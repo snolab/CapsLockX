@@ -80,6 +80,81 @@ MoCaLi(v, a){ ; 摩擦力
 }
 
 
+; 鼠标运动处理
+mm:
+    tNow := QPC()
+    ; 计算用户操作时间
+    tda := dt(ta, tNow),           tdd := dt(td, tNow)
+    tdw := dt(tw, tNow),           tds := dt(ts, tNow)
+
+    ; 计算加速度
+    max := ma(tdd - tda),          may := ma(tds - tdw)
+
+    ; 摩擦力不阻碍用户意志
+    mvx := MoCaLi(mvx + max, max), mvy := MoCaLi(mvy + may, may)
+
+    If(mvx Or mvy){
+        MouseMove, %mvx%, %mvy%, 0, R
+    }Else{
+        SetTimer, mm, Off
+    }
+    Return
+
+; 时间处理
+mTick(){
+    SetTimer, mm, 1
+}
+
+Pos2Long(x, y){
+    Return x | (y << 16)
+}
+
+; 滚轮运动处理
+msx:
+    tNow := QPC()
+    ; 计算用户操作时间
+    tdz := dt(tz, tNow), tdc := dt(tc, tNow)
+    ; 计算加速度
+    sax := ma(tdc - tdz)
+    svx := MoCaLi(svx + sax, sax)
+
+    If(svx){
+        MouseGetPos, mouseX, mouseY, wid, fcontrol
+        wParam := svx << 16 ;zDelta
+        lParam := Pos2Long(mouseX, mouseY)
+        PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
+    }Else{
+        SetTimer, msx, Off
+    }
+    Return
+
+msy:
+    tNow := QPC()
+    ; 计算用户操作时间
+    tdr := dt(tr, tNow), tdf := dt(tf, tNow)
+    ; 计算加速度
+    say := ma(tdr - tdf)
+    svy := MoCaLi(svy + say, say)
+
+    If(svy){
+        MouseGetPos, mouseX, mouseY, id, fcontrol
+        wParam := svy << 16 ;zDelta
+        lParam := Pos2Long(mouseX, mouseY)
+        PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
+    }Else{
+        SetTimer, msy, Off
+    }
+    Return
+
+; 时间处理
+sTickx(){
+    SetTimer, msx, 1
+}
+sTicky(){
+    SetTimer, msy, 1
+}
+
+
 ^!F12:: ExitApp
 
 
@@ -161,31 +236,6 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
     g:: search(copySelected())
 
 
-    ; 鼠标运动处理
-    mm:
-        tNow := QPC()
-        ; 计算用户操作时间
-        tda := dt(ta, tNow),           tdd := dt(td, tNow)
-        tdw := dt(tw, tNow),           tds := dt(ts, tNow)
-
-        ; 计算加速度
-        max := ma(tdd - tda),          may := ma(tds - tdw)
-
-        ; 摩擦力不阻碍用户意志
-        mvx := MoCaLi(mvx + max, max), mvy := MoCaLi(mvy + may, may)
-
-        If(mvx Or mvy){
-            MouseMove, %mvx%, %mvy%, 0, R
-        }Else{
-            SetTimer, mm, Off
-        }
-        Return
-
-    ; 时间处理
-    mTick(){
-        SetTimer, mm, 1
-    }
-
     a:: ta := (ta ? ta : QPC()), mTick()
     d:: td := (td ? td : QPC()), mTick()
     w:: tw := (tw ? tw : QPC()), mTick()
@@ -199,54 +249,6 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
     q:: RButton
 
 
-    Pos2Long(x, y){
-        Return x | (y << 16)
-    }
-
-    ; 滚轮运动处理
-    msx:
-        tNow := QPC()
-        ; 计算用户操作时间
-        tdz := dt(tz, tNow), tdc := dt(tc, tNow)
-        ; 计算加速度
-        sax := ma(tdc - tdz)
-        svx := MoCaLi(svx + sax, sax)
-
-        If(svx){
-            MouseGetPos, mouseX, mouseY, wid, fcontrol
-            wParam := svx << 16 ;zDelta
-            lParam := Pos2Long(mouseX, mouseY)
-            PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
-        }Else{
-            SetTimer, msx, Off
-        }
-        Return
-    
-    msy:
-        tNow := QPC()
-        ; 计算用户操作时间
-        tdr := dt(tr, tNow), tdf := dt(tf, tNow)
-        ; 计算加速度
-        say := ma(tdr - tdf)
-        svy := MoCaLi(svy + say, say)
-
-        If(svy){
-            MouseGetPos, mouseX, mouseY, id, fcontrol
-            wParam := svy << 16 ;zDelta
-            lParam := Pos2Long(mouseX, mouseY)
-            PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
-        }Else{
-            SetTimer, msy, Off
-        }
-        Return
-
-    ; 时间处理
-    sTickx(){
-        SetTimer, msx, 1
-    }
-    sTicky(){
-        SetTimer, msy, 1
-    }
 
     r:: tr := (tr ? tr : QPC()), sTicky()
     f:: tf := (tf ? tf : QPC()), sTicky()
