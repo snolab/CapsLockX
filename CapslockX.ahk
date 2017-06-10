@@ -61,10 +61,11 @@ dt(t, tNow){
 
 MoCaLi(v, a){ ; 摩擦力
     ; 限制最大速度
-    If(v <= -80)
-        v = -80
-    If(v >=  80)
-        v =  80
+    maxSpeed := 80
+    If(v   < -maxSpeed)
+        v := -maxSpeed
+    If(v   >  maxSpeed)
+        v :=  maxSpeed
     ; 摩擦力不阻碍用户意志
     If((a > 0 And v > 0) Or (a < 0 And v < 0))
         Return v
