@@ -1,4 +1,4 @@
-CoordMode, Mouse, Screen
+﻿CoordMode, Mouse, Screen
 
 QPF()
 {
