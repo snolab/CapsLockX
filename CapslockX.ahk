@@ -1,4 +1,5 @@
-﻿CoordMode, Mouse, Screen
+﻿;
+CoordMode, Mouse, Screen
 
 QPF()
 {
@@ -46,6 +47,8 @@ maPower(t){
     ; 这个模型可以满足精确定位需求，也不会感到鼠标“重”
     ; 但是因为跟现实世界的运动曲线不一样，凭直觉比较难判断落点，需要一定练习才能掌握。
     ;
+    ; 速度时间图像参见这个链接
+    ; http://m.wolframalpha.com/input/?i=Plot+%7BInt%28+%28+Exp%28+t%29+-+1+%29+*+16%29%2C+80%7D&x=0&y=0
     If(0 == t)
         Return 0
     If(t > 0)
@@ -61,11 +64,11 @@ dt(t, tNow){
 
 MoCaLi(v, a){ ; 摩擦力
     ; 限制最大速度
-    maxSpeed := 80
-    If(v   < -maxSpeed)
-        v := -maxSpeed
-    If(v   >  maxSpeed)
-        v :=  maxSpeed
+    ; maxSpeed := 80
+    ; If(v   < -maxSpeed)
+    ;     v := -maxSpeed
+    ; If(v   >  maxSpeed)
+    ;     v :=  maxSpeed
     ; 摩擦力不阻碍用户意志
     If((a > 0 And v > 0) Or (a < 0 And v < 0))
         Return v
@@ -82,32 +85,20 @@ MoCaLi(v, a){ ; 摩擦力
 
 ^!F12:: ExitApp
 
-
-CapsLock::
-    ; 这里改注册表是为了禁用 Win + L，不过只有用管理员运行才管用。。。
-    If(GetKeyState("ScrollLock", "T"))
-        RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 0
-    Else
-        RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 1
-    Send {ScrollLock}
-    Return
-
-!CapsLock:: CapsLock
-
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 Global ta := 0, td := 0, tw := 0, ts := 0, mvx := 0, mvy := 0
 
 ; 滚轮加速度微分对称模型（不要在意名字hhhh
 Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
 
-#If GetKeyState("ScrollLock", "T")
-    Pause::
-        RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 1
-        DllCall("LockWorkStation")
-        Sleep, 1000
-        RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 0
-        Return
-    ~#Tab:: Send {ScrollLock}
+Space::
+    Return
+Space Up::
+    Send {Space}
+    Return         
+
+#If GetKeyState("Space", "P")
+    ;~#Tab:: Send {ScrollLock}
     
     `:: Enter
 
