@@ -94,8 +94,6 @@ Global ta := 0, td := 0, tw := 0, ts := 0, mvx := 0, mvy := 0
 Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
 
 #If GetKeyState("ScrollLock", "T")
-    
-
     Pause::
         RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 1
         DllCall("LockWorkStation")
@@ -110,6 +108,8 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
     l:: Right
     j:: Down
     k:: Up
+    n:: Home
+    m:: End
     b:: Send {Delete}
 
     ; 窗口
@@ -140,23 +140,32 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
     F11:: Send {Volume_Down}
     F12:: Send {Volume_Up}
 
+    ; Google 搜索
+    search(q)
+    {
+        Run, https://www.google.com/search?q=%q%
+    }
+    copySelected()
+    {
+        Send ^c
+        ClipWait
+        Return Clipboard
+    }
+    g:: search(copySelected())
+
 
     ; 鼠标运动处理
     mm:
         tNow := QPC()
         ; 计算用户操作时间
-        tda := dt(ta, tNow)
-        tdd := dt(td, tNow)
-        tdw := dt(tw, tNow)
-        tds := dt(ts, tNow)
+        tda := dt(ta, tNow),           tdd := dt(td, tNow)
+        tdw := dt(tw, tNow),           tds := dt(ts, tNow)
 
         ; 计算加速度
-        max := ma(tdd - tda)
-        may := ma(tds - tdw)
+        max := ma(tdd - tda),          may := ma(tds - tdw)
 
         ; 摩擦力不阻碍用户意志
-        mvx := MoCaLi(mvx + max, max)
-        mvy := MoCaLi(mvy + may, may)
+        mvx := MoCaLi(mvx + max, max), mvy := MoCaLi(mvy + may, may)
 
         MouseMove, %mvx%, %mvy%, 0, R
 
@@ -182,7 +191,7 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
     q:: RButton
 
 
-    mouseWheel_lParam(x, y){
+    Pos2Long(x, y){
       return x | (y << 16)
     }
 
@@ -190,37 +199,39 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
     msx:
         tNow := QPC()
         ; 计算用户操作时间
-        tdz := dt(tz, tNow)
-        tdc := dt(tc, tNow)
+        tdz := dt(tz, tNow), tdc := dt(tc, tNow)
         ; 计算加速度
         sax := ma(tdc - tdz)
         svx := MoCaLi(svx + sax, sax)
 
         MouseGetPos, mouseX, mouseY, wid, fcontrol
         wParam := svx << 16 ;zDelta
-        lParam := mouseWheel_lParam(mouseX, mouseY)
+        lParam := Pos2Long(mouseX, mouseY)
         PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
 
         If(0 == svx)
             SetTimer, msx, Off
         Return
+    
+    
     msy:
+    {
         tNow := QPC()
         ; 计算用户操作时间
-        tdr := dt(tr, tNow)
-        tdf := dt(tf, tNow)
+        tdr := dt(tr, tNow), tdf := dt(tf, tNow)
         ; 计算加速度
         say := ma(tdr - tdf)
         svy := MoCaLi(svy + say, say)
 
         MouseGetPos, mouseX, mouseY, id, fcontrol
         wParam := svy << 16 ;zDelta
-        lParam := mouseWheel_lParam(mouseX, mouseY)
+        lParam := Pos2Long(mouseX, mouseY)
         PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
 
         If(0 == svy)
             SetTimer, msy, Off
         Return
+    }
 
     ; 时间处理
     sTickx(){
