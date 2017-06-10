@@ -1,4 +1,11 @@
-﻿;
+﻿; UTF-8 with BOM
+; 最后更新：2017年6月10日
+; 分支：with-space
+; 特点：改用空格切换状态
+;
+; 创建：Snowstar
+; 参与完善：张工 QQ: 45289331
+;
 CoordMode, Mouse, Screen
 
 QPF()
@@ -91,15 +98,25 @@ Global ta := 0, td := 0, tw := 0, ts := 0, mvx := 0, mvy := 0
 ; 滚轮加速度微分对称模型（不要在意名字hhhh
 Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
 
-Space::
-    Return
-Space Up::
-    Send {Space}
-    Return         
+;~ Space::
+    ;~ Return
+;~ Space Up::
+    ;~ Send {Space}
+    ;~ Return         
+
+space up::
+    if (A_PriorKey="space")
+        sendinput {space}
+    sendinput {Space Up}
+    Return   
+Space & Tab::sendinput {Space}
+^Space::^Space
++Space::+Space
+#Space::#Space
 
 #If GetKeyState("Space", "P")
     ;~#Tab:: Send {ScrollLock}
-    
+     
     `:: Enter
 
     h:: Left
