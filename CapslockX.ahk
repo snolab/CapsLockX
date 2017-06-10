@@ -173,10 +173,11 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
         ; 摩擦力不阻碍用户意志
         mvx := MoCaLi(mvx + max, max), mvy := MoCaLi(mvy + may, may)
 
-        MouseMove, %mvx%, %mvy%, 0, R
-
-        If(0 == mvx And 0 == mvy)
+        If(mvx Or mvy){
+            MouseMove, %mvx%, %mvy%, 0, R
+        }Else{
             SetTimer, mm, Off
+        }
         Return
 
     ; 时间处理
@@ -198,7 +199,7 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
 
 
     Pos2Long(x, y){
-      return x | (y << 16)
+        Return x | (y << 16)
     }
 
     ; 滚轮运动处理
@@ -210,18 +211,17 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
         sax := ma(tdc - tdz)
         svx := MoCaLi(svx + sax, sax)
 
-        MouseGetPos, mouseX, mouseY, wid, fcontrol
-        wParam := svx << 16 ;zDelta
-        lParam := Pos2Long(mouseX, mouseY)
-        PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
-
-        If(0 == svx)
+        If(svx){
+            MouseGetPos, mouseX, mouseY, wid, fcontrol
+            wParam := svx << 16 ;zDelta
+            lParam := Pos2Long(mouseX, mouseY)
+            PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
+        }Else{
             SetTimer, msx, Off
+        }
         Return
     
-    
     msy:
-    {
         tNow := QPC()
         ; 计算用户操作时间
         tdr := dt(tr, tNow), tdf := dt(tf, tNow)
@@ -229,15 +229,15 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
         say := ma(tdr - tdf)
         svy := MoCaLi(svy + say, say)
 
-        MouseGetPos, mouseX, mouseY, id, fcontrol
-        wParam := svy << 16 ;zDelta
-        lParam := Pos2Long(mouseX, mouseY)
-        PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
-
-        If(0 == svy)
+        If(svy){
+            MouseGetPos, mouseX, mouseY, id, fcontrol
+            wParam := svy << 16 ;zDelta
+            lParam := Pos2Long(mouseX, mouseY)
+            PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
+        }Else{
             SetTimer, msy, Off
+        }
         Return
-    }
 
     ; 时间处理
     sTickx(){
