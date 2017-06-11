@@ -1,6 +1,7 @@
 CoordMode, Mouse, Screen
-CoordMode, Pixel, Screen
 
+; 解决多屏DPI不一致问题
+DllCall("Shcore.dll\SetProcessDpiAwareness", "uint", 2)
 
 ; 调试用
 ^F12:: ExitApp
@@ -49,9 +50,9 @@ ma3(t){
     If(0 == t)
         Return 0
     If(t > 0)
-        Return t * 12
+        Return  1 + t * 12
     Else
-        Return t * 12
+        Return -1 + t * 12
 }
 
 maPower(t){
@@ -62,9 +63,9 @@ maPower(t){
     If(0 == t)
         Return 0
     If(t > 0)
-        Return  ( Exp( t) - 0.95 ) * 16
+        Return  1 +( Exp( t) - 1 ) * 16
     Else
-        Return -( Exp(-t) - 0.95 ) * 16
+        Return -1 -( Exp(-t) - 1 ) * 16
 }
 
 ; 时间计算
@@ -73,37 +74,13 @@ dt(t, tNow){
 }
 
 
-
-GetCursorShape(){   ;获取光标特征码 by nnrxin  
-    VarSetCapacity( PCURSORINFO, 20, 0) ;为鼠标信息 结构 设置出20字节空间
-    NumPut(20, PCURSORINFO, 0, "UInt")  ;*声明出 结构 的大小cbSize = 20字节
-    DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
-    if ( NumGet( PCURSORINFO, 4, "UInt")="0" ) ;当光标隐藏时，直接输出特征码为0
-        return, 0
-    VarSetCapacity( ICONINFO, 20, 0) ;创建 结构-图标信息
-    DllCall("GetIconInfo", "Ptr", NumGet(PCURSORINFO, 8), "Ptr", &ICONINFO)  ;获取 结构-图标信息
-    VarSetCapacity( lpvMaskBits, 128, 0) ;创造 数组-掩图信息（128字节）
-    DllCall("GetBitmapBits", "Ptr", NumGet( ICONINFO, 12), "UInt", 128, "UInt", &lpvMaskBits)  ;读取 数组-掩图信息
-    loop, 128{ ;掩图码
-        MaskCode += NumGet( lpvMaskBits, A_Index, "UChar")  ;累加拼合
-    }
-    if (NumGet( ICONINFO, 16, "UInt")<>"0"){ ;颜色图不为空时（彩色图标时）
-        VarSetCapacity( lpvColorBits, 4096, 0)  ;创造 数组-色图信息（4096字节）
-        DllCall("GetBitmapBits", "Ptr", NumGet( ICONINFO, 16), "UInt", 4096, "UInt", &lpvColorBits)  ;读取 数组-色图信息
-        loop, 256{ ;色图码
-            ColorCode += NumGet( lpvColorBits, A_Index*16-3, "UChar")  ;累加拼合
-        }  
-    } else
-        ColorCode := "0"
-    DllCall("DeleteObject", "Ptr", NumGet( ICONINFO, 12))  ; *清理掩图
-    DllCall("DeleteObject", "Ptr", NumGet( ICONINFO, 16))  ; *清理色图
-    VarSetCapacity( PCURSORINFO, 0) ;清空 结构-光标信息
-    VarSetCapacity( ICONINFO, 0) ;清空 结构-图标信息
-    VarSetCapacity( lpvMaskBits, 0)  ;清空 数组-掩图
-    VarSetCapacity( lpvColorBits, 0)  ;清空 数组-色图
-    return, % MaskCode//2 . ColorCode  ;输出特征码
+NewCursorShapeQ(){
+    static lA_Cursor := A_Cursor
+    If(A_Cursor == lA_Cursor)
+        Return 0
+    lA_Cursor := A_Cursor
+    Return 1
 }
-
 
 
 MoCaLi(v, a){ ; 摩擦力
@@ -113,16 +90,18 @@ MoCaLi(v, a){ ; 摩擦力
     ;     v := -maxSpeed
     ; If(v   >  maxSpeed)
     ;     v :=  maxSpeed
+
     ; 摩擦力不阻碍用户意志
-    If((a > 0 And v > 0) Or (a < 0 And v < 0))
+    If((a > 0 And v > 0) Or (a < 0 And v < 0)){
         Return v
+    }
+    
     ; 简单粗暴倍数降速
     v *= 0.8
     If(v > 0)
         v -= 1
     If(v < 0)
         v += 1
-    v //= 1
     Return v
 }
 
@@ -146,9 +125,46 @@ mm:
 
     ; 摩擦力不阻碍用户意志
     mvx := MoCaLi(mvx + max, max), mvy := MoCaLi(mvy + may, may)
+    ;mvx //= 1, mvy //= 1
+    ;mvx //= 1, mvy //= 1
+    If(Abs(mvx) < 0.5)
+        mvx := 0
+    If(Abs(mvy) < 0.5)
+        mvy := 0
+
 
     If(mvx Or mvy){
+        ;MouseGetPos, xa, ya
         MouseMove, %mvx%, %mvy%, 0, R
+        ;MouseGetPos, xb, yb
+
+        ; ; 对屏幕边角用力穿透，并粘附( 必须放 MouseMove 下面 )
+        ; If(max And Abs(mvx) > 80 And xa == xb){
+        ;     If(xStop){
+        ;         MouseMove, (mvx < 0 ? 3 : -3) * A_ScreenWidth, 0, 0, R
+        ;         throughedScreen = 1
+        ;         xStop = 0
+        ;     }Else{
+        ;         xStop = 1
+        ;     }
+        ;     mvx := 0, mvy := 0
+        ; }
+        ; If(may And Abs(mvy) > 80 And ya == yb){
+        ;     If(yStop){
+        ;         MouseMove, 0, (mvy < 0 ? 3 : -3) * A_ScreenHeight, 0, R
+        ;         throughedScreen = 1
+        ;         yStop = 0
+        ;     }Else{
+        ;         yStop = 1
+        ;     }
+        ;     mvx := 0, mvy := 0
+        ; }
+
+        ; 对区域切换粘附( 必须放 MouseMove 下面 )
+        If(NewCursorShapeQ() Or throughedScreen){
+            ;max := 0, may := 0
+            mvx := 0, mvy := 0
+        }
     }Else{
         SetTimer, mm, Off
     }
@@ -156,13 +172,26 @@ mm:
 
 ; 时间处理
 mTick(){
-    SetTimer, mm, 1
+    SetTimer, mm, 0
 }
 
 Pos2Long(x, y){
     Return x | (y << 16)
 }
 
+
+ScrollMsg2(msg, zDelta){
+    MouseGetPos, mouseX, mouseY, wid, fcontrol
+    wParam := zDelta << 16 ;zDelta
+    lParam := Pos2Long(mouseX, mouseY)
+
+    If(GetKeyState("Shift","p"))
+        wParam := wParam | 0x4
+    If(GetKeyState("Ctrl","p"))
+        wParam := wParam | 0x8
+
+    PostMessage, msg, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
+}
 
 
 ScrollMsg(msg, zDelta){
@@ -203,13 +232,14 @@ msx:
     ; 计算加速度
     sax := ma(tdc - tdz)
     svx := MoCaLi(svx + sax, sax)
-
-
+    If(Abs(svx) < 0.5)
+        svx := 0
     If(svx){
-        MouseGetPos, mouseX, mouseY, wid, fcontrol
-        wParam := svx << 16 ;zDelta
-        lParam := Pos2Long(mouseX, mouseY)
-        PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
+        ; MouseGetPos, mouseX, mouseY, wid, fcontrol
+        ; wParam := svx << 16 ;zDelta
+        ; lParam := Pos2Long(mouseX, mouseY)
+        ; PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
+        ScrollMsg2(0x20E, svx)
     }Else{
         SetTimer, msx, Off
     }
@@ -222,13 +252,14 @@ msy:
     ; 计算加速度
     say := ma(tdr - tdf)
     svy := MoCaLi(svy + say, say)
-
+    If(Abs(svy) < 0.5)
+        svy := 0
     If(svy){
-        MouseGetPos, mouseX, mouseY, id, fcontrol
-        wParam := svy << 16 ;zDelta
-        lParam := Pos2Long(mouseX, mouseY)
-        PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
-    ;    ScrollMsg(0x20A, svy)
+        ; MouseGetPos, mouseX, mouseY, id, fcontrol
+        ; wParam := svy << 16 ;zDelta
+        ; lParam := Pos2Long(mouseX, mouseY)
+        ; PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
+        ScrollMsg2(0x20A, svy)
     }Else{
         SetTimer, msy, Off
     }
@@ -237,10 +268,10 @@ msy:
 
 ; 时间处理
 sTickx(){
-    SetTimer, msx, 1
+    SetTimer, msx, 0
 }
 sTicky(){
-    SetTimer, msy, 1
+    SetTimer, msy, 0
 }
 
 
@@ -249,7 +280,6 @@ a:: mtl := (mtl ? mtl : QPC()), mTick()
 d:: mtr := (mtr ? mtr : QPC()), mTick()
 w:: mtu := (mtu ? mtu : QPC()), mTick()
 s:: tmd := (tmd ? tmd : QPC()), mTick()
-
 a Up:: mtl := 0, mTick()
 d Up:: mtr := 0, mTick()
 w Up:: mtu := 0, mTick()

@@ -1,4 +1,4 @@
-﻿Process, Priority,,high         ;脚本高优先级
+Process, Priority,,high         ;脚本高优先级
 ;#NoTrayIcon                        ;隐藏托盘图标
 ;#NoEnv                              ;不检查空变量是否为环境变量
 ;#Persistent                     ;让脚本持久运行(关闭或ExitApp)
@@ -6,12 +6,16 @@
 ;#MaxHotkeysPerInterval 300      ;时间内按热键最大次数
 ;#InstallMouseHook
 
-#Include %A_ScriptDir%\Modules
-;#Include Core.ahk
-
-
-
 ^!F12:: ExitApp
+
+#Include %A_ScriptDir%
+#Include CapsX-WinX.ahk
+#If
+;#Include Modules\Core.ahk
+
+
+
+
 
 
 CapsLock:: Return
@@ -41,21 +45,14 @@ Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
         Return
 
 #If GetKeyState("CapsLock", "P") And GetKeyState("ScrollLock", "T")
-    H::
-        Msgbox 帮助1
-        Return
+    h:: Home
+    k:: PgUp
+    j:: PgDn
+    l:: End
 
-#If GetKeyState("ScrollLock", "T")
-    #Include Mouse.ahk
-
-    Pause::
-        RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 1
-        DllCall("LockWorkStation")
-        Sleep, 1000
-        RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 0
-        Return
+#If !GetKeyState("CapsLock", "P") And GetKeyState("ScrollLock", "T")
+    #Include Modules\MouseX.ahk
     ~#Tab:: Send {ScrollLock}
-    
 
     z:: Send {Enter}
     h:: Left

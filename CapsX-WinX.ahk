@@ -1,4 +1,6 @@
-^!F12:: ExitApp
+
+
+;^!F12:: ExitApp
 
 ; #UseHook On
 
@@ -18,15 +20,16 @@
 #]:: Send {CtrlDown}#{Right}{CtrlUp}
 
 ;#IfWinActive 任务切换 ahk_class MultitaskingViewFrame ahk_exe explorer.exe
-#IfWinActive 任务切换 ahk_class MultitaskingViewFrame
-    ; 模拟方向键
+#IfWinActive ahk_class MultitaskingViewFrame
+
+#IfWinActive ahk_class MultitaskingViewFrame
+    ^F12:: ExitApp
+
+    ; 在Alt+Tab下模拟方向键
     !a:: Left
     !d:: Right
     !w:: Up
     !s:: Down
-
-#IfWinActive 任务视图 ahk_class MultitaskingViewFrame ahk_exe explorer.exe
-    ^F12:: ExitApp
 
     ; 模拟方向键
     w::Send {Up}
@@ -45,10 +48,10 @@
 	z::Send ^#{F4}
 
 	; 关掉窗口
-	x::Send ^w{Right}
+	x::Send ^w{Right} 
 
 	; 移到除了自己的第x个桌面（或新建桌面）
-	1::Send {AppsKey}m{Down 0}{Enter}
+	1::Send {AppsKey}m{Dopwn 0}{Enter}
 	2::Send {AppsKey}m{Down 1}{Enter}
 	3::Send {AppsKey}m{Down 2}{Enter}
 	4::Send {AppsKey}m{Down 3}{Enter}
