@@ -224,19 +224,21 @@ msy:
     tdr := dt(stu, tNow), tdf := dt(std, tNow)
 
     ; RF同时按下相当于中键
+    If(GetKeyState("MButton", "P")){
+        If(stu == 0 Or std == 0){
+            Send {MButton Up}
+            stu := 0, std := 0
+        }
+        Return
+    }
     If(stu And std And Abs(tdr - tdf) < 1){
         If(!GetKeyState("MButton", "P")){
             Send {MButton Down}
-            stu := 0, std := 0
         }
-    }Else{
-        If(GetKeyState("MButton", "P") And stu == 0 And std == 0)
-            Send {MButton Up}
+        Return
     }
     ; 计算加速度
     say := ma(tdr - tdf) * TMouse_WheelSpeedRatio
-    
-
     svy := Friction(svy + say, say)
     If(Abs(svy) < 0.5)
         svy := 0

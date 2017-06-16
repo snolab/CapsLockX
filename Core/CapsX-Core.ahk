@@ -82,28 +82,28 @@ If(!)
     Return
     #If
         Setup_Accelerate:
-        #Include Modules\00-Accelerate.ahk
+            #Include Modules\00-Accelerate.ahk
     #If
         Setup_Mouse:
-        #Include Modules\01-Mouse.ahk
+            #Include Modules\01-Mouse.ahk
     #If
         Setup_WinTab:
-        #Include Modules\02-WinTab.ahk
+            #Include Modules\02-WinTab.ahk
     #If
         Setup_Clip:
-        #Include Modules\Clip.ahk
+            #Include Modules\Clip.ahk
     #If
         Setup_Edit:
-        #Include Modules\Edit.ahk
+            #Include Modules\Edit.ahk
     #If
         Setup_Help:
-        #Include Modules\Help.ahk
+            #Include Modules\Help.ahk
     #If
         Setup_Media:
-        #Include Modules\Media.ahk
+            #Include Modules\Media.ahk
     #If
         Setup_Search:
-        #Include Modules\Search.ahk
+            #Include Modules\Search.ahk
 ; 动态结束；
 
     CapsX_Dn:
