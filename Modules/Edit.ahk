@@ -1,3 +1,14 @@
+; 自动抽取帮助
+; 
+; 
+; 
+; 
+; 
+; 
+; 
+; 
+; 
+
 Return
 OnSwitch(){
     ; 这里改注册表是为了禁用 Win + L 锁定机器，不过只有用管理员运行才管用。。。
@@ -27,9 +38,6 @@ OnSwitch(){
     ^b:: Send ^{BackSpace}
     ^+b:: Send ^{Delete}
 
-    ; 窗口转到Fn键
-    x:: Send ^w
-    !x:: Send !{F4}
     ; 撤销
     u:: Send ^z
     ; 重做

@@ -49,29 +49,36 @@ If(!)
     UpdateCapsXMode()
     ; 根据当前模式，切换灯
     UpdateLight(){
-        If(T_UseScrollLockLight)
-            SetScrollLockState % (CapsXMode & CM_CAPSX) ? "AlwaysOn" : "AlwaysOff"
+        If(T_UseScrollLockLight){
+            If(GetKeyState("ScrollLock", "T") != ((CapsXMode == CM_CAPSX) || (CapsXMode == CM_FN))){
+                Send {ScrollLock}
+                Return 1
+            }
+        }
         ;tips(CapsXMode)
     }
     
-    CapsXOff(){
+    CapsXTurnOff(){
         CapsXMode &= ~CM_CAPSX
-        UpdateLight()
+        Return UpdateLight()
     }
-
+    CapsXTurnOn(){
+        CapsXMode |= CM_CAPSX
+        Return UpdateLight()
+    }
 
     Hotkey, %T_CapsXKey%, CapsX_Dn
     Hotkey, %T_CapsXKey% Up, CapsX_Up
 
 ; 动态开始：载入模块
-        GoSub Setup_Accelerate
-        GoSub Setup_Mouse
-        GoSub Setup_WinTab
-        GoSub Setup_Clip
-        GoSub Setup_Edit
-        GoSub Setup_Help
-        GoSub Setup_Media
-        GoSub Setup_Search
+    GoSub Setup_Accelerate
+    GoSub Setup_Mouse
+    GoSub Setup_WinTab
+    GoSub Setup_Clip
+    GoSub Setup_Edit
+    GoSub Setup_Help
+    GoSub Setup_Media
+    GoSub Setup_Search
     Return
     #If
         Setup_Accelerate:

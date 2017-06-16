@@ -39,9 +39,9 @@ CodeLoadModules(source){
         If(T%ModuleName%_Disabled)
             LoadingTips("禁用模块：" i " " ModuleName)
         Else{
+            code_setup   .= "    GoSub Setup_" ModuleName "`n"
             code_include .= "    #If" "`n"
             ; code .= "    global MF_" ModuleName " := " 1 << (i - 1) "`n"
-            code_setup   .= "        GoSub Setup_" ModuleName "`n"
             code_include .= "        Setup_" ModuleName ":"  "`n"
             code_include .= "        #Include Modules\" ModuleFile "`n"
 
@@ -94,6 +94,8 @@ If(target != source){
 
 Send ^!+{F12} ; 把之前的实例关了
 Run %CoreAHK%, %A_WorkingDir%
+
+; 显示Tips 2秒
 Sleep 2000
 ExitApp
 

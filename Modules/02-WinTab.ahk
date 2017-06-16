@@ -15,13 +15,17 @@ Return
 
 ; 确保WinTab模块优先级比Mouse高，否则此处 wasd 无效
 
+#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+    ; 窗口转到Fn键
+    x:: Send ^w
+    !x:: Send !{F4}
 ; 帮助：
 ; 条件：WinActive ahk_class MultitaskingViewFrame 
 ; 
+~#Tab Up::
+	CapsXTurnOff()
+	Return
 #IfWinActive ahk_class MultitaskingViewFrame
-
-	!F1:: tips("WASD 切换窗口焦点")
-	F1:: tips("WASD 切换窗口焦点`nQE切换桌面")
     ; 在 Alt+Tab 下, WASD 模拟方向键
     !a:: Left
     !d:: Right
