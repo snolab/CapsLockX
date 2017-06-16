@@ -1,4 +1,4 @@
-# CapslockX
+# CapsX
 
 ## 入门教程第一
 首先，你需要安装了 AutoHotKey。
@@ -16,8 +16,11 @@
 
 ## 使用手册第二
 
+按 `CapsLock` 切换 CapsX 模式
+
 ### 按键表
 每个模块可以单独禁用，请见 `CapsX-Settings.ahk` 文件
+
 <!-- 开始：尝试自动抽取帮助文件 -->
 
 | 模式 | Mouse模块 | 说明 |
