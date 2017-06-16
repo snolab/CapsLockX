@@ -1,13 +1,7 @@
-
-
-;^!F12:: ExitApp
-
-; #UseHook On
-
-; ahk_class MultitaskingViewFrame ahk_exe explorer.exe
-#PgUp:: Send {CtrlDown}#{Left}{CtrlUp}
-#PgDn:: Send {CtrlDown}#{Right}{CtrlUp}
-
+﻿
+If(!CapsX)
+    ExitApp
+Return
 
 #Delete:: Send {CtrlDown}#{F4}{CtrlUp}
 #Insert:: Send {CtrlDown}#d{CtrlUp}
@@ -19,23 +13,29 @@
 #[:: Send {CtrlDown}#{Left}{CtrlUp}
 #]:: Send {CtrlDown}#{Right}{CtrlUp}
 
-;#IfWinActive 任务切换 ahk_class MultitaskingViewFrame ahk_exe explorer.exe
+; 确保WinTab模块优先级比Mouse高，否则此处 wasd 无效
+
+; 帮助：
+; 条件：WinActive ahk_class MultitaskingViewFrame 
+; 
 #IfWinActive ahk_class MultitaskingViewFrame
 
-#IfWinActive ahk_class MultitaskingViewFrame
-    ^F12:: ExitApp
-
-    ; 在Alt+Tab下模拟方向键
+	!F1:: tips("WASD 切换窗口焦点")
+	F1:: tips("WASD 切换窗口焦点`nQE切换桌面")
+    ; 在 Alt+Tab 下, WASD 模拟方向键
     !a:: Left
     !d:: Right
     !w:: Up
     !s:: Down
 
+    ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
+	; 以及在窗口贴边后，WASD 切换窗口焦点
+	
     ; 模拟方向键
-    w::Send {Up}
-    a::Send {Left}
-    s::Send {Down}
-    d::Send {Right}
+    w:: Send {Up}
+    a:: Send {Left}
+    s:: Send {Down}
+    d:: Send {Right}
 	
 	; 切换桌面概览
 	q::Send ^#{Left}
@@ -51,7 +51,7 @@
 	x::Send ^w{Right} 
 
 	; 移到除了自己的第x个桌面（或新建桌面）
-	1::Send {AppsKey}m{Dopwn 0}{Enter}
+	1::Send {AppsKey}m{Down 0}{Enter}
 	2::Send {AppsKey}m{Down 1}{Enter}
 	3::Send {AppsKey}m{Down 2}{Enter}
 	4::Send {AppsKey}m{Down 3}{Enter}
@@ -68,30 +68,3 @@
 	
 	; 移到新建桌面，并激活窗口
 	c::Send {AppsKey}mn{Enter}
-
-
-
-#IfWinActive 夜神模拟器 ahk_class Qt5QWindowIcon ahk_exe Nox.exe
-	q::
-	t::
-		WinGetPos, X, Y, Width, Height, A
-		If Y >= 0
-			WinMove, A, , X, Y - Height / 2
-		Else
-			WinMove, A, , X, Y + Height / 2
-		Return
-	w:: Send {Up}
-	a:: Send {Left}
-	s:: Send {Down}
-	d:: Send {Right}
-	r::
-		WinGetPos, X, Y, Width, Height, A
-		MouseMove, 0, -120/1871*Height, 0, R
-		Return
-	f:: 
-		WinGetPos, X, Y, Width, Height, A
-		MouseMove, 0, 120/1871*Height, 0, R
-		Return
-	e:: 
-		Click
-		Return
