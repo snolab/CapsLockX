@@ -8,6 +8,7 @@ global stu := 0, std := 0, stl := 0, str := 0, svx := 0, svy := 0
 
 If(TMouse_SendInput)
     SendMode Input
+    
 
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
@@ -54,7 +55,24 @@ NewCursorShapeQ(){
 ; e左键
 ; q右键
 
-
+; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646273(v=vs.85).aspx
+SendInput_MouseMsg(dwFlag, mouseData = 0){
+    VarSetCapacity(sendData, 28, 0)
+    NumPut(0, sendData,  0, "UInt")
+    NumPut(0, sendData,  4, "Int") 
+    NumPut(0, sendData,  8, "Int") 
+    NumPut(mouseData, sendData, 12, "UInt")
+    NumPut(dwFlag, sendData, 16, "UInt")
+    DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
+}
+SendInput_MouseMoveR(x, y){
+    VarSetCapacity(sendData, 28, 0)
+    NumPut(0, sendData,  0, "UInt")
+    NumPut(mvx, sendData,  4, "Int")
+    NumPut(mvy, sendData,  8, "Int")
+    NumPut(1, sendData, 16, "UInt")
+    DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
+}
 ; 鼠标运动处理
 mm:
     tNow := QPC()
@@ -85,12 +103,7 @@ mm:
         }
 
         If(TMouse_SendInputAPI){
-            VarSetCapacity(sendData, 28, 0) ;为鼠标信息 结构 设置出20字节空间
-            NumPut(0, sendData,  0, "UInt") ; INPUT.type
-            NumPut(mvx, sendData,  4, "Int") ; INPUT.mouse_event.dx
-            NumPut(mvy, sendData,  8, "Int") ; INPUT.mouse_event.dy
-            NumPut(1, sendData, 16, "UInt") ; INPUT.mouse_event.dwFlags = 1/*_MOUSEEVENTF_MOVE*/
-            DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
+            SendInput_MouseMoveR(mvx, mvy)
         }Else{
             MouseMove, %mvx%, %mvy%, 0, R   
         }
@@ -186,8 +199,7 @@ ScrollMsg(msg, zDelta){
 
     ; MsgBox, %ControlClass1% "\" %ControlClass2% "\" %ControlClass3%
 
-    If(ControlClass2 == "")
-    {
+    If(ControlClass2 == ""){
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass1%
     }Else{
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass2%
@@ -243,7 +255,10 @@ msy:
     If(Abs(svy) < 0.5)
         svy := 0
     If(svy){
-        ScrollMsg2(0x20A, svy)
+        If(TMouse_SendInputAPI)
+            SendInput_MouseMsg(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
+        Else
+            ScrollMsg2(0x20A, svy)
     }Else{
         SetTimer, msy, Off
     }
@@ -267,20 +282,31 @@ sTicky(){
     d Up:: mtr := 0, mTick()
     w Up:: mtu := 0, mTick()
     s Up:: tmd := 0, mTick()
-    
-    e:: LButton
-    q:: RButton
+    *e::    Send {Blind}{LButton Down}
+    *e up:: Send {Blind}{LButton Up}
+    *q::
+        If(TMouse_SendInputAPI)
+            SendInput_MouseMsg(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
+        Else
+            Send {Blind}{RButton Down}
+        Return
+    *q up::
+        If(TMouse_SendInputAPI)
+            SendInput_MouseMsg(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
+        Else
+            Send {Blind}{RButton Up}
+        Return
 
-    r:: stu := (stu ? stu : QPC()), sTicky()
-    f:: std := (std ? std : QPC()), sTicky()
+    *r:: stu := (stu ? stu : QPC()), sTicky()
+    *f:: std := (std ? std : QPC()), sTicky()
     ; z:: stl := (stl ? stl : QPC()), sTickx()
     ; c:: str := (str ? str : QPC()), sTickx()
-    !r:: Send {WheelUp}
-    !f:: Send {WheelDown}
-    ^r:: Send ^{WheelUp}
-    ^f:: Send ^{WheelDown}
+    ; !r:: Send {WheelUp}
+    ; !f:: Send {WheelDown}
+    ; ^r:: Send ^{WheelUp}
+    ; ^f:: Send ^{WheelDown}
 
-    r Up:: stu := 0, sTicky()
-    f Up:: std := 0, sTicky()
+    *r Up:: stu := 0, sTicky()
+    *f Up:: std := 0, sTicky()
     ; z Up:: stl := 0, sTickx()
     ; c Up:: str := 0, sTickx()

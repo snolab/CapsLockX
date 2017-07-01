@@ -1,7 +1,12 @@
-﻿Process Priority, , High     ; 脚本高优先级
+﻿; 模块名: 不能有这几个字符 "   ,``"
+
+Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
 #Include CapsX-Settings.ahk
+
+global PathModules := "模块"
+global PathCore    := "核心"
 
 global CapsX_Version := "v1.1 Alpha"
 LoadingTips(msg, clear = 0){
@@ -13,15 +18,13 @@ LoadingTips(msg, clear = 0){
 }
 
 
-
-
 TryLoadModuleHelp(ModuleFileName, ModuleName){
-    If(FileExist("Modules\" ModuleName ".md")){
-        FileRead, ModuleHelp, Modules\%ModuleName%.md
+    If(FileExist(PathModules "\" ModuleName ".md")){
+        FileRead, ModuleHelp, %PathModules%\%ModuleName%.md
         Return ModuleHelp
     }
-    If(FileExist("Modules\" ModuleFileName ".md")){
-        FileRead, ModuleHelp, Modules\%ModuleFileName%.md
+    If(FileExist(PathModules "\" ModuleFileName ".md")){
+        FileRead, ModuleHelp, %PathModules%\%ModuleFileName%.md
         Return ModuleHelp
     }
     Return ""
@@ -30,7 +33,7 @@ LoadModulesHelp(source){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
-    Loop, Files, Modules\*.ahk, R ; Recurse into subfolders.
+    Loop, Files, %PathModules%\*.ahk, R ; Recurse into subfolders.
         ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
@@ -80,15 +83,12 @@ LoadModulesHelp(source){
     Return target
 }
 
-
-
-
 ; 加载模块
 LoadModulesCode(source){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
-    Loop, Files, Modules\*.ahk, R ; Recurse into subfolders.
+    Loop, Files, %PathModules%\*.ahk, R ; Recurse into subfolders.
         ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
@@ -114,11 +114,11 @@ LoadModulesCode(source){
             code_include .= "    #If" "`n"
             ; code .= "    global MF_" ModuleName " := " 1 << (i - 1) "`n"
             code_include .= "        Setup_" ModuleName ":"  "`n"
-            code_include .= "            #Include Modules\" ModuleFile "`n"
+            code_include .= "            #Include " PathModules "\" ModuleFile "`n"
 
             LoadingTips("运行模块：" i " " ModuleName)
 
-            ; FileRead ModuleCode, Modules\%ModuleFile%
+            ; FileRead ModuleCode, 模块\%ModuleFile%
 
             ; If(RegExMatch(ModuleCode, "m)^\s*T" ModuleName "_Setup:$")){
             ;     code_setup .= "    GoSub T" ModuleName "_Setup`n"
@@ -149,8 +149,6 @@ LoadModulesCode(source){
 
 
 
-
-
 README := "README.md"
 FileRead, source, %README%
 target := LoadModulesHelp(source)
@@ -171,8 +169,8 @@ If(target != source){
 
 
 
+global CoreAHK := PathCore "\CapsX-Core.ahk"
 
-CoreAHK := "Core\CapsX-Core.ahk"
 FileRead, source, %CoreAHK%
 target := LoadModulesCode(source)
 If(target != source){
@@ -185,10 +183,7 @@ If(target != source){
 
     FileDelete %CoreAHK%
     FileAppend %target%, %CoreAHK%
-    ; Reload
-    ; ExitApp
 }
-
 
 
 Send ^!+{F12} ; 把之前的实例关了

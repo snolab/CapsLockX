@@ -71,39 +71,67 @@ If(!)
     Hotkey, %T_CapsXKey% Up, CapsX_Up
 
 ; 动态开始：载入模块
-    GoSub Setup_Accelerate
-    GoSub Setup_Mouse
+    GoSub Setup_Anki方向键转换
+    GoSub Setup_Cursor
+    GoSub Setup_OneNote2016拓展
+    GoSub Setup_OneNote拓展
+    GoSub Setup_TIM添加常驻功能
+    GoSub Setup_TIM连接OneNote2016
+    GoSub Setup_网易云音乐
+    GoSub Setup_加速模型
+    GoSub Setup_模拟鼠标
     GoSub Setup_WinTab
-    GoSub Setup_Clip
-    GoSub Setup_Edit
-    GoSub Setup_Help
-    GoSub Setup_Media
-    GoSub Setup_Search
+    GoSub Setup_剪贴板增强
+    GoSub Setup_媒体键
+    GoSub Setup_帮助
+    GoSub Setup_搜索键
+    GoSub Setup_编辑增强
     Return
     #If
-        Setup_Accelerate:
-            #Include Modules\00-Accelerate.ahk
+        Setup_Anki方向键转换:
+            #Include 模块\应用-Anki方向键转换.ahk
     #If
-        Setup_Mouse:
-            #Include Modules\01-Mouse.ahk
+        Setup_Cursor:
+            #Include 模块\应用-CapsX-Cursor.ahk-bak
+    #If
+        Setup_OneNote2016拓展:
+            #Include 模块\应用-OneNote2016拓展.ahk
+    #If
+        Setup_OneNote拓展:
+            #Include 模块\应用-OneNote拓展.ahk
+    #If
+        Setup_TIM添加常驻功能:
+            #Include 模块\应用-TIM添加常驻功能.ahk
+    #If
+        Setup_TIM连接OneNote2016:
+            #Include 模块\应用-TIM连接OneNote2016.ahk
+    #If
+        Setup_网易云音乐:
+            #Include 模块\应用-网易云音乐.ahk
+    #If
+        Setup_加速模型:
+            #Include 模块\插件-00-加速模型.ahk
+    #If
+        Setup_模拟鼠标:
+            #Include 模块\插件-01-模拟鼠标.ahk
     #If
         Setup_WinTab:
-            #Include Modules\02-WinTab.ahk
+            #Include 模块\插件-02-WinTab.ahk
     #If
-        Setup_Clip:
-            #Include Modules\Clip.ahk
+        Setup_剪贴板增强:
+            #Include 模块\插件-剪贴板增强.ahk
     #If
-        Setup_Edit:
-            #Include Modules\Edit.ahk
+        Setup_媒体键:
+            #Include 模块\插件-媒体键.ahk
     #If
-        Setup_Help:
-            #Include Modules\Help.ahk
+        Setup_帮助:
+            #Include 模块\插件-帮助.ahk
     #If
-        Setup_Media:
-            #Include Modules\Media.ahk
+        Setup_搜索键:
+            #Include 模块\插件-搜索键.ahk
     #If
-        Setup_Search:
-            #Include Modules\Search.ahk
+        Setup_编辑增强:
+            #Include 模块\插件-禁用-编辑增强.ahk
 ; 动态结束；
 
     CapsX_Dn:

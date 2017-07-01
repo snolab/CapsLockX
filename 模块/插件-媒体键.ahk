@@ -1,4 +1,5 @@
 Return
+
 #If !TMedia_Disabled And CapsXMode == CM_CAPSX
     F5:: Send {Media_Play_Pause}
     F6:: Send {Media_Prev}
