@@ -1,8 +1,8 @@
-
+﻿
 ; 基本设定
 
 	; 以管理员身份运行
-	global T_AskRunAsAdmin      := 0
+	global T_AskRunAsAdmin      := 1
 
 	; 鼠标模块设定
 		; 禁用模块

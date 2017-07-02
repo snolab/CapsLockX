@@ -1,10 +1,11 @@
-CoordMode, Mouse, Relative
-CoordMode, Pixel, Relative
 SetDefaultMouseSpeed 0
 Return
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe
     ^!F12:: ExitApp ; 退出脚本
-    ^f:: Click 300, 60
+    ^f::
+        CoordMode, Mouse, Relative
+        Click 300, 60
+        Return
     !Home:: Click 300, 180
     ^PgDn:: Send ^{Tab}
     ^PgUp:: Send +^{Tab}
