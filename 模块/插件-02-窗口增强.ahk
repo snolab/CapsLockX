@@ -29,7 +29,7 @@ Return
 		x -= 1
 		activeWin := WinActive("A")
 		WinHide ahk_id %activeWin%
-		If(0==x)
+		If(-1 == x)
 			Send ^#d
 		Else
 			Send ^#{Left 10}^#{Right %x%}
