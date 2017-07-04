@@ -13,6 +13,20 @@ Return
 #[:: Send {CtrlDown}#{Left}{CtrlUp}
 #]:: Send {CtrlDown}#{Right}{CtrlUp}
 
+
+; 把当前窗口移到其它桌面
+MoveActiveWindow(action){
+	activeWin := WinActive("A")
+	WinHide ahk_id %activeWin%
+	Send %action%
+	WinShow ahk_id %activeWin%
+	WinActivate ahk_id %activeWin%
+}
+; x = 0 时新键桌面
+MoveActiveWindowTo(x){
+	MoveActiveWindow("^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}")
+}
+
 #If !!(CapsXMode & CM_FN)
 	\:: Send #{Tab}
 
@@ -20,25 +34,16 @@ Return
 	[:: Send ^#{Left}
 	]:: Send ^#{Right}
 
+	; 移动当前窗口到其它桌面
+	![:: MoveActiveWindow("^#{Left}")
+	!]:: MoveActiveWindow("^#{Right}")
+
 	; 增删桌面
 	-:: Send ^#{F4}
 	=:: Send ^#d
 
-	; 把当前窗口移到第x个桌面, x = 0 时新键桌面
-	MoveActiveWindowTo(x = 0){
-		x -= 1
-		activeWin := WinActive("A")
-		WinHide ahk_id %activeWin%
-		If(-1 == x)
-			Send ^#d
-		Else
-			Send ^#{Left 10}^#{Right %x%}
-		WinShow ahk_id %activeWin%
-		WinActivate ahk_id %activeWin%
-	}
-
 	; 把当前窗口移到新建桌面
-	0:: MoveActiveWindowTo(0)
+	0:: MoveActiveWindow("^#d")
 
 	; 把当前窗口移到第x个桌面
 	1:: MoveActiveWindowTo(1)
