@@ -32,7 +32,7 @@ If(!)
     
     global CapsXMode   := 0
     global ModuleState := 0
-
+    global CapsX_FnActed   := 0
     global CM_NORMAL := 0 ; 普通模式
     global CM_FN     := 1 ; 临时 CapsX 模式
     global CM_CAPSX  := 2 ; CapsX 模式
@@ -48,38 +48,53 @@ If(!)
     }
     UpdateCapsXMode()
     ; 根据当前模式，切换灯
+    Menu,tray,icon,./数据/图标白.ico
     UpdateLight(){
-        If(T_UseScrollLockLight){
-            ToolTip % CapsXMode
-            If(GetKeyState("ScrollLock", "T") != ((CapsXMode & CM_CAPSX) || (CapsXMode & CM_FN))){
+        If (  ((CapsXMode & CM_CAPSX) || (CapsXMode & CM_FN)) ){
+            Menu,tray,icon,./数据/图标蓝.ico
+            If (T_SwitchSound){
+                SoundPlay ./数据/NoteG.mp3
+            }
+        }Else{
+            Menu,tray,icon,./数据/图标白.ico
+            If (T_SwitchSound){
+                SoundPlay ./数据/NoteC.mp3
+            }
+        }
+        If (T_UseScrollLockLight){
+            ; ToolTip % CapsXMode
+            If (GetKeyState("ScrollLock", "T") != ((CapsXMode & CM_CAPSX) || (CapsXMode & CM_FN))){
                 Send {ScrollLock}
                 Return 1
             }
         }
-        ;tips(CapsXMode)
+        ; tips(CapsXMode)
     }
     
     CapsXTurnOff(){
         CapsXMode &= ~CM_CAPSX
-        Return UpdateLight()
+        re =: UpdateLight()
+        Return re
     }
     CapsXTurnOn(){
         CapsXMode |= CM_CAPSX
-        Return UpdateLight()
+        re =: UpdateLight()
+        Return re
     }
 
-    Hotkey, %T_CapsXKey%, CapsX_Dn
-    Hotkey, %T_CapsXKey% Up, CapsX_Up
+    Hotkey *%T_CapsXKey%, CapsX_Dn
+    Hotkey *%T_CapsXKey% Up, CapsX_Up
 
 ; 动态开始：载入模块
-    GoSub Setup_Anki方向键转换
-    GoSub Setup_Cursor
+    GoSub Setup_加速模型
+    GoSub Setup_模拟鼠标
+    GoSub Setup_Anki增强
+    GoSub Setup_Acrobat自动缩放
     GoSub Setup_OneNote2016增强
     GoSub Setup_TIM添加常驻功能
     GoSub Setup_TIM连接OneNote2016
+    GoSub Setup_文明6
     GoSub Setup_网易云音乐
-    GoSub Setup_加速模型
-    GoSub Setup_模拟鼠标
     GoSub Setup_窗口增强
     GoSub Setup_剪贴板增强
     GoSub Setup_媒体键
@@ -88,11 +103,17 @@ If(!)
     GoSub Setup_编辑增强
     Return
     #If
-        Setup_Anki方向键转换:
-            #Include 模块\应用-Anki方向键转换.ahk
+        Setup_加速模型:
+            #Include 模块\00-插件-加速模型.ahk
     #If
-        Setup_Cursor:
-            #Include 模块\应用-CapsX-Cursor.ahk-bak
+        Setup_模拟鼠标:
+            #Include 模块\01-插件-模拟鼠标.ahk
+    #If
+        Setup_Anki增强:
+            #Include 模块\02-应用-Anki增强.ahk
+    #If
+        Setup_Acrobat自动缩放:
+            #Include 模块\应用-Acrobat自动缩放.ahk
     #If
         Setup_OneNote2016增强:
             #Include 模块\应用-OneNote2016增强.ahk
@@ -103,14 +124,11 @@ If(!)
         Setup_TIM连接OneNote2016:
             #Include 模块\应用-TIM连接OneNote2016.ahk
     #If
+        Setup_文明6:
+            #Include 模块\应用-文明6.ahk
+    #If
         Setup_网易云音乐:
             #Include 模块\应用-网易云音乐.ahk
-    #If
-        Setup_加速模型:
-            #Include 模块\插件-00-加速模型.ahk
-    #If
-        Setup_模拟鼠标:
-            #Include 模块\插件-01-模拟鼠标.ahk
     #If
         Setup_窗口增强:
             #Include 模块\插件-02-窗口增强.ahk
@@ -141,16 +159,20 @@ If(!)
     CapsX_Up:
         CapsXMode &= ~CM_FN
         ; 规避 Fn 功能键
-        If(A_PriorKey == T_CapsXKey || A_PriorKey == "RWin"){
-            ; If(A_PriorHotKey == T_CapsXKey){
+        CapsX_FnActed := CapsX_FnActed || (A_PriorKey != T_CapsXKey && A_PriorKey != "Insert")
+        If (!CapsX_FnActed) {
             CapsXMode ^= CM_CAPSX
         }
+        ;ToolTip, %CapsX_FnActed%
+        CapsX_FnActed := 0
         UpdateLight()
         Return
 
-#If T_CapsXKey == "CapsLock"
-    !CapsLock:: CapsLock ; 
+; 
+; #If T_CapsXKey == "CapsLock"
+;     !CapsLock:: CapsLock ; 
 
+; 用ScrollLock代替Capslock键
 #If T_UseScrollLockLight
     $ScrollLock:: CapsLock
 
@@ -167,5 +189,5 @@ If(!)
     ; 结束键
     ^!+F12:: ExitApp
 
-    RWin:: GoSub CapsX_Dn
-    RWin Up:: GoSub CapsX_Up
+    *Insert:: GoSub CapsX_Dn
+    *Insert Up:: GoSub CapsX_Up
