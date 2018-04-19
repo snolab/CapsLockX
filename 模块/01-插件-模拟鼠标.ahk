@@ -1,7 +1,7 @@
 CoordMode, Mouse, Screen
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
-global mtl := 0, mtr := 0, mtu := 0, tmd := 0, mvx := 0, mvy := 0
+global mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0
 
 ; 滚轮加速度微分对称模型（不要在意这中二的名字hhhh
 global stu := 0, std := 0, stl := 0, str := 0, svx := 0, svy := 0
@@ -87,19 +87,26 @@ mm:
     tNow := QPC()
     ; 计算用户操作时间
     tda := dt(mtl, tNow),          tdd := dt(mtr, tNow)
-    tdw := dt(mtu, tNow),          tds := dt(tmd, tNow)
+    tdw := dt(mtu, tNow),          tds := dt(mtd, tNow)
 
     ; 计算加速度
-    max := ma(tdd - tda) * TMouse_MouseSpeedRatio
-    may := ma(tds - tdw) * TMouse_MouseSpeedRatio
+    max := ma(tdd -tda) * TMouse_MouseSpeedRatio
+    may := ma(tds -tdw) * TMouse_MouseSpeedRatio
 
+    ; 在非CapsX模式下停止
+    If (!(CapsXMode == CM_CAPSX || CapsXMode == CM_FN)){
+        max := 0
+        may := 0
+    }
     ; 摩擦力不阻碍用户意志
     mvx := Friction(mvx + max, max), mvy := Friction(mvy + may, may)
     ;mvx //= 1, mvy //= 1
     ;mvx //= 1, mvy //= 1
-    If(Abs(mvx) < 0.5)
+
+    ; 稳定化
+    If(Abs(mvx) < 0.01)
         mvx := 0
-    If(Abs(mvy) < 0.5)
+    If(Abs(mvy) < 0.01)
         mvy := 0
 
     ; TODO: 输出速度时间曲线，用于DEBUG
@@ -120,8 +127,8 @@ mm:
         ; 撞到屏幕边角就停下来
         If(TMouse_StopAtScreenEdge){
             ; 修复拖动窗口加速不对的 BUG
-            If(GetKeyState("e", "P"))
-                Return
+            ; If(GetKeyState("e", "P"))
+            ;     Return
 
             If(xa == xb)
                 mvx := 0
@@ -138,6 +145,7 @@ mm:
         }
 
         ; ; 对屏幕边角用力穿透，并粘附( 必须放 MouseMove 下面 )
+        ; 此设定与StopAtScreenEdge不兼容
         ; If(max And Abs(mvx) > 80 And xa == xb){
         ;     If(xStop){
         ;         MouseMove, (mvx < 0 ? 3 : -3) * A_ScreenWidth, 0, 0, R
@@ -201,9 +209,9 @@ ScrollMsg(msg, zDelta){
         ControlClass1 := DllCall("WindowFromPoint", "int", m_x, "int", m_y)
 
     ;Detect modifer keys held down (only Shift and Control work)
-    If(GetKeyState("Shift","p"))
+    If(GetKeyState("Shift", "p"))
         wParam := wParam | 0x4
-    If(GetKeyState("Ctrl","p"))
+    If(GetKeyState("Ctrl", "p"))
         wParam := wParam | 0x8
 
     ; MsgBox, %ControlClass1% "\" %ControlClass2% "\" %ControlClass3%
@@ -218,85 +226,70 @@ ScrollMsg(msg, zDelta){
 
 }
 ; 滚轮运动处理
-msx:
+ms:
     tNow := QPC()
     ; 计算用户操作时间
     tdz := dt(stl, tNow), tdc := dt(str, tNow)
-    ; 计算加速度
-    sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
-    svx := Friction(svx + sax, sax)
-    If(Abs(svx) < 0.5)
-        svx := 0
-    If(svx){
-        ; MouseGetPos, mouseX, mouseY, wid, fcontrol
-        ; wParam := svx << 16 ;zDelta
-        ; lParam := Pos2Long(mouseX, mouseY)
-        ; PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
-        ScrollMsg2(0x20E, svx)
-    }Else{
-        SetTimer, msx, Off
-    }
-    Return
-
-msy:
-
-    tNow := QPC()
-    ; 计算用户操作时间
     tdr := dt(stu, tNow), tdf := dt(std, tNow)
 
     ; RF同时按下相当于中键
     If(GetKeyState("MButton", "P")){
-        If(stu == 0 Or std == 0){
+        If(stu == 0 And std == 0){
             Send {MButton Up}
             stu := 0, std := 0
+            Return
         }
-        Return
     }
     If(stu And std And Abs(tdr - tdf) < 1){
         If(!GetKeyState("MButton", "P")){
             Send {MButton Down}
+            stu := 1, std := 1
         }
         Return
     }
+    ; 在非CapsX模式下停止
+    If (!(CapsXMode == CM_CAPSX || CapsXMode == CM_FN)){
+        sax := 0
+        say := 0
+    }
     ; 计算加速度
     say := ma(tdr - tdf) * TMouse_WheelSpeedRatio
+    sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
+
+    ; 计算速度
     svy := Friction(svy + say, say)
-    If(Abs(svy) < 0.5)
+    svx := Friction(svx + sax, sax)
+
+    ; 稳定化
+    If(Abs(svx) < 0.02)
+        svx := 0
+    If(Abs(svy) < 0.02)
         svy := 0
-    If(svy){
+    ; ToolTip, %sax% %say% %svx% %svy%
+    
+    If (svy != 0) {
         If(TMouse_SendInputAPI)
             SendInput_MouseMsg(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
             ScrollMsg2(0x20A, svy)
+    }Else If (svx != 0) {
+        If(TMouse_SendInputAPI)
+            SendInput_MouseMsg(0x1000, svx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
+        Else
+            ScrollMsg2(0x20E, svx)
     }Else{
-        SetTimer, msy, Off
+        SetTimer, ms, Off
     }
     
     Return
 
 ; 时间处理
-sTickx(){
-    SetTimer, msx, 0
+sTick(){
+    SetTimer, ms, 0
 }
-sTicky(){
-    SetTimer, msy, 0
-}
-
-; 只有开启capsx模式能触发
-;#If CapsXMode == CM_CAPSX Or !CapsX
 
 ; capsx和fn模式都能触发
 #If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
-    ; 鼠标运动处理
-    a:: mtl := (mtl ? mtl : QPC()), mTick()
-    d:: mtr := (mtr ? mtr : QPC()), mTick()
-    w:: mtu := (mtu ? mtu : QPC()), mTick()
-    s:: tmd := (tmd ? tmd : QPC()), mTick()
-    a Up:: mtl := 0, mTick()
-    d Up:: mtr := 0, mTick()
-    w Up:: mtu := 0, mTick()
-    s Up:: tmd := 0, mTick()
-
     ; 鼠标按键处理
     *e::    Send {Blind}{LButton Down}
     *e up:: Send {Blind}{LButton Up}
@@ -313,17 +306,34 @@ sTicky(){
             Send {Blind}{RButton Up}
         Return
 
+
+; 只有开启capsx模式能触发
+; #If CapsXMode == CM_CAPSX
+    ; 鼠标运动处理
+    a:: mtl := (mtl ? mtl : QPC()), mTick()
+    d:: mtr := (mtr ? mtr : QPC()), mTick()
+    w:: mtu := (mtu ? mtu : QPC()), mTick()
+    s:: mtd := (mtd ? mtd : QPC()), mTick()
+    a Up:: mtl := 0, mTick()
+    d Up:: mtr := 0, mTick()
+    w Up:: mtu := 0, mTick()
+    s Up:: mtd := 0, mTick()
+
     ; 鼠标滚轮处理
-    *r:: stu := (stu ? stu : QPC()), sTicky()
-    *f:: std := (std ? std : QPC()), sTicky()
-    ; z:: stl := (stl ? stl : QPC()), sTickx()
-    ; c:: str := (str ? str : QPC()), sTickx()
+    r:: stu := (stu ? stu : QPC()), sTick()
+    f:: std := (std ? std : QPC()), sTick()
+    +r:: stl := (stl ? stl : QPC()), sTick()
+    +f:: str := (str ? str : QPC()), sTick()
+    ; +z:: stl := (stl ? stl : QPC()), sTickx()
+    ; +c:: str := (str ? str : QPC()), sTickx()
     ; !r:: Send {WheelUp}
     ; !f:: Send {WheelDown}
     ; ^r:: Send ^{WheelUp}
     ; ^f:: Send ^{WheelDown}
 
-    *r Up:: stu := 0, sTicky()
-    *f Up:: std := 0, sTicky()
+    r Up:: stu := 0, sTick()
+    f Up:: std := 0, sTick()
+    +r Up:: stl := 0, sTick()
+    +f Up:: str := 0, sTick()
     ; z Up:: stl := 0, sTickx()
     ; c Up:: str := 0, sTickx()

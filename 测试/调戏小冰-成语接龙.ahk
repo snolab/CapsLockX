@@ -13,23 +13,6 @@ FileEncoding, UTF-8
 ; 然后 Alt 2
 ;
 
-; !t::
-;     ;WinActive("杠把子.* ahk_class TXGuiFoundation ahk_exe TIM.exe")
-;     win := "Snowstar.* ahk_class TXGuiFoundation ahk_exe TIM.exe"
-;     WinActivate %win%
-;     WinWaitActive %win%
-;     Clipboard = "理综？哈哈哈哈哈……"
-;     Send ^v!s
-;     Clipboard = "哈哈…"
-;     Send ^v!s
-;     Clipboard = "哈…"
-;     Send ^v!s
-;     Clipboard = "…"
-;     Send ^v!s
-;     Clipboard = "呜"
-;     Send ^v!s
-;     Return
-
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe
     ^F12:: ExitApp
 

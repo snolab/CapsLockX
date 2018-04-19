@@ -1,5 +1,4 @@
 ﻿; 模块名: 不能有这几个字符 "   ,``"
-
 Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
@@ -9,14 +8,15 @@ global PathModules := "模块"
 global PathCore    := "核心"
 
 global CapsX_Version := "v1.1 Alpha"
+global loadingTips := ""
 LoadingTips(msg, clear = 0){
-    static tips
-    If(clear || tips == "")
-        tips := "CapsX " CapsX_Version "`n"
-    tips .= msg "`n"
-    ToolTip % tips
+    If(clear || loadingTips == "")
+        loadingTips := "CapsX " CapsX_Version "`n"
+    loadingTips .= msg "`n"
 }
-
+LoadingTipsShow(){
+    ToolTip % loadingTips
+}
 
 TryLoadModuleHelp(ModuleFileName, ModuleName){
     If(FileExist(PathModules "\" ModuleName ".md")){
@@ -54,18 +54,18 @@ LoadModulesHelp(source){
 
         
         ModuleHelp := TryLoadModuleHelp(ModuleFileName, ModuleName)
-        If(!ModuleHelp)
+        If (!ModuleHelp)
             Continue
         ModuleHelp := Trim(ModuleHelp, " `t`n")
-        LoadingTips("加载模块帮助：" i " " ModuleName)
+        LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
 
-        If(T%ModuleName%_Disabled)
+        If (T%ModuleName%_Disabled)
             help .= "#### " ModuleName "模块（此模块默认禁用）"
         Else
             help .= "#### " ModuleName "模块"
         help .= ModuleHelp "`n`n"
     }
-    
+    LoadingTipsShow()
     help := Trim(help, " `t`n")
     
     ; 生成替换代码
@@ -128,6 +128,7 @@ LoadModulesCode(source){
             ; }
         }
     }
+    LoadingTipsShow()
 
     ; 拼接代码
     code := ""

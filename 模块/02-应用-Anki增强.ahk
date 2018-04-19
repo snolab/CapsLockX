@@ -86,14 +86,14 @@ Return
 
     ; 扩充功能
     ; 搜索
-    ; $g::
-    ;     Click 2
-    ;     Send ^c
-    ;     ClipWait, 0, text
-    ;     If ErrorLevel
-    ;         Return
-    ;     Run, https://www.google.com/#q=%Clipboard%
-    ;     Return
+    $g::
+        Click 2
+        Send ^c
+        ClipWait, 0, text
+        If ErrorLevel
+            Return
+        ; Run, https://www.google.com/#q=%Clipboard%
+        Return
 
     ; 快速从剪贴板导入
     $!i::

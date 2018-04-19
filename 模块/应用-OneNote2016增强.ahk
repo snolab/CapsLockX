@@ -1,5 +1,5 @@
-SetTitleMatchMode RegEx
-;SetKeyDelay, 0, 0
+﻿SetTitleMatchMode RegEx
+; SetKeyDelay, 0, 0
 ;debug
 ;^F12:: ExitApp
 
@@ -9,31 +9,107 @@ SetTitleMatchMode RegEx
 ; ahk_exe ONENOTE.EXE
 
 altSend(altKeys){
-	Send {AltDown}%altKeys%{AltUp}
+	SetKeyDelay, 1, 1 ; 配置纠错
+	SendEvent {AltDown}%altKeys%{AltUp}
 }
 
 altSendEx(altKeys, suffix){
-	Send {AltDown}%altKeys%{AltUp}%suffix%
+	SetKeyDelay, 1, 1 ; 配置纠错
+	SendEvent {AltDown}%altKeys%{AltUp}%suffix%
 }
 
+StrJoin(sep, params*) {
+    for index,param in params
+        str .= param . sep
+    return SubStr(str, 1, -StrLen(sep))
+}
 Return
 
-#IfWinActive .*- OneNote ahk_class Framework\:\:CFrame
-	^!F12:: ExitApp ; 退出脚本
+
+#If !!(CapsXMode & CM_FN)
+	h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
+
+#If !CapsX
+	^+!F12:: ExitApp ; 退出脚本
+
+
+#If CapsXMode and WinActive("ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE")
+	e::
+		; //("").slice()
+		ToolTip, 增强搜索2
+		Clipboard =
+		Send ^c
+		ClipWait, 1
+		s1 := Clipboard
+		a := StrSplit(s1)
+		s2 := StrJoin("a", a*)
+		str := """" + s1 + """" + " " + """" + s2 + """"
+
+		Clipboard := str
+		Send ^v
+		Send {Enter}
+		msgbox %str%
+		Return
+
+#If CapsXMode and WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+	e::
+		; //("").slice()
+		ToolTip, 增强搜索1
+		Send ^e
+		Return
+
+#IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
 	
 	; ; 选择页面
 	; ^PgUp:: Send ^{PgUp}^+a
 	; ^PgDn:: Send ^{PgDn}^+a
 
+	$!c::
+		SetKeyDelay, 1, 1 ; 配置纠错
+		ToolTip, %A_KeyDelay%
+		;Send {AltDown}wi{AltSubmit}
+		;Send, {Blind}{AltDown}wi{AltUp}
+		; ControlSendRaw, , wi, A
+		; ControlSend, , wi, A
+
+		;SendEvent, {AltUp}!w!i
+		SendEvent, {AltDown}wi{AltUp}
+		Return
+	$!x::
+		Clipboard := ""
+		Send {AppsKey}x
+		Send {Tab}^c
+		ClipWait 1
+		Send {Esc}
+		Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
+		Send ^!{Right}^v
+		Return
+	$!+x::
+		Clipboard := ""
+		Send {AppsKey}y
+		ClipWait 1
+		Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
+		Send ^!{Right}^v
+		Return
+
+	; 重命名笔记
+	$F2:: Send ^+t
+
+	; 移动笔记
+	$!m:: Send ^!m
+
 	; 交换新建笔记热键
 	$^n:: Send ^!n
 	$^!n:: Send ^n
-
+	
 	; 移动页面
 	; $!+Up:: Send ^+a!+{Up}
 	; $!+Down:: Send ^+a!+{Down}
 	; $!+Left:: Send ^+a!+{Left}
 	; $!+Right:: Send ^+a!+{Right}
+
+	; 搜索标记
+	$!f:: altSend("hg")
 
 	; 选择页面
 	$^+PgUp:: Send ^+g{Up}{Enter}

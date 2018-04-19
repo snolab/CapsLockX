@@ -71,6 +71,11 @@ Friction(v, a){ ; 摩擦力
         Return v
     }
     
+    ; ; 刹车
+    ; If((a < 0 And v > 0) Or (a > 0 And v < 0)){
+    ;     Return 0
+    ; }
+
     ; 简单粗暴倍数降速
     v *= 0.9
     If(v > 0)

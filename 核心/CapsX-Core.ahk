@@ -51,14 +51,14 @@ If(!)
     Menu,tray,icon,./数据/图标白.ico
     UpdateLight(){
         If (  ((CapsXMode & CM_CAPSX) || (CapsXMode & CM_FN)) ){
-            Menu,tray,icon,./数据/图标蓝.ico
-            If (T_SwitchSound){
-                SoundPlay ./数据/NoteG.mp3
+            Menu,tray,icon, ./数据/图标蓝.ico
+            If (T_SwitchSoundOn && T_SwitchSoundOn){
+                SoundPlay %T_SwitchSoundOn%
             }
         }Else{
             Menu,tray,icon,./数据/图标白.ico
-            If (T_SwitchSound){
-                SoundPlay ./数据/NoteC.mp3
+            If (T_SwitchSoundOn && T_SwitchSoundOff){
+                SoundPlay %T_SwitchSoundOff%
             }
         }
         If (T_UseScrollLockLight){
@@ -89,18 +89,24 @@ If(!)
     GoSub Setup_加速模型
     GoSub Setup_模拟鼠标
     GoSub Setup_Anki增强
+    GoSub Setup_Acrobat增强
     GoSub Setup_Acrobat自动缩放
+    GoSub Setup_Cursor
+    GoSub Setup_DAP
+    GoSub Setup_LoopbackExemptionManager
+    GoSub Setup_mstsc远程桌面增强
     GoSub Setup_OneNote2016增强
     GoSub Setup_TIM添加常驻功能
     GoSub Setup_TIM连接OneNote2016
+    GoSub Setup_UWP应用增强
     GoSub Setup_文明6
     GoSub Setup_网易云音乐
     GoSub Setup_窗口增强
-    GoSub Setup_剪贴板增强
     GoSub Setup_媒体键
     GoSub Setup_帮助
     GoSub Setup_搜索键
     GoSub Setup_编辑增强
+    GoSub Setup_雪星转屏
     Return
     #If
         Setup_加速模型:
@@ -112,8 +118,23 @@ If(!)
         Setup_Anki增强:
             #Include 模块\02-应用-Anki增强.ahk
     #If
+        Setup_Acrobat增强:
+            #Include 模块\应用-Acrobat增强.ahk
+    #If
         Setup_Acrobat自动缩放:
             #Include 模块\应用-Acrobat自动缩放.ahk
+    #If
+        Setup_Cursor:
+            #Include 模块\应用-CapsX-Cursor.ahk-禁用
+    #If
+        Setup_DAP:
+            #Include 模块\应用-IAR改选项为CMSIS-DAP.ahk
+    #If
+        Setup_LoopbackExemptionManager:
+            #Include 模块\应用-LoopbackExemptionManager.ahk
+    #If
+        Setup_mstsc远程桌面增强:
+            #Include 模块\应用-mstsc远程桌面增强.ahk
     #If
         Setup_OneNote2016增强:
             #Include 模块\应用-OneNote2016增强.ahk
@@ -124,6 +145,9 @@ If(!)
         Setup_TIM连接OneNote2016:
             #Include 模块\应用-TIM连接OneNote2016.ahk
     #If
+        Setup_UWP应用增强:
+            #Include 模块\应用-UWP应用增强.ahk
+    #If
         Setup_文明6:
             #Include 模块\应用-文明6.ahk
     #If
@@ -132,9 +156,6 @@ If(!)
     #If
         Setup_窗口增强:
             #Include 模块\插件-02-窗口增强.ahk
-    #If
-        Setup_剪贴板增强:
-            #Include 模块\插件-剪贴板增强.ahk
     #If
         Setup_媒体键:
             #Include 模块\插件-媒体键.ahk
@@ -147,6 +168,9 @@ If(!)
     #If
         Setup_编辑增强:
             #Include 模块\插件-编辑增强.ahk
+    #If
+        Setup_雪星转屏:
+            #Include 模块\插件-雪星转屏.ahk
 ; 动态结束；
 #If
 
@@ -173,8 +197,11 @@ If(!)
 ;     !CapsLock:: CapsLock ; 
 
 ; 用ScrollLock代替Capslock键
-#If T_UseScrollLockLight
+#If T_UseScrollLockAsCapslock
     $ScrollLock:: CapsLock
+
+#If T_UseDoubleClickShiftAsCapslock
+    ; TODO
 
 #If
     ; 软重启键
