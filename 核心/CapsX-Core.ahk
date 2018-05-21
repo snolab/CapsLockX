@@ -89,13 +89,16 @@ If(!)
     GoSub Setup_加速模型
     GoSub Setup_模拟鼠标
     GoSub Setup_Anki增强
+    GoSub Setup_秒打时间戳
     GoSub Setup_Acrobat增强
     GoSub Setup_Acrobat自动缩放
     GoSub Setup_Cursor
+    GoSub Setup_Edge手写热键
     GoSub Setup_DAP
     GoSub Setup_LoopbackExemptionManager
     GoSub Setup_mstsc远程桌面增强
     GoSub Setup_OneNote2016增强
+    GoSub Setup_OneNoteMetro拓展
     GoSub Setup_TIM添加常驻功能
     GoSub Setup_TIM连接OneNote2016
     GoSub Setup_UWP应用增强
@@ -118,6 +121,9 @@ If(!)
         Setup_Anki增强:
             #Include 模块\02-应用-Anki增强.ahk
     #If
+        Setup_秒打时间戳:
+            #Include 模块\功能-秒打时间戳.ahk
+    #If
         Setup_Acrobat增强:
             #Include 模块\应用-Acrobat增强.ahk
     #If
@@ -126,6 +132,9 @@ If(!)
     #If
         Setup_Cursor:
             #Include 模块\应用-CapsX-Cursor.ahk-禁用
+    #If
+        Setup_Edge手写热键:
+            #Include 模块\应用-Edge手写热键.ahk
     #If
         Setup_DAP:
             #Include 模块\应用-IAR改选项为CMSIS-DAP.ahk
@@ -138,6 +147,9 @@ If(!)
     #If
         Setup_OneNote2016增强:
             #Include 模块\应用-OneNote2016增强.ahk
+    #If
+        Setup_OneNoteMetro拓展:
+            #Include 模块\应用-OneNoteMetro拓展.ahk
     #If
         Setup_TIM添加常驻功能:
             #Include 模块\应用-TIM添加常驻功能.ahk

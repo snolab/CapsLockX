@@ -1,6 +1,6 @@
 Return
 ::[d::
-    FormatTime, DateString, , [$yyyy-MM-dd] 
+    FormatTime, DateString, , [$yyyy-MM-dd]
     SendInput %DateString%
     Return
 ::[t::

@@ -19,12 +19,19 @@ altSendEx(altKeys, suffix){
 }
 
 StrJoin(sep, params*) {
-    for index,param in params
+    for index, param in params
         str .= param . sep
-    return SubStr(str, 1, -StrLen(sep))
+    return SubStr(str, 2, -StrLen(sep))
 }
+
 Return
 
+GetFocusControlName(){
+	ControlGetFocus, name, A
+	return name
+}
+
+; ClassNN:	RICHEDIT60W1
 
 #If !!(CapsXMode & CM_FN)
 	h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
@@ -32,37 +39,69 @@ Return
 #If !CapsX
 	^+!F12:: ExitApp ; 退出脚本
 
-
-#If CapsXMode and WinActive("ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE")
-	e::
-		; //("").slice()
-		ToolTip, 增强搜索2
+; #If CapsXMode and (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") or WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+#If (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") or WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+	$^e::
+		; 增强搜索
+		Send ^e
+		
+		If ("RICHEDIT60W1" != GetFocusControlName()){
+			Return
+		}
 		Clipboard =
 		Send ^c
 		ClipWait, 1
+		
+		If ErrorLevel {
+		    Return
+		}
+
 		s1 := Clipboard
+
 		a := StrSplit(s1)
-		s2 := StrJoin("a", a*)
-		str := """" + s1 + """" + " " + """" + s2 + """"
+		s2 := StrJoin(" ", a*)
+		str := """" s1 """" " OR " """" s2 """"
 
 		Clipboard := str
 		Send ^v
-		Send {Enter}
-		msgbox %str%
 		Return
+	$^f::
+		; 增强搜索
+		Send ^f
+		
+		If ("RICHEDIT60W1" != GetFocusControlName()){
+			Return
+		}
+		Clipboard =
+		Send ^c
+		ClipWait, 1
+		
+		If ErrorLevel {
+		    Return
+		}
 
-#If CapsXMode and WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-	e::
-		; //("").slice()
-		ToolTip, 增强搜索1
-		Send ^e
+		s1 := Clipboard
+
+		a := StrSplit(s1)
+		s2 := StrJoin(" ", a*)
+		str := """" s1 """" " OR " """" s2 """"
+
+		Clipboard := str
+		Send ^v
 		Return
-
 #IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
 	
 	; ; 选择页面
 	; ^PgUp:: Send ^{PgUp}^+a
 	; ^PgDn:: Send ^{PgDn}^+a
+
+	; ; 将此页面向上合并
+	$!j::
+		Send ^+t^a^x
+		Send ^{PgUp}^+t^{End}^v
+		Send ^{PgDn}^+a{Del}
+		Send ^{PgUp}
+		Return
 
 	$!c::
 		SetKeyDelay, 1, 1 ; 配置纠错

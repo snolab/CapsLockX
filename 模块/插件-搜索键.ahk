@@ -20,4 +20,5 @@ Return
         If(clip)
             Search(clip)
     }
-    g:: Search2()
+    ; 装有GoldenDict的，用g代替
+    g:: Send ^c^c
