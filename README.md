@@ -1,7 +1,7 @@
 ﻿# CapsX
 
 ## 入门教程第一
-首先，你需要安装了 AutoHotKey。
+首先，你需要安装了 [AutoHotKey](https://autohotkey.com/)。
 推荐使用的版本： `AutoHotKey_L Unicode x32` （鼠标模拟功能不支持64位）
 
 然后双击 `CapsX.ahk` 来启动 CapsX
