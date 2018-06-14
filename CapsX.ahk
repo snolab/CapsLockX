@@ -51,7 +51,6 @@ LoadModulesHelp(source){
             Continue
         ModuleFileName := Match[1] Match[2]
         ModuleName     := Match[2]
-
         
         ModuleHelp := TryLoadModuleHelp(ModuleFileName, ModuleName)
         If (!ModuleHelp)
@@ -59,10 +58,12 @@ LoadModulesHelp(source){
         ModuleHelp := Trim(ModuleHelp, " `t`n")
         LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
 
-        If (T%ModuleName%_Disabled)
+        If (T%ModuleName%_Disabled){
             help .= "#### " ModuleName "模块（此模块默认禁用）"
-        Else
+        }Else{
+            help .= "<!-- 模块帮助文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
             help .= "#### " ModuleName "模块"
+        }
         help .= ModuleHelp "`n`n"
     }
     LoadingTipsShow()
