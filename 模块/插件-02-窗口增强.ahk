@@ -1,4 +1,4 @@
-﻿If(!CapsX)
+If(!CapsX)
     ExitApp
 Return
 
@@ -124,6 +124,10 @@ SwitchToDesktop(x){
 	Return
 
 
+; 
+; 
+; 
+
 #IfWinActive ahk_class MultitaskingViewFrame ; ahk_exe explorer.exe
     ; 在 Alt+Tab 下, WASD 模拟方向键
     !a:: Left
@@ -179,7 +183,11 @@ SwitchToDesktop(x){
 	c:: Send {AppsKey}mn{Enter}
 
 ; 新版
-#IfWinActive 任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
+
+; ahk_class Windows.UI.Core.CoreWindow
+; ahk_exe explorer.exe
+
+#IfWinActive (?:Task View)|任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
     ; 在 Alt+Tab 下, WASD 模拟方向键
     !a:: Left
     !d:: Right
