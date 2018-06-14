@@ -133,9 +133,14 @@ GetFocusControlName(){
 
 	; 重命名笔记
 	$F2:: Send ^+t
+	; 重命名分区
+	$+F2:: Send ^+g{AppsKey}r
 
 	; 移动笔记
 	$!m:: Send ^!m
+
+	; 移动分区
+	$!+m:: Send ^+g{AppsKey}m
 
 	; 交换新建笔记热键
 	$^n:: Send ^!n
