@@ -4,7 +4,7 @@ Return
     SendInput %DateString%
     Return
 ::[t::
-    FormatTime, TimeString, , (yyyyMMddHHmmss)
+    FormatTime, TimeString, , (yyyyMMdd.HHmmss)
     SendInput %TimeString%
     Return
 ::[s::

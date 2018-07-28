@@ -119,7 +119,7 @@ If(!)
             #Include 模块\01-插件-模拟鼠标.ahk
     #If
         Setup_Anki增强:
-            #Include 模块\02-应用-Anki增强.ahk
+            #Include 模块\03-应用-Anki增强.ahk
     #If
         Setup_秒打时间戳:
             #Include 模块\功能-秒打时间戳.ahk

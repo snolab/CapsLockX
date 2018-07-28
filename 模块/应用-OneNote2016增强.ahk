@@ -1,4 +1,4 @@
-﻿SetTitleMatchMode RegEx
+SetTitleMatchMode RegEx
 ; SetKeyDelay, 0, 0
 ;debug
 ;^F12:: ExitApp
@@ -34,7 +34,8 @@ GetFocusControlName(){
 ; ClassNN:	RICHEDIT60W1
 
 #If !!(CapsXMode & CM_FN)
-	h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
+	; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
+	; 和编辑增强冲突
 
 #If !CapsX
 	^+!F12:: ExitApp ; 退出脚本
@@ -116,19 +117,22 @@ GetFocusControlName(){
 		Return
 	$!x::
 		Clipboard := ""
-		Send {AppsKey}x
-		Send {Tab}^c
+		SendEvent {AppsKey}x
+		SendEvent ^a^c
 		ClipWait 1
-		Send {Esc}
-		Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
-		Send ^!{Right}^v
+		SendEvent {Esc}
+		tmp := Clipboard
+		tmp := RegExReplace(tmp, "([一-龥]) ", "$1")
+		tmp := RegExReplace(tmp, "([一-龥]) ", "$1")
+		Clipboard := tmp
+		SendEvent ^!{Right 3}^v
 		Return
 	$!+x::
 		Clipboard := ""
-		Send {AppsKey}y
+		SendEvent {AppsKey}y
 		ClipWait 1
 		Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
-		Send ^!{Right}^v
+		SendEvent ^!{Right 3}^v
 		Return
 
 	; 重命名笔记
@@ -160,7 +164,7 @@ GetFocusControlName(){
 	$^+PgDn:: Send ^+g{Down}{Enter}
 
 	; 同步此笔记本
-	$^s:: Send +{F9}
+	; $^s:: Send +{F9}
 	
 	; 切换为无色背景
 	$!n:: altSend("wpcn")
@@ -175,38 +179,52 @@ GetFocusControlName(){
 	; 输入、套锁、橡皮
 	$!q:: altSend("dl")
 	$!w:: altSend("dn")
-	$!e:: altSend("dek")
+	$!e:: SendEvent !dek
 	
 	; 输入、套锁、橡皮
 	$!s:: altSend("dt")
-	$!d:: altSend("dh")
+	; $!d:: altSend("dh")
 
 	; 视图 - 缩放到页面宽度
-	$!r:: altSend("wi")
+	$!r:: SendEvent !w!i
 	$!+r:: altSend("w1")
 	
+	; 上支笔
+	$!a:: altSendEx("dp", "{Left 1}{Enter}")
+	; 下支笔
+	$!d:: altSendEx("dp", "{Right 1}{Enter}")
+
+	; 大纲折叠展开
+	$!1:: SendEvent !+1
+	$!2:: SendEvent !+2
+	$!3:: SendEvent !+3
+	$!4:: SendEvent !+4
+	$!5:: SendEvent !+5
+	$!6:: SendEvent !+6
+	$!7:: SendEvent !+7
+
 	; 笔收藏夹第一排
-	$!1:: altSendEx("dp", "{Home}{Right 0}{Enter}")
-	$!2:: altSendEx("dp", "{Home}{Right 1}{Enter}")
-	$!3:: altSendEx("dp", "{Home}{Right 2}{Enter}")
-	$!4:: altSendEx("dp", "{Home}{Right 3}{Enter}")
-	$!5:: altSendEx("dp", "{Home}{Right 4}{Enter}")
-	$!6:: altSendEx("dp", "{Home}{Right 5}{Enter}")
-	$!7:: altSendEx("dp", "{Home}{Right 6}{Enter}")
+	; $!1:: altSendEx("dp", "{Home}{Right 0}{Enter}")
+	; $!2:: altSendEx("dp", "{Home}{Right 1}{Enter}")
+	; $!3:: altSendEx("dp", "{Home}{Right 2}{Enter}")
+	; $!4:: altSendEx("dp", "{Home}{Right 3}{Enter}")
+	; $!5:: altSendEx("dp", "{Home}{Right 4}{Enter}")
+	; $!6:: altSendEx("dp", "{Home}{Right 5}{Enter}")
+	; $!7:: altSendEx("dp", "{Home}{Right 6}{Enter}")
 
 	; 收藏夹第二排
-	$!+1:: altSendEx("dp", "{Home}{Down 1}{Right 0}{Enter}")
-	$!+2:: altSendEx("dp", "{Home}{Down 1}{Right 1}{Enter}")
-	$!+3:: altSendEx("dp", "{Home}{Down 1}{Right 2}{Enter}")
-	$!+4:: altSendEx("dp", "{Home}{Down 1}{Right 3}{Enter}")
-	$!+5:: altSendEx("dp", "{Home}{Down 1}{Right 4}{Enter}")
-	$!+6:: altSendEx("dp", "{Home}{Down 1}{Right 5}{Enter}")
-	$!+7:: altSendEx("dp", "{Home}{Down 1}{Right 6}{Enter}")
+	; $!+1:: altSendEx("dp", "{Home}{Down 1}{Right 0}{Enter}")
+	; $!+2:: altSendEx("dp", "{Home}{Down 1}{Right 1}{Enter}")
+	; $!+3:: altSendEx("dp", "{Home}{Down 1}{Right 2}{Enter}")
+	; $!+4:: altSendEx("dp", "{Home}{Down 1}{Right 3}{Enter}")
+	; $!+5:: altSendEx("dp", "{Home}{Down 1}{Right 4}{Enter}")
+	; $!+6:: altSendEx("dp", "{Home}{Down 1}{Right 5}{Enter}")
+	; $!+7:: altSendEx("dp", "{Home}{Down 1}{Right 6}{Enter}")
 
 	; 自定义颜色
 	$!`:: altSendEx("dp", "{Down 2}{Left}")
 	$!+`:: altSend("dc")
-
+	$!v:: SendEvent !h!i
 	; 画笔粗细
 	$!t:: altSendEx("d", "{Down}{Tab 13}{Enter}")
 	$!g:: altSendEx("d", "{Down}{Tab 11}{Enter}")

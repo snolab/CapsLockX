@@ -68,20 +68,53 @@ SendInput_MouseMsg(dwFlag, mouseData = 0){
 SendInput_MouseMoveR32(x, y){
     VarSetCapacity(sendData, 28, 0)
     NumPut(0, sendData,  0, "UInt")
-    NumPut(mvx, sendData,  4, "Int")
-    NumPut(mvy, sendData,  8, "Int")
+    NumPut(x, sendData,  4, "Int")
+    NumPut(y, sendData,  8, "Int")
     NumPut(0, sendData, 12, "UInt")
     NumPut(1, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
+
+; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
 SendInput_MouseMoveR64(x, y){
-    VarSetCapacity(sendData, 56, 0)
-    NumPut(0, sendData,  0, "ULong")
-    NumPut(mvx, sendData,  8, "Long")
-    NumPut(mvy, sendData,  16, "Long")
-    NumPut(1, sendData, 32, "ULong")
-    DllCall("SendInput", "ULong", 1, "Str", sendData, "ULong", 56)
+/*
+    VarSetCapacity(sendData, 28, 0)
+    NumPut(0  , sendData,  0, "UShort")
+    NumPut(mvx, sendData,  4, "Short")
+    NumPut(mvy, sendData,  8, "Short")
+    NumPut(0  , sendData, 12, "UShort")
+    NumPut(1  , sendData, 16, "UShort")
+    DllCall("SendInput", "UShort", 1, "Point", sendData, "UShort", 28)
+*/
+
+    cbSize := 24 + A_PtrSize
+    VarSetCapacity(sendData, cbSize, 0) ; INPUT OBJECT
+    NumPut(0, sendData,  0, "UInt")
+    NumPut(x, sendData,  4,  "Int")
+    NumPut(y, sendData,  8,  "Int")
+    NumPut(0, sendData, 12, "UInt")
+    NumPut(1, sendData, 16, "UInt")
+    NumPut(0, sendData, 20, "UInt")
+    NumPut(0, sendData, 24, "UInt")
+    ; SendInput
+    test := &sendData
+    a0 := NumGet(sendData,  0, "UInt")
+    a1 := NumGet(sendData,  4, "UInt")
+    a2 := NumGet(sendData,  8, "UInt")
+    a3 := NumGet(sendData, 12, "UInt")
+    a4 := NumGet(sendData, 16, "UInt")
+    a5 := NumGet(sendData, 20, "UInt")
+    a6 := NumGet(sendData, 24, "UInt")
+
+
+    ret := DllCall("SendInput", "UInt", 1, "Int", 0, "Int", cbSize, "Int")
+    ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
+
+; \::
+;     SendInput_MouseMoveR64(1111, 1111)
+;     Return
+
 ; 鼠标运动处理
 mm:
     tNow := QPC()

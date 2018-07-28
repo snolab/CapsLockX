@@ -46,7 +46,7 @@ global last_mstsc := 0
     Return
 
 
-; SNO20503 - 远程桌面连接 ahk_class TscShellContainerClass ahk_exe mstsc.exe
+; ahk_class TscShellContainerClass ahk_exe mstsc.exe
 #IfWinActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
     >^RAlt::
     >!RCtrl::
