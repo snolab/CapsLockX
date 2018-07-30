@@ -102,7 +102,7 @@ If(!)
     GoSub Setup_TIM添加常驻功能
     GoSub Setup_TIM连接OneNote2016
     GoSub Setup_UWP应用增强
-    GoSub Setup_文明6
+    GoSub Setup_文明6回车左置
     GoSub Setup_网易云音乐
     GoSub Setup_窗口增强
     GoSub Setup_媒体键
@@ -160,8 +160,8 @@ If(!)
         Setup_UWP应用增强:
             #Include 模块\应用-UWP应用增强.ahk
     #If
-        Setup_文明6:
-            #Include 模块\应用-文明6.ahk
+        Setup_文明6回车左置:
+            #Include 模块\应用-文明6回车左置.ahk
     #If
         Setup_网易云音乐:
             #Include 模块\应用-网易云音乐.ahk

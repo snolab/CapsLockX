@@ -8,7 +8,6 @@ global stu := 0, std := 0, stl := 0, str := 0, svx := 0, svy := 0
 
 If(TMouse_SendInput)
     SendMode Input
-    
 
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
@@ -16,10 +15,6 @@ Return
 
 ; 解决DPI比率问题
 ;msgbox % DllCall("MonitorFromPoint", "UInt", 0, "UInt", 0, "UInt", 0)
-
-
-
-
 
 GetCursorHandle(){
     VarSetCapacity( PCURSORINFO, 20, 0) ;为鼠标信息 结构 设置出20字节空间
@@ -30,15 +25,13 @@ GetCursorHandle(){
     Return NumGet(PCURSORINFO, 8)
 }
 
-NewCursorShapeQ(){
+CursorShapeChangedQ(){
     static lA_Cursor := GetCursorHandle()
     If(lA_Cursor == GetCursorHandle())
         Return 0
     lA_Cursor := GetCursorHandle()
     Return 1
 }
-
-
 
 ;global dpiX := 0, dpiY := 0
 ;DllCall("User32.dll\MonitorFromPoint", "UInt", x, "UInt", y, "UInt", 0/*MONITOR_DEFAULTTONEAREST*/)
@@ -75,6 +68,7 @@ SendInput_MouseMoveR32(x, y){
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
 
+; TODO: 这个64位的函数不知道为啥用不了。。。
 ; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
 SendInput_MouseMoveR64(x, y){
 /*
@@ -105,13 +99,12 @@ SendInput_MouseMoveR64(x, y){
     a4 := NumGet(sendData, 16, "UInt")
     a5 := NumGet(sendData, 20, "UInt")
     a6 := NumGet(sendData, 24, "UInt")
-
-
+    
     ret := DllCall("SendInput", "UInt", 1, "Int", 0, "Int", cbSize, "Int")
     ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
 
-; \::
+; `\::
 ;     SendInput_MouseMoveR64(1111, 1111)
 ;     Return
 
@@ -173,7 +166,7 @@ mm:
         ; 对区域切换粘附
         ; 放在 MouseMove 后面是粘附的感觉
         ; 放在它前面是撞到东西的感觉
-        If(TMouse_StickyCursor And NewCursorShapeQ()){
+        If(TMouse_StickyCursor And CursorShapeChangedQ()){
             mvx := 0, mvy := 0
         }
 
