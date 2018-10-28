@@ -33,6 +33,29 @@ SwitchToDesktop(x){
 }
 
 #If !!(CapsXMode & CM_FN)
+	u::
+		; cmd := "taskkill /f /im ApplicationFrameHost.exe"
+		; cmd := "taskkill /f /im ShellExperienceHost.exe"
+		; Run, %cmd%
+		WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
+		Send {AppsKey}i
+		Return
+	i::
+		; cmd := "taskkill /f /im ShellExperienceHost.exe"
+		; Run, %cmd%
+		WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
+		Send {AppsKey}ei
+		Return
+	o::
+		; cmd := "taskkill /f /im ShellExperienceHost.exe"
+		; Run, %cmd%
+		WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
+		Send {AppsKey}d
+		Return
+	p::
+		cmd := "sihost"
+		Run, %cmd%
+		Return
 	; Win+Tab
 	\:: Send #{Tab}
 
@@ -46,7 +69,7 @@ SwitchToDesktop(x){
 
 	; 切换当前窗口置顶
 	':: Winset, Alwaysontop, , A
-	
+
 	/::
 		wid := WinActive("A")
 		WinGetText, title, ahk_id %wid%
@@ -86,7 +109,7 @@ SwitchToDesktop(x){
 	; !7:: MoveActiveWindowTo(7)
 	; !8:: MoveActiveWindowTo(8)
 	; !9:: MoveActiveWindowTo(9)
-	
+
 	; 关闭窗口
 	x:: Send ^w
     !x:: Send !{F4}
@@ -94,7 +117,7 @@ SwitchToDesktop(x){
 
 ; 确保WinTab模块优先级比Mouse高，否则此处 wasd 无效
 #If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
-    
+
     `:: Send ^!q
 
 	; 把当前窗口移到第x个桌面
@@ -117,35 +140,48 @@ SwitchToDesktop(x){
     ; Left:: Send #{Left}    ; 把热键让给转屏模块
     ; Right:: Send #{Right}  ; 把热键让给转屏模块
 ; 帮助：
-; 条件：WinActive ahk_class MultitaskingViewFrame 
-; 
+; 条件：WinActive ahk_class MultitaskingViewFrame
+;
 ~#Tab Up::
 	CapsXTurnOff()
 	Return
 
 
-; 
-; 
-; 
-
+;
+;
+;
 #IfWinActive ahk_class MultitaskingViewFrame ; ahk_exe explorer.exe
-    ; 在 Alt+Tab 下, WASD 模拟方向键
+    ; 在 Alt+Tab 下, WASD 模拟方向键 , 1803之后还可以用
     !a:: Left
     !d:: Right
     !w:: Up
     !s:: Down
+    ; qe 切换桌面
+	!q::
+		SendEvent {Blind}{Esc}
+		Sleep 200
+		Send ^#{Left}
+		Return
+	!e::
+		SendEvent {Blind}{Esc}
+		Sleep 200
+		Send ^#{Right}
+		Return
+	; qe 切换桌面
+	!c:: SendEvent {Blind}{Delete}{Right}
+	!x:: SendEvent {Blind}{Delete}{Right}
 
     ; 模拟 Tab 键切换焦点
 	\:: Send {Tab}
     ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
 	; 以及在窗口贴边后，WASD 切换窗口焦点
-	
+
     ; 模拟方向键
     w:: Send {Up}
     a:: Send {Left}
     s:: Send {Down}
     d:: Send {Right}
-	
+
 	; 切换桌面概览
 	q:: Send ^#{Left}
 	e:: Send ^#{Right}
@@ -158,8 +194,8 @@ SwitchToDesktop(x){
 	z:: Send ^#{F4}
 
 	; 关掉窗口
-	x:: Send ^w{Right} 
-	`;:: Send ^w{Right} 
+	x:: Send ^w{Right}
+	`;:: Send ^w{Right}
 
 	; 切换到第x个桌面
 	1::Send {AppsKey}m{Down 0}{Enter}
@@ -171,40 +207,46 @@ SwitchToDesktop(x){
 	7::Send {AppsKey}m{Down 6}{Enter}
 	8::Send {AppsKey}m{Down 7}{Enter}
 	9::Send {AppsKey}m{Down 8}{Enter}
-	 
+
 	; ; 移到除了自己的最后一个桌面（或新建桌面）
 	; 0::Send {AppsKey}m{Up 2}{Enter}
 
 	; 移到新建桌面
 	v:: Send {AppsKey}mn{Sleep 16}+{Tab}
 	':: Send {AppsKey}mn{Sleep 16}+{Tab}
-	
+
 	; 移到新建桌面，并激活窗口
 	c:: Send {AppsKey}mn{Enter}
 
 ; 新版
 
-; ahk_class Windows.UI.Core.CoreWindow
+; ahk_class Windows.UI.Core.CoreWindowi
 ; ahk_exe explorer.exe
 
-#IfWinActive (?:Task View)|任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
+; #IfWinActive (?:Task View)|任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
+#IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     ; 在 Alt+Tab 下, WASD 模拟方向键
     !a:: Left
     !d:: Right
     !w:: Up
     !s:: Down
+ ;    ; qe 切换桌面
+	; !q:: Send ^#{Left}
+	; !e:: Send ^#{Right}
+	; ; qe 切换桌面
+	; !c:: Delete
 
     ; 模拟 Tab 键切换焦点
 	\:: Send {Tab}
     ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
 	; 以及在窗口贴边后，WASD 切换窗口焦点
-	
+
     ; 模拟方向键
     w:: Send {Up}
     a:: Send {Left}
     s:: Send {Down}
     d:: Send {Right}
-	
+
 	; 切换桌面概览
 	q:: Send ^#{Left}
 	e:: Send ^#{Right}
@@ -230,13 +272,13 @@ SwitchToDesktop(x){
 	7::Send {AppsKey}m{Down 6}{Enter}
 	8::Send {AppsKey}m{Down 7}{Enter}
 	9::Send {AppsKey}m{Down 8}{Enter}
-	 
+
 	; ; 移到除了自己的最后一个桌面（或新建桌面）
 	; 0::Send {AppsKey}m{Up 2}{Enter}
 
 	; 移到新建桌面
 	v:: Send {AppsKey}mn{Sleep 16}+{Tab}
 	':: Send {AppsKey}mn{Sleep 16}+{Tab}
-	
+
 	; 移到新建桌面，并激活窗口
 	c:: Send {AppsKey}mn{Enter}

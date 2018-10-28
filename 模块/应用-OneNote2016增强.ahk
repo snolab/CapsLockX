@@ -1,5 +1,6 @@
 SetTitleMatchMode RegEx
 ; SetKeyDelay, 0, 0
+
 ;debug
 ;^F12:: ExitApp
 
@@ -9,12 +10,12 @@ SetTitleMatchMode RegEx
 ; ahk_exe ONENOTE.EXE
 
 altSend(altKeys){
-	SetKeyDelay, 1, 1 ; 配置纠错
+	SetKeyDelay, 1, 60 ; 配置纠错
 	SendEvent {AltDown}%altKeys%{AltUp}
 }
 
 altSendEx(altKeys, suffix){
-	SetKeyDelay, 1, 1 ; 配置纠错
+	SetKeyDelay, 1, 60 ; 配置纠错
 	SendEvent {AltDown}%altKeys%{AltUp}%suffix%
 }
 
@@ -179,20 +180,36 @@ GetFocusControlName(){
 	; 输入、套锁、橡皮
 	$!q:: altSend("dl")
 	$!w:: altSend("dn")
-	$!e:: SendEvent !dek
+	$!e:: altSend("dek")
 	
 	; 输入、套锁、橡皮
 	$!s:: altSend("dt")
 	; $!d:: altSend("dh")
 
 	; 视图 - 缩放到页面宽度
-	$!r:: SendEvent !w!i
-	$!+r:: altSend("w1")
-	
+	$!r:: altSend("wi")
+	; $!+r::
+	; 	SendEvent !w
+	; 	Sleep, 60
+	; 	SendEvent !1
+	; 	Return
+
 	; 上支笔
 	$!a:: altSendEx("dp", "{Left 1}{Enter}")
-	; 下支笔
 	$!d:: altSendEx("dp", "{Right 1}{Enter}")
+
+	; 换笔（只在非全屏时管用）
+	; $!a::
+	; 	Send {Alt}
+	; 	Sleep 60
+	; 	SendEvent dp{Left}{Enter}
+	; 	Return
+
+	; $!d::
+	; 	Send {Alt}
+	; 	Sleep 60
+	; 	SendEvent dp{Right}{Enter}
+	; 	Return
 
 	; 大纲折叠展开
 	$!1:: SendEvent !+1

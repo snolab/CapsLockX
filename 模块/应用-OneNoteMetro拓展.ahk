@@ -6,11 +6,23 @@ SetKeyDelay, 0, 0
 
 Return
 
+; YiDong 的笔记本 ‎- OneNote
+; ahk_class ApplicationFrameWindow
+; ahk_exe ApplicationFrameHost.exe
+
 #IfWinActive .*- OneNote ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe
 	^!F12:: ExitApp ; 退出脚本
 	
+	$F2::SendEvent ^+t
+	
+	$+F2::SendEvent {AppsKey}{Down}{Enter}
+
 	; 待定未定
 	$!`::SendEvent !r
+	
+	
+	; view
+	$!n::SendEvent !w{Down}{Tab 7}{Enter}{Up 2}{Enter}
 
 	; 套锁、空间、橡皮
 	$!q::SendEvent !d{Down}{Tab 1}{Enter}

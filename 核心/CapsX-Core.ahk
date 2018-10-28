@@ -93,7 +93,7 @@ If(!)
     GoSub Setup_Acrobat增强
     GoSub Setup_Acrobat自动缩放
     GoSub Setup_Cursor
-    GoSub Setup_Edge手写热键
+    GoSub Setup_Edge增强
     GoSub Setup_DAP
     GoSub Setup_LoopbackExemptionManager
     GoSub Setup_mstsc远程桌面增强
@@ -133,8 +133,8 @@ If(!)
         Setup_Cursor:
             #Include 模块\应用-CapsX-Cursor.ahk-禁用
     #If
-        Setup_Edge手写热键:
-            #Include 模块\应用-Edge手写热键.ahk
+        Setup_Edge增强:
+            #Include 模块\应用-Edge增强.ahk
     #If
         Setup_DAP:
             #Include 模块\应用-IAR改选项为CMSIS-DAP.ahk
