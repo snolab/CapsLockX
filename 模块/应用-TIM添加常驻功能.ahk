@@ -18,10 +18,18 @@ TIM_MouseShift(times){
     !q::
         CoordMode, Mouse, Relative
         WinGetPos, X, Y, W, H, A
-        x := W -20
-        y := 80
+        x := W - 20
+        y := 70
         Click %x%, %y%
         TIM_MouseShift(1)
+        Return
+    !b::
+        CoordMode, Mouse, Relative
+        MouseClick, Right
+        MouseMove 20, 300/8*6, 0, R
+        Sleep 100
+        MouseClick, Left
+        MouseMove 200, 60, 0, R
         Return
     !Up::
         TIM_MouseShift(-1)
@@ -62,7 +70,7 @@ TIM_MouseShift(times){
         ToolTip, f, x, y, 2
         
         x := W -20 + 1
-        y := 80 + 1
+        y := 70 + 1
         ToolTip, q, x, y, 3
         Return
     !h Up::

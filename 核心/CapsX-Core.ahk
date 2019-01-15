@@ -105,6 +105,7 @@ If(!)
     GoSub Setup_文明6回车左置
     GoSub Setup_网易云音乐
     GoSub Setup_窗口增强
+    GoSub Setup_Chrome增强
     GoSub Setup_媒体键
     GoSub Setup_帮助
     GoSub Setup_搜索键
@@ -168,6 +169,9 @@ If(!)
     #If
         Setup_窗口增强:
             #Include 模块\插件-02-窗口增强.ahk
+    #If
+        Setup_Chrome增强:
+            #Include 模块\插件-Chrome增强.ahk
     #If
         Setup_媒体键:
             #Include 模块\插件-媒体键.ahk

@@ -28,17 +28,18 @@ Return
 #IfWinActive Anki -.* ahk_exe anki.exe ahk_class Qt5QWindowIcon
     !^F12:: ExitApp
 
-    $x:: Send s ; study
-    $q:: Send d ; quit
-    $c:: Send a ; create
+    $x:: SendEvent s ; study
+    $q:: SendEvent d ; quit
+    $c:: SendEvent a ; create
      
     ; 撤销
-    $5:: Send ^z
-    $Numpad5:: Send ^z
+    $5:: SendEvent ^z
+    $Numpad5:: SendEvent ^z
     
     ; 暂停卡片
-    $6:: Send @
-    $Numpad6:: Send @
+    $`:: SendEvent {Space}
+    $6:: SendEvent @
+    $Numpad6:: SendEvent @
 
     ; 方向键控制
     $w::                 AnkiEnlock("w"                ,"^!z")
@@ -112,7 +113,7 @@ Return
         ToolTip, %text%
 
         ; 让 Anki 打开导入框
-        Send ^i
+        Send ^+i
         
         ; 获取到文本后保存到临时文件……
         FileName = %APPDATA%\Anki2\剪贴板导入.txt
@@ -136,21 +137,22 @@ Return
         ToolTip
 
         Return
-
+; 2.0
 #IfWinActive Anki -.* ahk_exe anki.exe ahk_class QWidget
     !^F12:: ExitApp
 
-    $x:: Send s ;study
-    $q:: Send d ;quit
-    $c:: Send a ;create
+    $x:: SendEvent s ;study
+    $q:: SendEvent d ;quit
+    $c:: SendEvent a ;create
      
     ; 撤销
-    $5:: Send ^z
-    $Numpad5:: Send ^z
+    $5:: SendEvent ^z
+    $Numpad5:: SendEvent ^z
     
     ; 暂停卡片
-    $6:: Send @
-    $Numpad6:: Send @
+    $`:: SendEvent {Space}
+    $6:: SendEvent @
+    $Numpad6:: SendEvent @
 
     ; 方向键控制
     $w::                 AnkiEnlock("w"                ,"^z")

@@ -1,3 +1,4 @@
+﻿; save as utf8 with bom
 SetTitleMatchMode RegEx
 ; SetKeyDelay, 0, 0
 
@@ -33,6 +34,32 @@ GetFocusControlName(){
 }
 
 ; ClassNN:	RICHEDIT60W1
+
+; 快速添加事项清单
+$#!n::
+	Send #n
+	WinWaitActive 无标题页 - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,2
+	
+	If ErrorLevel
+	{
+		Return
+	}Else{
+		Send !{Home}^{End}{Enter}
+	}
+	Return
+
+
+; $#n::
+; 	Send #n
+; 	WinWaitActive 无标题页 - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,2
+; 	
+; 	If ErrorLevel
+; 	{
+; 		Return
+; 	}Else{
+; 		altSend("wpcn")
+; 	}
+; 	Return
 
 #If !!(CapsXMode & CM_FN)
 	; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
@@ -96,7 +123,6 @@ GetFocusControlName(){
 	; ; 选择页面
 	; ^PgUp:: Send ^{PgUp}^+a
 	; ^PgDn:: Send ^{PgDn}^+a
-
 	; ; 将此页面向上合并
 	$!j::
 		Send ^+t^a^x
@@ -194,9 +220,9 @@ GetFocusControlName(){
 	; 	SendEvent !1
 	; 	Return
 
-	; 上支笔
-	$!a:: altSendEx("dp", "{Left 1}{Enter}")
-	$!d:: altSendEx("dp", "{Right 1}{Enter}")
+	; 换笔
+	$!a:: altSendEx("dp", "{Left 2}{Enter}") ; 黄色荧光
+	$!d:: altSendEx("dp", "{Right 1}{Enter}") ; 红色笔
 
 	; 换笔（只在非全屏时管用）
 	; $!a::

@@ -1,4 +1,4 @@
-Return
+﻿Return
 OnSwitch(){
     ; 这里改注册表是为了禁用 Win + L 锁定机器，不过只有用管理员运行才管用。
     value := !!(ModuleState & MF_EditX) ? 0 : 1
@@ -18,6 +18,10 @@ OnSwitch(){
     j:: Down
     n:: Home
     m:: End
+    
+    ,:: ^Left
+    .:: ^Right
+
     ; mn 一起按相当于选择当前行
     ; n & m:: Send ^{Home}^+{End}
     ; m & n:: Send ^{End}^+{Home}

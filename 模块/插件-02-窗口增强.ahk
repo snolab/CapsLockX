@@ -14,7 +14,6 @@ Return
 
 ^PrintScreen:: AppsKey
 
-
 ; 把当前窗口移到其它桌面
 MoveActiveWindow(action){
 	activeWin := WinActive("A")
@@ -67,8 +66,28 @@ SwitchToDesktop(x){
 	+[:: MoveActiveWindow("^#{Left}")
 	+]:: MoveActiveWindow("^#{Right}")
 
-	; 切换当前窗口置顶
-	':: Winset, Alwaysontop, , A
+	; 切换当前窗口置顶并透明
+	'::
+		; WinGet, Var, Transparent, 150, A
+		WinSet, Transparent, 200, A
+		Winset, Alwaysontop, , A
+		Return
+	+'::
+		; WinGet, Var, Transparent, 150, A
+		WinSet, Transparent, 255, A
+		Winset, Alwaysontop, , A
+		Return
+
+	; 所有窗口透明
+	`;::
+		; WinGet, Var, Transparent, 150, A
+		WinSet, Transparent, 100, A
+		Return
+	
+	`; Up::
+		; WinGet, Var, Transparent, 150, A
+		WinSet, Transparent, 255, A
+		Return
 
 	/::
 		wid := WinActive("A")
