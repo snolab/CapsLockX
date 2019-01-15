@@ -50,7 +50,7 @@
 | 在Anki内 | Alt + I | 快速导入剪贴版的内容 |
 
 >
-> 此插件可配合手柄使用，请见 bilibili (中二雪星怎背词 - 手柄怎么可以不用来背单词！)[https://www.bilibili.com/video/av8456838/]
+> 此插件可配合手柄使用，请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
 >
 
 <!-- 模块帮助文件名：功能-秒打时间戳.ahk-->
