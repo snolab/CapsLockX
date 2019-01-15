@@ -71,36 +71,6 @@ Return
     $Down up::           AnkiUnlock("{space}")
     $Right up::          AnkiUnlock("{space}")
     
-    ; 手柄控制
-    $Browser_Refresh::      AnkiEnlock("Browser_Refresh"  ,"^!z")
-    $Browser_Favorites::    AnkiEnlock("Browser_Favorites","432")
-    $Browser_Home::         AnkiEnlock("Browser_Home"     ,"2")
-    $Browser_Stop::         AnkiEnlock("Browser_Stop"     ,"1")
-    $Browser_Refresh up::   AnkiUnlock("{space}")
-    $Browser_Favorites up:: AnkiUnlock("{space}")
-    $Browser_Home up::      AnkiUnlock("{space}")
-    $Browser_Stop up::      AnkiUnlock("{space}")
-    ;$Media_Play_Pause::  AnkiEnlock("Media_Play_Pause" ,"@")
-    $Browser_Back::      AnkiEnlock("Media_Play_Pause" ,"@")
-    
-    ; 方向键控制
-
-    ; 方向键控制
-
-    ;$Media_Play_Pause up::  AnkiUnlock("{space}")
-    $Browser_Back up::      AnkiUnlock("{space}")
-
-    ; 扩充功能
-    ; 搜索
-    $g::
-        Click 2
-        Send ^c
-        ClipWait, 0, text
-        If ErrorLevel
-            Return
-        ; Run, https://www.google.com/#q=%Clipboard%
-        Return
-
     ; 快速从剪贴板导入
     $!i::
         ; 获取剪贴板内容
@@ -183,36 +153,6 @@ Return
     $Left up::           AnkiUnlock("{space}")
     $Down up::           AnkiUnlock("{space}")
     $Right up::          AnkiUnlock("{space}")
-    
-    ; 手柄控制
-    $Browser_Refresh::      AnkiEnlock("Browser_Refresh"  ,"^z")
-    $Browser_Favorites::    AnkiEnlock("Browser_Favorites","432")
-    $Browser_Home::         AnkiEnlock("Browser_Home"     ,"2")
-    $Browser_Stop::         AnkiEnlock("Browser_Stop"     ,"1")
-    $Browser_Refresh up::   AnkiUnlock("{space}")
-    $Browser_Favorites up:: AnkiUnlock("{space}")
-    $Browser_Home up::      AnkiUnlock("{space}")
-    $Browser_Stop up::      AnkiUnlock("{space}")
-    ;$Media_Play_Pause::  AnkiEnlock("Media_Play_Pause" ,"@")
-    $Browser_Back::      AnkiEnlock("Media_Play_Pause" ,"@")
-    
-    ; 方向键控制
-
-    ; 方向键控制
-
-    ;$Media_Play_Pause up::  AnkiUnlock("{space}")
-    $Browser_Back up::      AnkiUnlock("{space}")
-
-    ; 扩充功能
-    ; 搜索
-    $g::
-        Click 2
-        Send ^c
-        ClipWait, 0, text
-        If ErrorLevel
-            Return
-        ; Run, https://www.google.com/#q=%Clipboard%
-        Return
 
     ; 快速从剪贴板导入
     $!i::
