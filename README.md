@@ -196,6 +196,8 @@ po主偷懒中:
 后来写的脚本越来越多，就把其中一些常用的放到一起加载……然后就成这样了
 
 ## 相关答疑第五
+GitHub: [https://github.com/snomiao/capslockx](https://github.com/snomiao/capslockx)
+
 本人常驻 QQ群： 271105729
 
 关于这个脚本，相关答疑直接进群 @这个QQ 997596439 提问即可
