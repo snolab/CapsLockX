@@ -26,8 +26,8 @@ TIM_MouseShift(times){
     !b::
         CoordMode, Mouse, Relative
         MouseClick, Right
-        MouseMove 20, 300/8*6, 0, R
-        Sleep 100
+        MouseMove 20, 180, 0, R
+        Sleep 200
         MouseClick, Left
         MouseMove 200, 60, 0, R
         Return

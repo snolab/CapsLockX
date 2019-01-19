@@ -106,6 +106,7 @@ If(!)
     GoSub Setup_网易云音乐
     GoSub Setup_窗口增强
     GoSub Setup_Chrome增强
+    GoSub Setup_OneNote剪贴板收集器
     GoSub Setup_媒体键
     GoSub Setup_帮助
     GoSub Setup_搜索键
@@ -172,6 +173,9 @@ If(!)
     #If
         Setup_Chrome增强:
             #Include 模块\插件-Chrome增强.ahk
+    #If
+        Setup_OneNote剪贴板收集器:
+            #Include 模块\插件-OneNote剪贴板收集器.ahk
     #If
         Setup_媒体键:
             #Include 模块\插件-媒体键.ahk
