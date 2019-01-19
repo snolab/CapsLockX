@@ -22,7 +22,7 @@
 ### 按键表
 每个模块可以单独禁用，请见 `CapsX-Settings.ahk` 文件
 
-<!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到模块里操作 -->
+<!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到模块里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
 <!-- 模块帮助文件名：01-插件-模拟鼠标.ahk-->
 #### 模拟鼠标模块
@@ -116,19 +116,26 @@
 | 全局 | CapsX键 + 7 | 把当前窗口移到第7个桌面(如果有的话) |
 | 全局 | CapsX键 + 8 | 把当前窗口移到第8个桌面(如果有的话) |
 | 全局 | CapsX键 + 9 | 把当前窗口移到第9个桌面(如果有的话) |
-| Alt+Tab界面下 | w a s d | 切换窗口选择 |
+| Alt+Tab界面下 | w a s d | 上下左右切换窗口选择 |
+| Alt+Tab界面下 | x c     | 关闭选择的窗口 |
+| Alt+Tab界面下 | q e     | 左右切换多桌面 |
 | 窗口靠边界面下 | w a s d | 切换窗口选择 |
 | 窗口靠边界面下 | x | 关掉选择的窗口 |
 | Win+Tab界面下 | w a s d | 切换窗口选择 |
-| Win+Tab界面下 | q e | 左右切换桌面概览
-| Win+Tab界面下 | z | 合并当前桌面与上一个桌面
-| Win+Tab界面下 | x | 关掉选择的窗口
+| Win+Tab界面下 | q e | 左右切换桌面概览 |
+| Win+Tab界面下 | z | 合并当前桌面与上一个桌面 |
+| Win+Tab界面下 | x | 关掉选择的窗口 |
 | Win+Tab界面下 | 1 2 3 ... 9 0 | 把窗口移到除了自己的第x个桌面（或新建桌面） |
 | Win+Tab界面下 | v | 新建桌面，并把当前窗口扔到新建桌面 |
 | Win+Tab界面下 | c | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口 |
 | Win+Tab界面下 | \ | 相当于按下 Tab |
 | Win+Tab界面下 | [ | 切换到上一个桌面 |
 | Win+Tab界面下 | ] | 切换到下一个桌面 |
+
+如图
+![插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif)
+
+![插件-02-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_一键排列窗口.gif)
 
 <!-- 模块帮助文件名：插件-OneNote剪贴板收集器.ahk-->
 #### OneNote剪贴板收集器模块
@@ -137,7 +144,8 @@
 使用方法：
 1. OneNote 2016 打开一个窗口，标题写成这样“剪贴板收集”。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
-
+3. 如图
+![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
 
 <!-- 模块帮助文件名：插件-媒体键.ahk-->
 #### 媒体键模块
@@ -196,6 +204,7 @@ po主偷懒中:
 后来写的脚本越来越多，就把其中一些常用的放到一起加载……然后就成这样了
 
 ## 相关答疑第五
+
 GitHub: [https://github.com/snomiao/capslockx](https://github.com/snomiao/capslockx)
 
 本人常驻 QQ群： 271105729
