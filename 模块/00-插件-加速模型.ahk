@@ -12,9 +12,14 @@ QPC(){
 
 ; 构造加速模型相关函数
 ma(t){
-    ; Return ma2(t) ; 二次函数运动模型
-    ; Return ma3(t) ; 三次函数运动模型
-    Return maPower(t) * TMouse_DPIRatio ; 指数函数运动模型
+    ; 二次函数运动模型
+    ; Return ma2(t) 
+    
+    ; 三次函数运动模型
+    ; Return ma3(t) 
+    
+    ; 指数函数运动模型
+    Return maPower(t) * TMouse_DPIRatio
 }
 ma2(t){
     ; x-t 二次曲线加速运动模型
