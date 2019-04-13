@@ -23,9 +23,8 @@ Return
 
 ;#UseHook On
 
-
 ; ANKI 2.1
-#IfWinActive Anki -.* ahk_exe anki.exe ahk_class Qt5QWindowIcon
+#IfWinActive Anki - .*|.* - Anki ahk_exe anki.exe ahk_class Qt5QWindowIcon
     !^F12:: ExitApp
 
     $x:: SendEvent s ; study
@@ -42,7 +41,7 @@ Return
     $Numpad6:: SendEvent @
 
     ; 方向键控制
-    $w::                 AnkiEnlock("w"                ,"^!z")
+    $w::                 AnkiEnlock("w"                ,"^z")
     $a::                 AnkiEnlock("a"                ,"432")
     $s::                 AnkiEnlock("s"                ,"2")
     $d::                 AnkiEnlock("d"                ,"1")
@@ -52,7 +51,7 @@ Return
     $d up::              AnkiUnlock("{space}")
     
     ; 方向键控制
-    $k::                 AnkiEnlock("k"                ,"^!z")
+    $k::                 AnkiEnlock("k"                ,"^z")
     $h::                 AnkiEnlock("h"                ,"432")
     $j::                 AnkiEnlock("j"                ,"2")
     $l::                 AnkiEnlock("l"                ,"1")
@@ -62,7 +61,7 @@ Return
     $l up::              AnkiUnlock("{space}")
 
     ; 方向键控制
-    $Up::                AnkiEnlock("Up"               ,"^!z")
+    $Up::                AnkiEnlock("Up"               ,"^z")
     $Left::              AnkiEnlock("Left"             ,"432")
     $Down::              AnkiEnlock("Down"             ,"2")
     $Right::             AnkiEnlock("Right"            ,"1")

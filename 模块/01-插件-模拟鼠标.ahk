@@ -49,7 +49,7 @@ CursorShapeChangedQ(){
 ; q右键
 
 ; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646273(v=vs.85).aspx
-SendInput_MouseMsg(dwFlag, mouseData = 0){
+SendInput_MouseMsg32(dwFlag, mouseData = 0){
     VarSetCapacity(sendData, 28, 0)
     NumPut(0, sendData,  0, "UInt")
     NumPut(0, sendData,  4, "Int") 
@@ -140,11 +140,12 @@ mm:
     If(mvx Or mvy){
 
         ;
-        If(TMouse_StopAtScreenEdge){
+        If (TMouse_StopAtScreenEdge) {
             MouseGetPos, xa, ya
         }
 
-        If(TMouse_SendInputAPI){
+        If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
+        {
             SendInput_MouseMoveR32(mvx, mvy)
         }Else{
             MouseMove, %mvx%, %mvy%, 0, R   
@@ -283,9 +284,17 @@ ms:
     sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
 
     ; 计算速度
+    lastsvy := svy
+    lastsvx := svx
+
     svy := Friction(svy + say, say)
     svx := Friction(svx + sax, sax)
 
+    If ( (lastsvx > 0 && svx < 0) || (lastsvx < 0 && svx > 0) || (lastsvy > 0 && svy < 0) || (lastsvy < 0 && svy > 0) ){
+        svx := 0
+        svy := 0
+    }
+    
     ; 稳定化
     If(Abs(svx) < 0.02)
         svx := 0
@@ -294,13 +303,13 @@ ms:
     ; ToolTip, %sax% %say% %svx% %svy%
     
     If (svy != 0) {
-        If(TMouse_SendInputAPI)
-            SendInput_MouseMsg(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
+        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+            SendInput_MouseMsg32(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
             ScrollMsg2(0x20A, svy)
     }Else If (svx != 0) {
-        If(TMouse_SendInputAPI)
-            SendInput_MouseMsg(0x1000, svx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
+        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+            SendInput_MouseMsg32(0x1000, svx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
         Else
             ScrollMsg2(0x20E, svx)
     }Else{
@@ -320,14 +329,14 @@ sTick(){
     *e::    Send {Blind}{LButton Down}
     *e up:: Send {Blind}{LButton Up}
     *q::
-        If(TMouse_SendInputAPI)
-            SendInput_MouseMsg(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
+        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+            SendInput_MouseMsg32(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
         Else
             Send {Blind}{RButton Down}
         Return
     *q up::
-        If(TMouse_SendInputAPI)
-            SendInput_MouseMsg(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
+        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+            SendInput_MouseMsg32(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
         Else
             Send {Blind}{RButton Up}
         Return

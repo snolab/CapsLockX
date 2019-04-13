@@ -15,17 +15,21 @@ If(!CapsX)
 ;     Return
 
 
-; 如果当前操作的远程桌面窗口是最大化的窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
+; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
 SetTimer, tobottom, 1
 tobottom:
     WinWaitActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
     WinGet last_mstsc
     WinGet mm, MinMax, ahk_id %last_mstsc%
-    ; 如果当前操作的远程桌面窗口是最大化的窗口
-    if(mm == 1){
+    WinGetPos, X, Y, Width, Height, A
+    SysGet, VirtualWidth, 78
+    SysGet, VirtualHeight, 79
+    ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
+    ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
+    if(VirtualWidth == Width && VirtualHeight == Height){
         WinSet Bottom, , ahk_id %last_mstsc%
-        WinWaitNotActive ahk_id %last_mstsc%
     }
+    WinWaitNotActive ahk_id %last_mstsc%
     Return
 ; SetTimer, rdplayer, 1000
 ; rdplayer:

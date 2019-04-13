@@ -99,6 +99,7 @@ If(!)
     GoSub Setup_mstsc远程桌面增强
     GoSub Setup_OneNote2016增强
     GoSub Setup_OneNoteMetro拓展
+    GoSub Setup_QQ_UWP增强
     GoSub Setup_TIM添加常驻功能
     GoSub Setup_TIM连接OneNote2016
     GoSub Setup_UWP应用增强
@@ -107,6 +108,7 @@ If(!)
     GoSub Setup_窗口增强
     GoSub Setup_Chrome增强
     GoSub Setup_OneNote剪贴板收集器
+    GoSub Setup_合并右Ctrl与Menu键
     GoSub Setup_媒体键
     GoSub Setup_帮助
     GoSub Setup_搜索键
@@ -153,6 +155,9 @@ If(!)
         Setup_OneNoteMetro拓展:
             #Include 模块\应用-OneNoteMetro拓展.ahk
     #If
+        Setup_QQ_UWP增强:
+            #Include 模块\应用-QQ_UWP增强.ahk
+    #If
         Setup_TIM添加常驻功能:
             #Include 模块\应用-TIM添加常驻功能.ahk
     #If
@@ -177,6 +182,9 @@ If(!)
         Setup_OneNote剪贴板收集器:
             #Include 模块\插件-OneNote剪贴板收集器.ahk
     #If
+        Setup_合并右Ctrl与Menu键:
+            #Include 模块\插件-合并右Ctrl与Menu键.ahk
+    #If
         Setup_媒体键:
             #Include 模块\插件-媒体键.ahk
     #If
@@ -193,19 +201,30 @@ If(!)
             #Include 模块\插件-雪星转屏.ahk
 ; 动态结束；
 #If
-
     ; CapsX模式切换
     CapsX_Dn:
+        ; 进入 Fn 模式
         CapsXMode |= CM_FN
+        ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsX 冲突
+        if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")){
+            CapsXMode &= ~CM_FN
+        }
+
         UpdateLight()
         Return
 
     CapsX_Up:
+        ; 退出 Fn 模式
         CapsXMode &= ~CM_FN
         ; 规避 Fn 功能键
         CapsX_FnActed := CapsX_FnActed || (A_PriorKey != T_CapsXKey && A_PriorKey != "Insert")
         If (!CapsX_FnActed) {
             CapsXMode ^= CM_CAPSX
+
+            ; 限制在远程桌面里无法进入 CapsX 模式，避免和远程桌面里的 CapsX 冲突
+            if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")){
+                CapsXMode &= ~CM_CAPSX
+            }
         }
         ;ToolTip, %CapsX_FnActed%
         CapsX_FnActed := 0

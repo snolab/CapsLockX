@@ -32,28 +32,23 @@ SwitchToDesktop(x){
 }
 
 #If !!(CapsXMode & CM_FN)
-	u::
+	o::
 		; cmd := "taskkill /f /im ApplicationFrameHost.exe"
 		; cmd := "taskkill /f /im ShellExperienceHost.exe"
 		; Run, %cmd%
 		WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
+		; side by side 排列
 		Send {AppsKey}i
-		Return
-	i::
-		; cmd := "taskkill /f /im ShellExperienceHost.exe"
-		; Run, %cmd%
-		WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
-		Send {AppsKey}ei
-		Return
-	o::
-		; cmd := "taskkill /f /im ShellExperienceHost.exe"
-		; Run, %cmd%
-		WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
-		Send {AppsKey}d
-		Return
-	p::
-		cmd := "sihost"
-		Run, %cmd%
+		; stacked
+		; Send {AppsKey}e
+		; cascade
+		; Send {AppsKey}d
+		
+		; restart explorer if needed
+		; if(A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 1000){
+		; 	cmd := "sihost"
+		; 	Run, %cmd%
+		; }
 		Return
 	; Win+Tab
 	\:: Send #{Tab}
@@ -130,12 +125,16 @@ SwitchToDesktop(x){
 	; !9:: MoveActiveWindowTo(9)
 
 	; 关闭窗口
-	x:: Send ^w
-    !x:: Send !{F4}
-    ^!x:: WinKill A
+	$Esc:: Send !{F4}
+	$x:: Send ^w
+    $!x:: Send !{F4}
+    $^!x:: WinKill A
 
 ; 确保WinTab模块优先级比Mouse高，否则此处 wasd 无效
 #If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+
+	; 打开系统设定
+    p:: Send #{Pause}
 
     `:: Send ^!q
 

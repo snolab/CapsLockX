@@ -36,9 +36,9 @@ GetFocusControlName(){
 ; ClassNN:	RICHEDIT60W1
 
 ; 快速添加事项清单
-$#!n::
+$#n::
 	Send #n
-	WinWaitActive 无标题页 - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,2
+	WinWaitActive 无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
 	
 	If ErrorLevel
 	{
@@ -48,6 +48,10 @@ $#!n::
 	}
 	Return
 
+; 原热键
+$#!n::
+	Send #n
+	Return
 
 ; $#n::
 ; 	Send #n
@@ -196,7 +200,7 @@ $#!n::
 	; 切换为无色背景
 	$!n:: altSend("wpcn")
 
-	; 快速删除本页页面
+	; 快速删除当前页面
 	;$!Delete:: altSend("pd")
 	$!Delete:: Send ^+a{Delete}
 	

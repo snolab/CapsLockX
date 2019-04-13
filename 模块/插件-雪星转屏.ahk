@@ -69,8 +69,8 @@ RunSilent(command) {
 	Numpad4:: RunSilent("模块\雪星转屏.exe =90")
 	Numpad2:: RunSilent("模块\雪星转屏.exe =180")
 	Numpad6:: RunSilent("模块\雪星转屏.exe =270")
-	Up:: RunSilent("模块\雪星转屏.exe =0")
-	Left:: RunSilent("模块\雪星转屏.exe =90")
-	Down:: RunSilent("模块\雪星转屏.exe =180")
-	Right:: RunSilent("模块\雪星转屏.exe =270")
+	!Up:: RunSilent("模块\雪星转屏.exe =0")
+	!Left:: RunSilent("模块\雪星转屏.exe =90")
+	!Down:: RunSilent("模块\雪星转屏.exe =180")
+	!Right:: RunSilent("模块\雪星转屏.exe =270")
 
