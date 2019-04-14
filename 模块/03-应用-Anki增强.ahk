@@ -107,8 +107,8 @@ Return
 
         Return
 
-#If WinActive("添加|add ahk_exe anki.exe ahk_class QWidget") or WinActive("添加|add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
-; #IfWinActive 添加 ahk_exe anki.exe ahk_class QWidget
+; 快速添加内容
+#If WinActive("添加|Add ahk_exe anki.exe ahk_class QWidget") or WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
     $!c::
         WinActive("A")
         WinHide
@@ -123,7 +123,7 @@ Return
             Return
         }
         SendEvent ^v
-
         Return
 
     $!s:: SendEvent ^{Enter}
+    $!x:: SendEvent ^+x
