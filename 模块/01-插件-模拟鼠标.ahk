@@ -303,15 +303,15 @@ ms:
     ; ToolTip, %sax% %say% %svx% %svy%
     
     If (svy != 0) {
-        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
             SendInput_MouseMsg32(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
             ScrollMsg2(0x20A, svy)
     }Else If (svx != 0) {
-        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+        If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
             SendInput_MouseMsg32(0x1000, svx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
         Else
-            ScrollMsg2(0x20E, svx)
+            ScrollMsg2(0x20E, svx) ; 在64位下用的是低性能的……
     }Else{
         SetTimer, ms, Off
     }
@@ -340,7 +340,6 @@ sTick(){
         Else
             Send {Blind}{RButton Up}
         Return
-
 
 ; 只有开启capsx模式能触发
 ; #If CapsXMode == CM_CAPSX

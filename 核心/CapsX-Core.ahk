@@ -113,6 +113,7 @@ If(!)
     GoSub Setup_帮助
     GoSub Setup_搜索键
     GoSub Setup_编辑增强
+    GoSub Setup_自动滚动
     GoSub Setup_雪星转屏
     Return
     #If
@@ -196,6 +197,9 @@ If(!)
     #If
         Setup_编辑增强:
             #Include 模块\插件-编辑增强.ahk
+    #If
+        Setup_自动滚动:
+            #Include 模块\插件-自动滚动.ahk
     #If
         Setup_雪星转屏:
             #Include 模块\插件-雪星转屏.ahk
