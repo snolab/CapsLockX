@@ -172,7 +172,7 @@ $#!n::
 	$+F2:: Send ^+g{AppsKey}r
 
 	; 移动笔记
-	$!m:: Send ^!m
+	$!m:: SendEvent ^!m
 
 	; 移动分区
 	$!+m:: Send ^+g{AppsKey}m

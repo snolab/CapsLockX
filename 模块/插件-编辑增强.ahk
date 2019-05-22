@@ -9,8 +9,8 @@ OnSwitch(){
     Space:: Enter
 
 #If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
-    u:: PgUp
-    i:: PgDn
+    u:: PgDn
+    i:: PgUp
     ; 上下左右
     h:: Left
     l:: Right

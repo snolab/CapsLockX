@@ -176,19 +176,32 @@ SwitchToDesktop(x){
     !s:: Down
     ; qe 切换桌面
 	!q::
-		SendEvent {Blind}{Esc}
+		SendEvent {Blind}{Enter}
 		Sleep 200
-		Send ^#{Left}
+		MoveActiveWindow("^#{Left}")
 		Return
 	!e::
-		SendEvent {Blind}{Esc}
+		SendEvent {Blind}{Enter}
 		Sleep 200
-		Send ^#{Right}
+		MoveActiveWindow("^#{Right}")
 		Return
-	; qe 切换桌面
+	; cx 关闭应用
 	!c:: SendEvent {Blind}{Delete}{Right}
 	!x:: SendEvent {Blind}{Delete}{Right}
-
+	
+	; 新建桌面
+	!z::
+		SendEvent {Blind}{Esc}
+		Sleep 200
+		Send ^#d
+		Return
+	; 新建桌面并移动窗口
+	!v::
+		SendEvent {Blind}{Esc}
+		Sleep 200
+		MoveActiveWindowTo(0)
+		Return
+	
     ; 模拟 Tab 键切换焦点
 	\:: Send {Tab}
     ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
@@ -266,8 +279,8 @@ SwitchToDesktop(x){
     d:: Send {Right}
 
 	; 切换桌面概览
-	q:: Send ^#{Left}
-	e:: Send ^#{Right}
+	q:: Send {Enter}; ^#{Left}
+	e:: Send {Enter}; ^#{Right}
 	[:: Send ^#{Left}
 	]:: Send ^#{Right}
 

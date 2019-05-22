@@ -38,25 +38,80 @@ APISendInput_ScrollX(dx){
 
 Return
 
-AutoScroll:
-    APISendInput_ScrollY(autoScrollY)
+autoScroll:
+    If(!GetKeyState("Ctrl", "P")){
+        APISendInput_ScrollY(autoScrollStep)
+    }
     Return
+
+; autoPage:
+;     If(!GetKeyState("Ctrl", "P")){
+;         ToolTip, s %autoPageY%
+;         If(autoPageY > 0){
+;             Loop, %autoPageY% {
+;                 Send {PgDn}
+;             }
+;         }
+;         If(autoPageY < 0){
+;             r := -autoPageY
+;             Loop, %r% {
+;                 Send {PgUp}
+;             }
+;         }
+;     }
+;     Return
 
 ; capsx和fn模式都能触发
 #If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
-    $^Down::
+    $PgUp::
+        autoScrollY := autoScrollY ? autoScrollY : 0
+        autoScrollY -= 1
+        
+        If(autoScrollY){
+            autoScrollStepAbs := Max(1, -16 + 4 * Abs(autoScrollY))
+            autoScrollInterval := Max(8, 128 - 32 * Abs(autoScrollY))
+            
+            autoScrollStep := autoScrollY > 0 ? autoScrollStepAbs : -autoScrollStepAbs
+
+            SetTimer, autoScroll, %autoScrollInterval%
+            ToolTip, s %autoScrollY% %autoScrollInterval% %autoScrollStep%
+        }else{
+            SetTimer, autoScroll, Off
+        }
+
+        Return
+    $PgDn::
         autoScrollY := autoScrollY ? autoScrollY : 0
         autoScrollY += 1
         ToolTip, s %autoScrollY%
-        SetTimer, AutoScroll, 20
+
+        If(autoScrollY){
+            autoScrollStepAbs := Max(1, -16 + 4 * Abs(autoScrollY))
+            autoScrollInterval := Max(8, 128 - 32 * Abs(autoScrollY))
+            
+            autoScrollStep := autoScrollY > 0 ? autoScrollStepAbs : -autoScrollStepAbs
+
+            SetTimer, autoScroll, %autoScrollInterval%
+            ToolTip, s %autoScrollY% %autoScrollInterval% %autoScrollStep%
+        }else{
+            SetTimer, autoScroll, Off
+        }
+
         Return
 
-    $^Up::
-        autoScrollY := autoScrollY ? autoScrollY : 0
-        autoScrollY -= 1
-        ToolTip, s %autoScrollY%
-        SetTimer, AutoScroll, 20
-        Return
+    ; $PgUp::
+    ;     autoPageY := autoPageY ? autoPageY : 0
+    ;     autoPageY += 1
+    ;     ToolTip, s %autoPageY%
+    ;     SetTimer, autoPage, 1000
+    ;     Return
+
+    ; $PgDn::
+    ;     autoPageY := autoPageY ? autoPageY : 0
+    ;     autoPageY -= 1
+    ;     ToolTip, s %autoPageY%
+    ;     SetTimer, autoPage, 1000
+    ;     Return
 
     $Esc::
         If(autoScrollY){
