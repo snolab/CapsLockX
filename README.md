@@ -19,7 +19,7 @@
 按 `CapsLock` 切换 CapsX 模式
 按住 `CapsLock` 使用临时 CapsX 模式
 
-### 按键表
+## 按键表第三
 每个模块可以单独禁用，请见 `CapsX-Settings.ahk` 文件
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到模块里操作, 在这里修改会被覆盖 -->
@@ -149,9 +149,9 @@
 | Win+Tab界面下 | ] | 切换到下一个桌面 |
 
 如图
-![插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif)
+![插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capsx/raw/master/模块/插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif)
 
-![插件-02-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_一键排列窗口.gif)
+![插件-02-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capsx/raw/master/模块/插件-02-窗口增强_一键排列窗口.gif)
 
 <!-- 模块帮助文件名：插件-OneNote剪贴板收集器.ahk-->
 #### OneNote剪贴板收集器模块
@@ -161,7 +161,7 @@
 1. OneNote 2016 打开一个窗口，标题写成这样“剪贴板收集”。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
 3. 如图
-![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
+![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capsx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
 
 <!-- 模块帮助文件名：插件-合并右Ctrl与Menu键.ahk-->
 #### 合并右Ctrl与Menu键模块
@@ -212,7 +212,7 @@
 | CapsX | Alt + 小键盘 8 2 4 6 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
-## 发展路线第三
+## 发展路线第四
 
 简化电脑操作逻辑，提升效率，尽量不与习惯键位冲突
 
@@ -220,7 +220,7 @@ po主偷懒中:
 1. [ ] 长按CapsX键显示对应帮助
 2. 
 
-## 制作背景第四
+## 制作背景第五
 
 本人比较经常写代码……
 
@@ -230,9 +230,9 @@ po主偷懒中:
 
 后来写的脚本越来越多，就把其中一些常用的放到一起加载……然后就成这样了
 
-## 相关答疑第五
+## 答疑相关第六
 
-GitHub: [https://github.com/snomiao/capslockx](https://github.com/snomiao/capslockx)
+GitHub: [https://github.com/snomiao/capsx](https://github.com/snomiao/capsx)
 
 本人常驻 QQ群： 271105729
 
