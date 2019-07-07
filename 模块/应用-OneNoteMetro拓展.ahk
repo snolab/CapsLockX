@@ -30,9 +30,9 @@ Return
 	$!e::SendEvent !d{Down}{Tab 3}{Enter}
 	
 	; 换笔
-	$!a::SendEvent !d{Down}{Tab 4}+{Left}{Enter}
-	$!s::SendEvent !d{Down}{Tab 4}{Enter}
-	$!d::SendEvent !d{Down}{Tab 4}+{Right}{Enter}
+	$!a::SendEvent !d{Down}{Tab 5}+{Left}{Enter}
+	$!s::SendEvent !d{Down}{Tab 5}{Enter}
+	$!d::SendEvent !d{Down}{Tab 5}+{Right}{Enter}
 	
 	; 颜色
 	; $!1::SendEvent !d{Down}{Right 4}{Enter}

@@ -1,14 +1,14 @@
 Return
 ::[d::
-    FormatTime, DateString, , [yyyyMMdd]
+    FormatTime, DateString, , (yyyyMMdd)
     SendInput %DateString%
     Return
 ::[t::
-    FormatTime, TimeString, , [yyyyMMdd.HHmmss]
+    FormatTime, TimeString, , (yyyyMMdd.HHmmss)
     SendInput %TimeString%
     Return
 ::[s::
-    FormatTime, TimeString, , [HHmm]
+    FormatTime, TimeString, , (HHmm)
     SendInput %TimeString%
     Return
 ::[v::

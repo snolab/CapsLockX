@@ -89,6 +89,7 @@ If(!)
     GoSub Setup_加速模型
     GoSub Setup_模拟鼠标
     GoSub Setup_Anki增强
+    GoSub Setup_全局snippet@雪星
     GoSub Setup_秒打时间戳
     GoSub Setup_Acrobat增强
     GoSub Setup_Acrobat自动缩放
@@ -126,6 +127,9 @@ If(!)
     #If
         Setup_Anki增强:
             #Include 模块\03-应用-Anki增强.ahk
+    #If
+        Setup_全局snippet@雪星:
+            #Include 模块\功能-全局snippet@雪星.ahk
     #If
         Setup_秒打时间戳:
             #Include 模块\功能-秒打时间戳.ahk

@@ -1,7 +1,7 @@
 ; 正确运行方式……
 ; "C:\Program Files\AutoHotkey\AutoHotkeyU32.exe"  "C:\Users\snomiao\OneDrive\GitHub\CapslockX\工具\插件-自动滚动.ahk"
 
-global autoScrollY
+global autoScrollY, autoScrollStep
 autoScrollY := 0
 
 APISendInput(dx, dy, dwFlags, mouseData){
@@ -36,6 +36,20 @@ APISendInput_ScrollX(dx){
     APISendInput(0,0,0x1000, dx)
 }
 
+autoScrollY_SetTimer(){
+    If(autoScrollY){
+        autoScrollStepAbs := Max(1, -12 + 4 * Abs(autoScrollY))
+        autoScrollInterval := Max(1, 96 - 32 * Abs(autoScrollY))
+        
+        autoScrollStep := autoScrollY > 0 ? autoScrollStepAbs : -autoScrollStepAbs
+
+        ToolTip, s %autoScrollY% %autoScrollInterval% %autoScrollStep%
+        SetTimer, autoScroll, %autoScrollInterval%
+    }else{
+        ToolTip,
+        SetTimer, autoScroll, Off
+    }
+}
 Return
 
 autoScroll:
@@ -66,37 +80,13 @@ autoScroll:
     $PgUp::
         autoScrollY := autoScrollY ? autoScrollY : 0
         autoScrollY -= 1
-        
-        If(autoScrollY){
-            autoScrollStepAbs := Max(1, -16 + 4 * Abs(autoScrollY))
-            autoScrollInterval := Max(8, 128 - 32 * Abs(autoScrollY))
-            
-            autoScrollStep := autoScrollY > 0 ? autoScrollStepAbs : -autoScrollStepAbs
-
-            SetTimer, autoScroll, %autoScrollInterval%
-            ToolTip, s %autoScrollY% %autoScrollInterval% %autoScrollStep%
-        }else{
-            SetTimer, autoScroll, Off
-        }
+        autoScrollY_SetTimer()
 
         Return
     $PgDn::
         autoScrollY := autoScrollY ? autoScrollY : 0
         autoScrollY += 1
-        ToolTip, s %autoScrollY%
-
-        If(autoScrollY){
-            autoScrollStepAbs := Max(1, -16 + 4 * Abs(autoScrollY))
-            autoScrollInterval := Max(8, 128 - 32 * Abs(autoScrollY))
-            
-            autoScrollStep := autoScrollY > 0 ? autoScrollStepAbs : -autoScrollStepAbs
-
-            SetTimer, autoScroll, %autoScrollInterval%
-            ToolTip, s %autoScrollY% %autoScrollInterval% %autoScrollStep%
-        }else{
-            SetTimer, autoScroll, Off
-        }
-
+        autoScrollY_SetTimer()
         Return
 
     ; $PgUp::

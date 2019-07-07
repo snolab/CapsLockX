@@ -21,7 +21,8 @@ GenPassword(Length){
     }
 }
 
-Length := 16
-Clipboard := GenPassword(Length)
-
-MsgBox 长度%Length%的密码己复制
+^+u::
+    Length := 40
+    Clipboard := GenPassword(Length)
+    Send ^v
+    return

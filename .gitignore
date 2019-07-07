@@ -1,3 +1,4 @@
 *.sublime-*
 *.ini
 *.zip
+.vscode
