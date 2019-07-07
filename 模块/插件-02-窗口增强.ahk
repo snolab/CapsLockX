@@ -51,7 +51,7 @@ SwitchToDesktop(x){
 		; }
 		Return
 	; Win+Tab
-	\:: Send #{Tab}
+	\:: Send #{Tab} 
 
 	; 切换桌面
 	[:: Send ^#{Left}
@@ -84,15 +84,15 @@ SwitchToDesktop(x){
 		WinSet, Transparent, 255, A
 		Return
 
-	/::
-		wid := WinActive("A")
-		WinGetText, title, ahk_id %wid%
-		ToolTip 已对 %title% (%wid%) 开启窗口关闭通知
-		Sleep, 1000
-		ToolTip
-		WinWaitClose ahk_id %wid%
-		MsgBox, 窗口已关闭：%title%
-		Return
+	; /::
+	; 	wid := WinActive("A")
+	; 	WinGetText, title, ahk_id %wid%
+	; 	ToolTip 已对 %title% (%wid%) 开启窗口关闭通知
+	; 	Sleep, 1000
+	; 	ToolTip
+	; 	WinWaitClose ahk_id %wid%
+	; 	MsgBox, 窗口已关闭：%title%
+	; 	Return
 
 	; 增删桌面
 	-:: Send ^#{F4}

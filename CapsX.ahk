@@ -1,4 +1,10 @@
-﻿; 模块名: 不能有这几个字符 "   ,``"
+﻿; 
+; 程序入口
+; Copyright © 2017-2019 snomiao@gmail.com
+; LICENCE: GNU GPLv2
+; 
+
+; 模块名: 不能有这几个字符 "   ,``"
 Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
