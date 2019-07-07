@@ -6,13 +6,13 @@
 
 然后双击 `CapsX.ahk` 来启动 CapsX
 
-> 某些功能需要使用管理员身份运行
+> 某些功能需要使用管理员身份运行（如鼠标模拟）
 > 
 > 在 CapsX-Settings.ahk 中
 > 
 > 手动修改 global T_AskRunAsAdmin := 1 即可
-
-
+> 如不需要，可以改为 0
+> 
 
 ## 使用手册第二
 
