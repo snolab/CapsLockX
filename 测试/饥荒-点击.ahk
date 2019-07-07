@@ -1,5 +1,4 @@
 
-
 #IfWinActive Don't Starve
 	`::
 		SetTimer, click, 1

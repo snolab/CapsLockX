@@ -1,3 +1,5 @@
+; 不知道这个API为什么在64位的AHK下无效
+; 还请高人出手
 
 ; INPUTDATA = class {
 ;     INT type; 
