@@ -2,18 +2,6 @@ If(!CapslockX)
     ExitApp
 Return
 
-#Delete:: Send {CtrlDown}#{F4}{CtrlUp}
-#Insert:: Send {CtrlDown}#d{CtrlUp}
-
-; 当前窗口置顶
-#0:: WinSet, AlwaysOnTop, Toggle, A
-
-; 切换桌面
-#[:: Send {CtrlDown}#{Left}{CtrlUp}
-#]:: Send {CtrlDown}#{Right}{CtrlUp}
-
-^PrintScreen:: AppsKey
-
 ; 把当前窗口移到其它桌面
 MoveActiveWindow(action){
 	activeWin := WinActive("A")
@@ -30,6 +18,19 @@ MoveActiveWindowTo(x){
 SwitchToDesktop(x){
 	Send % "^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}"
 }
+
+
+#Delete:: Send {CtrlDown}#{F4}{CtrlUp}
+#Insert:: Send {CtrlDown}#d{CtrlUp}
+
+; 当前窗口置顶
+#0:: WinSet, AlwaysOnTop, Toggle, A
+
+; 切换桌面
+#[:: Send {CtrlDown}#{Left}{CtrlUp}
+#]:: Send {CtrlDown}#{Right}{CtrlUp}
+
+^PrintScreen:: AppsKey
 
 #If !!(CapslockXMode & CM_FN)
 	o::
