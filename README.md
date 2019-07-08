@@ -37,8 +37,7 @@
 
 <!-- 模块帮助文件名：02-插件-窗口增强.ahk-->
 #### 窗口增强模块效果如图
-![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块-0-插件2-窗口增强_Alt+Tab+WASD管理窗口.gif)
-
+![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/02-插件-窗口增强_一键排列窗口.gif)
 
 | 模式 | 窗口增强模块   | 说明 |
