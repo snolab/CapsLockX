@@ -73,10 +73,10 @@ LoadModulesHelp(sourceREADME){
         LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
 
         If (T%ModuleName%_Disabled){
-            help .= "#### " ModuleName "模块（此模块默认禁用）"
+            help .= "### " ModuleName "模块（此模块默认禁用）"
         }Else{
             help .= "<!-- 模块帮助文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
-            help .= "#### " ModuleName "模块"
+            help .= "### " ModuleName "模块"
         }
         help .= ModuleHelp "`n`n"
     }
