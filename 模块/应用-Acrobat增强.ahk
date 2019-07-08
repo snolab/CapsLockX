@@ -1,4 +1,4 @@
-
+﻿
 SetTitleMatchMode RegEx
 SetDefaultMouseSpeed 0
 Return

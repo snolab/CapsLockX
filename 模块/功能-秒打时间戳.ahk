@@ -1,4 +1,4 @@
-Return
+﻿Return
 ::[d::
     FormatTime, DateString, , (yyyyMMdd)
     SendInput %DateString%

@@ -1,4 +1,4 @@
-SetTitleMatchMode RegEx
+﻿SetTitleMatchMode RegEx
 			 			 
 Return
 #IfWinActive .*- Microsoft Edge ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe

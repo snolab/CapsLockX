@@ -1,4 +1,15 @@
-﻿Process Priority, , High     ; 脚本高优先级
+﻿; UTF-8 with BOM
+; 
+; 程序核心
+; 最后更新：(20190707)
+;
+; Copyright © 2017-2019 snomiao@gmail.com
+; 创建：Snowstar QQ: 997596439
+; 参与完善：张工 QQ: 45289331
+; LICENCE: GNU GPLv3
+; 
+
+Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 ; #NoTrayIcon                ; 隐藏托盘图标
 ; #NoEnv                     ; 不检查空变量是否为环境变量

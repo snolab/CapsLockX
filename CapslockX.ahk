@@ -40,7 +40,7 @@ TryLoadModuleHelp(ModuleFileName, ModuleName){
     }
     Return ""
 }
-LoadModulesHelp(source){
+LoadModulesHelp(sourceREADME){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
@@ -81,18 +81,19 @@ LoadModulesHelp(source){
     help := Trim(help, " `t`n")
     
     ; 生成替换代码
-    NeedleRegEx := "m)^(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\n\1(<!-- 结束：抽取模块帮助 -->)"
+    NeedleRegEx := "m)^(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n\1(<!-- 结束：抽取模块帮助 -->)"
     Replacement := "$1$2`n" help "`n$1$4"
-    target := RegExReplace(source, NeedleRegEx, Replacement, Replaces)
+    targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
     
     ; MsgBox, asdfasdf
     ; 检查替换情况
     If(!Replaces){
         MsgBox % "加载模块帮助遇到错误。`n请更新 CapslockX"
-        MsgBox % target
+        MsgBox % targetREADME
+        return sourceREADME
     }
 
-    Return target
+    Return targetREADME
 }
 
 ; 加载模块
@@ -162,19 +163,20 @@ LoadModulesCode(source){
 
 
 
-README := "README.md"
-FileRead, source, %README%
+README_FILE := "README.md"
+FileRead, source, %README_FILE%
 target := LoadModulesHelp(source)
 If(target != source){
     LoadingTips("模块帮助有变更")
 
     ; 稳定性检查
     source := LoadModulesHelp(target)
-    If(target != source)
+    If(target != source){
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……2"
+    }
 
-    FileDelete %README%
-    FileAppend %target%, %README%
+    FileDelete %README_FILE%
+    FileAppend %target%, %README_FILE%
     ; Reload
     ; ExitApp
 }
