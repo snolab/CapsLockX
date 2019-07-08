@@ -1,14 +1,14 @@
-﻿# CapsX
+﻿# CapslockX
 
 ## 入门教程第一
 首先，你需要安装一个 [AutoHotKey](https://autohotkey.com/)。
 推荐使用的版本： `AutoHotKey_L Unicode x32` （鼠标模拟模块不支持64位）
 
-然后双击 `CapsX.ahk` 来启动 CapsX
+然后双击 `CapslockX.ahk` 来启动 CapslockX
 
 > 某些功能需要使用管理员身份运行（如鼠标模拟）
 > 
-> 在 CapsX-Settings.ahk 中
+> 在 CapslockX-Settings.ahk 中
 > 
 > 手动修改 global T_AskRunAsAdmin := 1 即可
 > 如不需要，可以改为 0
@@ -16,11 +16,11 @@
 
 ## 使用手册第二
 
-按 `CapsLock` 切换 CapsX 模式
-按住 `CapsLock` 使用临时 CapsX 模式
+按 `CapsLock` 切换 CapslockX 模式
+按住 `CapsLock` 使用临时 CapslockX 模式
 
 ## 按键表第三
-每个模块可以单独禁用，请见 `CapsX-Settings.ahk` 文件
+每个模块可以单独禁用，请见 `CapslockX-Settings.ahk` 文件
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到模块里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
@@ -28,12 +28,12 @@
 #### 模拟鼠标模块
 | 模式 | 模拟鼠标模块 | 说明 |
 | - | :-: | - |
-| CapsX | w a s d   | 鼠标平滑移动（上下左右） |
-| CapsX | r f       | 垂直平滑滚轮（在chrome下有时失灵，原因未明) |
-| CapsX | R F       | 水平平滑滚轮（在chrome下有时失灵，原因未明) |
-| CapsX | rf        | r f一起按相当于鼠标中键 |
-| CapsX | e         | 鼠标左键 |
-| CapsX | q         | 鼠标右键 |
+| CapslockX | w a s d   | 鼠标平滑移动（上下左右） |
+| CapslockX | r f       | 垂直平滑滚轮（在chrome下有时失灵，原因未明) |
+| CapslockX | R F       | 水平平滑滚轮（在chrome下有时失灵，原因未明) |
+| CapslockX | rf        | r f一起按相当于鼠标中键 |
+| CapslockX | e         | 鼠标左键 |
+| CapslockX | q         | 鼠标右键 |
 
 <!-- 模块帮助文件名：03-应用-Anki增强.ahk-->
 #### Anki增强模块
@@ -89,7 +89,7 @@
 | 在远程桌面窗口中 | 无需按键自动触发 | 自动置底：如果当前操作的远程桌面窗口是最大化的窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作 |
 | 在远程桌面窗口中 | RAlt + RCtrl | 切换焦点：右边的 Alt+Ctrl 一起按可以切换焦点在不在远程桌面窗口 |
 | 在远程桌面窗口中 | LAlt + RAlt | 最小化当前远程桌面窗口：回到系统操作界面 |
- 
+
 <!-- 模块帮助文件名：应用-TIM添加常驻功能.ahk-->
 #### TIM添加常驻功能模块
 |模式|按键|功能|
@@ -104,34 +104,34 @@
 | 任意 | Win + H | 切换讯飞语音输入 |
 
 **需要先进行以下配置**
-1. 在C盘默认目录安装讯飞语音输入法（如果安装到其它目录请自己改代码……）
+1. 在C盘默认目录安装[讯飞语音输入法 Windows 版](https://srf.xunfei.cn/)（如果安装到其它目录请自己改代码……）
 2. 把讯飞语音输入法的语音悬浮窗热键设置为 `Ctrl+Shift+H`
 3. 当需要语音的时候按 Win+H 呼出即可
 4. Enjoy it.
 
-![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapsX/raw/master/模块/应用-讯飞语音输入法悬浮窗演示.gif)
+![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/模块/应用-讯飞语音输入法悬浮窗演示.gif)
 
 <!-- 模块帮助文件名：插件-02-窗口增强.ahk-->
 #### 窗口增强模块
 | 模式 | 窗口增强模块   | 说明 |
 | - | :-: | - |
-| 全局 | CapsX键 + \ | 打开多桌面视图 |
-| 全局 | CapsX键 + [ | 切换到上一个桌面 |
-| 全局 | CapsX键 + ] | 切换到下一个桌面 |
-| 全局 | CapsX键 + Alt + [ | 把当前窗口移到上一个桌面 |
-| 全局 | CapsX键 + Alt + ] | 把当前窗口移到下一个桌面 |
-| 全局 | CapsX键 + = | 新建桌面 |
-| 全局 | CapsX键 + - | 合并当前桌面 |
-| 全局 | CapsX键 + 0 | 新建桌面，并把当前窗口移过去 |
-| 全局 | CapsX键 + 1 | 把当前窗口移到第1个桌面(如果有的话) |
-| 全局 | CapsX键 + 2 | 把当前窗口移到第2个桌面(如果有的话) |
-| 全局 | CapsX键 + 3 | 把当前窗口移到第3个桌面(如果有的话) |
-| 全局 | CapsX键 + 4 | 把当前窗口移到第4个桌面(如果有的话) |
-| 全局 | CapsX键 + 5 | 把当前窗口移到第5个桌面(如果有的话) |
-| 全局 | CapsX键 + 6 | 把当前窗口移到第6个桌面(如果有的话) |
-| 全局 | CapsX键 + 7 | 把当前窗口移到第7个桌面(如果有的话) |
-| 全局 | CapsX键 + 8 | 把当前窗口移到第8个桌面(如果有的话) |
-| 全局 | CapsX键 + 9 | 把当前窗口移到第9个桌面(如果有的话) |
+| 全局 | CapslockX键 + \ | 打开多桌面视图 |
+| 全局 | CapslockX键 + [ | 切换到上一个桌面 |
+| 全局 | CapslockX键 + ] | 切换到下一个桌面 |
+| 全局 | CapslockX键 + Alt + [ | 把当前窗口移到上一个桌面 |
+| 全局 | CapslockX键 + Alt + ] | 把当前窗口移到下一个桌面 |
+| 全局 | CapslockX键 + = | 新建桌面 |
+| 全局 | CapslockX键 + - | 合并当前桌面 |
+| 全局 | CapslockX键 + 0 | 新建桌面，并把当前窗口移过去 |
+| 全局 | CapslockX键 + 1 | 把当前窗口移到第1个桌面(如果有的话) |
+| 全局 | CapslockX键 + 2 | 把当前窗口移到第2个桌面(如果有的话) |
+| 全局 | CapslockX键 + 3 | 把当前窗口移到第3个桌面(如果有的话) |
+| 全局 | CapslockX键 + 4 | 把当前窗口移到第4个桌面(如果有的话) |
+| 全局 | CapslockX键 + 5 | 把当前窗口移到第5个桌面(如果有的话) |
+| 全局 | CapslockX键 + 6 | 把当前窗口移到第6个桌面(如果有的话) |
+| 全局 | CapslockX键 + 7 | 把当前窗口移到第7个桌面(如果有的话) |
+| 全局 | CapslockX键 + 8 | 把当前窗口移到第8个桌面(如果有的话) |
+| 全局 | CapslockX键 + 9 | 把当前窗口移到第9个桌面(如果有的话) |
 | Alt+Tab界面下 | w a s d | 上下左右切换窗口选择 |
 | Alt+Tab界面下 | x c     | 关闭选择的窗口 |
 | Alt+Tab界面下 | q e     | 左右切换多桌面 |
@@ -149,9 +149,9 @@
 | Win+Tab界面下 | ] | 切换到下一个桌面 |
 
 如图
-![插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capsx/raw/master/模块/插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif)
+![插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif)
 
-![插件-02-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capsx/raw/master/模块/插件-02-窗口增强_一键排列窗口.gif)
+![插件-02-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_一键排列窗口.gif)
 
 <!-- 模块帮助文件名：插件-OneNote剪贴板收集器.ahk-->
 #### OneNote剪贴板收集器模块
@@ -161,7 +161,7 @@
 1. OneNote 2016 打开一个窗口，标题写成这样“剪贴板收集”。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
 3. 如图
-![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capsx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
+![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
 
 <!-- 模块帮助文件名：插件-合并右Ctrl与Menu键.ahk-->
 #### 合并右Ctrl与Menu键模块
@@ -176,40 +176,40 @@
 #### 媒体键模块
 | 模式 | 媒体键模块   | 说明 （这个模块基本还是半成品。。欢迎push） |
 | - | :-: | - |
-| CapsX | F5   | 暂停播放 |
-| CapsX | F6   | 上一首 |
-| CapsX | F7   | 下一首 |
-| CapsX | F8   | 停止播放 |
-| CapsX | F10  | 静音 |
-| CapsX | F11  | 音量减 |
-| CapsX | F12  | 音量加 |
+| CapslockX | F5   | 暂停播放 |
+| CapslockX | F6   | 上一首 |
+| CapslockX | F7   | 下一首 |
+| CapslockX | F8   | 停止播放 |
+| CapslockX | F10  | 静音 |
+| CapslockX | F11  | 音量减 |
+| CapslockX | F12  | 音量加 |
 
 <!-- 模块帮助文件名：插件-搜索键.ahk-->
 #### 搜索键模块
 | 模式 | 搜索键模块   | 说明 （这个模块基本还是半成品。。欢迎push） |
 | - | :-: | - |
-| CapsX | g    | 用 google 搜索当前选择或鼠标所指的词 |
+| CapslockX | g    | 用 google 搜索当前选择或鼠标所指的词 |
 
 <!-- 模块帮助文件名：插件-编辑增强.ahk-->
 #### 编辑增强模块
 | 模式 | Edit模块   | 说明 （欢迎push）|
 | - | :-: | - |
-| CapsX | z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
-| CapsX | h l       | 左右方向键 |
-| CapsX | k j       | 上下方向键 |
-| CapsX | hl        | h l 一起按选择光标下的单词词 |
-| CapsX | nm        | n m 一起按选择当前行 |
-| CapsX | b         | BackSpace |
-| CapsX | B         | Delete |
-| CapsX | u         | 撤销 |
-| CapsX | U         | 重做 |
+| CapslockX | z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
+| CapslockX | h l       | 左右方向键 |
+| CapslockX | k j       | 上下方向键 |
+| CapslockX | hl        | h l 一起按选择光标下的单词词 |
+| CapslockX | nm        | n m 一起按选择当前行 |
+| CapslockX | b         | BackSpace |
+| CapslockX | B         | Delete |
+| CapslockX | u         | 撤销 |
+| CapslockX | U         | 重做 |
 
 <!-- 模块帮助文件名：插件-雪星转屏.ahk-->
 #### 雪星转屏模块
 | 模式 | 按键 | 功能 |
 | - | :-: | - |
-| CapsX | Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
-| CapsX | Alt + 小键盘 8 2 4 6 | 同时旋转所有屏幕到你指定的方向 |
+| CapslockX | Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
+| CapslockX | Alt + 小键盘 8 2 4 6 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
 ## 发展路线第四
@@ -217,7 +217,7 @@
 简化电脑操作逻辑，提升效率，尽量不与习惯键位冲突
 
 po主偷懒中:
-1. [ ] 长按CapsX键显示对应帮助
+1. [ ] 长按CapslockX键显示对应帮助
 2. 
 
 ## 制作背景第五
@@ -232,7 +232,7 @@ po主偷懒中:
 
 ## 答疑相关第六
 
-GitHub: [https://github.com/snomiao/capsx](https://github.com/snomiao/capsx)
+GitHub: [https://github.com/snomiao/CapslockX](https://github.com/snomiao/CapslockX)
 
 本人常驻 QQ群： 271105729
 

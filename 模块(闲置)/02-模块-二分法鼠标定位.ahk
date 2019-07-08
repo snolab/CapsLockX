@@ -26,14 +26,14 @@ start_precision_mouse_locate(){
 
 
 
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
 	o::
 		global o_mode
 		o_mode := 1
 		start_precision_mouse_locate()
 		Return
 
-#If (CapsXMode == CM_CAPSX || CapsXMode == CM_FN) && o_mode
+#If (CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN) && o_mode
 	o::
 		global o_mode
 		o_mode := 0

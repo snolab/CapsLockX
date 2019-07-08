@@ -64,7 +64,7 @@ RunSilent(command) {
     StdoutToVar_CreateProcess(command)
 }
 
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
 	Numpad8:: RunSilent("模块\雪星转屏.exe =0")
 	Numpad4:: RunSilent("模块\雪星转屏.exe =90")
 	Numpad2:: RunSilent("模块\雪星转屏.exe =180")

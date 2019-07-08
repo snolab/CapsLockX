@@ -1,23 +1,23 @@
 #MaxHotkeysPerInterval 100
 Return
 
-#If !!(CapsXMode & CM_FN) || !!(CapsXMode & CM_CAPSX)
+#If !!(CapslockXMode & CM_FN) || !!(CapslockXMode & CM_CapslockX)
 
     ; $WheelUp:: 
     ;     Send {Volume_Up}
-    ;     CapsX_FnActed := 1
+    ;     CapslockX_FnActed := 1
     ;     Return
     ; $WheelDown::
     ;     Send {Volume_Down}
-    ;     CapsX_FnActed := 1
+    ;     CapslockX_FnActed := 1
     ;     Return
     ; $!WheelUp:: 
     ;     Send {Media_Prev}
-    ;     CapsX_FnActed := 1
+    ;     CapslockX_FnActed := 1
     ;     Return
     ; $!WheelDown::
     ;     Send {Media_Next}
-    ;     CapsX_FnActed := 1
+    ;     CapslockX_FnActed := 1
     ;     Return
 
     F1:: Launch_App1 ; 打开我的电脑

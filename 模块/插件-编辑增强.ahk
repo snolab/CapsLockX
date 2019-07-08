@@ -5,10 +5,10 @@ OnSwitch(){
     RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, %value%
 }
     
-#If CapsXMode == CM_FN
+#If CapslockXMode == CM_FN
     Space:: Enter
 
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
     u:: PgDn
     i:: PgUp
     ; 上下左右

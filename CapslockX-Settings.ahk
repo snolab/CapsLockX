@@ -37,10 +37,10 @@
 
 ; 实验性功能（改了不知道会出啥事哦）
 
-	; 修改CapsX触发键
-	global T_CapsXKey           := "CapsLock"
+	; 修改CapslockX触发键
+	global T_CapslockXKey           := "CapsLock"
 
-	; 是否使用 ScrollLock 灯来显示 CapsX 状态
+	; 是否使用 ScrollLock 灯来显示 CapslockX 状态
 	global T_UseScrollLockLight := 0
 	global T_UseScrollLockAsCapslock := 0
 

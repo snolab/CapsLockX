@@ -1,5 +1,5 @@
 Return
-#If CapsXMode == CM_CAPSX
+#If CapslockXMode == CM_CapslockX
     ; Google 搜索
     Search(q){
         Run, https://www.google.com/search?q=%q%

@@ -7,7 +7,7 @@
 ; #InstallMouseHook          ; 安装鼠标钩子
 
 ; 载入设定
-#Include CapsX-Settings.ahk
+#Include CapslockX-Settings.ahk
 If(!)
     ExitApp
 
@@ -28,29 +28,29 @@ If(!)
     }
 
     ; 模式处理
-    global CapsX := 1 ; 模块运行标识符
+    global CapslockX := 1 ; 模块运行标识符
     
-    global CapsXMode   := 0
+    global CapslockXMode   := 0
     global ModuleState := 0
-    global CapsX_FnActed   := 0
+    global CapslockX_FnActed   := 0
     global CM_NORMAL := 0 ; 普通模式
-    global CM_FN     := 1 ; 临时 CapsX 模式
-    global CM_CAPSX  := 2 ; CapsX 模式
+    global CM_FN     := 1 ; 临时 CapslockX 模式
+    global CM_CapslockX  := 2 ; CapslockX 模式
     global CM_FNX    := 3 ; FnX 模式
 
     ; 切换模式
-    UpdateCapsXMode(){
-        CapsXMode := GetKeyState(T_CapsXKey, "P")
+    UpdateCapslockXMode(){
+        CapslockXMode := GetKeyState(T_CapslockXKey, "P")
         If(T_UseScrollLockLight)
-            CapsXMode |= GetKeyState("ScrollLock", "T") << 1
+            CapslockXMode |= GetKeyState("ScrollLock", "T") << 1
         
-        Return CapsXMode
+        Return CapslockXMode
     }
-    UpdateCapsXMode()
+    UpdateCapslockXMode()
     ; 根据当前模式，切换灯
     Menu,tray,icon,./数据/图标白.ico
     UpdateLight(){
-        If (  ((CapsXMode & CM_CAPSX) || (CapsXMode & CM_FN)) ){
+        If (  ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN)) ){
             Menu,tray,icon, ./数据/图标蓝.ico
             If (T_SwitchSoundOn && T_SwitchSoundOn){
                 SoundPlay %T_SwitchSoundOn%
@@ -62,28 +62,28 @@ If(!)
             }
         }
         If (T_UseScrollLockLight){
-            ; ToolTip % CapsXMode
-            If (GetKeyState("ScrollLock", "T") != ((CapsXMode & CM_CAPSX) || (CapsXMode & CM_FN))){
+            ; ToolTip % CapslockXMode
+            If (GetKeyState("ScrollLock", "T") != ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))){
                 Send {ScrollLock}
                 Return 1
             }
         }
-        ; tips(CapsXMode)
+        ; tips(CapslockXMode)
     }
     
-    CapsXTurnOff(){
-        CapsXMode &= ~CM_CAPSX
+    CapslockXTurnOff(){
+        CapslockXMode &= ~CM_CapslockX
         re =: UpdateLight()
         Return re
     }
-    CapsXTurnOn(){
-        CapsXMode |= CM_CAPSX
+    CapslockXTurnOn(){
+        CapslockXMode |= CM_CapslockX
         re =: UpdateLight()
         Return re
     }
 
-    Hotkey *%T_CapsXKey%, CapsX_Dn
-    Hotkey *%T_CapsXKey% Up, CapsX_Up
+    Hotkey *%T_CapslockXKey%, CapslockX_Dn
+    Hotkey *%T_CapslockXKey% Up, CapslockX_Up
 
 ; 动态开始：载入模块
     GoSub Setup_加速模型
@@ -137,7 +137,7 @@ If(!)
             #Include 模块\应用-Acrobat自动缩放.ahk
     #If
         Setup_Cursor:
-            #Include 模块\应用-CapsX-Cursor.ahk-禁用
+            #Include 模块\应用-CapsX-Cursor.ahk
     #If
         Setup_Edge增强:
             #Include 模块\应用-Edge增强.ahk
@@ -209,38 +209,38 @@ If(!)
             #Include 模块\插件-雪星转屏.ahk
 ; 动态结束；
 #If
-    ; CapsX模式切换
-    CapsX_Dn:
+    ; CapslockX模式切换
+    CapslockX_Dn:
         ; 进入 Fn 模式
-        CapsXMode |= CM_FN
-        ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsX 冲突
+        CapslockXMode |= CM_FN
+        ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapslockX 冲突
         if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")){
-            CapsXMode &= ~CM_FN
+            CapslockXMode &= ~CM_FN
         }
 
         UpdateLight()
         Return
 
-    CapsX_Up:
+    CapslockX_Up:
         ; 退出 Fn 模式
-        CapsXMode &= ~CM_FN
+        CapslockXMode &= ~CM_FN
         ; 规避 Fn 功能键
-        CapsX_FnActed := CapsX_FnActed || (A_PriorKey != T_CapsXKey && A_PriorKey != "Insert")
-        If (!CapsX_FnActed) {
-            CapsXMode ^= CM_CAPSX
+        CapslockX_FnActed := CapslockX_FnActed || (A_PriorKey != T_CapslockXKey && A_PriorKey != "Insert")
+        If (!CapslockX_FnActed) {
+            CapslockXMode ^= CM_CapslockX
 
-            ; 限制在远程桌面里无法进入 CapsX 模式，避免和远程桌面里的 CapsX 冲突
+            ; 限制在远程桌面里无法进入 CapslockX 模式，避免和远程桌面里的 CapslockX 冲突
             if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")){
-                CapsXMode &= ~CM_CAPSX
+                CapslockXMode &= ~CM_CapslockX
             }
         }
-        ;ToolTip, %CapsX_FnActed%
-        CapsX_FnActed := 0
+        ;ToolTip, %CapslockX_FnActed%
+        CapslockX_FnActed := 0
         UpdateLight()
         Return
 
 ; 
-; #If T_CapsXKey == "CapsLock"
+; #If T_CapslockXKey == "CapsLock"
 ;     !CapsLock:: CapsLock ; 
 
 ; 用ScrollLock代替Capslock键
@@ -256,12 +256,12 @@ If(!)
 
     ; 硬重启键
     ^!F12::
-        Run CapsX.ahk, %A_WorkingDir%
+        Run CapslockX.ahk, %A_WorkingDir%
         ExitApp
         Return
 
     ; 结束键
     ^!+F12:: ExitApp
 
-    *Insert:: GoSub CapsX_Dn
-    *Insert Up:: GoSub CapsX_Up
+    *Insert:: GoSub CapslockX_Dn
+    *Insert Up:: GoSub CapslockX_Up

@@ -75,8 +75,8 @@ autoScroll:
 ;     }
 ;     Return
 
-; capsx和fn模式都能触发
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+; CapslockX和fn模式都能触发
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
     $PgUp::
         autoScrollY := autoScrollY ? autoScrollY : 0
         autoScrollY -= 1

@@ -1,4 +1,4 @@
-If(!CapsX)
+If(!CapslockX)
     ExitApp
 Return
 
@@ -31,7 +31,7 @@ SwitchToDesktop(x){
 	Send % "^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}"
 }
 
-#If !!(CapsXMode & CM_FN)
+#If !!(CapslockXMode & CM_FN)
 	o::
 		; cmd := "taskkill /f /im ApplicationFrameHost.exe"
 		; cmd := "taskkill /f /im ShellExperienceHost.exe"
@@ -131,7 +131,7 @@ SwitchToDesktop(x){
     $^!x:: WinKill A
 
 ; 确保WinTab模块优先级比Mouse高，否则此处 wasd 无效
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
 
 	; 打开系统设定
     p:: Send #{Pause}
@@ -161,7 +161,7 @@ SwitchToDesktop(x){
 ; 条件：WinActive ahk_class MultitaskingViewFrame
 ;
 ~#Tab Up::
-	CapsXTurnOff()
+	CapslockXTurnOff()
 	Return
 
 

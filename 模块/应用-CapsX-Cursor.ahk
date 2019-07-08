@@ -18,8 +18,8 @@ OCR_SIZEWE      = 32644
 OCR_UP          = 32516
 OCR_WAIT        = 32514
 
-RegRead, CapsXState, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation
-;ToolTip % CapsXState
+RegRead, CapslockXState, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation
+;ToolTip % CapslockXState
 
 SetCursor(code, curFile){
 	;加载capslock增强的鼠标指针
@@ -29,7 +29,7 @@ SetCursor(code, curFile){
 }
 PATH_CURSOR := "cursor"
 
-If(CapsXState){
+If(CapslockXState){
 	SetCursor(OCR_APPSTARTING, PATH_CURSOR "\appstarting.cur") ;AppStarting.cur")
 	SetCursor(OCR_NORMAL     , PATH_CURSOR "\normal.cur") ;正常选择.cur")
 	SetCursor(OCR_CROSS      , PATH_CURSOR "\cross.cur") ;精确选择.cur")

@@ -119,8 +119,8 @@ mm:
     max := ma(tdd -tda) * TMouse_MouseSpeedRatio
     may := ma(tds -tdw) * TMouse_MouseSpeedRatio
 
-    ; 在非CapsX模式下停止
-    If (!(CapsXMode == CM_CAPSX || CapsXMode == CM_FN)){
+    ; 在非CapslockX模式下停止
+    If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
         max := 0
         may := 0
     }
@@ -274,8 +274,8 @@ ms:
         }
         Return
     }
-    ; 在非CapsX模式下停止
-    If (!(CapsXMode == CM_CAPSX || CapsXMode == CM_FN)){
+    ; 在非CapslockX模式下停止
+    If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
         sax := 0
         say := 0
     }
@@ -323,8 +323,8 @@ sTick(){
     SetTimer, ms, 0
 }
 
-; capsx和fn模式都能触发
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
+; CapslockX和fn模式都能触发
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
     ; 鼠标按键处理
     *e::    Send {Blind}{LButton Down}
     *e up:: Send {Blind}{LButton Up}
@@ -341,8 +341,8 @@ sTick(){
             Send {Blind}{RButton Up}
         Return
 
-; 只有开启capsx模式能触发
-; #If CapsXMode == CM_CAPSX
+; 只有开启CapslockX模式能触发
+; #If CapslockXMode == CM_CapslockX
     ; 鼠标运动处理
     a:: mtl := (mtl ? mtl : QPC()), mTick()
     d:: mtr := (mtr ? mtr : QPC()), mTick()

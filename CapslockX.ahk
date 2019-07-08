@@ -1,266 +1,218 @@
 ﻿; UTF-8 with BOM
-; 最后更新：2017年6月10日
-; 分支：with-space
-; 特点：改用空格切换状态
+; 
+; 程序入口
+; 最后更新：(20190707)
 ;
-; 创建：Snowstar
+; Copyright © 2017-2019 snomiao@gmail.com
+; 创建：Snowstar QQ: 997596439
 ; 参与完善：张工 QQ: 45289331
-;
-CoordMode, Mouse, Screen
+; LICENCE: GNU GPLv3
+; 
 
-QPF()
-{
-    DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
-    Return QuadPart
+; 模块名: 不能有这几个字符 "   ,``"
+Process Priority, , High     ; 脚本高优先级
+#SingleInstance Force        ; 跳过对话框并自动替换旧实例
+#NoTrayIcon                ; 隐藏托盘图标
+#Include CapslockX-Settings.ahk
+
+global PathModules := "模块"
+global PathCore    := "核心"
+
+global CapslockX_Version := "v1.2 Alpha"
+global loadingTips := ""
+LoadingTips(msg, clear = 0){
+    If(clear || loadingTips == "")
+        loadingTips := "CapslockX " CapslockX_Version "`n"
+    loadingTips .= msg "`n"
+}
+LoadingTipsShow(){
+    ToolTip % loadingTips
 }
 
-QPC()
-{
-    DllCall("QueryPerformanceCounter", "Int64*", Counter)
-    Return Counter
+TryLoadModuleHelp(ModuleFileName, ModuleName){
+    If(FileExist(PathModules "\" ModuleName ".md")){
+        FileRead, ModuleHelp, %PathModules%\%ModuleName%.md
+        Return ModuleHelp
+    }
+    If(FileExist(PathModules "\" ModuleFileName ".md")){
+        FileRead, ModuleHelp, %PathModules%\%ModuleFileName%.md
+        Return ModuleHelp
+    }
+    Return ""
 }
-
-ma(t){
-    ; Return ma2(t) ; 二次函数运动模型
-    ; Return ma3(t) ; 三次函数运动模型
-    Return maPower(t) ; 指数函数运动模型
-}
-ma2(t){
-    ; x-t 二次曲线加速运动模型
-    ; 跟现实世界的运动一个感觉
-    If(0 == t)
-        Return 0
-    If(t > 0)
-        Return  6
-    Else
-        Return -6
-}
-
-ma3(t){
-    ; x-t 三次曲线函数运动模型
-    ; 与现实世界不同，
-    ; 这个模型会让人感觉鼠标比较“重”
-    ;
-    If(0 == t)
-        Return 0
-    If(t > 0)
-        Return t * 12
-    Else
-        Return t * 12
-}
-
-maPower(t){
-    ; x-t 指数曲线运动的简化模型
-    ; 这个模型可以满足精确定位需求，也不会感到鼠标“重”
-    ; 但是因为跟现实世界的运动曲线不一样，凭直觉比较难判断落点，需要一定练习才能掌握。
-    ;
-    ; 速度时间图像参见这个链接
-    ; http://m.wolframalpha.com/input/?i=Plot+%7BInt%28+%28+Exp%28+t%29+-+1+%29+*+16%29%2C+80%7D&x=0&y=0
-    If(0 == t)
-        Return 0
-    If(t > 0)
-        Return  ( Exp( t) - 0.95 ) * 16
-    Else
-        Return -( Exp(-t) - 0.95 ) * 16
-}
-
-; 时间计算
-dt(t, tNow){
-    Return t ? (tNow - t) / QPF() : 0
-}
-
-MoCaLi(v, a){ ; 摩擦力
-    ; 限制最大速度
-    ; maxSpeed := 80
-    ; If(v   < -maxSpeed)
-    ;     v := -maxSpeed
-    ; If(v   >  maxSpeed)
-    ;     v :=  maxSpeed
-    ; 摩擦力不阻碍用户意志
-    If((a > 0 And v > 0) Or (a < 0 And v < 0))
-        Return v
-    ; 简单粗暴倍数降速
-    v *= 0.8
-    If(v > 0)
-        v -= 1
-    If(v < 0)
-        v += 1
-    v //= 1
-    Return v
-}
-
-
-^!F12:: ExitApp
-
-; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
-Global ta := 0, td := 0, tw := 0, ts := 0, mvx := 0, mvy := 0
-
-; 滚轮加速度微分对称模型（不要在意名字hhhh
-Global tr := 0, tf := 0, tz := 0, tc := 0, svx := 0, svy := 0
-
-;~ Space::
-    ;~ Return
-;~ Space Up::
-    ;~ Send {Space}
-    ;~ Return         
-
-space up::
-    if (A_PriorKey="space")
-        sendinput {space}
-    sendinput {Space Up}
-    Return   
-Space & Tab::sendinput {Space}
-^Space::^Space
-+Space::+Space
-#Space::#Space
-
-#If GetKeyState("Space", "P")
-    ;~#Tab:: Send {ScrollLock}
-     
-    `:: Enter
-
-    h:: Left
-    l:: Right
-    j:: Down
-    k:: Up
-    n:: Home
-    m:: End
-    b:: Send {Delete}
-
-    ; 窗口
-    x:: Send ^w
-    !x:: Send !{F4}
-    ; 撤销
-    u:: Send ^z
-    ; 重做
-    +u:: Send ^z
-
-    1:: Send #1
-    2:: Send #2
-    3:: Send #3
-    4:: Send #4
-    5:: Send #5
-    6:: Send #6
-    7:: Send #7
-    8:: Send #8
-    9:: Send #9
-
-    F5:: Send {Media_Play_Pause}
-    F6:: Send {Media_Prev}
-    F7:: Send {Media_Next}
-    F8:: Send {Media_Stop}
-
+LoadModulesHelp(source){
+    FileEncoding UTF-8
+    ; 列出模块文件
+    ModuleFiles  := ""
+    Loop, Files, %PathModules%\*.ahk, R ; Recurse into subfolders.
+        ModuleFiles .= A_LoopFileName "`n"
+    ModuleFiles := Trim(ModuleFiles, "`n")
+    Sort ModuleFiles
     
-    F10:: Send {Volume_Mute}
-    F11:: Send {Volume_Down}
-    F12:: Send {Volume_Up}
-
-    ; Google 搜索
-    search(q)
+    ; 生成帮助
+    help := ""
+    i := 0
+    Loop, Parse, ModuleFiles, `n
     {
-        Run, https://www.google.com/search?q=%q%
-    }
-    copySelected()
-    {
-        Send ^c
-        ClipWait
-        Return Clipboard
-    }
-    g:: search(copySelected())
+        i++
+        ; 匹配模块名
+        ModuleFile := A_LoopField
+        re := RegExMatch(A_LoopField, "O)((?:.*[.-])*)(.*)\.ahk", Match)
+        If(!re)
+            Continue
+        ModuleFileName := Match[1] Match[2]
+        ModuleName     := Match[2]
+        
+        ModuleHelp := TryLoadModuleHelp(ModuleFileName, ModuleName)
+        If (!ModuleHelp)
+            Continue
+        ModuleHelp := Trim(ModuleHelp, " `t`n")
+        LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
 
-
-    ; 鼠标运动处理
-    mm:
-        tNow := QPC()
-        ; 计算用户操作时间
-        tda := dt(ta, tNow),           tdd := dt(td, tNow)
-        tdw := dt(tw, tNow),           tds := dt(ts, tNow)
-
-        ; 计算加速度
-        max := ma(tdd - tda),          may := ma(tds - tdw)
-
-        ; 摩擦力不阻碍用户意志
-        mvx := MoCaLi(mvx + max, max), mvy := MoCaLi(mvy + may, may)
-
-        If(mvx Or mvy){
-            MouseMove, %mvx%, %mvy%, 0, R
+        If (T%ModuleName%_Disabled){
+            help .= "#### " ModuleName "模块（此模块默认禁用）"
         }Else{
-            SetTimer, mm, Off
+            help .= "<!-- 模块帮助文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
+            help .= "#### " ModuleName "模块"
         }
-        Return
-
-    ; 时间处理
-    mTick(){
-        SetTimer, mm, 1
+        help .= ModuleHelp "`n`n"
     }
-
-    a:: ta := (ta ? ta : QPC()), mTick()
-    d:: td := (td ? td : QPC()), mTick()
-    w:: tw := (tw ? tw : QPC()), mTick()
-    s:: ts := (ts ? ts : QPC()), mTick()
-    a Up:: ta := 0, mTick()
-    d Up:: td := 0, mTick()
-    w Up:: tw := 0, mTick()
-    s Up:: ts := 0, mTick()
-
-    e:: LButton
-    q:: RButton
-
-
-    Pos2Long(x, y){
-        Return x | (y << 16)
-    }
-
-    ; 滚轮运动处理
-    msx:
-        tNow := QPC()
-        ; 计算用户操作时间
-        tdz := dt(tz, tNow), tdc := dt(tc, tNow)
-        ; 计算加速度
-        sax := ma(tdc - tdz)
-        svx := MoCaLi(svx + sax, sax)
-
-        If(svx){
-            MouseGetPos, mouseX, mouseY, wid, fcontrol
-            wParam := svx << 16 ;zDelta
-            lParam := Pos2Long(mouseX, mouseY)
-            PostMessage, 0x20E, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
-        }Else{
-            SetTimer, msx, Off
-        }
-        Return
+    LoadingTipsShow()
+    help := Trim(help, " `t`n")
     
-    msy:
-        tNow := QPC()
-        ; 计算用户操作时间
-        tdr := dt(tr, tNow), tdf := dt(tf, tNow)
-        ; 计算加速度
-        say := ma(tdr - tdf)
-        svy := MoCaLi(svy + say, say)
+    ; 生成替换代码
+    NeedleRegEx := "m)^(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\n\1(<!-- 结束：抽取模块帮助 -->)"
+    Replacement := "$1$2`n" help "`n$1$4"
+    target := RegExReplace(source, NeedleRegEx, Replacement, Replaces)
+    
+    ; MsgBox, asdfasdf
+    ; 检查替换情况
+    If(!Replaces){
+        MsgBox % "加载模块帮助遇到错误。`n请更新 CapslockX"
+        MsgBox % target
+    }
 
-        If(svy){
-            MouseGetPos, mouseX, mouseY, id, fcontrol
-            wParam := svy << 16 ;zDelta
-            lParam := Pos2Long(mouseX, mouseY)
-            PostMessage, 0x20A, %wParam%, %lParam%, %fcontrol%, ahk_id %id%
-        }Else{
-            SetTimer, msy, Off
+    Return target
+}
+
+; 加载模块
+LoadModulesCode(source){
+    FileEncoding UTF-8
+    ; 列出模块文件
+    ModuleFiles  := ""
+    Loop, Files, %PathModules%\*.ahk, R ; Recurse into subfolders.
+        ModuleFiles .= A_LoopFileName "`n"
+    ModuleFiles := Trim(ModuleFiles, "`n")
+    Sort ModuleFiles
+    
+    ; 生成加载代码
+    code_setup   := ""
+    code_include := ""
+    i := 0
+    Loop, Parse, ModuleFiles, `n
+    {
+        i++
+        ; 匹配模块名
+        ModuleFile := A_LoopField
+        re := RegExMatch(A_LoopField, "O)(?:.*[.-])*(.*)\.ahk", Match)
+        If(!re)
+            Continue
+        ModuleName := Match[1]
+        
+        If(T%ModuleName%_Disabled)
+            LoadingTips("禁用模块：" i " " ModuleName)
+        Else{
+            code_setup   .= "    GoSub Setup_" ModuleName "`n"
+            code_include .= "    #If" "`n"
+            ; code .= "    global MF_" ModuleName " := " 1 << (i - 1) "`n"
+            code_include .= "        Setup_" ModuleName ":"  "`n"
+            code_include .= "            #Include " PathModules "\" ModuleFile "`n"
+
+            LoadingTips("运行模块：" i " " ModuleName)
+
+            ; FileRead ModuleCode, 模块\%ModuleFile%
+
+            ; If(RegExMatch(ModuleCode, "m)^\s*T" ModuleName "_Setup:$")){
+            ;     code_setup .= "    GoSub T" ModuleName "_Setup`n"
+            ;     LoadingTips("运行模块：" i " " ModuleName)
+            ; }Else{
+            ;     LoadingTips("加载模块：" i " " ModuleName)
+            ; }
         }
-        Return
-
-    ; 时间处理
-    sTickx(){
-        SetTimer, msx, 1
     }
-    sTicky(){
-        SetTimer, msy, 1
-    }
+    LoadingTipsShow()
 
-    r:: tr := (tr ? tr : QPC()), sTicky()
-    f:: tf := (tf ? tf : QPC()), sTicky()
-    z:: tz := (tz ? tz : QPC()), sTickx()
-    c:: tc := (tc ? tc : QPC()), sTickx()
-    r Up:: tr := 0, sTicky()
-    f Up:: tf := 0, sTicky()
-    z Up:: tz := 0, sTickx()
-    c Up:: tc := 0, sTickx()
+    ; 拼接代码
+    code := ""
+    code .= code_setup
+    code .= "    Return`n"
+    code .= code_include 
+
+    ; 生成替换代码
+    NeedleRegEx := "m)^(\s*)(; 动态开始：载入模块)([\s\S]*)\n\1(; 动态结束；)"
+    Replacement := "$1$2`n" code "$1$4"
+    target := RegExReplace(source, NeedleRegEx, Replacement, Replaces)
+
+    ; 检查替换情况
+    If(!Replaces){
+        MsgBox % "加载模块遇到错误。`n请更新 CapslockX"
+    }
+    Return target
+}
+
+
+
+README := "README.md"
+FileRead, source, %README%
+target := LoadModulesHelp(source)
+If(target != source){
+    LoadingTips("模块帮助有变更")
+
+    ; 稳定性检查
+    source := LoadModulesHelp(target)
+    If(target != source)
+        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……2"
+
+    FileDelete %README%
+    FileAppend %target%, %README%
+    ; Reload
+    ; ExitApp
+}
+
+
+
+
+global CoreAHK := PathCore "\CapslockX-Core.ahk"
+
+FileRead, source, %CoreAHK%
+target := LoadModulesCode(source)
+If(target != source){
+    LoadingTips("模块设定有变更")
+
+    ; 稳定性检查
+    source := LoadModulesCode(target)
+    If(target != source)
+        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……"
+
+    FileDelete %CoreAHK%
+    FileAppend %target%, %CoreAHK%
+}
+
+
+Send ^!+{F12} ; 把之前的实例关了
+Run 核心\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
+
+; 显示Tips 2秒
+Sleep 2000
+ExitApp
+
+;"(^\s*);#T_" Module "_" SettingName "{{ ([\s\S]*)\1;}}"
+
+; #T_COMDING = 1
+
+; XBEGIN := "; #T_" Module "_" SettingName
+
+; NeedleRegEx := "(\s*)(" XBEGIN ")((?:\1.*\n|\n)*)\1(" XEND ")"
+; Replacement := "$1$2" code "$1$4"
+
+; !F12:: ExitApp

@@ -1,5 +1,5 @@
 
-If(!CapsX)
+If(!CapslockX)
     ExitApp
 
 
