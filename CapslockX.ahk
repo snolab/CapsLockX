@@ -10,6 +10,7 @@
 ; 
 
 ; 模块名: 不能有这几个字符 "   ,``"
+
 Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
@@ -40,6 +41,8 @@ TryLoadModuleHelp(ModuleFileName, ModuleName){
     }
     Return ""
 }
+
+; 加载模块帮助
 LoadModulesHelp(sourceREADME){
     FileEncoding UTF-8
     ; 列出模块文件
@@ -81,8 +84,8 @@ LoadModulesHelp(sourceREADME){
     help := Trim(help, " `t`n")
     
     ; 生成替换代码
-    NeedleRegEx := "m)^(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n\1(<!-- 结束：抽取模块帮助 -->)"
-    Replacement := "$1$2`n" help "`n$1$4"
+    NeedleRegEx := "m)(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n(\s*)(<!-- 结束：抽取模块帮助 -->)"
+    Replacement := "$1$2`n" help "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
     
     ; MsgBox, asdfasdf
@@ -97,7 +100,7 @@ LoadModulesHelp(sourceREADME){
 }
 
 ; 加载模块
-LoadModulesCode(source){
+LoadModulesCode(sourceCORE){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
@@ -127,9 +130,21 @@ LoadModulesCode(source){
             code_include .= "    #If" "`n"
             ; code .= "    global MF_" ModuleName " := " 1 << (i - 1) "`n"
             code_include .= "        Setup_" ModuleName ":"  "`n"
+            
+            ; 这里引入模块代码
+            ; 方式1(Include方式导入代码)
+            
+            ; 清洗为 UTF-8 WITH BOM 型编码
+            FileRead ModuleCode,  %PathModules%\%ModuleFile%
+            FileDelete %PathModules%\%ModuleFile%
+            FileAppend %ModuleCode%,  %PathModules%\%ModuleFile%
+
+            ; 导入模块
             code_include .= "            #Include " PathModules "\" ModuleFile "`n"
 
-            LoadingTips("运行模块：" i " " ModuleName)
+            ; 方式2: 直接导入模块代码(不方便查看是哪个模块出错)
+            ; FileRead ModuleCode,  %PathModules%\%ModuleFile%
+            ; code_include .= ModuleCode "`n"
 
             ; FileRead ModuleCode, 模块\%ModuleFile%
 
@@ -139,6 +154,7 @@ LoadModulesCode(source){
             ; }Else{
             ;     LoadingTips("加载模块：" i " " ModuleName)
             ; }
+            LoadingTips("运行模块：" i " " ModuleName)
         }
     }
     LoadingTipsShow()
@@ -150,19 +166,21 @@ LoadModulesCode(source){
     code .= code_include 
 
     ; 生成替换代码
-    NeedleRegEx := "m)^(\s*)(; 动态开始：载入模块)([\s\S]*)\n\1(; 动态结束；)"
-    Replacement := "$1$2`n" code "$1$4"
-    target := RegExReplace(source, NeedleRegEx, Replacement, Replaces)
+    NeedleRegEx := "m)(\s*)(; 动态开始：载入模块)([\s\S]*)\r?\n(\s*)(; 动态结束；)"
+    Replacement := "$1$2`n" code "$4$5"
+    targetCORE := RegExReplace(sourceCORE, NeedleRegEx, Replacement, Replaces)
 
     ; 检查替换情况
     If(!Replaces){
         MsgBox % "加载模块遇到错误。`n请更新 CapslockX"
+        MsgBox % targetCORE
+        return sourceCORE
     }
-    Return target
+    Return targetCORE
 }
 
 
-
+; 编译README.md
 README_FILE := "README.md"
 FileRead, source, %README_FILE%
 target := LoadModulesHelp(source)
@@ -183,26 +201,25 @@ If(target != source){
 
 
 
-
+; 编译核心文件
 global CoreAHK := PathCore "\CapslockX-Core.ahk"
-
-FileRead, source, %CoreAHK%
-target := LoadModulesCode(source)
-If(target != source){
+FileRead, sourceCORE, %CoreAHK%
+targetCORE := LoadModulesCode(sourceCORE)
+If(targetCORE != sourceCORE){
     LoadingTips("模块设定有变更")
 
     ; 稳定性检查
-    source := LoadModulesCode(target)
-    If(target != source)
+    sourceCORE := LoadModulesCode(targetCORE)
+    If(targetCORE != sourceCORE)
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……"
 
     FileDelete %CoreAHK%
-    FileAppend %target%, %CoreAHK%
+    FileAppend %targetCORE%, %CoreAHK%
 }
 
-
+; 运行核心
 Send ^!+{F12} ; 把之前的实例关了
-Run 核心\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
+Run %PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 
 ; 显示Tips 2秒
 Sleep 2000
