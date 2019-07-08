@@ -35,6 +35,48 @@
 | CapslockX | e         | 鼠标左键 |
 | CapslockX | q         | 鼠标右键 |
 
+<!-- 模块帮助文件名：02-插件-窗口增强.ahk-->
+#### 窗口增强模块效果如图
+![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块-0-插件2-窗口增强_Alt+Tab+WASD管理窗口.gif)
+
+![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/02-插件-窗口增强_一键排列窗口.gif)
+
+| 模式 | 窗口增强模块   | 说明 |
+| - | :-: | - |
+| 全局 | CapslockX键 + \ | 打开多桌面视图 |
+| 全局 | CapslockX键 + [ | 切换到上一个桌面 |
+| 全局 | CapslockX键 + ] | 切换到下一个桌面 |
+| 全局 | CapslockX键 + Alt + [ | 把当前窗口移到上一个桌面 |
+| 全局 | CapslockX键 + Alt + ] | 把当前窗口移到下一个桌面 |
+| 全局 | CapslockX键 + = | 新建桌面 |
+| 全局 | CapslockX键 + - | 合并当前桌面 |
+| 全局 | CapslockX键 + 0 | 新建桌面，并把当前窗口移过去 |
+| 全局 | CapslockX键 + 1 | 把当前窗口移到第1个桌面(如果有的话) |
+| 全局 | CapslockX键 + 2 | 把当前窗口移到第2个桌面(如果有的话) |
+| 全局 | CapslockX键 + 3 | 把当前窗口移到第3个桌面(如果有的话) |
+| 全局 | CapslockX键 + 4 | 把当前窗口移到第4个桌面(如果有的话) |
+| 全局 | CapslockX键 + 5 | 把当前窗口移到第5个桌面(如果有的话) |
+| 全局 | CapslockX键 + 6 | 把当前窗口移到第6个桌面(如果有的话) |
+| 全局 | CapslockX键 + 7 | 把当前窗口移到第7个桌面(如果有的话) |
+| 全局 | CapslockX键 + 8 | 把当前窗口移到第8个桌面(如果有的话) |
+| 全局 | CapslockX键 + 9 | 把当前窗口移到第9个桌面(如果有的话) |
+| Alt+Tab界面下 | w a s d | 上下左右切换窗口选择 |
+| Alt+Tab界面下 | x c     | 关闭选择的窗口 |
+| Alt+Tab界面下 | q e     | 左右切换多桌面 |
+| 窗口靠边界面下 | w a s d | 切换窗口选择 |
+| 窗口靠边界面下 | x | 关掉选择的窗口 |
+| Win+Tab界面下 | w a s d | 切换窗口选择 |
+| Win+Tab界面下 | q e | 左右切换桌面概览 |
+| Win+Tab界面下 | z | 合并当前桌面与上一个桌面 |
+| Win+Tab界面下 | x | 关掉选择的窗口 |
+| Win+Tab界面下 | 1 2 3 ... 9 0 | 把窗口移到除了自己的第x个桌面（或新建桌面） |
+| Win+Tab界面下 | v | 新建桌面，并把当前窗口扔到新建桌面 |
+| Win+Tab界面下 | c | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口 |
+| Win+Tab界面下 | \ | 相当于按下 Tab |
+| Win+Tab界面下 | [ | 切换到上一个桌面 |
+| Win+Tab界面下 | ] | 切换到下一个桌面 |
+
+
 <!-- 模块帮助文件名：03-应用-Anki增强.ahk-->
 #### Anki增强模块
 | 模式 | Anki增强模块   | 说明 |
@@ -110,48 +152,6 @@
 4. Enjoy it.
 
 ![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/模块/应用-讯飞语音输入法悬浮窗演示.gif)
-
-<!-- 模块帮助文件名：插件-02-窗口增强.ahk-->
-#### 窗口增强模块
-| 模式 | 窗口增强模块   | 说明 |
-| - | :-: | - |
-| 全局 | CapslockX键 + \ | 打开多桌面视图 |
-| 全局 | CapslockX键 + [ | 切换到上一个桌面 |
-| 全局 | CapslockX键 + ] | 切换到下一个桌面 |
-| 全局 | CapslockX键 + Alt + [ | 把当前窗口移到上一个桌面 |
-| 全局 | CapslockX键 + Alt + ] | 把当前窗口移到下一个桌面 |
-| 全局 | CapslockX键 + = | 新建桌面 |
-| 全局 | CapslockX键 + - | 合并当前桌面 |
-| 全局 | CapslockX键 + 0 | 新建桌面，并把当前窗口移过去 |
-| 全局 | CapslockX键 + 1 | 把当前窗口移到第1个桌面(如果有的话) |
-| 全局 | CapslockX键 + 2 | 把当前窗口移到第2个桌面(如果有的话) |
-| 全局 | CapslockX键 + 3 | 把当前窗口移到第3个桌面(如果有的话) |
-| 全局 | CapslockX键 + 4 | 把当前窗口移到第4个桌面(如果有的话) |
-| 全局 | CapslockX键 + 5 | 把当前窗口移到第5个桌面(如果有的话) |
-| 全局 | CapslockX键 + 6 | 把当前窗口移到第6个桌面(如果有的话) |
-| 全局 | CapslockX键 + 7 | 把当前窗口移到第7个桌面(如果有的话) |
-| 全局 | CapslockX键 + 8 | 把当前窗口移到第8个桌面(如果有的话) |
-| 全局 | CapslockX键 + 9 | 把当前窗口移到第9个桌面(如果有的话) |
-| Alt+Tab界面下 | w a s d | 上下左右切换窗口选择 |
-| Alt+Tab界面下 | x c     | 关闭选择的窗口 |
-| Alt+Tab界面下 | q e     | 左右切换多桌面 |
-| 窗口靠边界面下 | w a s d | 切换窗口选择 |
-| 窗口靠边界面下 | x | 关掉选择的窗口 |
-| Win+Tab界面下 | w a s d | 切换窗口选择 |
-| Win+Tab界面下 | q e | 左右切换桌面概览 |
-| Win+Tab界面下 | z | 合并当前桌面与上一个桌面 |
-| Win+Tab界面下 | x | 关掉选择的窗口 |
-| Win+Tab界面下 | 1 2 3 ... 9 0 | 把窗口移到除了自己的第x个桌面（或新建桌面） |
-| Win+Tab界面下 | v | 新建桌面，并把当前窗口扔到新建桌面 |
-| Win+Tab界面下 | c | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口 |
-| Win+Tab界面下 | \ | 相当于按下 Tab |
-| Win+Tab界面下 | [ | 切换到上一个桌面 |
-| Win+Tab界面下 | ] | 切换到下一个桌面 |
-
-如图
-![插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_Alt+Tab+WASD管理窗口.gif)
-
-![插件-02-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-02-窗口增强_一键排列窗口.gif)
 
 <!-- 模块帮助文件名：插件-OneNote剪贴板收集器.ahk-->
 #### OneNote剪贴板收集器模块

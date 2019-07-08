@@ -102,6 +102,7 @@ If(!)
 ; 动态开始：载入模块
     GoSub Setup_加速模型
     GoSub Setup_模拟鼠标
+    GoSub Setup_窗口增强
     GoSub Setup_Anki增强
     GoSub Setup_秒打时间戳
     GoSub Setup_Acrobat增强
@@ -120,7 +121,6 @@ If(!)
     GoSub Setup_文明6回车左置
     GoSub Setup_网易云音乐
     GoSub Setup_讯飞输入法语音悬浮窗
-    GoSub Setup_窗口增强
     GoSub Setup_Chrome增强
     GoSub Setup_OneNote剪贴板收集器
     GoSub Setup_合并右Ctrl与Menu键
@@ -137,6 +137,9 @@ If(!)
     #If
         Setup_模拟鼠标:
             #Include 模块\01-插件-模拟鼠标.ahk
+    #If
+        Setup_窗口增强:
+            #Include 模块\02-插件-窗口增强.ahk
     #If
         Setup_Anki增强:
             #Include 模块\03-应用-Anki增强.ahk
@@ -191,9 +194,6 @@ If(!)
     #If
         Setup_讯飞输入法语音悬浮窗:
             #Include 模块\应用-讯飞输入法语音悬浮窗.ahk
-    #If
-        Setup_窗口增强:
-            #Include 模块\插件-02-窗口增强.ahk
     #If
         Setup_Chrome增强:
             #Include 模块\插件-Chrome增强.ahk
