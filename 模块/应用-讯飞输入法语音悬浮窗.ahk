@@ -1,4 +1,4 @@
-Return
+﻿Return
 #h::
     Process, Exist, iFlyVoice.exe
     if(ErrorLevel){

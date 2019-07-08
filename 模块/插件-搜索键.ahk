@@ -1,4 +1,4 @@
-Return
+﻿Return
 #If CapslockXMode == CM_CapslockX
     ; Google 搜索
     Search(q){

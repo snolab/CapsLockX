@@ -1,4 +1,4 @@
-
+﻿
 SetDefaultMouseSpeed 0
 Return
 #IfWinActive ahk_class OrpheusBrowserHost ahk_exe cloudmusic.exe

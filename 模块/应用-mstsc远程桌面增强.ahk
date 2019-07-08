@@ -1,4 +1,4 @@
-
+﻿
 If(!CapslockX)
     ExitApp
 

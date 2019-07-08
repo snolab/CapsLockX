@@ -1,7 +1,7 @@
+ï»¿;
+; ï¿½ï¿½ï¿½ï¿½Îª UTF8 With BOM
 ;
-; ±£´æÎª UTF8 With BOM
-;
-#IfWinExist ¼ôÌù°åÊÕ¼¯ ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
+#IfWinExist ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
     ~^c::
         Clipboard := ""
         ClipWait, 2, 1
@@ -11,7 +11,7 @@
             Return
         }
         
-        winid := WinExist("¼ôÌù°åÊÕ¼¯ ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+        winid := WinExist("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
         If(winid){
             WinGet, current, ID, A
             WinActivate, ahk_id %winid%

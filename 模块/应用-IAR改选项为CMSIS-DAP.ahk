@@ -1,4 +1,4 @@
-Return
+﻿Return
 #IfWinActive ahk_class #32770 ahk_exe IarIdePm.exe
 	!o::
 		Send {Home}{Tab 2}{Down 9}

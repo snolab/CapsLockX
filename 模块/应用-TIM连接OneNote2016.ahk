@@ -1,4 +1,4 @@
-SetTitleMatchMode RegEx
+﻿SetTitleMatchMode RegEx
 Return
 
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe

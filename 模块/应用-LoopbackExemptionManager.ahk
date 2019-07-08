@@ -1,4 +1,4 @@
-If(!CapslockX)
+﻿If(!CapslockX)
     ExitApp
 Return
 

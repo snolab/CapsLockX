@@ -1,4 +1,4 @@
-Return
+﻿Return
 
 tips(x, t = 1024){
 	ToolTip %x%

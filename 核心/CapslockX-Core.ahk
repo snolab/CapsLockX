@@ -48,7 +48,7 @@ If(!)
     global CM_FN     := 1 ; 临时 CapslockX 模式
     global CM_CapslockX  := 2 ; CapslockX 模式
     global CM_FNX    := 3 ; FnX 模式
-
+    global LastLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
     ; 切换模式
     UpdateCapslockXMode(){
         CapslockXMode := GetKeyState(T_CapslockXKey, "P")
@@ -61,12 +61,14 @@ If(!)
     ; 根据当前模式，切换灯
     Menu,tray,icon,./数据/图标白.ico
     UpdateLight(){
-        If (  ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN)) ){
+        NowLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
+        If ( NowLightState && !LastLightState){
             Menu,tray,icon, ./数据/图标蓝.ico
             If (T_SwitchSoundOn && T_SwitchSoundOn){
                 SoundPlay %T_SwitchSoundOn%
             }
-        }Else{
+        }
+        If ( !NowLightState && LastLightState ){
             Menu,tray,icon,./数据/图标白.ico
             If (T_SwitchSoundOn && T_SwitchSoundOff){
                 SoundPlay %T_SwitchSoundOff%
@@ -80,6 +82,7 @@ If(!)
             }
         }
         ; tips(CapslockXMode)
+        LastLightState := NowLightState
     }
     
     CapslockXTurnOff(){

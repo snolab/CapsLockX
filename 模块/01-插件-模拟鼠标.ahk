@@ -1,4 +1,4 @@
-CoordMode, Mouse, Screen
+﻿CoordMode, Mouse, Screen
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 global mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0
