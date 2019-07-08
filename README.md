@@ -1,10 +1,14 @@
 ﻿# CapslockX
 
 ## 入门教程第一
+<!-- 
 首先，你需要安装一个 [AutoHotKey](https://autohotkey.com/)。
-推荐使用的版本： `AutoHotKey_L Unicode x32` （鼠标模拟模块不支持64位）
+推荐使用的版本： `AutoHotKey_L Unicode x32` （鼠标模拟模块不支持64位） -->
 
-然后双击 `CapslockX.ahk` 来启动 CapslockX
+<!-- 然后双击 `CapslockX.ahk` 来启动 CapslockX -->
+
+双击 `启动 CapsX (别名).lnk` 即可启动脚本
+
 
 > 某些功能需要使用管理员身份运行（如鼠标模拟）
 > 
