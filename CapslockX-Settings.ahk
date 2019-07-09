@@ -45,7 +45,7 @@
 	global T_UseScrollLockAsCapslock := 0
 
 	; 是否开启声音提示
-	global T_SwitchSound := 1
+	global T_SwitchSound := 0
 	global T_SwitchSoundOn := "./数据/NoteG.mp3"
 	global T_SwitchSoundOff := "./数据/NoteC.mp3"
 
