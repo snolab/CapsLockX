@@ -205,6 +205,10 @@ $#!n::
 	;$!Delete:: altSend("pd")
 	$!Delete:: Send ^+a{Delete}
 	
+	; 快速删除当前行
+	;$!Delete:: altSend("pd")
+	$+Delete:: Send ^!{Down}^!{Up}{Delete}
+	
 	; 快速关闭窗口
 	$^w:: altSend("{F4}")
 

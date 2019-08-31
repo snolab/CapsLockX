@@ -64,13 +64,13 @@ If(!)
         NowLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
         If ( NowLightState && !LastLightState){
             Menu,tray,icon, ./数据/图标蓝.ico
-            If (T_SwitchSoundOn && T_SwitchSoundOn){
+            If (T_SwitchSound && T_SwitchSoundOn){
                 SoundPlay %T_SwitchSoundOn%
             }
         }
         If ( !NowLightState && LastLightState ){
             Menu,tray,icon,./数据/图标白.ico
-            If (T_SwitchSoundOn && T_SwitchSoundOff){
+            If (T_SwitchSound && T_SwitchSoundOff){
                 SoundPlay %T_SwitchSoundOff%
             }
         }
@@ -111,6 +111,7 @@ If(!)
     GoSub Setup_Edge增强
     GoSub Setup_DAP
     GoSub Setup_LoopbackExemptionManager
+    GoSub Setup_MobaXterm
     GoSub Setup_mstsc远程桌面增强
     GoSub Setup_OneNote2016增强
     GoSub Setup_OneNoteMetro拓展
@@ -164,6 +165,9 @@ If(!)
     #If
         Setup_LoopbackExemptionManager:
             #Include 模块\应用-LoopbackExemptionManager.ahk
+    #If
+        Setup_MobaXterm:
+            #Include 模块\应用-MobaXterm.ahk
     #If
         Setup_mstsc远程桌面增强:
             #Include 模块\应用-mstsc远程桌面增强.ahk
