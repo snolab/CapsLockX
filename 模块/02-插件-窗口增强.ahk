@@ -170,11 +170,11 @@ SwitchToDesktop(x){
 ;
 ;
 #IfWinActive ahk_class MultitaskingViewFrame ; ahk_exe explorer.exe
-    ; 在 Alt+Tab 下, WASD 模拟方向键 , 1803之后还可以用
-    !a:: Left
-    !d:: Right
-    !w:: Up
-    !s:: Down
+    ; 在 Alt + Tab 下, WASD 模拟方向键 , 1803之后还可以用
+    $!a:: Left
+    $!d:: Right
+    $!w:: Up
+    $!s:: Down
     ; qe 切换桌面
 	!q::
 		SendEvent {Blind}{Enter}
@@ -258,10 +258,10 @@ SwitchToDesktop(x){
 ; #IfWinActive (?:Task View)|任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
 #IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     ; 在 Alt+Tab 下, WASD 模拟方向键
-    !a:: Left
-    !d:: Right
-    !w:: Up
-    !s:: Down
+    $!a:: Left
+    $!d:: Right
+    $!w:: Up
+    $!s:: Down
  ;    ; qe 切换桌面
 	; !q:: Send ^#{Left}
 	; !e:: Send ^#{Right}
