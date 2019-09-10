@@ -49,6 +49,15 @@ Return
 	$!5:: SendEvent !+5
 	$!6:: SendEvent !+6
 
+    ; 拍照
+	$!p::
+		SendEvent !n{Down}{Tab 4}{Enter}
+		Sleep, 200
+		SendEvent {Down 1}{Enter}
+		Sleep, 2000
+		SendEvent +{Tab 3}
+		Return
+	
 	; 画笔粗细
 	$!t::SendEvent !d{Down}{Tab 13}{Enter}
 	$!g::SendEvent !d{Down}{Tab 11}{Enter}

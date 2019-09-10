@@ -2,19 +2,7 @@
 If(!CapslockX)
     ExitApp
 
-
-; SetTimer, asdfwer, 0
-; asdfwer:
-;     SetTimer, asdfwer, Off
-;     If ( last_mstsc ) {
-;         WinSet, Bottom, , ahk_id %last_mstsc%
-;     }
-;     WinShow, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-;     WinSet, AlwaysOnTop, On, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-;     SetTimer, asdfwer, O
-;     Return
-
-global mstsc_st := "bottom"
+global last_mstsc := 0
 ; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
 SetTimer, toggleBottomOrTop, 1
 toggleBottomOrTop:
@@ -27,59 +15,43 @@ toggleBottomOrTop:
     SysGet, VirtualHeight, 79
 
     ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
-    ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
     
+    ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
     if(VirtualWidth == Width && VirtualHeight == Height){
         WinSet Bottom, , ahk_id %last_mstsc%
     }
     WinWaitNotActive ahk_id %last_mstsc%
     Return
-; SetTimer, rdplayer, 1000
-; rdplayer:
-;     WinWaitActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-;     ;WinMinimizeAll
-;     WinGet, last_mstsc
-;     WinSet, Bottom, , ahk_id %last_mstsc%
-;     ;WinActivate, ahk_id %last_mstsc%
-;     WinWaitNotActive, ahk_id %last_mstsc%
-;     Return
 
-global last_mstsc := 0
-
-; >^RAlt::
-; >!RCtrl::
-;     global last_mstsc
-;     If ( last_mstsc ) {
-;         WinActivate ahk_id %last_mstsc%
-;         ;WinActivate, ahk_id %last_mstsc%
-;     }Else{
-;         WinActivate ahk_class TscShellContainerClass ahk_exe mstsc.exe
-;     }
-;     Return
-
-
+; 左右Alt一起按 显示当前mstsc窗口
 <!RAlt::
 >!LAlt::
-    global last_mstsc
-    WinGet, last_mstsc
-    WinMinimize ahk_id %last_mstsc%
+    ; WinGet, last_mstsc
+    WinActivate ahk_id %last_mstsc%
+    ; WinSet, TopMost, , ahk_id %last_mstsc%
+    ; WinMinimizeAllUndo
     Return
+
 
 ; ahk_class TscShellContainerClass ahk_exe mstsc.exe
 #IfWinActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-    
-    >^RAlt::
-    >!RCtrl::
-        global last_mstsc
-        WinGet, last_mstsc
-        WinSet, Bottom, , ahk_id %last_mstsc%
-        WinMinimizeAllUndo
-        Return
-    
-    ; 左右Alt一起按，切换最小化远程桌面窗口
+    ; 左右Alt一起按 前置当前mstsc窗口
     <!RAlt::
     >!LAlt::
-        global last_mstsc
         WinGet, last_mstsc
+        WinRestore, ahk_id %last_mstsc%
+        WinSet, Top, , ahk_id %last_mstsc%
+        ; WinShow,  ahk_id %last_mstsc%
+        Return
+    
+    ; 左Ctrl + 右Alt 使远程窗口最小化并失去焦点，显示其它窗口
+    <^RAlt::
+    >!LCtrl::
+        WinGet, last_mstsc
+        ; WinMinimizeAllUndo
         WinMinimize ahk_id %last_mstsc%
+        ; WinRestore, ahk_id %last_mstsc%
+        ; 失去焦点
+        WinHide,  ahk_id %last_mstsc%
+        WinShow,  ahk_id %last_mstsc%
         Return
