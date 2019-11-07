@@ -109,7 +109,7 @@ SendInput_MouseMoveR64(x, y){
 ;     Return
 
 ; 鼠标运动处理
-mm:
+mTicker:
     tNow := QPC()
     ; 计算用户操作时间
     tda := dt(mtl, tNow),          tdd := dt(mtr, tNow)
@@ -195,13 +195,13 @@ mm:
         ; }
 
     }Else{
-        SetTimer, mm, Off
+        SetTimer, mTicker, Off
     }
     Return
 
 ; 时间处理
 mTick(){
-    SetTimer, mm, 0
+    SetTimer, mTicker, 0
 }
 
 Pos2Long(x, y){
@@ -253,7 +253,7 @@ ScrollMsg(msg, zDelta){
 
 }
 ; 滚轮运动处理
-ms:
+sTicker:
     tNow := QPC()
     ; 计算用户操作时间
     tdz := dt(stl, tNow), tdc := dt(str, tNow)
@@ -313,14 +313,14 @@ ms:
         Else
             ScrollMsg2(0x20E, svx) ; 在64位下用的是低性能的……
     }Else{
-        SetTimer, ms, Off
+        SetTimer, sTicker, Off
     }
     
     Return
 
 ; 时间处理
 sTick(){
-    SetTimer, ms, 0
+    SetTimer, sTicker, 0
 }
 
 ; CapslockX和fn模式都能触发

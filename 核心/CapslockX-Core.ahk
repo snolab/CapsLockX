@@ -127,6 +127,7 @@ If(!)
     GoSub Setup_合并右Ctrl与Menu键
     GoSub Setup_媒体键
     GoSub Setup_帮助
+    GoSub Setup_控制台启用CtrlV粘贴
     GoSub Setup_搜索键
     GoSub Setup_编辑增强
     GoSub Setup_自动滚动
@@ -213,6 +214,9 @@ If(!)
     #If
         Setup_帮助:
             #Include 模块\插件-帮助.ahk
+    #If
+        Setup_控制台启用CtrlV粘贴:
+            #Include 模块\插件-控制台启用CtrlV粘贴.ahk
     #If
         Setup_搜索键:
             #Include 模块\插件-搜索键.ahk
