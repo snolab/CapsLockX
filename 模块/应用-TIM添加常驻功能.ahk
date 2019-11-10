@@ -9,8 +9,12 @@ TIM_MouseShift(times){
 }
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe
     ^!F12:: ExitApp ; 退出脚本
-    !f::
-        CoordMode, Mouse, Relative
+    ^f::
+        ; CoordMode, Mouse, Relative
+        ; x := 117 * TMouse_DPIRatio
+        ; y := 30 * TMouse_DPIRatio
+        ; Click %x%, %y%
+        CoordMode, Mouse, Client
         x := 117 * TMouse_DPIRatio
         y := 30 * TMouse_DPIRatio
         Click %x%, %y%
@@ -26,10 +30,19 @@ TIM_MouseShift(times){
     !b::
         CoordMode, Mouse, Relative
         MouseClick, Right
-        MouseMove 20, 180, 0, R
-        Sleep 200
-        MouseClick, Left
-        MouseMove 200, 60, 0, R
+        Sleep 50
+        Send {Up 2}
+        Sleep 50
+        Send {Right}
+        Sleep 50
+        Send {Up}
+        Sleep 50
+        Send {Enter}
+        ; Send {Space}
+        ; MouseMove 20, 180, 0, R
+        ; Sleep 200
+        ; MouseClick, Left
+        ; MouseMove 200, 60, 0, R
         Return
     !Up::
         TIM_MouseShift(-1)

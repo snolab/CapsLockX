@@ -33,18 +33,39 @@ GetFocusControlName(){
 	return name
 }
 
+getAscStr(str)
+{
+    charList:=StrSplit(str)
+    for key,val in charList
+        out.="{Asc " . asc(val) . "}"
+    return out
+}
 ; ClassNN:	RICHEDIT60W1
 
 ; 快速添加事项清单
 $#n::
-	Send #n
-	WinWaitActive 无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
-	
-	If ErrorLevel
-	{
+	if WinExist("TODO - OneNote ahk_class Framework::CFrame ahk_exe ONENOTE.EXE"){
+		; ToolTip todo exist
+    	WinActivate  ; Uses the last found window.
+		Send !{Home}^{End}{Enter}
 		Return
 	}Else{
-		Send !{Home}^{End}{Enter}
+		Send #n
+		WinWait 无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
+		If ErrorLevel
+			Return
+		WinActivate
+	}
+
+	Send !{Home}^{End}{Enter}
+
+	Sleep 1000
+	WinGetTitle, title
+	if title != "TODO - OneNote"
+	{
+		Send ^+t
+		Send % getAscStr("TODO")
+		Send ^{End}{Enter}
 	}
 	Return
 
