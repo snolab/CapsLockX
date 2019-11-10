@@ -33,6 +33,8 @@ GetFocusControlName(){
 	return name
 }
 
+
+; 获取与IME无冲的编码字符串，用于 Send （SEO： SendRaw SendInput）
 getAscStr(str)
 {
     charList:=StrSplit(str)
@@ -49,7 +51,9 @@ $#n::
     	WinActivate  ; Uses the last found window.
 		Send !{Home}^{End}{Enter}
 		Return
-	}Else{
+	}else if WinExist("无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"){
+    	WinActivate  ; Uses the last found window.
+	}else{
 		Send #n
 		WinWait 无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
 		If ErrorLevel
@@ -60,12 +64,11 @@ $#n::
 	Send !{Home}^{End}{Enter}
 
 	Sleep 1000
-	WinGetTitle, title
-	if title != "TODO - OneNote"
-	{
+	WinGetTitle, title, A
+	if(title != "TODO - OneNote"){
 		Send ^+t
 		Send % getAscStr("TODO")
-		Send ^{End}{Enter}
+		Send ^{End}TEST
 	}
 	Return
 
