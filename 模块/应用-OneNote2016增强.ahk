@@ -1,5 +1,6 @@
 ﻿; save as utf8 with bom
 SetTitleMatchMode RegEx
+Return	 
 
 altSend(altKeys){
 	SetKeyDelay, 1, 60 ; 配置纠错
@@ -30,7 +31,6 @@ getAscStr(str)
     return out
 }
 
-Return	 
 ; ClassNN	 :	RICHEDIT60W1
 
 ; 快速添加事项清单

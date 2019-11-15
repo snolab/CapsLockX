@@ -4,6 +4,8 @@
 global autoScrollY, autoScrollStep
 autoScrollY := 0
 
+Return
+
 APISendInput(dx, dy, dwFlags, mouseData){
     p := 0
     DWORD := 4
@@ -50,7 +52,6 @@ autoScrollY_SetTimer(){
         SetTimer, autoScroll, Off
     }
 }
-Return
 
 autoScroll:
     If(!GetKeyState("Ctrl", "P")){

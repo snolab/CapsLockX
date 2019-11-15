@@ -1,9 +1,11 @@
 ﻿
 If(!CapslockX) ExitApp
-
 global last_mstsc := 0
+
 ; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
 SetTimer, toggleBottomOrTop, 1
+
+Return
 toggleBottomOrTop:
     ; 不用担心 SetTimer 消耗 CPU 性能，因为它会在这一步阻塞
     WinWaitActive ahk_class TscShellContainerClass ahk_exe mstsc.exe

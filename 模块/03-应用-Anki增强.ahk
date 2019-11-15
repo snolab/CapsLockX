@@ -117,7 +117,7 @@ AnkiUnlock(x){
         WinShow
         ClipWait, 10, 1
         if ErrorLevel   
-        {
+        {    
             ToolTip, 没有获取到剪贴板的内容, 2
             Return
         }
@@ -127,23 +127,23 @@ AnkiUnlock(x){
     $!s:: SendEvent ^{Enter}
     $!x:: SendEvent ^+x
 
-    #If WinExist("添加|Add ahk_exe anki.exe ahk_class QWidget") or WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
-        $!1::
-            ahkid := LastFoundExist
-            WinHide ahk_id %ahkid%
-            Clipboard := ""
-            Send #+s
-            WinWait Screen snipping ahk_class Windows.UI.Core.CoreWindow ahk_exe ShellExperienceHost.exe
-            ; Sleep, 128
-            WinShow ahk_id %ahkid%
-            WinActivate, ahk_id %ahkid%
-            ClipWait, 10, 1
-            if ErrorLevel   
-            {
-                ToolTip, 没有获取到剪贴板的内容, 2
-                Return
-            }
-            SendEvent ^v{Tab}
-        $!h::
-            ToolTip "; 快速添加内容 $!c::"
+#If WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe") or WinActive("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
+    $!1::
+        ToolTip 123
+        ahkid := LastFoundExist
+        WinHide ahk_id %ahkid%
+        Clipboard := ""
+        Send #+s
+        WinWait Screen snipping ahk_class Windows.UI.Core.CoreWindow ahk_exe ShellExperienceHost.exe
+        WinShow ahk_id %ahkid%
+        WinActivate, ahk_id %ahkid%
+        ClipWait, 10, 1
+        if ErrorLevel   
+        {
+            ToolTip, 没有获取到剪贴板的内容, 2
             Return
+        }
+        SendEvent ^v{Tab}
+    $!h::
+        ToolTip "; 快速添加内容 $!c::"
+        Return
