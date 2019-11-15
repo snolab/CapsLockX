@@ -21,7 +21,3 @@ markTime:
 #i::
 	FileAppend, Another line.`n, time.log
 	Return
-
-
-^F12::
-	ExitApp

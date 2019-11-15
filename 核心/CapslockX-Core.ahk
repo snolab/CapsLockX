@@ -14,13 +14,11 @@ Process Priority, , High     ; 脚本高优先级
 ; #NoTrayIcon                ; 隐藏托盘图标
 ; #NoEnv                     ; 不检查空变量是否为环境变量
 ; #Persistent                ; 让脚本持久运行(关闭或ExitApp)
-; #MaxHotkeysPerInterval 300 ; 时间内按热键最大次数
+#MaxHotkeysPerInterval 300 ; 时间内按键最大次数（通常是一直按着键触发的）
 ; #InstallMouseHook          ; 安装鼠标钩子
 
 ; 载入设定
 #Include CapslockX-Settings.ahk
-If(!)
-    ExitApp
 
 #If
     If(T_AskRunAsAdmin)
@@ -102,7 +100,6 @@ If(!)
 ; 动态开始：载入模块
     GoSub Setup_加速模型
     GoSub Setup_模拟鼠标
-    GoSub Setup_窗口增强
     GoSub Setup_Anki增强
     GoSub Setup_秒打时间戳
     GoSub Setup_Acrobat增强
@@ -139,9 +136,6 @@ If(!)
     #If
         Setup_模拟鼠标:
             #Include 模块\01-插件-模拟鼠标.ahk
-    #If
-        Setup_窗口增强:
-            #Include 模块\02-插件-窗口增强.ahk
     #If
         Setup_Anki增强:
             #Include 模块\03-应用-Anki增强.ahk

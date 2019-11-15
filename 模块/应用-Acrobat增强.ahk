@@ -14,6 +14,3 @@ Return
     ; 单页滚动视图（Single）
     !s:: Send !vpc^h^3
     f11:: ^l
-
-;debug
-;F12:: ExitApp

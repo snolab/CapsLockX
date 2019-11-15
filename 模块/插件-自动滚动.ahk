@@ -112,6 +112,3 @@ autoScroll:
             Send {Esc}
         }
         Return
-
-    $End::
-        ExitApp

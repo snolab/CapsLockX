@@ -11,8 +11,7 @@ Return
 ; ahk_exe ApplicationFrameHost.exe
 
 #IfWinActive .*- OneNote ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe
-	^!F12:: ExitApp ; 退出脚本
-	
+
 	$F2::SendEvent ^+t
 	
 	$+F2::SendEvent {AppsKey}{Down}{Enter}

@@ -4,33 +4,31 @@
 
 ;^!F12:: ExitApp
 
-Global _Lock := 0
+Global Anki增强_Lock := 0
+Return
+     
 AnkiEnlock(key, to){
-    If _Lock{
+    If Anki增强_Lock{
         Send {%key% up}
         Return
     }
-    _Lock := 1
+    Anki增强_Lock := 1
     Send %to%
 }
 AnkiUnlock(x){
-    _Lock := 0
+    Anki增强_Lock := 0
     Send %x%
 }
 
-Return
-
-
 ;#UseHook On
+    
 
 ; ANKI 2.0 and 2.1
-#If WinActive("Anki -.* ahk_exe anki.exe ahk_class QWidget") or WinActive("Anki - .*|.* - Anki ahk_exe anki.exe ahk_class Qt5QWindowIcon")
-    !^F12:: ExitApp
-
+#If WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe")
     $x:: SendEvent s ; study
     $q:: SendEvent d ; quit
     $c:: SendEvent a ; create
-     
+ 
     ; 撤销
     $5:: SendEvent ^z
     $Numpad5:: SendEvent ^z
@@ -70,7 +68,7 @@ Return
     $Down up::           AnkiUnlock("{space}")
     $Right up::          AnkiUnlock("{space}")
     
-    ; 快速从剪贴板导入
+    ; 快速从剪贴板导入卡片列表
     $!i::
         ; 获取剪贴板内容
         ClipWait, 0, text
@@ -107,13 +105,14 @@ Return
 
         Return
 
-; 快速添加内容
 #If WinActive("添加|Add ahk_exe anki.exe ahk_class QWidget") or WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
+    ; 快速添加内容
     $!c::
         WinActive("A")
         WinHide
         Clipboard := ""
-        Send ^!a
+        ; Send ^!a
+        Send #+s
         Sleep, 128
         WinShow
         ClipWait, 10, 1
@@ -127,3 +126,24 @@ Return
 
     $!s:: SendEvent ^{Enter}
     $!x:: SendEvent ^+x
+
+    #If WinExist("添加|Add ahk_exe anki.exe ahk_class QWidget") or WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
+        $!1::
+            ahkid := LastFoundExist
+            WinHide ahk_id %ahkid%
+            Clipboard := ""
+            Send #+s
+            WinWait Screen snipping ahk_class Windows.UI.Core.CoreWindow ahk_exe ShellExperienceHost.exe
+            ; Sleep, 128
+            WinShow ahk_id %ahkid%
+            WinActivate, ahk_id %ahkid%
+            ClipWait, 10, 1
+            if ErrorLevel   
+            {
+                ToolTip, 没有获取到剪贴板的内容, 2
+                Return
+            }
+            SendEvent ^v{Tab}
+        $!h::
+            ToolTip "; 快速添加内容 $!c::"
+            Return
