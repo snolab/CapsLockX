@@ -1,5 +1,6 @@
-﻿If(!CapslockX) ExitApp
-Return 
+﻿If(!CapslockX)
+	ExitApp
+Return
 	 
 
 #IfWinActive Loopback Exemption Manager ahk_exe WindowsLoopbackManager.exe

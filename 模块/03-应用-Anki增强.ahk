@@ -5,6 +5,7 @@
 ;^!F12:: ExitApp
 
 Global Anki增强_Lock := 0
+#WinActivateForce 
 Return
      
 AnkiEnlock(key, to){
@@ -127,23 +128,44 @@ AnkiUnlock(x){
     $!s:: SendEvent ^{Enter}
     $!x:: SendEvent ^+x
 
-#If WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe") or WinActive("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
-    $!1::
-        ToolTip 123
-        ahkid := LastFoundExist
-        WinHide ahk_id %ahkid%
+
+#If WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe") or WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
+    添加截屏笔记(){
+        a := WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe")
+        b := WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
+        addWindow := a ? a : b
+        WinActivate ahk_id %addWindow%
+        WinHide ahk_id %addWindow%
         Clipboard := ""
         Send #+s
-        WinWait Screen snipping ahk_class Windows.UI.Core.CoreWindow ahk_exe ShellExperienceHost.exe
-        WinShow ahk_id %ahkid%
-        WinActivate, ahk_id %ahkid%
         ClipWait, 10, 1
-        if ErrorLevel   
-        {
-            ToolTip, 没有获取到剪贴板的内容, 2
-            Return
+        WinShow ahk_id %addWindow%
+        if ErrorLevel {
+            MsgBox, 没有获取到剪贴板的内容
+            Return False
         }
-        SendEvent ^v{Tab}
+        While !WinActive("ahk_id" addWindow) && WinExist("ahk_id" addWindow)
+            WinActivate ahk_id %addWindow%
+        Return True
+    }
+    $F1::
+        If(!添加截屏笔记())
+            Return
+        SendEvent ^v
+        Sleep 200
+        SendEvent {Tab}
+        Return
+    $F2::
+        If(!添加截屏笔记())
+            Return
+        SendEvent ^v
+        Sleep 200
+        SendEvent ^{Enter}
+    $F3::
+        If(!添加截屏笔记())
+            Return
+        SendEvent ^+o
+        Return
     $!h::
         ToolTip "; 快速添加内容 $!c::"
         Return
