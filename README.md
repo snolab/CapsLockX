@@ -40,6 +40,7 @@
 | CapslockX | e         | 鼠标左键 |
 | CapslockX | q         | 鼠标右键 |
 
+<<<<<<< HEAD
 <!-- 模块帮助文件名：02-插件-窗口增强.ahk-->
 ### 窗口增强模块效果如图
 ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
@@ -80,6 +81,8 @@
 | Win+Tab界面下 | [ | 切换到上一个桌面 |
 | Win+Tab界面下 | ] | 切换到下一个桌面 |
 
+=======
+>>>>>>> 69ffd3a0ac47d894e65f98fea559a272452143e0
 <!-- 模块帮助文件名：03-应用-Anki增强.ahk-->
 ### Anki增强模块| 模式 | Anki增强模块   | 说明 |
 | - | :-: | - |

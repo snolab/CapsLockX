@@ -11,6 +11,7 @@ If(TMouse_SendInput)
 
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
+
 Return
 
 ; 解决DPI比率问题

@@ -21,6 +21,7 @@ global PathCore    := "核心"
 
 global CapslockX_Version := "v1.2 Alpha"
 global loadingTips := ""
+
 LoadingTips(msg, clear = 0){
     If(clear || loadingTips == "")
         loadingTips := "CapslockX " CapslockX_Version "`n"
@@ -43,7 +44,7 @@ TryLoadModuleHelp(ModuleFileName, ModuleName){
 }
 
 ; 加载模块帮助
-LoadModulesHelp(sourceREADME){
+UpdateModulesHelp(sourceREADME){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
@@ -99,8 +100,11 @@ LoadModulesHelp(sourceREADME){
     Return targetREADME
 }
 
-; 加载模块
-LoadModulesCode(sourceCORE){
+; 加载模块改为外置文件加载
+; 加载   模块
+global ModulesLoader := PathCore "\CapslockX-LoadModules.ahk"
+LoadModules(ModulesLoader)
+LoadModules(ModulesLoader){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
@@ -126,34 +130,17 @@ LoadModulesCode(sourceCORE){
         If(T%ModuleName%_Disabled)
             LoadingTips("禁用模块：" i " " ModuleName)
         Else{
-            code_setup   .= "    GoSub Setup_" ModuleName "`n"
-            code_include .= "    #If" "`n"
-            ; code .= "    global MF_" ModuleName " := " 1 << (i - 1) "`n"
-            code_include .= "        Setup_" ModuleName ":"  "`n"
-            
             ; 这里引入模块代码
-            ; 方式1(Include方式导入代码)
-            
             ; 清洗为 UTF-8 WITH BOM 型编码
             FileRead ModuleCode,  %PathModules%\%ModuleFile%
             FileDelete %PathModules%\%ModuleFile%
             FileAppend %ModuleCode%,  %PathModules%\%ModuleFile%
 
             ; 导入模块
+            code_setup   .= "    GoSub Setup_" i      "`n"
+            code_include .= "    #If" "`n"
+            code_include .= "        Setup_" i ":"  "`n"
             code_include .= "            #Include " PathModules "\" ModuleFile "`n"
-
-            ; 方式2: 直接导入模块代码(不方便查看是哪个模块出错)
-            ; FileRead ModuleCode,  %PathModules%\%ModuleFile%
-            ; code_include .= ModuleCode "`n"
-
-            ; FileRead ModuleCode, 模块\%ModuleFile%
-
-            ; If(RegExMatch(ModuleCode, "m)^\s*T" ModuleName "_Setup:$")){
-            ;     code_setup .= "    GoSub T" ModuleName "_Setup`n"
-            ;     LoadingTips("运行模块：" i " " ModuleName)
-            ; }Else{
-            ;     LoadingTips("加载模块：" i " " ModuleName)
-            ; }
             LoadingTips("运行模块：" i " " ModuleName)
         }
     }
@@ -164,33 +151,23 @@ LoadModulesCode(sourceCORE){
     code .= code_setup
     code .= "    Return`n"
     code .= code_include 
-
-    ; 生成替换代码
-    NeedleRegEx := "m)(\s*)(; 动态开始：载入模块)([\s\S]*)\r?\n(\s*)(; 动态结束；)"
-    Replacement := "$1$2`n" code "$4$5"
-    targetCORE := RegExReplace(sourceCORE, NeedleRegEx, Replacement, Replaces)
-
-    ; 检查替换情况
-    If(!Replaces){
-        MsgBox % "加载模块遇到错误。`n请更新 CapslockX"
-        MsgBox % targetCORE
-        return sourceCORE
-    }
-    Return targetCORE
+    
+    FileDelete %ModulesLoader%
+    FileAppend %code%, %ModulesLoader%
 }
 
 
 ; 编译README.md
 README_FILE := "README.md"
 FileRead, source, %README_FILE%
-target := LoadModulesHelp(source)
+target := UpdateModulesHelp(source)
 If(target != source){
     LoadingTips("模块帮助有变更")
 
     ; 稳定性检查
-    source := LoadModulesHelp(target)
+    source := UpdateModulesHelp(target)
     If(target != source){
-        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……2"
+        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……"
     }
 
     FileDelete %README_FILE%
@@ -198,26 +175,10 @@ If(target != source){
     ; Reload
     ; ExitApp
 }
-
-
-
 ; 编译核心文件
 global CoreAHK := PathCore "\CapslockX-Core.ahk"
-FileRead, sourceCORE, %CoreAHK%
-targetCORE := LoadModulesCode(sourceCORE)
-If(targetCORE != sourceCORE){
-    LoadingTips("模块设定有变更")
 
-    ; 稳定性检查
-    sourceCORE := LoadModulesCode(targetCORE)
-    If(targetCORE != sourceCORE)
-        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……"
-
-    FileDelete %CoreAHK%
-    FileAppend %targetCORE%, %CoreAHK%
-}
-
-; 运行核心
+; 运行核心   
 Send ^!+{F12} ; 把之前的实例关了
 Run %PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 

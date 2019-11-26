@@ -1,14 +1,6 @@
 ﻿; save as utf8 with bom
 SetTitleMatchMode RegEx
-; SetKeyDelay, 0, 0
-
-;debug
-;^F12:: ExitApp
-
-;#UseHook On
-; .* - OneNote
-; ahk_class Framework::CFrame
-; ahk_exe ONENOTE.EXE
+Return	 
 
 altSend(altKeys){
 	SetKeyDelay, 1, 60 ; 配置纠错
@@ -25,14 +17,10 @@ StrJoin(sep, params*) {
         str .= param . sep
     return SubStr(str, 2, -StrLen(sep))
 }
-
-Return
-
 GetFocusControlName(){
 	ControlGetFocus, name, A
 	return name
 }
-
 
 ; 获取与IME无冲的编码字符串，用于 Send （SEO： SendRaw SendInput）
 getAscStr(str)
@@ -42,7 +30,8 @@ getAscStr(str)
         out.="{Asc " . asc(val) . "}"
     return out
 }
-; ClassNN:	RICHEDIT60W1
+
+; ClassNN	 :	RICHEDIT60W1
 
 ; 快速添加事项清单
 $#n::

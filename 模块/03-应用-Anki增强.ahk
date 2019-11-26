@@ -4,33 +4,32 @@
 
 ;^!F12:: ExitApp
 
-Global _Lock := 0
+Global Anki增强_Lock := 0
+#WinActivateForce 
+Return
+     
 AnkiEnlock(key, to){
-    If _Lock{
+    If Anki增强_Lock{
         Send {%key% up}
         Return
     }
-    _Lock := 1
+    Anki增强_Lock := 1
     Send %to%
 }
 AnkiUnlock(x){
-    _Lock := 0
+    Anki增强_Lock := 0
     Send %x%
 }
 
-Return
-
-
 ;#UseHook On
+    
 
 ; ANKI 2.0 and 2.1
-#If WinActive("Anki -.* ahk_exe anki.exe ahk_class QWidget") or WinActive("Anki - .*|.* - Anki ahk_exe anki.exe ahk_class Qt5QWindowIcon")
-    !^F12:: ExitApp
-
+#If WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe")
     $x:: SendEvent s ; study
     $q:: SendEvent d ; quit
     $c:: SendEvent a ; create
-     
+ 
     ; 撤销
     $5:: SendEvent ^z
     $Numpad5:: SendEvent ^z
@@ -70,7 +69,7 @@ Return
     $Down up::           AnkiUnlock("{space}")
     $Right up::          AnkiUnlock("{space}")
     
-    ; 快速从剪贴板导入
+    ; 快速从剪贴板导入卡片列表
     $!i::
         ; 获取剪贴板内容
         ClipWait, 0, text
@@ -107,18 +106,19 @@ Return
 
         Return
 
-; 快速添加内容
 #If WinActive("添加|Add ahk_exe anki.exe ahk_class QWidget") or WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
+    ; 快速添加内容
     $!c::
         WinActive("A")
         WinHide
         Clipboard := ""
-        Send ^!a
+        ; Send ^!a
+        Send #+s
         Sleep, 128
         WinShow
         ClipWait, 10, 1
         if ErrorLevel   
-        {
+        {    
             ToolTip, 没有获取到剪贴板的内容, 2
             Return
         }
@@ -127,3 +127,45 @@ Return
 
     $!s:: SendEvent ^{Enter}
     $!x:: SendEvent ^+x
+
+
+#If WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe") or WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
+    添加截屏笔记(){
+        a := WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe")
+        b := WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
+        addWindow := a ? a : b
+        WinActivate ahk_id %addWindow%
+        WinHide ahk_id %addWindow%
+        Clipboard := ""
+        Send #+s
+        ClipWait, 10, 1
+        WinShow ahk_id %addWindow%
+        if ErrorLevel {
+            MsgBox, 没有获取到剪贴板的内容
+            Return False
+        }
+        While !WinActive("ahk_id" addWindow) && WinExist("ahk_id" addWindow)
+            WinActivate ahk_id %addWindow%
+        Return True
+    }
+    $F1::
+        If(!添加截屏笔记())
+            Return
+        SendEvent ^v
+        Sleep 200
+        SendEvent {Tab}
+        Return
+    $F2::
+        If(!添加截屏笔记())
+            Return
+        SendEvent ^v
+        Sleep 200
+        SendEvent ^{Enter}
+    $F3::
+        If(!添加截屏笔记())
+            Return
+        SendEvent ^+o
+        Return
+    $!h::
+        ToolTip "; 快速添加内容 $!c::"
+        Return

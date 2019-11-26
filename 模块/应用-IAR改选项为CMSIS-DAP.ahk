@@ -9,4 +9,3 @@
 		Sleep, 200
 		Send {Tab 5}{Down 3}^{Tab 2}!s
 		Return
-	!F12:: ExitApp

@@ -2,7 +2,6 @@
 Return
 
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe
-	; ^!F12:: ExitApp ; 退出脚本
 	$!n::
 		CoordMode, Mouse, Relative
 		Clipboard := ""

@@ -1,5 +1,4 @@
-﻿#MaxHotkeysPerInterval 100
-Return
+﻿Return
 
 #If !!(CapslockXMode & CM_FN) || !!(CapslockXMode & CM_CapslockX)
 

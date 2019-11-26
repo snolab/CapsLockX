@@ -8,7 +8,6 @@ TIM_MouseShift(times){
     MouseMove 0, changey, 1, R
 }
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe
-    ^!F12:: ExitApp ; 退出脚本
     ^f::
         ; CoordMode, Mouse, Relative
         ; x := 117 * TMouse_DPIRatio

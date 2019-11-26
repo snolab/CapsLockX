@@ -1,5 +1,5 @@
 ﻿If(!CapslockX)
-    ExitApp
+	ExitApp
 Return
 
 clickInWindow(px, py, win="A"){

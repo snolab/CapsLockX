@@ -2,9 +2,6 @@
 SetTitleMatchMode RegEx
 ; SetKeyDelay, 0, 0
 
-;debug
-;^F12:: ExitApp
-
 Return
 
 #IfWinActive QQ ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe

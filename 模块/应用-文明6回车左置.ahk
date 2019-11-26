@@ -3,4 +3,3 @@
     `:: Send {Enter}
 
 ;debug
-;F12:: ExitApp

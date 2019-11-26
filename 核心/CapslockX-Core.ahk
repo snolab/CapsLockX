@@ -14,222 +14,90 @@ Process Priority, , High     ; 脚本高优先级
 ; #NoTrayIcon                ; 隐藏托盘图标
 ; #NoEnv                     ; 不检查空变量是否为环境变量
 ; #Persistent                ; 让脚本持久运行(关闭或ExitApp)
-; #MaxHotkeysPerInterval 300 ; 时间内按热键最大次数
+#MaxHotkeysPerInterval 300 ; 时间内按键最大次数（通常是一直按着键触发的）
 ; #InstallMouseHook          ; 安装鼠标钩子
 
 ; 载入设定
 #Include CapslockX-Settings.ahk
-If(!)
-    ExitApp
 
-#If
-    If(T_AskRunAsAdmin)
+If(T_AskRunAsAdmin)
+{
+    full_command_line := DllCall("GetCommandLine", "str")
+    If(!A_IsAdmin And !RegExMatch(full_command_line, " /restart(?!\S)"))
     {
-        full_command_line := DllCall("GetCommandLine", "str")
-        If(!A_IsAdmin And !RegExMatch(full_command_line, " /restart(?!\S)"))
-        {
-            Try{
-                If A_IsCompiled
-                    Run *RunAs "%A_ScriptFullPath%" /restart, "%A_WorkingDir%"
-                Else
-                    Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", "%A_WorkingDir%"
-            }
-            ExitApp
+        Try{
+            If A_IsCompiled
+                Run *RunAs "%A_ScriptFullPath%" /restart, "%A_WorkingDir%"
+            Else
+                Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", "%A_WorkingDir%"
         }
+        ExitApp
     }
+}
 
-    ; 模式处理
-    global CapslockX := 1 ; 模块运行标识符
+; 模式处理
+global CapslockX := 1 ; 模块运行标识符
+
+global CapslockXMode   := 0
+global ModuleState := 0
+global CapslockX_FnActed   := 0
+global CM_NORMAL := 0 ; 普通模式
+global CM_FN     := 1 ; 临时 CapslockX 模式
+global CM_CapslockX  := 2 ; CapslockX 模式
+global CM_FNX    := 3 ; FnX 模式
+global LastLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
+; 切换模式
+UpdateCapslockXMode(){
+    CapslockXMode := GetKeyState(T_CapslockXKey, "P")
+    If(T_UseScrollLockLight)
+        CapslockXMode |= GetKeyState("ScrollLock", "T") << 1
     
-    global CapslockXMode   := 0
-    global ModuleState := 0
-    global CapslockX_FnActed   := 0
-    global CM_NORMAL := 0 ; 普通模式
-    global CM_FN     := 1 ; 临时 CapslockX 模式
-    global CM_CapslockX  := 2 ; CapslockX 模式
-    global CM_FNX    := 3 ; FnX 模式
-    global LastLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
-    ; 切换模式
-    UpdateCapslockXMode(){
-        CapslockXMode := GetKeyState(T_CapslockXKey, "P")
-        If(T_UseScrollLockLight)
-            CapslockXMode |= GetKeyState("ScrollLock", "T") << 1
-        
-        Return CapslockXMode
-    }
-    UpdateCapslockXMode()
-    ; 根据当前模式，切换灯
-    Menu,tray,icon,./数据/图标白.ico
-    UpdateLight(){
-        NowLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
-        If ( NowLightState && !LastLightState){
-            Menu,tray,icon, ./数据/图标蓝.ico
-            If (T_SwitchSound && T_SwitchSoundOn){
-                SoundPlay %T_SwitchSoundOn%
-            }
+    Return CapslockXMode
+}
+UpdateCapslockXMode()
+; 根据当前模式，切换灯
+Menu,tray,icon,./数据/图标白.ico
+UpdateLight(){
+    NowLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
+    If ( NowLightState && !LastLightState){
+        Menu,tray,icon, ./数据/图标蓝.ico
+        If (T_SwitchSound && T_SwitchSoundOn){
+            SoundPlay %T_SwitchSoundOn%
         }
-        If ( !NowLightState && LastLightState ){
-            Menu,tray,icon,./数据/图标白.ico
-            If (T_SwitchSound && T_SwitchSoundOff){
-                SoundPlay %T_SwitchSoundOff%
-            }
+    }
+    If ( !NowLightState && LastLightState ){
+        Menu,tray,icon,./数据/图标白.ico
+        If (T_SwitchSound && T_SwitchSoundOff){
+            SoundPlay %T_SwitchSoundOff%
         }
-        If (T_UseScrollLockLight){
-            ; ToolTip % CapslockXMode
-            If (GetKeyState("ScrollLock", "T") != ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))){
-                Send {ScrollLock}
-                Return 1
-            }
+    }
+    If (T_UseScrollLockLight){
+        ; ToolTip % CapslockXMode
+        If (GetKeyState("ScrollLock", "T") != ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))){
+            Send {ScrollLock}
+            Return 1
         }
-        ; tips(CapslockXMode)
-        LastLightState := NowLightState
     }
-    
-    CapslockXTurnOff(){
-        CapslockXMode &= ~CM_CapslockX
-        re =: UpdateLight()
-        Return re
-    }
-    CapslockXTurnOn(){
-        CapslockXMode |= CM_CapslockX
-        re =: UpdateLight()
-        Return re
-    }
+    ; tips(CapslockXMode)
+    LastLightState := NowLightState
+}
 
-    Hotkey *%T_CapslockXKey%, CapslockX_Dn
-    Hotkey *%T_CapslockXKey% Up, CapslockX_Up
+CapslockXTurnOff(){
+    CapslockXMode &= ~CM_CapslockX
+    re =: UpdateLight()
+    Return re
+}
+CapslockXTurnOn(){
+    CapslockXMode |= CM_CapslockX
+    re =: UpdateLight()
+    Return re
+}
 
-; 动态开始：载入模块
-    GoSub Setup_加速模型
-    GoSub Setup_模拟鼠标
-    GoSub Setup_窗口增强
-    GoSub Setup_Anki增强
-    GoSub Setup_秒打时间戳
-    GoSub Setup_Acrobat增强
-    GoSub Setup_Acrobat自动缩放
-    GoSub Setup_Cursor
-    GoSub Setup_Edge增强
-    GoSub Setup_DAP
-    GoSub Setup_LoopbackExemptionManager
-    GoSub Setup_MobaXterm
-    GoSub Setup_mstsc远程桌面增强
-    GoSub Setup_OneNote2016增强
-    GoSub Setup_OneNoteMetro拓展
-    GoSub Setup_QQ_UWP增强
-    GoSub Setup_TIM添加常驻功能
-    GoSub Setup_TIM连接OneNote2016
-    GoSub Setup_UWP应用增强
-    GoSub Setup_文明6回车左置
-    GoSub Setup_网易云音乐
-    GoSub Setup_讯飞输入法语音悬浮窗
-    GoSub Setup_Chrome增强
-    GoSub Setup_OneNote剪贴板收集器
-    GoSub Setup_合并右Ctrl与Menu键
-    GoSub Setup_媒体键
-    GoSub Setup_帮助
-    GoSub Setup_控制台启用CtrlV粘贴
-    GoSub Setup_搜索键
-    GoSub Setup_编辑增强
-    GoSub Setup_自动滚动
-    GoSub Setup_雪星转屏
-    Return
-    #If
-        Setup_加速模型:
-            #Include 模块\00-插件-加速模型.ahk
-    #If
-        Setup_模拟鼠标:
-            #Include 模块\01-插件-模拟鼠标.ahk
-    #If
-        Setup_窗口增强:
-            #Include 模块\02-插件-窗口增强.ahk
-    #If
-        Setup_Anki增强:
-            #Include 模块\03-应用-Anki增强.ahk
-    #If
-        Setup_秒打时间戳:
-            #Include 模块\功能-秒打时间戳.ahk
-    #If
-        Setup_Acrobat增强:
-            #Include 模块\应用-Acrobat增强.ahk
-    #If
-        Setup_Acrobat自动缩放:
-            #Include 模块\应用-Acrobat自动缩放.ahk
-    #If
-        Setup_Cursor:
-            #Include 模块\应用-CapsX-Cursor.ahk
-    #If
-        Setup_Edge增强:
-            #Include 模块\应用-Edge增强.ahk
-    #If
-        Setup_DAP:
-            #Include 模块\应用-IAR改选项为CMSIS-DAP.ahk
-    #If
-        Setup_LoopbackExemptionManager:
-            #Include 模块\应用-LoopbackExemptionManager.ahk
-    #If
-        Setup_MobaXterm:
-            #Include 模块\应用-MobaXterm.ahk
-    #If
-        Setup_mstsc远程桌面增强:
-            #Include 模块\应用-mstsc远程桌面增强.ahk
-    #If
-        Setup_OneNote2016增强:
-            #Include 模块\应用-OneNote2016增强.ahk
-    #If
-        Setup_OneNoteMetro拓展:
-            #Include 模块\应用-OneNoteMetro拓展.ahk
-    #If
-        Setup_QQ_UWP增强:
-            #Include 模块\应用-QQ_UWP增强.ahk
-    #If
-        Setup_TIM添加常驻功能:
-            #Include 模块\应用-TIM添加常驻功能.ahk
-    #If
-        Setup_TIM连接OneNote2016:
-            #Include 模块\应用-TIM连接OneNote2016.ahk
-    #If
-        Setup_UWP应用增强:
-            #Include 模块\应用-UWP应用增强.ahk
-    #If
-        Setup_文明6回车左置:
-            #Include 模块\应用-文明6回车左置.ahk
-    #If
-        Setup_网易云音乐:
-            #Include 模块\应用-网易云音乐.ahk
-    #If
-        Setup_讯飞输入法语音悬浮窗:
-            #Include 模块\应用-讯飞输入法语音悬浮窗.ahk
-    #If
-        Setup_Chrome增强:
-            #Include 模块\插件-Chrome增强.ahk
-    #If
-        Setup_OneNote剪贴板收集器:
-            #Include 模块\插件-OneNote剪贴板收集器.ahk
-    #If
-        Setup_合并右Ctrl与Menu键:
-            #Include 模块\插件-合并右Ctrl与Menu键.ahk
-    #If
-        Setup_媒体键:
-            #Include 模块\插件-媒体键.ahk
-    #If
-        Setup_帮助:
-            #Include 模块\插件-帮助.ahk
-    #If
-        Setup_控制台启用CtrlV粘贴:
-            #Include 模块\插件-控制台启用CtrlV粘贴.ahk
-    #If
-        Setup_搜索键:
-            #Include 模块\插件-搜索键.ahk
-    #If
-        Setup_编辑增强:
-            #Include 模块\插件-编辑增强.ahk
-    #If
-        Setup_自动滚动:
-            #Include 模块\插件-自动滚动.ahk
-    #If
-        Setup_雪星转屏:
-            #Include 模块\插件-雪星转屏.ahk
-; 动态结束；
+Hotkey *%T_CapslockXKey%, CapslockX_Dn
+Hotkey *%T_CapslockXKey% Up, CapslockX_Up
+
+#Include 核心\CapslockX-LoadModules.ahk
+
 #If
     ; CapslockX模式切换
     CapslockX_Dn:
