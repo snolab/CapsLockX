@@ -34,13 +34,14 @@ Return
 	$!d::SendEvent !d{Down}{Tab 5}+{Right}{Enter}
 	
 	; 颜色
-	; $!1::SendEvent !d{Down}{Right 4}{Enter}
-	; $!2::SendEvent !d{Down}{Right 5}{Enter}
-	; $!3::SendEvent !d{Down}{Right 6}{Enter}
-	; $!4::SendEvent !d{Down}{Right 7}{Enter}
-	; $!5::SendEvent !d{Down}{Right 8}{Enter}
-	; $!6::SendEvent !d{Down}{Right 9}{Enter}
+	$+!1::SendEvent !d{Down}{Right 4}{Enter}
+	$+!2::SendEvent !d{Down}{Right 5}{Enter}
+	$+!3::SendEvent !d{Down}{Right 6}{Enter}
+	$+!4::SendEvent !d{Down}{Right 7}{Enter}
+	$+!5::SendEvent !d{Down}{Right 8}{Enter}
+	$+!6::SendEvent !d{Down}{Right 9}{Enter}
 
+	; 展开
 	$!1:: SendEvent !+1
 	$!2:: SendEvent !+2
 	$!3:: SendEvent !+3
