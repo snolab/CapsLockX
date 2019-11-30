@@ -1,4 +1,4 @@
-﻿If(!CapsX)
+﻿If(!CapslockX)
     ExitApp
 Return
 
@@ -31,7 +31,7 @@ SwitchToDesktop(x){
 #]:: Send {CtrlDown}#{Right}{CtrlUp}
 
 ^PrintScreen:: AppsKey
-#If !!(CapsXMode & CM_FN)
+#If !!(CapslockXMode & CM_FN)
 	o::
 		; cmd := "taskkill /f /im ApplicationFrameHost.exe"
 		; cmd := "taskkill /f /im ShellExperienceHost.exe"
@@ -131,10 +131,12 @@ SwitchToDesktop(x){
     $^!x:: WinKill A
 
 ; 确保WinTab模块优先级比Mouse高，否则此处 wasd 无效
-#If CapsXMode == CM_CAPSX || CapsXMode == CM_FN
-
+#If CapslockXMode == CM_CAPSX || CapslockXMode == CM_FN
 	; 打开系统设定
-    p:: Send #{Pause}
+    p::
+		; ToolTip s %CapslockXMode%p
+		Send #{Pause}
+		Return
 
     `:: Send ^!q
 
@@ -160,15 +162,16 @@ SwitchToDesktop(x){
 ; 帮助：
 ; 条件：WinActive ahk_class MultitaskingViewFrame
 ;
-~#Tab Up::
-	CapsXTurnOff()
-	Return
+
+; ~#Tab Up::
+; 	CapsXTurnOff()
+; 	Return
 
 
 ;
 ;
 ;
-#IfWinActive ahk_class MultitaskingViewFrame ; ahk_exe explorer.exe
+#If WinActive("ahk_class MultitaskingViewFrame")
     ; 在 Alt+Tab 下, WASD 模拟方向键 , 1803之后还可以用
     !a:: Left
     !d:: Right

@@ -213,6 +213,7 @@ $#!n::
 	
 	; 切换为无色背景
 	$!n:: altSend("wpcn")
+	$+!n:: altSend("wre")
 
 	; 快速删除当前页面
 	;$!Delete:: altSend("pd")
