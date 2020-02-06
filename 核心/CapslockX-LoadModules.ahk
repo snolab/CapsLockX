@@ -30,6 +30,7 @@
     GoSub Setup_30
     GoSub Setup_31
     GoSub Setup_32
+    GoSub Setup_33
     Return
     #If
         Setup_1:
@@ -102,28 +103,31 @@
             #Include 模块\插件-Chrome增强.ahk
     #If
         Setup_24:
-            #Include 模块\插件-OneNote剪贴板收集器.ahk
+            #Include 模块\插件-Excel增强.ahk
     #If
         Setup_25:
-            #Include 模块\插件-合并右Ctrl与Menu键.ahk
+            #Include 模块\插件-OneNote剪贴板收集器.ahk
     #If
         Setup_26:
-            #Include 模块\插件-媒体键.ahk
+            #Include 模块\插件-合并右Ctrl与Menu键.ahk
     #If
         Setup_27:
-            #Include 模块\插件-帮助.ahk
+            #Include 模块\插件-媒体键.ahk
     #If
         Setup_28:
-            #Include 模块\插件-控制台启用CtrlV粘贴.ahk
+            #Include 模块\插件-帮助.ahk
     #If
         Setup_29:
-            #Include 模块\插件-搜索键.ahk
+            #Include 模块\插件-控制台启用CtrlV粘贴.ahk
     #If
         Setup_30:
-            #Include 模块\插件-编辑增强.ahk
+            #Include 模块\插件-搜索键.ahk
     #If
         Setup_31:
-            #Include 模块\插件-自动滚动.ahk
+            #Include 模块\插件-编辑增强.ahk
     #If
         Setup_32:
+            #Include 模块\插件-自动滚动.ahk
+    #If
+        Setup_33:
             #Include 模块\插件-雪星转屏.ahk

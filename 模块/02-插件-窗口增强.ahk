@@ -181,9 +181,19 @@ SwitchToDesktop(x){
 	!q::
 		SendEvent {Blind}{Enter}
 		Sleep 200
-		MoveActiveWindow("^#{Left}")
+		SendEvent ^#{Left}
 		Return
 	!e::
+		SendEvent {Blind}{Enter}
+		Sleep 200
+		SendEvent ^#{Right}
+		Return
+	!+q::
+		SendEvent {Blind}{Enter}
+		Sleep 200
+		MoveActiveWindow("^#{Left}")
+		Return
+	!+e::
 		SendEvent {Blind}{Enter}
 		Sleep 200
 		MoveActiveWindow("^#{Right}")
