@@ -63,8 +63,8 @@ $#n::
 
 ; 原热键
 $#!n::
-	; Send #n
-	Run "onenote-cmd://quicknote?onOpen=typing"
+	Send #n
+	; Run "onenote-cmd://quicknote?onOpen=typing"
 	Return
 
 ; $#n::
