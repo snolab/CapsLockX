@@ -31,6 +31,7 @@
     GoSub Setup_31
     GoSub Setup_32
     GoSub Setup_33
+    GoSub Setup_34
     Return
     #If
         Setup_1:
@@ -82,52 +83,55 @@
             #Include 模块\应用-QQ_UWP增强.ahk
     #If
         Setup_17:
-            #Include 模块\应用-TIM添加常驻功能.ahk
+            #Include 模块\应用-Telegram.ahk
     #If
         Setup_18:
-            #Include 模块\应用-TIM连接OneNote2016.ahk
+            #Include 模块\应用-TIM添加常驻功能.ahk
     #If
         Setup_19:
-            #Include 模块\应用-UWP应用增强.ahk
+            #Include 模块\应用-TIM连接OneNote2016.ahk
     #If
         Setup_20:
-            #Include 模块\应用-文明6回车左置.ahk
+            #Include 模块\应用-UWP应用增强.ahk
     #If
         Setup_21:
-            #Include 模块\应用-网易云音乐.ahk
+            #Include 模块\应用-文明6回车左置.ahk
     #If
         Setup_22:
-            #Include 模块\应用-讯飞输入法语音悬浮窗.ahk
+            #Include 模块\应用-网易云音乐.ahk
     #If
         Setup_23:
-            #Include 模块\插件-Chrome增强.ahk
+            #Include 模块\应用-讯飞输入法语音悬浮窗.ahk
     #If
         Setup_24:
-            #Include 模块\插件-Excel增强.ahk
+            #Include 模块\插件-Chrome增强.ahk
     #If
         Setup_25:
-            #Include 模块\插件-OneNote剪贴板收集器.ahk
+            #Include 模块\插件-Excel增强.ahk
     #If
         Setup_26:
-            #Include 模块\插件-合并右Ctrl与Menu键.ahk
+            #Include 模块\插件-OneNote剪贴板收集器.ahk
     #If
         Setup_27:
-            #Include 模块\插件-媒体键.ahk
+            #Include 模块\插件-合并右Ctrl与Menu键.ahk
     #If
         Setup_28:
-            #Include 模块\插件-帮助.ahk
+            #Include 模块\插件-媒体键.ahk
     #If
         Setup_29:
-            #Include 模块\插件-控制台启用CtrlV粘贴.ahk
+            #Include 模块\插件-帮助.ahk
     #If
         Setup_30:
-            #Include 模块\插件-搜索键.ahk
+            #Include 模块\插件-控制台启用CtrlV粘贴.ahk
     #If
         Setup_31:
-            #Include 模块\插件-编辑增强.ahk
+            #Include 模块\插件-搜索键.ahk
     #If
         Setup_32:
-            #Include 模块\插件-自动滚动.ahk
+            #Include 模块\插件-编辑增强.ahk
     #If
         Setup_33:
+            #Include 模块\插件-自动滚动.ahk
+    #If
+        Setup_34:
             #Include 模块\插件-雪星转屏.ahk
