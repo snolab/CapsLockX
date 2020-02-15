@@ -136,8 +136,17 @@ $#!n::
 		Clipboard := str
 		Send ^v
 		Return
+
+
+#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+    ; 上下左右
+    ; 不知为啥这个kj在OneNote里有时候会不管用
+	k:: Send {Home}{Left}
+	j:: Send {End}{Right}
+
 #IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
-	
+
+
 	; ; 选择页面
 	; ^PgUp:: Send ^{PgUp}^+a
 	; ^PgDn:: Send ^{PgDn}^+a
