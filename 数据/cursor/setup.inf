@@ -1,0 +1,53 @@
+[Version]
+signature="$CHICAGO$"
+
+[DefaultInstall]
+CopyFiles = Scheme.Cur, Scheme.Txt
+AddReg    = Scheme.Reg
+
+[DestinationDirs]
+Scheme.Cur = 10,"%CUR_DIR%"
+Scheme.Txt = 10,"%CUR_DIR%"
+
+[Scheme.Reg]
+HKCU,"Control Panel\Cursors\Schemes","%SCHEME_NAME%",,"%10%\%CUR_DIR%\%pointer%,%10%\%CUR_DIR%\%help%,%10%\%CUR_DIR%\%work%,%10%\%CUR_DIR%\%busy%,%10%\%CUR_DIR%\%Cross%,%10%\%CUR_DIR%\%Text%,%10%\%CUR_DIR%\%Hand%,%10%\%CUR_DIR%\%Unavailiable%,%10%\%CUR_DIR%\%Vert%,%10%\%CUR_DIR%\%Horz%,%10%\%CUR_DIR%\%Dgn1%,%10%\%CUR_DIR%\%Dgn2%,%10%\%CUR_DIR%\%move%,%10%\%CUR_DIR%\%alternate%,%10%\%CUR_DIR%\%link%"
+
+; -- Common Information
+
+[Scheme.Cur]
+"arrow.ani"
+"Help.cur"
+"AppStarting.ani"
+"wait.ani"
+"Cross.cur"
+"IBeam.cur"
+"handwriting.cur"
+"NO.cur"
+"sizens.cur"
+"sizewe.cur"
+"sizenwse.cur"
+"sizenesw.cur"
+"sizeall.cur"
+"uparrow.cur"
+"hand.cur"
+
+[Strings]
+CUR_DIR         = "Cursors\fire"
+SCHEME_NAME     = "fire"
+pointer		= "arrow.ani"
+help		= "Help.cur"
+work		= "AppStarting.ani"
+busy		= "Wait.ani"
+cross		= "Cross.cur"
+text		= "IBeam.cur"
+hand		= "handwriting.cur"
+unavailiable	= "NO.cur"
+vert		= "sizens.cur"
+horz		= "sizewe.cur"
+dgn1		= "sizenwse.cur"
+dgn2		= "sizenesw.cur"
+move		= "sizeall.cur"
+alternate	= "uparrow.cur"
+link		= "hand.cur"
+
+//更多指针尽在肥鱼地带  http://fatfish.91.tc   肥鱼提取

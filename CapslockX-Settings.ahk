@@ -22,19 +22,6 @@
 		; 滚轮加速度比率, 一般就改那个1，你想慢点就改成 0.8
 		global TMouse_WheelSpeedRatio  := TMouse_DPIRatio * 0.8
 
-	; 其它模块是否禁用
-		global TWinTab_Disabled := 0
-		global TClip_Disabled   := 0
-		global TEdit_Disabled   := 0
-		global TMedia_Disabled  := 0
-		global TSearch_Disabled := 0
-
-; 进阶设定
-	; 还没有
-
-; 智能设定
-	; 还没有
-
 ; 实验性功能（改了不知道会出啥事哦）
 
 	; 修改CapslockX触发键
