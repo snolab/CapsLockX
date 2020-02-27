@@ -1,7 +1,7 @@
 ﻿; UTF-8 with BOM
 ; 
 ; 程序入口
-; 最后更新：(20190707)
+; 最后更新：(20200227)
 ;
 ; Copyright © 2017-2019 snomiao@gmail.com
 ; 创建：Snowstar QQ: 997596439
