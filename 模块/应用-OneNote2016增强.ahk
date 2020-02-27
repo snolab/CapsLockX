@@ -145,12 +145,17 @@ $#!n::
 	j:: Send {End}{Right}
 
 #IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
-
+	; 粘贴纯文本
+	$^+v::
+		Clipboard := Clipboard
+		Send ^v
+		return
 
 	; ; 选择页面
 	; ^PgUp:: Send ^{PgUp}^+a
 	; ^PgDn:: Send ^{PgDn}^+a
 	; ; 将此页面向上合并
+	
 	$!j::
 		Send ^+t^a^x
 		Send ^{PgUp}^+t^{End}^v

@@ -1,5 +1,7 @@
 ﻿# CapslockX
 
+// 自用项目
+
 ## 入门教程第一
 <!-- 
 首先，你需要安装一个 [AutoHotKey](https://autohotkey.com/)。
