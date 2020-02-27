@@ -18,7 +18,7 @@ UpdateCapsCursor(s){
 		return
 	}
 
-	PATH_CURSOR := "cursor"
+	PATH_CURSOR := "数据/cursor"
 	; OCR_APPSTARTING := 32650
 	SetCursor(32650, PATH_CURSOR "/APPSTARTING.cur") ;AppStarting.cur")
 	; OCR_NORMAL      := 32512
