@@ -4,12 +4,13 @@
 ; Author: snomiao@gmail.com
 ; 
 ; Copyright © 2017-2020 snomiao@gmail.com
+;
 ; 创建：Snowstar QQ: 997596439
 ; 参与完善：张工 QQ: 45289331
 ; LICENCE: GNU GPLv3
 ; 
-
-; 模块名: 不能有这几个字符 "   ,``"
+;
+; 模块名: 不能有这几个字符 " ,``"
 
 Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
