@@ -12,26 +12,28 @@
 ;
 ; 模块名: 不能有这几个字符 " ,``"
 
-Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
 #Include CapslockX-Settings.ahk
+Process Priority, , High     ; 脚本高优先级
+
 
 global PathModules := "模块"
 global PathCore    := "核心"
-
 global CapslockX_Version := "v1.3 Alpha"
 global loadingTips := ""
 
 LoadingTips(msg, clear = 0){
-    If(clear || loadingTips == "")
+    If(clear || loadingTips == ""){
+
         loadingTips := "CapslockX " CapslockX_Version "`n"
+    }
     loadingTips .= msg "`n"
 }
-LoadingTipsShow(){
+
+ShowLoadingTips(){
     ToolTip % loadingTips
 }
-
 TryLoadModuleHelp(ModuleFileName, ModuleName){
     If(FileExist(PathModules "\" ModuleName ".md")){
         FileRead, ModuleHelp, %PathModules%\%ModuleName%.md
@@ -43,8 +45,6 @@ TryLoadModuleHelp(ModuleFileName, ModuleName){
     }
     Return ""
 }
-
-; 加载模块帮助
 UpdateModulesHelp(sourceREADME){
     FileEncoding UTF-8
     ; 列出模块文件
@@ -82,7 +82,7 @@ UpdateModulesHelp(sourceREADME){
         }
         help .= ModuleHelp "`n`n"
     }
-    LoadingTipsShow()
+    ShowLoadingTips()
     help := Trim(help, " `t`n")
     
     ; 生成替换代码
@@ -101,10 +101,6 @@ UpdateModulesHelp(sourceREADME){
     Return targetREADME
 }
 
-; 加载模块改为外置文件加载
-; 加载   模块
-global ModulesLoader := PathCore "\CapslockX-LoadModules.ahk"
-LoadModules(ModulesLoader)
 LoadModules(ModulesLoader){
     FileEncoding UTF-8
     ; 列出模块文件
@@ -145,7 +141,7 @@ LoadModules(ModulesLoader){
             LoadingTips("运行模块：" i " " ModuleName)
         }
     }
-    LoadingTipsShow()
+    ShowLoadingTips()
 
     ; 拼接代码
     code := ""
@@ -158,9 +154,16 @@ LoadModules(ModulesLoader){
 }
 
 
+; 加载模块
+global ModulesLoader := PathCore "\CapslockX-LoadModules.ahk"
+LoadModules(ModulesLoader)
+
+
 ; 编译README.md
 README_FILE := "README.md"
 FileRead, source, %README_FILE%
+
+; 加载模块帮助
 target := UpdateModulesHelp(source)
 If(target != source){
     LoadingTips("模块帮助有变更")

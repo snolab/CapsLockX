@@ -1,6 +1,5 @@
 ﻿; save as utf8 with bom
-SetTitleMatchMode RegEx
-Return	 
+Return
 
 altSend(altKeys){
 	SetKeyDelay, 1, 60 ; 配置纠错
