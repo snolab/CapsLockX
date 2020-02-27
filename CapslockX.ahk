@@ -180,6 +180,8 @@ global CoreAHK := PathCore "\CapslockX-Core.ahk"
 
 ; 运行核心   
 Send ^!+{F12} ; 把之前的实例关了
+
+; Run %PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 Run %PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 
 ; 显示Tips 2秒

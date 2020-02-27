@@ -13,9 +13,9 @@ Process Priority, , High     ; 脚本高优先级
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 ; #NoTrayIcon                ; 隐藏托盘图标
 ; #NoEnv                     ; 不检查空变量是否为环境变量
-; #Persistent                ; 让脚本持久运行(关闭或ExitApp)
-#MaxHotkeysPerInterval 300 ; 时间内按键最大次数（通常是一直按着键触发的）
-; #InstallMouseHook          ; 安装鼠标钩子
+#Persistent                
+#MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的）
+#InstallMouseHook          ; 安装鼠标钩子
 
 ; 载入设定
 #Include CapslockX-Settings.ahk
@@ -59,6 +59,12 @@ UpdateCapslockXMode()
 Menu,tray,icon,./数据/图标白.ico
 UpdateLight(){
     NowLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
+    ; UpdateCapsCursor(1)
+    If (NowLightState == LastLightState){
+        Return
+    }
+    ; ToolTip testDDDD
+    
     If ( NowLightState && !LastLightState){
         Menu,tray,icon, ./数据/图标蓝.ico
         If (T_SwitchSound && T_SwitchSoundOn){
@@ -73,11 +79,16 @@ UpdateLight(){
     }
     If (T_UseScrollLockLight){
         ; ToolTip % CapslockXMode
-        If (GetKeyState("ScrollLock", "T") != ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))){
+        If (GetKeyState("ScrollLock", "T") != NowLightState){
             Send {ScrollLock}
             Return 1
         }
     }
+    If (1 || T_UseCursor){
+        ; ToolTip test
+        UpdateCapsCursor(NowLightState)
+    }
+    
     ; tips(CapslockXMode)
     LastLightState := NowLightState
 }
