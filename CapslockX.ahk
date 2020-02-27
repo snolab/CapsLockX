@@ -1,9 +1,9 @@
-﻿; UTF-8 with BOM
+﻿; Encoding: UTF-8 with BOM
+; Name: CapslockX
+; Description: 程序入口
+; Author: snomiao@gmail.com
 ; 
-; 程序入口
-; 最后更新：(20190707)
-;
-; Copyright © 2017-2019 snomiao@gmail.com
+; Copyright © 2017-2020 snomiao@gmail.com
 ; 创建：Snowstar QQ: 997596439
 ; 参与完善：张工 QQ: 45289331
 ; LICENCE: GNU GPLv3
@@ -19,7 +19,7 @@ Process Priority, , High     ; 脚本高优先级
 global PathModules := "模块"
 global PathCore    := "核心"
 
-global CapslockX_Version := "v1.2 Alpha"
+global CapslockX_Version := "v1.3 Alpha"
 global loadingTips := ""
 
 LoadingTips(msg, clear = 0){
@@ -185,14 +185,3 @@ Run %PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 ; 显示Tips 2秒
 Sleep 2000
 ExitApp
-
-;"(^\s*);#T_" Module "_" SettingName "{{ ([\s\S]*)\1;}}"
-
-; #T_COMDING = 1
-
-; XBEGIN := "; #T_" Module "_" SettingName
-
-; NeedleRegEx := "(\s*)(" XBEGIN ")((?:\1.*\n|\n)*)\1(" XEND ")"
-; Replacement := "$1$2" code "$1$4"
-
-; !F12:: ExitApp
