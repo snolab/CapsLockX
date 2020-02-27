@@ -34,7 +34,8 @@ ShowLoadingTips()
 {
     ToolTip % loadingTips
 }
-TryLoadModuleHelp(ModuleFileName, ModuleName){
+TryLoadModuleHelp(ModuleFileName, ModuleName)
+{
     if (FileExist(PathModules "\" ModuleName ".md")) {
         FileRead, ModuleHelp, %PathModules%\%ModuleName%.md
         Return ModuleHelp
