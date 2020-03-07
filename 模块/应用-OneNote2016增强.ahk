@@ -26,29 +26,34 @@ getAscStr(str)
 {
     charList:=StrSplit(str)
     for key,val in charList
+	{
         out.="{Asc " . asc(val) . "}"
+	}
     return out
 }
 
-; ClassNN	 :	RICHEDIT60W1
-
 ; 快速添加事项清单
-$#n::
-	if WinExist("TODO - OneNote ahk_class Framework::CFrame ahk_exe ONENOTE.EXE"){
+OpenToDoList(){
+	; IfWinExist, TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
+	if WinExist("TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
+	{
 		; ToolTip todo exist
-    	WinActivate  ; Uses the last found window.
+    	WinActivate ; Uses the last found window.
 		Send !{Home}^{End}{Enter}
-		Return
-	}else if WinExist("无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"){
-    	WinActivate  ; Uses the last found window.
+	}else
+	if WinExist("无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
+	{
+
+		WinActivate  ; Uses the last found window.
 	}else{
 		Send #n
 		WinWait 无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
 		If ErrorLevel
+		{
 			Return
+		}
 		WinActivate
 	}
-
 	Send !{Home}^{End}{Enter}
 
 	Sleep 1000
@@ -56,41 +61,38 @@ $#n::
 	if(title != "TODO - OneNote"){
 		Send ^+t
 		Send % getAscStr("TODO")
-		Send ^{End}TEST
+		Send ^{End}
 	}
 	Return
+}
 
-; 原热键
-$#!n::
-	Send #n
-	; Run "onenote-cmd://quicknote?onOpen=typing"
-	Return
+; 原热键，打开快速笔记
+; $#n:: Send #n
 
-; $#n::
-; 	Send #n
-; 	WinWaitActive 无标题页 - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,2
-; 	
-; 	If ErrorLevel
-; 	{
-; 		Return
-; 	}Else{
-; 		altSend("wpcn")
-; 	}
-; 	Return
+; 打开 TODO
+$#!n:: OpenToDoList()
 
-#If !!(CapslockXMode & CM_FN)
-	; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
-	; 和编辑增强冲突
+; 打开 UWP 版 OneNote
+$#+!n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
-#If !CapslockX
-	^+!F12:: ExitApp ; 退出脚本
+; #If !!(CapslockXMode & CM_FN)
+; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
+; 和编辑增强冲突
+
+#If (!CapslockX)
+^+!F12:: ExitApp ; 退出脚本
 
 ; #If CapslockXMode and (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") or WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
-#If (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") or WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
-	$^e::
+#If (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+$^f::
+$^e::
+	enhanced_search() {
 		; 增强搜索
-		Send ^e
-		
+		if (A_ThisHotkey = "$^e"){
+			Send ^e
+		}else{
+			Send ^f
+		}
 		If ("RICHEDIT60W1" != GetFocusControlName()){
 			Return
 		}
@@ -99,7 +101,7 @@ $#!n::
 		ClipWait, 1
 		
 		If ErrorLevel {
-		    Return
+			Return
 		}
 
 		s1 := Clipboard
@@ -111,35 +113,11 @@ $#!n::
 		Clipboard := str
 		Send ^v
 		Return
-	$^f::
-		; 增强搜索
-		Send ^f
-		
-		If ("RICHEDIT60W1" != GetFocusControlName()){
-			Return
-		}
-		Clipboard =
-		Send ^c
-		ClipWait, 1
-		
-		If ErrorLevel {
-		    Return
-		}
-
-		s1 := Clipboard
-
-		a := StrSplit(s1)
-		s2 := StrJoin(" ", a*)
-		str := """" s1 """" " OR " """" s2 """"
-
-		Clipboard := str
-		Send ^v
-		Return
-
+	}
 
 #If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
     ; 上下左右
-    ; 不知为啥这个kj在OneNote里有时候会不管用
+    ; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
 	k:: Send {Home}{Left}
 	j:: Send {End}{Right}
 
@@ -154,7 +132,6 @@ $#!n::
 	; ^PgUp:: Send ^{PgUp}^+a
 	; ^PgDn:: Send ^{PgDn}^+a
 	; ; 将此页面向上合并
-	
 	$!j::
 		Send ^+t^a^x
 		Send ^{PgUp}^+t^{End}^v
@@ -234,7 +211,8 @@ $#!n::
 	
 	; 快速删除当前行
 	;$!Delete:: altSend("pd")
-	$+Delete:: Send ^!{Down}^!{Up}{Delete}
+	; $+Delete:: Send ^!{Down}^!{Up}{Delete}
+	$+Delete:: Send {Escape}^a{Del}
 	
 	; 快速关闭窗口
 	$^w:: altSend("{F4}")
@@ -249,7 +227,10 @@ $#!n::
 	; $!d:: altSend("dh")
 
 	; 视图 - 缩放到页面宽度
-	$!r:: altSend("wi")
+	$!r:: altSend("w1")
+	$!y:: altSend("wi")
+	; 视图 - 缩放到1
+	; $!+r:: altSend("w1")
 	; $!+r::
 	; 	SendEvent !w
 	; 	Sleep, 60
