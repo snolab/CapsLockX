@@ -169,7 +169,8 @@ Return
 
 ; 硬重启键
 ^!F12::
-    Run CapslockX.ahk, %A_WorkingDir%
+    ; Run CapslockX.ahk, %A_WorkingDir%
+    Run CapslockX.exe, %A_WorkingDir%
     ExitApp
 Return
 

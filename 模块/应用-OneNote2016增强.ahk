@@ -47,7 +47,7 @@ OpenToDoList(){
 		WinActivate  ; Uses the last found window.
 	}else{
 		Send #n
-		WinWait 无标题页 - OneNote|Untitled page - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
+		WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE,,5
 		If ErrorLevel
 		{
 			Return
@@ -122,6 +122,13 @@ $^e::
 	j:: Send {End}{Right}
 
 #IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
+	; 自动2维化公式
+	$!-::
+		Send !=
+		Sleep, 200
+		altSend("jp")
+		return
+		; Send !={AppsKey}p
 	; 粘贴纯文本
 	$^+v::
 		Clipboard := Clipboard
@@ -217,8 +224,11 @@ $^e::
 	; 快速关闭窗口
 	$^w:: altSend("{F4}")
 
+	; 选中行
+	$^+l:: Send !+{Down}!+{Up}
 	; 输入、套锁、橡皮
-	$!q:: altSend("dl")
+	; $!q:: altSend("dl")
+	$!q:: altSend("dh") ;换成手形工具
 	$!w:: altSend("dn")
 	$!e:: altSend("dek")
 	
