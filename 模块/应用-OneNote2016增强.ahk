@@ -129,6 +129,13 @@ $^e::
 		altSend("jp")
 		return
 		; Send !={AppsKey}p
+	; 复制纯文本
+	$^+c::
+		Clipboard =
+		Send ^c
+		ClipWait, 1
+		Clipboard := Clipboard
+		return
 	; 粘贴纯文本
 	$^+v::
 		Clipboard := Clipboard
@@ -157,18 +164,18 @@ $^e::
 		;SendEvent, {AltUp}!w!i
 		SendEvent, {AltDown}wi{AltUp}
 		Return
-	$!x::
-		Clipboard := ""
-		SendEvent {AppsKey}x
-		SendEvent ^a^c
-		ClipWait 1
-		SendEvent {Esc}
-		tmp := Clipboard
-		tmp := RegExReplace(tmp, "([一-龥]) ", "$1")
-		tmp := RegExReplace(tmp, "([一-龥]) ", "$1")
-		Clipboard := tmp
-		SendEvent ^!{Right 3}^v
-		Return
+	; $!x::
+	; 	Clipboard := ""
+	; 	SendEvent {AppsKey}x
+	; 	SendEvent ^a^c
+	; 	ClipWait 1
+	; 	SendEvent {Esc}
+	; 	tmp := Clipboard
+	; 	tmp := RegExReplace(tmp, "([一-龥]) ", "$1")
+	; 	tmp := RegExReplace(tmp, "([一-龥]) ", "$1")
+	; 	Clipboard := tmp
+	; 	SendEvent ^!{Right 3}^v
+	; 	Return
 	$!+x::
 		Clipboard := ""
 		SendEvent {AppsKey}y
