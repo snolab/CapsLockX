@@ -13,10 +13,10 @@ QPC(){
 ; 构造加速模型相关函数
 ma(t){
     ; 二次函数运动模型
-    ; Return ma2(t) 
+    ; Return ma2(t) * TMouse_DPIRatio
     
     ; 三次函数运动模型
-    ; Return ma3(t) 
+    ; Return ma3(t) * TMouse_DPIRatio
     
     ; 指数函数运动模型
     Return maPower(t) * TMouse_DPIRatio
@@ -27,9 +27,9 @@ ma2(t){
     If(0 == t)
         Return 0
     If(t > 0)
-        Return  3
+        Return  1
     Else
-        Return -3
+        Return -1
 }
 
 ma3(t){
@@ -65,11 +65,11 @@ dt(t, tNow){
 
 Friction(v, a){ ; 摩擦力
     ; 限制最大速度
-    ; maxSpeed := 80
-    ; If(v   < -maxSpeed)
-    ;     v := -maxSpeed
-    ; If(v   >  maxSpeed)
-    ;     v :=  maxSpeed
+    maxSpeed := 1000
+    If(v   < -maxSpeed)
+        v := -maxSpeed
+    If(v   >  maxSpeed)
+        v :=  maxSpeed
 
     ; 摩擦力不阻碍用户意志
     If((a > 0 And v > 0) Or (a < 0 And v < 0)){
@@ -83,9 +83,9 @@ Friction(v, a){ ; 摩擦力
 
     ; 简单粗暴倍数降速
     v *= 0.9
-    If(v > 0)
+    If(v > 1)
         v -= 1
-    If(v < 0)
+    If(v < -1)
         v += 1
     Return v
 }

@@ -18,7 +18,7 @@
 		; 屏幕 DPI 比率，自动计算得出，如果数值不对，才需要纠正
 		global TMouse_DPIRatio         := A_ScreenDPI / 96
 		; 鼠标加速度比率, 一般就改那个1，你想慢点就改成 0.8
-		global TMouse_MouseSpeedRatio  := TMouse_DPIRatio * 0.5
+		global TMouse_MouseSpeedRatio  := TMouse_DPIRatio * 0.3
 		; 滚轮加速度比率, 一般就改那个1，你想慢点就改成 0.8
 		global TMouse_WheelSpeedRatio  := TMouse_DPIRatio * 0.8
 
