@@ -27,7 +27,7 @@ ma2(t){
     If(0 == t)
         Return 0
     If(t > 0)
-        Return  1
+        Return 1
     Else
         Return -1
 }
@@ -40,7 +40,7 @@ ma3(t){
     If(0 == t)
         Return 0
     If(t > 0)
-        Return  1 + t * 6
+        Return 1 + t * 6
     Else
         Return -1 + t * 6
 }
@@ -53,7 +53,7 @@ maPower(t){
     If(0 == t)
         Return 0
     If(t > 0)
-        Return  1 +( Exp( t) - 1 ) * 8
+        Return 1 +( Exp( t) - 1 ) * 8
     Else
         Return -1 -( Exp(-t) - 1 ) * 8
 }
@@ -65,12 +65,12 @@ dt(t, tNow){
 
 Friction(v, a){ ; 摩擦力
     ; 限制最大速度
-    maxSpeed := 1000
-    If(v   < -maxSpeed)
+    maxSpeed := 1000000
+    If(v < -maxSpeed)
         v := -maxSpeed
-    If(v   >  maxSpeed)
-        v :=  maxSpeed
-
+    If(v > maxSpeed)
+        v := maxSpeed
+    
     ; 摩擦力不阻碍用户意志
     If((a > 0 And v > 0) Or (a < 0 And v < 0)){
         Return v
@@ -78,14 +78,17 @@ Friction(v, a){ ; 摩擦力
     
     ; ; 刹车
     ; If((a < 0 And v > 0) Or (a > 0 And v < 0)){
-    ;     Return 0
+    ; Return 0
     ; }
-
+    
     ; 简单粗暴倍数降速
     v *= 0.9
-    If(v > 1)
+    ; 线性
+    If (v > 1)
         v -= 1
-    If(v < -1)
+    If (v < -1)
         v += 1
+    if (Abs(v)<=0.01)
+        v:=0
     Return v
 }
