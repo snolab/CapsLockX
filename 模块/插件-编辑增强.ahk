@@ -1,5 +1,4 @@
 ﻿
-
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 global ktl := 0, ktr := 0, ktu := 0, ktd := 0, kvx := 0, kvy := 0, kdx := 0, kdy := 0
 Return
@@ -7,13 +6,14 @@ Return
 OnSwitch(){
     ; 这里改注册表是为了禁用 Win + L 锁定机器，让 Win+hjkl 可以挪窗口位置，不过只有用管理员运行才管用。
     value := !!(ModuleState & MF_EditX) ? 0 : 1
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, %value%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersio n\Policies\System, DisableLockWorkstation, %value%
 }
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 
 ; ToolTip, %kvx% _ %kvy% _ %kdx% _ %kdy%
 kTicker:
+    
     ; 在非 CapslockX 模式下直接停止
     If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
         kax := 0, kay := 0
@@ -23,6 +23,7 @@ kTicker:
         tda := dt(ktl, tNow), tdd := dt(ktr, tNow)
         tdw := dt(ktu, tNow), tds := dt(ktd, tNow)
         ; 计算加速度
+        ; 这里偶尔会出现加速度突然超大的 bug 但暂时找不到原因
         kax := ma(tdd - tda) , kay := ma(tds - tdw)
     }
     
@@ -31,7 +32,7 @@ kTicker:
     
     ; 稳定化
     kdx += kvx / 200, kdy += kvy / 200
-    ToolTip, %ktl% _ %ktr% _ %ktu% _ %ktd% `n %kax% _ %kay% _ %kvx% _ %kvy% _ %kdx% _ %kdy%
+    ; ToolTip, %ktl% _ %ktr% _ %ktu% _ %ktd% `n %kax% _ %kay% _ %kvx% _ %kvy% _ %kdx% _ %kdy%
     
     ; 完成移动时
     if ( 0 == kvx && 0 == kvy){

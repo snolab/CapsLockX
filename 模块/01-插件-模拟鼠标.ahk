@@ -291,8 +291,8 @@ sTicker:
     ; ; ToolTip, %sax% %say% %svx% %svy%
     
     if ( svy == 0 && svx == 0){
-        ; 完成移动，退出定时
-        tooltip Done
+        ; 完成滚动，退出定时
+        ; tooltip Done
         SetTimer, sTicker, Off
         Return
     }
