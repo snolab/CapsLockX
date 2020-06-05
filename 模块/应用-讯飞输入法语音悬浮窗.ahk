@@ -1,7 +1,6 @@
 ﻿If(CapslockX)
     Return
 
-; 显示式
 #h::
     Process, Exist, iFlyVoice.exe
     If (ErrorLevel) {
@@ -10,7 +9,14 @@
         ; 新方案直接发送模拟消息
         ControlClick, x0 y0, ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe
     }Else{
-        Run "C:\Program Files (x86)\iFly Info Tek\iFlyIME\2.1.1708\iFlyVoice.exe"
+        If (!FileExist("C:\Program Files (x86)\iFly Info Tek\iFlyIME\2.1.1708\iFlyVoice.exe")){
+            Run "C:\Program Files (x86)\iFly Info Tek\iFlyIME\2.1.1708\iFlyVoice.exe"
+        }else{
+            MsgBox, 4, , 你似乎还没有安装讯飞语音输入法，是否现在下载安装包并【手动安装】到默认目录？
+            IfMsgBox, NO, Return
+            UrlDownloadToFile https://download.voicecloud.cn/200ime/iFlyIME_Setup_2.1.1708.exe, %TEMP%/iFlyIME_Setup_2.1.1708.exe
+            Run %TEMP%/iFlyIME_Setup_2.1.1708.exe
+        }
     }
 Return
-
++#h:: Send #h
