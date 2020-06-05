@@ -1,7 +1,8 @@
 ﻿; @CapslockX    v1
-; @name         加速模型
+; @name         操作加速模型
+; @description  如题
 ; @author       snomiao@gmail.com
-; 
+; @version      0.0.1(20200606)
 ; 
 Return
 ; 高性能计时
