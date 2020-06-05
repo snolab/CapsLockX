@@ -1,6 +1,13 @@
-﻿If(CapslockX)
+﻿; @CapslockX    v1
+; @name         Win + H 快速启动讯飞语音悬浮窗
+; @description  如题
+; @author       snomiao@gmail.com
+; @version      2.1.1(20200606)
+
+If(CapslockX)
     Return
 
+Return
 #h::
     Process, Exist, iFlyVoice.exe
     If (ErrorLevel) {
