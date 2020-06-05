@@ -341,20 +341,20 @@ Return
 ; 只有开启CapslockX模式能触发
 ; #If CapslockXMode == CM_CapslockX
 ; 鼠标运动处理
-a:: mtl := (mtl ? mtl : QPC()), mTick()
-d:: mtr := (mtr ? mtr : QPC()), mTick()
-w:: mtu := (mtu ? mtu : QPC()), mTick()
-s:: mtd := (mtd ? mtd : QPC()), mTick()
-a Up:: mtl := 0, mTick()
-d Up:: mtr := 0, mTick()
-w Up:: mtu := 0, mTick()
-s Up:: mtd := 0, mTick()
+*a:: mtl := (mtl ? mtl : QPC()), mTick()
+*d:: mtr := (mtr ? mtr : QPC()), mTick()
+*w:: mtu := (mtu ? mtu : QPC()), mTick()
+*s:: mtd := (mtd ? mtd : QPC()), mTick()
+*a Up:: mtl := 0, mTick()
+*d Up:: mtr := 0, mTick()
+*w Up:: mtu := 0, mTick()
+*s Up:: mtd := 0, mTick()
 
 ; 鼠标滚轮处理
-r:: stu := (stu ? stu : QPC()), sTick()
-f:: std := (std ? std : QPC()), sTick()
-+r:: stl := (stl ? stl : QPC()), sTick()
-+f:: str := (str ? str : QPC()), sTick()
+*r:: stu := (stu ? stu : QPC()), sTick()
+*f:: std := (std ? std : QPC()), sTick()
+*+r:: stl := (stl ? stl : QPC()), sTick()
+*+f:: str := (str ? str : QPC()), sTick()
 ; +z:: stl := (stl ? stl : QPC()), sTickx()
 ; +c:: str := (str ? str : QPC()), sTickx()
 ; !r:: Send {WheelUp}
@@ -362,9 +362,9 @@ f:: std := (std ? std : QPC()), sTick()
 ; ^r:: Send ^{WheelUp}
 ; ^f:: Send ^{WheelDown}
 
-r Up:: stu := 0, sTick()
-f Up:: std := 0, sTick()
-+r Up:: stl := 0, sTick()
-+f Up:: str := 0, sTick()
+*r Up:: stu := 0, sTick()
+*f Up:: std := 0, sTick()
+*+r Up:: stl := 0, sTick()
+*+f Up:: str := 0, sTick()
 ; z Up:: stl := 0, sTickx()
 ; c Up:: str := 0, sTickx()

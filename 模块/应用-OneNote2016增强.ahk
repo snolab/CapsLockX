@@ -98,6 +98,8 @@ $#+!n:: Run "onenote-cmd://quicknote?onOpen=typing"
 k:: Send {Home}{Left}
 j:: Send {End}{Right}
 
+
+
 #IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
     ; 自动2维化公式
     $!-::
@@ -232,8 +234,8 @@ j:: Send {End}{Right}
     ; 	Return
     
     ; 换笔
-    $!a:: altSendEx("dp", "{Left 2}{Enter}") ; 黄色荧光
-    $!d:: altSendEx("dp", "{Right 1}{Enter}") ; 红色笔
+    $!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
+    $!a:: altSendEx("dp", "{Right 1}{Enter}")   ; 笔悬停时是下一支笔，没有笔时是选红色笔
     
     ; 换笔（只在非全屏时管用）
     ; $!a::
@@ -292,3 +294,62 @@ j:: Send {End}{Right}
     $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
     $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
     $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
+
+#IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
+    ; 换笔盘
+    $1::
+        if(A_PriorHotkey=="!d")
+            Send {Right 0}{Enter}
+        Return
+    $2::
+        if(A_PriorHotkey="!d")
+            Send {Right 1}{Enter}
+        Return
+    $3::
+        if(A_PriorHotkey="!d")
+            Send {Right 2}{Enter}
+        Return
+    $4::
+        if(A_PriorHotkey="!d")
+            Send {Right 3}{Enter}
+        Return
+    $5::
+        if(A_PriorHotkey="!d")
+            Send {Right 4}{Enter}
+        Return
+    $6::
+        if(A_PriorHotkey="!d")
+            Send {Right 5}{Enter}
+        Return
+    $7::
+        if(A_PriorHotkey="!d")
+            Send {Right 6}{Enter}
+        Return
+    $!1::
+        if(A_PriorHotkey=="!d")
+            Send {Down 1}{Right 0}{Enter}
+        Return
+    $!2::
+        if(A_PriorHotkey="!d")
+            Send {Down 1}{Right 1}{Enter}
+        Return
+    $!3::
+        if(A_PriorHotkey="!d")
+            Send {Down 1}{Right 2}{Enter}
+        Return
+    $!4::
+        if(A_PriorHotkey="!d")
+            Send {Down 1}{Right 3}{Enter}
+        Return
+    $!5::
+        if(A_PriorHotkey="!d")
+            Send {Down 1}{Right 4}{Enter}
+        Return
+    $!6::
+        if(A_PriorHotkey="!d")
+            Send {Down 1}{Right 5}{Enter}
+        Return
+    $!7::
+        if(A_PriorHotkey="!d")
+            Send {Down 1}{Right 6}{Enter}
+        Return

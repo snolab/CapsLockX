@@ -1,4 +1,8 @@
-﻿
+﻿; @CapslockX    v1
+; @name         加速模型
+; @author       snomiao@gmail.com
+; 
+; 
 Return
 ; 高性能计时
 QPF(){

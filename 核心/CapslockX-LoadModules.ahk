@@ -34,7 +34,6 @@
     GoSub Setup_34
     GoSub Setup_35
     GoSub Setup_36
-    GoSub Setup_37
     Return
     #If
         Setup_1:
@@ -143,7 +142,4 @@
             #Include 模块\插件-编辑增强.ahk
     #If
         Setup_36:
-            #Include 模块\插件-自动滚动.ahk
-    #If
-        Setup_37:
             #Include 模块\插件-雪星转屏.ahk
