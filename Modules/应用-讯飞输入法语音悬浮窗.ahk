@@ -4,13 +4,10 @@
 ; @author       snomiao@gmail.com
 ; @version      2.1.1(20200606)
 
-If(CapslockX)
-    Return
-
 Return
 #h::
-    Process, Exist, iFlyVoice.exe
-    If (ErrorLevel) {
+    ; If (ErrorLevel) {
+    If (WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe")) {
         ; 原方案使用热键触发
         ; Send ^+h
         ; 新方案直接发送模拟消息
@@ -26,4 +23,5 @@ Return
         }
     }
 Return
+
 +#h:: Send #h
