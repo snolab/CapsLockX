@@ -81,10 +81,15 @@ UpdateModulesHelp(sourceREADME)
         LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
         
         help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
-        if (T%ModuleName%_Disabled) {
-            help .=  "`n" g"### " ModuleName "模块（禁用）" "`n"
-        } else {
-            help .=  "`n" "### " ModuleName "模块" "`n"
+        
+        ModuleHelp := RegExReplace(ModuleHelp, "^#", "###")
+        
+        if (!RegExMatch(ModuleHelp, "^#")){
+            if (T%ModuleName%_Disabled) {
+                help .=  "`n" "### " ModuleName "模块（禁用）" "`n"
+            } else {
+                help .=  "`n" "### " ModuleName "模块" "`n"
+            }
         }
         help .= ModuleHelp "`n`n"
     }
