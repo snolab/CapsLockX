@@ -80,11 +80,11 @@ UpdateModulesHelp(sourceREADME)
         ModuleHelp := Trim(ModuleHelp, " `t`n")
         LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
         
+        help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
         if (T%ModuleName%_Disabled) {
-            help .= "### " ModuleName "模块（禁用）" "`n"
+            help .=  "`n" g"### " ModuleName "模块（禁用）" "`n"
         } else {
-            help .= "<!-- 模块帮助文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
-            help .= "### " ModuleName "模块" "`n"
+            help .=  "`n" "### " ModuleName "模块" "`n"
         }
         help .= ModuleHelp "`n`n"
     }
@@ -111,7 +111,8 @@ LoadModules(ModulesLoader)
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
-    loop, Files, %CapslockX_PathModules%\*.ahk, R ; Recurse into subfolders.
+    ; loop, Files, %CapslockX_PathModules%\*.ahk, R ; Recurse into subfolders.
+    loop, Files, %CapslockX_PathModules%\*.ahk,  ; NOT Recurse into subfolders.
     ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles

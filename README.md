@@ -11,12 +11,9 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 按下`Alt`, 按住`Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
 
 > 某些功能需要使用管理员身份运行（如鼠标模拟）
-> 
 > 在 CapslockX-Settings.ahk 中
-> 
 > 手动修改 global T_AskRunAsAdmin := 1 即可
 > 如不需要，可以改为 0
-> 
 
 ## 使用手册第二
 
@@ -24,6 +21,7 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 按住 `CapsLock` 使用临时 CapslockX 模式
 
 ## 按键表第三
+
 每个模块可以单独禁用，请见 `CapslockX-Settings.ahk` 文件
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到模块里操作, 在这里修改会被覆盖 -->
@@ -164,7 +162,7 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 ##### OneNote 剪贴板收集插件
 
 使用方法：
-1. OneNote 2016 打开一个窗口，标题写成这样“剪贴板收集”。
+1. OneNote 2016 打开一个窗口，标题写成这样 "剪贴板收集"。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
 3. 如图
 ![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
