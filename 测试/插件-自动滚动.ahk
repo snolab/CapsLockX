@@ -1,5 +1,5 @@
 ﻿; 正确运行方式……
-; "C:\Program Files\AutoHotkey\AutoHotkeyU32.exe"  "C:\Users\snomiao\OneDrive\GitHub\CapslockX\工具\插件-自动滚动.ahk"
+; "C:\Program Files\AutoHotkey\AutoHotkeyU32.exe"  "C:\Users\snomiao\OneDrive\GitHub\CapslockX\Tools\插件-自动滚动.ahk"
 
 global autoScrollY, autoScrollStep
 autoScrollY := 0

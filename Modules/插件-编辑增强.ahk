@@ -1,6 +1,6 @@
 ﻿
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
-global ktl := 0, ktr := 0, ktu := 0, ktd := 0, kvx := 0, kvy := 0, kdx := 0, kdy := 0
+global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
 Return
 
 OnSwitch(){
@@ -11,67 +11,69 @@ OnSwitch(){
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 
-; ToolTip, %kvx% _ %kvy% _ %kdx% _ %kdy%
-kTicker:
-    
+; ToolTip, %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
+
+arrowTicker:
     ; 在非 CapslockX 模式下直接停止
     If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
+        arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0
+        arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
         kax := 0, kay := 0
     }else{
         tNow := QPC()
         ; 计算用户操作时间
-        tda := dt(ktl, tNow), tdd := dt(ktr, tNow)
-        tdw := dt(ktu, tNow), tds := dt(ktd, tNow)
+        tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
+        tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
         ; 计算加速度
         ; 这里偶尔会出现加速度突然超大的 bug 但暂时找不到原因
         kax := ma(tdd - tda) , kay := ma(tds - tdw)
     }
     
     ; 摩擦力不阻碍用户意志
-    kvx := Friction(kvx + kax, kax), kvy := Friction(kvy + kay, kay)
+    arrow_vx := Friction(arrow_vx + kax, kax), arrow_vy := Friction(arrow_vy + kay, kay)
     
     ; 稳定化
-    kdx += kvx / 200, kdy += kvy / 200
-    ; ToolTip, %ktl% _ %ktr% _ %ktu% _ %ktd% `n %kax% _ %kay% _ %kvx% _ %kvy% _ %kdx% _ %kdy%
+    arrow_dx += arrow_vx / 200, arrow_dy += arrow_vy / 200
+    ; ToolTip, %arrow_tl% _ %arrow_tr% _ %arrow_tu% _ %arrow_td% `n %kax% _ %kay% _ %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
     
     ; 完成移动时
-    if ( 0 == kvx && 0 == kvy){
-        ; 重置小数点
-        kdx := 0, kdy := 0
+    if ( 0 == arrow_vx && 0 == arrow_vy){
+        ; 重置相关参数
+        arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
         ; 退出定时
-        SetTimer, kTIcker, Off
+        SetTimer, arrowTicker, Off
         Return
     }
     ; TODO: 输出速度时间曲线，用于DEBUG
-    If(kdx >= 1){
-        Loop, %kdx%
+    If(arrow_dx >= 1){
+        Loop, %arrow_dx%
             SendEvent {Blind}{Right}
-        kdx -= kdx | 0
+        arrow_dx -= arrow_dx | 0
     }
-    If(kdx <= -1){
-        kdx := -kdx
-        Loop, %kdx%
+    If(arrow_dx <= -1){
+        arrow_dx := -arrow_dx
+        Loop, %arrow_dx%
             SendEvent {Blind}{Left}
-        kdx := -kdx
-        kdx -= kdx | 0
+        arrow_dx := -arrow_dx
+        arrow_dx -= arrow_dx | 0
     }
-    If(kdy >= 1){
-        Loop, %kdy%
+    If(arrow_dy >= 1){
+        Loop, %arrow_dy%
             SendEvent {Blind}{Down}
-        kdy -= kdy | 0
+        arrow_dy -= arrow_dy | 0
     }
-    If(kdy <= -1){
-        kdy := -kdy
-        Loop, %kdy%
+    If(arrow_dy <= -1){
+        arrow_dy := -arrow_dy
+        Loop, %arrow_dy%
             SendEvent {Blind}{Up}
-        kdy := -kdy
-        kdy -= kdy | 0
+        arrow_dy := -arrow_dy
+        arrow_dy -= arrow_dy | 0
     }
 Return
 
 ; 时间处理
 kTick(){
-    SetTimer, kTicker, 0
+    SetTimer, arrowTicker, 0
 }
 
 #If CapslockXMode == CM_FN
@@ -93,9 +95,9 @@ kTick(){
 
 ; ; ; 光标运动处理
 *h::
-    ; ktl := (ktl ? ktl : QPC())
-    if (!ktl){
-        ktl:=QPC()
+    ; arrow_tl := (arrow_tl ? arrow_tl : QPC())
+    if (!arrow_tl){
+        arrow_tl:=QPC()
         SendInput {Blind}{Left}
     }
     
@@ -103,9 +105,9 @@ kTick(){
     Return 
     ;
 *l::
-    ; ktr := (ktr ? ktr : QPC())
-    if (!ktr){
-        ktr:=QPC()
+    ; arrow_tr := (arrow_tr ? arrow_tr : QPC())
+    if (!arrow_tr){
+        arrow_tr:=QPC()
         SendInput {Blind}{Right}
     }
     
@@ -113,9 +115,9 @@ kTick(){
     Return 
     ;
 *k::
-    ; ktu := (ktu ? ktu : QPC())
-    if (!ktu){
-        ktu:=QPC()
+    ; arrow_tu := (arrow_tu ? arrow_tu : QPC())
+    if (!arrow_tu){
+        arrow_tu:=QPC()
         SendInput {Blind}{Up}
     }
     
@@ -123,19 +125,19 @@ kTick(){
     Return 
     ;
 *j::
-    ; ktd := (ktd ? ktd : QPC())
-    if (!ktd){
-        ktd:=QPC()
+    ; arrow_td := (arrow_td ? arrow_td : QPC())
+    if (!arrow_td){
+        arrow_td:=QPC()
         SendInput {Blind}{Down}
     }
     
     kTick()
     Return 
     ;
-*h Up:: ktl := 0, kTick()
-*l Up:: ktr := 0, kTick()
-*k Up:: ktu := 0, kTick()
-*j Up:: ktd := 0, kTick()
+*h Up:: arrow_tl := 0, kTick()
+*l Up:: arrow_tr := 0, kTick()
+*k Up:: arrow_tu := 0, kTick()
+*j Up:: arrow_td := 0, kTick()
 
 ; 试过下面这样子的还是不管用
 ; *k:: SendInput {Blind}{Up Down} 

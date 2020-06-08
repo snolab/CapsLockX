@@ -34,11 +34,11 @@ Send % "^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}"
     
 o::
     ArrangeWindows(){
-        Run 工具\ArrangeWindows.func.ahk
+        Run Tools\ArrangeWindows.func.ahk
     }
 +o::
     ArrangeWindowsRestoreMaxWindows(){
-        Run 工具\ArrangeWindows.func.ahk 1
+        Run Tools\ArrangeWindows.func.ahk 1
     }
     
 !o::
