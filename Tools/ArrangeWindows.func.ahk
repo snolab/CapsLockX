@@ -6,8 +6,11 @@
 ;
 FileEncoding, utf-8
 ArrangeWindows(resotreMaxWindows = 0){
-    WS_CAPTION := 0x00C00000
-    WS_EX_TOOLWINDOW := 0x00000080
+    WS_EX_TOOLWINDOW  := 0x00000080
+    WS_CAPTION        := 0x00C00000
+    WS_EX_NOANIMATION := 0x04000000
+    WS_EX_NOACTIVATE  := 0x08000000
+    WS_POPUP          := 0x80000000
     ; FileDelete, listOfWindow.txt
     WinGet, id, List,,,
     listOfWindow := ""
@@ -16,19 +19,25 @@ ArrangeWindows(resotreMaxWindows = 0){
     {
         this_id := id%A_Index%
         WinGet, style, style, ahk_id %this_id%
-        ; if !(style & WS_CAPTION) ; if the window doesn't have a title bar
-        ; Continue
-        if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
-            Continue ; 跳过工具窗口嗯，
-        ; if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
-        ;     Continue ; 跳过工具窗口
         WinGetTitle, this_title, ahk_id %this_id%
-        If (!RegExMatch(this_title, ".+"))
-            Continue ; 排除空标题窗口
         WinGetClass, this_class, ahk_id %this_id%
-        If (this_class == "Progman")
-            Continue ; 排除 Win10 的常驻窗口管理器
-        
+        ; Process, , PID-or-Name [, Param3]
+        If (this_class=="TXGuiFoundation"){  ;  && this_process=="QQ.exe"
+            ; 白名单
+        }else{
+            ; 黑名单
+            ; if !(style & WS_CAPTION) ; if the window doesn't have a title bar
+            ; Continue
+            ; if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
+            ; Continue ; 跳过工具窗口
+            if (style & WS_POPUP) ; if the window doesn't have a title bar
+                Continue ; 跳过弹出窗口
+            ; If (!RegExMatch(this_title, ".+"))
+            ; Continue ; 排除空标题窗口
+            ; If (this_class == "Progman")
+            ; Continue ; 排除 Win10 的常驻窗口管理器
+        }
+
         listOfWindow .= this_id . "|" . this_title . "`n"
         
         WinGet, minmax, minmax, ahk_id %this_id%
@@ -50,7 +59,6 @@ ArrangeWindows(resotreMaxWindows = 0){
         ; IfMsgBox, NO, break
     }
     
-    
     ; shorten edge first
     if (A_ScreenWidth <= A_ScreenHeight){
         ; row more than cols
@@ -61,27 +69,31 @@ ArrangeWindows(resotreMaxWindows = 0){
         row := Sqrt(n) | 0
         col := Ceil(n / row)
     }
-    size_x := A_ScreenWidth / col
-    size_y := A_ScreenHeight / row
-
+    
     k:=0
     Loop, %id%
     {
         this_id := id%A_Index%
         WinGet, style, style, ahk_id %this_id%
-        ; if !(style & WS_CAPTION) ; if the window doesn't have a title bar
-        ; Continue
-        if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
-            Continue ; 跳过工具窗口
-        ; if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
-        ;     Continue ; 跳过工具窗口
         WinGetTitle, this_title, ahk_id %this_id%
-        If (!RegExMatch(this_title, ".+"))
-            Continue ; 排除空标题窗口
         WinGetClass, this_class, ahk_id %this_id%
-        If (this_class == "Progman")
-            Continue ; 排除 Win10 的常驻窗口管理器
-        
+        ; Process, , PID-or-Name [, Param3]
+        If (this_class=="TXGuiFoundation"){  ;  && this_process=="QQ.exe"
+            ; 白名单
+        }else{
+            ; 黑名单
+            ; if !(style & WS_CAPTION) ; if the window doesn't have a title bar
+            ; Continue
+            ; if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
+            ; Continue ; 跳过工具窗口
+            if (style & WS_POPUP) ; if the window doesn't have a title bar
+                Continue ; 跳过弹出窗口
+            ; If (!RegExMatch(this_title, ".+"))
+            ; Continue ; 排除空标题窗口
+            ; If (this_class == "Progman")
+            ; Continue ; 排除 Win10 的常驻窗口管理器
+        }
+
         listOfWindow .= this_id . "|" . this_title . "`n"
         
         ; shorten edge first
@@ -89,10 +101,14 @@ ArrangeWindows(resotreMaxWindows = 0){
             ; row first
             nx := Mod(k, col)
             ny := k / col | 0
+            size_x := A_ScreenWidth / col
+            size_y := A_ScreenHeight / row
         }else{
             ; col first
             nx := k / row | 0
             ny := Mod(k, row)
+            size_x := A_ScreenWidth / col
+            size_y := A_ScreenHeight / row
         }
         x := nx * size_x
         y := ny * size_y
