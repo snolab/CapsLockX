@@ -214,7 +214,7 @@ j:: Send {End}{Right}
     $^+l:: Send !+{Down}!+{Up}
     ; 输入、套锁、橡皮
     ; $!q:: altSend("dl")
-    $!q:: altSend("dh") ;换成手形工具
+    $!q:: altSend("dh") ;换成手形Tools
     $!w:: altSend("dn")
     $!e:: altSend("dek")
     

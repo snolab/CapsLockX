@@ -1,11 +1,8 @@
-﻿; ArrangeWindows.func.ahk
-; UTF-8 with BOM
-; 
-; 排列窗口
-; 
+﻿; 排列窗口
+; Save as UTF-8 with BOM please
 ; Copyright © 2017-2020 snomiao@gmail.com
-; 创建：Snowstar QQ: 997596439
 ; LICENCE: GNU GPLv3
+; 
 ;
 FileEncoding, utf-8
 ArrangeWindows(resotreMaxWindows = 0){
@@ -22,7 +19,9 @@ ArrangeWindows(resotreMaxWindows = 0){
         ; if !(style & WS_CAPTION) ; if the window doesn't have a title bar
         ; Continue
         if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
-            Continue ; 只处理任务栏里有的窗口
+            Continue ; 跳过工具窗口嗯，
+        ; if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
+        ;     Continue ; 跳过工具窗口
         WinGetTitle, this_title, ahk_id %this_id%
         If (!RegExMatch(this_title, ".+"))
             Continue ; 排除空标题窗口
@@ -42,18 +41,29 @@ ArrangeWindows(resotreMaxWindows = 0){
         }
         listOfWindow .= this_id . "|" . this_title . "`n"
         n += 1
-        WinActivate, ahk_id %this_id%
-        WinGetClass, this_class, ahk_id %this_id%
-        WinGetPos, X, Y, Width, Height, ahk_id %this_id%
-        MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %this_id%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
-        IfMsgBox, NO, break
+        
+        ; debug
+        ; WinActivate, ahk_id %this_id%
+        ; WinGetClass, this_class, ahk_id %this_id%
+        ; WinGetPos, X, Y, Width, Height, ahk_id %this_id%
+        ; MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %this_id%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
+        ; IfMsgBox, NO, break
     }
     
-    row := Sqrt(n) | 0
-    col := Ceil(n / row)
+    
+    ; shorten edge first
+    if (A_ScreenWidth <= A_ScreenHeight){
+        ; row more than cols
+        col := Sqrt(n) | 0
+        row := Ceil(n / col)
+    }else{
+        ; col more than rows
+        row := Sqrt(n) | 0
+        col := Ceil(n / row)
+    }
     size_x := A_ScreenWidth / col
     size_y := A_ScreenHeight / row
-    
+
     k:=0
     Loop, %id%
     {
@@ -62,7 +72,9 @@ ArrangeWindows(resotreMaxWindows = 0){
         ; if !(style & WS_CAPTION) ; if the window doesn't have a title bar
         ; Continue
         if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
-            Continue ; 只处理任务栏里有的窗口
+            Continue ; 跳过工具窗口
+        ; if (style & WS_EX_TOOLWINDOW) ; if the window doesn't have a title bar
+        ;     Continue ; 跳过工具窗口
         WinGetTitle, this_title, ahk_id %this_id%
         If (!RegExMatch(this_title, ".+"))
             Continue ; 排除空标题窗口
@@ -72,9 +84,16 @@ ArrangeWindows(resotreMaxWindows = 0){
         
         listOfWindow .= this_id . "|" . this_title . "`n"
         
-        
-        nx := Mod(k, col)
-        ny := k / col | 0
+        ; shorten edge first
+        if (A_ScreenWidth <= A_ScreenHeight){
+            ; row first
+            nx := Mod(k, col)
+            ny := k / col | 0
+        }else{
+            ; col first
+            nx := k / row | 0
+            ny := Mod(k, row)
+        }
         x := nx * size_x
         y := ny * size_y
         

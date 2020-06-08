@@ -119,7 +119,8 @@ CapslockXTurnOn()
 Hotkey *%T_CapslockXKey%, CapslockX_Dn
 Hotkey *%T_CapslockXKey% Up, CapslockX_Up
 
-#Include 核心\CapslockX-LoadModules.ahk
+
+#Include Core\CapslockX-LoadModules.ahk
 
 #If
 ; CapslockX模式切换

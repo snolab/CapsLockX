@@ -1,10 +1,12 @@
 ﻿CoordMode, Mouse, Screen
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
-global mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+global mtl := 0, mtr := 0, mtu := 0, mtd := 0
+global mvx := 0, mvy := 0, mdx := 0, mdy := 0
 
 ; 滚轮加速度微分对称模型（不要在意这中二的名字hhhh
-global stu := 0, std := 0, stl := 0, str := 0, svx := 0, svy := 0, sdx := 0, sdy := 0
+global scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0
+global scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
 
 If(TMouse_SendInput)
     SendMode Input
@@ -105,16 +107,12 @@ SendInput_MouseMoveR64(x, y){
     ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
 
-; `\::
-; SendInput_MouseMoveR64(1111, 1111)
-; Return
-
 ; 鼠标运动处理
-mTicker:
+mouseTicker:
     ; 在非 CapslockX 模式下直接停止
     If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
-        max := 0
-        may := 0
+        mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+        max := 0, may := 0
     }else{
         tNow := QPC()
         ; 计算用户操作时间, 计算 ADWS 键按下的时长
@@ -133,7 +131,8 @@ mTicker:
     
     if ( mvx == 0 && mvy == 0){
         ; 完成移动，退出定时
-        SetTimer, mTicker, Off
+        mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+        SetTimer, mouseTicker, Off
         Return
     }
     
@@ -193,7 +192,7 @@ Return
 
 ; 时间处理
 mTick(){
-    SetTimer, mTicker, 0
+    SetTimer, mouseTicker, 0
 }
 
 Pos2Long(x, y) {
@@ -241,88 +240,87 @@ ScrollMsg(msg, zDelta){
     }
 }
 ; 滚轮运动处理
-sTicker:
+scrollTicker:
     ; RF同时按下相当于中键
     If(GetKeyState("MButton", "P")){
-        If(stu == 0 And std == 0){
+        If(scroll_tu == 0 And scroll_td == 0){
             Send {MButton Up}
-            stu := 0, std := 0
+            scroll_tu := 0, scroll_td := 0
             Return
         }
     }
-    If(stu And std And Abs(tdr - tdf) < 1){
+    If(scroll_tu And scroll_td And Abs(tdr - tdf) < 1){
         If(!GetKeyState("MButton", "P")){
             Send {MButton Down}
-            stu := 1, std := 1
+            scroll_tu := 1, scroll_td := 1
         }
         Return
     }
     
     ; 在非CapslockX模式下停止
     If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
-        sax := 0
-        say := 0
+        scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0
+        scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
+        sax := 0, say := 0
     }else{
         tNow := QPC()
         ; 计算用户操作时间
-        tdz := dt(stl, tNow), tdc := dt(str, tNow)
-        tdr := dt(stu, tNow), tdf := dt(std, tNow)
+        tdz := dt(scroll_tl, tNow), tdc := dt(scroll_tr, tNow)
+        tdr := dt(scroll_tu, tNow), tdf := dt(scroll_td, tNow)
         ; 计算加速度
         say := ma(tdr - tdf) * TMouse_WheelSpeedRatio
         sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
     }
     ; 计算速度
-    lastsvy := svy
-    lastsvx := svx
+    lastsvy := scroll_vy
+    lastsvx := scroll_vx
     
-    svy := Friction(svy + say, say), svx := Friction(svx + sax, sax)
+    scroll_vy := Friction(scroll_vy + say, say), scroll_vx := Friction(scroll_vx + sax, sax)
     
-    ; ?
-    ; If ( (lastsvx > 0 && svx < 0) || (lastsvx < 0 && svx > 0) || (lastsvy > 0 && svy < 0) || (lastsvy < 0 && svy > 0) ){
-    ; svx := 0
-    ; svy := 0
-    ; }
+    ; tooltip %scroll_tu%`n%scroll_td%`n%scroll_tl%`n%scroll_tr%`n%scroll_vx%`n%scroll_vy%`n%scroll_dx%`n%scroll_dy%
     
-    ; ; 稳定化
-    ; If(Abs(svx) < 0.02)
-    ; svx := 0
-    ; If(Abs(svy) < 0.02)
-    ; svy := 0
-    ; ; ToolTip, %sax% %say% %svx% %svy%
-    
-    if ( svy == 0 && svx == 0){
+    if ( scroll_vy == 0 && scroll_vx == 0){
         ; 完成滚动，退出定时
         ; tooltip Done
-        SetTimer, sTicker, Off
+        scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0, scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
+        SetTimer, scrollTicker, Off
         Return
     }
     
-    sdy+= svy, sdx += svx
+    scroll_dy+= scroll_vy, scroll_dx += scroll_vx
     ; 处理移动
-    If ((sdy|0) != 0) {
+    If ((scroll_dy|0) != 0) {
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x0800, sdy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
+            SendInput_MouseMsg32(0x0800, scroll_dy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
-            ScrollMsg2(0x20A, sdy)
-        sdy -= sdy | 0
+            ScrollMsg2(0x20A, scroll_dy)
+        scroll_dy -= scroll_dy | 0
     }
-    If ((sdx|0) != 0) {
+    If ((scroll_dx|0) != 0) {
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x1000, sdx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
+            SendInput_MouseMsg32(0x1000, scroll_dx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
         Else
-            ScrollMsg2(0x20E, sdx) ; 在64位下用的是低性能的……
-        sdx -= sdx | 0
+            ScrollMsg2(0x20E, scroll_dx) ; 在64位下用的是低性能的……
+        scroll_dx -= scroll_dx | 0
     }
 Return
 
 ; 时间处理
 sTick(){
-    SetTimer, sTicker, 0
+    SetTimer, scrollTicker, 0
 }
+
+
+
+
+
+
 
 ; CapslockX和fn模式都能触发
 #If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
-    ; 鼠标按键处理
+
+; 鼠标按键处理
+
 *e:: Send {Blind}{LButton Down}
 *e up:: Send {Blind}{LButton Up}
 *q::
@@ -351,20 +349,21 @@ Return
 *s Up:: mtd := 0, mTick()
 
 ; 鼠标滚轮处理
-*r:: stu := (stu ? stu : QPC()), sTick()
-*f:: std := (std ? std : QPC()), sTick()
-*+r:: stl := (stl ? stl : QPC()), sTick()
-*+f:: str := (str ? str : QPC()), sTick()
-; +z:: stl := (stl ? stl : QPC()), sTickx()
-; +c:: str := (str ? str : QPC()), sTickx()
+*r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
+*f:: scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
++r:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), sTick()
++f:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), sTick()
+; +z:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), sTickx()
+; +c:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), sTickx()
 ; !r:: Send {WheelUp}
 ; !f:: Send {WheelDown}
 ; ^r:: Send ^{WheelUp}
 ; ^f:: Send ^{WheelDown}
 
-*r Up:: stu := 0, sTick()
-*f Up:: std := 0, sTick()
-*+r Up:: stl := 0, sTick()
-*+f Up:: str := 0, sTick()
-; z Up:: stl := 0, sTickx()
-; c Up:: str := 0, sTickx()
+*r Up:: scroll_tu := 0, sTick()
+*f Up:: scroll_td := 0, sTick()
++r Up:: scroll_tl := 0, sTick()
++f Up:: scroll_tr := 0, sTick()
+; 
+; z Up:: scroll_tl := 0, sTickx()
+; c Up:: scroll_tr := 0, sTickx()
