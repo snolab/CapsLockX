@@ -135,7 +135,8 @@ mouseTicker:
         SetTimer, mouseTicker, Off
         Return
     }
-    
+
+    ; 撞到屏幕边角就停下来
     If (TMouse_StopAtScreenEdge) {
         MouseGetPos, xa, ya
     }
@@ -145,7 +146,7 @@ mouseTicker:
         SendInput_MouseMoveR32(mdx, mdy)
         mdx -= mdx | 0, mdy -= mdy | 0
     }Else{
-        MouseMove, %mdx%, %mdy%, 0, R 
+        MouseMove, %mdx%, %mdy%, 0, R
         mdx -= mdx | 0, mdy -= mdy | 0
     }
     

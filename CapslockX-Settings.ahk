@@ -1,14 +1,14 @@
 ﻿; 基本设定
 
-	; 以管理员身份运行
+	; 以管理员身份运行（模拟鼠标功能需要管理员权限，如果不使用这个功能可以普通用户权限运行）
 	global T_AskRunAsAdmin      := 1
 
 	; 鼠标模块设定
 		; 禁用模块
 		global TMouse_Disabled         := 0
-		; 提高鼠标点击、移动性能
+		; 使用 SendInput 方法提高模拟鼠标点击、移动性能
 		global TMouse_SendInput        := 1
-		; 强势提升鼠标移动性能
+		; 使用 Windows API 强势提升模拟鼠标移动性能
 		global TMouse_SendInputAPI     := 1
 		; 自动粘附各种按钮，编辑框
 		global TMouse_StickyCursor     := 1

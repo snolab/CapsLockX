@@ -26,9 +26,10 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
-<!-- 模块文件名： 01-插件-模拟鼠标.ahk -->
+<!-- 模块文件名：01-插件-模拟鼠标.ahk-->
+### 模拟鼠标插件
 
-### 模拟鼠标模块
+![鼠标模拟.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/鼠标模拟.gif)
 
 | 作用窗口 | 模拟鼠标模块 | 说明 |
 | - | :-: | - |
@@ -165,9 +166,7 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 
 
 <!-- 模块文件名：插件-OneNote剪贴板收集器.ahk-->
-
-### OneNote剪贴板收集器模块
-### OneNote 剪贴板收集插件
+##### OneNote 剪贴板收集插件
 
 使用方法：
 
@@ -254,8 +253,10 @@ po主偷懒中:
 
 GitHub: [https://github.com/snomiao/CapslockX](https://github.com/snomiao/CapslockX)
 
-本人常驻 QQ群： 271105729
 
+QQ群：
+QZ/VimD/TC/AHK群：271105729
+CapsLockX 用户群：100949388
 关于这个脚本，相关答疑直接进群 @这个QQ 997596439 提问即可
 
 ## 性能指标
