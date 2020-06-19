@@ -350,21 +350,28 @@ Return
 *s Up:: mtd := 0, mTick()
 
 ; 鼠标滚轮处理
-*r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
-*f:: scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
+r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
+f:: scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
+r Up:: scroll_tu := 0, sTick()
+f Up:: scroll_td := 0, sTick()
+
+; 单格滚动
+!r:: Send {WheelUp}
+!f:: Send {WheelDown}
+!^r:: Send ^{WheelUp}
+!^f:: Send ^{WheelDown}
+
+; 缩放
+^r:: Send ^{WheelUp}
+^f:: Send ^{WheelDown}
+
+; ^r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
+; ^f:: scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
+; ^r Up:: scroll_tu := 0, sTick()
+; ^f Up:: scroll_td := 0, sTick()
+
+; 横向滚动
 +r:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), sTick()
 +f:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), sTick()
-; +z:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), sTickx()
-; +c:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), sTickx()
-; !r:: Send {WheelUp}
-; !f:: Send {WheelDown}
-; ^r:: Send ^{WheelUp}
-; ^f:: Send ^{WheelDown}
-
-*r Up:: scroll_tu := 0, sTick()
-*f Up:: scroll_td := 0, sTick()
 +r Up:: scroll_tl := 0, sTick()
 +f Up:: scroll_tr := 0, sTick()
-; 
-; z Up:: scroll_tl := 0, sTickx()
-; c Up:: scroll_tr := 0, sTickx()
