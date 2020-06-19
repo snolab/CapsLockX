@@ -15,8 +15,8 @@ SetTitleMatchMode RegEx
 ; #NoTrayIcon                ; 隐藏托盘图标
 ; #NoEnv                     ; 不检查空变量是否为环境变量
 #Persistent
-#MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的）
-#InstallMouseHook          ; 安装鼠标钩子
+#MaxHotkeysPerInterval 1000  ; 时间内按键最大次数（通常是一直按着键触发的）
+#InstallMouseHook            ; 安装鼠标钩子
 
 ; 载入设定
 #Include CapslockX-Settings.ahk

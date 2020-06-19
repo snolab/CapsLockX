@@ -1,6 +1,5 @@
 ﻿Return
 
-
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Function .....: StdoutToVar_CreateProcess
 ; Description ..: Runs a command line program and returns its output.
@@ -65,10 +64,6 @@ RunSilent(command) {
 }
 
 #If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
-	Numpad8:: RunSilent("模块\雪星转屏.exe =0")
-	Numpad4:: RunSilent("模块\雪星转屏.exe =90")
-	Numpad2:: RunSilent("模块\雪星转屏.exe =180")
-	Numpad6:: RunSilent("模块\雪星转屏.exe =270")
 	!Up:: RunSilent("模块\雪星转屏.exe =0")
 	!Left:: RunSilent("模块\雪星转屏.exe =90")
 	!Down:: RunSilent("模块\雪星转屏.exe =180")

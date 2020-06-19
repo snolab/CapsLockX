@@ -16,7 +16,13 @@ MoveActiveWindowTo(x){
     MoveActiveWindow( 0 == x ? "^#d" : "^#{Left 10}^#{Right " (x - 1) "}")
 }
 SwitchToDesktop(x){
-Send % "^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}"
+    ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
+    ; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
+    Send ^#{Left 10}
+    ; Send % "^#{Right " x - 1 "}"
+    x -= 1
+    Loop, %x%
+        Send ^#{Right}
 }
 
 #Delete:: Send {CtrlDown}#{F4}{CtrlUp}
@@ -100,26 +106,26 @@ Return
 0:: MoveActiveWindowTo(0)
 
 ; 把当前窗口移到第x个桌面
-1:: MoveActiveWindowTo(1)
-2:: MoveActiveWindowTo(2)
-3:: MoveActiveWindowTo(3)
-4:: MoveActiveWindowTo(4)
-5:: MoveActiveWindowTo(5)
-6:: MoveActiveWindowTo(6)
-7:: MoveActiveWindowTo(7)
-8:: MoveActiveWindowTo(8)
-9:: MoveActiveWindowTo(9)
+1:: SwitchToDesktop(1)
+2:: SwitchToDesktop(2)
+3:: SwitchToDesktop(3)
+4:: SwitchToDesktop(4)
+5:: SwitchToDesktop(5)
+6:: SwitchToDesktop(6)
+7:: SwitchToDesktop(7)
+8:: SwitchToDesktop(8)
+9:: SwitchToDesktop(9)
 
 ; ; 把当前窗口移到第x个桌面
-; !1:: MoveActiveWindowTo(1)
-; !2:: MoveActiveWindowTo(2)
-; !3:: MoveActiveWindowTo(3)
-; !4:: MoveActiveWindowTo(4)
-; !5:: MoveActiveWindowTo(5)
-; !6:: MoveActiveWindowTo(6)
-; !7:: MoveActiveWindowTo(7)
-; !8:: MoveActiveWindowTo(8)
-; !9:: MoveActiveWindowTo(9)
+!1:: MoveActiveWindowTo(1)
+!2:: MoveActiveWindowTo(2)
+!3:: MoveActiveWindowTo(3)
+!4:: MoveActiveWindowTo(4)
+!5:: MoveActiveWindowTo(5)
+!6:: MoveActiveWindowTo(6)
+!7:: MoveActiveWindowTo(7)
+!8:: MoveActiveWindowTo(8)
+!9:: MoveActiveWindowTo(9)
 
 ; 关闭窗口
 $Esc:: Send !{F4}

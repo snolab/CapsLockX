@@ -18,7 +18,7 @@ Process Priority, , High     ; 脚本高优先级
 
 global CapslockX_PathModules := "Modules"
 global CapslockX_PathCore    := "Core"
-global CapslockX_Version := "v1.4 Alpha"
+global CapslockX_Version := "v1.5 Alpha"
 global loadingTips := ""
 
 LoadingTips(msg, clear = 0)
@@ -158,7 +158,12 @@ LoadModules(ModulesLoader)
     ShowLoadingTips()
     
     ; 拼接代码
+    code_consts .= "global CapslockX_PathModules := " `" CapslockX_PathModules `"
+    code_consts .= "global CapslockX_PathCore := "    `" CapslockX_PathCore    `"
+    code_consts .= "global CapslockX_Version := "     `" CapslockX_Version     `"
+
     code := ""
+    code .= code_consts
     code .= code_setup
     code .= "    Return`n"
     code .= code_include

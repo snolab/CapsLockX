@@ -1,4 +1,4 @@
-﻿    GoSub Setup_1
+﻿global CapslockX_PathModules :=  CapslockX_PathModules global CapslockX_PathCore :=  CapslockX_PathCore    global CapslockX_Version :=  CapslockX_Version         GoSub Setup_1
     GoSub Setup_2
     GoSub Setup_3
     GoSub Setup_4

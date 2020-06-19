@@ -42,12 +42,12 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 
 
 <!-- 模块文件名：02-插件-窗口增强.ahk-->
-
-### 窗口增强模块
+### 窗口增强插件
 
 效果如图
-![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
-<!-- ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/模块/02-插件-窗口增强_一键排列窗口.gif) -->
+
+![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
+<!-- ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/Modules/02-插件-窗口增强_一键排列窗口.gif) -->
 
 | 作用域 | 窗口增强模块   | 说明 |
 | - | :-: | - |
@@ -147,33 +147,29 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 | 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
+### 讯飞输入法悬浮窗插件
 
-### 讯飞输入法语音悬浮窗模块
-效果如下
 
 | 模式 | 按键| 功能说明 |
 | - | :-: | - |
 | 任意 | Win + H | 启动/切换讯飞语音输入 |
-*注1：原 Win+H 的功能是 Windows 自带听写，安装本插件后会变成 Win+Shift+H
-*注2：若没有安装讯飞语音则会询问是否下载安装
 
-<!-- **需要先进行以下配置**
-1. 在C盘默认目录安装[讯飞语音输入法 Windows 版](https://srf.xunfei.cn/)（如果安装到其它目录请自己改代码……）
-2. 当需要语音输入东西的时候按 Win+H 呼出即可
-3. Enjoy it. -->
+* 注1：原 Win+H 的功能是 Windows 自带听写，安装本插件后会变成 Win+Shift+H
+* 注2：若没有安装讯飞语音则会自动询问是否引导下载安装
 
-![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/模块/应用-讯飞语音输入法悬浮窗演示.gif)
+效果如下
+![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
 
 
 <!-- 模块文件名：插件-OneNote剪贴板收集器.ahk-->
-##### OneNote 剪贴板收集插件
+### OneNote 剪贴板收集插件
 
 使用方法：
 
 1. OneNote 2016 打开一个窗口，标题写成这样 "剪贴板收集"。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
 3. 如图
-   ![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/模块/插件-OneNote剪贴板收集器.gif)
+   ![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/Modules/插件-OneNote剪贴板收集器.gif)
 
 <!-- 模块文件名：插件-合并右Ctrl与Menu键.ahk-->
 
@@ -209,8 +205,8 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 | CapslockX | g    | 用 google 搜索当前选择或鼠标所指的词 |
 
 <!-- 模块文件名：插件-编辑增强.ahk-->
+### 编辑增强插件
 
-### 编辑增强模块
 | 作用 | Edit模块   | 说明 （欢迎push）|
 | - | :-: | - |
 | 全局 | CapslockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |

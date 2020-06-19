@@ -1,4 +1,5 @@
-﻿If(!CapslockX)
+﻿
+If(!CapslockX)
     ExitApp
 Return
 
@@ -52,7 +53,7 @@ TIM_MouseShift(times){
         CoordMode, Pixel, Screen
         CoordMode, Mouse, Screen
         Loop {
-            FILE := "./模块/TIM同意按钮.png"
+            FILE := "./Modules/TIM同意按钮.png"
             If ( !FileExist(FILE) ){
                 Msgbox 文件不存在：%FILE%
                 Return
