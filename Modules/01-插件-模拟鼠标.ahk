@@ -321,7 +321,7 @@ sTick(){
 #If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
 
 ; 鼠标按键处理
-
+`:: Send {LButton 5}
 *e:: Send {Blind}{LButton Down}
 *e up:: Send {Blind}{LButton Up}
 *q::
