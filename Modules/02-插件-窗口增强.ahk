@@ -2,6 +2,16 @@
     ExitApp
 Return
 
+SwitchToDesktop(x){
+    ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
+    ; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
+    Send ^#{Left 10}
+    ; Send % "^#{Right " x - 1 "}"
+    x -= 1
+    Loop, %x%
+        Send ^#{Right}
+}
+
 ; 把当前窗口移到其它桌面
 MoveActiveWindow(action){
     activeWin := WinActive("A")
@@ -14,15 +24,6 @@ MoveActiveWindow(action){
 MoveActiveWindowTo(x){
     ; MoveActiveWindow("^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}")
     MoveActiveWindow( 0 == x ? "^#d" : "^#{Left 10}^#{Right " (x - 1) "}")
-}
-SwitchToDesktop(x){
-    ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
-    ; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
-    Send ^#{Left 10}
-    ; Send % "^#{Right " x - 1 "}"
-    x -= 1
-    Loop, %x%
-        Send ^#{Right}
 }
 
 #Delete:: Send {CtrlDown}#{F4}{CtrlUp}

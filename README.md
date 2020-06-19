@@ -29,8 +29,11 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 <!-- 模块文件名：01-插件-模拟鼠标.ahk-->
 ### 模拟鼠标插件
 
+功能及效果如图
+
 ![鼠标模拟.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/鼠标模拟.gif)
 
+使用方法如下
 | 作用窗口 | 模拟鼠标模块 | 说明 |
 | - | :-: | - |
 | 全局 | CapslockX + w a s d   | 鼠标平滑移动（上下左右） |
@@ -44,11 +47,14 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 <!-- 模块文件名：02-插件-窗口增强.ahk-->
 ### 窗口增强插件
 
-效果如图
+功能：
+1. Alt + Tab 的时候可以用 WASD 切换窗口了
+2. CapslockX + 数字 切换虚拟桌面，加上 Alt 键把当前窗口带过去，高效使用虚拟桌面
 
 ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 <!-- ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/Modules/02-插件-窗口增强_一键排列窗口.gif) -->
 
+使用方法如下
 | 作用域 | 窗口增强模块   | 说明 |
 | - | :-: | - |
 | 全局 | CapslockX + \ | 打开多桌面视图 |
@@ -59,7 +65,7 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 | 全局 | CapslockX + 0 | 新建桌面，并把当前窗口移过去 |
 | 全局 | CapslockX + 1 2 ... 9 | 把当前窗口移到第1...9个桌面(如果有的话) |
 | Alt+Tab界面 | w a s d | 上下左右切换窗口选择 |
-| Alt+Tab界面 | x c     | 关闭选择的窗口 |
+| Alt+Tab界面 | x c     | 关闭选择的窗口（目前 x 和 c 没有区别） |
 | Alt+Tab界面 | q e     | 左右切换多桌面 |
 | Win+Tab视图 | w a s d | 切换窗口选择 |
 | Win+Tab视图 | x | 关掉选择的窗口 |
@@ -149,6 +155,8 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 ### 讯飞输入法悬浮窗插件
 
+效果如下
+![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
 
 | 模式 | 按键| 功能说明 |
 | - | :-: | - |
@@ -156,10 +164,6 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 
 * 注1：原 Win+H 的功能是 Windows 自带听写，安装本插件后会变成 Win+Shift+H
 * 注2：若没有安装讯飞语音则会自动询问是否引导下载安装
-
-效果如下
-![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
-
 
 <!-- 模块文件名：插件-OneNote剪贴板收集器.ahk-->
 ### OneNote 剪贴板收集插件
@@ -217,13 +221,15 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 | 全局 | CapslockX + Shift + b | Delete |
 
 <!-- 模块文件名：插件-雪星转屏.ahk-->
-
 ### 雪星转屏模块
+
+功能：同步旋转你所有的屏幕，自动对齐屏幕边界，不会错位
+
+使用方式如下
 
 | 模式 | 按键 | 功能 |
 | - | :-: | - |
-| CapslockX | Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
-| CapslockX | Alt + 小键盘 8 2 4 6 | 同时旋转所有屏幕到你指定的方向 |
+| 全局 | CapslockX + Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
 ## 发展路线第四
