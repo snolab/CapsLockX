@@ -224,6 +224,8 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
+![光标移动.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/光标移动.gif)
+
 | 作用 | Edit模块   | 说明 （欢迎push）|
 | - | :-: | - |
 | 全局 | CapslockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
