@@ -35,6 +35,7 @@
     GoSub Setup_35
     GoSub Setup_36
     GoSub Setup_37
+    GoSub Setup_38
     Return
     #If
         Setup_1:
@@ -53,97 +54,100 @@
             #Include Modules\help.ahk
     #If
         Setup_6:
-            #Include Modules\功能-秒打时间戳.ahk
+            #Include Modules\OpenSystemSetting.ahk
     #If
         Setup_7:
-            #Include Modules\应用-Acrobat增强.ahk
+            #Include Modules\功能-秒打时间戳.ahk
     #If
         Setup_8:
-            #Include Modules\应用-Acrobat自动缩放.ahk
+            #Include Modules\应用-Acrobat增强.ahk
     #If
         Setup_9:
-            #Include Modules\应用-BTSync1.4.111快速添加Key.ahk
+            #Include Modules\应用-Acrobat自动缩放.ahk
     #If
         Setup_10:
-            #Include Modules\应用-CapsX-Cursor.ahk
+            #Include Modules\应用-BTSync1.4.111快速添加Key.ahk
     #If
         Setup_11:
-            #Include Modules\应用-Edge增强.ahk
+            #Include Modules\应用-CapsX-Cursor.ahk
     #If
         Setup_12:
-            #Include Modules\应用-IAR改选项为CMSIS-DAP.ahk
+            #Include Modules\应用-Edge增强.ahk
     #If
         Setup_13:
-            #Include Modules\应用-LoopbackExemptionManager.ahk
+            #Include Modules\应用-IAR改选项为CMSIS-DAP.ahk
     #If
         Setup_14:
-            #Include Modules\应用-MobaXterm.ahk
+            #Include Modules\应用-LoopbackExemptionManager.ahk
     #If
         Setup_15:
-            #Include Modules\应用-mstsc远程桌面增强.ahk
+            #Include Modules\应用-MobaXterm.ahk
     #If
         Setup_16:
-            #Include Modules\应用-OneNote2016增强.ahk
+            #Include Modules\应用-mstsc远程桌面增强.ahk
     #If
         Setup_17:
-            #Include Modules\应用-OneNoteMetro拓展.ahk
+            #Include Modules\应用-OneNote2016增强.ahk
     #If
         Setup_18:
-            #Include Modules\应用-QQ_UWP增强.ahk
+            #Include Modules\应用-OneNoteMetro拓展.ahk
     #If
         Setup_19:
-            #Include Modules\应用-Telegram.ahk
+            #Include Modules\应用-QQ_UWP增强.ahk
     #If
         Setup_20:
-            #Include Modules\应用-TIM添加常驻功能.ahk
+            #Include Modules\应用-Telegram.ahk
     #If
         Setup_21:
-            #Include Modules\应用-TIM连接OneNote2016.ahk
+            #Include Modules\应用-TIM添加常驻功能.ahk
     #If
         Setup_22:
-            #Include Modules\应用-UWP应用增强.ahk
+            #Include Modules\应用-TIM连接OneNote2016.ahk
     #If
         Setup_23:
-            #Include Modules\应用-文明6回车左置.ahk
+            #Include Modules\应用-UWP应用增强.ahk
     #If
         Setup_24:
-            #Include Modules\应用-桌面QQ增强.ahk
+            #Include Modules\应用-文明6回车左置.ahk
     #If
         Setup_25:
-            #Include Modules\应用-网易云音乐.ahk
+            #Include Modules\应用-桌面QQ增强.ahk
     #If
         Setup_26:
-            #Include Modules\应用-讯飞输入法语音悬浮窗.ahk
+            #Include Modules\应用-网易云音乐.ahk
     #If
         Setup_27:
-            #Include Modules\插件-Chrome增强.ahk
+            #Include Modules\应用-讯飞输入法语音悬浮窗.ahk
     #If
         Setup_28:
-            #Include Modules\插件-Excel增强.ahk
+            #Include Modules\插件-Chrome增强.ahk
     #If
         Setup_29:
-            #Include Modules\插件-OneNote剪贴板收集器.ahk
+            #Include Modules\插件-Excel增强.ahk
     #If
         Setup_30:
-            #Include Modules\插件-VSCode增强.ahk
+            #Include Modules\插件-OneNote剪贴板收集器.ahk
     #If
         Setup_31:
-            #Include Modules\插件-合并右Ctrl与Menu键.ahk
+            #Include Modules\插件-VSCode增强.ahk
     #If
         Setup_32:
-            #Include Modules\插件-媒体键.ahk
+            #Include Modules\插件-合并右Ctrl与Menu键.ahk
     #If
         Setup_33:
-            #Include Modules\插件-帮助.ahk
+            #Include Modules\插件-媒体键.ahk
     #If
         Setup_34:
-            #Include Modules\插件-控制台启用CtrlV粘贴.ahk
+            #Include Modules\插件-帮助.ahk
     #If
         Setup_35:
-            #Include Modules\插件-搜索键.ahk
+            #Include Modules\插件-控制台启用CtrlV粘贴.ahk
     #If
         Setup_36:
-            #Include Modules\插件-编辑增强.ahk
+            #Include Modules\插件-搜索键.ahk
     #If
         Setup_37:
+            #Include Modules\插件-编辑增强.ahk
+    #If
+        Setup_38:
             #Include Modules\插件-雪星转屏.ahk
