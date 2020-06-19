@@ -29,19 +29,20 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 <!-- 模块文件名：01-插件-模拟鼠标.ahk-->
 ### 模拟鼠标插件
 
-功能及效果如图
+非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
+会自动黏附各种按钮、超链接。指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 
 ![鼠标模拟.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/鼠标模拟.gif)
 
 使用方法如下
 | 作用窗口 | 模拟鼠标模块 | 说明 |
 | - | :-: | - |
-| 全局 | CapslockX + w a s d   | 鼠标平滑移动（上下左右） |
-| 全局 | CapslockX + r f       | 垂直平滑滚轮（在chrome下有时失灵，原因未明) |
-| 全局 | CapslockX + R F       | 水平平滑滚轮（在chrome下有时失灵，原因未明) |
-| 全局 | CapslockX + rf        | r f 一起按相当于鼠标中键 |
-| 全局 | CapslockX + e         | 鼠标左键 |
-| 全局 | CapslockX + q         | 鼠标右键 |
+| 全局 | CapslockX + w a s d   | 鼠标抛物移动（上下左右）  |
+| 全局 | CapslockX + r f       | 垂直抛物滚轮（上下）      |
+| 全局 | CapslockX + R F       | 水平抛物滚轮             |
+| 全局 | CapslockX + rf        | r f 同时按相当于鼠标中键 |
+| 全局 | CapslockX + e         | 鼠标左键                 |
+| 全局 | CapslockX + q         | 鼠标右键                 |
 
 
 <!-- 模块文件名：02-插件-窗口增强.ahk-->
