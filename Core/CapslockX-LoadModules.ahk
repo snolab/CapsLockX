@@ -35,7 +35,6 @@
     GoSub Setup_35
     GoSub Setup_36
     GoSub Setup_37
-    GoSub Setup_38
     Return
     #If
         Setup_1:
@@ -51,7 +50,7 @@
             #Include Modules\03-应用-Anki增强.ahk
     #If
         Setup_5:
-            #Include Modules\help.ahk
+            #Include Modules\Help.ahk
     #If
         Setup_6:
             #Include Modules\OpenSystemSetting.ahk
@@ -138,16 +137,13 @@
             #Include Modules\插件-媒体键.ahk
     #If
         Setup_34:
-            #Include Modules\插件-帮助.ahk
-    #If
-        Setup_35:
             #Include Modules\插件-控制台启用CtrlV粘贴.ahk
     #If
-        Setup_36:
+        Setup_35:
             #Include Modules\插件-搜索键.ahk
     #If
-        Setup_37:
+        Setup_36:
             #Include Modules\插件-编辑增强.ahk
     #If
-        Setup_38:
+        Setup_37:
             #Include Modules\插件-雪星转屏.ahk

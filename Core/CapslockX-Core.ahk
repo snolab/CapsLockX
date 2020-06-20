@@ -9,14 +9,14 @@
 ; LICENCE: GNU GPLv3
 ;
 
-Process Priority, , High     ; 脚本高优先级
+Process Priority, , High ; 脚本高优先级
 SetTitleMatchMode RegEx
-#SingleInstance Force        ; 跳过对话框并自动替换旧实例
-; #NoTrayIcon                ; 隐藏托盘图标
-; #NoEnv                     ; 不检查空变量是否为环境变量
+#SingleInstance Force ; 跳过对话框并自动替换旧实例
+; #NoTrayIcon ; 隐藏托盘图标
+; #NoEnv ; 不检查空变量是否为环境变量
 #Persistent
-#MaxHotkeysPerInterval 1000  ; 时间内按键最大次数（通常是一直按着键触发的）
-#InstallMouseHook            ; 安装鼠标钩子
+#MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的）
+#InstallMouseHook ; 安装鼠标钩子
 
 ; 载入设定
 #Include CapslockX-Settings.ahk
@@ -39,20 +39,32 @@ AskRunAsAdmin()
 }
 
 If(T_AskRunAsAdmin) {
-    
     AskRunAsAdmin()
 }
 
 ; 模式处理
 global CapslockX := 1 ; 模块运行标识符
-global CapslockXMode   := 0
+global CapslockXMode := 0
 global ModuleState := 0
-global CapslockX_FnActed   := 0
+global CapslockX_FnActed := 0
 global CM_NORMAL := 0 ; 普通模式
-global CM_FN     := 1 ; 临时 CapslockX 模式
-global CM_CapslockX  := 2 ; CapslockX 模式
-global CM_FNX    := 3 ; FnX 模式
+global CM_FN := 1 ; 临时 CapslockX 模式
+global CM_CapslockX := 2 ; CapslockX 模式
+; global CM_FNX := 3 ; FnX 模式
 global LastLightState := ((CapslockXMode & CM_CapslockX) || (CapslockXMode & CM_FN))
+global globalHelpInfo := ""
+
+CapslockAddHelp(helpStr)
+{
+    globalHelpInfo .= helpStr . "`n"
+}
+CapslockShowHelp(helpStr){
+    ToolTip % helpStr
+    KeyWait, /
+    ToolTip
+}
+
+
 ; 切换模式
 UpdateCapslockXMode()
 {
@@ -119,11 +131,10 @@ CapslockXTurnOn()
 Hotkey *%T_CapslockXKey%, CapslockX_Dn
 Hotkey *%T_CapslockXKey% Up, CapslockX_Up
 
-
 #Include Core\CapslockX-LoadModules.ahk
 
 #If
-; CapslockX模式切换
+    ; CapslockX模式切换
 CapslockX_Dn:
     ; 进入 Fn 模式
     CapslockXMode |= CM_FN
@@ -155,7 +166,20 @@ Return
 
 ;
 ; #If T_CapslockXKey == "CapsLock"
-;     !CapsLock:: CapsLock ;
+; !CapsLock:: CapsLock ;
+
+
+#If CapslockXMode
+
+; 显示使用方法
+; /::
+;     ToolTip % globalHelpInfo
+;     KeyWait, /
+;     Return
+; / Up:: ToolTip
+/:: CapslockShowHelp(globalHelpInfo)
+
+
 
 ; 用ScrollLock代替Capslock键
 #if T_UseScrollLockAsCapslock
@@ -163,10 +187,11 @@ Return
 
 #if T_UseDoubleClickShiftAsCapslock
     ; TODO
-    
+
 #if
-    ; 软重启键
-    !F12:: Reload
+
+; 软重启键
+!F12:: Reload
 
 ; 硬重启键
 ^!F12::
@@ -180,3 +205,4 @@ Return
 
 *Insert:: GoSub CapslockX_Dn
 *Insert Up:: GoSub CapslockX_Up
+
