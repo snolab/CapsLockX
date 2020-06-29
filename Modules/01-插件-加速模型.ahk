@@ -5,12 +5,17 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：0.0.1(20200606)
-; 核心：v1
 ; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 ;
-Return
-; 高性能计时
+
+If(!CapsLockX){
+    MsgBox, % "本模块只在 CapsLockX 下工作"
+    ExitApp
+}
+
+
+; 高性能计时器，精度能够达打微秒级，相比之下 A_Tick 的精度大概只有10几ms。
 QPF(){
     DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
     Return QuadPart
@@ -102,3 +107,4 @@ Friction(v, a){ ; 摩擦力
         v:=0
     Return v
 }
+Return

@@ -9,7 +9,7 @@
 ;
 ; CoordMode, Mouse, Screen
 
-CapslockXAddHelp( "
+AppendHelp( "
 (
 模拟鼠标
 | CapsLockX + w a s d `t| 鼠标抛物移动（上下左右）

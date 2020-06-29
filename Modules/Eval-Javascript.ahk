@@ -13,9 +13,9 @@ If(!CapsLockX){
 }
 
 ; 
-; 注释：在这里，你可以使用 CapslockXAddHelp 添加帮助信息
+; 注释：在这里，你可以使用 AppendHelp 添加帮助信息
 ; 
-CapslockXAddHelp("
+AppendHelp("
 (
 Javascript 计算
 | CapsLockX + Tab   `t| 计算当前选区 Javascript 表达式，并替换

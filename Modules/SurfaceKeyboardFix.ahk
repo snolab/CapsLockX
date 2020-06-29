@@ -11,7 +11,7 @@
 If(!CapsLockX)
     ExitApp
 
-CapslockXAddHelp("
+AppendHelp("
 (
 笔记本功能键补充
 | CapsLockX + P | 打开系统设定，拯救笔记本 |

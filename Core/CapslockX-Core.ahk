@@ -54,17 +54,6 @@ global CM_CapsLockX := 2 ; CapsLockX 模式
 ; global CM_FNX := 3 ; FnX 模式
 global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
 global CapsLockPressTimestamp := 0
-global globalHelpInfo := ""
-
-CapslockXAddHelp(helpStr){
-    globalHelpInfo .= helpStr "`n`n"
-}
-
-CapsLockShowHelp(helpStr){
-    ToolTip % helpStr
-    KeyWait, /
-    ToolTip
-}
 
 ; 切换模式
 UpdateCapsLockXMode()
@@ -196,10 +185,6 @@ CapsLockX_Up:
 Return
 
 #If CapsLockXMode
-; 显示使用方法
-/:: CapsLockShowHelp(globalHelpInfo)
-
-
 
 ; 用ScrollLock代替CapsLock键
 #if T_UseScrollLockAsCapsLock

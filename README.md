@@ -6,7 +6,6 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
   - [目录](#目录)
   - [入门教程第一](#入门教程第一)
   - [使用手册第二](#使用手册第二)
-  - [按键表第三](#按键表第三)
     - [模拟鼠标插件](#模拟鼠标插件)
     - [窗口增强插件](#窗口增强插件)
       - [功能简述：](#功能简述)
@@ -44,34 +43,68 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 
 ## 使用手册第二
 
-* 按 `CapsLock` 切换 CapsLockX 模式
-* 按住 `CapsLock` 使用临时 CapsLockX 模式
+<!-- * 按 `CapsLock` 切换 CapsLockX 模式 -->
+* 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
-## 按键表第三
 
 下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
 对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + F12` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
-<!-- 模块文件名：01-插件-模拟鼠标.ahk-->
+<!-- 模块文件名：00-Help.ahk-->
+### 帮助模块
+
+如果你想学习如何开发 CapsLockX 的插件，请：
+1. 打开这个文件中： `Modules/01-Help.ahk`， 你可以了解到 CapsLockX 插件的基本格式
+2. 将它复制一份，命名为你自己的插件名称
+3. 将它本来的功能改成你自己需要的功能，插件的开发就完成啦！
+
+#### 本模块功能见下
+
+| 作用于 | 按键 | 功能
+| - | - | -
+| 全局 | CapsLockX + /          | 临时显示热键提示
+| 全局 | CapsLockX + Alt + /    | 🔗 打开 CapsLockX 的 README.md 页面
+| 全局 | CapsLockX + Shift + /  | 🕷 提交bug、建议等
+
+<!-- 模块文件名：01.1-插件-模拟鼠标.ahk-->
 ### 模拟鼠标插件
 
-非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
-指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
+#### 功能
+* 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
+* 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
+* 效果如图：
+  ![鼠标模拟.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/鼠标模拟.gif)
 
-![鼠标模拟.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/鼠标模拟.gif)
+#### 使用方法如下
+| 作用于 | 按键 | 说明
+| - | - | -
+| 全局 | CapsLockX + w a s d | 鼠标抛物移动（上下左右）
+| 全局 | CapsLockX + r f     | 垂直抛物滚轮（上下）
+| 全局 | CapsLockX + R F     | 水平抛物滚轮
+| 全局 | CapsLockX + rf      | r f 同时按相当于鼠标中键
+| 全局 | CapsLockX + e       | 鼠标左键
+| 全局 | CapsLockX + q       | 鼠标右键
 
-使用方法如下
-| 作用窗口 | 模拟鼠标模块 | 说明 |
+
+<!-- 模块文件名：01.2-插件-编辑增强.ahk-->
+### 编辑增强插件
+
+这个世界上还有比 Vim 模式的 HJKL 移动光标更棒的东西吗？
+这个必须有！
+那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
+
+![光标移动.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/光标移动.gif)
+
+| 作用域 | Edit模块   | 说明 （欢迎push）|
 | - | :-: | - |
-| 全局 | CapsLockX + w a s d   | 鼠标抛物移动（上下左右）  |
-| 全局 | CapsLockX + r f       | 垂直抛物滚轮（上下）      |
-| 全局 | CapsLockX + R F       | 水平抛物滚轮             |
-| 全局 | CapsLockX + rf        | r f 同时按相当于鼠标中键 |
-| 全局 | CapsLockX + e         | 鼠标左键                 |
-| 全局 | CapsLockX + q         | 鼠标右键                 |
-
+| 全局 | CapsLockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
+| 全局 | CapsLockX + k j h l   | 上下左右 方向键 |
+| 全局 | CapsLockX + n m       | Home End |
+| 全局 | CapsLockX + n + m     | n m 一起按选择当前行 |
+| 全局 | CapsLockX + b         | BackSpace |
+| 全局 | CapsLockX + Shift + b | Delete |
 
 <!-- 模块文件名：03-插件-窗口增强.ahk-->
 ### 窗口增强插件
@@ -203,15 +236,18 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 ### 讯飞输入法悬浮窗插件
 
-效果如下
-![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
+#### 用法
 
-| 模式 | 按键| 功能说明 |
+| 作用于 | 按键| 功能说明 |
 | - | :-: | - |
-| 任意 | Win + H | 启动/切换讯飞语音输入 |
+| 全局 | Win + H | 启动/切换讯飞语音输入 |
 
-* 注1：原 Win+H 的功能是 Windows 自带听写，安装本插件后会变成 Win+Shift+H
-* 注2：若没有安装讯飞语音则会自动询问是否引导下载安装
+**注：**
+1. 原 `Win + H` 的功能是 Windows 自带听写，安装本插件后，可通过 `Win + Shift + H` 使用原 Windows 的听写
+2. 若没有安装讯飞语音则会自动询问是否引导下载安装
+
+#### 效果如下图
+![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
 
 <!-- 模块文件名：插件-OneNote剪贴板收集器.ahk-->
 ### OneNote 剪贴板收集插件
@@ -250,24 +286,6 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 | 模式 | 搜索键模块   | 说明 （这个模块基本还是半成品。。欢迎push） |
 | - | :-: | - |
 | CapsLockX | g    | 用 google 搜索当前选择或鼠标所指的词 |
-
-<!-- 模块文件名：插件-编辑增强.ahk-->
-### 编辑增强插件
-
-这个世界上还有比 Vim 模式的 HJKL 移动光标更棒的东西吗？
-这个必须有！
-那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
-
-![光标移动.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/光标移动.gif)
-
-| 作用域 | Edit模块   | 说明 （欢迎push）|
-| - | :-: | - |
-| 全局 | CapsLockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
-| 全局 | CapsLockX + k j h l   | 上下左右 方向键 |
-| 全局 | CapsLockX + n m       | Home End |
-| 全局 | CapsLockX + n + m     | n m 一起按选择当前行 |
-| 全局 | CapsLockX + b         | BackSpace |
-| 全局 | CapsLockX + Shift + b | Delete |
 
 <!-- 模块文件名：插件-雪星转屏.ahk-->
 ### 雪星转屏模块

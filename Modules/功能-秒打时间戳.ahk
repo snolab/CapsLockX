@@ -28,7 +28,7 @@ If(CapsLockX){
     FormatTime, TimeString, , vyyyy.MM.dd
     help .= "| 输入 /v`t| 输出 " . TimeString
 
-    CapslockXAddHelp(help)
+    AppendHelp(help)
 }
 Return
 

@@ -11,7 +11,7 @@
 global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
 
 
-CapslockXAddHelp("
+AppendHelp("
 (
 编辑增强模块
 | CapsLockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑）

@@ -111,7 +111,7 @@ k:: Send {Home}{Left}
 j:: Send {End}{Right}
 
 #IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
-/:: CapsLockShowHelp("
+/:: ShowHelp("
 (
 OneNote 笔记界面（由于太多）故
 !-  | 自动2维化公式
@@ -349,7 +349,7 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
 #IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
-    /:: CapsLockShowHelp("
+    /:: ShowHelp("
     (
     换笔盘界面
     1::  ; 换到第 1 行的 1 支笔

@@ -3,7 +3,7 @@
     ExitApp
 }
 
-CapslockXAddHelp("
+AppendHelp("
 (
 媒体键
 | CapslockX + F1    | 打开：我的电脑

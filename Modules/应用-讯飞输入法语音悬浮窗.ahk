@@ -4,6 +4,12 @@
 ; @author       snomiao@gmail.com
 ; @version      2.1.1(20200606)
 
+AppendHelp("
+(
+= 讯飞语音悬浮窗
+| Win + H | 启动 / 切换讯飞语音输入 |
+)")
+
 Return
 #h::
     If (WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe")) {
@@ -23,4 +29,4 @@ Return
     }
 Return
 
-+#h:: Send #h
+#+h:: Send #h

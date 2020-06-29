@@ -148,25 +148,25 @@ LoadModules(ModulesLoader)
             FileAppend %ModuleCode%, %CapsLockX_PathModules%\%ModuleFile%
             
             ; 导入模块
-            code_setup   .= "    GoSub Setup_" i      "`n"
-            code_include .= "    #If" "`n"
-            code_include .= "        Setup_" i ":"  "`n"
-            code_include .= "            #Include " CapsLockX_PathModules "\" ModuleFile "`n"
+            code_setup   .= "GoSub Setup_" i      "`n"
+            code_include .= "#If" "`n"
+            code_include .= "    Setup_" i ":"  "`n"
+            code_include .= "        #Include " CapsLockX_PathModules "\" ModuleFile "`n"
             LoadingTips("运行模块：" i " " ModuleName)
         }
     }
     ShowLoadingTips()
     
     ; 拼接代码
-    code_consts .= "global CapsLockX_PathModules := " `" CapsLockX_PathModules `"
-    code_consts .= "global CapsLockX_PathCore := "    `" CapsLockX_PathCore    `"
-    code_consts .= "global CapsLockX_Version := "     `" CapsLockX_Version     `"
+    code_consts .= "global CapsLockX_PathModules := " """" CapsLockX_PathModules """" "`n"
+    code_consts .= "global CapsLockX_PathCore := "    """" CapsLockX_PathCore    """" "`n"
+    code_consts .= "global CapsLockX_Version := "     """" CapsLockX_Version     """" "`n"
 
     code := ""
-    code .= code_consts
-    code .= code_setup
-    code .= "    Return`n"
-    code .= code_include
+    code .= code_consts "`n"
+    code .= code_setup  "`n"
+    code .= "Return" "`n"
+    code .= code_include "`n"
 
     FileDelete %ModulesLoader%
     FileAppend %code%, %ModulesLoader%

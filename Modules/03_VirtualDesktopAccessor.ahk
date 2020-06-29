@@ -15,7 +15,7 @@ global RestartVirtualDesktopAccessorProc := DllCall("GetProcAddress", Ptr, hVirt
 ; GetWindowDesktopNumberProc := DllCall("GetProcAddress", Ptr, hVirtualDesktopAccessor, AStr, "GetWindowDesktopNumber", "Ptr")
 activeWindowByDesktop := {}
 
-ToolTip, % hVirtualDesktopAccessor
+; ToolTip, % hVirtualDesktopAccessor
 
 ; Restart the virtual desktop accessor when Explorer.exe crashes, or restarts (e.g. when coming from fullscreen game)
 explorerRestartMsg := DllCall("user32\RegisterWindowMessage", "Str", "TaskbarCreated")

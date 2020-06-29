@@ -2,7 +2,7 @@
 If(!CapsLockX)
     ExitApp
 
-CapslockXAddHelp("
+AppendHelp("
 (
 窗口墙强
 | CapsLockX + O               | 快速排列当前桌面的窗口
@@ -19,13 +19,13 @@ CapslockXAddHelp("
 Return
 
 SwitchToDesktop(x){
-ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
-; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
-Send ^#{Left 10}
-; Send % "^#{Right " x - 1 "}"
-x -= 1
-Loop, %x%
-    Send ^#{Right}
+    ; ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
+    ; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
+    Send ^#{Left 10}
+    ; Send % "^#{Right " x - 1 "}"
+    x -= 1
+    Loop, %x%
+        Send ^#{Right}
 }
 
 ; 把当前窗口移到其它桌面
