@@ -82,7 +82,7 @@ UpdateModulesHelp(sourceREADME)
         
         help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
         
-        ModuleHelp := RegExReplace(ModuleHelp, "^#", "###")
+        ModuleHelp := RegExReplace(ModuleHelp, "m)^#", "###")
         
         if (!RegExMatch(ModuleHelp, "^#")){
             if (T%ModuleName%_Disabled) {

@@ -73,19 +73,19 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 <!-- 模块文件名：03-插件-窗口增强.ahk-->
 ### 窗口增强插件
 
-## 功能简述：
+#### 功能简述：
 1. CapsLockX + O 快速排列窗口
-2. Alt + Tab 的时候可以用 WASD 切换窗口了
-3. CapsLockX + 数字 切换虚拟桌面，加上 Alt 键把当前窗口带过去，高效使用虚拟桌面
+2. 在 Alt + Tab 的时候，用 `WASD` 切换窗口，C 关掉窗口
+3. `CapsLockX + 0123456789 - =` 切换、增减虚拟桌面，加上 Alt 键可以转移当前窗口，高效使用虚拟桌面
 
-## 效果图
+#### 效果图
 
 * Alt + Tab 管理窗口增强
   ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 * 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
   ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/02-插件-窗口增强_一键排列窗口.gif)
 
-## 使用方法如下
+#### 使用方法如下
 | 作用域 | 窗口增强模块   | 说明
 | - | - | -
 | 全局 | CapsLockX + O | 快速排列当前桌面的窗口
