@@ -1,5 +1,5 @@
 ﻿; Encoding: UTF-8 with BOM
-; Name: CapslockX
+; Name: CapsLockX
 ; Description: 程序入口
 ; Author: snomiao@gmail.com
 ;
@@ -13,19 +13,19 @@
 
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
-#Include CapslockX-Settings.ahk
+#Include CapsLockX-Settings.ahk
 Process Priority, , High     ; 脚本高优先级
 
-global CapslockX_PathModules := "Modules"
-global CapslockX_PathCore    := "Core"
-global CapslockX_Version := "v1.5 Alpha"
+global CapsLockX_PathModules := "Modules"
+global CapsLockX_PathCore    := "Core"
+global CapsLockX_Version := "v1.5 Alpha"
 global loadingTips := ""
 
 LoadingTips(msg, clear = 0)
 {
     if (clear || loadingTips == "") {
         
-        loadingTips := "CapslockX " CapslockX_Version "`n"
+        loadingTips := "CapsLockX " CapsLockX_Version "`n"
     }
     loadingTips .= msg "`n"
 }
@@ -35,12 +35,12 @@ ShowLoadingTips()
 }
 TryLoadModuleHelp(ModuleFileName, ModuleName)
 {
-    if (FileExist(CapslockX_PathModules "\" ModuleName ".md")) {
-        FileRead, ModuleHelp, %CapslockX_PathModules%\%ModuleName%.md
+    if (FileExist(CapsLockX_PathModules "\" ModuleName ".md")) {
+        FileRead, ModuleHelp, %CapsLockX_PathModules%\%ModuleName%.md
         Return ModuleHelp
     }
-    if (FileExist(CapslockX_PathModules "\" ModuleFileName ".md")) {
-        FileRead, ModuleHelp, %CapslockX_PathModules%\%ModuleFileName%.md
+    if (FileExist(CapsLockX_PathModules "\" ModuleFileName ".md")) {
+        FileRead, ModuleHelp, %CapsLockX_PathModules%\%ModuleFileName%.md
         Return ModuleHelp
     }
     Return ""
@@ -50,8 +50,8 @@ UpdateModulesHelp(sourceREADME)
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
-    ; loop, Files, %CapslockX_PathModules%\*.ahk, R ; Recurse into subfolders.
-    loop, Files, %CapslockX_PathModules%\*.ahk,  ; Do not Recurse into subfolders.
+    ; loop, Files, %CapsLockX_PathModules%\*.ahk, R ; Recurse into subfolders.
+    loop, Files, %CapsLockX_PathModules%\*.ahk,  ; Do not Recurse into subfolders.
     ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
@@ -104,7 +104,7 @@ UpdateModulesHelp(sourceREADME)
     ; MsgBox, asdfasdf
     ; 检查替换情况
     if (!Replaces) {
-        MsgBox % "加载模块帮助遇到错误。`n请更新 CapslockX"
+        MsgBox % "加载模块帮助遇到错误。`n请更新 CapsLockX"
         MsgBox % targetREADME
         return sourceREADME
     }
@@ -116,8 +116,8 @@ LoadModules(ModulesLoader)
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles  := ""
-    ; loop, Files, %CapslockX_PathModules%\*.ahk, R ; Recurse into subfolders.
-    loop, Files, %CapslockX_PathModules%\*.ahk,  ; NOT Recurse into subfolders.
+    ; loop, Files, %CapsLockX_PathModules%\*.ahk, R ; Recurse into subfolders.
+    loop, Files, %CapsLockX_PathModules%\*.ahk,  ; NOT Recurse into subfolders.
     ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
@@ -143,24 +143,24 @@ LoadModules(ModulesLoader)
         } else {
             ; 这里引入模块代码
             ; 清洗为 UTF-8 WITH BOM 型编码
-            FileRead ModuleCode, %CapslockX_PathModules%\%ModuleFile%
-            FileDelete %CapslockX_PathModules%\%ModuleFile%
-            FileAppend %ModuleCode%, %CapslockX_PathModules%\%ModuleFile%
+            FileRead ModuleCode, %CapsLockX_PathModules%\%ModuleFile%
+            FileDelete %CapsLockX_PathModules%\%ModuleFile%
+            FileAppend %ModuleCode%, %CapsLockX_PathModules%\%ModuleFile%
             
             ; 导入模块
             code_setup   .= "    GoSub Setup_" i      "`n"
             code_include .= "    #If" "`n"
             code_include .= "        Setup_" i ":"  "`n"
-            code_include .= "            #Include " CapslockX_PathModules "\" ModuleFile "`n"
+            code_include .= "            #Include " CapsLockX_PathModules "\" ModuleFile "`n"
             LoadingTips("运行模块：" i " " ModuleName)
         }
     }
     ShowLoadingTips()
     
     ; 拼接代码
-    code_consts .= "global CapslockX_PathModules := " `" CapslockX_PathModules `"
-    code_consts .= "global CapslockX_PathCore := "    `" CapslockX_PathCore    `"
-    code_consts .= "global CapslockX_Version := "     `" CapslockX_Version     `"
+    code_consts .= "global CapsLockX_PathModules := " `" CapsLockX_PathModules `"
+    code_consts .= "global CapsLockX_PathCore := "    `" CapsLockX_PathCore    `"
+    code_consts .= "global CapsLockX_Version := "     `" CapsLockX_Version     `"
 
     code := ""
     code .= code_consts
@@ -173,7 +173,7 @@ LoadModules(ModulesLoader)
 }
 
 ; 加载模块
-global ModulesLoader := CapslockX_PathCore "\CapslockX-LoadModules.ahk"
+global ModulesLoader := CapsLockX_PathCore "\CapsLockX-LoadModules.ahk"
 LoadModules(ModulesLoader)
 
 ; 编译README.md
@@ -197,12 +197,12 @@ if (target != source) {
     ; ExitApp
 }
 ; 编译核心文件
-global CoreAHK := CapslockX_PathCore "\CapslockX-Core.ahk"
+global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
 
 ; 运行核心
 Send ^!+{F12} ; 把之前的实例关了
 
-Run %CapslockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
+Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 
 ; 显示Tips 2秒
 Sleep 2000

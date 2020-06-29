@@ -1,5 +1,5 @@
 ﻿; 正确运行方式……
-; "C:\Program Files\AutoHotkey\AutoHotkeyU32.exe"  "C:\Users\snomiao\OneDrive\GitHub\CapslockX\Tools\插件-自动滚动.ahk"
+; "C:\Program Files\AutoHotkey\AutoHotkeyU32.exe"  "C:\Users\snomiao\OneDrive\GitHub\CapsLockX\Tools\插件-自动滚动.ahk"
 
 global autoScrollY, autoScrollStep
 autoScrollY := 0
@@ -76,8 +76,8 @@ autoScroll:
 ;     }
 ;     Return
 
-; CapslockX和fn模式都能触发
-#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
+; CapsLockX和fn模式都能触发
+#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
     $PgUp::
         autoScrollY := autoScrollY ? autoScrollY : 0
         autoScrollY -= 1

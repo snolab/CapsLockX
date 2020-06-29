@@ -18,11 +18,11 @@ OCR_SIZEWE      = 32644
 OCR_UP          = 32516
 OCR_WAIT        = 32514
 
-RegRead, CapslockXState, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation
-;ToolTip % CapslockXState
+RegRead, CapsLockXState, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation
+;ToolTip % CapsLockXState
 
 SetCursor(code, curFile){
-	;加载capslock增强的鼠标指针
+	;加载CapsLock增强的鼠标指针
 	hIcon := DllCall("LoadCursorFromFile","Str", curFile)
 	DllCall("SetSystemCursor", "UInt", hIcon, "Int", code)
 }

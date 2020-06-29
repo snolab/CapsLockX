@@ -1,18 +1,31 @@
-﻿; Exit if running without CapslockX
-If(!CapslockX)
+﻿; Exit if running without CapsLockX
+If(!CapsLockX)
     ExitApp
 
+CapslockXAddHelp("
+(
+窗口墙强
+| CapsLockX + O               | 快速排列当前桌面的窗口
+| CapsLockX + Shift + O       | 快速排列当前桌面的窗口（不包括最大化的窗口）
+| CapsLockX + [ ]             | 切换到上一个/下一个桌面
+| CapsLockX + =               | 新建桌面
+| CapsLockX + -               | 删除当前桌面（会把所有窗口移到上一个桌面）
+| CapsLockX + Alt + [ ]       | 把当前窗口移到上一个/下一个桌面
+| CapsLockX + Alt + =         | 新建桌面，并把当前窗口移过去
+| CapsLockX + 1 2 ... 9       | 切换到第 n 个桌面
+| CapsLockX + Alt + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话)
+)")
 ; setup done
 Return
 
 SwitchToDesktop(x){
-    ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
-    ; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
-    Send ^#{Left 10}
-    ; Send % "^#{Right " x - 1 "}"
-    x -= 1
-    Loop, %x%
-        Send ^#{Right}
+ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
+; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
+Send ^#{Left 10}
+; Send % "^#{Right " x - 1 "}"
+x -= 1
+Loop, %x%
+    Send ^#{Right}
 }
 
 ; 把当前窗口移到其它桌面
@@ -40,23 +53,18 @@ MoveActiveWindowTo(x){
 
 ; 把当前窗口置顶
 
-; #If !!(CapslockXMode & CM_FN)
+; #If !!(CapsLockXMode & CM_FN)
 
 ; 确保WinTab模块优先级比Mouse高，否则此处 WASD 无效
 ; Make sure WinTab module has higher priority than Mouse, otherwise WASD is invalid here
 
-#If CapslockXMode == CM_CAPSX || CapslockXMode == CM_FN
-    
-; 自动排列窗口 
-o::
-    Run Tools\ArrangeWindows.func.ahk
-return
-; 自动排列窗口（包括最大化的窗口）
-+o::
-    Run Tools\ArrangeWindows.func.ahk 1
-return
+#If CapsLockXMode == CM_CAPSX || CapsLockXMode == CM_FN
 
-; 使用Windows原生的方式自动排列窗口（和虚拟桌面不兼容）
+; 自动排列窗口 
+o:: Run Tools\ArrangeWindows.func.ahk 1
+; 自动排列窗口（不包括最大化的窗口）
++o:: Run Tools\ArrangeWindows.func.ahk 0
+; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
 !o::
     WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
     ; side by side 排列
@@ -89,8 +97,8 @@ Return
 
 ; 让当前窗口临时透明
 `;::
-    WinSet, Transparent, 100, A
-    Return
+WinSet, Transparent, 100, A
+Return
 
 `; Up::
 WinSet, Transparent, 255, A
@@ -102,7 +110,7 @@ Return
 ; 把当前窗口移到新桌面
 !=:: MoveActiveWindowTo(0)
 
-; 把当前窗口移到第x个桌面
+; 切换到第 x 个桌面
 1:: SwitchToDesktop(1)
 2:: SwitchToDesktop(2)
 3:: SwitchToDesktop(3)
@@ -116,7 +124,6 @@ Return
 
 ; ; 把当前窗口移到第x个桌面
 !1:: MoveActiveWindowTo(1)
-
 !2:: MoveActiveWindowTo(2)
 !3:: MoveActiveWindowTo(3)
 !4:: MoveActiveWindowTo(4)
@@ -135,9 +142,8 @@ $!x:: Send !{F4}
 ; 杀死窗口
 $^!x:: WinKill A
 
-
 #If WinActive("ahk_class MultitaskingViewFrame")
-
+    
 ; 在 Alt+Tab 下, WASD 模拟方向键 , 1803之后还可以用
 !a:: Left
 !d:: Right
@@ -235,6 +241,7 @@ c:: Send {AppsKey}mn{Enter}
 
 ; #IfWinActive (?:Task View)|任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
 #IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    
     ; 在 Alt+Tab 下, WASD 模拟方向键
     !a:: Left
     !d:: Right

@@ -21,6 +21,6 @@ Search2(){
         Search(clip)
 }
 
-#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
+#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
     ; g:: Send ^c^c
     g:: Search2()

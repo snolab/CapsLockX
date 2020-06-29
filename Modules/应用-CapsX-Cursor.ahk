@@ -5,7 +5,7 @@
 ;鼠标特征值
 return
 SetCursor(code, curFile){
-	;加载capslock增强的鼠标指针
+	;加载CapsLock增强的鼠标指针
 	hIcon := DllCall("LoadCursorFromFile","Str", curFile)
 	DllCall("SetSystemCursor", "UInt", hIcon, "Int", code)
 }

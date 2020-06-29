@@ -1,4 +1,13 @@
-﻿SetTitleMatchMode RegEx
+﻿; ========== CapsLockX ==========
+; 名称：编辑增强
+; 版本：v2020.06.27
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 支持：https://github.com/snomiao/CapsLockX
+; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; ========== CapsLockX ==========
+
+SetTitleMatchMode RegEx
 			 			 
 Return
 #IfWinActive .*- Microsoft Edge ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe

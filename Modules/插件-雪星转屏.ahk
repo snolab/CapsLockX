@@ -63,7 +63,7 @@ RunSilent(command) {
     StdoutToVar_CreateProcess(command)
 }
 
-#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
+#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
 	!Up:: RunSilent("模块\雪星转屏.exe =0")
 	!Left:: RunSilent("模块\雪星转屏.exe =90")
 	!Down:: RunSilent("模块\雪星转屏.exe =180")

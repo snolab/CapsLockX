@@ -1,6 +1,27 @@
-﻿
+﻿; ========== CapsLockX ==========
+; 名称：编辑增强
+; 版本：v2020.06.27
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 支持：https://github.com/snomiao/CapsLockX
+; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; ========== CapsLockX ==========
+; 
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
+
+
+CapslockXAddHelp("
+(
+编辑增强模块
+| CapsLockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑）
+| CapsLockX + k j h l   | 上下左右 方向键
+| CapsLockX + n m       | Home End
+| CapsLockX + n + m     | n m 一起按选择当前行
+| CapsLockX + b         | BackSpace
+| CapsLockX + Shift + b | Delete
+)")
+
 Return
 
 OnSwitch(){
@@ -14,8 +35,8 @@ OnSwitch(){
 ; ToolTip, %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
 
 arrowTicker:
-    ; 在非 CapslockX 模式下直接停止
-    If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
+    ; 在非 CapsLockX 模式下直接停止
+    If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0
         arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
         kax := 0, kay := 0
@@ -76,11 +97,11 @@ kTick(){
     SetTimer, arrowTicker, 0
 }
 
-#If CapslockXMode == CM_FN
+#If CapsLockXMode == CM_FN
     
 *Space:: Enter
 
-#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
+#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
     
 *u:: PgDn
 *i:: PgUp

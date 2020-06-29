@@ -1,5 +1,5 @@
 ﻿
-If(!CapslockX)
+If(!CapsLockX)
     ExitApp
 Return
 
@@ -10,10 +10,6 @@ TIM_MouseShift(times){
 }
 #IfWinActive ahk_class TXGuiFoundation ahk_exe TIM.exe
     ^f::
-        ; CoordMode, Mouse, Relative
-        ; x := 117 * TMouse_DPIRatio
-        ; y := 30 * TMouse_DPIRatio
-        ; Click %x%, %y%
         CoordMode, Mouse, Client
         x := 117 * TMouse_DPIRatio
         y := 30 * TMouse_DPIRatio

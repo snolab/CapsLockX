@@ -1,4 +1,24 @@
-﻿CoordMode, Mouse, Screen
+﻿; ========== CapsLockX ==========
+; 名称：摸拟鼠标
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 支持：https://github.com/snomiao/CapsLockX
+; 版本：v2020.06.27
+; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; ========== CapsLockX ==========
+;
+; CoordMode, Mouse, Screen
+
+CapslockXAddHelp( "
+(
+模拟鼠标
+| CapsLockX + w a s d `t| 鼠标抛物移动（上下左右）
+| CapsLockX + r f     `t| 垂直抛物滚轮（上下）
+| CapsLockX + R F     `t| 水平抛物滚轮
+| CapsLockX + rf      `t| r f 同时按相当于鼠标中键
+| CapsLockX + e       `t| 鼠标左键
+| CapsLockX + q       `t| 鼠标右键
+)")
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 global mtl := 0, mtr := 0, mtu := 0, mtd := 0
@@ -109,8 +129,8 @@ SendInput_MouseMoveR64(x, y){
 
 ; 鼠标运动处理
 mouseTicker:
-    ; 在非 CapslockX 模式下直接停止
-    If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
+    ; 在非 CapsLockX 模式下直接停止
+    If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
         max := 0, may := 0
     }else{
@@ -258,8 +278,8 @@ scrollTicker:
         Return
     }
     
-    ; 在非CapslockX模式下停止
-    If (!(CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN)){
+    ; 在非CapsLockX模式下停止
+    If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0
         scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
         sax := 0, say := 0
@@ -317,8 +337,8 @@ sTick(){
 
 
 
-; CapslockX和fn模式都能触发
-#If CapslockXMode == CM_CapslockX || CapslockXMode == CM_FN
+; CapsLockX和fn模式都能触发
+#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
 
 ; 鼠标按键处理
 `:: Send {LButton 5}
@@ -337,8 +357,8 @@ Return
         Send {Blind}{RButton Up}
 Return
 
-; 只有开启CapslockX模式能触发
-; #If CapslockXMode == CM_CapslockX
+; 只有开启CapsLockX模式能触发
+; #If CapsLockXMode == CM_CapsLockX
 ; 鼠标运动处理
 *a:: mtl := (mtl ? mtl : QPC()), mTick()
 *d:: mtr := (mtr ? mtr : QPC()), mTick()

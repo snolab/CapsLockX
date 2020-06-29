@@ -23,15 +23,16 @@
 
 ; 实验性功能（改了不知道会出啥事哦）
 
-	; 修改CapslockX触发键
-	global T_CapslockXKey           := "CapsLock"
+	; 修改CapsLockX触发键
+	global T_CapsLockXKey           := "CapsLock"
 
-	; 是否使用 ScrollLock 灯来显示 CapslockX 状态
+	; 是否使用 ScrollLock 灯来显示 CapsLockX 状态
 	global T_UseScrollLockLight := 0
-	global T_UseScrollLockAsCapslock := 0
+	global T_UseScrollLockAsCapsLock := 0
 
 	; 是否开启声音提示
 	global T_SwitchSound := 0
 	global T_SwitchSoundOn := "./数据/NoteG.mp3"
 	global T_SwitchSoundOff := "./数据/NoteC.mp3"
 
+	

@@ -1,19 +1,18 @@
 {
-  "name": "capslockx",
+  "name": "CapsLockX",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "CapsLockX": "CapsLockX.exe"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/snomiao/CapslockX.git"
+    "url": "git+https://github.com/snomiao/CapsLockX.git"
   },
-  "author": "",
+  "author": "snomiao@gmail.com",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/snomiao/CapslockX/issues"
+    "url": "https://github.com/snomiao/CapsLockX/issues"
   },
-  "homepage": "https://github.com/snomiao/CapslockX#readme"
+  "homepage": "https://github.com/snomiao/CapsLockX#readme"
 }

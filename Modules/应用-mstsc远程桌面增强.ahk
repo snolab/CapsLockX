@@ -1,5 +1,5 @@
 ﻿
-If(!CapslockX)
+If(!CapsLockX)
     ExitApp
 global last_mstsc := 0
 

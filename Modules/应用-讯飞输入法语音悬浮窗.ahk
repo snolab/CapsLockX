@@ -1,4 +1,4 @@
-﻿; @CapslockX    v1
+﻿; @CapsLockX    v1
 ; @name         Win + H 快速启动讯飞语音悬浮窗
 ; @description  如题
 ; @author       snomiao@gmail.com

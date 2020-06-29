@@ -1,28 +1,53 @@
-﻿# CapslockX
+﻿# CapsLockX - Windows 效率套件
+CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。
 
-CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口管理、鼠标模拟、应用内热键增强等功能，基于AHK实现。
+## 目录
+- [CapsLockX - Windows 效率套件](#capslockx---windows-效率套件)
+  - [目录](#目录)
+  - [入门教程第一](#入门教程第一)
+  - [使用手册第二](#使用手册第二)
+  - [按键表第三](#按键表第三)
+    - [模拟鼠标插件](#模拟鼠标插件)
+    - [窗口增强插件](#窗口增强插件)
+    - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
+    - [秒打时间戳模块](#秒打时间戳模块)
+    - [Anki增强模块](#anki增强模块)
+    - [Edge增强模块](#edge增强模块)
+    - [mstsc远程桌面增强模块](#mstsc远程桌面增强模块)
+    - [TIM添加常驻功能模块](#tim添加常驻功能模块)
+    - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
+    - [OneNote 剪贴板收集插件](#onenote-剪贴板收集插件)
+    - [媒体键模块](#媒体键模块)
+    - [搜索键模块](#搜索键模块)
+    - [编辑增强插件](#编辑增强插件)
+    - [雪星转屏模块](#雪星转屏模块)
+  - [过去与未来](#过去与未来)
+    - [制作背景](#制作背景)
+    - [发展路线](#发展路线)
+    - [本项目与类似项目的功能对比 / (20200627)](#本项目与类似项目的功能对比--20200627)
+  - [答疑相关](#答疑相关)
+  - [支持本项目](#支持本项目)
 
 ## 入门教程第一
 
-下载源码 zip 解压
-双击 `CapslockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了
-
-启动脚本后, 你可以尝试:
-按下`Alt`, 按住`Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
+1. [下载源码 zip](https://github.com/snomiao/CapslockX/archive/master.zip) 解压
+3. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了
+4. 启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
 
 > 某些功能需要使用管理员身份运行（如鼠标模拟）
-> 在 CapslockX-Settings.ahk 中
+> 在 CapsLockX-Settings.ahk 中
 > 手动修改 global T_AskRunAsAdmin := 1 即可
 > 如不需要，可以改为 0
 
 ## 使用手册第二
 
-按 `CapsLock` 切换 CapslockX 模式
-按住 `CapsLock` 使用临时 CapslockX 模式
+* 按 `CapsLock` 切换 CapsLockX 模式
+* 按住 `CapsLock` 使用临时 CapsLockX 模式
 
 ## 按键表第三
 
-每个模块可以单独禁用，请见 `CapslockX-Settings.ahk` 文件
+下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
+对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + F12` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
@@ -32,56 +57,85 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 
-![鼠标模拟.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/鼠标模拟.gif)
+![鼠标模拟.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/鼠标模拟.gif)
 
 使用方法如下
 | 作用窗口 | 模拟鼠标模块 | 说明 |
 | - | :-: | - |
-| 全局 | CapslockX + w a s d   | 鼠标抛物移动（上下左右）  |
-| 全局 | CapslockX + r f       | 垂直抛物滚轮（上下）      |
-| 全局 | CapslockX + R F       | 水平抛物滚轮             |
-| 全局 | CapslockX + rf        | r f 同时按相当于鼠标中键 |
-| 全局 | CapslockX + e         | 鼠标左键                 |
-| 全局 | CapslockX + q         | 鼠标右键                 |
+| 全局 | CapsLockX + w a s d   | 鼠标抛物移动（上下左右）  |
+| 全局 | CapsLockX + r f       | 垂直抛物滚轮（上下）      |
+| 全局 | CapsLockX + R F       | 水平抛物滚轮             |
+| 全局 | CapsLockX + rf        | r f 同时按相当于鼠标中键 |
+| 全局 | CapsLockX + e         | 鼠标左键                 |
+| 全局 | CapsLockX + q         | 鼠标右键                 |
 
 
-<!-- 模块文件名：02-插件-窗口增强.ahk-->
+<!-- 模块文件名：03-插件-窗口增强.ahk-->
 ### 窗口增强插件
 
-功能：
-1. Alt + Tab 的时候可以用 WASD 切换窗口了
-2. CapslockX + 数字 切换虚拟桌面，加上 Alt 键把当前窗口带过去，高效使用虚拟桌面
+## 功能简述：
+1. CapsLockX + O 快速排列窗口
+2. Alt + Tab 的时候可以用 WASD 切换窗口了
+3. CapsLockX + 数字 切换虚拟桌面，加上 Alt 键把当前窗口带过去，高效使用虚拟桌面
 
-![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/capslockx/raw/master/Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
-<!-- ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/capslockx/raw/master/Modules/02-插件-窗口增强_一键排列窗口.gif) -->
+## 效果图
 
-使用方法如下
-| 作用域 | 窗口增强模块   | 说明 |
+* Alt + Tab 管理窗口增强
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
+* 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
+  ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/02-插件-窗口增强_一键排列窗口.gif)
+
+## 使用方法如下
+| 作用域 | 窗口增强模块   | 说明
+| - | - | -
+| 全局 | CapsLockX + O | 快速排列当前桌面的窗口
+| 全局 | CapsLockX + Shift + O | 快速排列当前桌面的窗口（不包括最大化的窗口）
+| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面
+| 全局 | CapsLockX + = | 新建桌面
+| 全局 | CapsLockX + - | 删除当前桌面（会把所有窗口移到上一个桌面）
+| 全局 | CapsLockX + Alt + [ ] | 把当前窗口移到上一个/下一个桌面
+| 全局 | CapsLockX + Alt + = | 新建桌面，并把当前窗口移过去
+| 全局 | CapsLockX + 1 2 ... 9 | 切换到第 n 个桌面
+| 全局 | CapsLockX + Alt + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话)
+| Alt+Tab 界面下 | W A S D | 上下左右切换窗口选择
+| Alt+Tab 界面下 | X C     | 关闭选择的窗口（目前 X 和 C 没有区别）
+| Alt+Tab 界面下 | Q E     | 左右切换多桌面
+| Win+Tab 视图下 | W A S D | 切换窗口选择
+| Win+Tab 视图下 | X | 关掉选择的窗口
+| Win+Tab 视图下 | Q E | 左右切换桌面概览
+| Win+Tab 视图下 | Z | 合并当前桌面与上一个桌面
+| Win+Tab 视图下 | 0 | 新建桌面
+| Win+Tab 视图下 | 1 2 ... 9 | 把窗口移到除了自己的第X个桌面（或新建桌面）
+| Win+Tab 视图下 | V | 新建桌面，并把当前窗口扔到新建桌面
+| Win+Tab 视图下 | C | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口
+| Win+Tab 视图下 | [ ] | 切换到上一个/下一个桌面
+
+<!-- 模块文件名：SurfaceKeyboardFix.ahk-->
+### Surface 笔记本扩充功能键
+
+专治各种笔记本残破键盘
+1. 没有右 Ctrl 键？合并 Menu与 右Ctrl键，Menu当Ctrl用 或者 Ctrl当Menu用都可以
+2. 没有 Pause 键？Win + Alt + P 也能打开系统设定信息。
+3. 待补充
+
+| 模式 | 按键 | 功能 |
 | - | :-: | - |
-| 全局 | CapslockX + \ | 打开多桌面视图 |
-| 全局 | CapslockX + [ ] | 切换到上一个/下一个桌面 |
-| 全局 | CapslockX + Alt + [ ] | 把当前窗口移到上一个/下一个桌面 |
-| 全局 | CapslockX + = | 新建桌面 |
-| 全局 | CapslockX + - | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局 | CapslockX + 1 2 ... 9 | 切换到第 n 个桌面 |
-| 全局 | CapslockX + Alt + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话) |
-| 全局 | CapslockX + 0 | 新建桌面 |
-| Alt+Tab 界面下 | w a s d | 上下左右切换窗口选择 |
-| Alt+Tab 界面下 | x c     | 关闭选择的窗口（目前 x 和 c 没有区别） |
-| Alt+Tab 界面下 | q e     | 左右切换多桌面 |
-| Win+Tab 视图下 | w a s d | 切换窗口选择 |
-| Win+Tab 视图下 | x | 关掉选择的窗口 |
-| Win+Tab 视图下 | q e | 左右切换桌面概览 |
-| Win+Tab 视图下 | z | 合并当前桌面与上一个桌面 |
-| Win+Tab 视图下 | 0 | 新建桌面 |
-| Win+Tab 视图下 | 1 2 ... 9 | 把窗口移到除了自己的第x个桌面（或新建桌面） |
-| Win+Tab 视图下 | v | 新建桌面，并把当前窗口扔到新建桌面 |
-| Win+Tab 视图下 | c | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口 |
-| Win+Tab 视图下 | [ ] | 切换到上一个/下一个桌面 |
+| 全局 | Win + Alt + P | 相当于 Win + Pause，专为笔记本定制 |
+| 全局 | 右Ctrl按一下 | 会按一下 Menu 弹出菜单 |
+| 全局 | 按住右Menu | 会按住 Ctrl，此时可以与其它键组合 |
 
-<!-- [#ahk_class MultitaskingViewFrame](#ahk_class+MultitaskingViewFrame) -->
+<!-- 模块文件名：功能-秒打时间戳.ahk-->
 
-<!-- 模块文件名：03-应用-Anki增强.ahk-->
+### 秒打时间戳模块
+
+| 模式 | 秒打时间戳   | 说明 |
+| - | :-: | - |
+| 全局 | [d 或 (d | 插入日期, 类似 (20190115) 这样的时间戳 |
+| 全局 | [t 或 (t | 插入时间, 类似 (20190115.164744) 这样的时间戳 |
+| 全局 | [s 或 (s | 插入时间, 类似 (1647) 这样的时间戳 |
+| 全局 | [v | 插入版本号, 类似 v2019.01.15 这样的版本号 |
+
+<!-- 模块文件名：应用-Anki增强.ahk-->
 
 ### Anki增强模块
 
@@ -105,24 +159,6 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 >
 > 此插件可配合手柄使用，请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
 >
-
-<!-- 模块文件名：OpenSystemSetting.ahk-->
-### 打开系统设定
-
-| 模式 | 按键 | 功能 |
-| - | :-: | - |
-| 全局 | CapslockX + P | 相当于 Win + Pause，专为笔记本定制 |
-
-<!-- 模块文件名：功能-秒打时间戳.ahk-->
-
-### 秒打时间戳模块
-
-| 模式 | 秒打时间戳   | 说明 |
-| - | :-: | - |
-| 全局 | [d 或 (d | 插入日期, 类似 (20190115) 这样的时间戳 |
-| 全局 | [t 或 (t | 插入时间, 类似 (20190115.164744) 这样的时间戳 |
-| 全局 | [s 或 (s | 插入时间, 类似 (1647) 这样的时间戳 |
-| 全局 | [v | 插入版本号, 类似 v2019.01.15 这样的版本号 |
 
 <!-- 模块文件名：应用-Edge增强.ahk-->
 
@@ -165,7 +201,7 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 ### 讯飞输入法悬浮窗插件
 
 效果如下
-![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
+![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
 
 | 模式 | 按键| 功能说明 |
 | - | :-: | - |
@@ -182,32 +218,27 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 1. OneNote 2016 打开一个窗口，标题写成这样 "剪贴板收集"。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
 3. 如图
-   ![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/capslockx/raw/master/Modules/插件-OneNote剪贴板收集器.gif)
-
-<!-- 模块文件名：插件-合并右Ctrl与Menu键.ahk-->
-
-### 合并右Ctrl与Menu键模块
-
-专治各种（Surface 的 右 Ctrl 键）残破键盘，合并 Menu与 右Ctrl键，Menu当Ctrl用 或者 Ctrl当Menu用都可以
-
-| 模式 | 操作 | 说明 |
-| - | :-: | - |
-| 全局 | 右Ctrl按一下 | 会按一下 Menu 弹出菜单 |
-| 全局 | 按住右Menu | 会按住 Ctrl，此时可以与其它键组合 |
+   ![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/插件-OneNote剪贴板收集器.gif)
 
 <!-- 模块文件名：插件-媒体键.ahk-->
 
 ### 媒体键模块
 
-| 模式 | 媒体键模块   | 说明 （这个模块基本还是半成品。。欢迎push） |
-| - | :-: | - |
-| CapslockX | F5   | 暂停播放 |
-| CapslockX | F6   | 上一首 |
-| CapslockX | F7   | 下一首 |
-| CapslockX | F8   | 停止播放 |
-| CapslockX | F10  | 静音 |
-| CapslockX | F11  | 音量减 |
-| CapslockX | F12  | 音量加 |
+| 作用于 | 媒体键模块   | 说明 |
+|-|-|-|
+| 全局 | CapslockX + F1     | 打开：我的电脑 |
+| 全局 | CapslockX + F2     | 打开：计算器 |
+| 全局 | CapslockX + F3     | 打开：浏览器主页 |
+| 全局 | CapslockX + F4     | 打开：媒体库（默认是 Windows Media Player） |
+| 全局 | CapslockX + F5     | 播放：暂停/播放 |
+| 全局 | CapslockX + F6     | 播放：上一首 |
+| 全局 | CapslockX + F7     | 播放：下一首 |
+| 全局 | CapslockX + F8     | 播放：停止 |
+| 全局 | CapslockX + F9     | 音量加 |
+| 全局 | CapslockX + F10    | 音量减 |
+| 全局 | CapslockX + F11    | 静音 |
+| 全局 | CapslockX + F12    |  |
+| 全局 | CapslockX + Pause  |  |
 
 <!-- 模块文件名：插件-搜索键.ahk-->
 
@@ -215,7 +246,7 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 
 | 模式 | 搜索键模块   | 说明 （这个模块基本还是半成品。。欢迎push） |
 | - | :-: | - |
-| CapslockX | g    | 用 google 搜索当前选择或鼠标所指的词 |
+| CapsLockX | g    | 用 google 搜索当前选择或鼠标所指的词 |
 
 <!-- 模块文件名：插件-编辑增强.ahk-->
 ### 编辑增强插件
@@ -224,16 +255,16 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![光标移动.gif](https://github.com/snomiao/CapslockX/raw/master/Modules/光标移动.gif)
+![光标移动.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/光标移动.gif)
 
-| 作用 | Edit模块   | 说明 （欢迎push）|
+| 作用域 | Edit模块   | 说明 （欢迎push）|
 | - | :-: | - |
-| 全局 | CapslockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
-| 全局 | CapslockX + k j h l   | 上下左右 方向键 |
-| 全局 | CapslockX + n m       | Home End |
-| 全局 | CapslockX + n + m     | n m 一起按选择当前行 |
-| 全局 | CapslockX + b         | BackSpace |
-| 全局 | CapslockX + Shift + b | Delete |
+| 全局 | CapsLockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑） |
+| 全局 | CapsLockX + k j h l   | 上下左右 方向键 |
+| 全局 | CapsLockX + n m       | Home End |
+| 全局 | CapsLockX + n + m     | n m 一起按选择当前行 |
+| 全局 | CapsLockX + b         | BackSpace |
+| 全局 | CapsLockX + Shift + b | Delete |
 
 <!-- 模块文件名：插件-雪星转屏.ahk-->
 ### 雪星转屏模块
@@ -244,38 +275,93 @@ CapslockX 是 Windows 下的一套快捷键操作脚本，提供便捷的窗口�
 
 | 模式 | 按键 | 功能 |
 | - | :-: | - |
-| 全局 | CapslockX + Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
+| 全局 | CapsLockX + Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
-## 发展路线第四
+## 过去与未来
 
-简化电脑操作逻辑，提升效率，尽量不与习惯键位冲突
-
-po主偷懒中:
-
-1. [ ] 长按CapslockX键显示对应帮助
-2. 
-
-## 制作背景第五
+### 制作背景
 
 本人比较经常写代码……
 
 起初我是右鼠……后来觉得鼠标放右边有点远……改成了左鼠
 
-左鼠之后发现手还是要离开键盘……于是做了个WASD模拟鼠标的东西。
+左鼠之后发现手还是要离开键盘……于是做了个 WASD 模拟鼠标的东西。（然后就能一直用右手托着下巴玩电脑了）
 
-后来写的脚本越来越多，就把其中一些常用的放到一起加载……然后就成这样了
+后来写的脚本越来越多，就把其中一些常用的放到一起加载……
 
-## 答疑相关第六
+### 发展路线
 
-GitHub: [https://github.com/snomiao/CapslockX](https://github.com/snomiao/CapslockX)
+本项目的核心理念是：简化系统操作逻辑，提升操作效率，且尽量不与原有习惯键位冲突。
 
+1. [x] 长按 CapsLockX 键显示对应帮助
+2. [ ] 初次使用上手教程
+3. [ ] 自动更新
+4. [ ] 插件管理器
+5. [ ] 自动配置同步功能
+6. [ ] 易用的选项配置的 UI 界面
+7. [ ] ……
+
+如果你有任何想法或建议，请在这里提出：
+[Issues · snomiao/CapslockX]( https://github.com/snomiao/CapsLockX/issues )
+
+### 本项目与类似项目的功能对比 / (20200627)
+
+如下表所示
+
+| 功能\项目 | [CapsLockX](https://github.com/snomiao/CapsLockX) | [Vonng/CapsLock]( https://github.com/Vonng/CapsLock ) | [coralsw/CapsEz]( https://github.com/coralsw/CapsEz ) | [CapsLock+]( https://capslox.com/CapsLock-plus/ ) |
+| :- | :- | :- | :- | :- |
+| 鼠标模拟 | ✅流畅完整 | ✅无滚轮 | ❌🈚无 | ❌🈚无 |
+| 表达式计算 | ✅ Nodejs 或 JScript | ❌🈚无 | ❌🈚无 | ✅ TabScript (Snippet + Javascript) |
+| 窗口管理 | ✅强 | ✅有 | ✅有 | ✅强 |
+| 虚拟桌面管理 | ✅有 | ❌🈚无 | ❌🈚无 |  ❌🈚无 |
+| 编辑增强 | ✅有（抛物模型） | ✅有 | ✅有 | ✅有（很全） |
+| 绿色免安装 | ✅是 | ✅是 | ✅是 | ✅是 |
+| 增强媒体键 | 不全 | ✅全 | ❌🈚无 | ❌🈚无 |
+| 强化的剪贴板 | 弱 | ❌🈚无 | ❌🈚无 | ✅有 |
+| 快速启动应用 |  ✅插件 | ✅有 | ✅有 | ✅有  |
+| Bash 控制 | ❌🈚无 | ✅有 | ❌🈚无 | ❌🈚无  |
+| 快速启动语音输入 | ✅讯飞 | | | |
+| 应用功能增强 | ✅丰富 | ❌🈚无 | ✅有  | ❌🈚无|
+| 快速输入时间日期 | ✅有 | | ✅有 | |
+| 窗口绑定到热键 | ❌🈚无 | ❌🈚无 | ❌🈚无 | ✅有 |
+| 快速旋转屏幕 | ✅有 | ❌🈚无 | ❌🈚无 | ❌🈚无 |
+| 二次开发 | ✅文档友好 | ✅可 | ✅可 | ✅可 |
+| 内存占用 | ✅约 2~3M |  |  | |
+| 系统 | Win | Mac（主），Win（次） | Win | Win, [Mac](https://capslox.com/) |
+| 支持语言 | 中文 | 中文 / English | 中文 | 中文 / English |
+
+
+本项目地址
+* GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+
+相似项目地址：
+* 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )
+  设计：[Capslock/design.md at master · Vonng/Capslock]( https://github.com/Vonng/Capslock/blob/master/design.md )
+* [coralsw/CapsEz: KeyMouse Tools]( https://github.com/coralsw/CapsEz )
+* [CapsLock+]( https://capslox.com/CapsLock-plus/ )
+* [Capslox]( https://capslox.com/cn/ )
+* CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.]( https://github.com/matrix1001/CapsLock-plus-plus )
+
+## 答疑相关
+
+本项目地址
+* GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+
+相关阅读：
+* 秦金伟的引用推荐文章：[2020-02-23 当键盘模拟鼠标 - 简书]( https://www.jianshu.com/p/f757f56a7de6 )
+
+如果本项目有帮助到你，请一定要让我知道。
 
 QQ群：
-QZ/VimD/TC/AHK群：271105729
-CapsLockX 用户群：100949388
-关于这个脚本，相关答疑直接进群 @这个QQ 997596439 提问即可
+* QZ/VimD/TC/AHK群：271105729
+* CapsLockX 用户群：100949388
+关于这个脚本，相关答疑直接进群 @snomiao 提问即可
 
-## 性能指标
 
-内存占用：约2.2M
+## 支持本项目
+
+你可以在此支持本项目的开发：
+* PAYPAL: https://paypal.me/snomiao
+
+你的支持会实际地，帮助到本项目的未来开发工作，见此：[发展路线](#发展路线)
