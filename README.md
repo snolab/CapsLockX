@@ -6,11 +6,16 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
   - [目录](#目录)
   - [入门教程第一](#入门教程第一)
   - [使用手册第二](#使用手册第二)
+    - [帮助模块](#帮助模块)
+      - [本模块功能见下](#本模块功能见下)
     - [模拟鼠标插件](#模拟鼠标插件)
+      - [功能](#功能)
+      - [使用方法如下](#使用方法如下)
+    - [编辑增强插件](#编辑增强插件)
     - [窗口增强插件](#窗口增强插件)
       - [功能简述：](#功能简述)
       - [效果图](#效果图)
-      - [使用方法如下](#使用方法如下)
+      - [使用方法如下](#使用方法如下-1)
     - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [秒打时间戳模块](#秒打时间戳模块)
     - [Anki增强模块](#anki增强模块)
@@ -18,15 +23,19 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
     - [mstsc远程桌面增强模块](#mstsc远程桌面增强模块)
     - [TIM添加常驻功能模块](#tim添加常驻功能模块)
     - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
+      - [用法](#用法)
+      - [效果如下图](#效果如下图)
     - [OneNote 剪贴板收集插件](#onenote-剪贴板收集插件)
     - [媒体键模块](#媒体键模块)
     - [搜索键模块](#搜索键模块)
-    - [编辑增强插件](#编辑增强插件)
     - [雪星转屏模块](#雪星转屏模块)
   - [过去与未来](#过去与未来)
     - [制作背景](#制作背景)
     - [发展路线](#发展路线)
     - [本项目与类似项目的功能对比 / (20200627)](#本项目与类似项目的功能对比--20200627)
+      - [本项目地址](#本项目地址)
+      - [相似项目地址：](#相似项目地址)
+      - [相关软件推荐](#相关软件推荐)
   - [答疑相关](#答疑相关)
   - [支持本项目](#支持本项目)
 
@@ -44,7 +53,7 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 ## 使用手册第二
 
 <!-- * 按 `CapsLock` 切换 CapsLockX 模式 -->
-* 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
+- 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
 
 下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
@@ -328,8 +337,6 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 
 ### 本项目与类似项目的功能对比 / (20200627)
 
-如下表所示
-
 | 功能\项目 | [CapsLockX](https://github.com/snomiao/CapsLockX) | [Vonng/CapsLock]( https://github.com/Vonng/CapsLock ) | [coralsw/CapsEz]( https://github.com/coralsw/CapsEz ) | [CapsLock+]( https://capslox.com/CapsLock-plus/ ) |
 | :- | :- | :- | :- | :- |
 | 鼠标模拟 | ✅流畅完整 | ✅无滚轮 | 🈚无 | 🈚无 |
@@ -342,8 +349,8 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 | 强化的剪贴板 | 弱 | 🈚无 | 🈚无 | ✅有 |
 | 快速启动应用 |  ✅插件 | ✅有 | ✅有 | ✅有  |
 | Bash 控制 | 🈚无 | ✅有 | 🈚无 | 🈚无  |
-| 快速启动语音输入 | ✅讯飞 | | | |
-| 应用功能增强 | ✅丰富 | 🈚无 | ✅有  | 🈚无|
+| 快速启动语音输入 | ✅讯飞 | 🈚无 | 🈚无 | 🈚无 |
+| 应用功能增强 | ✅丰富 | 🈚无 | ✅有  | 🈚无 |
 | 快速输入时间日期 | ✅有 | | ✅有 | |
 | 窗口绑定到热键 | 🈚无 | 🈚无 | 🈚无 | ✅有 |
 | 快速旋转屏幕 | ✅有 | 🈚无 | 🈚无 | 🈚无 |
@@ -353,36 +360,40 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 | 支持语言 | 中文 | 中文 / English | 中文 | 中文 / English |
 
 
-本项目地址
-* GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+#### 本项目地址
+- GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
 
-相似项目地址：
-* 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )
+#### 相似项目地址：
+- 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )
   设计：[Capslock/design.md at master · Vonng/Capslock]( https://github.com/Vonng/Capslock/blob/master/design.md )
-* [coralsw/CapsEz: KeyMouse Tools]( https://github.com/coralsw/CapsEz )
-* [CapsLock+]( https://capslox.com/CapsLock-plus/ )
-* [Capslox]( https://capslox.com/cn/ )
-* CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.]( https://github.com/matrix1001/CapsLock-plus-plus )
+- [coralsw/CapsEz: KeyMouse Tools]( https://github.com/coralsw/CapsEz )
+- [CapsLock+]( https://capslox.com/CapsLock-plus/ )
+- [Capslox]( https://capslox.com/cn/ )
+- CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.]( https://github.com/matrix1001/CapsLock-plus-plus )
+
+#### 相关软件推荐
+Quicker 也是一个提高电脑操作效率的软件，与本项目可以互补。
+- 链接：https://getquicker.net/ （雪星的推荐码： 55396-2857）
 
 ## 答疑相关
 
 本项目地址
-* GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+- GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
 
 相关阅读：
-* 秦金伟的引用推荐文章：[2020-02-23 当键盘模拟鼠标 - 简书]( https://www.jianshu.com/p/f757f56a7de6 )
+- 秦金伟的引用推荐文章：[2020-02-23 当键盘模拟鼠标 - 简书]( https://www.jianshu.com/p/f757f56a7de6 )
 
 如果本项目有帮助到你，请一定要让我知道。
 
 QQ群：
-* QZ/VimD/TC/AHK群：271105729
-* CapsLockX 用户群：100949388
+- QZ/VimD/TC/AHK群：271105729
+- CapsLockX 用户群：100949388
 关于这个脚本，相关答疑直接进群 @snomiao 提问即可
 
 
 ## 支持本项目
 
 你可以在此支持本项目的开发：
-* PAYPAL: https://paypal.me/snomiao
+- PAYPAL: https://paypal.me/snomiao
 
-你的支持会实际地，帮助到本项目的未来开发工作，见此：[发展路线](#发展路线)
+你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
