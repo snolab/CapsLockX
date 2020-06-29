@@ -9,18 +9,25 @@
 
 If(CapsLockX){
     help := "秒打时间戳" . "`n"
+    
     FormatTime, TimeString, , yyyy-MM-dd
-    help .= "| /d`t| " . TimeString . "`n"
+    help .= "| 输入 /d`t| 输出 " . TimeString . "`n"
+    
     FormatTime, DateString, , (yyyyMMdd)
-    help .= "| /tf`t| " . DateString . "`n"
+    help .= "| 输入 /tf`t| 输出 " . DateString . "`n"
+    
     FormatTime, TimeString, , (yyyyMMdd.HHmmss)
-    help .= "| /t`t| " . TimeString . "`n"
+    help .= "| 输入 /t`t| 输出 " . TimeString . "`n"
+    
     FormatTime, TimeString, , (HHmm)
-    help .= "| /s`t| " . TimeString . "`n"
+    help .= "| 输入 /s`t| 输出 " . TimeString . "`n"
+    
+    FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
+    help .= "| 输入 /dt`t| 输出 " . TimeString . "`n"
+    
     FormatTime, TimeString, , vyyyy.MM.dd
-    help .= "| /v`t| " . TimeString . "`n"
-    FormatTime, TimeString, , vyyyy.MM.dd
-    help .= "| /v`t| " . TimeString
+    help .= "| 输入 /v`t| 输出 " . TimeString
+
     CapslockXAddHelp(help)
 }
 Return
