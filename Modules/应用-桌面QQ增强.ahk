@@ -13,25 +13,32 @@ If(!CapsLockX)
 Return
 
 #IfWinActive .*的资料 ahk_class TXGuiFoundation ahk_exe QQ.exe
-/:: ShowHelp("
+/:: CapslockXShowHelp("
 (
 QQ 资料卡界面
 F2:: ; 改备注名
-F3:: ; 加备注（手机号等）
+F3:: ; 改分组
+F4:: ; 加备注（手机号等）
 )")
 
 F2:: ; 改备注名
-; Send {Tab 9}{Enter}
-Send {Tab 10}{Enter}
+; 这里的 ^+{Tab 2}{Tab 1} 是利用QQ 的 Edit 控件无法使用 Ctrl + Tab 跳转离开的特性，来重置光标到备注栏。
+Send {Tab 10}^+{Tab 2}{Tab 1}{Enter}
 Return
-F3:: ; 加备注（手机号等）
+
+F3:: ; 改分组
+Send {Tab 10}^+{Tab 2}{Tab 2}{Enter}
+Return
+
+F4:: ; 加备注（手机号等）
 Send +{Tab}{Enter}
 Return
 
 
 
-#IfWinActive .*\d+个会话 ahk_class TXGuiFoundation ahk_exe QQ.exe
-/:: ShowHelp("
+#IfWinActive .*等\d+个会话 ahk_class TXGuiFoundation ahk_exe QQ.exe
+
+/:: CapslockXShowHelp("
 (
 QQ 会话界面
 F2:: ; 看资料
@@ -39,7 +46,6 @@ F2:: ; 看资料
 !w:: ; 开出小窗口
 !r:: ; 快速点击接收文件
 )")
-
 
 F2:: ; 看资料
 Send +{Tab 3}{Enter}
@@ -58,24 +64,19 @@ Return
 
 
 !r:: ; 快速点击接收文件
-Send 1!s+{Tab 9}{Space}!s
+Send 1!s{Tab 10}{Space}!s
 Return
 
 
 
-
-
 #IfWinActive ahk_class TXGuiFoundation ahk_exe QQ.exe
-/:: ShowHelp("
+/:: CapslockXShowHelp("
 (
 QQ 单人会话办面
 !m:: ; 屏蔽鼠标指向的群
 !r:: ; 快速点击接收文件
 F2:: ; 查看这个人的资料
 )")
-
-
-
 
 !m:: ; 屏蔽鼠标指向的群
 Send {RButton}{Down 2}{Right}{Up}{Enter}

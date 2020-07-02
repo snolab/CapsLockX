@@ -10,7 +10,7 @@ global wx, wy, w, h
 
 MouseGetPos, mx, my, win, fControl
 WinGetTitle, title, ahk_id %win%
-ToolTip 已对 %title% 启用自动抢红包, 按F12结束。
+TrayTip  已对 %title% 启用自动抢红包, 按F12结束。
 
 WinGetPos, wx, wy, w, h, ahk_id %win%
 
@@ -19,12 +19,12 @@ SetTimer, qianghongbao, 16
 Return
 
 F12::
-    ToolTip 已结束对 %title% 的自动抢红包。
+    TrayTip  已结束对 %title% 的自动抢红包。
     ExitApp
     Return
 
 Pause::
-    ToolTip 己刷新
+    TrayTip  己刷新
     WinGetPos, wx, wy, w, h, ahk_id %win%
     Return
 
@@ -50,7 +50,7 @@ qianghongbao:
         ; SendMessage 0x0201, %wParam%, %lParam%, %fControl%, ahk_id %win%
         ; SendMessage 0x0202, %wParam%, %lParam%, %fControl%, ahk_id %win%
 
-        ToolTip, %clr% 发现目标!
+        TrayTip , %clr% 发现目标!
     }Else if (Action2Color == clr){
         ;Sleep, 200
         wParam := 0x0000
@@ -59,10 +59,10 @@ qianghongbao:
         SendMessage 0x0201, %wParam%, %lParam%, %fControl%, ahk_id %win%
         SendMessage 0x0202, %wParam%, %lParam%, %fControl%, ahk_id %win%
 
-        ToolTip, %clr% 发现高级目标!
+        TrayTip , %clr% 发现高级目标!
 
         Send !s
     }Else{
-        ; ToolTip, %clr%
+        ; TrayTip , %clr%
     }
     Return

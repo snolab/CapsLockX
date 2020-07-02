@@ -166,6 +166,8 @@ AnkiUnlock(x){
             Return
         SendEvent ^+o
         Return
-    $!h::
-        ToolTip "; 快速添加内容 $!c::"
-        Return
+
+; /:: CapslockXShowHelp("
+; (
+    
+; )")

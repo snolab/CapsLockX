@@ -1,12 +1,15 @@
-﻿; Source: [ToolTipFont / ToolTipColor - options for the ToolTip command - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?t=4777 )
-; ToolTipOpt v1.004
+﻿; ToolTipOpt v1.004
 ; Changes:
 ;  v1.001 - Pass "Default" to restore a setting to default
 ;  v1.002 - ANSI compatibility
 ;  v1.003 - Added workarounds for ToolTip's parameter being overwritten
 ;           by code within the message hook.
 ;  v1.004 - Fixed text colour.
-
+; Source: [ToolTipFont / ToolTipColor - options for the ToolTip command - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?t=4777 )
+; 
+; 目前配置为黑体 10 号，可对齐中英文
+; 这个插件用来设置 ToolTip 的输出字体格式
+; 
 ToolTipFont("s10", "黑体")
 
 Return

@@ -35,7 +35,7 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
     - [本项目与类似项目的功能对比 / (20200627)](#本项目与类似项目的功能对比--20200627)
       - [本项目地址](#本项目地址)
       - [相似项目地址：](#相似项目地址)
-      - [相关软件推荐](#相关软件推荐)
+      - [其它效率软件推荐](#其它效率软件推荐)
   - [答疑相关](#答疑相关)
   - [支持本项目](#支持本项目)
 
@@ -330,7 +330,7 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 4. [ ] 插件管理器
 5. [ ] 自动配置同步功能
 6. [ ] 易用的选项配置的 UI 界面
-7. [ ] ……
+7. [ ] 执行外部代码（Python、Nodejs、Bash、……）
 
 如果你有任何想法或建议，请在这里提出：
 [Issues · snomiao/CapslockX]( https://github.com/snomiao/CapsLockX/issues )
@@ -356,9 +356,9 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 | 快速旋转屏幕 | ✅有 | 🈚无 | 🈚无 | 🈚无 |
 | 二次开发 | ✅文档友好 | ✅可 | ✅可 | ✅可 |
 | 内存占用 | ✅约 2~3M |  |  | |
+| 模块化 | ✅ | 🈚无 | 🈚无 | 🈚无 |
 | 系统 | Win | Mac（主），Win（次） | Win | Win, [Mac](https://capslox.com/) |
 | 支持语言 | 中文 | 中文 / English | 中文 | 中文 / English |
-
 
 #### 本项目地址
 - GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
@@ -371,9 +371,11 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 - [Capslox]( https://capslox.com/cn/ )
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.]( https://github.com/matrix1001/CapsLock-plus-plus )
 
-#### 相关软件推荐
-Quicker 也是一个提高电脑操作效率的软件，与本项目可以互补。
-- 链接：https://getquicker.net/ （雪星的推荐码： 55396-2857）
+#### 其它效率软件推荐
+- Quicker 也是一个提高电脑操作效率的软件，与本项目可以互补。
+  - 链接：https://getquicker.net/ （雪星的推荐码： 55396-2857）
+- [Listary Pro - 能极大幅度提高你 Windows 文件浏览与搜索速度效率的「超级神器」 - 异次元软件下载]( https://www.iplaysoft.com/listary.html )
+- [Everything]( https://www.voidtools.com/zh-cn/ )
 
 ## 答疑相关
 
@@ -395,5 +397,7 @@ QQ群：
 
 你可以在此支持本项目的开发：
 - PAYPAL: https://paypal.me/snomiao
+- 支付宝：
+- 微信：
 
 你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)

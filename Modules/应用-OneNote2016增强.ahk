@@ -11,6 +11,11 @@
 
 If(!CapsLockX)
     ExitApp
+
+#Include Modules/WinClip/WinClipAPI.ahk
+#Include Modules/WinClip/WinClip.ahk
+global wc := new WinClip
+
 Return
 
 
@@ -47,7 +52,7 @@ getAscStr(str)
 ; 快速添加事项清单
 OpenToDoList(){
     if !WinExist("TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
-        Run "onenote:#TODO"
+        Run "onenote:#TODO" ; 打开默认分区的 TODO 页面
     WinWait TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
     WinActivate ; Uses the last found window.
     Send ^{End}{Enter}
@@ -56,11 +61,10 @@ OpenToDoList(){
 
 ; 原热键，打开快速笔记
 ; $#n:: Send #n
-
 ; 打开 TODO
 $#!n:: OpenToDoList()
-; 打开 UWP 版 OneNote
-$#+!n:: Run "onenote-cmd://quicknote?onOpen=typing"
+; 打开 UWP 版 OneNote 的快速笔记
+$#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 ; #If !!(CapsLockXMode & CM_FN)
 ; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
@@ -110,8 +114,8 @@ $#+!n:: Run "onenote-cmd://quicknote?onOpen=typing"
 k:: Send {Home}{Left}
 j:: Send {End}{Right}
 
-#IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
-/:: ShowHelp("
+#IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
+/:: CapslockXShowHelp("
 (
 OneNote 笔记界面（由于太多）故
 !-  | 自动2维化公式
@@ -170,24 +174,111 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     ^]
     )")
 
+; 创建链接窗口
+#IfWinActive ahk_class NUIDialog ahk_exe ONENOTE.EXE
+/:: CapslockXShowHelp("
+(
+创建链接窗口
+| !s | 复制当前所有搜索结果页面的链接
+| !+s | 复制当前所有搜索结果页面的链接并粘贴
+)")
+
+!+s::
+    CopySearchResultSectionAndPagesThenPaste(){
+        CopySearchResultSectionAndPages()
+        WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        Send ^v
+    }
+!s::
+    CopySearchResultSectionAndPages(){
+        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ; 标题 ClassNN:	RICHEDIT60W3
+        ; 地址 ClassNN:	RICHEDIT60W2
+        ; 定位到第一项
+        
+        prev_addr := ""
+        this_addr := ""
+
+        links := ""
+        prev_link := ""
+        this_link := ""
+        
+        links_html := ""
+        prev_link_html := ""
+        this_link_html := ""
+
+        samecount := 0
+        k := -1
+        ; 这里不加{Blind}{AltUp} 会出现连 ctrl也一起按下的bug...原因未明
+        SendEvent {Blind}{AltUp}!o{Down}{Home}
+
+        Loop, 1000
+        {
+            Sleep, 20
+            ControlGetText, title, RICHEDIT60W3, A
+            ControlGetText, addr , RICHEDIT60W2, A
+            this_addr := addr
+            isPage := !!RegExMatch(addr, "page-id=")
+            Transform, title_html, HTML, %title%
+            if(!isPage ){
+                title := "§ " title
+                title_html := "§ " title_html
+            }
+
+            this_link := "[" title_html "]" "( " addr " )" "`n"
+            this_link_html := "<a href=""" addr """>" title_html "</a>" "<br />`n"
+            SendEvent {Down}
+        
+            if(this_addr == prev_addr){
+                samecount++
+                if(samecount >= 2){
+                    Break
+                }
+            }else{
+                prev_addr := this_addr
+                k += 1
+
+                ; 这里用 prev_addr 意在去掉最后一条（一般是新建笔记）
+                links .= prev_link
+                prev_link := this_link
+
+                ; 这里用 prev_link_html 意在去掉最后一条（一般是新建笔记）
+                links_html .= prev_link_html
+                prev_link_html := this_link_html
+            }
+        }
+        
+        ; links_html
+        ; Clipboard := links
+        Clipboard := links
+        ; Sleep 128
+        wc.SetText(links)
+        wc.SetHTML(links_html)
+        SendEvent {Escape}
+
+        TrayTip, %k% 条笔记链接已复制, %links%, 1
+    }
+
+
+#IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
     ; 自动2维化公式
     $!-::
-        Send !=
+        SendEvent !=
         Sleep, 200
         altSend("jp")
     return
-    ; Send !={AppsKey}p
+    ; SendEvent !={AppsKey}p
     ; 复制纯文本
     $^+c::
         Clipboard =
-        Send ^c
+        SendEvent ^c
         ClipWait, 1
         Clipboard := Clipboard
     return
     ; 粘贴纯文本
     $^+v::
         Clipboard := Clipboard
-        Send ^v
+        SendEvent ^v
     return
     
     ; ; 选择页面
@@ -301,7 +392,19 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     ; 	Sleep 60
     ; 	SendEvent dp{Right}{Enter}
     ; 	Return
-    
+
+    ; 相关页面链接
+    $!k:: 
+        Clipboard := ""
+        SendEvent ^a^c{Right}{Enter}{Tab}^k
+        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ClipWait, 2
+        Send ^v
+        Sleep 200 ; searching...
+        CopySearchResultSectionAndPagesThenPaste()
+        Return
+    ; $!d:: altSend("dh")
+
     ; 大纲折叠展开
     $!1:: SendEvent !+1
     $!2:: SendEvent !+2
@@ -349,7 +452,7 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
 #IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
-    /:: ShowHelp("
+    /:: CapslockXShowHelp("
     (
     换笔盘界面
     1::  ; 换到第 1 行的 1 支笔

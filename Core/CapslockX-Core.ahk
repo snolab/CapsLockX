@@ -186,6 +186,11 @@ Return
 
 #If CapsLockXMode
 
+; 显示使用方法，直接调用前面定义的函数
+/:: CapslockXShowHelp(globalHelpInfo, 1)
+
+
+
 ; 用ScrollLock代替CapsLock键
 #if T_UseScrollLockAsCapsLock
     $ScrollLock:: CapsLock

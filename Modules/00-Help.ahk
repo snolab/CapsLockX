@@ -55,7 +55,11 @@ AppendHelp(helpStr){
     globalHelpInfo .= helpStr "`n`n"
 }
 
-ShowHelp(helpStr){
+CapslockXShowHelp(helpStr, inGlobal = 0){
+    if (!inGlobal && !CapsLockXMode){
+        SendEvent, /
+        Return
+    }
     ToolTip % helpStr
     KeyWait, /
     ToolTip
@@ -66,9 +70,6 @@ ShowHelp(helpStr){
 ; 
 ; 比如这一行，指的是当前在 CapsLockX 模式时，生效的热键
 #If CapsLockXMode
-
-; 显示使用方法，直接调用前面定义的函数
-/:: ShowHelp(globalHelpInfo)
 
 ; 你可以按住 CapsLockX 键观察托盘的 CapsLockX 图标，当它变蓝时，按下 Alt + / 就可以快速打开 CapsLockX 的首页
 ; 也就是 CapsLockX + Alt + /
