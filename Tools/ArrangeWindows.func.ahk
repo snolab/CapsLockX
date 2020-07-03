@@ -1,10 +1,11 @@
-﻿; 排列窗口
-; Save as UTF-8 with BOM please
-; Copyright © 2017-2020 snomiao@gmail.com
+﻿; Save as UTF-8 with BOM please
+; 自动排列窗口
+; author: snomiao@gmail.com
+; Copyright © 2020
 ; LICENCE: GNU GPLv3
-; 
 ;
-FileEncoding, utf-8
+ArrangeWindows(A_Args[1])
+Return
 ArrangeWindows(arrangeFlags = "0"){
     arrangeFlags += 0 ; string to number
 
@@ -142,4 +143,3 @@ ArrangeWindows(arrangeFlags = "0"){
         k+=1
     }
 }
-ArrangeWindows(A_Args[1])

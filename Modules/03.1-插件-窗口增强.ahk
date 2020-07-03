@@ -1,4 +1,15 @@
-﻿; Exit if running without CapsLockX
+﻿; ========== CapsLockX ==========
+; Note：Save as UTF-8 with BOM please
+; 名称：窗口增强模块
+; 作者：snomiao (snomiao@gmail.com)
+; 支持：https://github.com/snomiao/CapsLockX
+; 版本：v2020.07.04
+; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; LICENCE: GNU GPLv3
+; ========== CapsLockX ==========
+;
+; Exit if running without CapsLockX
+; 
 If(!CapsLockX)
     ExitApp
 
@@ -18,38 +29,6 @@ AppendHelp("
 ; setup done
 Return
 
-SwitchToDesktop(x){
-    ; ToolTip % "^#{Left 10}^#{Right " x - 1 "}"
-    ; Send % "^#{Left 10}{Sleep 20}^#{Right "(0 == x ? "^#d" : x - 1) "}"
-    Send ^#{Left 10}
-    ; Send % "^#{Right " x - 1 "}"
-    x -= 1
-    Loop, %x%
-        Send ^#{Right}
-}
-
-; 把当前窗口移到其它桌面
-MoveActiveWindow(action){
-    activeWin := WinActive("A")
-    WinHide ahk_id %activeWin%
-    Send %action%
-    WinShow ahk_id %activeWin%
-    WinActivate ahk_id %activeWin%
-}
-
-; x = 0 时新键桌面
-MoveActiveWindowTo(x){
-    ; MoveActiveWindow("^#{Left 10}^#{Right "(0 == x ? "^#d" : x - 1) "}")
-    MoveActiveWindow( 0 == x ? "^#d" : "^#{Left 10}^#{Right " (x - 1) "}")
-}
-
-; 增加和删除桌面
-#Delete:: Send {CtrlDown}#{F4}{CtrlUp}
-#Insert:: Send {CtrlDown}#d{CtrlUp}
-
-; 切换桌面
-#[:: Send {CtrlDown}#{Left}{CtrlUp}
-#]:: Send {CtrlDown}#{Right}{CtrlUp}
 
 ; 把当前窗口置顶
 
@@ -74,14 +53,6 @@ Return
 ; Win + Tab
 \:: Send #{Tab} 
 
-; 切换桌面
-[:: Send ^#{Left}
-]:: Send ^#{Right}
-
-; 移动当前窗口到其它桌面
-![:: MoveActiveWindow("^#{Left}")
-!]:: MoveActiveWindow("^#{Right}")
-
 ; 切换当前窗口置顶并透明
 '::
     ; WinGet, Var, Transparent, 150, A
@@ -103,36 +74,6 @@ Return
 `; Up::
 WinSet, Transparent, 255, A
 Return
-
-; 增删桌面
--:: Send ^#{F4}
-=:: Send ^#d
-; 把当前窗口移到新桌面
-!=:: MoveActiveWindowTo(0)
-
-; 切换到第 x 个桌面
-1:: SwitchToDesktop(1)
-2:: SwitchToDesktop(2)
-3:: SwitchToDesktop(3)
-4:: SwitchToDesktop(4)
-5:: SwitchToDesktop(5)
-6:: SwitchToDesktop(6)
-7:: SwitchToDesktop(7)
-8:: SwitchToDesktop(8)
-9:: SwitchToDesktop(9)
-0:: SwitchToDesktop(10)
-
-; ; 把当前窗口移到第x个桌面
-!1:: MoveActiveWindowTo(1)
-!2:: MoveActiveWindowTo(2)
-!3:: MoveActiveWindowTo(3)
-!4:: MoveActiveWindowTo(4)
-!5:: MoveActiveWindowTo(5)
-!6:: MoveActiveWindowTo(6)
-!7:: MoveActiveWindowTo(7)
-!8:: MoveActiveWindowTo(8)
-!9:: MoveActiveWindowTo(9)
-!0:: MoveActiveWindowTo(10)
 
 ; 关闭标签
 $x:: Send ^w
@@ -163,12 +104,12 @@ Return
 !+q::
     SendEvent {Blind}{Enter}
     Sleep 200
-    MoveActiveWindow("^#{Left}")
+    MoveActiveWindowWithAction("^#{Left}")
 Return
 !+e::
     SendEvent {Blind}{Enter}
     Sleep 200
-    MoveActiveWindow("^#{Right}")
+    MoveActiveWindowWithAction("^#{Right}")
 Return
 ; cx 关闭应用
 !c:: SendEvent {Blind}{Delete}{Right}
@@ -184,7 +125,7 @@ Return
 !v::
     SendEvent {Blind}{Esc}
     Sleep 200
-    MoveActiveWindowTo(0)
+    MoveActiveWindowWithAction("^#d")
 Return
 
 ; 模拟 Tab 键切换焦点

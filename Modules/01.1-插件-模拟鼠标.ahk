@@ -1,4 +1,5 @@
 ﻿; ========== CapsLockX ==========
+; 注：Save as UTF-8 with BOM please
 ; 名称：摸拟鼠标
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com

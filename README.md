@@ -115,7 +115,7 @@ CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌�
 | 全局 | CapsLockX + b         | BackSpace |
 | 全局 | CapsLockX + Shift + b | Delete |
 
-<!-- 模块文件名：03-插件-窗口增强.ahk-->
+<!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 ### 窗口增强插件
 
 #### 功能简述：
