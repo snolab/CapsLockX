@@ -75,35 +75,33 @@ EvalNodejs(code)
     escapeCode := RegExReplace(escapeCode, "'", "\'")
     escapeCode := RegExReplace(escapeCode, "\n", "\n")
     escapeCode := RegExReplace(escapeCode, "\r", "\r")
-    realcode := "process.stdout.write(((function(){try{return eval('" encoded_code "')}catch(e){return e}})()||'').toString())"
-    ; 写入临时文件
+    realcode := ""
+    realcode .= "const code = '" escapeCode "'; `n"
+    realcode .= "process.stdout.write(((function(){try{return eval(code)}catch(e){return e}})()||'').toString()); `n"
+    ; 定义写入临时文件目录
     scriptPath := A_Temp . "\" . A_ScriptName . "_eval-javascript.js"
     if FileExist(scriptPath)
         FileDelete %scriptPath%
+    ; 写入纯 UTF8 脚本文件
     FileAppend %realcode%, %scriptPath%, UTF-8-RAW
     ; 执行 node 的指令
-    command := """" nodejsPath """" " " """" scriptPath """"
+    nodejsCommand := """" nodejsPath """" " " """" scriptPath """"
     ; 使用 Node.js 运行并获取输出 // exec方法，有小黑框
     ; 这里使用 Node.js 运行并获取输出 // tmp文件方法，无小黑框
     ; [How to read output of a command in Git Bash through Autohotkey - Stack Overflow]( https://stackoverflow.com/questions/53189150/how-to-read-output-of-a-command-in-git-bash-through-autohotkey )
     
-    tmpInputPath  := A_Temp . "\" . A_ScriptName . "_eval-javascript.input.tmp"
     tmpOutputPath := A_Temp . "\" . A_ScriptName . "_eval-javascript.output.tmp"
     FileDelete %tmpOutputPath%
-    FileDelete %tmpInputPath%
-    ; 写入纯 UTF8 脚本文件
-    FileAppend %code%, %tmpInputPath%, UTF-8
 
     cmdline := ""
     cmdline .= ComSpec " /c """
-    cmdline .= command
+    cmdline .= nodejsCommand
     cmdline .= " > """ . tmpOutputPath . """"
     RunWait, % cmdline,, Hide
     ; 读取纯 UTF8 输出
     FileRead, stdout, *P65001 %tmpOutputPath% 
-    ; 清掉垃圾文件
-    FileDelete, %tmpInputPath%
-    FileDelete, %tmpOutputPath%
+    ; `清掉垃圾文件`
+    FileDelete %tmpOutputPath%
     FileDelete %scriptPath%
     return stdout
 }

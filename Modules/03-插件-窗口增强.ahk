@@ -79,8 +79,8 @@ Return
 ]:: Send ^#{Right}
 
 ; 移动当前窗口到其它桌面
-+[:: MoveActiveWindow("^#{Left}")
-+]:: MoveActiveWindow("^#{Right}")
+![:: MoveActiveWindow("^#{Left}")
+!]:: MoveActiveWindow("^#{Right}")
 
 ; 切换当前窗口置顶并透明
 '::

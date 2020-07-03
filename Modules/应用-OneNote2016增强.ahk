@@ -212,9 +212,8 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         ; 这里不加{Blind}{AltUp} 会出现连 ctrl也一起按下的bug...原因未明
         SendEvent {Blind}{AltUp}!o{Down}{Home}
 
-        Loop, 1000
+        Loop, 10000
         {
-            Sleep, 20
             ControlGetText, title, RICHEDIT60W3, A
             ControlGetText, addr , RICHEDIT60W2, A
             this_addr := addr
@@ -227,23 +226,27 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
 
             this_link := "[" title_html "]" "( " addr " )" "`n"
             this_link_html := "<a href=""" addr """>" title_html "</a>" "<br />`n"
-            SendEvent {Down}
         
+            SendEvent {Down}
+            Sleep, 32
             if(this_addr == prev_addr){
                 samecount++
                 if(samecount >= 2){
                     Break
                 }
             }else{
+                samecount := 0
                 prev_addr := this_addr
                 k += 1
 
                 ; 这里用 prev_addr 意在去掉最后一条（一般是新建笔记）
-                links .= prev_link
+                ; OneNote搜索默认倒字母序排列，这里把它正过来
+                links := prev_link . links
                 prev_link := this_link
 
                 ; 这里用 prev_link_html 意在去掉最后一条（一般是新建笔记）
-                links_html .= prev_link_html
+                ; OneNote搜索默认倒字母序排列，这里把它正过来
+                links_html := prev_link_html . links_html
                 prev_link_html := this_link_html
             }
         }
@@ -393,14 +396,15 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     ; 	SendEvent dp{Right}{Enter}
     ; 	Return
 
-    ; 相关页面链接
+    ; 展开当前关键词的相关页面链接（请等搜索内容加载完之后再松开Alt键）
     $!k:: 
         Clipboard := ""
         SendEvent ^a^c{Right}{Enter}{Tab}^k
         WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
         ClipWait, 2
-        Send ^v
-        Sleep 200 ; searching...
+        ; 输入搜索内容
+        ControlSetText, RICHEDIT60W1, %Clipboard%, A
+        KeyWait, Alt
         CopySearchResultSectionAndPagesThenPaste()
         Return
     ; $!d:: altSend("dh")
