@@ -396,15 +396,15 @@ QQ群：
 本项目相关答疑直接进群 @雪星 提问即可。
 
 ## 支持本项目
+如何帮助本项目生存下去？
+1. 如果本项目有帮助到你，欢迎把我转发分享给你身边的朋友们。
+2. 也欢迎在此捐助本项目的开发（自愿）：
+   - 爱发电：https://afdian.net/@snomiao
+   - PAYPAL: https://paypal.me/snomiao
+   - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](https://github.com/snomiao/CapsLockX/raw/master/支付宝捐助.png)
 
-如果本项目有帮助到你，欢迎把我转发分享给你身边的朋友们。
-也欢迎在此支持本项目的开发（自愿）：
-- 爱发电：https://afdian.net/@snomiao
-- PAYPAL: https://paypal.me/snomiao
-- 支付宝捐助账号： [snomiao@gmail.com](支付宝.png)
-
-你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
+你在各种形式上的支持都会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
 
 ### 鸣谢列表
 
-感谢 秦金伟的引用推荐。
+感谢 [秦金伟]( http://rsytes.coding-pages.com/ ) 的引用推荐。
