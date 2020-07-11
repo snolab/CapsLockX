@@ -159,8 +159,6 @@
 | Win+Tab 视图下 | C | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口
 | Win+Tab 视图下 | [ ] | 切换到上一个/下一个桌面
 
-
-
 <!-- 模块文件名：SurfaceKeyboardFix.ahk-->
 ### Surface 笔记本扩充功能键
 
@@ -401,8 +399,7 @@ QQ群：
 也欢迎在此支持本项目的开发（自愿）：
 - 爱发电：https://afdian.net/@snomiao
 - PAYPAL: https://paypal.me/snomiao
-- 支付宝捐助账号： [snomiao@gmail.com](支付宝.png)
-
+- 支付宝捐助账号： [snomiao@gmail.com](https://github.com/snomiao/CapsLockX/raw/master/支付宝捐助.gif)
 你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
 
 ### 鸣谢列表
