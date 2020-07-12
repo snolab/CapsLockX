@@ -49,12 +49,19 @@ GetObjJScript()
          ), % ComObjFile
    Return ComObjGet("script:" . ComObjFile)
 }
+EscapeAsJavascriptQuoted(code)
+{
+    escapeCode := code
+    escapeCode := RegExReplace(escapeCode, "\\", "\\")
+    escapeCode := RegExReplace(escapeCode, "'", "\'")
+    escapeCode := RegExReplace(escapeCode, "\n", "\n")
+    escapeCode := RegExReplace(escapeCode, "\r", "\r")
+    return escapeCode
+}
 EvalJScript(code)
 {
     ; 生成代码
-    encoded_code := code
-    encoded_code := RegExReplace(encoded_code, "\\", "\\")
-    encoded_code := RegExReplace(encoded_code, "'", "\'")
+    encoded_code := EscapeAsJavascriptQuoted(code)
     realcode := "(function(){try{return eval('" . encoded_code .  "')}catch(e){return e.toString()}})()"
     ; 执行代码
     JS := GetObjJScript()
@@ -70,11 +77,7 @@ EvalNodejs(code)
     if !FileExist(nodejsPath)
         return ""
     ; 生成代码
-    escapeCode := code
-    escapeCode := RegExReplace(escapeCode, "\\", "\\")
-    escapeCode := RegExReplace(escapeCode, "'", "\'")
-    escapeCode := RegExReplace(escapeCode, "\n", "\n")
-    escapeCode := RegExReplace(escapeCode, "\r", "\r")
+    encoded_code := EscapeAsJavascriptQuoted(code)
     realcode := ""
     realcode .= "const code = '" escapeCode "'; `n"
     realcode .= "process.stdout.write(((function(){try{return eval(code)}catch(e){return e}})()||'').toString()); `n"

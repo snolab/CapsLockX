@@ -201,6 +201,17 @@ SwitchToDesktopByHotkey(idx){
         SendInput ^#{Right}
 }
 
+IsWindowOnCurrentVirtualDesktop(hWnd){
+    IVirtualDesktopManager          := ComObjCreate("{AA509086-5CA9-4C25-8F95-589D3C07B48A}", "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}")
+    ; 如果这个对象不存在那就没有虚拟桌面的说法了，那就默认返回true好了
+    if(!IVirtualDesktopManager)
+        return 1
+    IsWindowOnCurrentVirtualDesktop := vtable(IVirtualDesktopManager, 3)
+    bool := 0
+    DllCall(IsWindowOnCurrentVirtualDesktop, "UPtr", IVirtualDesktopManager, "UInt", hWnd , "UIntP", bool)
+    ObjRelease(IVirtualDesktopManager)
+    return %bool%
+}
 SwitchToDesktopByInternalAPI(idx) {
     succ := 0
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
