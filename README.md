@@ -86,7 +86,7 @@
 * 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 * 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 * 效果如图：
-  ![鼠标模拟.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/鼠标模拟.gif)
+  ![鼠标模拟.gif](./Modules/鼠标模拟.gif)
 
 #### 使用方法如下
 | 作用于 | 按键 | 说明
@@ -106,7 +106,7 @@
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![光标移动.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/光标移动.gif)
+![光标移动.gif](./Modules/光标移动.gif)
 
 | 作用域 | Edit模块   | 说明 （欢迎push）|
 | - | :-: | - |
@@ -128,9 +128,9 @@
 #### 效果图
 
 * Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./Modules/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 * 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
-  ![02-插件-窗口增强_一键排列窗口.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/02-插件-窗口增强_一键排列窗口.gif)
+  ![02-插件-窗口增强_一键排列窗口.gif](./Modules/02-插件-窗口增强_一键排列窗口.gif)
 
 #### 使用方法如下
 | 作用域 | 窗口增强模块   | 说明
@@ -158,8 +158,6 @@
 | Win+Tab 视图下 | V | 新建桌面，并把当前窗口扔到新建桌面
 | Win+Tab 视图下 | C | 新建桌面，并把当前窗口扔到新建桌面，并激活窗口
 | Win+Tab 视图下 | [ ] | 切换到上一个/下一个桌面
-
-
 
 <!-- 模块文件名：SurfaceKeyboardFix.ahk-->
 ### Surface 笔记本扩充功能键
@@ -262,7 +260,7 @@
 2. 若没有安装讯飞语音则会自动询问是否引导下载安装
 
 #### 效果如下图
-![应用-讯飞语音输入法悬浮窗演示.gif](https://github.com/snomiao/CapsLockX/raw/master/Modules/应用-讯飞语音输入法悬浮窗演示.gif)
+![应用-讯飞语音输入法悬浮窗演示.gif](./Modules/应用-讯飞语音输入法悬浮窗演示.gif)
 
 <!-- 模块文件名：插件-OneNote剪贴板收集器.ahk-->
 ### OneNote 剪贴板收集插件
@@ -272,7 +270,7 @@
 1. OneNote 2016 打开一个窗口，标题写成这样 "剪贴板收集"。
 2. 然后再用 Ctrl + C 复制东西的时候就会自动记到 OneNote 里
 3. 如图
-   ![插件-OneNote剪贴板收集器.gif](https://github.com/snomiao/CapsLockx/raw/master/Modules/插件-OneNote剪贴板收集器.gif)
+   ![插件-OneNote剪贴板收集器.gif](./Modules/插件-OneNote剪贴板收集器.gif)
 
 <!-- 模块文件名：插件-媒体键.ahk-->
 
@@ -401,9 +399,9 @@ QQ群：
 2. 也欢迎在此捐助本项目的开发（自愿）：
    - 爱发电：https://afdian.net/@snomiao
    - PAYPAL: https://paypal.me/snomiao
-   - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](https://github.com/snomiao/CapsLockX/raw/master/支付宝捐助.png)
+   - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
 
-你在各种形式上的支持都会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
+你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
 
 ### 鸣谢列表
 

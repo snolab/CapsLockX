@@ -82,7 +82,11 @@ UpdateModulesHelp(sourceREADME)
         
         help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
         
+        ; 替换标题层级
         ModuleHelp := RegExReplace(ModuleHelp, "m)^#", "###")
+        
+        ; 替换资源链接的相对目录（图片gif等）
+        ModuleHelp := RegExReplace(ModuleHelp, "m)(\[.*\]\(\s*?)\.\/(.*?\))", "$1./Modules/$2")
         
         if (!RegExMatch(ModuleHelp, "^#")){
             if (T%ModuleName%_Disabled) {
