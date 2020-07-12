@@ -34,7 +34,7 @@
     - [制作背景 ( 2017年秋)](#制作背景--2017年秋)
     - [发展路线](#发展路线)
     - [本项目与类似项目的功能对比 / (20200627)](#本项目与类似项目的功能对比--20200627)
-      - [本项目地址](#本项目地址)
+      - [本项目地址（以下几个仓库同步）：](#本项目地址以下几个仓库同步)
       - [相似项目地址：](#相似项目地址)
       - [其它效率软件推荐](#其它效率软件推荐)
   - [答疑相关](#答疑相关)
@@ -43,9 +43,11 @@
 
 ## 入门教程第一
 
-1. [下载源码 zip](https://github.com/snomiao/CapslockX/archive/master.zip) 解压
-3. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了
-4. 启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
+源码打包就是软件本体，无需编译
+
+1. 下载源码 zip 点击 [Github仓库](https://github.com/snomiao/CapslockX/archive/master.zip) 或 [墙内-Gitee仓库](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) 然后解压后使用。
+2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
+3. 启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
 
 > 某些功能需要使用管理员身份运行（如鼠标模拟）
 > 在 CapsLockX-Settings.ahk 中
@@ -360,8 +362,9 @@
 | 系统 | Win | Mac（主），Win（次） | Win | Win, [Mac](https://capslox.com/) |
 | 支持语言 | 中文 | 中文 / English | 中文 | 中文 / English |
 
-#### 本项目地址
+#### 本项目地址（以下几个仓库同步）：
 - GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+- Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
 
 #### 相似项目地址：
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )
@@ -394,9 +397,10 @@ QQ群：
 本项目相关答疑直接进群 @雪星 提问即可。
 
 ## 支持本项目
-如何帮助本项目生存下去？
-1. 如果本项目有帮助到你，欢迎把我转发分享给你身边的朋友们。
-2. 也欢迎在此捐助本项目的开发（自愿）：
+如何帮助本项目生存下去？ 如果本项目有帮助到你：
+1. 
+2. 欢迎把我转发分享给你身边的朋友们。
+3. 也欢迎在此捐助本项目的开发（自愿）：
    - 爱发电：https://afdian.net/@snomiao
    - PAYPAL: https://paypal.me/snomiao
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)

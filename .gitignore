@@ -5,5 +5,6 @@
 *.bak
 _config.yaml
 AutoHotKey/
-测试/
+Test/
 README.md
+Settings/
