@@ -16,8 +16,8 @@
 #Include CapsLockX-Settings.ahk
 Process Priority, , High     ; 脚本高优先级
 
-global CapsLockX_PathModules := "Modules"
-global CapsLockX_PathCore    := "Core"
+global CapsLockX_PathModules := "./Modules"
+global CapsLockX_PathCore    := "./Core"
 global CapsLockX_Version := "v1.5 Alpha"
 global loadingTips := ""
 
@@ -45,7 +45,7 @@ TryLoadModuleHelp(ModuleFileName, ModuleName)
     }
     Return ""
 }
-UpdateModulesHelp(sourceREADME)
+UpdateModulesHelp(sourceREADME, docs="")
 {
     FileEncoding UTF-8
     ; 列出模块文件
@@ -81,12 +81,15 @@ UpdateModulesHelp(sourceREADME)
         LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
         
         help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
-        
         ; 替换标题层级
         ModuleHelp := RegExReplace(ModuleHelp, "m)^#", "###")
         
         ; 替换资源链接的相对目录（图片gif等）
-        ModuleHelp := RegExReplace(ModuleHelp, "m)(\[.*\]\(\s*?)\.\/(.*?\))", "$1./Modules/$2")
+        if(docs){
+            ModuleHelp := RegExReplace(ModuleHelp, "m)(\[.*\]\(\s*?)\.\/(.*?\))", "$1../" CapsLockX_PathModules "/$2")
+        }else{
+            ModuleHelp := RegExReplace(ModuleHelp, "m)(\[.*\]\(\s*?)\.\/(.*?\))", "$1./" CapsLockX_PathModules "/$2")
+        }
         
         if (!RegExMatch(ModuleHelp, "^#")){
             if (T%ModuleName%_Disabled) {
@@ -194,9 +197,14 @@ if (target != source) {
     if (target != source) {
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
     }
-    
+    ; 替换原来的 readme.md
     FileDelete %README_FILE%
     FileAppend %target%, %README_FILE%
+
+    ; 输出到 docs/readme.md （用于 github-pages ）
+    docs_target := UpdateModulesHelp(source, 1)
+    FileDelete ./docs/%README_FILE%
+    FileAppend %docs_target%, ./docs/%README_FILE%
     ; Reload
     ; ExitApp
 }
