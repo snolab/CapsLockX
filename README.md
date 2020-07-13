@@ -363,8 +363,9 @@
 | 支持语言 | 中文 | 中文 / English | 中文 | 中文 / English |
 
 #### 本项目地址（以下几个仓库同步）：
-- GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
-- Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
+- GitHub: https://github.com/snomiao/CapsLockX
+- Gitee: https://gitee.com/snomiao/CapslockX
+- Bitbucket: https://bitbucket.org/snomiao/capslockx/
 
 #### 相似项目地址：
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )

@@ -189,8 +189,6 @@ Return
 ; 显示使用方法，直接调用前面定义的函数
 /:: CapslockXShowHelp(globalHelpInfo, 1)
 
-
-
 ; 用ScrollLock代替CapsLock键
 #if T_UseScrollLockAsCapsLock
     $ScrollLock:: CapsLock
@@ -213,6 +211,6 @@ Return
 ; 结束键
 ^!+F12:: ExitApp
 
-*Insert:: GoSub CapsLockX_Dn
-*Insert Up:: GoSub CapsLockX_Up
+; *Insert:: GoSub CapsLockX_Dn
+; *Insert Up:: GoSub CapsLockX_Up
 
