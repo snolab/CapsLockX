@@ -397,10 +397,12 @@ QQ群：
 本项目相关答疑直接进群 @雪星 提问即可。
 
 ## 支持本项目
+
 如何帮助本项目生存下去？ 如果本项目有帮助到你：
-1. 
+1. 欢迎在 Github 上点星
 2. 欢迎把我转发分享给你身边的朋友们。
-3. 也欢迎在此捐助本项目的开发（自愿）：
+3. 欢迎提交 [issues]( https://github.com/snomiao/CapsLockX/issues )、提交代码PR
+4. 欢迎在此捐助本项目的开发（自愿）：
    - 爱发电：https://afdian.net/@snomiao
    - PAYPAL: https://paypal.me/snomiao
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)

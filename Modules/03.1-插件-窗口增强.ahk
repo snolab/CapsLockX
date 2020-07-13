@@ -530,12 +530,12 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
 
         x := AreaX + k * dx
         y := AreaY + k * dy
-        FastResizeWindow(hWnd, x, y, w, h)
+        FastResizeWindow(hWnd, x, y, w, h, 1)
         k+=1
     }
 }
 
-FastResizeWindow(hWnd, x, y, w, h){
+FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
     ; 如有必要则还原最大化的窗口
     WinGet, minmax, minmax, ahk_id %hWnd%
     if (minmax == 1){
@@ -552,16 +552,18 @@ FastResizeWindow(hWnd, x, y, w, h){
     HWND_NOTOPMOST := -2
     SWP_NOMOVE := 0x0002
     SWP_NOSIE := 0x0001
-    flags := SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS
+    flags := SWP_NOACTIVATE
     ; 先置顶（否则会显示在最大化窗口的后面 -- 被挡住）
-    ; DllCall("SetWindowPos"
-    ;     , "UInt", hWnd ;handle
-    ;     , "UInt", HWND_TOPMOST ; z-index
-    ;     , "Int", 0 ; x
-    ;     , "Int", 0 ; y
-    ;     , "Int", 0 ; width
-    ;     , "Int", 0 ; height
-    ;     , "UInt", flags | SWP_NOSIZE | SWP_NOMOVE ) ; SWP_ASYNCWINDOWPOS
+    if(ForceTOP){
+        DllCall("SetWindowPos"
+            , "UInt", hWnd ;handle
+            , "UInt", HWND_TOPMOST ; z-index
+            , "Int", 0 ; x
+            , "Int", 0 ; y
+            , "Int", 0 ; width
+            , "Int", 0 ; height
+            , "UInt", flags | SWP_NOSIZE | SWP_NOMOVE ) ; SWP_ASYNCWINDOWPOS
+    }
     ; 再排到正确的位置上
     DllCall("SetWindowPos"
         , "UInt", hWnd ;handle
@@ -570,5 +572,5 @@ FastResizeWindow(hWnd, x, y, w, h){
         , "Int", y
         , "Int", w
         , "Int", h
-        , "UInt", flags ) ; SWP_ASYNCWINDOWPOS
+        , "UInt", flags | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
 }
