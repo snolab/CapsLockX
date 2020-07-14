@@ -394,6 +394,7 @@ ArrangeWindows(arrangeFlags = "0"){
             ; ; 跳过工具窗口
             ; if (style & WS_EX_TOOLWINDOW)
             ;     Continue
+            ; 只显示Alt+TAB里有的窗口
             if (!(style & WS_EX_APPWINDOW))
                 Continue
             ; ; 跳过弹出窗口
@@ -418,12 +419,12 @@ ArrangeWindows(arrangeFlags = "0"){
             ; MsgBox ,,,% style
 
             ; debug
-            ; WinActivate, ahk_id %hWnd%
-            ; WinGetClass, this_class, ahk_id %hWnd%
-            ; WinGetTitle, this_title, ahk_id %hWnd%
-            ; WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
-            ; MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
-            ; IfMsgBox, NO, break
+            WinActivate, ahk_id %hWnd%
+            WinGetClass, this_class, ahk_id %hWnd%
+            WinGetTitle, this_title, ahk_id %hWnd%
+            WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
+            MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
+            IfMsgBox, NO, break
         }
         this_monitor := GetMonitorIndexFromWindow(hWnd)
         listOfWindow%this_monitor% .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -552,7 +553,6 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
     HWND_NOTOPMOST := -2
     SWP_NOMOVE := 0x0002
     SWP_NOSIE := 0x0001
-    flags := SWP_NOACTIVATE
     ; 先置顶（否则会显示在最大化窗口的后面 -- 被挡住）
     if(ForceTOP){
         DllCall("SetWindowPos"
@@ -562,7 +562,7 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
             , "Int", 0 ; y
             , "Int", 0 ; width
             , "Int", 0 ; height
-            , "UInt", flags | SWP_NOSIZE | SWP_NOMOVE ) ; SWP_ASYNCWINDOWPOS
+            , "UInt", SWP_NOSIZE | SWP_NOMOVE ) ; SWP_ASYNCWINDOWPOS
     }
     ; 再排到正确的位置上
     DllCall("SetWindowPos"
@@ -572,5 +572,5 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
         , "Int", y
         , "Int", w
         , "Int", h
-        , "UInt", flags | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
+        , "UInt", SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
 }
