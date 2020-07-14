@@ -419,12 +419,12 @@ ArrangeWindows(arrangeFlags = "0"){
             ; MsgBox ,,,% style
 
             ; debug
-            WinActivate, ahk_id %hWnd%
-            WinGetClass, this_class, ahk_id %hWnd%
-            WinGetTitle, this_title, ahk_id %hWnd%
-            WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
-            MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
-            IfMsgBox, NO, break
+            ; WinActivate, ahk_id %hWnd%
+            ; WinGetClass, this_class, ahk_id %hWnd%
+            ; WinGetTitle, this_title, ahk_id %hWnd%
+            ; WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
+            ; MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
+            ; IfMsgBox, NO, break
         }
         this_monitor := GetMonitorIndexFromWindow(hWnd)
         listOfWindow%this_monitor% .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
