@@ -94,7 +94,15 @@ Return
 $x:: Send ^w
 ; 关闭窗口
 $Esc:: Send !{F4}
-$!x:: Send !{F4}
+$!x::
+    ; Send !{F4}
+    hWnd := WinActive("A")
+    WM_CLOSE := 0x0010
+    PostMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+    WinHide, ahk_id %hWnd%
+    Sleep 1000
+    WinShow, ahk_id %hWnd%
+    Return
 ; 杀死窗口
 $^!x:: WinKill A
 
@@ -419,11 +427,15 @@ ArrangeWindows(arrangeFlags = "0"){
             ; MsgBox ,,,% style
 
             ; debug
-            ; WinActivate, ahk_id %hWnd%
+            ; WinGet, this_pid, PID, ahk_id %hWnd%
+            ; WinGet, style, style, ahk_id %hWnd%
+            ; WinGet, minmax, minmax, ahk_id %hWnd%
             ; WinGetClass, this_class, ahk_id %hWnd%
             ; WinGetTitle, this_title, ahk_id %hWnd%
             ; WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
-            ; MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`n`nContinue?
+            
+            ; WinActivate, ahk_id %hWnd%            
+            ; MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`nthis_pid %this_pid%`nstyle %style%`n`nContinue?
             ; IfMsgBox, NO, break
         }
         this_monitor := GetMonitorIndexFromWindow(hWnd)
