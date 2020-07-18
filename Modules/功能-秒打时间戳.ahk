@@ -34,24 +34,24 @@ Return
 
 ::/date::
     FormatTime, TimeString, , yyyy-MM-dd
-    SendInput %TimeString%
+    SendInput {Text}%TimeString%
     Return
 ::/d::
     FormatTime, DateString, , (yyyyMMdd)
-    SendInput %DateString%
+    SendInput {Text}%DateString%
     Return
 ::/tick::
-    SendInput % A_TickCount
+    SendInput {Text}%A_TickCount%
     Return
 ::/t::
     FormatTime, TimeString, , (yyyyMMdd.HHmmss)
-    SendInput %TimeString%
+    SendInput {Text}%TimeString%
     Return
 ::/dt::
     FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
-    SendInput %TimeString%
+    SendInput {Text}%TimeString%
     Return
 ::/v::
     FormatTime, TimeString, , vyyyy.MM.dd
-    SendInput %TimeString%
+    SendInput {Text}%TimeString%
     Return

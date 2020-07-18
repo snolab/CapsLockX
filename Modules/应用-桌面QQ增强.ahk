@@ -56,6 +56,14 @@ CoordMode, Mouse, Client
 Click 32, 32
 Return
 
+!d:: ; 定位到功能栏
+SendInput, +{Tab 4}{Enter}
+return
+
+!b:: ; 屏蔽此人
+SendInput, +{Tab 4}{Left}{Enter}
+return
+
 !w:: ; 开出小窗口
 CoordMode, Mouse, Client
 MouseClickDrag, Left, 32, 128, 256, 128, 0
