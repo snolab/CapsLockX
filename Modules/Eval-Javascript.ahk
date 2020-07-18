@@ -91,7 +91,6 @@ EvalNodejs(code)
     FileDelete %jsonoutPath%
 
     ; 生成代码
-    encodedCode := 
     realcode := ""
     realcode .= "const code = " EscapeQuoted(code) "; `n"
     realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) "; `n"
