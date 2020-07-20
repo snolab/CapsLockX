@@ -27,6 +27,14 @@ AppendHelp("
 | CapsLockX + Alt + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话)
 )")
 ; setup done
+
+; flags
+global ARRANGE_SIDE_BY_SIDE := 0
+global ARRANGE_MAXWINDOW := 1
+global ARRANGE_MINWINDOW := 4
+global ARRANGE_STACKED := 2 ; if not then arrange SIDE_BY_SIDE
+
+
 Return
 
 
@@ -39,24 +47,14 @@ Return
 
 #If CapsLockXMode == CM_CAPSX || CapsLockXMode == CM_FN
 
-; ; 自动排列窗口 
-; o:: Run Tools\ArrangeWindows.func.ahk 1
-; ; 自动排列窗口（不包括最大化的窗口）
-; +o:: Run Tools\ArrangeWindows.func.ahk 0
-; ; 自动堆叠窗口 
-; !o:: Run Tools\ArrangeWindows.func.ahk 3
-; ; 自动堆叠窗口（不包括最大化的窗口）
-; !+o:: Run Tools\ArrangeWindows.func.ahk 2
-
-
 ; 自动排列窗口 
-o:: ArrangeWindows(1)
-; 自动排列窗口（不包括最大化的窗口）
-+o:: ArrangeWindows(0)
+o:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
+; 自动排列窗口（包括最小化的窗口）
++o:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
 ; 自动堆叠窗口 
-!o:: ArrangeWindows(3)
-; 自动堆叠窗口（不包括最大化的窗口）
-!+o:: ArrangeWindows(2)
+!o:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
+; 自动堆叠窗口（包括最小化的窗口）
+!+o:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
 
 ; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
 ; !o::
@@ -349,9 +347,6 @@ GetMonitorIndexFromWindow(hWnd)
 }
 ArrangeWindows(arrangeFlags = "0"){
     arrangeFlags += 0 ; string to number
-    ARRANGE_MAXWINDOW := 1
-    ARRANGE_STACKED := 2 ; if not then arrange SIDE_BY_SIDE
-
     ; 常量定义
     WS_EX_TOOLWINDOW  := 0x00000080
     WS_EX_APPWINDOW   := 0x00040000
@@ -384,17 +379,6 @@ ArrangeWindows(arrangeFlags = "0"){
         ;     style := style & ~WS_POPUP
         ; }
         If(1){
-            ; 跳过最小化的窗口
-            WinGet, minmax, minmax, ahk_id %hWnd%
-            if(minmax == -1){
-                continue
-            }
-            ; 跳过最大化窗口
-            if(!(arrangeFlags & ARRANGE_MAXWINDOW)){
-                if (minmax == 1){
-                    continue
-                }
-            }
             ; 黑名单
             ; ; 跳过无标题窗口
             ; if !(style & WS_CAPTION)
@@ -424,8 +408,15 @@ ArrangeWindows(arrangeFlags = "0"){
             if(!IsWindowOnCurrentVirtualDesktop(hWnd)){
                 continue
             }
-            ; MsgBox ,,,% style
-
+            ; 跳过最大化窗口
+            WinGet, minmax, minmax, ahk_id %hWnd%
+            if(!(arrangeFlags & ARRANGE_MAXWINDOW) && minmax == 1){
+                continue
+            }
+            ; 跳过最小化的窗口
+            if(!(arrangeFlags & ARRANGE_MINWINDOW) && minmax == -1){
+                continue
+            }
             ; debug
             ; WinGet, this_pid, PID, ahk_id %hWnd%
             ; WinGet, style, style, ahk_id %hWnd%
@@ -433,10 +424,21 @@ ArrangeWindows(arrangeFlags = "0"){
             ; WinGetClass, this_class, ahk_id %hWnd%
             ; WinGetTitle, this_title, ahk_id %hWnd%
             ; WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
-            
-            ; WinActivate, ahk_id %hWnd%            
-            ; MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %hWnd%`n%X% %Y% %Width% %Height%`nahk_class %this_class%`n%this_title%`nthis_pid %this_pid%`nstyle %style%`n`nContinue?
             ; IfMsgBox, NO, break
+            ; WinActivate, ahk_id %hWnd%
+            
+            ; msg := ""
+            ; msg = %msg% arrangeFlags%arrangeFlags%`n
+            ; msg = %msg% %A_Index% of %id%`n
+            ; msg = %msg% ahk_id %hWnd%`n
+            ; msg = %msg% ahk_class %this_class%`n
+            ; msg = %msg% ahk_pid %this_pid%`n
+            ; msg = %msg% %X% %Y% %Width% %Height%`n
+            ; msg = %msg% title %this_title%`n
+            ; msg = %msg% minmax %minmax%`n
+            ; msg = %msg% style %style%`n
+            ; msg = %msg% `nContinue?
+            ; MsgBox, 4, , %msg%
         }
         this_monitor := GetMonitorIndexFromWindow(hWnd)
         listOfWindow%this_monitor% .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -549,9 +551,9 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
 }
 
 FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
-    ; 如有必要则还原最大化的窗口
+    ; 如有必要则还原最大化最小化的窗口
     WinGet, minmax, minmax, ahk_id %hWnd%
-    if (minmax == 1){
+    if (minmax != 0){
         WinRestore, ahk_id %hWnd%
         needSetTOPMOST := 1
     }
