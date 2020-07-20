@@ -83,7 +83,7 @@ EvalNodejs(code)
     nodejsPath := "C:\Program Files\nodejs\node.exe"
     if (!FileExist(nodejsPath))
         return ""
-
+    
     ; 定义工作临时文件
     inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"    
     FileDelete %inputScriptPath%
@@ -93,8 +93,8 @@ EvalNodejs(code)
     ; 生成代码
     realcode := ""
     realcode .= "const code = " EscapeQuoted(code) "; `n"
-    realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) "; `n"
     realcode .= "const ret = (()=>{try{return JSON.stringify(eval(code))}catch(err){return err}})(); `n"
+    realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) "; `n"
     realcode .= "const fs = require('fs'); `n"
     realcode .= "fs.writeFileSync(jsonoutPath, ret)"
 
@@ -128,14 +128,20 @@ SafeEval(code)
     }
 }
 #If CapsLockXMode
+
 ; 使用 JS 计算并替换所选内容
 Tab::
     Clipboard =
     Send ^c
     ClipWait, 1, 1
     code := Clipboard
-    ; ToolTip, % code
-    Clipboard := SafeEval(code)
+    codeWithoutEqualEnding := RegExReplace(code, "= ?$", "")
+
+    Clipboard := SafeEval(codeWithoutEqualEnding)
+    ; 如果输入代码最后是 = 号就把结果添加到后面
+    if(code != codeWithoutEqualEnding){
+        Send {Right}
+    }
     Send ^v
 Return
 
