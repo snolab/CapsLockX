@@ -2,98 +2,200 @@
 ; Copyright 2020 snomiao@gmail.com
 ; LICENSE - GPLv3
 ; (20200722) 创建
-; (20200723)
+; Save this file as utf8 with bom
 
 #MaxHotkeysPerInterval, 200
-; 雪星并击规则集与分手按键表 {{
-global LeftHandRule := {"1":"1","2":"2","3":"3","4":"4","5":"5","12":"0","13":"9","21":"0","23":"8","24":"7","31":"9","32":"8","34":"6","42":"7","43":"6","q":"q","w":"w","e":"e","r":"r","t":"t","qw":"p","wq":"p","qe":"o","eq":"o","we":"i","ew":"i","wr":"u","rw":"u","er":"y","re":"y","a":"a","s":"s","d":"d","f":"f","g":"g","as":";","sa":";","ad":"l","da":"l","sd":"k","ds":"k","sf":"j","fs":"j","df":"h","fd":"h","z":"z","x":"x","c":"c","v":"v","b":"b","zx":"/","xz":"/","zc":".","cz":".","xc":",","cx":",","xv":"m","vx":"m","cv":"n","vc":"n"}
-global RightHandRule := {"0":"0","6":"6","7":"7","8":"8","9":"9","78":"5","79":"4","80":"2","87":"5","89":"3","90":"1","97":"4","98":"3","09":"1","08":"2","p":"p","y":"y","u":"u","i":"i","o":"o","ui":"t","iu":"t","uo":"r","ou":"r","io":"e","oi":"e","po":"q","op":"q","pi":"w","ip":"w",";":";","h":"h","j":"j","k":"k","l":"l","jk":"g","kj":"g","jl":"f","lj":"f","kl":"d","lk":"d",";l":"a","l;":"a",";k":"s","k;":"s","/":"/","n":"n","m":"m",",":",",".":".","m,":"b",",m":"b","m.":"v",".m":"v",",.":"c",".,":"c","/.":"z","./":"z","/,":"x",",/":"x"}
-global LeftHandKeys := ["1","2","3","4","5","q","w","e","r","t","a","s","d","f","g","z","x","c","v","b"]
-global RightHandKeys := ["0","6","7","8","9","p","y","u","i","o",";","h","j","k","l","/","n","m",",","."]
-; }} /* 此区块由 index.js 自动生成。 */
 
-global OtherKeys := "/.;"
+FileEncoding, UTF-8
+
+; FileRead, config, 雪星并击配置.md
+
+; 键位配置
+global AllowRewriteString := "qwertasdfgzxcvbpyuiohjklnm"
+global AllowRewrite := 0
+global AppendSpace := 0
+global StageList := []
+
+; 读入配置
+global ConfigPath := "雪星并击配置.md"
+IniRead, AllowRewriteString, %ConfigPath%, Common, AllowRewriteString, %AllowRewriteString%
+If(!CapsLockXMode)
+    IniWrite, %AllowRewriteString%, %ConfigPath%, Common, AllowRewriteString
+IniRead, AllowRewrite, %ConfigPath%, Common, AllowRewrite, %AllowRewrite%
+If(!CapsLockXMode)
+    IniWrite, %AllowRewrite%, %ConfigPath%, Common, AllowRewrite
+IniRead, AppendSpace, %ConfigPath%, Common, AppendSpace, %AppendSpace%
+If(!CapsLockXMode)
+    IniWrite, %AppendSpace%, %ConfigPath%, Common, AppendSpace
+; MsgBox, , , AllowRewriteString: %AllowRewriteString%
+
+RuleStage1 :="
+(
+=|         |         |         |         |         |
+=|    -    |    -    |    -    |    -    |    -    |
+=| 1  => 1 | 2  => 2 | 3  => 3 | 4  => 4 | 5  => 5 |
+=| q  => q | w  => w | e  => e | r  => r | t  => t |
+=| a  => a | s  => s | d  => d | f  => f | g  => g |
+=| z  => z | x  => x | c  => c | v  => v | b  => b |
+=| 12 => 0 | 13 => 9 | 23 => 8 | 24 => 7 | 34 => 6 |
+=| 21 => 0 | 31 => 9 | 32 => 8 | 42 => 7 | 43 => 6 |
+=| qw => p | qe => o | we => i | wr => u | er => y |
+=| wq => p | eq => o | ew => i | rw => u | re => y |
+=| as => ; | ad => l | sd => k | sf => j | df => h |
+=| sa => ; | da => l | ds => k | fs => j | fd => h |
+=| zx => / | zc => . | xc => , | xv => m | cv => n |
+=| xz => / | cz => . | cx => , | vx => m | vc => n |
+
+)"
+RuleStage2 := "
+(
+=|         |         |         |         |         |
+=|    -    |    -    |    -    |    -    |    -    |
+=| 6  => 6 | 7  => 7 | 8  => 8 | 9  => 9 | 0  => 0 |
+=| y  => y | u  => u | i  => i | o  => o | p  => p |
+=| h  => h | j  => j | k  => k | l  => l | ;  => ; |
+=| n  => n | m  => m | ,  => , | .  => . | /  => / |
+=| 78 => 5 | 79 => 4 | 89 => 3 | 08 => 2 | 09 => 1 |
+=| 87 => 5 | 97 => 4 | 98 => 3 | 80 => 2 | 90 => 1 |
+=| ui => t | uo => r | io => e | pi => w | po => q |
+=| iu => t | ou => r | oi => e | ip => w | op => q |
+=| jk => g | jl => f | kl => d | ;k => s | ;l => a |
+=| kj => g | lj => f | lk => d | k; => s | l; => a |
+=| m, => b | m. => v | ,. => c | /, => x | /. => z |
+=| ,m => b | .m => v | ., => c | ,/ => x | ./ => z |
+
+)"
+RuleStage3 := "
+(
+=|         |         |         |         |         |
+=|    -    |    -    |    -    |    -    |    -    |
+=| -  => - | =  => = | [  => [ | ]  => ] | \  => \ |
+=| '  => ' | _  => _ |
+)"
+
+StageIndex := 1
+while(1){
+    IniRead, RuleStage, %ConfigPath%, RuleStage%StageIndex%
+    ; MsgBox ,,, % "asdf" RuleStage "zxcv" StageIndex "asdf" !RuleStage
+    If (!RuleStage)
+        Break
+    RuleStage%StageIndex% := RuleStage
+    ; MsgBox, , , RuleStage: %RuleStage%
+    
+    objRule := {}
+    FoundPos := 0
+    while(FoundPos := RegExMatch(RuleStage, "O)\s(\S+)\s*?=>\s*?(\S+)\s", SubPat, FoundPos+1))
+    {
+        MapFrom := "" SubPat.Value(1)
+        MapTo := SubPat.Value(2) ""
+
+        ; MsgBox ,,, % SubPat.Value(1) "=" SubPat.Value(2)
+
+        MapFrom := StrReplace(MapFrom, "_", " ")
+        MapTo := StrReplace(MapTo, "_", " ")
+
+        objRule[MapFrom] := MapTo
+    }
+
+    objKeys := {}
+    lsKey := []
+    RightHandKeysSet := []
+    For Keys, _ in objRule{
+        ; MsgBox ,,, % "Keys" Keys
+        KeysList := StrSplit(Keys)
+        Loop % KeysList.MaxIndex()
+        {
+            Key := KeysList[A_Index]
+            Key := StrReplace(Key, "_", " ")
+            ; MsgBox ,,, % Key
+            objKeys[Key] := 1
+        }
+    }
+    For Key, _ in objKeys{
+        ; MsgBox ,,, % Key
+        lsKey.Push(Key)
+    }
+    Stage := {"objKeys": objKeys, "lsKey": lsKey, "objRule": objRule, "Pressed": "", "Typed": ""}
+    StageList.Push(Stage)
+    StageIndex++
+}
+
+If(!CapsLockXMode)
+    IniWrite, %RuleStage1%, %ConfigPath%, RuleStage1
+If(!CapsLockXMode)
+    IniWrite, %RuleStage2%, %ConfigPath%, RuleStage2
+If(!CapsLockXMode)
+    IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
+
 global PressedKeySet := {}
 global TypedKeys := ""
-global LeftPressedKey := ""
-global RightPressedKey := ""
-global SpacePressed := 0
-
-Hotkey, if, !CapsLockXMode
-
-For _, KeyName in LeftHandKeys{
-    Hotkey, $%KeyName%, LeftKeyDown
-    Hotkey, $%KeyName% Up, KeyUp
+; global PressedKeys := ""
+Hotkey, if, (!CapsLockXMode)
+For _, Stage in StageList{
+    For _, KeyName in Stage["lsKey"]{
+        KeyName := StrReplace(KeyName, " ", "Space")
+        ; 只有字母直接按下会不导致输入法上屏
+        if(AllowRewrite && InStr(AllowRewriteString, KeyName)){
+            Hotkey, ~$%KeyName%, KeyDown
+            Hotkey, ~$+%KeyName%, KeyDown
+        }else{
+            Hotkey, $%KeyName%, KeyDown
+            Hotkey, $+%KeyName%, KeyDown
+        }
+        Hotkey, ~$*%KeyName% Up, KeyUp
+    }
 }
-For _, KeyName in RightHandKeys{
-    Hotkey, $%KeyName%, RightKeyDown
-    Hotkey, $%KeyName% Up, KeyUp
-}
-Hotkey, $Space, OtherKeyDown
-Hotkey, $Space Up, KeyUp
-
 Hotkey, if,
-
-
 Return
+#If (!CapsLockXMode)
 
-#If !CapsLockXMode
-
-LeftKeyDown:
-StringRight, ThisKey, A_ThisHotkey, 1
-if(StrLen(A_ThisHotkey)==3){
-    TypedKeys .= ThisKey
-}
-LeftPressedKey .= ThisKey
-Return
-
-RightKeyDown:
-StringRight, ThisKey, A_ThisHotkey, 1
-if(StrLen(A_ThisHotkey)==3){
-    TypedKeys .= ThisKey
-}
-RightPressedKey .= ThisKey
-Return
-
-OtherKeyDown:
-if(A_ThisHotkey=="$Space"){
-    SpacePressed := 1
-}
+KeyDown:
+    ThisKey := A_ThisHotkey
+    ThisKey := StrReplace(ThisKey, "~")
+    ThisKey := StrReplace(ThisKey, "$")
+    ThisKey := StrReplace(ThisKey, "+")
+    ThisKey := StrReplace(ThisKey, "Space", " ")
+    For StageIndex, Stage in StageList{
+        if(Stage["objKeys"].HasKey(ThisKey)){
+            Stage["Pressed"] .= ThisKey
+            Break
+        }
+    }
+    if(SubStr(A_ThisHotkey, 1, 1)=="~"){
+        TypedKeys .= ThisKey
+    }
+    ; PressedKeys .= ThisKey
 Return
 
 KeyUp:
     OutputKey := ""
-    if(LeftHandRule[LeftPressedKey ""]){
-        OutputKey .= LeftHandRule[LeftPressedKey ""]
-    }else{
-        OutputKey .= LeftPressedKey
+    For _, Stage in StageList {
+        StagePressed := Stage["Pressed"]
+        Replaced := Stage["objRule"][StagePressed ""]
+        OutputKey .= Replaced ? Replaced : StagePressed
+        Stage["Pressed"] := ""
     }
-    if(RightHandRule[RightPressedKey ""]){
-        OutputKey .= RightHandRule[RightPressedKey ""]
-    }else{
-        OutputKey .= RightPressedKey
-    }
-    PressedLength := StrLen(TypedKeys)
+    lenTyped := StrLen(TypedKeys)
     OutputLength := StrLen(OutputKey)
-    ; ToolTip % LeftPressedKey " " RightPressedKey " " OtherPressedKeys "(" PressedLength ")" " => " OutputKey "("  OutputLength ")"
     OutputChanged := TypedKeys != OutputKey
     ; Clean
-    TypedKeys := LeftPressedKey := RightPressedKey := ""
+    TypedKeys := ""
     if(OutputChanged && OutputLength){
-        if(SpacePressed){
-            OutputKey .= " "
-        }
-        Loop, % PressedLength
+        ; OutputKey .= " "
+        OutputKey := "{blind}" . OutputKey
+        Loop, % lenTyped
             OutputKey := "{BackSpace}" . OutputKey
-        SendEvent %OutputKey%
-    }else{
-        if(SpacePressed){
-            SendEvent {Space}
-        }
+        ; send event is most stable
+        SendEvent % OutputKey
     }
-    SpacePressed := 0
-    OtherPressedKeyList := []
+    If(AppendSpace){
+        SendEvent % " "
+    }
+    ; PressedKeys is only for debug
+    ; If(PressedKeys)
+    ;     ToolTip % TypedKeys " | " PressedKeys "(" lenTyped ")" " => " OutputKey "("  OutputLength ")"
+    ; PressedKeys := ""
 Return
 
-#If (!CapslockX)
-    F12:: ExitApp
+#If !CapslockX
+F12:: ExitApp
