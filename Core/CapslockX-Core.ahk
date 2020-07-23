@@ -118,6 +118,9 @@ CapsLockXTurnOn()
     Return re
 }
 
+; Hotkey $*%T_CapsLockXKey%, CapsLockX_Dn
+; Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
+
 Hotkey $*%T_CapsLockXKey%, CapsLockX_Dn
 Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
 
@@ -134,10 +137,12 @@ CapsLockX_Dn:
     CapsLockXMode |= CM_FN
     ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
     if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")) {
+        ; tooltip capslockx disabled
         CapsLockXMode &= ~CM_FN
+        WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
+    }else{
+        ; SendInput, {CapsLock}
     }
-    ; SendInput, {CapsLock}
-
     UpdateLight()
 Return
 
@@ -154,6 +159,11 @@ CapsLockX_Up:
         }
     }
     UpdateLight()
+
+    ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
+    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")) {
+        WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
+    }
 
     ; 轻按 CapsLock 切换 CapsLock 锁定（用来保留 CapsLock 键的原功能）
     ; if (A_PriorKey == "CapsLock" && CapsLockPressTimestamp){

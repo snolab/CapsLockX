@@ -40,6 +40,7 @@ GoSub Setup_35
 GoSub Setup_36
 GoSub Setup_37
 GoSub Setup_38
+GoSub Setup_39
 
 Return
 #If
@@ -156,4 +157,7 @@ Return
 #If
     Setup_38:
         #Include ./Modules\插件-雪星转屏.ahk
+#If
+    Setup_39:
+        #Include ./Modules\雪星并击.ahk
 
