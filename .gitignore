@@ -1,10 +1,11 @@
 *.sublime-*
 *.ini
 *.zip
-.vscode
+/.vscode
 *.bak
 _config.yaml
-AutoHotKey/
+/AutoHotKey/
+/docs/README.html
 # Test/
 # README.md
 # Settings/

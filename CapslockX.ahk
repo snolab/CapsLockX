@@ -85,11 +85,21 @@ UpdateModulesHelp(sourceREADME, docs="")
         ModuleHelp := RegExReplace(ModuleHelp, "m)^#", "###")
         
         ; 替换资源链接的相对目录（图片gif等）
-        if(docs){
-            ModuleHelp := RegExReplace(ModuleHelp, "m)(\[.*\]\(\s*?)\.\/(.*?\))", "$1../" CapsLockX_PathModules "/$2")
-        }else{
-            ModuleHelp := RegExReplace(ModuleHelp, "m)(\[.*\]\(\s*?)\.\/(.*?\))", "$1./" CapsLockX_PathModules "/$2")
-        }
+        
+        ; position := RegExMatch(ModuleHelp, "Om)\[(.*)\]\(\s*?\.\/(.*?)\)", matchObject)
+        ; loop, matchObject.Count()
+        ; {
+        ;     MsgBox % matchObject[A_Index]
+        ; }
+        FileCopy, %CapsLockX_PathModules%\*.gif, .\docs\media\, 1
+        FileCopy, %CapsLockX_PathModules%\*.png, .\docs\media\, 1
+        ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./media/$2 )")
+
+        ; if(docs){
+        ;     ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./$2 )")
+        ; }else{
+        ;     ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./" CapsLockX_PathModules " /$2 ")
+        ; }
         
         if (!RegExMatch(ModuleHelp, "^#")){
             if (T%ModuleName%_Disabled) {
@@ -184,7 +194,7 @@ global ModulesLoader := CapsLockX_PathCore "\CapsLockX-LoadModules.ahk"
 LoadModules(ModulesLoader)
 
 ; 编译README.md
-README_FILE := "README.md"
+README_FILE := "./docs/README.md"
 FileRead, source, %README_FILE%
 
 ; 加载模块帮助
@@ -201,10 +211,11 @@ if (target != source) {
     FileDelete %README_FILE%
     FileAppend %target%, %README_FILE%
 
-    ; 输出到 docs/readme.md （用于 github-pages ）
-    docs_target := UpdateModulesHelp(source, 1)
-    FileDelete ./docs/%README_FILE%
-    FileAppend %docs_target%, ./docs/%README_FILE%
+    ; ; 输出到 docs/readme.md （用于 github-pages ）
+    ; docs_target := UpdateModulesHelp(source, 1)
+    ; FileDelete ./docs/%README_FILE%
+    ; FileAppend %docs_target%, ./docs/%README_FILE%
+
     ; Reload
     ; ExitApp
 }
