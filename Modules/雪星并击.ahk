@@ -184,7 +184,6 @@ snochorded_output_recored_keys(){
 
 KeyDown:
     NowTick := A_TickCount
-    ToolTip % NowTick
     ThisKey := A_ThisHotkey
     ThisKey := StrReplace(ThisKey, "~")
     ThisKey := StrReplace(ThisKey, "$")
