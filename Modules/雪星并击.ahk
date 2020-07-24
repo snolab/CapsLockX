@@ -3,21 +3,23 @@
 ; LICENSE - GPLv3
 ; (20200722) 创建
 ; Save this file as utf8 with bom
-
+; update: https://github.com/snomiao/snochorded/raw/master/%E9%9B%AA%E6%98%9F%E5%B9%B6%E5%87%BB.ahk
 #MaxHotkeysPerInterval, 200
 
 FileEncoding, UTF-8
 
-; FileRead, config, 雪星并击配置.md
-
 ; 键位配置
+global ChordIntervalThreshold := 32
 global AllowRewriteString := "qwertasdfgzxcvbpyuiohjklnm"
 global AllowRewrite := 0
 global AppendSpace := 0
 global StageList := []
 
 ; 读入配置
-global ConfigPath := "雪星并击配置.md"
+global ConfigPath := "雪星并击配置.ini"
+IniRead, ChordIntervalThreshold, %ConfigPath%, Common, ChordIntervalThreshold, %ChordIntervalThreshold%
+If(!CapsLockXMode)
+    IniWrite, %ChordIntervalThreshold%, %ConfigPath%, Common, ChordIntervalThreshold
 IniRead, AllowRewriteString, %ConfigPath%, Common, AllowRewriteString, %AllowRewriteString%
 If(!CapsLockXMode)
     IniWrite, %AllowRewriteString%, %ConfigPath%, Common, AllowRewriteString
@@ -129,6 +131,8 @@ If(!CapsLockXMode)
 
 global PressedKeySet := {}
 global TypedKeys := ""
+global LastKeyDownTick := 0
+
 ; global PressedKeys := ""
 Hotkey, if, (!CapsLockXMode)
 For _, Stage in StageList{
@@ -145,29 +149,13 @@ For _, Stage in StageList{
         Hotkey, ~$*%KeyName% Up, KeyUp
     }
 }
+
 Hotkey, if,
+
 Return
+
 #If (!CapsLockXMode)
-
-KeyDown:
-    ThisKey := A_ThisHotkey
-    ThisKey := StrReplace(ThisKey, "~")
-    ThisKey := StrReplace(ThisKey, "$")
-    ThisKey := StrReplace(ThisKey, "+")
-    ThisKey := StrReplace(ThisKey, "Space", " ")
-    For StageIndex, Stage in StageList{
-        if(Stage["objKeys"].HasKey(ThisKey)){
-            Stage["Pressed"] .= ThisKey
-            Break
-        }
-    }
-    if(SubStr(A_ThisHotkey, 1, 1)=="~"){
-        TypedKeys .= ThisKey
-    }
-    ; PressedKeys .= ThisKey
-Return
-
-KeyUp:
+snochorded_output_recored_keys(){
     OutputKey := ""
     For _, Stage in StageList {
         StagePressed := Stage["Pressed"]
@@ -179,6 +167,7 @@ KeyUp:
     OutputLength := StrLen(OutputKey)
     OutputChanged := TypedKeys != OutputKey
     ; Clean
+    LastKeyDownTick := 0
     TypedKeys := ""
     if(OutputChanged && OutputLength){
         ; OutputKey .= " "
@@ -191,6 +180,37 @@ KeyUp:
     If(AppendSpace){
         SendEvent % " "
     }
+}
+
+KeyDown:
+    NowTick := A_TickCount
+    ToolTip % NowTick
+    ThisKey := A_ThisHotkey
+    ThisKey := StrReplace(ThisKey, "~")
+    ThisKey := StrReplace(ThisKey, "$")
+    ThisKey := StrReplace(ThisKey, "+")
+    ThisKey := StrReplace(ThisKey, "Space", " ")
+
+    if( LastKeyDownTick == 0
+    || NowTick - LastKeyDownTick <= ChordIntervalThreshold){
+        if(SubStr(A_ThisHotkey, 1, 1)=="~"){
+            TypedKeys .= ThisKey
+        }
+    }else{
+        snochorded_output_recored_keys()
+    }
+
+    For StageIndex, Stage in StageList{
+        if(Stage["objKeys"].HasKey(ThisKey)){
+            Stage["Pressed"] .= ThisKey
+            Break
+        }
+    }
+    LastKeyDownTick := NowTick
+Return
+
+KeyUp:
+    snochorded_output_recored_keys()
     ; PressedKeys is only for debug
     ; If(PressedKeys)
     ;     ToolTip % TypedKeys " | " PressedKeys "(" lenTyped ")" " => " OutputKey "("  OutputLength ")"
