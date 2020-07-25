@@ -8,7 +8,11 @@
 
 FileEncoding, UTF-8
 
-; 键位配置
+; 配置
+global EnableChordTyping := 0
+if(!EnableChordTyping){
+    Return
+}
 global ChordIntervalThreshold := 32
 global AllowRewriteString := "qwertasdfgzxcvbpyuiohjklnm"
 global AllowRewrite := 0
