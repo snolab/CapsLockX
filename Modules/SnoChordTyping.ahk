@@ -8,31 +8,37 @@
 
 FileEncoding, UTF-8
 
-; 配置
-global EnableChordTyping := 0
-if(!EnableChordTyping){
+; 開關
+global CapslockXConfigPath := "./CapsLockX-Config.ini"
+global EnableSnoChordTyping := 0
+IniRead, EnableSnoChordTyping, %CapslockXConfigPath%, Plugins, , %EnableSnoChordTyping%
+IniWrite, %EnableSnoChordTyping%, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping
+if(!EnableSnoChordTyping){
     Return
 }
+
+; 配置
 global ChordIntervalThreshold := 32
 global AllowRewriteString := "qwertasdfgzxcvbpyuiohjklnm"
 global AllowRewrite := 0
 global AppendSpace := 0
 global StageList := []
 
+; 变量
+global PressedKeySet := {}
+global TypedKeys := ""
+global LastKeyDownTick := 0
+
 ; 读入配置
-global ConfigPath := "雪星并击配置.ini"
+ConfigPath := "./雪星并击配置.ini"
 IniRead, ChordIntervalThreshold, %ConfigPath%, Common, ChordIntervalThreshold, %ChordIntervalThreshold%
-If(!CapsLockXMode)
-    IniWrite, %ChordIntervalThreshold%, %ConfigPath%, Common, ChordIntervalThreshold
+IniWrite, %ChordIntervalThreshold%, %ConfigPath%, Common, ChordIntervalThreshold
 IniRead, AllowRewriteString, %ConfigPath%, Common, AllowRewriteString, %AllowRewriteString%
-If(!CapsLockXMode)
-    IniWrite, %AllowRewriteString%, %ConfigPath%, Common, AllowRewriteString
+IniWrite, %AllowRewriteString%, %ConfigPath%, Common, AllowRewriteString
 IniRead, AllowRewrite, %ConfigPath%, Common, AllowRewrite, %AllowRewrite%
-If(!CapsLockXMode)
-    IniWrite, %AllowRewrite%, %ConfigPath%, Common, AllowRewrite
+IniWrite, %AllowRewrite%, %ConfigPath%, Common, AllowRewrite
 IniRead, AppendSpace, %ConfigPath%, Common, AppendSpace, %AppendSpace%
-If(!CapsLockXMode)
-    IniWrite, %AppendSpace%, %ConfigPath%, Common, AppendSpace
+IniWrite, %AppendSpace%, %ConfigPath%, Common, AppendSpace
 ; MsgBox, , , AllowRewriteString: %AllowRewriteString%
 
 RuleStage1 :="
@@ -126,16 +132,10 @@ while(1){
     StageIndex++
 }
 
-If(!CapsLockXMode)
-    IniWrite, %RuleStage1%, %ConfigPath%, RuleStage1
-If(!CapsLockXMode)
-    IniWrite, %RuleStage2%, %ConfigPath%, RuleStage2
-If(!CapsLockXMode)
-    IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
+IniWrite, %RuleStage1%, %ConfigPath%, RuleStage1
+IniWrite, %RuleStage2%, %ConfigPath%, RuleStage2
+IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
 
-global PressedKeySet := {}
-global TypedKeys := ""
-global LastKeyDownTick := 0
 
 ; global PressedKeys := ""
 Hotkey, if, (!CapsLockXMode)
