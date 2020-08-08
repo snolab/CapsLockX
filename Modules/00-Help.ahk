@@ -55,13 +55,13 @@ AppendHelp(helpStr){
     globalHelpInfo .= helpStr "`n`n"
 }
 
-CapslockXShowHelp(helpStr, inGlobal = 0){
+CapslockXShowHelp(helpStr, inGlobal = 0, waitKey = "/"){
     if (!inGlobal && !CapsLockXMode){
         SendEvent, /
         Return
     }
     ToolTip % helpStr
-    KeyWait, /
+    KeyWait, %waitKey%
     ToolTip
 }
 

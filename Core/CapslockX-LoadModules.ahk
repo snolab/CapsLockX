@@ -63,10 +63,10 @@ Return
         #Include ./Modules\03.1-插件-窗口增强.ahk
 #If
     Setup_7:
-        #Include ./Modules\08雪星并击.ahk
+        #Include ./Modules\Eval-Javascript.ahk
 #If
     Setup_8:
-        #Include ./Modules\Eval-Javascript.ahk
+        #Include ./Modules\SnoChordTyping.ahk
 #If
     Setup_9:
         #Include ./Modules\SurfaceKeyboardFix.ahk
