@@ -127,7 +127,7 @@ Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
 #Include Core\CapsLockX-LoadModules.ahk
 
 #If
-
+    
 ; CapsLockX模式切换处理
 CapsLockX_Dn:
     if (A_ThisHotkey == "$*CapsLock" && CapsLockPressTimestamp == 0){
@@ -143,6 +143,15 @@ CapsLockX_Dn:
     }else{
         ; SendInput, {CapsLock}
     }
+    
+    ; (20200809)长按显示帮助
+    if(A_PriorKey == "CapsLock"){
+        if( A_TickCount - CapsLockPressTimestamp > 1000){
+            CapslockXShowHelp(globalHelpInfo, 1, "CapsLock")
+            ; KeyWait, CapsLock
+        }
+    }
+    
     UpdateLight()
 Return
 
@@ -159,12 +168,12 @@ CapsLockX_Up:
         }
     }
     UpdateLight()
-
+    
     ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
     if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")) {
         WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
     }
-
+    
     ; 轻按 CapsLock 切换 CapsLock 锁定（用来保留 CapsLock 键的原功能）
     ; if (A_PriorKey == "CapsLock" && CapsLockPressTimestamp){
     ;     dt := A_TickCount - CapsLockPressTimestamp
@@ -184,7 +193,7 @@ CapsLockX_Up:
     ; CapsLockX_FnActed := CapsLockX_FnActed || (A_PriorKey != T_CapsLockXKey && A_PriorKey != "Insert")
     ; if (!CapsLockX_FnActed) {
     ;     CapsLockXMode ^= CM_CapsLockX
-        
+    
     ;     ; 限制在远程桌面里无法进入 CapsLockX 模式，避免和远程桌面里的 CapsLockX 冲突
     ;     if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")) {
     ;         CapsLockXMode &= ~CM_CapsLockX
@@ -195,7 +204,7 @@ CapsLockX_Up:
 Return
 
 #If CapsLockXMode
-
+    
 ; 显示使用方法，直接调用前面定义的函数
 /:: CapslockXShowHelp(globalHelpInfo, 1)
 
@@ -207,7 +216,7 @@ Return
     ; TODO
 
 #if
-
+    
 ; 软重启键
 !F12:: Reload
 
@@ -215,7 +224,7 @@ Return
 ^!F12::
     ; Run CapsLockX.ahk, %A_WorkingDir%
     Run CapsLockX.exe, %A_WorkingDir%
-    ExitApp
+ExitApp
 Return
 
 ; 结束键
