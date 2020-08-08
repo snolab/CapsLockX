@@ -11,7 +11,7 @@ FileEncoding, UTF-8
 ; 開關
 global CapslockXConfigPath := "./CapsLockX-Config.ini"
 global EnableSnoChordTyping := 0 ; 默认关
-IniRead, EnableSnoChordTyping, %CapslockXConfigPath%, Plugins, , %EnableSnoChordTyping%
+IniRead, EnableSnoChordTyping, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping, %EnableSnoChordTyping%
 IniWrite, %EnableSnoChordTyping%, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping
 if(!EnableSnoChordTyping){
     Return
