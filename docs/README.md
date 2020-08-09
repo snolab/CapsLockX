@@ -349,7 +349,7 @@
 
 ### 本项目与类似项目的功能对比 / (20200627)
 
-| 功能\项目 | [CapsLockX](https://github.com/snomiao/CapsLockX) | [Vonng/CapsLock]( https://github.com/Vonng/CapsLock ) | [coralsw/CapsEz]( https://github.com/coralsw/CapsEz ) | [CapsLock+]( https://capslox.com/CapsLock-plus/ ) |
+| 功能\项目 | [CapsLockX](https://github.com/snomiao/CapsLockX) | [Vonng/CapsLock]( https://github.com/Vonng/CapsLock ) | [coralsw/CapsEz]( https://github.com/coralsw/CapsEz ) | [CapsLock+]( https://capslox.com/capslock-plus/ ) |
 | :- | :- | :- | :- | :- |
 | 鼠标模拟 | ✅流畅完整 | ✅无滚轮 | 🈚无 | 🈚无 |
 | 表达式计算 | ✅ Nodejs 或 JScript | 🈚无 | 🈚无 | ✅ TabScript (Snippet + Javascript) |
@@ -386,8 +386,7 @@
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.]( https://github.com/matrix1001/CapsLock-plus-plus )
 
 #### 其它效率软件推荐
-- Quicker 也是一个提高电脑操作效率的软件，与本项目可以互补。
-  - 链接：https://getquicker.net/ （雪星的推荐码： 55396-2857）
+- [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。<!-- （雪星的推荐码： 55396-2857） -->
 - [Listary Pro - 能极大幅度提高你 Windows 文件浏览与搜索速度效率的「超级神器」 - 异次元软件下载]( https://www.iplaysoft.com/listary.html )
 - [Everything]( https://www.voidtools.com/zh-cn/ )
 
