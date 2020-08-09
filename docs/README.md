@@ -1,12 +1,32 @@
 ﻿# CapsLockX - Windows 效率套件
 
-像**黑客**一样操作电脑！CapsLockX 让你可以像电影里的**黑客**一样，双手不离开键盘，高效率地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。
+像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。
 
-## 目录
+## 入门教程第一
+
+源码打包就是软件本体，无需编译
+
+1. 下载源码 zip 点击 [Github仓库](https://github.com/snomiao/CapslockX/archive/master.zip) 或 [Gitee仓库（墙内）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) 然后解压后使用。
+
+
+2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
+
+
+3. 启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
+
+
+> 某些功能需要使用管理员身份运行（如鼠标模拟）
+> 在 CapsLockX-Settings.ahk 中
+> 手动修改 global T_AskRunAsAdmin := 1 即可
+> 如不需要，可以改为 0
+
+
+## 目录第二
+
 - [CapsLockX - Windows 效率套件](#capslockx---windows-效率套件)
-  - [目录](#目录)
   - [入门教程第一](#入门教程第一)
-  - [使用手册第二](#使用手册第二)
+  - [目录第二](#目录第二)
+  - [使用手册第三](#使用手册第三)
     - [帮助模块](#帮助模块)
       - [本模块功能见下](#本模块功能见下)
     - [模拟鼠标插件](#模拟鼠标插件)
@@ -30,31 +50,19 @@
     - [媒体键模块](#媒体键模块)
     - [搜索键模块](#搜索键模块)
     - [雪星转屏模块](#雪星转屏模块)
-  - [过去与未来](#过去与未来)
+  - [过去与未来第四](#过去与未来第四)
     - [制作背景 ( 2017年秋)](#制作背景--2017年秋)
     - [发展路线](#发展路线)
     - [本项目与类似项目的功能对比 / (20200627)](#本项目与类似项目的功能对比--20200627)
       - [本项目地址（以下几个仓库同步）：](#本项目地址以下几个仓库同步)
       - [相似项目地址：](#相似项目地址)
       - [其它效率软件推荐](#其它效率软件推荐)
-  - [答疑相关](#答疑相关)
-  - [支持本项目](#支持本项目)
+  - [答疑相关第五](#答疑相关第五)
+  - [支持本项目第六](#支持本项目第六)
     - [鸣谢列表](#鸣谢列表)
 
-## 入门教程第一
 
-源码打包就是软件本体，无需编译
-
-1. 下载源码 zip 点击 [Github仓库](https://github.com/snomiao/CapslockX/archive/master.zip) 或 [Gitee仓库（墙内）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) 然后解压后使用。
-2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
-3. 启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
-
-> 某些功能需要使用管理员身份运行（如鼠标模拟）
-> 在 CapsLockX-Settings.ahk 中
-> 手动修改 global T_AskRunAsAdmin := 1 即可
-> 如不需要，可以改为 0
-
-## 使用手册第二
+## 使用手册第三
 
 <!-- * 按 `CapsLock` 切换 CapsLockX 模式 -->
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
@@ -143,7 +151,7 @@
 | 全局 | CapsLockX + Shift + O | 快速排列当前桌面的窗口（不包括最大化的窗口）
 | 全局 | CapsLockX + Alt + O | 快速堆叠当前桌面的窗口
 | 全局 | CapsLockX + Alt + Shift + O | 快速堆叠当前桌面的窗口（不包括最大化的窗口）
-| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面
+| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面r
 | 全局 | CapsLockX + = | 新建桌面
 | 全局 | CapsLockX + - | 删除当前桌面（会把所有窗口移到上一个桌面）
 | 全局 | CapsLockX + Alt + [ ] | 把当前窗口移到上一个/下一个桌面
@@ -316,7 +324,7 @@
 | 全局 | CapsLockX + Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
-## 过去与未来
+## 过去与未来第四
 
 ### 制作背景 ( 2017年秋)
 > 本人比较经常写代码…
@@ -371,7 +379,7 @@
 
 #### 相似项目地址：
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )
-  设计：[Capslock/design.md at master · Vonng/Capslock]( https://github.com/Vonng/Capslock/blob/master/design.md )
+  设计：[rrCapslock/design.md at master · Vonng/Capslock]( https://github.com/Vonng/Capslock/blob/master/design.md )
 - [coralsw/CapsEz: KeyMouse Tools]( https://github.com/coralsw/CapsEz )
 - [CapsLock+]( https://capslox.com/CapsLock-plus/ )
 - [Capslox]( https://capslox.com/cn/ )
@@ -383,7 +391,7 @@
 - [Listary Pro - 能极大幅度提高你 Windows 文件浏览与搜索速度效率的「超级神器」 - 异次元软件下载]( https://www.iplaysoft.com/listary.html )
 - [Everything]( https://www.voidtools.com/zh-cn/ )
 
-## 答疑相关
+## 答疑相关第五
 
 本项目使用 [GNU通用公共许可证 v3.0 - GNU工程 - 自由软件基金会]( https://www.gnu.org/licenses/gpl-3.0.html )。
 
@@ -399,13 +407,14 @@ QQ群：
 
 本项目相关答疑直接进群 @雪星 提问即可。
 
-## 支持本项目
+## 支持本项目第六
 
 如何帮助本项目生存下去？ 如果本项目有帮助到你：
 1. 欢迎在 Github 上点星
 2. 欢迎把我转发分享给你身边的朋友们。
-3. 欢迎提交 [issues]( https://github.com/snomiao/CapsLockX/issues )、提交代码PR
-4. 欢迎在此捐助本项目的开发（自愿）：
+3. 欢迎提交bug、提出完善建议 [issues]( https://github.com/snomiao/CapsLockX/issues )
+4. 欢迎提交代码PR
+5. 欢迎在此捐助本项目的开发：
    - 爱发电：https://afdian.net/@snomiao
    - PAYPAL: https://paypal.me/snomiao
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
