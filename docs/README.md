@@ -86,6 +86,7 @@
 | 作用于 | 按键 | 功能
 | - | - | -
 | 全局 | CapsLockX + /          | 临时显示热键提示
+| 全局 | CapsLockX（长按）      | 临时显示热键提示
 | 全局 | CapsLockX + Alt + /    | 🔗 打开 CapsLockX 的 README.md 页面
 | 全局 | CapsLockX + Shift + /  | 🕷 提交bug、建议等
 
@@ -151,7 +152,7 @@
 | 全局 | CapsLockX + Shift + O | 快速排列当前桌面的窗口（不包括最大化的窗口）
 | 全局 | CapsLockX + Alt + O | 快速堆叠当前桌面的窗口
 | 全局 | CapsLockX + Alt + Shift + O | 快速堆叠当前桌面的窗口（不包括最大化的窗口）
-| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面r
+| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面
 | 全局 | CapsLockX + = | 新建桌面
 | 全局 | CapsLockX + - | 删除当前桌面（会把所有窗口移到上一个桌面）
 | 全局 | CapsLockX + Alt + [ ] | 把当前窗口移到上一个/下一个桌面
@@ -197,8 +198,7 @@
 | 全局 | [v | 插入版本号, 类似 v2019.01.15 这样的版本号 |
 
 <!-- 模块文件名：应用-Anki增强.ahk-->
-
-### Anki增强模块
+### Anki 增强
 
 | 模式 | Anki增强模块   | 说明 |
 | - | :-: | - |
@@ -218,7 +218,9 @@
 | 在Anki-添加卡片界面 | Alt + s | 按下 "添加" 按钮 |
 
 >
-> 此插件可配合手柄使用，请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
+> 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
+> 
+> 效果请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
 >
 
 <!-- 模块文件名：应用-Edge增强.ahk-->

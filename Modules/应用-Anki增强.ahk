@@ -43,7 +43,7 @@ AnkiUnlock(x){
     | 在Anki-学习界面 | 5 或 NumPad5 | 撤销 |
     | 在Anki-学习界面 | 6 或 NumPad6 | 暂停卡片 |
     | 在Anki-学习界面 | Alt + i | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从Excel复制 |
-    | 在Anki-添加卡片界面 | Alt + s | 按下 "添加" 按钮 |
+    | 在Anki-添加卡片界面 | Alt + s | 按下 添加 按钮 |
     )")
 
     $x:: SendEvent s ; study
