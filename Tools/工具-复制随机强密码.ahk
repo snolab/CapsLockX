@@ -24,4 +24,4 @@ GenPassword(Length){
 Length := 16
 Clipboard := GenPassword(Length)
 
-MsgBox 长度%Length%的密码己复制
+TrayTip,, 长度%Length%的密码己复制
