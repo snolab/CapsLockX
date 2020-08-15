@@ -1,4 +1,4 @@
-﻿# Anki 增强
+﻿# Anki增强模块
 
 | 模式 | Anki增强模块   | 说明 |
 | - | :-: | - |
@@ -20,5 +20,5 @@
 >
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 > 
-> 效果请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
+> 效果请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！]( https://www.bilibili.com/video/av8456838/ )
 >

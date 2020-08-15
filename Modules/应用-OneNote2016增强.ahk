@@ -117,7 +117,7 @@ j:: Send {End}{Right}
 #IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
 /:: CapslockXShowHelp("
 (
-OneNote 笔记界面（由于太多）故
+OneNote 笔记界面（因为热键太多，所以写成了ahk的格式）
 !-  | 自动2维化公式
 ^+c | 复制纯文本
 ^+v | 粘贴纯文本

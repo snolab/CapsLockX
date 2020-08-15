@@ -159,6 +159,7 @@ Hotkey, if,
 Return
 
 #If (!CapsLockXMode)
+
 snochorded_output_recored_keys(){
     OutputKey := ""
     For _, Stage in StageList {

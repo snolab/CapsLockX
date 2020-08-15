@@ -39,7 +39,7 @@
       - [使用方法如下](#使用方法如下-1)
     - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [秒打时间戳模块](#秒打时间戳模块)
-    - [Anki增强模块](#anki增强模块)
+    - [Anki 增强](#anki-增强)
     - [Edge增强模块](#edge增强模块)
     - [mstsc远程桌面增强模块](#mstsc远程桌面增强模块)
     - [TIM添加常驻功能模块](#tim添加常驻功能模块)
@@ -94,12 +94,14 @@
 ### 模拟鼠标插件
 
 #### 功能
+
 * 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 * 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 * 效果如图：
   ![鼠标模拟.gif]( ./media/鼠标模拟.gif )
 
 #### 使用方法如下
+
 | 作用于 | 按键 | 说明
 | - | - | -
 | 全局 | CapsLockX + w a s d | 鼠标抛物移动（上下左右）
@@ -274,6 +276,7 @@
 2. 若没有安装讯飞语音则会自动询问是否引导下载安装
 
 #### 效果如下图
+
 ![应用-讯飞语音输入法悬浮窗演示.gif]( ./media/应用-讯飞语音输入法悬浮窗演示.gif )
 
 <!-- 模块文件名：插件-OneNote剪贴板收集器.ahk-->
@@ -329,6 +332,7 @@
 ## 过去与未来第四
 
 ### 制作背景 ( 2017年秋)
+
 > 本人比较经常写代码…
 > 起初我是右鼠……后来觉得鼠标放右边有点远……改成了左鼠
 > 左鼠之后发现手还是要离开键盘……于是做了个 WASD 模拟鼠标的东西。（然后就能一直用右手托着下巴玩电脑了）
@@ -375,11 +379,13 @@
 | 支持语言 | 中文 | 中文 / English | 中文 | 中文 / English |
 
 #### 本项目地址（以下几个仓库同步）：
+
 - GitHub: https://github.com/snomiao/CapsLockX
 - Gitee: https://gitee.com/snomiao/CapslockX
 - Bitbucket: https://bitbucket.org/snomiao/capslockx/
 
 #### 相似项目地址：
+
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!]( https://github.com/Vonng/CapsLock )
   设计：[rrCapslock/design.md at master · Vonng/Capslock]( https://github.com/Vonng/Capslock/blob/master/design.md )
 - [coralsw/CapsEz: KeyMouse Tools]( https://github.com/coralsw/CapsEz )
@@ -388,6 +394,7 @@
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.]( https://github.com/matrix1001/CapsLock-plus-plus )
 
 #### 其它效率软件推荐
+
 - [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。<!-- （雪星的推荐码： 55396-2857） -->
 - [Listary Pro - 能极大幅度提高你 Windows 文件浏览与搜索速度效率的「超级神器」 - 异次元软件下载]( https://www.iplaysoft.com/listary.html )
 - [Everything]( https://www.voidtools.com/zh-cn/ )
