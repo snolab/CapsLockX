@@ -344,29 +344,30 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     $!n:: altSend("wpcn")
     $+!n:: altSend("wre")
     
-    ; 快速删除当前页面
-    ;$!Delete:: altSend("pd")
-    $!Delete:: Send ^+a{Delete}
-    
     ; 快速删除当前行
-    ;$!Delete:: altSend("pd")
-    ; $+Delete:: Send ^!{Down}^!{Up}{Delete}
-    $+Delete:: Send {Escape}^a{Del}
+    $+Delete:: SendEvent {Escape}^a{Del}
+
+    ; 快速删除当前页面
+    $!Delete:: SendEvent ^+a{Delete}
+
+    ; 快速删除当前分区（并要求确认）
+    $!+Delete:: SendEvent ^+g{AppsKey}d
+    
     
     ; 快速关闭窗口
     $^w:: altSend("{F4}")
     
     ; 选中行
     $^+l:: Send !+{Down}!+{Up}
-    ; 输入、套锁、橡皮
-    ; $!q:: altSend("dl")
+    
+    ; 选中当前词（目前来说会带上词右边的空格）
+    $^d:: Send {Right}^{Left}^+{Right}
+
+    ; 输入、拖动、套锁、橡皮
+    $!s:: altSend("dt")
     $!q:: altSend("dh") ;换成手形Tools
     $!w:: altSend("dn")
     $!e:: altSend("dek")
-    
-    ; 输入、套锁、橡皮
-    $!s:: altSend("dt")
-    ; $!d:: altSend("dh")
     
     ; 视图 - 缩放到页面宽度
     $!r:: altSend("w1")
