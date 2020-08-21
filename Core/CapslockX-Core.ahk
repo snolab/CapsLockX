@@ -18,7 +18,9 @@ SetTitleMatchMode RegEx
 #MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的）
 #InstallMouseHook ; 安装鼠标钩子
 
+
 ; 载入设定
+global CapslockXConfigPath := "./CapsLockX-Config.ini"
 #Include CapsLockX-Settings.ahk
 
 ; 管理员模式运行
@@ -39,9 +41,12 @@ AskRunAsAdmin()
     }
 }
 
+
+
 If(T_AskRunAsAdmin) {
     AskRunAsAdmin()
 }
+
 
 ; 模式处理
 global CapsLockX := 1 ; 模块运行标识符
@@ -67,7 +72,7 @@ UpdateCapsLockXMode()
 }
 UpdateCapsLockXMode()
 ; 根据当前模式，切换灯
-Menu, tray, icon, ./数据/图标白.ico
+Menu, tray, icon, %T_SwitchTrayIconDefault%
 UpdateLight()
 {
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
@@ -78,13 +83,13 @@ UpdateLight()
     ; ToolTip testDDDD
     
     if ( NowLightState && !LastLightState) {
-        Menu, tray, icon, ./数据/图标蓝.ico
+        Menu, tray, icon, %T_SwitchTrayIconOn%
         if (T_SwitchSound && T_SwitchSoundOn) {
             SoundPlay %T_SwitchSoundOn%
         }
     }
     if ( !NowLightState && LastLightState ) {
-        Menu, tray, icon, ./数据/图标白.ico
+        Menu, tray, icon, %T_SwitchTrayIconOff%
         if (T_SwitchSound && T_SwitchSoundOff) {
             SoundPlay %T_SwitchSoundOff%
         }
@@ -118,9 +123,6 @@ CapsLockXTurnOn()
     Return re
 }
 
-; Hotkey $*%T_CapsLockXKey%, CapsLockX_Dn
-; Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
-
 Hotkey $*%T_CapsLockXKey%, CapsLockX_Dn
 Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
 
@@ -130,7 +132,7 @@ Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
     
 ; CapsLockX模式切换处理
 CapsLockX_Dn:
-    if (A_ThisHotkey == "$*CapsLock" && CapsLockPressTimestamp == 0){
+    if (A_ThisHotkey == ("$*".T_CapsLockXKey) && CapsLockPressTimestamp == 0){
         CapsLockPressTimestamp := A_TickCount
     }
     ; 进入 Fn 模式
@@ -145,9 +147,9 @@ CapsLockX_Dn:
     }
     
     ; (20200809)长按显示帮助
-    if(A_PriorKey == "CapsLock"){
+    if(A_PriorKey == T_CapsLockXKey){
         if( A_TickCount - CapsLockPressTimestamp > 1000){
-            CapslockXShowHelp(globalHelpInfo, 1, "CapsLock")
+            CapslockXShowHelp(globalHelpInfo, 1, T_CapsLockXKey)
             ; KeyWait, CapsLock
         }
     }
@@ -160,7 +162,7 @@ CapsLockX_Up:
     CapsLockXMode &= ~CM_FN
     
     ; (20200629) 取消长按进入 CapslockX Mode 的功能，改为只要没有用作组合键都算切换 Capslock
-    if(A_PriorKey == "CapsLock"){
+    if(T_CapsLockXKey =="CapsLock" && A_PriorKey == "CapsLock"){
         if (GetKeyState("CapsLock", "T")) {
             SetCapsLockState, Off
         }else{
