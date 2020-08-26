@@ -314,6 +314,9 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     ; 重命名分区
     $+F2:: Send ^+g{AppsKey}r
     
+    ; 复制页面链接
+    $!F2:: Send ^+a{AppsKey}l
+
     ; 移动笔记
     $!m:: SendEvent ^!m
     
