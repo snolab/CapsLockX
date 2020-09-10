@@ -39,7 +39,6 @@ GoSub Setup_34
 GoSub Setup_35
 GoSub Setup_36
 GoSub Setup_37
-GoSub Setup_38
 
 Return
 #If
@@ -140,20 +139,17 @@ Return
         #Include Modules\应用-讯飞输入法语音悬浮窗.ahk
 #If
     Setup_33:
-        #Include Modules\插件-OneNote剪贴板收集器.ahk
-#If
-    Setup_34:
         #Include Modules\插件-VSCode增强.ahk
 #If
-    Setup_35:
+    Setup_34:
         #Include Modules\插件-媒体键.ahk
 #If
-    Setup_36:
+    Setup_35:
         #Include Modules\插件-控制台启用CtrlV粘贴.ahk
 #If
-    Setup_37:
+    Setup_36:
         #Include Modules\插件-搜索键.ahk
 #If
-    Setup_38:
+    Setup_37:
         #Include Modules\插件-雪星转屏.ahk
 

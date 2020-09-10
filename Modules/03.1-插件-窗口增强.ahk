@@ -555,6 +555,7 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
     flags := SWP_NOACTIVATE
     ; 先置顶（否则会显示在最大化窗口的后面 -- 被挡住）
     if(ForceTOP){
+        ; WinActivate, ahk_id %hWnd%
         DllCall("SetWindowPos"
             , "UInt", hWnd ;handle
             , "UInt", HWND_TOPMOST ; z-index
@@ -562,7 +563,7 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
             , "Int", 0 ; y
             , "Int", 0 ; width
             , "Int", 0 ; height
-            , "UInt", flags | SWP_NOSIZE | SWP_NOMOVE ) ; SWP_ASYNCWINDOWPOS
+            , "UInt", SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS ) ; SWP_ASYNCWINDOWPOS
     }
     ; 再排到正确的位置上
     DllCall("SetWindowPos"
@@ -572,5 +573,5 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
         , "Int", y
         , "Int", w
         , "Int", h
-        , "UInt", flags | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
+        , "UInt", SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
 }
