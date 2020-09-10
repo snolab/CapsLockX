@@ -49,24 +49,31 @@ GetObjJScript()
          ), % ComObjFile
    Return ComObjGet("script:" . ComObjFile)
 }
-EscapeAsJavascriptQuoted(code)
+EscapeQuoted(code)
 {
-    escapeCode := code
-    escapeCode := RegExReplace(escapeCode, "\\", "\\")
-    escapeCode := RegExReplace(escapeCode, "'", "\'")
-    escapeCode := RegExReplace(escapeCode, "\n", "\n")
-    escapeCode := RegExReplace(escapeCode, "\r", "\r")
-    return escapeCode
+    encodedCode := code
+    encodedCode := RegExReplace(encodedCode, "\\", "\\")
+    encodedCode := RegExReplace(encodedCode, "'", "\'")
+    encodedCode := RegExReplace(encodedCode, "\n", "\n")
+    encodedCode := RegExReplace(encodedCode, "\r", "\r")
+    return "'" encodedCode "'"
+}
+EscapeDoubleQuotedForBatch(code)
+{
+    encodedCode := code
+    encodedCode := RegExReplace(encodedCode, "\\", "\\")
+    encodedCode := RegExReplace(encodedCode, """", "^""")
+    encodedCode := RegExReplace(encodedCode, "\n", "\n")
+    encodedCode := RegExReplace(encodedCode, "\r", "\r")
+    return """" encodedCode """"
 }
 EvalJScript(code)
 {
     ; 生成代码
-    encoded_code := EscapeAsJavascriptQuoted(code)
-    realcode := "(function(){try{return eval('" . encoded_code .  "')}catch(e){return e.toString()}})()"
+    realcode := "(function(){try{return eval(" . EscapeQuoted(code) .  ")}catch(e){return e.toString()}})()"
     ; 执行代码
     JS := GetObjJScript()
     re := JS.Eval(realcode)
-    ; ToolTip % code "`n" encoded_code "`n" realcode "`n" re
     return re
 }
 
@@ -74,57 +81,67 @@ EvalNodejs(code)
 {
     ; 检查 Node.js 是否安装
     nodejsPath := "C:\Program Files\nodejs\node.exe"
-    if !FileExist(nodejsPath)
+    if (!FileExist(nodejsPath))
         return ""
-    ; 生成代码
-    encoded_code := EscapeAsJavascriptQuoted(code)
-    realcode := ""
-    realcode .= "const code = '" escapeCode "'; `n"
-    realcode .= "process.stdout.write(((function(){try{return eval(code)}catch(e){return e}})()||'').toString()); `n"
-    ; 定义写入临时文件目录
-    scriptPath := A_Temp . "\" . A_ScriptName . "_eval-javascript.js"
-    if FileExist(scriptPath)
-        FileDelete %scriptPath%
-    ; 写入纯 UTF8 脚本文件
-    FileAppend %realcode%, %scriptPath%, UTF-8-RAW
-    ; 执行 node 的指令
-    nodejsCommand := """" nodejsPath """" " " """" scriptPath """"
-    ; 使用 Node.js 运行并获取输出 // exec方法，有小黑框
-    ; 这里使用 Node.js 运行并获取输出 // tmp文件方法，无小黑框
-    ; [How to read output of a command in Git Bash through Autohotkey - Stack Overflow]( https://stackoverflow.com/questions/53189150/how-to-read-output-of-a-command-in-git-bash-through-autohotkey )
     
-    tmpOutputPath := A_Temp . "\" . A_ScriptName . "_eval-javascript.output.tmp"
-    FileDelete %tmpOutputPath%
+    ; 定义工作临时文件
+    inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"    
+    FileDelete %inputScriptPath%
+    jsonoutPath := A_Temp . "\eval-javascript.json.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.tmp"
+    FileDelete %jsonoutPath%
 
-    cmdline := ""
-    cmdline .= ComSpec " /c """
-    cmdline .= nodejsCommand
-    cmdline .= " > """ . tmpOutputPath . """"
-    RunWait, % cmdline,, Hide
+    ; 生成代码
+    realcode := ""
+    realcode .= "const code = " EscapeQuoted(code) "; `n"
+    realcode .= "const ret = (()=>{try{return JSON.stringify(eval(code))}catch(err){return err}})(); `n"
+    realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) "; `n"
+    realcode .= "const fs = require('fs'); `n"
+    realcode .= "fs.writeFileSync(jsonoutPath, ret)"
+
+    ; 写入纯 UTF8 脚本文件
+    FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
+    if(!FileExist(inputScriptPath)){
+        ToolTip % inputScriptPatherr
+        MsgBox 执行失败，未能写入脚本文件
+        return "err"
+    }
+    ; 执行 node 的指令
+    nodejsCommand := """" nodejsPath """" " " """" inputScriptPath """"
+    RunWait, % nodejsCommand, , Hide
+
     ; 读取纯 UTF8 输出
-    FileRead, stdout, *P65001 %tmpOutputPath% 
+    FileRead, out, *P65001 %jsonoutPath%
+
     ; `清掉垃圾文件`
-    FileDelete %tmpOutputPath%
-    FileDelete %scriptPath%
-    return stdout
+    FileDelete %inputScriptPath%
+    FileDelete %jsonoutPath%
+    return out ? out : ""   
 }
 
 SafeEval(code)
 {
     nodejsPath := "C:\Program Files\nodejs\node.exe"
-    if !FileExist(nodejsPath)
+    if (FileExist(nodejsPath)){
+        return EvalNodejs(code)
+    }else{
         return EvalJScript(code)
-    return EvalNodejs(code)
+    }
 }
 #If CapsLockXMode
+
 ; 使用 JS 计算并替换所选内容
 Tab::
     Clipboard =
     Send ^c
     ClipWait, 1, 1
     code := Clipboard
-    ; ToolTip, % code
-    Clipboard := SafeEval(code)
+    codeWithoutEqualEnding := RegExReplace(code, "= ?$", "")
+
+    Clipboard := SafeEval(codeWithoutEqualEnding)
+    ; 如果输入代码最后是 = 号就把结果添加到后面
+    if(code != codeWithoutEqualEnding){
+        Send {Right}
+    }
     Send ^v
 Return
 

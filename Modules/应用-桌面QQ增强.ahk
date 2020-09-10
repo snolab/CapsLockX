@@ -40,11 +40,12 @@ Return
 
 /:: CapslockXShowHelp("
 (
-QQ 会话界面
+QQ 多人会话界面
 F2:: ; 看资料
 !f:: ; 点开左上角搜索（仅主屏有效）
 !w:: ; 开出小窗口
 !r:: ; 快速点击接收文件
+!h:: ; 聊天记录
 )")
 
 F2:: ; 看资料
@@ -55,6 +56,14 @@ Return
 CoordMode, Mouse, Client
 Click 32, 32
 Return
+
+!d:: ; 定位到功能栏
+SendInput, +{Tab 4}{Enter}
+return
+
+!b:: ; 屏蔽此人
+SendInput, +{Tab 4}{Left}{Enter}
+return
 
 !w:: ; 开出小窗口
 CoordMode, Mouse, Client
@@ -68,11 +77,14 @@ Send 1!s{Tab 10}{Space}!s
 Return
 
 
+!n:: ; 群通知设定 (或抖窗)
+SendInput, {Tab 5}{Right 6}{Enter}
+return
 
 #IfWinActive ahk_class TXGuiFoundation ahk_exe QQ.exe
 /:: CapslockXShowHelp("
 (
-QQ 单人会话办面
+QQ 单人会话界面
 !m:: ; 屏蔽鼠标指向的群
 !r:: ; 快速点击接收文件
 F2:: ; 查看这个人的资料

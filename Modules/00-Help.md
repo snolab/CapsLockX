@@ -10,5 +10,6 @@
 | 作用于 | 按键 | 功能
 | - | - | -
 | 全局 | CapsLockX + /          | 临时显示热键提示
+| 全局 | CapsLockX（长按）      | 临时显示热键提示
 | 全局 | CapsLockX + Alt + /    | 🔗 打开 CapsLockX 的 README.md 页面
 | 全局 | CapsLockX + Shift + /  | 🕷 提交bug、建议等

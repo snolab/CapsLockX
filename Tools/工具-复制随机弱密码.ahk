@@ -21,8 +21,7 @@ GenPassword(Length){
     }
 }
 
-^+u::
-    Length := 40
-    Clipboard := GenPassword(Length)
-    Send ^v
-    return
+Length := 16
+Clipboard := GenPassword(Length)
+
+TrayTip,, 长度%Length%的密码己复制
