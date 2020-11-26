@@ -68,10 +68,10 @@ if(!!CapslockXConfigPath){
     IniWrite, %TMouse_StopAtScreenEdge%, %CapslockXConfigPath%, TMouse, TMouse_StopAtScreenEdge
     
     ; 屏幕 DPI 比率，自动计算得出，如果数值不对，才需要纠正
-    global TMouse_DPIRatio := A_ScreenDPI / 96
+    global TMouse_DPIRatio := A_ScreenDPI / 96 / 3
     
     ; 鼠标加速度比率, 一般就改那个1，你想慢点就改成 0.8
-    global TMouse_MouseSpeedRatio := TMouse_DPIRatio * 1
+    global TMouse_MouseSpeedRatio := TMouse_DPIRatio * 0.8
     
     ; 滚轮加速度比率, 一般就改那个1，你想慢点就改成 0.8
     global TMouse_WheelSpeedRatio := TMouse_DPIRatio * 0.8

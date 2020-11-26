@@ -57,6 +57,11 @@ CursorShapeChangedQ(){
     Return 1
 }
 
+
+sign(v){
+    Return v == 0 ? 0 : (v > 0 ? 1 : -1)
+}
+
 ;global dpiX := 0, dpiY := 0
 ;DllCall("User32.dll\MonitorFromPoint", "UInt", x, "UInt", y, "UInt", 0/*MONITOR_DEFAULTTONEAREST*/)
 ; VarSetCapacity(point, 8, 0)
@@ -129,6 +134,30 @@ SendInput_MouseMoveR64(x, y){
 }
 
 ; 鼠标运动处理
+; mouseTicker_dev:
+;     ; 在非 CapsLockX 模式下直接停止
+;     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
+;         mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+;         max := 0, may := 0
+;     }else{
+;         tNow := QPC()
+;         ; 计算用户操作时间, 计算 ADWS 键按下的时长
+;         tda := dt(mtl, tNow), tdd := dt(mtr, tNow)
+;         tdw := dt(mtu, tNow), tds := dt(mtd, tNow)
+;         tdx := tdd - tda, tdy := tds - tdw
+;     }
+;     sign(tdx) + tdx * tdx
+;     tax := tda * tay
+;     If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
+;     {
+;         SendInput_MouseMoveR32(mdx, mdy)
+;         mdx -= mdx | 0, mdy -= mdy | 0
+;     }Else{
+;         MouseMove, %mdx%, %mdy%, 0, R
+;         mdx -= mdx | 0, mdy -= mdy | 0
+;     }
+; Return
+
 mouseTicker:
     ; 在非 CapsLockX 模式下直接停止
     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
@@ -140,8 +169,9 @@ mouseTicker:
         tda := dt(mtl, tNow), tdd := dt(mtr, tNow)
         tdw := dt(mtu, tNow), tds := dt(mtd, tNow)
         ; 计算这段时长的加速度
-        max := ma(tdd - tda) * TMouse_MouseSpeedRatio
-        may := ma(tds - tdw) * TMouse_MouseSpeedRatio
+        ; tooltip % TMouse_MouseSpeedRatio
+        max := ma(tdd - tda) * 0.5 ; * TMouse_MouseSpeedRatio
+        may := ma(tds - tdw) * 0.5 ; * TMouse_MouseSpeedRatio
     }
     
     ; ; 摩擦力不阻碍用户意志
@@ -218,7 +248,7 @@ mTick(){
 }
 
 Pos2Long(x, y) {
-Return x | (y << 16)
+    Return x | (y << 16)
 }
 
 ScrollMsg2(msg, zDelta){
@@ -334,10 +364,6 @@ sTick(){
 
 
 
-
-
-
-
 ; CapsLockX和fn模式都能触发
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
 
@@ -371,8 +397,14 @@ Return
 *s Up:: mtd := 0, mTick()
 
 ; 鼠标滚轮处理
-r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
-f:: scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
+r::
+    scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
+    ; KeyWait, r
+    return
+f::
+    scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
+    ; KeyWait, f
+    return
 r Up:: scroll_tu := 0, sTick()
 f Up:: scroll_td := 0, sTick()
 
