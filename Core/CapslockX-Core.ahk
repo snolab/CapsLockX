@@ -137,14 +137,15 @@ CapsLockX_Dn:
     ; 进入 Fn 模式
     CapsLockXMode |= CM_FN
     ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
-    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")
-    || WinActive("SynergyDesk ahk_class SynergyDesk")) {
-        SendEvent, {CapsLock Down}
+    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe") ){
+    ; || WinActive("SynergyDesk ahk_class SynergyDesk")
+    ; ) {
+        ; SendEvent, {CapsLock Down}
         ; tooltip capslockx disabled
         CapsLockXMode &= ~CM_FN
         ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
         ToolTip 当前在远程桌面中按下CapsLock，等待中
-        ; WinWaitNotActive, ; LAST_FOUND
+        WinWaitNotActive, ; LAST_FOUND
         ; ToolTip
     }else{
         ; SendInput, {CapsLock}
@@ -180,13 +181,13 @@ CapsLockX_Up:
     UpdateLight()
     
     ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
-    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")
-    || WinActive("SynergyDesk ahk_class SynergyDesk")) {
-        SendEvent, {CapsLock Up}
+    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe") ){
+    ; || WinActive("SynergyDesk ahk_class SynergyDesk")) {
+        ; SendEvent, {CapsLock Up}
         ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
         
         ToolTip 当前在远程桌面中弹起CapsLock
-        ; WinWaitNotActive, ; LAST_FOUND
+        WinWaitNotActive, ; LAST_FOUND
         ; ToolTip
     }
     
