@@ -11,6 +11,9 @@ AppendHelp("
 )")
 
 Return
+
+#IF (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN))
+
 #h::
     If (WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe")) {
         ; 原方案使用热键触发

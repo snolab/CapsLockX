@@ -21,10 +21,10 @@ AppendHelp("
 | CapsLockX + [ ]             | 切换到上一个/下一个桌面
 | CapsLockX + =               | 新建桌面
 | CapsLockX + -               | 删除当前桌面（会把所有窗口移到上一个桌面）
-| CapsLockX + Alt + [ ]       | 把当前窗口移到上一个/下一个桌面
-| CapsLockX + Alt + =         | 新建桌面，并把当前窗口移过去
+| CapsLockX + Shift + [ ]       | 把当前窗口移到上一个/下一个桌面
+| CapsLockX + Shift + =         | 新建桌面，并把当前窗口移过去
 | CapsLockX + 1 2 ... 9       | 切换到第 n 个桌面
-| CapsLockX + Alt + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话)
+| CapsLockX + Shift + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话)
 )")
 ; setup done
 

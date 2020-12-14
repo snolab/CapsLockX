@@ -81,70 +81,70 @@ Return
         #Include ./Modules\功能-秒打时间戳.ahk
 #If
     Setup_13:
-        #Include ./Modules\应用-Acrobat增强.ahk
+        #Include ./Modules\功能-锁屏时自动息屏.ahk
 #If
     Setup_14:
-        #Include ./Modules\应用-Acrobat自动缩放.ahk
+        #Include ./Modules\应用-Acrobat增强.ahk
 #If
     Setup_15:
-        #Include ./Modules\应用-Anki增强.ahk
+        #Include ./Modules\应用-Acrobat自动缩放.ahk
 #If
     Setup_16:
-        #Include ./Modules\应用-BTSync1.4.111快速添加Key.ahk
+        #Include ./Modules\应用-Anki增强.ahk
 #If
     Setup_17:
-        #Include ./Modules\应用-CapsX-Cursor.ahk
+        #Include ./Modules\应用-BTSync1.4.111快速添加Key.ahk
 #If
     Setup_18:
-        #Include ./Modules\应用-Edge增强.ahk
+        #Include ./Modules\应用-CapsX-Cursor.ahk
 #If
     Setup_19:
-        #Include ./Modules\应用-IAR改选项为CMSIS-DAP.ahk
+        #Include ./Modules\应用-Edge增强.ahk
 #If
     Setup_20:
-        #Include ./Modules\应用-LoopbackExemptionManager.ahk
+        #Include ./Modules\应用-IAR改选项为CMSIS-DAP.ahk
 #If
     Setup_21:
-        #Include ./Modules\应用-MobaXterm.ahk
+        #Include ./Modules\应用-LoopbackExemptionManager.ahk
 #If
     Setup_22:
-        #Include ./Modules\应用-mstsc远程桌面增强.ahk
+        #Include ./Modules\应用-MobaXterm.ahk
 #If
     Setup_23:
-        #Include ./Modules\应用-OneNote2016增强.ahk
+        #Include ./Modules\应用-mstsc远程桌面增强.ahk
 #If
     Setup_24:
-        #Include ./Modules\应用-OneNoteMetro拓展.ahk
+        #Include ./Modules\应用-OneNote2016增强.ahk
 #If
     Setup_25:
-        #Include ./Modules\应用-QQ_UWP增强.ahk
+        #Include ./Modules\应用-OneNoteMetro拓展.ahk
 #If
     Setup_26:
-        #Include ./Modules\应用-Telegram.ahk
+        #Include ./Modules\应用-QQ_UWP增强.ahk
 #If
     Setup_27:
-        #Include ./Modules\应用-TIM添加常驻功能.ahk
+        #Include ./Modules\应用-Telegram.ahk
 #If
     Setup_28:
-        #Include ./Modules\应用-TIM连接OneNote2016.ahk
+        #Include ./Modules\应用-TIM添加常驻功能.ahk
 #If
     Setup_29:
-        #Include ./Modules\应用-UWP应用增强.ahk
+        #Include ./Modules\应用-TIM连接OneNote2016.ahk
 #If
     Setup_30:
-        #Include ./Modules\应用-文明6回车左置.ahk
+        #Include ./Modules\应用-UWP应用增强.ahk
 #If
     Setup_31:
-        #Include ./Modules\应用-桌面QQ增强.ahk
+        #Include ./Modules\应用-文明6回车左置.ahk
 #If
     Setup_32:
-        #Include ./Modules\应用-网易云音乐.ahk
+        #Include ./Modules\应用-桌面QQ增强.ahk
 #If
     Setup_33:
-        #Include ./Modules\应用-讯飞输入法语音悬浮窗.ahk
+        #Include ./Modules\应用-网易云音乐.ahk
 #If
     Setup_34:
-        #Include ./Modules\插件-OneNote剪贴板收集器.ahk
+        #Include ./Modules\应用-讯飞输入法语音悬浮窗.ahk
 #If
     Setup_35:
         #Include ./Modules\插件-VSCode增强.ahk

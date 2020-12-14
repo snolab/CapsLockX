@@ -34,14 +34,14 @@ Return
 -:: SendInput ^#{F4}
 =:: SendInput ^#d
 ; Move current window to new desktop
-!=:: MoveActiveWindowWithAction("^#d")
++=:: MoveActiveWindowWithAction("^#d")
 
 ; Switch desktop left and right
 [:: SendInput ^#{Left}
 ]:: SendInput ^#{Right}
 ; Move the current window to the left or right desktop
-![:: MoveActiveWindowWithAction("^#{Left}")
-!]:: MoveActiveWindowWithAction("^#{Right}")
++[:: MoveActiveWindowWithAction("^#{Left}")
++]:: MoveActiveWindowWithAction("^#{Right}")
 
 ; Switch to desktop
 1:: SwitchToDesktop(1)
@@ -56,16 +56,16 @@ Return
 0:: SwitchToDesktop(10)
 
 ; Move the current window to the X-th desktop
-!1:: MoveActiveWindowToDesktop(1)
-!2:: MoveActiveWindowToDesktop(2)
-!3:: MoveActiveWindowToDesktop(3)
-!4:: MoveActiveWindowToDesktop(4)
-!5:: MoveActiveWindowToDesktop(5)
-!6:: MoveActiveWindowToDesktop(6)
-!7:: MoveActiveWindowToDesktop(7)
-!8:: MoveActiveWindowToDesktop(8)
-!9:: MoveActiveWindowToDesktop(9)
-!0:: MoveActiveWindowToDesktop(10)
++1:: MoveActiveWindowToDesktop(1)
++2:: MoveActiveWindowToDesktop(2)
++3:: MoveActiveWindowToDesktop(3)
++4:: MoveActiveWindowToDesktop(4)
++5:: MoveActiveWindowToDesktop(5)
++6:: MoveActiveWindowToDesktop(6)
++7:: MoveActiveWindowToDesktop(7)
++8:: MoveActiveWindowToDesktop(8)
++9:: MoveActiveWindowToDesktop(9)
++0:: MoveActiveWindowToDesktop(10)
 
 ; API definitions
 /*
@@ -95,7 +95,7 @@ internal interface IVirtualDesktopManagerInternal
     void RemoveDesktop(IVirtualDesktop desktop, IVirtualDesktop fallback);
     IVirtualDesktop FindDesktop(ref Guid desktopid);
 }
-
+1
 [ComImport]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 [Guid("A5CD92FF-29BE-454C-8D04-D82879FB3F1B")]

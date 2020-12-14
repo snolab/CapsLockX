@@ -28,13 +28,13 @@ QPC(){
 ; 构造加速模型相关函数
 ma(t){
     ; 二次函数运动模型
-    ; Return ma2(t) * TMouse_DPIRatio
+    Return ma2(t)  ; * TMouse_DPIRatio
     
     ; 三次函数运动模型
-    ; Return ma3(t) * TMouse_DPIRatio
+    ; Return ma3(t)
     
     ; 指数函数运动模型
-    Return maPower(t) * TMouse_DPIRatio
+    ; Return maPower(t)
 }
 ma2(t){
     ; x-t 二次曲线加速运动模型
@@ -67,10 +67,7 @@ maPower(t){
     ;
     If(0 == t)
         Return 0
-    If(t > 0)
-        Return 1 +( Exp( t) - 1 ) * 8
-    Else
-        Return -1 -( Exp(-t) - 1 ) * 8
+    Return (t > 0 ? 1 : -1) * ( 1 + ( Exp(Abs(t)) - 1 ) * 2)
 }
 
 ; 时间计算

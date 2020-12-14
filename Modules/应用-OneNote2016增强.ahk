@@ -111,8 +111,10 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
     
 ; 上下左右
 ; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
-k:: Send {Home}{Left}
-j:: Send {End}{Right}
+; k:: Send {Home}{Left}
+; j:: Send {End}{Right}
+; k:: ControlSend, OneNote::DocumentCanvas1, {Up}, ahk_exe ONENOTE.EXE
+; j:: ControlSend, OneNote::DocumentCanvas1, {Down}, ahk_exe ONENOTE.EXE
 
 #IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
 /:: CapslockXShowHelp("

@@ -30,7 +30,25 @@ OnSwitch(){
     RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersio n\Policies\System, DisableLockWorkstation, %value%
 }
 
-; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
+SendArrowUp(){
+    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+    {
+        ControlSend, OneNote::DocumentCanvas1, {Up}
+    }else{
+        SendEvent  {blind}{up}
+    }
+}
+SendArrowDown(){
+    ; sendplay {blind}{down}
+    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+    {
+        ControlSend, OneNote::DocumentCanvas1, {Down}
+    }else{
+        SendEvent {blind}{down}
+    }
+}
+    
+    ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 
 ; ToolTip, %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
 
@@ -68,25 +86,25 @@ arrowTicker:
     ; TODO: 输出速度时间曲线，用于DEBUG
     If(arrow_dx >= 1){
         Loop, %arrow_dx%
-            SendEvent {Blind}{Right}
+            SendInput {Blind}{Right}
         arrow_dx -= arrow_dx | 0
     }
     If(arrow_dx <= -1){
         arrow_dx := -arrow_dx
         Loop, %arrow_dx%
-            SendEvent {Blind}{Left}
+            SendInput {Blind}{Left}
         arrow_dx := -arrow_dx
         arrow_dx -= arrow_dx | 0
     }
     If(arrow_dy >= 1){
         Loop, %arrow_dy%
-            SendEvent {Blind}{Down}
+            SendArrowDown()
         arrow_dy -= arrow_dy | 0
     }
     If(arrow_dy <= -1){
         arrow_dy := -arrow_dy
         Loop, %arrow_dy%
-            SendEvent {Blind}{Up}
+            SendArrowUp()
         arrow_dy := -arrow_dy
         arrow_dy -= arrow_dy | 0
     }
@@ -106,7 +124,9 @@ kTick(){
 *u:: PgDn
 *i:: PgUp
 ; 上下左右
-; 不知为啥这个kj在OneNote里有时候会不管用
+
+; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
+; 见 OneNote 2016 增强
 
 ; 光标运动处理
 ; *h:: Left
@@ -121,8 +141,8 @@ kTick(){
         arrow_tl:=QPC()
         SendInput {Blind}{Left}
     }
-    
     kTick()
+    ; KeyWait, h ; 并不管用
     Return 
     ;
 *l::
@@ -131,17 +151,16 @@ kTick(){
         arrow_tr:=QPC()
         SendInput {Blind}{Right}
     }
-    
     kTick()
+    ; KeyWait, l ; 并不管用
     Return 
     ;
 *k::
     ; arrow_tu := (arrow_tu ? arrow_tu : QPC())
     if (!arrow_tu){
         arrow_tu:=QPC()
-        SendInput {Blind}{Up}
+        SendArrowUp()
     }
-    
     kTick()
     Return 
     ;
@@ -149,9 +168,8 @@ kTick(){
     ; arrow_td := (arrow_td ? arrow_td : QPC())
     if (!arrow_td){
         arrow_td:=QPC()
-        SendInput {Blind}{Down}
+        SendArrowDown()
     }
-    
     kTick()
     Return 
     ;
@@ -186,6 +204,7 @@ b:: Send {Blind}{BackSpace}
 ; ^b:: Send ^{BackSpace}
 ; ^+b:: Send ^{Delete}
 
+; 回车
 *z:: Enter
 
 
