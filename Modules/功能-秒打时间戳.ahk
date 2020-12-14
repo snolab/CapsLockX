@@ -40,6 +40,10 @@ Return
     FormatTime, DateString, , (yyyyMMdd)
     SendInput {Text}%DateString%
     Return
+::/da::
+    FormatTime, DateString, , (yyyy-MM-dd)
+    SendInput {Text}%DateString%
+    Return
 ::/tick::
     SendInput {Text}%A_TickCount%
     Return

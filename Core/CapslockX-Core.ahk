@@ -137,6 +137,7 @@ CapsLockX_Dn:
     }
     ; 进入 Fn 模式
     CapsLockXMode |= CM_FN
+
     ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
     if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")) {
         ; tooltip capslockx disabled

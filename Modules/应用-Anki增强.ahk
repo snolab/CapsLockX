@@ -15,6 +15,7 @@ AnkiEnlock(key, to){
     }
     Anki增强_Lock := 1
     Send %to%
+    KeyWait, %key%
 }
 AnkiUnlock(x){
     Anki增强_Lock := 0
