@@ -4,15 +4,20 @@
 
 ## 入门教程第一
 
-源码打包就是软件本体，无需编译
+### 安装方式1
+
+源码打包就是软件本体，无需编译。
 
 1. 下载源码 zip 点击 [Github仓库](https://github.com/snomiao/CapslockX/archive/master.zip) 或 [Gitee仓库（墙内）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) 然后解压后使用。
 
-
 2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
+### 安装方式2
 
-3. 启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
+如果你有 npm ，可以尝试 `npm i -g capslockx` 以及 `npx capslockx` 来自动安装本软件
+### 使用方式
+
+启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
 
 
 > 某些功能需要使用管理员身份运行（如鼠标模拟）
