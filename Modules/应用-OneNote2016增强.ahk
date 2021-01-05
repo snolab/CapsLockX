@@ -40,7 +40,7 @@ GetFocusControlName(){
     return name
 }
 
-; 获取与IME无冲的编码字符串，用于 Send （SEO： SendRaw SendInput）
+; 获取与IME无冲的编码字符串，用于 SendEvent （SEO： SendRaw SendInput）
 getAscStr(str)
 {
     charList := StrSplit(str)
@@ -55,12 +55,12 @@ OpenToDoList(){
         Run "onenote:#TODO" ; 打开默认分区的 TODO 页面
     WinWait TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
     WinActivate ; Uses the last found window.
-    Send ^{End}{Enter}
+    SendEvent ^{End}{Enter}
     Return
 }
 
 ; 原热键，打开快速笔记
-; $#n:: Send #n
+; $#n:: SendEvent #n
 ; 打开 TODO
 $#!n:: OpenToDoList()
 ; 打开 UWP 版 OneNote 的快速笔记
@@ -81,15 +81,15 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 ; enhanced_search() {
 ; ; 增强搜索
 ; if (A_ThisHotkey = "$^e"){
-; Send ^e
+; SendEvent ^e
 ; }else{
-; Send ^f
+; SendEvent ^f
 ; }
 ; If ("RICHEDIT60W1" != GetFocusControlName()){
 ; Return
 ; }
 ; Clipboard =
-; Send ^c
+; SendEvent ^c
 ; ClipWait, 1
 
 ; If ErrorLevel {
@@ -103,7 +103,7 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 ; str := """" s1 """" " OR " """" s2 """"
 
 ; Clipboard := str
-; Send ^v
+; SendEvent ^v
 ; Return
 ; }
 
@@ -111,8 +111,8 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
     
 ; 上下左右
 ; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
-; k:: Send {Home}{Left}
-; j:: Send {End}{Right}
+; k:: SendEvent {Home}{Left}
+; j:: SendEvent {End}{Right}
 ; k:: ControlSend, OneNote::DocumentCanvas1, {Up}, ahk_exe ONENOTE.EXE
 ; j:: ControlSend, OneNote::DocumentCanvas1, {Down}, ahk_exe ONENOTE.EXE
 
@@ -131,7 +131,7 @@ F2  | 重命名笔记
 ^!n | 
 !f | 搜索标记
 ; 选择页面
-    $^+PgUp:: Send ^+g{Up}{Enter}
+    $^+PgUp:: SendEvent ^+g{Up}{Enter}
     $^+PgDn::
 ^s:: ; 同步此笔记本
     
@@ -189,9 +189,10 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     CopySearchResultSectionAndPagesThenPaste(){
         CopySearchResultSectionAndPages()
         WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        Send ^v
+        SendEvent ^v
     }
 !s::
+    ; 复制链接笔记页面的搜索结果
     CopySearchResultSectionAndPages(){
         WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
         ; 标题 ClassNN:	RICHEDIT60W3
@@ -260,12 +261,11 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         wc.SetText(links)
         wc.SetHTML(links_html)
         SendEvent {Escape}
-
+        
         TrayTip, %k% 条笔记链接已复制, %links%, 1
     }
 
-
-#IfWinActive .*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
+#If ((CapsLockXMode != CM_CapsLockX && CapsLockXMode != CM_FN) && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
     ; 自动2维化公式
     $!-::
         SendEvent !=
@@ -287,14 +287,14 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     return
     
     ; ; 选择页面
-    ; ^PgUp:: Send ^{PgUp}^+a
-    ; ^PgDn:: Send ^{PgDn}^+a
+    ; ^PgUp:: SendEvent ^{PgUp}^+a
+    ; ^PgDn:: SendEvent ^{PgDn}^+a
     ; ; 将此页面向上合并
     ; $!j::
-    ;     Send ^+t^a^x
-    ;     Send ^{PgUp}^+t^{End}^v
-    ;     Send ^{PgDn}^+a{Del}
-    ;     Send ^{PgUp}
+    ;     SendEvent ^+t^a^x
+    ;     SendEvent ^{PgUp}^+t^{End}^v
+    ;     SendEvent ^{PgDn}^+a{Del}
+    ;     SendEvent ^{PgUp}
     ; Return
     
     $!c::
@@ -311,36 +311,36 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     ; Return
     
     ; 重命名笔记
-    $F2:: Send ^+t
+    $F2:: SendEvent ^+t
 
     ; 重命名分区
-    $+F2:: Send ^+g{AppsKey}r
+    $+F2:: SendEvent ^+g{AppsKey}r
     
     ; 移动笔记
     $!m:: SendEvent ^!m
     
     ; 移动分区
-    $!+m:: Send ^+g{AppsKey}m
+    $!+m:: SendEvent ^+g{AppsKey}m
     
     ; 交换新建笔记热键
-    $^n:: Send ^!n
-    $^!n:: Send ^n
+    ; $^n:: SendEvent ^!n
+    ; $^!n:: SendEvent ^n
     
     ; 移动页面
-    ; $!+Up:: Send ^+a!+{Up}
-    ; $!+Down:: Send ^+a!+{Down}
-    ; $!+Left:: Send ^+a!+{Left}
-    ; $!+Right:: Send ^+a!+{Right}
+    ; $!+Up:: SendEvent ^+a!+{Up}
+    ; $!+Down:: SendEvent ^+a!+{Down}
+    ; $!+Left:: SendEvent ^+a!+{Left}
+    ; $!+Right:: SendEvent ^+a!+{Right}
     
     ; 搜索标记
     $!f:: altSend("hg")
     
     ; 选择页面
-    $^+PgUp:: Send ^+g{Up}{Enter}
-    $^+PgDn:: Send ^+g{Down}{Enter}
+    $^+PgUp:: SendEvent ^+g{Up}{Enter}
+    $^+PgDn:: SendEvent ^+g{Down}{Enter}
     
     ; 同步此笔记本
-    ; $^s:: Send +{F9}
+    ; $^s:: SendEvent +{F9}
     
     ; 切换为无色背景
     $!n:: altSend("wpcn")
@@ -360,10 +360,10 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     $^w:: altSend("{F4}")
     
     ; 选中行
-    $^+l:: Send !+{Down}!+{Up}
+    $^+l:: SendEvent !+{Down}!+{Up}
     
     ; 选中当前词（目前来说会带上词右边的空格）
-    $^d:: Send {Right}^{Left}^+{Right}
+    $^d:: SendEvent {Right}^{Left}^+{Right}
 
     ; 输入、拖动、套锁、橡皮
     $!s:: altSend("dt")
@@ -388,13 +388,13 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     
     ; 换笔（只在非全屏时管用）
     ; $!a::
-    ; 	Send {Alt}
+    ; 	SendEvent {Alt}
     ; 	Sleep 60
     ; 	SendEvent dp{Left}{Enter}
     ; 	Return
     
     ; $!d::
-    ; 	Send {Alt}
+    ; 	SendEvent {Alt}
     ; 	Sleep 60
     ; 	SendEvent dp{Right}{Enter}
     ; 	Return
@@ -403,12 +403,49 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     $!k:: 
         Clipboard := ""
         SendEvent ^a^c{Right}{Enter}{Tab}^k
-        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
         ClipWait, 2
+        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
         ; 输入搜索内容
         ControlSetText, RICHEDIT60W1, %Clipboard%, A
         KeyWait, Alt
         CopySearchResultSectionAndPagesThenPaste()
+        Return
+    
+    ; 将当前内容追加到相关页面
+    $!l:: 
+        ; 复制当前内容
+        Clipboard := ""
+        SendEvent ^a^x{Left}{Enter}^k
+
+        ; 可能新建一个页面
+        ClipWait, 2
+        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ; 输入搜索内容
+        ControlSetText, RICHEDIT60W1, %Clipboard%, A
+        ; 等结果出来
+        
+        KeyWait, Alt       ; 放开Alt确认
+        
+        SendEvent {Enter}
+        WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        
+        ; ; （如果是新建生成的链接可能出bug不能直接点过去）
+        ; Sleep, 1000
+        ; ; 所以这里等新页面好了之后再来一次就能点进去了
+        SendEvent ^a{Delete}{Left}{Enter}^k
+
+        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ; 输入搜索内容
+        ControlSetText, RICHEDIT60W1, %Clipboard%, A
+        ; 等结果出来
+        KeyWait, Alt, D  ; 按Alt确认
+        SendEvent {Enter}
+        WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        SendEvent {Left}{Enter}
+        ; 在新页面末尾追加粘贴内容
+        SendEvent ^{Home}^{End}+{Tab}{Enter}^v
+        KeyWait, Alt  ; 放开Alt确认
+        SendEvent !{Left}
         Return
     ; $!d:: altSend("dh")
 
@@ -480,57 +517,57 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
 
     $1::  ; 换到第 1 行的 1 支笔
         if(A_PriorHotkey=="!d")
-            Send {Right 0}{Enter}
+            SendEvent {Right 0}{Enter}
         Return
     $2::  ; 换到第 1 行的 2 支笔
         if(A_PriorHotkey="!d")
-            Send {Right 1}{Enter}
+            SendEvent {Right 1}{Enter}
         Return
     $3::  ; 换到第 1 行的 3 支笔
         if(A_PriorHotkey="!d")
-            Send {Right 2}{Enter}
+            SendEvent {Right 2}{Enter}
         Return
     $4::  ; 换到第 1 行的 4 支笔
         if(A_PriorHotkey="!d")
-            Send {Right 3}{Enter}
+            SendEvent {Right 3}{Enter}
         Return
     $5::  ; 换到第 1 行的 5 支笔
         if(A_PriorHotkey="!d")
-            Send {Right 4}{Enter}
+            SendEvent {Right 4}{Enter}
         Return
     $6::  ; 换到第 1 行的 6 支笔
         if(A_PriorHotkey="!d")
-            Send {Right 5}{Enter}
+            SendEvent {Right 5}{Enter}
         Return
     $7::  ; 换到第 1 行的 7 支笔
         if(A_PriorHotkey="!d")
-            Send {Right 6}{Enter}
+            SendEvent {Right 6}{Enter}
         Return
     $!1:: ; 换到第 2 行的 1 支笔
         if(A_PriorHotkey=="!d")
-            Send {Down 1}{Right 0}{Enter}
+            SendEvent {Down 1}{Right 0}{Enter}
         Return
     $!2:: ; 换到第 2 行的 2 支笔
         if(A_PriorHotkey="!d")
-            Send {Down 1}{Right 1}{Enter}
+            SendEvent {Down 1}{Right 1}{Enter}
         Return
     $!3:: ; 换到第 2 行的 3 支笔
         if(A_PriorHotkey="!d")
-            Send {Down 1}{Right 2}{Enter}
+            SendEvent {Down 1}{Right 2}{Enter}
         Return
     $!4:: ; 换到第 2 行的 4 支笔
         if(A_PriorHotkey="!d")
-            Send {Down 1}{Right 3}{Enter}
+            SendEvent {Down 1}{Right 3}{Enter}
         Return
     $!5:: ; 换到第 2 行的 5 支笔
         if(A_PriorHotkey="!d")
-            Send {Down 1}{Right 4}{Enter}
+            SendEvent {Down 1}{Right 4}{Enter}
         Return
     $!6:: ; 换到第 2 行的 6 支笔
         if(A_PriorHotkey="!d")
-            Send {Down 1}{Right 5}{Enter}
+            SendEvent {Down 1}{Right 5}{Enter}
         Return
     $!7:: ; 换到第 2 行的 7 支笔
         if(A_PriorHotkey="!d")
-            Send {Down 1}{Right 6}{Enter}
+            SendEvent {Down 1}{Right 6}{Enter}
         Return
