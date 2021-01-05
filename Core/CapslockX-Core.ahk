@@ -144,9 +144,8 @@ CapsLockX_Dn:
         ; tooltip capslockx disabled
         CapsLockXMode &= ~CM_FN
         ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
-        ToolTip 当前在远程桌面中按下CapsLock，等待中
+        ; TrayTip,, 当前在远程桌面中按下CapsLock
         WinWaitNotActive, ; LAST_FOUND
-        ; ToolTip
     }else{
         ; SendInput, {CapsLock}
     }
@@ -162,7 +161,6 @@ CapsLockX_Dn:
     UpdateLight()
 
     KeyWait, %T_CapsLockXKey%
-    ToolTip
 Return
 
 CapsLockX_Up:
@@ -186,9 +184,8 @@ CapsLockX_Up:
         ; SendEvent, {CapsLock Up}
         ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
         
-        ToolTip 当前在远程桌面中弹起CapsLock
+        ; TrayTip,, 当前在远程桌面中弹起CapsLock
         WinWaitNotActive, ; LAST_FOUND
-        ; ToolTip
     }
     
     ; 轻按 CapsLock 切换 CapsLock 锁定（用来保留 CapsLock 键的原功能）
