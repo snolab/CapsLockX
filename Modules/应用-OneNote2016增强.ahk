@@ -316,6 +316,9 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     ; 重命名分区
     $+F2:: SendEvent ^+g{AppsKey}r
     
+    ; 复制页面链接
+    $!F2:: Send ^+a{AppsKey}l
+
     ; 移动笔记
     $!m:: SendEvent ^!m
     
@@ -569,5 +572,30 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         Return
     $!7:: ; 换到第 2 行的 7 支笔
         if(A_PriorHotkey="!d")
-            SendEvent {Down 1}{Right 6}{Enter}
+            Send {Down 1}{Right 6}{Enter}
         Return
+
+
+        
+#IfWinExist 剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
+
+~^c::
+    hwndOneNote := WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+    if(!hwndOneNote)
+        Return
+    ; 通常在弹起时触发
+    Clipboard := ""
+    ClipWait, 2, 1 ; 2 secons
+    if ErrorLevel {
+        ; MsgBox, The attempt 2 copy text onto the clipboard failed.
+        Return
+    }
+    WinGet, current, ID, A
+    WinActivate, ahk_id %hwndOneNote%
+    FormatTime, timeString, , (yyyyMMdd.HHmmss)
+    SendEvent, ^{End}{Enter}
+    SendEvent, {text}%timeString%
+    SendEvent, ^v
+    Sleep 16
+    WinActivate, ahk_id %current%
+Return
