@@ -25,39 +25,24 @@ Return
 ; 左右Alt一起按 显示当前mstsc窗口
 <!RAlt::
 >!LAlt::
+    ; 前置当前mstsc窗口
+    WinGet, last_mstsc
+    WinRestore, ahk_id %last_mstsc%
+    WinSet, Top, , ahk_id %last_mstsc%
+    ; WinShow,  ahk_id %last_mstsc%
+    
     ; WinGet, last_mstsc
     WinActivate ahk_id %last_mstsc%
     ; WinSet, TopMost, , ahk_id %last_mstsc%
     ; WinMinimizeAllUndo
     Return
 
-
 ; ahk_class TscShellContainerClass ahk_exe mstsc.exe
 #IfWinActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-    ; ; 左右Alt一起按 前置当前mstsc窗口
+    ; 左右Alt一起按 显示当前mstsc窗口
     <!RAlt::
     >!LAlt::
-        WinGet, last_mstsc
-        WinRestore, ahk_id %last_mstsc%
-        WinSet, Top, , ahk_id %last_mstsc%
-        ; WinShow,  ahk_id %last_mstsc%
-        Return
-    
-    ; ; 左Ctrl + 右Alt 使远程窗口最小化并失去焦点，显示其它窗口
-    ; <^RAlt::
-    ; >!LCtrl::
-    ;     WinGet, last_mstsc
-    ;     ; WinMinimizeAllUndo
-    ;     WinMinimize ahk_id %last_mstsc%
-    ;     ; WinRestore, ahk_id %last_mstsc%
-    ;     ; 失去焦点
-    ;     WinHide,  ahk_id %last_mstsc%
-    ;     WinShow,  ahk_id %last_mstsc%
-    ;     Return
-
-    ; 左Ctrl + 左Alt 使远程窗口最小化并失去焦点，显示其它窗口
-    <^LAlt Up::
-    <!LCtrl Up::
+        ; 使远程窗口最小化并失去焦点，显示其它窗口
         ; Tooltip % A_PriorHotkey
         if(A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
             WinGet, last_mstsc
@@ -69,3 +54,13 @@ Return
             WinShow,  ahk_id %last_mstsc%
         }
         Return
+
+    ; ; 左Ctrl + 左Alt 
+    ; <^LAlt Up::
+    ; <!LCtrl Up::
+    ;     ; 前置当前mstsc窗口
+    ;     WinGet, last_mstsc
+    ;     WinRestore, ahk_id %last_mstsc%
+    ;     WinSet, Top, , ahk_id %last_mstsc%
+    ;     ; WinShow,  ahk_id %last_mstsc%
+    ;     Return

@@ -33,7 +33,7 @@ OnSwitch(){
 SendArrowUp(){
     if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
     {
-        ControlSend, OneNote::DocumentCanvas1, {Up}
+        ControlSend, OneNote::DocumentCanvas1, {blind}{Up}
     }else{
         SendEvent  {blind}{up}
     }
@@ -42,7 +42,7 @@ SendArrowDown(){
     ; sendplay {blind}{down}
     if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
     {
-        ControlSend, OneNote::DocumentCanvas1, {Down}
+        ControlSend, OneNote::DocumentCanvas1, {blind}{Down}
     }else{
         SendEvent {blind}{down}
     }
