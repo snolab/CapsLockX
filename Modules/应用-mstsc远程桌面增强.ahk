@@ -23,10 +23,12 @@ Return
 ;     Return
 
 ; 左右Alt一起按 显示当前mstsc窗口
-<!RAlt::
->!LAlt::
+<!RAlt Up::
+>!LAlt Up::
+    TrayTip, , 远程桌面显示, 1
     ; 前置当前mstsc窗口
-    WinGet, last_mstsc
+    ; WinGet, last_mstsc
+    ; WinGet, OutputVar [, Cmd, ahk_class TscShellContainerClass ahk_exe mstsc.exe
     WinRestore, ahk_id %last_mstsc%
     WinSet, Top, , ahk_id %last_mstsc%
     ; WinShow,  ahk_id %last_mstsc%
@@ -39,20 +41,22 @@ Return
 
 ; ahk_class TscShellContainerClass ahk_exe mstsc.exe
 #IfWinActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-    ; 左右Alt一起按 显示当前mstsc窗口
-    <!RAlt::
-    >!LAlt::
+    ; 左右Alt或Ctrl一起按 显示当前mstsc窗口
+    <!RAlt Up::
+    >!LAlt Up::
+        TrayTip, , 远程桌面最小化, 1
         ; 使远程窗口最小化并失去焦点，显示其它窗口
+
         ; Tooltip % A_PriorHotkey
-        if(A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
+        ; if(A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
             WinGet, last_mstsc
             ; WinMinimizeAllUndo
             WinMinimize ahk_id %last_mstsc%
             ; WinRestore, ahk_id %last_mstsc%
-            ; 失去焦点
+            ; 使其失去焦点
             WinHide,  ahk_id %last_mstsc%
             WinShow,  ahk_id %last_mstsc%
-        }
+        ; }
         Return
 
     ; ; 左Ctrl + 左Alt 
