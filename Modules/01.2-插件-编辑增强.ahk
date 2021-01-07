@@ -60,13 +60,14 @@ arrowTicker:
         SetTimer, arrowTicker, Off
         return
     }
-    
-    tNow := QPC()
-    ; 计算用户操作时间
-    tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
-    tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
-    ; 计算加速度
-    kax := ma(tdd - tda) , kay := ma(tds - tdw)
+    ; else{
+        tNow := QPC()
+        ; 计算用户操作时间
+        tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
+        tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
+        ; 计算加速度
+        kax := ma(tdd - tda) , kay := ma(tds - tdw)
+    ; }
     
     ; 摩擦力不阻碍用户意志
     arrow_vx := Friction(arrow_vx + kax, kax), arrow_vy := Friction(arrow_vy + kay, kay)
@@ -115,8 +116,8 @@ Return
 kTick(){
     if(!arrowTickerTiming){
         arrowTickerTiming := True
-        SetTimer, arrowTicker, 1
     }
+        SetTimer, arrowTicker, 0
 }
 
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
