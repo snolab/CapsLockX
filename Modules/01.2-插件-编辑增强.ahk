@@ -8,7 +8,7 @@
 ; ========== CapsLockX ==========
 ; 
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
-global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0, arrowTickerTiming := False
+global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0, ArrowTickerTiming := False
 
 AppendHelp("
 (
@@ -51,13 +51,13 @@ SendArrowDown(){
 
 ; ToolTip, %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
 
-arrowTicker:
+ArrowTicker:
     ; 在非 CapsLockX 模式下直接停止
     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0
         arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
         kax := 0, kay := 0
-        SetTimer, arrowTicker, Off
+        SetTimer, ArrowTicker, Off
         return
     }
     ; else{
@@ -78,11 +78,7 @@ arrowTicker:
     
     ; 完成移动时
     if ( 0 == arrow_vx && 0 == arrow_vy){
-        ; 重置相关参数
-        arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
-        ; 退出定时
-        arrowTickerTiming := False
-        SetTimer, arrowTicker, Off
+        ArrowTickerStop()
         Return
     }
     ; TODO: 输出速度时间曲线，用于DEBUG
@@ -113,11 +109,18 @@ arrowTicker:
 Return
 
 ; 时间处理
-kTick(){
-    if(!arrowTickerTiming){
-        arrowTickerTiming := True
+ArrowTickerStart(){
+    if(!ArrowTickerTiming){
+        ArrowTickerTiming := True
     }
-        SetTimer, arrowTicker, 0
+    SetTimer, ArrowTicker, 0
+}
+ArrowTickerStop(){
+    ; 重置相关参数
+    arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
+    ; 退出定时
+    ArrowTickerTiming := False
+    SetTimer, ArrowTicker, Off
 }
 
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
@@ -137,47 +140,65 @@ kTick(){
 
 ; ; ; 光标运动处理
 *h::
-    ; arrow_tl := (arrow_tl ? arrow_tl : QPC())
-    if (!arrow_tl){
-        arrow_tl := QPC()
-        SendEvent {Blind}{Left}
+    ArrowTickerStart()
+    if (arrow_tl){
+        Return
     }
-    kTick()
-    Return 
-    ;
+    if (arrow_tr){ ; 选中当前词
+        SendEvent ^{Right}^+{Left} 
+        arrow_tr := 0
+        Return
+    }
+    arrow_tl := QPC()
+    SendEvent {Blind}{Left}
+    Return
 *l::
-    ; arrow_tr := (arrow_tr ? arrow_tr : QPC())
-    if (!arrow_tr){
-        arrow_tr := QPC()
-        ; arrow_tr := 1
-        SendEvent {Blind}{Right}
+    ArrowTickerStart()
+    if (arrow_tr){
+        Return
     }
-    ; SendEvent {Blind}{Right}
-    kTick()
-    Return 
-    ;
+    if (arrow_tl){ ; 选中当前词
+        SendEvent ^{Left}^+{Right} 
+        arrow_tl := 0
+        Return
+    }
+    arrow_tr := QPC()
+    SendEvent {Blind}{Right}
+    Return
 *k::
-    ; arrw_tu := (arrow_tu ? arrow_tu : QPC())
-    if (!arrow_tu){
-        arrow_tu := QPC()
-        SendArrowUp()
+    ArrowTickerStart()
+    if (arrow_tu){
+        Return
     }
-    kTick()
+    if (arrow_td){
+        ; KJ一起按
+        ; 
+        arrow_td := 0
+        Return
+    }
+    arrow_tu := QPC()
+    SendArrowUp()
     Return 
     ;
 *j::
-    ; arrow_td := (arrow_td ? arrow_td : QPC())
-    if (!arrow_td){
-        arrow_td := QPC()
-        SendArrowDown()
+    ArrowTickerStart()
+    if (arrow_td){
+        Return
     }
-    kTick()
+    if (arrow_tu){
+        ; KJ一起按
+        ; 
+        arrow_tu := 0
+        Return
+    }
+    arrow_td := QPC()
+    SendArrowDown()
     Return 
     ;
-*h Up:: arrow_tl := 0, kTick()
-*l Up:: arrow_tr := 0, kTick()
-*k Up:: arrow_tu := 0, kTick()
-*j Up:: arrow_td := 0, kTick()
+*h Up:: arrow_tl := 0, ArrowTickerStart()
+*l Up:: arrow_tr := 0, ArrowTickerStart()
+*k Up:: arrow_tu := 0, ArrowTickerStart()
+*j Up:: arrow_td := 0, ArrowTickerStart()
 
 ; 试过下面这样子的还是不管用
 ; *k:: SendEvent {Blind}{Up Down} 
