@@ -39,6 +39,7 @@ Return
 ; Switch desktop left and right
 [:: SendInput ^#{Left}
 ]:: SendInput ^#{Right}
+
 ; Move the current window to the left or right desktop
 +[:: MoveActiveWindowWithAction("^#{Left}")
 +]:: MoveActiveWindowWithAction("^#{Right}")

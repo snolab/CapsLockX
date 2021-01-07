@@ -9,13 +9,14 @@ if(!!CapslockXConfigPath){
     
     ; 修改CapsLockX触发键
     global T_CapsLockXKey
-    IniRead, T_CapsLockXKey, %CapslockXConfigPath%, Core, T_CapsLockXKey, CapsLock
+    IniRead, T_CapsLockXKey, %CapslockXConfigPath%, Core, T_CapsLockXKey, Capslock
     IniWrite, %T_CapsLockXKey%, %CapslockXConfigPath%, Core, T_CapsLockXKey
     
     ; 是否使用 ScrollLock 灯来显示 CapsLockX 状态
     global T_UseScrollLockLight
     IniRead, T_UseScrollLockLight, %CapslockXConfigPath%, Core, T_UseScrollLockLight, 0
     IniWrite, %T_UseScrollLockLight%, %CapslockXConfigPath%, Core, T_UseScrollLockLight
+    
     global T_UseScrollLockAsCapsLock
     IniRead, T_UseScrollLockAsCapsLock, %CapslockXConfigPath%, Core, T_UseScrollLockAsCapsLock, 0
     IniWrite, %T_UseScrollLockAsCapsLock%, %CapslockXConfigPath%, Core, T_UseScrollLockAsCapsLock

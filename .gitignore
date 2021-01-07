@@ -3,6 +3,8 @@
 *.zip
 /.vscode
 *.bak
+*.user.ahk
+*.user.md
 _config.yaml
 /AutoHotKey/
 /docs/README.html
