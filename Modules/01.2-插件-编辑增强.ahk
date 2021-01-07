@@ -8,8 +8,7 @@
 ; ========== CapsLockX ==========
 ; 
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
-global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
-
+global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0, arrowTickerTiming := False
 
 AppendHelp("
 (
@@ -33,18 +32,18 @@ OnSwitch(){
 SendArrowUp(){
     if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
     {
-        ControlSend, OneNote::DocumentCanvas1, {blind}{Up}
+        ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
     }else{
-        SendEvent  {blind}{up}
+        SendEvent {Blind}{up}
     }
 }
 SendArrowDown(){
-    ; sendplay {blind}{down}
+    ; sendplay {Blind}{down}
     if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
     {
-        ControlSend, OneNote::DocumentCanvas1, {blind}{Down}
+        ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
     }else{
-        SendEvent {blind}{down}
+        SendEvent {Blind}{down}
     }
 }
     
@@ -58,15 +57,16 @@ arrowTicker:
         arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0
         arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
         kax := 0, kay := 0
-    }else{
-        tNow := QPC()
-        ; 计算用户操作时间
-        tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
-        tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
-        ; 计算加速度
-        ; 这里偶尔会出现加速度突然超大的 bug 但暂时找不到原因
-        kax := ma(tdd - tda) , kay := ma(tds - tdw)
+        SetTimer, arrowTicker, Off
+        return
     }
+    
+    tNow := QPC()
+    ; 计算用户操作时间
+    tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
+    tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
+    ; 计算加速度
+    kax := ma(tdd - tda) , kay := ma(tds - tdw)
     
     ; 摩擦力不阻碍用户意志
     arrow_vx := Friction(arrow_vx + kax, kax), arrow_vy := Friction(arrow_vy + kay, kay)
@@ -80,19 +80,20 @@ arrowTicker:
         ; 重置相关参数
         arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
         ; 退出定时
+        arrowTickerTiming := False
         SetTimer, arrowTicker, Off
         Return
     }
     ; TODO: 输出速度时间曲线，用于DEBUG
     If(arrow_dx >= 1){
         Loop, %arrow_dx%
-            SendInput {Blind}{Right}
+            SendEvent {Blind}{Right}
         arrow_dx -= arrow_dx | 0
     }
     If(arrow_dx <= -1){
         arrow_dx := -arrow_dx
         Loop, %arrow_dx%
-            SendInput {Blind}{Left}
+            SendEvent {Blind}{Left}
         arrow_dx := -arrow_dx
         arrow_dx -= arrow_dx | 0
     }
@@ -112,12 +113,11 @@ Return
 
 ; 时间处理
 kTick(){
-    SetTimer, arrowTicker, 0
+    if(!arrowTickerTiming){
+        arrowTickerTiming := True
+        SetTimer, arrowTicker, 1
+    }
 }
-
-#If CapsLockXMode == CM_FN
-    
-*Space:: Enter
 
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
     
@@ -138,27 +138,27 @@ kTick(){
 *h::
     ; arrow_tl := (arrow_tl ? arrow_tl : QPC())
     if (!arrow_tl){
-        arrow_tl:=QPC()
-        SendInput {Blind}{Left}
+        arrow_tl := QPC()
+        SendEvent {Blind}{Left}
     }
     kTick()
-    ; KeyWait, h ; 并不管用
     Return 
     ;
 *l::
     ; arrow_tr := (arrow_tr ? arrow_tr : QPC())
     if (!arrow_tr){
-        arrow_tr:=QPC()
-        SendInput {Blind}{Right}
+        arrow_tr := QPC()
+        ; arrow_tr := 1
+        SendEvent {Blind}{Right}
     }
+    ; SendEvent {Blind}{Right}
     kTick()
-    ; KeyWait, l ; 并不管用
     Return 
     ;
 *k::
-    ; arrow_tu := (arrow_tu ? arrow_tu : QPC())
+    ; arrw_tu := (arrow_tu ? arrow_tu : QPC())
     if (!arrow_tu){
-        arrow_tu:=QPC()
+        arrow_tu := QPC()
         SendArrowUp()
     }
     kTick()
@@ -167,7 +167,7 @@ kTick(){
 *j::
     ; arrow_td := (arrow_td ? arrow_td : QPC())
     if (!arrow_td){
-        arrow_td:=QPC()
+        arrow_td := QPC()
         SendArrowDown()
     }
     kTick()
@@ -179,10 +179,10 @@ kTick(){
 *j Up:: arrow_td := 0, kTick()
 
 ; 试过下面这样子的还是不管用
-; *k:: SendInput {Blind}{Up Down} 
-; *k Up:: SendInput {Blind}{Up Up}
-; *j:: SendInput {Blind}{Down Down}
-; *j Up:: SendInput {Blind}{Down Up}
+; *k:: SendEvent {Blind}{Up Down} 
+; *k Up:: SendEvent {Blind}{Up Up}
+; *j:: SendEvent {Blind}{Down Down}
+; *j Up:: SendEvent {Blind}{Down Up}
 
 *n:: Home
 *m:: End

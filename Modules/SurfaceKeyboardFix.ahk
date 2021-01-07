@@ -14,10 +14,10 @@ If(!CapsLockX)
 AppendHelp("
 (
 笔记本功能键补充
-| CapsLockX + P | 打开系统设定，拯救笔记本 |
+| Win + Alt + P | 打开系统设定 |
+| 按住 Menu键 + 其它键 | 相当于按住 右Ctrl + 其它键 |
+| 单击右Ctrl | 相当于单击Menu键 |
 )")
-
-; setup done
 Return
 
 ; 专治 Surface 的残破键盘，合并右Ctrl与Menu键！
