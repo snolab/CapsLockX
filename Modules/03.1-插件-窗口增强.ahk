@@ -65,16 +65,14 @@ o:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
 ;     Send {AppsKey}i
 Return
 
-; Win + Tab
-\:: Send #{Tab} 
+; WinTab 窗口切换
+\:: Send #{Tab}
 
 ; 切换当前窗口置顶并透明
 +'::
-    ; WinGet, Var, Transparent, 150, A
     WinSet, Transparent, 200, A
     WinSet, Alwaysontop, Toggle, A
 Return
-
 ; 让当前窗口临时透明
 '::
     WinSet, Transparent, 100, A
@@ -102,34 +100,13 @@ Return
 ; 杀死窗口
 $^!x:: WinKill A
 
-#If WinActive("ahk_class MultitaskingViewFrame")
-
-; 在 Alt+Tab 下, WASD 模拟方向键 , 1803之后还可以用
+#If WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+; 在 Win + Tab 下, WASD 模拟方向键 , 1803之后还可以用
 !a:: Left
 !d:: Right
 !w:: Up
 !s:: Down
-; qe 切换桌面
-!q::
-    SendEvent {Blind}{Enter}
-    Sleep 200
-    SendEvent ^#{Left}
-Return
-!e::
-    SendEvent {Blind}{Enter}
-    Sleep 200
-    SendEvent ^#{Right}
-Return
-!+q::
-    SendEvent {Blind}{Enter}
-    Sleep 200
-    MoveActiveWindowWithAction("^#{Left}")
-Return
-!+e::
-    SendEvent {Blind}{Enter}
-    Sleep 200
-    MoveActiveWindowWithAction("^#{Right}")
-Return
+
 ; cx 关闭应用
 !c:: SendEvent {Blind}{Delete}{Right}
 !x:: SendEvent {Blind}{Delete}{Right}
@@ -137,32 +114,26 @@ Return
 ; 新建桌面
 !z::
     SendEvent {Blind}{Esc}
-    Sleep 200
+    ; Sleep 200
     Send ^#d
 Return
 ; 新建桌面并移动窗口
 !v::
     SendEvent {Blind}{Esc}
-    Sleep 200
+    ; Sleep 200
     MoveActiveWindowWithAction("^#d")
 Return
 
 ; 模拟 Tab 键切换焦点
-\:: Send {Tab}
+!\:: Send {Tab}
 ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
 ; 以及在窗口贴边后，WASD 切换窗口焦点
 
-; 模拟方向键
-w:: Send {Up}
-a:: Send {Left}
-s:: Send {Down}
-d:: Send {Right}
-
 ; 切换桌面概览
-q:: Send ^#{Left}
-e:: Send ^#{Right}
-[:: Send ^#{Left}
-]:: Send ^#{Right}
+!q:: Send ^#{Left}
+!e:: Send ^#{Right}
+![:: Send ^#{Left}
+!]:: Send ^#{Right}
 
 ; 增删桌面
 =:: Send ^#d
@@ -170,29 +141,29 @@ e:: Send ^#{Right}
 z:: Send ^#{F4}
 
 ; 关掉窗口
-x:: Send ^w{Right}
-`;:: Send ^w{Right}
+; !x:: Send ^w{Right}
+; `;:: Send ^w{Right}
 
 ; 切换到第x个桌面
-1::Send {AppsKey}m{Down 0}{Enter}
-2::Send {AppsKey}m{Down 1}{Enter}
-3::Send {AppsKey}m{Down 2}{Enter}
-4::Send {AppsKey}m{Down 3}{Enter}
-5::Send {AppsKey}m{Down 4}{Enter}
-6::Send {AppsKey}m{Down 5}{Enter}
-7::Send {AppsKey}m{Down 6}{Enter}
-8::Send {AppsKey}m{Down 7}{Enter}
-9::Send {AppsKey}m{Down 8}{Enter}
+; 1::Send {AppsKey}m{Down 0}{Enter}
+; 2::Send {AppsKey}m{Down 1}{Enter}
+; 3::Send {AppsKey}m{Down 2}{Enter}
+; 4::Send {AppsKey}m{Down 3}{Enter}
+; 5::Send {AppsKey}m{Down 4}{Enter}
+; 6::Send {AppsKey}m{Down 5}{Enter}
+; 7::Send {AppsKey}m{Down 6}{Enter}
+; 8::Send {AppsKey}m{Down 7}{Enter}
+; 9::Send {AppsKey}m{Down 8}{Enter}
 
 ; ; 移到除了自己的最后一个桌面（或新建桌面）
 ; 0::Send {AppsKey}m{Up 2}{Enter}
 
 ; 移到新建桌面
-v:: Send {AppsKey}mn{Sleep 16}+{Tab}
-':: Send {AppsKey}mn{Sleep 16}+{Tab}
+; !v:: Send {AppsKey}mn{Sleep 16}+{Tab}
+; ':: Send {AppsKey}mn{Sleep 16}+{Tab}
 
 ; 移到新建桌面，并激活窗口
-c:: Send {AppsKey}mn{Enter}
+; c:: Send {AppsKey}mn{Enter}
 
 ; 新版
 
@@ -200,83 +171,8 @@ c:: Send {AppsKey}mn{Enter}
 ; ahk_exe explorer.exe
 
 ; #IfWinActive (?:Task View)|任务视图 ahk_class Windows.UI.Core.CoreWindow ; ahk_exe explorer.exe
-#IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
 
-    ; 在 Alt+Tab 下, WASD 模拟方向键
-    !a:: Left
-    !d:: Right
-    !w:: Up
-    !s:: Down
-    ; ; qe 切换桌面
-    ; !q:: Send ^#{Left}
-    ; !e:: Send ^#{Right}
-    ; ; qe 切换桌面
-    ; !c:: Delete
-
-    ; 模拟 Tab 键切换焦点
-    \:: Send {Tab}
-    ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
-    ; 以及在窗口贴边后，WASD 切换窗口焦点
-
-    ; 模拟方向键
-    w:: Send {Up}
-    a:: Send {Left}
-    s:: Send {Down}
-    d:: Send {Right}
-
-    ; 切换桌面概览
-    q:: Send {Enter}; ^#{Left}
-    e:: Send {Enter}; ^#{Right}
-    [:: Send ^#{Left}
-    ]:: Send ^#{Right}
-
-    ; 增删桌面
-    =:: Send ^#d
-    -:: Send ^#{F4}
-    z:: Send ^#{F4}
-
-    ; 关掉窗口
-    x:: Send ^w
-    `;:: Send ^w
-
-    ; 切换到第x个桌面
-    1::Send {AppsKey}m{Down 0}{Enter}
-    2::Send {AppsKey}m{Down 1}{Enter}
-    3::Send {AppsKey}m{Down 2}{Enter}
-    4::Send {AppsKey}m{Down 3}{Enter}
-    5::Send {AppsKey}m{Down 4}{Enter}
-    6::Send {AppsKey}m{Down 5}{Enter}
-    7::Send {AppsKey}m{Down 6}{Enter}
-    8::Send {AppsKey}m{Down 7}{Enter}
-    9::Send {AppsKey}m{Down 8}{Enter}
-
-    ; ; 移到除了自己的最后一个桌面（或新建桌面）
-    ; 0::Send {AppsKey}m{Up 2}{Enter}
-
-    ; 移到新建桌面
-    v:: Send {AppsKey}mn{Sleep 16}+{Tab}
-    ':: Send {AppsKey}mn{Sleep 16}+{Tab}
-
-    ; 移到新建桌面，并激活窗口
-    c:: Send {AppsKey}mn{Enter}
-
-    #If
-
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口 快速排列窗口
-    ; ArrangeWindows(arrangeFlags = "0"){
-    ;     SysGet, MonitorCount, MonitorCount
-    ;     Loop, %MonitorCount%
-    ;     {
-    ;         ArrangeWindowsInMonitor(arrangeFlags, A_Index)
-    ;     }
-    ; }
+#If False && "FUNCTIION DEFINES"
     ; this is improved method for stable
     GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd){
         WinGetPos, X, Y, W, H, ahk_id %hWnd%
@@ -489,8 +385,19 @@ c:: Send {AppsKey}mn{Enter}
         {
             hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
 
-            ; shorten edge first
-            if (AreaW <= AreaH){
+            ; ; shorten edge first
+            ; if (AreaW <= AreaH){
+            ;     ; row first
+            ;     nx := Mod(k, col)
+            ;     ny := k / col | 0
+            ; }else{
+            ;     ; col first
+            ;     nx := k / row | 0
+            ;     ny := Mod(k, row)
+            ; }
+            
+            ; long edge first
+            if (AreaW >= AreaH){
                 ; row first
                 nx := Mod(k, col)
                 ny := k / col | 0
@@ -546,7 +453,6 @@ c:: Send {AppsKey}mn{Enter}
             k+=1
         }
     }
-
     FastResizeWindow(hWnd, x, y, w, h, ForceTOP = ""){
         ; 如有必要则还原最大化最小化的窗口
         WinGet, minmax, minmax, ahk_id %hWnd%
