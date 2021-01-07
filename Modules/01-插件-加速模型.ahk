@@ -15,7 +15,7 @@ If(!CapsLockX){
 }
 
 
-; 高性能计时器，精度能够达打微秒级，相比之下 A_Tick 的精度大概只有10几ms。
+; 高性能计时器，精度能够达到微秒级，相比之下 A_Tick 的精度大概只有10几ms。
 QPF(){
     DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
     Return QuadPart
