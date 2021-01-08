@@ -3,19 +3,20 @@
 ; 贡献者： @冰封 QQ: 124702759
 ;
 ;鼠标特征值
-return
+Return
+
 SetCursor(code, curFile){
-	;加载CapsLock增强的鼠标指针
+	;加载CapsLock增强的标指针
 	hIcon := DllCall("LoadCursorFromFile","Str", curFile)
 	DllCall("SetSystemCursor", "UInt", hIcon, "Int", code)
 }
 
 UpdateCapsCursor(s){
-	If(!s){
+	if (!s){
 		;恢复默认指针
 		SPI_SETCURSORS := 0x57
 		DllCall( "SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-		return
+		Return
 	}
 
 	PATH_CURSOR := "数据/cursor"

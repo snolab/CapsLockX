@@ -37,20 +37,20 @@ start_precision_mouse_locate(){
 	o::
 		global o_mode
 		o_mode := 0
-		return
+		Return
 	h::
 		rctr := (rctl + rctr) / 2
 		move_to_center()
-		return
+		Return
 	l::
 		rctl := (rctl + rctr) / 2
 		move_to_center()
-		return
+		Return
 	j::
 		rctt := (rctt + rctb) / 2
 		move_to_center()
-		return
+		Return
 	k::
 		rctb := (rctt + rctb) / 2
 		move_to_center()
-		return
+		Return

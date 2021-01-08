@@ -6,68 +6,67 @@
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
-; 
+;
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0, ArrowTickerTiming := False
 
 AppendHelp("
 (
-编辑增强模块
-| CapsLockX + z         | 回车（单纯是为了把回车放到左手……以便右手可以一直撑着下巴玩电脑）
-| CapsLockX + k j h l   | 上下左右 方向键
-| CapsLockX + n m       | Home End
-| CapsLockX + n + m     | n m 一起按选择当前行
-| CapsLockX + b         | BackSpace
-| CapsLockX + Shift + b | Delete
+编辑增强
+| 全局   | CapsLockX + k j h l   | 上下左右 方向键     |
+| 全局   | CapsLockX + hl        | hl 一起按选择当前词 |
+| 全局   | CapsLockX + y o       | Home End            |
+| 全局   | CapsLockX + yo        | yo 一起按选择当前行 |
+| 全局   | CapsLockX + g         | 回车                |
+| 全局   | CapsLockX + t         | BackSpace           |
+| 全局   | CapsLockX + Shift + t | Delete |
 )")
 
 Return
 
-OnSwitch(){
+ArrowTicker:
+    ArrowTicker()
+Return
+
+OnSwitch()
+{
     ; 这里改注册表是为了禁用 Win + L 锁定机器，让 Win+hjkl 可以挪窗口位置，不过只有用管理员运行才管用。
     value := !!(ModuleState & MF_EditX) ? 0 : 1
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersio n\Policies\System, DisableLockWorkstation, %value%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, %value%
 }
 
-SendArrowUp(){
-    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-    {
+SendArrowUp()
+{
+    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") {
         ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
-    }else{
+    } else {
         SendEvent {Blind}{up}
     }
 }
-SendArrowDown(){
+SendArrowDown()
+{
     ; sendplay {Blind}{down}
-    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-    {
+    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") {
         ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
-    }else{
+    } else {
         SendEvent {Blind}{down}
     }
 }
-    
-    ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 
-; ToolTip, %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
-
-ArrowTicker:
+ArrowTicker()
+{
     ; 在非 CapsLockX 模式下直接停止
-    If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
-        arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0
-        arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
-        kax := 0, kay := 0
-        SetTimer, ArrowTicker, Off
-        return
+    if (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)) {
+        ArrowTickerStop()
+        Return
     }
     ; else{
-        tNow := QPC()
-        ; 计算用户操作时间
-        tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
-        tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
-        ; 计算加速度
-        kax := ma(tdd - tda) , kay := ma(tds - tdw)
-    ; }
+    tNow := QPC()
+    ; 计算用户操作时间
+    tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
+    tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
+    ; 计算加速度
+    kax := ma(tdd - tda), kay := ma(tds - tdw)
     
     ; 摩擦力不阻碍用户意志
     arrow_vx := Friction(arrow_vx + kax, kax), arrow_vy := Friction(arrow_vy + kay, kay)
@@ -77,45 +76,55 @@ ArrowTicker:
     ; ToolTip, %arrow_tl% _ %arrow_tr% _ %arrow_tu% _ %arrow_td% `n %kax% _ %kay% _ %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
     
     ; 完成移动时
-    if ( 0 == arrow_vx && 0 == arrow_vy){
+    if ( 0 == arrow_vx && 0 == arrow_vy) {
         ArrowTickerStop()
         Return
     }
     ; TODO: 输出速度时间曲线，用于DEBUG
-    If(arrow_dx >= 1){
-        Loop, %arrow_dx%
+    if (arrow_dx >= 1) {
+        Loop %arrow_dx% {
             SendEvent {Blind}{Right}
+        }
         arrow_dx -= arrow_dx | 0
     }
-    If(arrow_dx <= -1){
+    if (arrow_dx <= -1) {
         arrow_dx := -arrow_dx
-        Loop, %arrow_dx%
+        Loop %arrow_dx%
+        {
             SendEvent {Blind}{Left}
+        }
         arrow_dx := -arrow_dx
         arrow_dx -= arrow_dx | 0
     }
-    If(arrow_dy >= 1){
-        Loop, %arrow_dy%
+    if (arrow_dy >= 1) {
+        Loop %arrow_dy%
+        {
             SendArrowDown()
+        }
         arrow_dy -= arrow_dy | 0
     }
-    If(arrow_dy <= -1){
+    if (arrow_dy <= -1) {
         arrow_dy := -arrow_dy
-        Loop, %arrow_dy%
+        Loop %arrow_dy%
+        {
             SendArrowUp()
+        }
         arrow_dy := -arrow_dy
         arrow_dy -= arrow_dy | 0
     }
-Return
+    Return
+}
 
 ; 时间处理
-ArrowTickerStart(){
-    if(!ArrowTickerTiming){
+ArrowTickerStart()
+{
+    if (!ArrowTickerTiming) {
         ArrowTickerTiming := True
     }
     SetTimer, ArrowTicker, 0
 }
-ArrowTickerStop(){
+ArrowTickerStop()
+{
     ; 重置相关参数
     arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
     ; 退出定时
@@ -123,8 +132,8 @@ ArrowTickerStop(){
     SetTimer, ArrowTicker, Off
 }
 
-#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
-    
+#if CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
+
 *u:: PgDn
 *i:: PgUp
 ; 上下左右
@@ -139,94 +148,87 @@ ArrowTickerStop(){
 ; *l:: Right
 
 ; ; ; 光标运动处理
-*h::
+ ArrowLeftPressed(){
     ArrowTickerStart()
-    if (arrow_tl){
+    if (arrow_tl) {
         Return
     }
-    if (arrow_tr){ ; 选中当前词
-        SendEvent ^{Right}^+{Left} 
+    if (arrow_tr) {
+        ; 选中当前词
+        SendEvent ^{Right}^+{Left}
         arrow_tr := 0
         Return
     }
     arrow_tl := QPC()
     SendEvent {Blind}{Left}
     Return
-*l::
+}
+ArrowRightPressed(){
     ArrowTickerStart()
-    if (arrow_tr){
+    if (arrow_tr) {
         Return
     }
-    if (arrow_tl){ ; 选中当前词
-        SendEvent ^{Left}^+{Right} 
+    if (arrow_tl) {
+        ; 选中当前词
+        SendEvent ^{Left}^+{Right}
         arrow_tl := 0
         Return
     }
     arrow_tr := QPC()
     SendEvent {Blind}{Right}
     Return
-*k::
+}
+ ArrowUpPressed(){
     ArrowTickerStart()
-    if (arrow_tu){
+    if (arrow_tu) {
         Return
     }
-    if (arrow_td){
+    if (arrow_td) {
         ; KJ一起按
-        ; 
         arrow_td := 0
         Return
     }
     arrow_tu := QPC()
     SendArrowUp()
-    Return 
-    ;
-*j::
+    Return
+}
+ ArrowDownPressed(){
     ArrowTickerStart()
-    if (arrow_td){
+    if (arrow_td) {
         Return
     }
-    if (arrow_tu){
+    if (arrow_tu) {
         ; KJ一起按
-        ; 
         arrow_tu := 0
         Return
     }
     arrow_td := QPC()
     SendArrowDown()
-    Return 
-    ;
+    Return
+}
+
+;
+*h:: ArrowLeftPressed()
+*l:: ArrowRightPressed()
+*k:: ArrowUpPressed()
+*j:: ArrowDownPressed()
 *h Up:: arrow_tl := 0, ArrowTickerStart()
 *l Up:: arrow_tr := 0, ArrowTickerStart()
 *k Up:: arrow_tu := 0, ArrowTickerStart()
 *j Up:: arrow_td := 0, ArrowTickerStart()
 
-; 试过下面这样子的还是不管用
-; *k:: SendEvent {Blind}{Up Down} 
-; *k Up:: SendEvent {Blind}{Up Up}
-; *j:: SendEvent {Blind}{Down Down}
-; *j Up:: SendEvent {Blind}{Down Up}
-
-*n:: Home
-*m:: End
-
-; hl 一起按相当于选择当前词
-; h & l:: Send ^{Left}^+{Right}
-; l & h:: Send ^{Right}^+{Left}
-
-; ,:: ^Left
-; .:: ^Right
-
-; mn 一起按相当于选择当前行，不同的顺序影响按完之后的光标位置（在前在后）
-n & m:: Send {Home}+{End}
-m & n:: Send {End}+{Home}
+*y:: Home
+*o:: End
+; 一起按相当于选择当前行，不同的顺序影响按完之后的光标位置（在前在后）
+y & o:: Send {Home}+{End}
+o & y:: Send {End}+{Home}
 
 ; 前删，后删
-b:: Send {Blind}{BackSpace}
-+b:: Send {Delete}
-; ^b:: Send ^{BackSpace}
-; ^+b:: Send ^{Delete}
+*t:: Send {Blind}{BackSpace}
+*+t:: Send {Blind}{Delete}
+*^t:: Send ^{BackSpace}
+*^+t:: Send ^{Delete}
 
 ; 回车
-*z:: Enter
-
+*g:: Enter
 

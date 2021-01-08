@@ -64,7 +64,7 @@ _TTWndProc(nCode, _wp, _lp) {
             ToolTipFont(,, hwnd)
         }
     }
-    return DllCall("CallNextHookEx", "ptr", 0, "int", nCode, "ptr", _wp, "ptr", _lp, "ptr")
+    Return DllCall("CallNextHookEx", "ptr", 0, "int", nCode, "ptr", _wp, "ptr", _lp, "ptr")
 }
  
 _TTG(Cmd, Arg1, Arg2 := "") {
@@ -77,13 +77,13 @@ _TTG(Cmd, Arg1, Arg2 := "") {
     if (Cmd = "Font") {
         GuiControl _TTG: Font, %htext%
         SendMessage 0x31, 0, 0,, ahk_id %htext%
-        return ErrorLevel
+        Return ErrorLevel
     }
     if (Cmd = "Color") {
         hdc := DllCall("GetDC", "ptr", htext, "ptr")
         SendMessage 0x138, hdc, htext,, ahk_id %hgui%
         clr := DllCall("GetBkColor", "ptr", hdc, "uint")
         DllCall("ReleaseDC", "ptr", htext, "ptr", hdc)
-        return clr
+        Return clr
     }
 }

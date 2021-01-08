@@ -10,6 +10,6 @@ Return
 
 a Up::
 
-    return 
+    Return 
 F12:: Reload
 ^F12:: ExitApp

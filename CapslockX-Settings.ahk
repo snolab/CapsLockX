@@ -1,6 +1,6 @@
 ﻿; save with UTF8 with DOM
 
-if(!!CapslockXConfigPath){
+if (!!CapslockXConfigPath) {
     ; 基本设定
     ; [Core]
     global T_AskRunAsAdmin

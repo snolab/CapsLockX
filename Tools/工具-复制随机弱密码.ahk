@@ -1,5 +1,5 @@
 ﻿CheckStrong(password){
-	return ( RegExMatch(password, "[0-9]") && RegExMatch(password, "[a-z]") && RegExMatch(password, "[A-Z]") )
+	Return ( RegExMatch(password, "[0-9]") && RegExMatch(password, "[a-z]") && RegExMatch(password, "[A-Z]") )
 }
 ;
 GenPassword(Length){
@@ -14,7 +14,7 @@ GenPassword(Length){
 	    pw := pw SubStr(Chars, StartPos, 1)
     }
     Clipboard := Chars
-    if(CheckStrong(pw)){
+    if (CheckStrong(pw)){
     	Return pw
     }else{
     	Return GenPassword(Length)

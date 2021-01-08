@@ -50,7 +50,7 @@ Pos2Long(x, y){
 	; 		clickList.Push([cx, cy])
 	; 		hx += 82
 	; 		Goto, start
-	; 	}else if(0xFF0000 == hcolor){
+	; 	}else if (0xFF0000 == hcolor){
 	; 		; clickList.Push([cx, cy])
 	; 		cx += 82
 	; 		hx += 82
@@ -85,7 +85,7 @@ Pos2Long(x, y){
 	; 		clickList.Push([cx, cy])
 	; 		hx += 82
 	; 		Goto, start2
-	; 	}else if(0x00FF00 == hcolor){
+	; 	}else if (0x00FF00 == hcolor){
 	; 		; clickList.Push([cx, cy])
 	; 		cx += 82
 	; 		hx += 82
@@ -130,7 +130,7 @@ Pos2Long(x, y){
 
 	; 		hx += 82
 	; 		Goto, start
-	; 	}else if(0xFF0000 == hcolor){
+	; 	}else if (0xFF0000 == hcolor){
 	; 		; clickList.Push([cx, cy])
 	; 		cx += 82
 	; 		hx += 82

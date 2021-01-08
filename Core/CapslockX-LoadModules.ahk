@@ -1,6 +1,6 @@
 ﻿global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore := "./Core"
-global CapsLockX_Version := "v1.5 Alpha"
+global CapsLockX_Version := "v1.7.0 Beta"
 
 GoSub Setup_1
 GoSub Setup_2
@@ -40,7 +40,6 @@ GoSub Setup_35
 GoSub Setup_36
 GoSub Setup_37
 GoSub Setup_38
-GoSub Setup_39
 
 Return
 #If
@@ -66,16 +65,16 @@ Return
         #Include ./Modules\Eval-Javascript.ahk
 #If
     Setup_8:
-        #Include ./Modules\SnoChordTyping.ahk
+        #Include ./Modules\LaptopKeyboardFix.ahk
 #If
     Setup_9:
-        #Include ./Modules\SurfaceKeyboardFix.ahk
+        #Include ./Modules\SaladictTranslate.ahk
 #If
     Setup_10:
-        #Include ./Modules\ToolTipFont.ahk
+        #Include ./Modules\SnoChordTyping.ahk
 #If
     Setup_11:
-        #Include ./Modules\Translate.ahk
+        #Include ./Modules\ToolTipFont.ahk
 #If
     Setup_12:
         #Include ./Modules\功能-秒打时间戳.ahk
@@ -156,8 +155,5 @@ Return
         #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
 #If
     Setup_38:
-        #Include ./Modules\插件-搜索键.ahk
-#If
-    Setup_39:
         #Include ./Modules\插件-雪星转屏.ahk
 

@@ -18,7 +18,8 @@ Process Priority, , High     ; 脚本高优先级
 
 global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore    := "./Core"
-global CapsLockX_Version := "v1.5 Alpha"
+global CapsLockX_Version := "v1.7.0 Beta"
+
 global loadingTips := ""
 
 LoadingTips(msg, clear = 0)
@@ -51,7 +52,7 @@ UpdateModulesHelp(sourceREADME, docs="")
     ; 列出模块文件
     ModuleFiles  := ""
     ; loop, Files, %CapsLockX_PathModules%\*.ahk, R ; Recurse into subfolders.
-    loop, Files, %CapsLockX_PathModules%\*.ahk,  ; Do not Recurse into subfolders.
+    loop, Files, %CapsLockX_PathModules%\*.ahk, ; Do not Recurse into subfolders.
     ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
@@ -94,14 +95,14 @@ UpdateModulesHelp(sourceREADME, docs="")
         FileCopy, %CapsLockX_PathModules%\*.gif, .\docs\media\, 1
         FileCopy, %CapsLockX_PathModules%\*.png, .\docs\media\, 1
         ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./media/$2 )")
-
-        ; if(docs){
+        
+        ; if (docs){
         ;     ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./$2 )")
         ; }else{
         ;     ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./" CapsLockX_PathModules " /$2 ")
         ; }
         
-        if (!RegExMatch(ModuleHelp, "^#")){
+        if (!RegExMatch(ModuleHelp, "^#")) {
             if (T%ModuleName%_Disabled) {
                 help .=  "`n" "### " ModuleName "模块（禁用）" "`n"
             } else {
@@ -118,12 +119,11 @@ UpdateModulesHelp(sourceREADME, docs="")
     Replacement := "$1$2`n" help "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
     
-    ; MsgBox, asdfasdf
     ; 检查替换情况
     if (!Replaces) {
         MsgBox % "加载模块帮助遇到错误。`n请更新 CapsLockX"
         MsgBox % targetREADME
-        return sourceREADME
+        Return sourceREADME
     }
     
     Return targetREADME
@@ -134,7 +134,7 @@ LoadModules(ModulesLoader)
     ; 列出模块文件
     ModuleFiles  := ""
     ; loop, Files, %CapsLockX_PathModules%\*.ahk, R ; Recurse into subfolders.
-    loop, Files, %CapsLockX_PathModules%\*.ahk,  ; NOT Recurse into subfolders.
+    loop, Files, %CapsLockX_PathModules%\*.ahk, ; NOT Recurse into subfolders.
     ModuleFiles .= A_LoopFileName "`n"
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
@@ -178,13 +178,13 @@ LoadModules(ModulesLoader)
     code_consts .= "global CapsLockX_PathModules := " """" CapsLockX_PathModules """" "`n"
     code_consts .= "global CapsLockX_PathCore := "    """" CapsLockX_PathCore    """" "`n"
     code_consts .= "global CapsLockX_Version := "     """" CapsLockX_Version     """" "`n"
-
+    
     code := ""
     code .= code_consts "`n"
     code .= code_setup  "`n"
     code .= "Return" "`n"
     code .= code_include "`n"
-
+    
     FileDelete %ModulesLoader%
     FileAppend %code%, %ModulesLoader%
 }
@@ -194,8 +194,8 @@ global ModulesLoader := CapsLockX_PathCore "\CapsLockX-LoadModules.ahk"
 LoadModules(ModulesLoader)
 
 ; 编译README.md
-README_FILE := "./docs/README.md"
-FileRead, source, %README_FILE%
+INPUT_README_FILE := "./docs/README.md"
+FileRead, source, %INPUT_README_FILE%
 
 ; 加载模块帮助
 target := UpdateModulesHelp(source)
@@ -207,15 +207,16 @@ if (target != source) {
     if (target != source) {
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
     }
-    ; 替换原来的 readme.md
-    FileDelete %README_FILE%
-    FileAppend %target%, %README_FILE%
-
-    ; ; 输出到 docs/readme.md （用于 github-pages ）
+    ; 输出根目录 README.md
+    FileDelete ./README.md
+    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README --->`n"
+    FileAppend %PREFIX% %target%, ./README.md
+    
+    ; 输出到 docs/readme.md （用于 github-pages ）
     ; docs_target := UpdateModulesHelp(source, 1)
-    ; FileDelete ./docs/%README_FILE%
-    ; FileAppend %docs_target%, ./docs/%README_FILE%
-
+    FileDelete ./docs/README.md
+    FileAppend %target%, ./docs/README.md
+    
     ; Reload
     ; ExitApp
 }

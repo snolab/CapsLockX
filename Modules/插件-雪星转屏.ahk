@@ -2,7 +2,7 @@
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Function .....: StdoutToVar_CreateProcess
-; Description ..: Runs a command line program and returns its output.
+; Description ..: Runs a command line program and Returns its output.
 ; Parameters ...: sCmd      - Commandline to execute.
 ; ..............: sEncoding - Encoding used by the target process. Look at StrGet() for possible values.
 ; ..............: sDir      - Working directory.

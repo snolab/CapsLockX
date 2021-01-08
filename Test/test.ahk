@@ -20,6 +20,6 @@ CursorCheck()
 
  h_cursor := *(&ci+8)+(*(&ci+9) << 8)+(*(&ci+10) << 16)+(*(&ci+11) << 24)
 
- return h_cursor
+ Return h_cursor
 
 }

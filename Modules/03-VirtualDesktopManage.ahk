@@ -22,7 +22,7 @@
 ; [PowerShell Gallery | VirtualDesktop.ps1 1.1.0]( https://www.powershellgallery.com/packages/VirtualDesktop/1.1.0/Content/VirtualDesktop.ps1 )
 ; [Windows 10 の仮想デスクトップを制御しようとして失敗した話 | grabacr.nét]( http://grabacr.net/archives/5601 )
 
-if(!CapsLockX)
+if (!CapsLockX)
     ExitApp
 
 Return
@@ -134,7 +134,7 @@ internal interface IObjectArray
 [Guid("6D5140C1-7436-11CE-8034-00AA006009FA")]
 internal interface IServiceProvider10
 {
-    [return: MarshalAs(UnmanagedType.IUnknown)]
+    [Return: MarshalAs(UnmanagedType.IUnknown)]
     object QueryService(ref Guid service, ref Guid riid);
 }
 
@@ -187,7 +187,7 @@ MoveActiveWindowToDesktop(idx){
 SwitchToDesktop(idx){
     re := SwitchToDesktopByInternalAPI(idx)
     ; ToolTip % re
-    if(!re){
+    if (!re){
         SwitchToDesktopByHotkey(idx)
     }
 }
@@ -205,33 +205,33 @@ SwitchToDesktopByHotkey(idx){
 IsWindowOnCurrentVirtualDesktop(hWnd){
     IVirtualDesktopManager          := ComObjCreate("{AA509086-5CA9-4C25-8F95-589D3C07B48A}", "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}")
     ; 如果这个对象不存在那就没有虚拟桌面的说法了，那就默认返回true好了
-    if(!IVirtualDesktopManager)
-        return 1
+    if (!IVirtualDesktopManager)
+        Return 1
     IsWindowOnCurrentVirtualDesktop := vtable(IVirtualDesktopManager, 3)
     bool := 0
     DllCall(IsWindowOnCurrentVirtualDesktop, "UPtr", IVirtualDesktopManager, "UInt", hWnd , "UIntP", bool)
     ObjRelease(IVirtualDesktopManager)
-    return %bool%
+    Return %bool%
 }
 SwitchToDesktopByInternalAPI(idx) {
     succ := 0
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
     ObjRelease(IServiceProvider)
-    If(IVirtualDesktopManagerInternal) {
+    if (IVirtualDesktopManagerInternal) {
         ; GetCount := vtable(IVirtualDesktopManagerInternal, 3)
         GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
         SwitchDesktop := vtable(IVirtualDesktopManagerInternal, 9)
         ; TrayTip,,% IVirtualDesktopManagerInternal
         pDesktopIObjectArray := 0
         DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
-        if(pDesktopIObjectArray) {
+        if (pDesktopIObjectArray) {
             GetDesktopCount := vtable(pDesktopIObjectArray, 3)
             GetDesktopAt := vtable(pDesktopIObjectArray, 4)
 
             DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
             ; if idx-th desktop doesn't exists then create a new desktop
-            if(idx > DesktopCount){
+            if (idx > DesktopCount){
                 Send ^#d
                 succ := 1
             }
@@ -247,7 +247,7 @@ SwitchToDesktopByInternalAPI(idx) {
         }
         ObjRelease(IVirtualDesktopManagerInternal)
     }
-    return succ
+    Return succ
 }
 
 GetGUIDFromString(ByRef GUID, sGUID) ; Converts a string to a binary GUID
@@ -257,8 +257,8 @@ GetGUIDFromString(ByRef GUID, sGUID) ; Converts a string to a binary GUID
 }
 
 vtable(ptr, n) {
-    ; NumGet(ptr+0) returns the address of the object's virtual function
+    ; NumGet(ptr+0) Returns the address of the object's virtual function
     ; table (vtable for short). The remainder of the expression retrieves
     ; the address of the nth function's address from the vtable.
-    return NumGet(NumGet(ptr+0), n*A_PtrSize)
+    Return NumGet(NumGet(ptr+0), n*A_PtrSize)
 }

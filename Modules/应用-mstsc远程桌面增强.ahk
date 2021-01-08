@@ -1,5 +1,5 @@
 ﻿
-If(!CapsLockX)
+if (!CapsLockX)
     ExitApp
 global last_mstsc := 0
 
@@ -16,7 +16,7 @@ Return
 ;     SysGet, VirtualHeight, 79
 ;     ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
 ;     ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
-;     if(VirtualWidth == Width && VirtualHeight == Height){
+;     if (VirtualWidth == Width && VirtualHeight == Height){
 ;         WinSet Bottom, , ahk_id %last_mstsc%
 ;     }
 ;     WinWaitNotActive ahk_id %last_mstsc%
@@ -48,7 +48,7 @@ Return
         ; 使远程窗口最小化并失去焦点，显示其它窗口
 
         ; Tooltip % A_PriorHotkey
-        ; if(A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
+        ; if (A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
             WinGet, last_mstsc
             ; WinMinimizeAllUndo
             WinMinimize ahk_id %last_mstsc%

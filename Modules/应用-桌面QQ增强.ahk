@@ -8,7 +8,7 @@
 ; ========== CapsLockX ==========
 ; 
 
-If(!CapsLockX)
+if (!CapsLockX)
     ExitApp
 Return
 
@@ -59,11 +59,11 @@ Return
 
 !d:: ; 定位到功能栏
 SendInput, +{Tab 4}{Enter}
-return
+Return
 
 !b:: ; 屏蔽此人
 SendInput, +{Tab 4}{Left}{Enter}
-return
+Return
 
 !w:: ; 开出小窗口
 CoordMode, Mouse, Client
@@ -79,7 +79,7 @@ Return
 
 !n:: ; 群通知设定 (或抖窗)
 SendInput, {Tab 5}{Right 6}{Enter}
-return
+Return
 
 #IfWinActive ahk_class TXGuiFoundation ahk_exe QQ.exe
 /:: CapslockXShowHelp("

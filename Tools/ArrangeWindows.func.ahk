@@ -57,10 +57,10 @@ ArrangeWindows(arrangeFlags = "0"){
 
         ; 跳过最小化的窗口
         WinGet, minmax, minmax, ahk_id %this_id%
-        if(minmax == -1)
+        if (minmax == -1)
             continue
         if (minmax == 1){
-            if(!(arrangeFlags & ARRANGE_MAXWINDOW)){
+            if (!(arrangeFlags & ARRANGE_MAXWINDOW)){
                 continue
             }
         }
@@ -76,7 +76,7 @@ ArrangeWindows(arrangeFlags = "0"){
     }
     ; 按 pid 和 hwnd 排列，所以这样排出来的窗口的顺序是稳定的
     Sort listOfWindow
-    if(arrangeFlags & ARRANGE_STACKED){
+    if (arrangeFlags & ARRANGE_STACKED){
         ArrangeWindowsStacked(listOfWindow, arrangeFlags)
     }else{
         ArrangeWindowsSideBySide(listOfWindow, arrangeFlags)

@@ -28,7 +28,7 @@ SetCursor(code, curFile){
 }
 PATH_CURSOR := "cursor"
 
-If(0){
+if (0){
 	SetCursor(OCR_APPSTARTING, PATH_CURSOR "\APPSTARTING.cur") ;AppStarting.cur")
 	SetCursor(OCR_NORMAL     , PATH_CURSOR "\NORMAL.cur") ;正常选择.cur")
 	SetCursor(OCR_CROSS      , PATH_CURSOR "\CROSS.cur") ;精确选择.cur")

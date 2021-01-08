@@ -7,7 +7,7 @@
 ; ========== CapsLockX ==========
 ; 
 
-If(!CapsLockX){
+if (!CapsLockX){
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
@@ -26,12 +26,12 @@ Javascript 计算
 ; CreateScriptObj() {
 ;     static doc := ComObjCreate("htmlfile")
 ;     doc.write("<meta http-equiv='X-UA-Compatible' content='IE=9'>")
-;     return ObjBindMethod(doc.parentWindow, "eval")
+;     Return ObjBindMethod(doc.parentWindow, "eval")
 ; }
 
 ; EvalJavascript(){
 ;     jsObj := CreateScriptObj()
-;     return %jsObj%("1+1")
+;     Return %jsObj%("1+1")
 ; }
 Return
 
@@ -56,7 +56,7 @@ EscapeQuoted(code)
     encodedCode := RegExReplace(encodedCode, "'", "\'")
     encodedCode := RegExReplace(encodedCode, "\n", "\n")
     encodedCode := RegExReplace(encodedCode, "\r", "\r")
-    return "'" encodedCode "'"
+    Return "'" encodedCode "'"
 }
 EscapeDoubleQuotedForBatch(code)
 {
@@ -65,16 +65,16 @@ EscapeDoubleQuotedForBatch(code)
     encodedCode := RegExReplace(encodedCode, """", "^""")
     encodedCode := RegExReplace(encodedCode, "\n", "\n")
     encodedCode := RegExReplace(encodedCode, "\r", "\r")
-    return """" encodedCode """"
+    Return """" encodedCode """"
 }
 EvalJScript(code)
 {
     ; 生成代码
-    realcode := "(function(){try{return eval(" . EscapeQuoted(code) .  ")}catch(e){return e.toString()}})()"
+    realcode := "(function(){try{Return eval(" . EscapeQuoted(code) .  ")}catch(e){Return e.toString()}})()"
     ; 执行代码
     JS := GetObjJScript()
     re := JS.Eval(realcode)
-    return re
+    Return re
 }
 
 EvalNodejs(code)
@@ -82,7 +82,7 @@ EvalNodejs(code)
     ; 检查 Node.js 是否安装
     nodejsPath := "C:\Program Files\nodejs\node.exe"
     if (!FileExist(nodejsPath))
-        return ""
+        Return ""
     
     ; 定义工作临时文件
     inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"    
@@ -93,17 +93,17 @@ EvalNodejs(code)
     ; 生成代码
     realcode := ""
     realcode .= "const code = " EscapeQuoted(code) "; `n"
-    realcode .= "const ret = (()=>{try{return JSON.stringify(eval(code))}catch(err){return err}})(); `n"
+    realcode .= "const ret = (()=>{try{Return JSON.stringify(eval(code))}catch(err){Return err}})(); `n"
     realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) "; `n"
     realcode .= "const fs = require('fs'); `n"
     realcode .= "fs.writeFileSync(jsonoutPath, ret)"
 
     ; 写入纯 UTF8 脚本文件
     FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
-    if(!FileExist(inputScriptPath)){
+    if (!FileExist(inputScriptPath)){
         ToolTip % inputScriptPatherr
         MsgBox 执行失败，未能写入脚本文件
-        return "err"
+        Return "err"
     }
     ; 执行 node 的指令
     nodejsCommand := """" nodejsPath """" " " """" inputScriptPath """"
@@ -115,16 +115,16 @@ EvalNodejs(code)
     ; `清掉垃圾文件`
     FileDelete %inputScriptPath%
     FileDelete %jsonoutPath%
-    return out ? out : ""   
+    Return out ? out : ""   
 }
 
 SafeEval(code)
 {
     nodejsPath := "C:\Program Files\nodejs\node.exe"
     if (FileExist(nodejsPath)){
-        return EvalNodejs(code)
+        Return EvalNodejs(code)
     }else{
-        return EvalJScript(code)
+        Return EvalJScript(code)
     }
 }
 #If CapsLockXMode
@@ -139,7 +139,7 @@ Tab::
 
     Clipboard := SafeEval(codeWithoutEqualEnding)
     ; 如果输入代码最后是 = 号就把结果添加到后面
-    if(code != codeWithoutEqualEnding){
+    if (code != codeWithoutEqualEnding){
         Send {Right}
     }
     Send ^v

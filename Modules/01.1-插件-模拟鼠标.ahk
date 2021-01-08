@@ -13,12 +13,12 @@
 AppendHelp( "
 (
 模拟鼠标
-| CapsLockX + w a s d `t| 鼠标抛物移动（上下左右）
-| CapsLockX + r f     `t| 垂直抛物滚轮（上下）
-| CapsLockX + R F     `t| 水平抛物滚轮
-| CapsLockX + rf      `t| r f 同时按相当于鼠标中键
-| CapsLockX + e       `t| 鼠标左键
-| CapsLockX + q       `t| 鼠标右键
+| CapsLockX + w a s d | 鼠标移动（上下左右）    |
+| CapsLockX + r f     | 垂直滚轮（上下）        |
+| CapsLockX + R F     | 水平滚轮（左右）        |
+| CapsLockX + rf      | rf 同时按相当于鼠标中键 |
+| CapsLockX + e       | 鼠标左键                |
+| CapsLockX + q       | 鼠标右键                |
 )")
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
@@ -400,11 +400,11 @@ Return
 r::
     scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
     ; KeyWait, r
-    return
+    Return
 f::
     scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
     ; KeyWait, f
-    return
+    Return
 r Up:: scroll_tu := 0, sTick()
 f Up:: scroll_td := 0, sTick()
 

@@ -39,7 +39,7 @@ APISendInput_ScrollX(dx){
 }
 
 autoScrollY_SetTimer(){
-    If(autoScrollY){
+    if (autoScrollY){
         autoScrollStepAbs := Max(1, -12 + 4 * Abs(autoScrollY))
         autoScrollInterval := Max(1, 96 - 32 * Abs(autoScrollY))
         
@@ -54,20 +54,20 @@ autoScrollY_SetTimer(){
 }
 
 autoScroll:
-    If(!GetKeyState("Ctrl", "P")){
+    if (!GetKeyState("Ctrl", "P")){
         APISendInput_ScrollY(autoScrollStep)
     }
     Return
 
 ; autoPage:
-;     If(!GetKeyState("Ctrl", "P")){
+;     if (!GetKeyState("Ctrl", "P")){
 ;         ToolTip, s %autoPageY%
-;         If(autoPageY > 0){
+;         if (autoPageY > 0){
 ;             Loop, %autoPageY% {
 ;                 Send {PgDn}
 ;             }
 ;         }
-;         If(autoPageY < 0){
+;         if (autoPageY < 0){
 ;             r := -autoPageY
 ;             Loop, %r% {
 ;                 Send {PgUp}
@@ -105,7 +105,7 @@ autoScroll:
     ;     Return
 
     $Esc::
-        If(autoScrollY){
+        if (autoScrollY){
             autoScrollY := 0
             ToolTip,
         }Else{

@@ -4,9 +4,10 @@ if (!CapsLockX)
 Return
 
 #If (CapsLockXMode)
-t::
+^c::
     Clipboard =
     SendEvent ^c
     ClipWait
+    ; Saladict
     SendEvent !l
     Return
