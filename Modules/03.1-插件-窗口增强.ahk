@@ -85,8 +85,9 @@ Return
     WinSet, Alwaysontop, Off, A
 Return
 
-; 关闭标签
+; 关闭标签/
 $x:: Send ^w
+$+x:: Send !{F4}
 ; 关闭窗口
 $Esc:: Send !{F4}
 $!x::
