@@ -1,7 +1,7 @@
 ﻿; UTF-8 with BOM
 ;
 ; 程序核心
-; 最后更新：(20190707)
+; 最后更新：(20210107)
 ;
 ; Copyright © 2017-2021 snomiao@gmail.com
 ; 创建：Snowstar QQ: 997596439
@@ -166,7 +166,7 @@ CapsLockX_Dn:
     if(A_PriorKey == lastCapsLockKey){
         if( A_TickCount - CapsLockPressTimestamp > 1000){
             CapslockXShowHelp(globalHelpInfo, 1, lastCapsLockKey)
-             KeyWait, %lastCapsLockKey%
+            KeyWait, %lastCapsLockKey%
             ; KeyWait, CapsLock
         }
     }else{
@@ -252,17 +252,17 @@ Return
 #if
 
 ; 软重启键
-!F12:: Reload
+; !F12:: Reload
 
 ; 硬重启键
-^!F12::
+^!\::
     ; Run CapsLockX.ahk, %A_WorkingDir%
     Run CapsLockX.exe, %A_WorkingDir%
 ExitApp
 Return
 
 ; 结束键
-^!+F12:: ExitApp
+^!+Delete:: ExitApp
 
 ; *Insert:: GoSub CapsLockX_Dn
 ; *Insert Up:: GoSub CapsLockX_Up
