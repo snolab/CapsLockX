@@ -1,13 +1,13 @@
-Process, Priority,,high			;½Å±¾¸ßÓÅÏÈ¼¶
-;#NoTrayIcon 						;Òþ²ØÍÐÅÌÍ¼±ê
-#NoEnv								;²»¼ì²é¿Õ±äÁ¿ÊÇ·ñÎª»·¾³±äÁ¿
-#Persistent						;ÈÃ½Å±¾³Ö¾ÃÔËÐÐ(¹Ø±Õ»òExitApp)
-#SingleInstance Force				;Ìø¹ý¶Ô»°¿ò²¢×Ô¶¯Ìæ»»¾ÉÊµÀý
-#MaxHotkeysPerInterval 300		;Ê±¼äÄÚ°´ÈÈ¼ü×î´ó´ÎÊý
+Process, Priority,,high			;ï¿½Å±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½
+;#NoTrayIcon 						;ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½
+#NoEnv								;ï¿½ï¿½ï¿½ï¿½ï¿½Õ±ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#Persistent						;ï¿½Ã½Å±ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Ø±Õ»ï¿½ExitApp)
+#SingleInstance Force				;ï¿½ï¿½ï¿½ï¿½ï¿½Ô»ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½æ»»ï¿½ï¿½Êµï¿½ï¿½
+#MaxHotkeysPerInterval 300		;Ê±ï¿½ï¿½ï¿½Ú°ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #InstallMouseHook
 ;Autoexecute code
 CoordMode, Mouse, Screen
-SetTitleMatchMode RegEx			;´°¿Ú±êÌâÕýÔòÆ¥Åä	;SetTitleMatchMode 2	;´°¿Ú±êÌâÄ£ºýÆ¥Åä
+SetTitleMatchMode RegEx			;ï¿½ï¿½ï¿½Ú±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½	;SetTitleMatchMode 2	;ï¿½ï¿½ï¿½Ú±ï¿½ï¿½ï¿½Ä£ï¿½ï¿½Æ¥ï¿½ï¿½
 
 MinLinesPerNotch := 1
 MaxLinesPerNotch := 5
@@ -20,8 +20,8 @@ FocuslessScroll(MinLinesPerNotch, MaxLinesPerNotch, AccelerationThreshold, Accel
 	SetBatchLines, -1 ;Run as fast as possible
 
 	;Stutter filter: Prevent stutter caused by cheap mice by ignoring successive WheelUp/WheelDown events that occur to close together.
-	If(A_TimeSincePriorHotkey < StutterThreshold) ;Quickest succession time in ms
-		If(A_PriorHotkey = "WheelUp" Or A_PriorHotkey ="WheelDown")
+	if (A_TimeSincePriorHotkey < StutterThreshold) ;Quickest succession time in ms
+		if (A_PriorHotkey = "WheelUp" Or A_PriorHotkey ="WheelDown")
 			Return
 
 	MouseGetPos, m_x, m_y
@@ -30,7 +30,7 @@ FocuslessScroll(MinLinesPerNotch, MaxLinesPerNotch, AccelerationThreshold, Accel
 	MouseGetPos,,,, ControlClass2, 2
 	MouseGetPos,,,, ControlClass3, 3
 
-	if(A_Is64bitOS)
+	if (A_Is64bitOS)
 		;64-bit systems use this line
 		ControlClass1 := DllCall( "WindowFromPoint", "int64", m_x | (m_y << 32), "Ptr")
 	else
@@ -40,13 +40,13 @@ FocuslessScroll(MinLinesPerNotch, MaxLinesPerNotch, AccelerationThreshold, Accel
 	wParam := (120 << 16) ;Wheel delta is 120, as defined by MicroSoft
 
 	;Detect WheelDown event
-	If(A_ThisHotkey = "WheelDown" Or A_ThisHotkey = "^WheelDown" Or A_ThisHotkey = "+WheelDown" Or A_ThisHotkey = "*WheelDown")
+	if (A_ThisHotkey = "WheelDown" Or A_ThisHotkey = "^WheelDown" Or A_ThisHotkey = "+WheelDown" Or A_ThisHotkey = "*WheelDown")
 		wParam := -wParam ;If scrolling down, invert scroll direction
 
 	;Detect modifer keys held down (only Shift and Control work)
-	If(GetKeyState("Shift","p"))
+	if (GetKeyState("Shift","p"))
 		wParam := wParam | 0x4
-	If(GetKeyState("Ctrl","p"))
+	if (GetKeyState("Ctrl","p"))
 		wParam := wParam | 0x8
 
 	;If you don't need scroll acceleration, you can simply remove the LinesPerNotch() function def and set Lines := 1. Additionally you will want to strip out all the related unused function parameters.
@@ -55,12 +55,12 @@ FocuslessScroll(MinLinesPerNotch, MaxLinesPerNotch, AccelerationThreshold, Accel
 	;Run this loop several times to create the impression of faster scrolling
 	Loop, %Lines%
 	{
-		If(ControlClass2 = "")
+		if (ControlClass2 = "")
 			SendMessage, 0x20A, wParam, lParam,, ahk_id %ControlClass1%
 		Else
 		{
 			SendMessage, 0x20A, wParam, lParam,, ahk_id %ControlClass2%
-			If(ControlClass2 != ControlClass3)
+			if (ControlClass2 != ControlClass3)
 				SendMessage, 0x20A, wParam, lParam,, ahk_id %ControlClass3%
 		}
 	}
@@ -71,14 +71,14 @@ LinesPerNotch(MinLinesPerNotch, MaxLinesPerNotch, AccelerationThreshold, Acceler
 	T := A_TimeSincePriorHotkey
 
 	;Normal slow scrolling, separationg between scroll events is greater than AccelerationThreshold miliseconds.
-	If((T > AccelerationThreshold) Or (T = -1)) ;T = -1 if this is the first hotkey ever run
+	if ((T > AccelerationThreshold) Or (T = -1)) ;T = -1 if this is the first hotkey ever run
 	{
 		Lines := MinLinesPerNotch
 	}
 	;Fast scrolling, use acceleration
 	Else
 	{
-		If(AccelerationType = "P")
+		if (AccelerationType = "P")
 		{
 			;Parabolic scroll speed curve
 			;f(t) = At^2 + Bt + C

@@ -9,7 +9,7 @@
 ; 
 ; save as utf8 with bom
 
-If(!CapsLockX)
+if (!CapsLockX)
     ExitApp
 
 #Include Modules/WinClip/WinClipAPI.ahk
@@ -33,11 +33,11 @@ altSendEx(altKeys, suffix){
 StrJoin(sep, params*) {
     for index, param in params
         str .= param . sep
-    return SubStr(str, 2, -StrLen(sep))
+    Return SubStr(str, 2, -StrLen(sep))
 }
 GetFocusControlName(){
     ControlGetFocus, name, A
-    return name
+    Return name
 }
 
 ; 获取与IME无冲的编码字符串，用于 SendEvent （SEO： SendRaw SendInput）
@@ -46,7 +46,7 @@ getAscStr(str)
     charList := StrSplit(str)
     for key, val in charList
         out .= "{Asc " . asc(val) . "}"
-    return out
+    Return out
 }
 
 ; 快速添加事项清单
@@ -222,7 +222,7 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
             this_addr := addr
             isPage := !!RegExMatch(addr, "page-id=")
             Transform, title_html, HTML, %title%
-            if(!isPage ){
+            if (!isPage ){
                 title := "§ " title
                 title_html := "§ " title_html
             }
@@ -232,9 +232,9 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         
             SendEvent {Down}
             Sleep, 32
-            if(this_addr == prev_addr){
+            if (this_addr == prev_addr){
                 samecount++
-                if(samecount >= 2){
+                if (samecount >= 2){
                     Break
                 }
             }else{
@@ -271,7 +271,7 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         SendEvent !=
         Sleep, 200
         altSend("jp")
-    return
+    Return
     ; SendEvent !={AppsKey}p
     ; 复制纯文本
     $^+c::
@@ -279,12 +279,12 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         SendEvent ^c
         ClipWait, 1
         Clipboard := Clipboard
-    return
+    Return
     ; 粘贴纯文本
     $^+v::
         Clipboard := Clipboard
         SendEvent ^v
-    return
+    Return
     
     ; ; 选择页面
     ; ^PgUp:: SendEvent ^{PgUp}^+a
@@ -519,59 +519,59 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
     )")
 
     $1::  ; 换到第 1 行的 1 支笔
-        if(A_PriorHotkey=="!d")
+        if (A_PriorHotkey=="!d")
             SendEvent {Right 0}{Enter}
         Return
     $2::  ; 换到第 1 行的 2 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Right 1}{Enter}
         Return
     $3::  ; 换到第 1 行的 3 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Right 2}{Enter}
         Return
     $4::  ; 换到第 1 行的 4 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Right 3}{Enter}
         Return
     $5::  ; 换到第 1 行的 5 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Right 4}{Enter}
         Return
     $6::  ; 换到第 1 行的 6 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Right 5}{Enter}
         Return
     $7::  ; 换到第 1 行的 7 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Right 6}{Enter}
         Return
     $!1:: ; 换到第 2 行的 1 支笔
-        if(A_PriorHotkey=="!d")
+        if (A_PriorHotkey=="!d")
             SendEvent {Down 1}{Right 0}{Enter}
         Return
     $!2:: ; 换到第 2 行的 2 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Down 1}{Right 1}{Enter}
         Return
     $!3:: ; 换到第 2 行的 3 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Down 1}{Right 2}{Enter}
         Return
     $!4:: ; 换到第 2 行的 4 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Down 1}{Right 3}{Enter}
         Return
     $!5:: ; 换到第 2 行的 5 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Down 1}{Right 4}{Enter}
         Return
     $!6:: ; 换到第 2 行的 6 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             SendEvent {Down 1}{Right 5}{Enter}
         Return
     $!7:: ; 换到第 2 行的 7 支笔
-        if(A_PriorHotkey="!d")
+        if (A_PriorHotkey="!d")
             Send {Down 1}{Right 6}{Enter}
         Return
 
@@ -581,7 +581,7 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
 
 ~^c::
     hwndOneNote := WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-    if(!hwndOneNote)
+    if (!hwndOneNote)
         Return
     ; 通常在弹起时触发
     Clipboard := ""

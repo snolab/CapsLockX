@@ -52,7 +52,7 @@ dt(t, t2)
 }
 sign(x)
 {
-    return x == 0 ? 0 : x > 0 ? 1 : -1
+    Return x == 0 ? 0 : x > 0 ? 1 : -1
 }
 calcPos(t)
 {
@@ -77,11 +77,11 @@ mTick:
     ; 计算新坐标
     ; _mtx := tdx == 0 ? mtx : sign( tdx ) * Abs( 1 + tdx * tdx* tdx * A_ScreenWidth )
     ; _mty := tdy == 0 ? mty : sign( tdy ) * Abs( 1 + tdy * tdy* tdy * A_ScreenHeight )
-    ; if(tdx == 0) {
+    ; if (tdx == 0) {
     ;     mtx := 0, _mtx :=0
     ; } else {
     ; }
-    ; if(tdy == 0) {
+    ; if (tdy == 0) {
     ;     mty := 0, _mty :=0
     ; } else {
     ;     ; _mty := sign( tdy ) * Abs( 1 + tdy * tdy * A_ScreenHeight ) ; 2次
@@ -97,7 +97,7 @@ mTick:
     mty += mdy
     QSeconds := QuerySeconds()
     
-    if(mdx || mdy ) {
+    if (mdx || mdy ) {
         MouseMove(mdx, mdy)
         ; ToolTip, %tdx% %_mtx% %mtx% %mdx%
     }

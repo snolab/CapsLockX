@@ -8,7 +8,7 @@ TryCopy(retry = 0){
     Clipboard =
     Send, ^c
     ClipWait, 0.1, 1
-    If(ErrorLevel && !retry){
+    if (ErrorLevel && !retry){
         Send {Click 2}
         Return TryCopy(retry+1)
     }Else{
@@ -17,7 +17,7 @@ TryCopy(retry = 0){
 }
 Search2(){
     clip := TryCopy()
-    If(clip)
+    if (clip)
         Search(clip)
 }
 

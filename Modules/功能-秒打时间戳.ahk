@@ -7,7 +7,7 @@
 ; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
-If(CapsLockX){
+if (CapsLockX){
     help := "秒打时间戳" . "`n"
     
     FormatTime, TimeString, , yyyy-MM-dd
@@ -32,29 +32,36 @@ If(CapsLockX){
 }
 Return
 
+::(date::
 ::/date::
     FormatTime, TimeString, , yyyy-MM-dd
     SendInput {Text}%TimeString%
     Return
+::(d::
 ::/d::
     FormatTime, DateString, , (yyyyMMdd)
     SendInput {Text}%DateString%
     Return
+::(da::
 ::/da::
     FormatTime, DateString, , (yyyy-MM-dd)
     SendInput {Text}%DateString%
     Return
+::(tick::
 ::/tick::
     SendInput {Text}%A_TickCount%
     Return
+::(t::
 ::/t::
     FormatTime, TimeString, , (yyyyMMdd.HHmmss)
     SendInput {Text}%TimeString%
     Return
+::(dt::
 ::/dt::
     FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
     SendInput {Text}%TimeString%
     Return
+::(v::
 ::/v::
     FormatTime, TimeString, , vyyyy.MM.dd
     SendInput {Text}%TimeString%

@@ -4,7 +4,7 @@ global LastWinTitle
 #Persistent
 	;SetTimer, markTime, 60000
 	SetTimer, markTime, 200
-	return
+	Return
 
 markTime:
 	WinGetTitle WinTitle, A

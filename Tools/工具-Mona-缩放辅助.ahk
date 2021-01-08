@@ -33,9 +33,9 @@ ma(t){
 ma2(t){
     ; x-t 二次曲线加速运动模型
     ; 跟现实世界的运动一个感觉
-    If(0 == t)
+    if (0 == t)
         Return 0
-    If(t > 0)
+    if (t > 0)
         Return  3
     Else
         Return -3
@@ -46,9 +46,9 @@ ma3(t){
     ; 与现实世界不同，
     ; 这个模型会让人感觉鼠标比较“重”
     ;
-    If(0 == t)
+    if (0 == t)
         Return 0
-    If(t > 0)
+    if (t > 0)
         Return  1 + t * 6
     Else
         Return -1 + t * 6
@@ -59,9 +59,9 @@ maPower(t){
     ; 这个模型可以满足精确定位需求，也不会感到鼠标“重”
     ; 但是因为跟现实世界的运动曲线不一样，凭直觉比较难判断落点，需要一定练习才能掌握。
     ;
-    If(0 == t)
+    if (0 == t)
         Return 0
-    If(t > 0)
+    if (t > 0)
         Return  1 +( Exp( t) - 1 ) * 8
     Else
         Return -1 -( Exp(-t) - 1 ) * 8
@@ -75,13 +75,13 @@ dt(t, tNow){
 Friction(v, a){ ; 摩擦力
     ; 限制最大速度
     ; maxSpeed := 80
-    ; If(v   < -maxSpeed)
+    ; if (v   < -maxSpeed)
     ;     v := -maxSpeed
-    ; If(v   >  maxSpeed)
+    ; if (v   >  maxSpeed)
     ;     v :=  maxSpeed
 
     ; 摩擦力不阻碍用户意志
-    If((a > 0 And v > 0) Or (a < 0 And v < 0)){
+    if ((a > 0 And v > 0) Or (a < 0 And v < 0)){
         Return v
     }
     ; 摩擦系数无限大
@@ -89,9 +89,9 @@ Friction(v, a){ ; 摩擦力
 
     ; ; 简单粗暴倍数降速
     ; v *= 0.9
-    ; If(v > 0)
+    ; if (v > 0)
     ;     v -= 1
-    ; If(v < 0)
+    ; if (v < 0)
     ;     v += 1
     ; Return v
 }
@@ -123,9 +123,9 @@ msx:
     ; 计算加速度
     sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
     svx := Friction(svx + sax, sax)
-    If(Abs(svx) < 0.5)
+    if (Abs(svx) < 0.5)
         svx := 0
-    If(svx){
+    if (svx){
         SendInput_MouseMsg(0x01000, svy) ; 0x01000/*MOUSEEVENTF_HWHEEL*/
     }Else{
         SetTimer, msx, Off
@@ -139,15 +139,15 @@ msy:
     tdu := dt(stu, tNow), tdd := dt(std, tNow)
 
     ; RF同时按下相当于中键
-    If(GetKeyState("MButton", "P")){
-        If(stu == 0 Or std == 0){
+    if (GetKeyState("MButton", "P")){
+        if (stu == 0 Or std == 0){
             Send {MButton Up}
             stu := 0, std := 0
         }
         Return
     }
-    If(stu And std And Abs(tdu - tdd) < 1){
-        If(!GetKeyState("MButton", "P")){
+    if (stu And std And Abs(tdu - tdd) < 1){
+        if (!GetKeyState("MButton", "P")){
             Send {MButton Down}
         }
         Return
@@ -157,9 +157,9 @@ msy:
     say := ma(tdu - tdd) * TMouse_WheelSpeedRatio
     svy := Friction(svy + say, say)
 
-    If(Abs(svy) < 0.5)
+    if (Abs(svy) < 0.5)
         svy := 0
-    If(svy){
+    if (svy){
         SendInput_MouseMsg(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
     }Else{
         SetTimer, msy, Off
@@ -180,13 +180,13 @@ sTicky(){
     ; *e::    Send {Blind}{LButton Down}
     ; *e up:: Send {Blind}{LButton Up}
     ; *q::
-    ;     If(TMouse_SendInputAPI)
+    ;     if (TMouse_SendInputAPI)
     ;         SendInput_MouseMsg(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
     ;     Else
     ;         Send {Blind}{RButton Down}
     ;     Return
     ; *q up::
-    ;     If(TMouse_SendInputAPI)
+    ;     if (TMouse_SendInputAPI)
     ;         SendInput_MouseMsg(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
     ;     Else
     ;         Send {Blind}{RButton Up}

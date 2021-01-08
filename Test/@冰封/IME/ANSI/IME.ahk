@@ -1,40 +1,40 @@
 /*****************************************************************************
-  IME§Œä—p ŠÖ”ŒQ (IME.ahk)
+  IMEï¿½ï¿½ï¿½ï¿½p ï¿½Öï¿½ï¿½Q (IME.ahk)
 
-    ƒOƒ[ƒoƒ‹•Ï” : ‚È‚µ
-    ŠeŠÖ”‚ÌˆË‘¶« : ‚È‚µ(•K—vŠÖ”‚¾‚¯Øo‚µ‚ÄƒRƒsƒy‚Å‚àŽg‚¦‚Ü‚·)
+    ï¿½Oï¿½ï¿½ï¿½[ï¿½oï¿½ï¿½ï¿½Ïï¿½ : ï¿½È‚ï¿½
+    ï¿½eï¿½Öï¿½ï¿½ÌˆË‘ï¿½ï¿½ï¿½ : ï¿½È‚ï¿½(ï¿½Kï¿½vï¿½Öï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Øoï¿½ï¿½ï¿½ÄƒRï¿½sï¿½yï¿½Å‚ï¿½ï¿½gï¿½ï¿½ï¿½Ü‚ï¿½)
 
     AutoHotkey:     L 1.1.08.01
     Language:       Japanease
-    Platform:       NTŒn
+    Platform:       NTï¿½n
     Author:         eamat.      http://www6.atwiki.jp/eamat/
 *****************************************************************************
-—š—ð
-    2008.07.11 v1.0.47ˆÈ~‚Ì ŠÖ”ƒ‰ƒCƒuƒ‰ƒŠƒXƒNƒŠƒvƒg‘Î‰ž—p‚Éƒtƒ@ƒCƒ‹–¼‚ð•ÏX
-    2008.12.10 ƒRƒƒ“ƒgC³
-    2009.07.03 IME_GetConverting() ’Ç‰Á 
-               Last Found Window‚ª—LŒø‚É‚È‚ç‚È‚¢–â‘èC³A‘¼B
+ï¿½ï¿½ï¿½ï¿½
+    2008.07.11 v1.0.47ï¿½È~ï¿½ï¿½ ï¿½Öï¿½ï¿½ï¿½ï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Nï¿½ï¿½ï¿½vï¿½gï¿½Î‰ï¿½ï¿½pï¿½Éƒtï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏX
+    2008.12.10 ï¿½Rï¿½ï¿½ï¿½ï¿½ï¿½gï¿½Cï¿½ï¿½
+    2009.07.03 IME_GetConverting() ï¿½Ç‰ï¿½ 
+               Last Found Windowï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½É‚È‚ï¿½È‚ï¿½ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½B
     2009.12.03
-      EIME ó‘Ôƒ`ƒFƒbƒN GUIThreadInfo —˜—p”Å “ü‚êž‚Ý
-       iIE‚âGŠÛ8ƒÀ‚Å‚àIMEó‘Ô‚ªŽæ‚ê‚é‚æ‚¤‚Éj
+      ï¿½EIME ï¿½ï¿½Ôƒ`ï¿½Fï¿½bï¿½N GUIThreadInfo ï¿½ï¿½ï¿½pï¿½ï¿½ ï¿½ï¿½ï¿½êžï¿½ï¿½
+       ï¿½iIEï¿½ï¿½Gï¿½ï¿½8ï¿½ï¿½ï¿½Å‚ï¿½IMEï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½Éj
         http://blechmusik.xrea.jp/resources/keyboard_layout/DvorakJ/inc/IME.ahk
-      EGoogle“ú–{Œê“ü—ÍƒÀ Œü‚¯’²®
-        “ü—Íƒ‚[ƒh ‹y‚Ñ •ÏŠ·ƒ‚[ƒh‚ÍŽæ‚ê‚È‚¢‚Á‚Û‚¢
-        IME_GET/SET() ‚Æ IME_GetConverting()‚Í—LŒø
+      ï¿½EGoogleï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½ï¿½Íƒï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½h ï¿½yï¿½ï¿½ ï¿½ÏŠï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½ÍŽï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½Û‚ï¿½
+        IME_GET/SET() ï¿½ï¿½ IME_GetConverting()ï¿½Í—Lï¿½ï¿½
 
-    2012.11.10 x64 & Unicode‘Î‰ž
-      ŽÀsŠÂ‹«‚ð AHK_L U64‚É (–{‰Æ‚¨‚æ‚ÑA32,U32”Å‚Æ‚ÌŒÝŠ·«‚ÍˆÛŽ‚µ‚½‚Â‚à‚è)
-      ELongPtr‘ÎôFƒ|ƒCƒ“ƒ^ƒTƒCƒY‚ðA_PtrSize‚ÅŒ©‚é‚æ‚¤‚É‚µ‚½
+    2012.11.10 x64 & Unicodeï¿½Î‰ï¿½
+      ï¿½ï¿½ï¿½sï¿½Â‹ï¿½ï¿½ï¿½ AHK_L U64ï¿½ï¿½ (ï¿½{ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½A32,U32ï¿½Å‚Æ‚ÌŒÝŠï¿½ï¿½ï¿½ï¿½ÍˆÛŽï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½)
+      ï¿½ELongPtrï¿½Îï¿½Fï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½Tï¿½Cï¿½Yï¿½ï¿½A_PtrSizeï¿½ÅŒï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
 
                 ;==================================
                 ;  GUIThreadInfo 
                 ;=================================
-                ; \‘¢‘Ì GUITreadInfo
+                ; ï¿½\ï¿½ï¿½ï¿½ï¿½ GUITreadInfo
                 ;typedef struct tagGUITHREADINFO {(x86) (x64)
                 ;	DWORD   cbSize;                 0    0
-                ;	DWORD   flags;                  4    4   ¦
+                ;	DWORD   flags;                  4    4   ï¿½ï¿½
                 ;	HWND	hwndActive;             8    8
-                ;	HWND	hwndFocus;             12    16  ¦
+                ;	HWND	hwndFocus;             12    16  ï¿½ï¿½
                 ;	HWND	hwndCapture;           16    24
                 ;	HWND	hwndMenuOwner;         20    32
                 ;	HWND	hwndMoveSize;          24    40
@@ -42,97 +42,97 @@
                 ;	RECT	rcCaret;               32    56
                 ;} GUITHREADINFO, *PGUITHREADINFO;
 
-      EWinTitleƒpƒ‰ƒ[ƒ^‚ªŽÀŽ¿–³ˆÓ–¡‰»‚µ‚Ä‚¢‚½‚Ì‚ðC³
-        ‘ÎÛ‚ªƒAƒNƒeƒBƒuƒEƒBƒ“ƒhƒE‚ÌŽž‚Ì‚Ý GetGUIThreadInfo‚ðŽg‚¢
-        ‚»‚¤‚Å‚È‚¢‚Æ‚«‚ÍControlƒnƒ“ƒhƒ‹‚ðŽg—p
-        ˆê‰žƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚ÌIMEî•ñ‚àŽæ‚ê‚é‚æ‚¤‚É–ß‚µ‚½
-        (Žæ“¾ƒnƒ“ƒhƒ‹‚ðWindow‚©‚çControl‚É•Ï‚¦‚½‚±‚Æ‚Åƒuƒ‰ƒEƒUˆÈŠO‚Ì‘å”¼‚Ì
-        ƒAƒvƒŠ‚Å‚ÍƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚Å‚à³‚µ‚­’l‚ªŽæ‚ê‚é‚æ‚¤‚É‚È‚Á‚½B
-        ¦ƒuƒ‰ƒEƒUŒn‚Å‚àƒAƒNƒeƒBƒu‘‹‚Ì‚Ý‚Å‚ÌŽg—p‚È‚ç–â‘è‚È‚¢‚ÆŽv‚¤A‚½‚Ô‚ñ)
+      ï¿½EWinTitleï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó–ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½Cï¿½ï¿½
+        ï¿½ÎÛ‚ï¿½ï¿½Aï¿½Nï¿½eï¿½Bï¿½uï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ÌŽï¿½ï¿½Ì‚ï¿½ GetGUIThreadInfoï¿½ï¿½ï¿½gï¿½ï¿½
+        ï¿½ï¿½ï¿½ï¿½ï¿½Å‚È‚ï¿½ï¿½Æ‚ï¿½ï¿½ï¿½Controlï¿½nï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½gï¿½p
+        ï¿½ê‰žï¿½oï¿½bï¿½Nï¿½Oï¿½ï¿½ï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½IMEï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É–ß‚ï¿½ï¿½ï¿½
+        (ï¿½æ“¾ï¿½nï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½Windowï¿½ï¿½ï¿½ï¿½Controlï¿½É•Ï‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ‚Åƒuï¿½ï¿½ï¿½Eï¿½Uï¿½ÈŠOï¿½Ì‘å”¼ï¿½ï¿½
+        ï¿½Aï¿½vï¿½ï¿½ï¿½Å‚Íƒoï¿½bï¿½Nï¿½Oï¿½ï¿½ï¿½Eï¿½ï¿½ï¿½hï¿½Å‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É‚È‚ï¿½ï¿½ï¿½ï¿½B
+        ï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Eï¿½Uï¿½nï¿½Å‚ï¿½ï¿½Aï¿½Nï¿½eï¿½Bï¿½uï¿½ï¿½ï¿½Ì‚Ý‚Å‚ÌŽgï¿½pï¿½È‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ÆŽvï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Ô‚ï¿½)
 
 */
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 ;
-; “®ìŠm”F—p “à•”ƒ‹[ƒ`ƒ“ (ƒ}ƒEƒXƒJ[ƒ\ƒ‹ˆÊ’u‚ÌƒEƒBƒ“ƒhƒE‚ÌIMEó‘Ô‚ðŒ©‚é)
-;  ’P‘Ì‹N“®Žž‚ÌƒeƒXƒg—p‚È‚Ì‚Åíœ‚µ‚Ä‚à–â‘è‚È‚µ
+; ï¿½ï¿½ï¿½ï¿½mï¿½Fï¿½p ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½`ï¿½ï¿½ (ï¿½}ï¿½Eï¿½Xï¿½Jï¿½[ï¿½\ï¿½ï¿½ï¿½Ê’uï¿½ÌƒEï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½IMEï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½ï¿½)
+;  ï¿½Pï¿½Ì‹Nï¿½ï¿½ï¿½ï¿½ï¿½Ìƒeï¿½Xï¿½gï¿½pï¿½È‚Ì‚Åíœï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 _ImeAutoExecuteSample:
     Hotkey,#1,_ImeGetTest
     Hotkey,#2,_ImeSetTest
     Hotkey,#3,_ImeIsConvertingTest
     Hotkey,+ESC,_ImeTestExt
     SetTimer,_ImeInfoTimer,ON
-return
+Return
 
-;--- IMEó‘Ô•\Ž¦ƒ^ƒCƒ} ---
+;--- IMEï¿½ï¿½Ô•\ï¿½ï¿½ï¿½^ï¿½Cï¿½} ---
 _ImeInfoTimer:
     Tooltip,% "IME_GET			: "     . IME_GET(_mhwnd())             . "`n"
           .  "IME_GetConvMode		: " . IME_GetConvMode(_mhwnd())     . "`n"
           .  "IME_GetSentenceMode	: " . IME_GetSentenceMode(_mhwnd()) . "`n"
           .  "IME_GetConverting	: "     . IME_GetConverting(_mhwnd())
-return
+Return
 
 ;--- IME Get Test [Win]+[1] ---
 _ImeGetTest:
     MsgBox,% "IME_GET			: "     . IME_GET(_mhwnd())             . "`n"
           .  "IME_GetConvMode		: " . IME_GetConvMode(_mhwnd())     . "`n"
           .  "IME_GetSentenceMode	: " . IME_GetSentenceMode(_mhwnd()) . "`n"
-return
+Return
 ;--- IME Get Test [Win]+[2] ---
 _ImeSetTest:
     MsgBox,% "IME_SET			: "     . IME_SET(1,_mhwnd())             . "`n"
           .  "IME_SetConvMode		: " . IME_SetConvMode(0x08,_mhwnd())  . "`n"
           .  "IME_SetSentenceMode	: " . IME_SetSentenceMode(1,_mhwnd()) . "`n"
-return
+Return
 
 _mhwnd(){	;background test
 	MouseGetPos,x,,hwnd
-	return "ahk_id " . hwnd
+	Return "ahk_id " . hwnd
 }
 
 ;------------------------------------------------------------------
-; IME‘‹‚ÌƒNƒ‰ƒX–¼‚ð’²‚×‚éƒeƒXƒgƒ‹[ƒ`ƒ“
-;   “ü—Íor•ÏŠ·ó‘Ô‚ÅIme‘‹‚Éƒ}ƒEƒXƒJ[ƒ\ƒ‹Ž‚Á‚Ä‚Á‚Ä [Win]+[3]‰Ÿ‚·
-;   Clipboard‚É Class–¼‚ªƒRƒs[‚³‚ê‚éB“ü—Í‘‹/Œó•â‘‹ ‚»‚ê‚¼‚ê’²‚×‚éB
-;   ’²‚×‚½ƒNƒ‰ƒX–¼‚Í ³‹K•\Œ»‚É‚È‚¨‚µ‚Ä
-;      IME_GetConverting("A","“ü—Í‘‹ƒNƒ‰ƒX","Œó•â‘‹ƒNƒ‰ƒX")
-;   ‚Æ‚©‚â‚Á‚ÄŽg‚¤B(‚à‚µ‚­‚Í IME_GetConverting()‚Ì’†‚É’¼Ú’Ç‰Á‚·‚é)
+; IMEï¿½ï¿½ï¿½ÌƒNï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½ð’²‚×‚ï¿½eï¿½Xï¿½gï¿½ï¿½ï¿½[ï¿½`ï¿½ï¿½
+;   ï¿½ï¿½ï¿½ï¿½orï¿½ÏŠï¿½ï¿½ï¿½Ô‚ï¿½Imeï¿½ï¿½ï¿½Éƒ}ï¿½Eï¿½Xï¿½Jï¿½[ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ [Win]+[3]ï¿½ï¿½ï¿½ï¿½
+;   Clipboardï¿½ï¿½ Classï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½sï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Bï¿½ï¿½ï¿½Í‘ï¿½/ï¿½ï¿½â‘‹ ï¿½ï¿½ï¿½ê‚¼ï¿½ê’²ï¿½×‚ï¿½B
+;   ï¿½ï¿½ï¿½×‚ï¿½ï¿½Nï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Kï¿½\ï¿½ï¿½ï¿½É‚È‚ï¿½ï¿½ï¿½ï¿½ï¿½
+;      IME_GetConverting("A","ï¿½ï¿½ï¿½Í‘ï¿½ï¿½Nï¿½ï¿½ï¿½X","ï¿½ï¿½â‘‹ï¿½Nï¿½ï¿½ï¿½X")
+;   ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½ï¿½ÄŽgï¿½ï¿½ï¿½B(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IME_GetConverting()ï¿½Ì’ï¿½ï¿½É’ï¿½ï¿½Ú’Ç‰ï¿½ï¿½ï¿½ï¿½ï¿½)
 ;
-;   ‚ ‚ ‚     © “ü—Í‘‹‚Ìã‚É ƒ}ƒEƒXƒJ[ƒ\ƒ‹Ž‚Á‚Ä‚Á‚Ä [Win]+[3]‰Ÿ‚·
-;   PPP       Clipboard‚É Class–¼‚ªƒRƒs[‚³‚ê‚éB
-;                ¦ MS OfficeŒn‚ÌƒV[ƒ€ƒŒƒX“ü—Íó‘Ô‚Å‚ÍŽæ‚ê‚È‚¢‚Á‚Û‚¢
-;                   DetectHiddenWindows,ON‚Å‚àƒ_ƒBƒV[ƒ€ƒŒƒXOFF‚É‚µ‚È‚¢‚Æ–³—
+;   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½    ï¿½ï¿½ ï¿½ï¿½ï¿½Í‘ï¿½ï¿½Ìï¿½ï¿½ ï¿½}ï¿½Eï¿½Xï¿½Jï¿½[ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ [Win]+[3]ï¿½ï¿½ï¿½ï¿½
+;   ï¿½Pï¿½Pï¿½P       Clipboardï¿½ï¿½ Classï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½sï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½B
+;                ï¿½ï¿½ MS Officeï¿½nï¿½ÌƒVï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½Íï¿½Ô‚Å‚ÍŽï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½Û‚ï¿½
+;                   DetectHiddenWindows,ONï¿½Å‚ï¿½ï¿½_ï¿½ï¿½ï¿½Bï¿½Vï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½XOFFï¿½É‚ï¿½ï¿½È‚ï¿½ï¿½Æ–ï¿½ï¿½ï¿½
 ;
-;   ˆ¤
-;  |ˆ¤@@@| © Œó•â‘‹‚Ìã‚Éƒ}ƒEƒXƒJ[ƒ\ƒ‹Ž‚Á‚Ä‚Á‚Ä [Win]+[3]‰Ÿ‚·
-;  |ˆŸˆË@@|    Clipboard‚É Class–¼‚ªƒRƒs[‚³‚ê‚éB
-;  |‚ ‚¢@@|
-;  |—•@@@|
-;  |@F@@|
-;  PPPP
+;   ï¿½ï¿½
+;  |ï¿½ï¿½ï¿½@ï¿½@ï¿½@| ï¿½ï¿½ ï¿½ï¿½â‘‹ï¿½Ìï¿½Éƒ}ï¿½Eï¿½Xï¿½Jï¿½[ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ [Win]+[3]ï¿½ï¿½ï¿½ï¿½
+;  |ï¿½ï¿½ï¿½Ë@ï¿½@|    Clipboardï¿½ï¿½ Classï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½sï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½B
+;  |ï¿½ï¿½ï¿½ï¿½ï¿½@ï¿½@|
+;  |ï¿½ï¿½ï¿½@ï¿½@ï¿½@|
+;  |ï¿½@ï¿½Fï¿½@ï¿½@|
+;  ï¿½Pï¿½Pï¿½Pï¿½P
 ;------------------------------------------------------------------
 _ImeIsConvertingTest:
     _ImeTestClassCheck()
-return
+Return
 _ImeTestClassCheck()  {
     MouseGetPos,,,hwnd
     WinGetClass,Imeclass,ahk_id %hwnd%
     Clipboard := Imeclass
-    ;IME_GetConverting() “®ìƒ`ƒFƒbƒN & IME “ü—Í‘‹/Œó•â‘‹ Class–¼Šm”F
+    ;IME_GetConverting() ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N & IME ï¿½ï¿½ï¿½Í‘ï¿½/ï¿½ï¿½â‘‹ Classï¿½ï¿½ï¿½mï¿½F
     MsgBox,% Imeclass "`n" IME_GetConverting()
 }
-;--- í’“ƒeƒXƒgI—¹ [Shift]+[ESC] ---
+;--- ï¿½í’“ï¿½eï¿½Xï¿½gï¿½Iï¿½ï¿½ [Shift]+[ESC] ---
 _ImeTestExt:
 ExitApp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
 ;---------------------------------------------------------------------------
-;  ”Ä—pŠÖ” (‘½•ª‚Ç‚ÌIME‚Å‚à‚¢‚¯‚é‚Í‚¸)
+;  ï¿½Ä—pï¿½Öï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚ï¿½IMEï¿½Å‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í‚ï¿½)
 
 ;-----------------------------------------------------------
-; IME‚Ìó‘Ô‚ÌŽæ“¾
-;   WinTitle="A"    ‘ÎÛWindow
-;   –ß‚è’l          1:ON / 0:OFF
+; IMEï¿½Ìï¿½Ô‚ÌŽæ“¾
+;   WinTitle="A"    ï¿½Îï¿½Window
+;   ï¿½ß‚ï¿½l          1:ON / 0:OFF
 ;-----------------------------------------------------------
 IME_GET(WinTitle="A")  {
 	ControlGet,hwnd,HWND,,,%WinTitle%
@@ -144,7 +144,7 @@ IME_GET(WinTitle="A")  {
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
 
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x0005  ;wParam  : IMC_GETOPENSTATUS
@@ -152,10 +152,10 @@ IME_GET(WinTitle="A")  {
 }
 
 ;-----------------------------------------------------------
-; IME‚Ìó‘Ô‚ðƒZƒbƒg
+; IMEï¿½Ìï¿½Ô‚ï¿½ï¿½Zï¿½bï¿½g
 ;   SetSts          1:ON / 0:OFF
-;   WinTitle="A"    ‘ÎÛWindow
-;   –ß‚è’l          0:¬Œ÷ / 0ˆÈŠO:Ž¸”s
+;   WinTitle="A"    ï¿½Îï¿½Window
+;   ï¿½ß‚ï¿½l          0:ï¿½ï¿½ï¿½ï¿½ / 0ï¿½ÈŠO:ï¿½ï¿½ï¿½s
 ;-----------------------------------------------------------
 IME_SET(SetSts, WinTitle="A")    {
 	ControlGet,hwnd,HWND,,,%WinTitle%
@@ -167,7 +167,7 @@ IME_SET(SetSts, WinTitle="A")    {
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
 
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x006   ;wParam  : IMC_SETOPENSTATUS
@@ -175,28 +175,28 @@ IME_SET(SetSts, WinTitle="A")    {
 }
 
 ;===========================================================================
-; IME “ü—Íƒ‚[ƒh (‚Ç‚Ì IME‚Å‚à‹¤’Ê‚Á‚Û‚¢)
+; IME ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½h (ï¿½Ç‚ï¿½ IMEï¿½Å‚ï¿½ï¿½ï¿½ï¿½Ê‚ï¿½ï¿½Û‚ï¿½)
 ;   DEC  HEX    BIN
-;     0 (0x00  0000 0000) ‚©‚È    ”¼‰p”
-;     3 (0x03  0000 0011)         ”¼¶Å
-;     8 (0x08  0000 1000)         ‘S‰p”
-;     9 (0x09  0000 1001)         ‚Ð‚ç‚ª‚È
-;    11 (0x0B  0000 1011)         ‘SƒJƒ^ƒJƒi
-;    16 (0x10  0001 0000) ƒ[ƒ}Žš”¼‰p”
-;    19 (0x13  0001 0011)         ”¼¶Å
-;    24 (0x18  0001 1000)         ‘S‰p”
-;    25 (0x19  0001 1001)         ‚Ð‚ç‚ª‚È
-;    27 (0x1B  0001 1011)         ‘SƒJƒ^ƒJƒi
+;     0 (0x00  0000 0000) ï¿½ï¿½ï¿½ï¿½    ï¿½ï¿½ï¿½pï¿½ï¿½
+;     3 (0x03  0000 0011)         ï¿½ï¿½ï¿½ï¿½
+;     8 (0x08  0000 1000)         ï¿½Sï¿½pï¿½ï¿½
+;     9 (0x09  0000 1001)         ï¿½Ð‚ç‚ªï¿½ï¿½
+;    11 (0x0B  0000 1011)         ï¿½Sï¿½Jï¿½^ï¿½Jï¿½i
+;    16 (0x10  0001 0000) ï¿½ï¿½ï¿½[ï¿½}ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½
+;    19 (0x13  0001 0011)         ï¿½ï¿½ï¿½ï¿½
+;    24 (0x18  0001 1000)         ï¿½Sï¿½pï¿½ï¿½
+;    25 (0x19  0001 1001)         ï¿½Ð‚ç‚ªï¿½ï¿½
+;    27 (0x1B  0001 1011)         ï¿½Sï¿½Jï¿½^ï¿½Jï¿½i
 
-;  ¦ ’nˆæ‚ÆŒ¾Œê‚ÌƒIƒvƒVƒ‡ƒ“ - [Ú×] - Ú×Ý’è
-;     - Ú×‚ÈƒeƒLƒXƒgƒT[ƒrƒX‚ÌƒTƒ|[ƒg‚ðƒvƒƒOƒ‰ƒ€‚Ì‚·‚×‚Ä‚ÉŠg’£‚·‚é
-;    ‚ª ON‚É‚È‚Á‚Ä‚é‚Æ’l‚ªŽæ‚ê‚È‚¢–Í—l 
-;    (Google“ú–{Œê“ü—ÍƒÀ‚Í‚±‚±‚ðON‚É‚µ‚È‚¢‚Æ‘Ê–Ú‚È‚Ì‚Å’l‚ªŽæ‚ê‚È‚¢‚Á‚Û‚¢)
+;  ï¿½ï¿½ ï¿½nï¿½ï¿½ÆŒï¿½ï¿½ï¿½ÌƒIï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ - [ï¿½Úï¿½] - ï¿½Ú×Ý’ï¿½
+;     - ï¿½Ú×‚Èƒeï¿½Lï¿½Xï¿½gï¿½Tï¿½[ï¿½rï¿½Xï¿½ÌƒTï¿½|ï¿½[ï¿½gï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½×‚Ä‚ÉŠgï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+;    ï¿½ï¿½ ONï¿½É‚È‚ï¿½ï¿½Ä‚ï¿½Æ’lï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½Í—l 
+;    (Googleï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½ï¿½Íƒï¿½ï¿½Í‚ï¿½ï¿½ï¿½ï¿½ï¿½ONï¿½É‚ï¿½ï¿½È‚ï¿½ï¿½Æ‘Ê–Ú‚È‚Ì‚Å’lï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½Û‚ï¿½)
 
 ;-------------------------------------------------------
-; IME “ü—Íƒ‚[ƒhŽæ“¾
-;   WinTitle="A"    ‘ÎÛWindow
-;   –ß‚è’l          “ü—Íƒ‚[ƒh
+; IME ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½hï¿½æ“¾
+;   WinTitle="A"    ï¿½Îï¿½Window
+;   ï¿½ß‚ï¿½l          ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½h
 ;--------------------------------------------------------
 IME_GetConvMode(WinTitle="A")   {
 	ControlGet,hwnd,HWND,,,%WinTitle%
@@ -207,7 +207,7 @@ IME_GetConvMode(WinTitle="A")   {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x001   ;wParam  : IMC_GETCONVERSIONMODE
@@ -215,10 +215,10 @@ IME_GetConvMode(WinTitle="A")   {
 }
 
 ;-------------------------------------------------------
-; IME “ü—Íƒ‚[ƒhƒZƒbƒg
-;   ConvMode        “ü—Íƒ‚[ƒh
-;   WinTitle="A"    ‘ÎÛWindow
-;   –ß‚è’l          0:¬Œ÷ / 0ˆÈŠO:Ž¸”s
+; IME ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½hï¿½Zï¿½bï¿½g
+;   ConvMode        ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½h
+;   WinTitle="A"    ï¿½Îï¿½Window
+;   ï¿½ß‚ï¿½l          0:ï¿½ï¿½ï¿½ï¿½ / 0ï¿½ÈŠO:ï¿½ï¿½ï¿½s
 ;--------------------------------------------------------
 IME_SetConvMode(ConvMode,WinTitle="A")   {
 	ControlGet,hwnd,HWND,,,%WinTitle%
@@ -229,7 +229,7 @@ IME_SetConvMode(ConvMode,WinTitle="A")   {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283      ;Message : WM_IME_CONTROL
           ,  Int, 0x002       ;wParam  : IMC_SETCONVERSIONMODE
@@ -237,19 +237,19 @@ IME_SetConvMode(ConvMode,WinTitle="A")   {
 }
 
 ;===========================================================================
-; IME •ÏŠ·ƒ‚[ƒh (ATOK‚Íver.16‚Å’²¸Aƒo[ƒWƒ‡ƒ“‚Å‘½­ˆá‚¤‚©‚à)
+; IME ï¿½ÏŠï¿½ï¿½ï¿½ï¿½[ï¿½h (ATOKï¿½ï¿½ver.16ï¿½Å’ï¿½ï¿½ï¿½ï¿½Aï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½Å‘ï¿½ï¿½ï¿½ï¿½á‚¤ï¿½ï¿½ï¿½ï¿½)
 
-;   MS-IME  0:–³•ÏŠ· / 1:l–¼/’n–¼                    / 8:ˆê”Ê    /16:˜b‚µŒ¾—t
-;   ATOKŒn  0:ŒÅ’è   / 1:•¡‡Œê              / 4:Ž©“® / 8:˜A•¶ß
-;   WXG              / 1:•¡‡Œê  / 2:–³•ÏŠ·  / 4:Ž©“® / 8:˜A•¶ß
-;   SKKŒn            / 1:ƒm[ƒ}ƒ‹ (‘¼‚Ìƒ‚[ƒh‚Í‘¶Ý‚µ‚È‚¢H)
-;   GoogleƒÀ                                          / 8:ƒm[ƒ}ƒ‹
+;   MS-IME  0:ï¿½ï¿½ï¿½ÏŠï¿½ / 1:ï¿½lï¿½ï¿½/ï¿½nï¿½ï¿½                    / 8:ï¿½ï¿½ï¿½    /16:ï¿½bï¿½ï¿½ï¿½ï¿½ï¿½t
+;   ATOKï¿½n  0:ï¿½Å’ï¿½   / 1:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½              / 4:ï¿½ï¿½ï¿½ï¿½ / 8:ï¿½Aï¿½ï¿½ï¿½ï¿½
+;   WXG              / 1:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  / 2:ï¿½ï¿½ï¿½ÏŠï¿½  / 4:ï¿½ï¿½ï¿½ï¿½ / 8:ï¿½Aï¿½ï¿½ï¿½ï¿½
+;   SKKï¿½n            / 1:ï¿½mï¿½[ï¿½}ï¿½ï¿½ (ï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½hï¿½Í‘ï¿½ï¿½Ý‚ï¿½ï¿½È‚ï¿½ï¿½H)
+;   Googleï¿½ï¿½                                          / 8:ï¿½mï¿½[ï¿½}ï¿½ï¿½
 ;------------------------------------------------------------------
-; IME •ÏŠ·ƒ‚[ƒhŽæ“¾
-;   WinTitle="A"    ‘ÎÛWindow
-;   –ß‚è’l MS-IME  0:–³•ÏŠ· 1:l–¼/’n–¼               8:ˆê”Ê    16:˜b‚µŒ¾—t
-;          ATOKŒn  0:ŒÅ’è   1:•¡‡Œê           4:Ž©“® 8:˜A•¶ß
-;          WXG4             1:•¡‡Œê  2:–³•ÏŠ· 4:Ž©“® 8:˜A•¶ß
+; IME ï¿½ÏŠï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½æ“¾
+;   WinTitle="A"    ï¿½Îï¿½Window
+;   ï¿½ß‚ï¿½l MS-IME  0:ï¿½ï¿½ï¿½ÏŠï¿½ 1:ï¿½lï¿½ï¿½/ï¿½nï¿½ï¿½               8:ï¿½ï¿½ï¿½    16:ï¿½bï¿½ï¿½ï¿½ï¿½ï¿½t
+;          ATOKï¿½n  0:ï¿½Å’ï¿½   1:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½           4:ï¿½ï¿½ï¿½ï¿½ 8:ï¿½Aï¿½ï¿½ï¿½ï¿½
+;          WXG4             1:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  2:ï¿½ï¿½ï¿½ÏŠï¿½ 4:ï¿½ï¿½ï¿½ï¿½ 8:ï¿½Aï¿½ï¿½ï¿½ï¿½
 ;------------------------------------------------------------------
 IME_GetSentenceMode(WinTitle="A")   {
 	ControlGet,hwnd,HWND,,,%WinTitle%
@@ -260,7 +260,7 @@ IME_GetSentenceMode(WinTitle="A")   {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x003   ;wParam  : IMC_GETSENTENCEMODE
@@ -268,13 +268,13 @@ IME_GetSentenceMode(WinTitle="A")   {
 }
 
 ;----------------------------------------------------------------
-; IME •ÏŠ·ƒ‚[ƒhƒZƒbƒg
+; IME ï¿½ÏŠï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Zï¿½bï¿½g
 ;   SentenceMode
-;       MS-IME  0:–³•ÏŠ· 1:l–¼/’n–¼               8:ˆê”Ê    16:˜b‚µŒ¾—t
-;       ATOKŒn  0:ŒÅ’è   1:•¡‡Œê           4:Ž©“® 8:˜A•¶ß
-;       WXG              1:•¡‡Œê  2:–³•ÏŠ· 4:Ž©“® 8:˜A•¶ß
-;   WinTitle="A"    ‘ÎÛWindow
-;   –ß‚è’l          0:¬Œ÷ / 0ˆÈŠO:Ž¸”s
+;       MS-IME  0:ï¿½ï¿½ï¿½ÏŠï¿½ 1:ï¿½lï¿½ï¿½/ï¿½nï¿½ï¿½               8:ï¿½ï¿½ï¿½    16:ï¿½bï¿½ï¿½ï¿½ï¿½ï¿½t
+;       ATOKï¿½n  0:ï¿½Å’ï¿½   1:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½           4:ï¿½ï¿½ï¿½ï¿½ 8:ï¿½Aï¿½ï¿½ï¿½ï¿½
+;       WXG              1:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  2:ï¿½ï¿½ï¿½ÏŠï¿½ 4:ï¿½ï¿½ï¿½ï¿½ 8:ï¿½Aï¿½ï¿½ï¿½ï¿½
+;   WinTitle="A"    ï¿½Îï¿½Window
+;   ï¿½ß‚ï¿½l          0:ï¿½ï¿½ï¿½ï¿½ / 0ï¿½ÈŠO:ï¿½ï¿½ï¿½s
 ;-----------------------------------------------------------------
 IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
 	ControlGet,hwnd,HWND,,,%WinTitle%
@@ -285,7 +285,7 @@ IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283          ;Message : WM_IME_CONTROL
           ,  Int, 0x004           ;wParam  : IMC_SETSENTENCEMODE
@@ -294,43 +294,43 @@ IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
 
 
 ;---------------------------------------------------------------------------
-;  IME‚ÌŽí—Þ‚ð‘I‚Ô‚©‚à‚µ‚ê‚È‚¢ŠÖ”
+;  IMEï¿½ÌŽï¿½Þ‚ï¿½Iï¿½Ô‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½Öï¿½
 
 ;==========================================================================
-;  IME •¶Žš“ü—Í‚Ìó‘Ô‚ð•Ô‚·
-;  (ƒpƒNƒŠŒ³ : http://sites.google.com/site/agkh6mze/scripts#TOC-IME- )
-;    •W€‘Î‰žIME : ATOKŒn / MS-IME2002 2007 / WXG / SKKIME
-;    ‚»‚Ì‘¼‚ÌIME‚Í “ü—Í‘‹/•ÏŠ·‘‹‚ð’Ç‰ÁŽw’è‚·‚é‚±‚Æ‚Å‘Î‰ž‰Â”\
+;  IME ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í‚Ìï¿½Ô‚ï¿½Ô‚ï¿½
+;  (ï¿½pï¿½Nï¿½ï¿½ï¿½ï¿½ : http://sites.google.com/site/agkh6mze/scripts#TOC-IME- )
+;    ï¿½Wï¿½ï¿½ï¿½Î‰ï¿½IME : ATOKï¿½n / MS-IME2002 2007 / WXG / SKKIME
+;    ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ï¿½IMEï¿½ï¿½ ï¿½ï¿½ï¿½Í‘ï¿½/ï¿½ÏŠï¿½ï¿½ï¿½ï¿½ï¿½Ç‰ï¿½ï¿½wï¿½è‚·ï¿½é‚±ï¿½Æ‚Å‘Î‰ï¿½ï¿½Â”\
 ;
-;       WinTitle="A"   ‘ÎÛWindow
-;       ConvCls=""     “ü—Í‘‹‚ÌƒNƒ‰ƒX–¼ (³‹K•\Œ»•\‹L)
-;       CandCls=""     Œó•â‘‹‚ÌƒNƒ‰ƒX–¼ (³‹K•\Œ»•\‹L)
-;       –ß‚è’l      1 : •¶Žš“ü—Í’† or •ÏŠ·’†
-;                   2 : •ÏŠ·Œó•â‘‹‚ªo‚Ä‚¢‚é
-;                   0 : ‚»‚Ì‘¼‚Ìó‘Ô
+;       WinTitle="A"   ï¿½Îï¿½Window
+;       ConvCls=""     ï¿½ï¿½ï¿½Í‘ï¿½ï¿½ÌƒNï¿½ï¿½ï¿½Xï¿½ï¿½ (ï¿½ï¿½ï¿½Kï¿½\ï¿½ï¿½ï¿½\ï¿½L)
+;       CandCls=""     ï¿½ï¿½â‘‹ï¿½ÌƒNï¿½ï¿½ï¿½Xï¿½ï¿½ (ï¿½ï¿½ï¿½Kï¿½\ï¿½ï¿½ï¿½\ï¿½L)
+;       ï¿½ß‚ï¿½l      1 : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í’ï¿½ or ï¿½ÏŠï¿½ï¿½ï¿½
+;                   2 : ï¿½ÏŠï¿½ï¿½ï¿½â‘‹ï¿½ï¿½ï¿½oï¿½Ä‚ï¿½ï¿½ï¿½
+;                   0 : ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½Ìï¿½ï¿½
 ;
-;   ¦ MS-OfficeŒn‚Å “ü—Í‘‹‚ÌƒNƒ‰ƒX–¼ ‚ð³‚µ‚­Žæ“¾‚·‚é‚É‚ÍIME‚ÌƒV[ƒ€ƒŒƒX•\Ž¦‚ð
-;      OFF‚É‚·‚é•K—v‚ª‚ ‚é
-;      ƒIƒvƒVƒ‡ƒ“-•ÒW‚Æ“ú–{Œê“ü—Í-•ÒW’†‚Ì•¶Žš—ñ‚ð•¶‘‚É‘}“üƒ‚[ƒh‚Å“ü—Í‚·‚é
-;      ‚Ìƒ`ƒFƒbƒN‚ðŠO‚·
+;   ï¿½ï¿½ MS-Officeï¿½nï¿½ï¿½ ï¿½ï¿½ï¿½Í‘ï¿½ï¿½ÌƒNï¿½ï¿½ï¿½Xï¿½ï¿½ ï¿½ð³‚ï¿½ï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½ï¿½É‚ï¿½IMEï¿½ÌƒVï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½\ï¿½ï¿½ï¿½ï¿½
+;      OFFï¿½É‚ï¿½ï¿½ï¿½Kï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+;      ï¿½Iï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½-ï¿½ÒWï¿½Æ“ï¿½ï¿½{ï¿½ï¿½ï¿½ï¿½ï¿½-ï¿½ÒWï¿½ï¿½ï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½ð•¶ï¿½ï¿½É‘}ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Å“ï¿½ï¿½Í‚ï¿½ï¿½ï¿½
+;      ï¿½Ìƒ`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½Oï¿½ï¿½
 ;==========================================================================
 IME_GetConverting(WinTitle="A",ConvCls="",CandCls="") {
 
-    ;IME–ˆ‚Ì “ü—Í‘‹/Œó•â‘‹Classˆê—— ("|" ‹æØ‚è‚Å“K“–‚É‘«‚µ‚Ä‚¯‚ÎOK)
-    ConvCls .= (ConvCls ? "|" : "")                 ;--- “ü—Í‘‹ ---
-            .  "ATOK\d+CompStr"                     ; ATOKŒn
-            .  "|imejpstcnv\d+"                     ; MS-IMEŒn
+    ;IMEï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í‘ï¿½/ï¿½ï¿½â‘‹Classï¿½ê—— ("|" ï¿½ï¿½Ø‚ï¿½Å“Kï¿½ï¿½ï¿½É‘ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½OK)
+    ConvCls .= (ConvCls ? "|" : "")                 ;--- ï¿½ï¿½ï¿½Í‘ï¿½ ---
+            .  "ATOK\d+CompStr"                     ; ATOKï¿½n
+            .  "|imejpstcnv\d+"                     ; MS-IMEï¿½n
             .  "|WXGIMEConv"                        ; WXG
             .  "|SKKIME\d+\.*\d+UCompStr"           ; SKKIME Unicode
-            .  "|MSCTFIME Composition"              ; Google“ú–{Œê“ü—Í
+            .  "|MSCTFIME Composition"              ; Googleï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½ï¿½ï¿½
 
-    CandCls .= (CandCls ? "|" : "")                 ;--- Œó•â‘‹ ---
-            .  "ATOK\d+Cand"                        ; ATOKŒn
-            .  "|imejpstCandList\d+|imejpstcand\d+" ; MS-IME 2002(8.1)XP•t‘®
+    CandCls .= (CandCls ? "|" : "")                 ;--- ï¿½ï¿½â‘‹ ---
+            .  "ATOK\d+Cand"                        ; ATOKï¿½n
+            .  "|imejpstCandList\d+|imejpstcand\d+" ; MS-IME 2002(8.1)XPï¿½tï¿½ï¿½
             .  "|mscandui\d+\.candidate"            ; MS Office IME-2007
             .  "|WXGIMECand"                        ; WXG
             .  "|SKKIME\d+\.*\d+UCand"              ; SKKIME Unicode
-   CandGCls := "GoogleJapaneseInputCandidateWindow" ;Google“ú–{Œê“ü—Í
+   CandGCls := "GoogleJapaneseInputCandidateWindow" ;Googleï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	ControlGet,hwnd,HWND,,,%WinTitle%
 	if	(WinActive(WinTitle))	{
@@ -349,5 +349,5 @@ IME_GetConverting(WinTitle="A",ConvCls="",CandCls="") {
         :  WinExist("ahk_class " . ConvCls . " ahk_pid " pid) ? 1
         :  0
     SetTitleMatchMode, %tmm%
-    return ret
+    Return ret
 }

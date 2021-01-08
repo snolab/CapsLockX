@@ -12,7 +12,7 @@ FileEncoding, UTF-8
 global EnableSnoChordTyping := 0 ; 默认关
 IniRead, EnableSnoChordTyping, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping, %EnableSnoChordTyping%
 IniWrite, %EnableSnoChordTyping%, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping
-if(!EnableSnoChordTyping){
+if (!EnableSnoChordTyping){
     Return
 }
 
@@ -142,7 +142,7 @@ For _, Stage in StageList{
     For _, KeyName in Stage["lsKey"]{
         KeyName := StrReplace(KeyName, " ", "Space")
         ; 只有字母直接按下会不导致输入法上屏
-        if(AllowRewrite && InStr(AllowRewriteString, KeyName)){
+        if (AllowRewrite && InStr(AllowRewriteString, KeyName)){
             Hotkey, ~$%KeyName%, KeyDown
             Hotkey, ~$+%KeyName%, KeyDown
         }else{
@@ -173,7 +173,7 @@ snochorded_output_recored_keys(){
     ; Clean
     LastKeyDownTick := 0
     TypedKeys := ""
-    if(OutputChanged && OutputLength){
+    if (OutputChanged && OutputLength){
         ; OutputKey .= " "
         OutputKey := "{blind}" . OutputKey
         Loop, % lenTyped
@@ -181,7 +181,7 @@ snochorded_output_recored_keys(){
         ; send event is most stable
         SendEvent % OutputKey
     }
-    If(AppendSpace){
+    if (AppendSpace){
         SendEvent % " "
     }
 }
@@ -194,9 +194,9 @@ KeyDown:
     ThisKey := StrReplace(ThisKey, "+")
     ThisKey := StrReplace(ThisKey, "Space", " ")
 
-    if( LastKeyDownTick == 0
+    if ( LastKeyDownTick == 0
     || NowTick - LastKeyDownTick <= ChordIntervalThreshold){
-        if(SubStr(A_ThisHotkey, 1, 1)=="~"){
+        if (SubStr(A_ThisHotkey, 1, 1)=="~"){
             TypedKeys .= ThisKey
         }
     }else{
@@ -204,7 +204,7 @@ KeyDown:
     }
 
     For StageIndex, Stage in StageList{
-        if(Stage["objKeys"].HasKey(ThisKey)){
+        if (Stage["objKeys"].HasKey(ThisKey)){
             Stage["Pressed"] .= ThisKey
             Break
         }
@@ -215,7 +215,7 @@ Return
 KeyUp:
     snochorded_output_recored_keys()
     ; PressedKeys is only for debug
-    ; If(PressedKeys)
+    ; if (PressedKeys)
     ;     ToolTip % TypedKeys " | " PressedKeys "(" lenTyped ")" " => " OutputKey "("  OutputLength ")"
     ; PressedKeys := ""
 Return

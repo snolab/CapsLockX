@@ -67,18 +67,18 @@ TrayTip ,, % 0 || "asdf"
 ;     escapeCode := RegExReplace(escapeCode, "'", "\'")
 ;     escapeCode := RegExReplace(escapeCode, "\n", "\n")
 ;     escapeCode := RegExReplace(escapeCode, "\r", "\r")
-;     return "'" escapeCode "'"
+;     Return "'" escapeCode "'"
 ; }
 ; EvalJScript(code)
 ; {
 ;     ; 生成代码
 ;     quoted_code := EscapeAsJavascriptQuoted(code)
 ;     TrayTip, (quoted_code)
-;     ; realcode := "(function(){try{return eval(" . quoted_code .  ")}catch(e){return [...Object.keys(e).val]}})()"
+;     ; realcode := "(function(){try{Return eval(" . quoted_code .  ")}catch(e){Return [...Object.keys(e).val]}})()"
 ;     realcode := "typeof ([].map)"
 ;     ; 执行代码
 ;     JS := GetObjJScript()
 ;     re := JS.Eval(realcode)
 ;     ; ToolTip % code "`n" encoded_code "`n" realcode "`n" re
-;     return re
+;     Return re
 ; }

@@ -62,7 +62,7 @@ _ImeAutoExecuteSample:
     Hotkey,#3,_ImeIsConvertingTest
     Hotkey,+ESC,_ImeTestExt
     SetTimer,_ImeInfoTimer,ON
-return
+Return
 
 ;--- IME状態表示タイマ ---
 _ImeInfoTimer:
@@ -70,24 +70,24 @@ _ImeInfoTimer:
           .  "IME_GetConvMode		: " . IME_GetConvMode(_mhwnd())     . "`n"
           .  "IME_GetSentenceMode	: " . IME_GetSentenceMode(_mhwnd()) . "`n"
           .  "IME_GetConverting	: "     . IME_GetConverting(_mhwnd())
-return
+Return
 
 ;--- IME Get Test [Win]+[1] ---
 _ImeGetTest:
     MsgBox,% "IME_GET			: "     . IME_GET(_mhwnd())             . "`n"
           .  "IME_GetConvMode		: " . IME_GetConvMode(_mhwnd())     . "`n"
           .  "IME_GetSentenceMode	: " . IME_GetSentenceMode(_mhwnd()) . "`n"
-return
+Return
 ;--- IME Get Test [Win]+[2] ---
 _ImeSetTest:
     MsgBox,% "IME_SET			: "     . IME_SET(1,_mhwnd())             . "`n"
           .  "IME_SetConvMode		: " . IME_SetConvMode(0x08,_mhwnd())  . "`n"
           .  "IME_SetSentenceMode	: " . IME_SetSentenceMode(1,_mhwnd()) . "`n"
-return
+Return
 
 _mhwnd(){	;background test
 	MouseGetPos,x,,hwnd
-	return "ahk_id " . hwnd
+	Return "ahk_id " . hwnd
 }
 
 ;------------------------------------------------------------------
@@ -113,7 +113,7 @@ _mhwnd(){	;background test
 ;------------------------------------------------------------------
 _ImeIsConvertingTest:
     _ImeTestClassCheck()
-return
+Return
 _ImeTestClassCheck()  {
     MouseGetPos,,,hwnd
     WinGetClass,Imeclass,ahk_id %hwnd%
@@ -144,7 +144,7 @@ IME_GET(WinTitle="A")  {
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
 
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x0005  ;wParam  : IMC_GETOPENSTATUS
@@ -167,7 +167,7 @@ IME_SET(SetSts, WinTitle="A")    {
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
 
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x006   ;wParam  : IMC_SETOPENSTATUS
@@ -207,7 +207,7 @@ IME_GetConvMode(WinTitle="A")   {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x001   ;wParam  : IMC_GETCONVERSIONMODE
@@ -229,7 +229,7 @@ IME_SetConvMode(ConvMode,WinTitle="A")   {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283      ;Message : WM_IME_CONTROL
           ,  Int, 0x002       ;wParam  : IMC_SETCONVERSIONMODE
@@ -260,7 +260,7 @@ IME_GetSentenceMode(WinTitle="A")   {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283  ;Message : WM_IME_CONTROL
           ,  Int, 0x003   ;wParam  : IMC_GETSENTENCEMODE
@@ -285,7 +285,7 @@ IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
 		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
 	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
 	}
-    return DllCall("SendMessage"
+    Return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
           , UInt, 0x0283          ;Message : WM_IME_CONTROL
           ,  Int, 0x004           ;wParam  : IMC_SETSENTENCEMODE
@@ -349,5 +349,5 @@ IME_GetConverting(WinTitle="A",ConvCls="",CandCls="") {
         :  WinExist("ahk_class " . ConvCls . " ahk_pid " pid) ? 1
         :  0
     SetTitleMatchMode, %tmm%
-    return ret
+    Return ret
 }

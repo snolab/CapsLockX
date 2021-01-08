@@ -173,20 +173,20 @@ AnkiUnlock(x){
         Return True
     }
     $F1::
-        If(!添加截屏笔记())
+        if (!添加截屏笔记())
             Return
         SendEvent ^v
         Sleep 200
         SendEvent {Tab}
         Return
     $F2::
-        If(!添加截屏笔记())
+        if (!添加截屏笔记())
             Return
         SendEvent ^v
         Sleep 200
         SendEvent ^{Enter}
     $F3::
-        If(!添加截屏笔记())
+        if (!添加截屏笔记())
             Return
         SendEvent ^+o
         Return

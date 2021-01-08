@@ -9,7 +9,7 @@ GetCursorShape(){   ;获取光标特征码 by nnrxin
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
 
     if ( NumGet( PCURSORINFO, 4, "UInt")="0" ) ;当光标隐藏时，直接输出特征码为0
-        return, 0
+        Return, 0
     VarSetCapacity( ICONINFO, 20, 0) ;创建 结构-图标信息
     DllCall("GetIconInfo", "Ptr", NumGet(PCURSORINFO, 8), "Ptr", &ICONINFO)  ;获取 结构-图标信息
     VarSetCapacity( lpvMaskBits, 128, 0) ;创造 数组-掩图信息（128字节）
@@ -31,5 +31,5 @@ GetCursorShape(){   ;获取光标特征码 by nnrxin
     VarSetCapacity( ICONINFO, 0) ;清空 结构-图标信息
     VarSetCapacity( lpvMaskBits, 0)  ;清空 数组-掩图
     VarSetCapacity( lpvColorBits, 0)  ;清空 数组-色图
-    return, % MaskCode//2 . ColorCode  ;输出特征码
+    Return, % MaskCode//2 . ColorCode  ;输出特征码
 }

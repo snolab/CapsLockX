@@ -8,8 +8,9 @@
 ; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
-If(!CapsLockX)
+if (!CapsLockX)
     ExitApp
+
 
 AppendHelp("
 (
@@ -19,24 +20,29 @@ AppendHelp("
 | 单击右Ctrl | 相当于单击Menu键 |
 )")
 Return
-
 ; 专治 Surface 的残破键盘，合并右Ctrl与Menu键！
 ; 单击 Menu 键为 Menu 键功能，按住 Menu 键再按别的键则表现为 Ctrl 组合键
 $*AppsKey:: Send {Blind}{RControl Down}
 $*AppsKey Up::
-    If ("AppsKey" == A_PriorKey){
+    if ("AppsKey" == A_PriorKey) {
         Send {Blind}{RControl Up}{AppsKey}
-    }Else{
+    } else {
         Send {Blind}{RControl Up}
     }
 Return
 ~*RControl Up::
-    If ("RControl" == A_PriorKey) {
+    if ("RControl" == A_PriorKey) {
         Send {AppsKey}
     }
-Return 
+Return
 
-; Win+Alt+P 打开系统设定
+; Win+Alt+P 打开系统设定 (模拟 pause 键)
 $#!p::
     Send #{Pause}
 Return
+
+; 对于没有 Win 键的环境，用 2个分号一起按来模拟 Win 键
+*' Up:: Send {Blind}'
+*`; Up:: Send {Blind}`;
+' & `;:: LWin
+`; & ':: LWin

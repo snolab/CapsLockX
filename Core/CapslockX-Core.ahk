@@ -30,10 +30,8 @@ AskRunAsAdmin()
     if (!A_IsAdmin And !RegExMatch(full_command_line, " /restart(?!\S)")) {
         try {
             if A_IsCompiled {
-
                 Run *RunAs "%A_ScriptFullPath%" /restart, "%A_WorkingDir%"
-            }
-            Else{
+            } else {
                 Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", "%A_WorkingDir%"
             }
         }
@@ -41,7 +39,7 @@ AskRunAsAdmin()
     }
 }
 
-If(T_AskRunAsAdmin) {
+if (T_AskRunAsAdmin) {
     AskRunAsAdmin()
 }
 
@@ -61,7 +59,7 @@ global CapsLockPressTimestamp := 0
 UpdateCapsLockXMode()
 {
     CapsLockXMode := GetKeyState(T_CapsLockXKey, "P")
-    If(T_UseScrollLockLight) {
+    if (T_UseScrollLockLight) {
         CapsLockXMode |= GetKeyState("ScrollLock", "T") << 1
     }
     Return CapsLockXMode
@@ -70,14 +68,14 @@ UpdateCapsLockXMode()
 ; 根据当前模式，切换灯
 Menu, tray, icon, %T_SwitchTrayIconDefault%
 
-UpdateLight(){
+UpdateLight()
+{
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
     ; UpdateCapsCursor(1)
     if (NowLightState == LastLightState) {
         Return
     }
-    ; ToolTip testDDDD
-
+    
     if ( NowLightState && !LastLightState) {
         Menu, tray, icon, %T_SwitchTrayIconOn%
         if (T_SwitchSound && T_SwitchSoundOn) {
@@ -101,11 +99,9 @@ UpdateLight(){
         ; ToolTip test
         UpdateCapsCursor(NowLightState)
     }
-
     ; tips(CapsLockXMode)
     LastLightState := NowLightState
 }
-
 CapsLockXTurnOff()
 {
     CapsLockXMode &= ~CM_CapsLockX
@@ -121,10 +117,8 @@ CapsLockXTurnOn()
 
 ; Hotkey $*%T_CapsLockXKey%, CapsLockX_Dn
 ; Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
-
 Hotkey $*CapsLock, CapsLockX_Dn
 Hotkey $*CapsLock Up, CapsLockX_Up
-
 Hotkey $Space, CapsLockX_Dn
 Hotkey $Space Up, CapsLockX_Up
 
@@ -135,45 +129,45 @@ Hotkey $Space Up, CapsLockX_Up
 ; CapsLockX模式切换处理
 CapsLockX_Dn:
     lastCapsLockKey := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
-    ; ToolTip ,thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey%
-
-    if(A_PriorKey == "LAlt"){
+    ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey%
+    
+    if (A_PriorKey == "LAlt") {
         lastCapsLockKey =
-        Return
-    }
-    ; A_ThisHotkey == ("$*".T_CapsLockXKey) &&
-    if ( CapsLockPressTimestamp == 0){
-        CapsLockPressTimestamp := A_TickCount
-    }
-    ; 进入 Fn 模式
-    CapsLockXMode |= CM_FN
+    Return
+}
+; A_ThisHotkey == ("$*".T_CapsLockXKey) &&
+if ( CapsLockPressTimestamp == 0) {
+    CapsLockPressTimestamp := A_TickCount
+}
+; 进入 Fn 模式
+CapsLockXMode |= CM_FN
 
-    ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
-    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe") ){
-        ; || WinActive("SynergyDesk ahk_class SynergyDesk")
-        ; ) {
-        ; SendEvent, {CapsLock Down}
-        ; tooltip capslockx disabled
-        CapsLockXMode &= ~CM_FN
-        ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
-        ; TrayTip,, 当前在远程桌面中按下CapsLock
-        WinWaitNotActive, ; LAST_FOUND
-    }else{
-        ; SendInput, {CapsLock}
-    }
+; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
+if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe") ) {
+    ; || WinActive("SynergyDesk ahk_class SynergyDesk")
+    ; ) {
+    ; SendEvent, {CapsLock Down}
+    ; tooltip capslockx disabled
+    CapsLockXMode &= ~CM_FN
+    ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
+    ; TrayTip, , 当前在远程桌面中按下CapsLock
+    WinWaitNotActive, ; LAST_FOUND
+} else {
+    ; SendInput, {CapsLock}
+}
 
-    ; (20200809)长按显示帮助
-    if(A_PriorKey == lastCapsLockKey){
-        if( A_TickCount - CapsLockPressTimestamp > 1000){
-            CapslockXShowHelp(globalHelpInfo, 1, lastCapsLockKey)
-            KeyWait, %lastCapsLockKey%
-            ; KeyWait, CapsLock
-        }
-    }else{
-        ; KeyWait, %lastCapsLockKey% 
+; (20200809)长按显示帮助
+if (A_PriorKey == lastCapsLockKey) {
+    if ( A_TickCount - CapsLockPressTimestamp > 1000) {
+        CapslockXShowHelp(globalHelpInfo, 1, lastCapsLockKey)
+        KeyWait, %lastCapsLockKey%
+        ; KeyWait, CapsLock
     }
+} else {
+    ; KeyWait, %lastCapsLockKey%
+}
 
-    UpdateLight()
+UpdateLight()
 
 Return
 
@@ -181,32 +175,32 @@ CapsLockX_Up:
     CapsLockPressTimestamp := 0
     ; 退出 Fn 模式
     CapsLockXMode &= ~CM_FN
-
+    
     ; (20200629) 取消长按进入 CapslockX Mode 的功能，改为只要没有用作组合键都算切换 Capslock
-    ; if(T_CapsLockXKey =="CapsLock" && A_PriorKey == "CapsLock"){
-    if(A_PriorKey == "CapsLock"){
+    ; if (T_CapsLockXKey =="CapsLock" && A_PriorKey == "CapsLock"){
+    if (A_PriorKey == "CapsLock") {
         if (GetKeyState("CapsLock", "T")) {
             SetCapsLockState, Off
-        }else{
+        } else {
             SetCapsLockState, On
         }
     }
-    if(A_PriorKey == "Space") {
+    if (A_PriorKey == "Space") {
         Send {Space}
     }
-    ; if(A_PriorKey == "\")     Send \\
+    ; if (A_PriorKey == "\")     Send \\
     UpdateLight()
-
+    
     ; 限制在远程桌面里无法进入 Fn 模式，避免和远程桌面里的 CapsLockX 冲突
-    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe") ){
+    if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe") ) {
         ; || WinActive("SynergyDesk ahk_class SynergyDesk")) {
         ; SendEvent, {CapsLock Up}
         ; WinWaitNotActive, ahk_class TscShellContainerClass ahk_exe mstsc.exe
-
-        ; TrayTip,, 当前在远程桌面中弹起CapsLock
+        
+        ; TrayTip, , 当前在远程桌面中弹起CapsLock
         WinWaitNotActive, ; LAST_FOUND
     }
-
+    
     ; 轻按 CapsLock 切换 CapsLock 锁定（用来保留 CapsLock 键的原功能）
     ; if (A_PriorKey == "CapsLock" && CapsLockPressTimestamp){
     ;     dt := A_TickCount - CapsLockPressTimestamp
@@ -226,7 +220,7 @@ CapsLockX_Up:
     ; CapsLockX_FnActed := CapsLockX_FnActed || (A_PriorKey != T_CapsLockXKey && A_PriorKey != "Insert")
     ; if (!CapsLockX_FnActed) {
     ;     CapsLockXMode ^= CM_CapsLockX
-
+    
     ;     ; 限制在远程桌面里无法进入 CapsLockX 模式，避免和远程桌面里的 CapsLockX 冲突
     ;     if (WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")) {
     ;         CapsLockXMode &= ~CM_CapsLockX
@@ -237,8 +231,8 @@ CapsLockX_Up:
     lastCapsLockKey := ""
 Return
 
-#If CapsLockXMode
-
+#if CapsLockXMode
+    
 ; 显示使用方法，直接调用前面定义的函数
 /:: CapslockXShowHelp(globalHelpInfo, 1)
 
@@ -248,9 +242,9 @@ Return
 
 #if T_UseDoubleClickShiftAsCapsLock
     ; TODO
-
+    
 #if
-
+    
 ; 软重启键
 ; !F12:: Reload
 
@@ -258,11 +252,11 @@ Return
 ^!\::
     ; Run CapsLockX.ahk, %A_WorkingDir%
     Run CapsLockX.exe, %A_WorkingDir%
-ExitApp
+    ExitApp
 Return
 
-; 结束键
-^!+Delete:: ExitApp
+; 退出键、结束键
+^!+F12:: ExitApp
 
 ; *Insert:: GoSub CapsLockX_Dn
 ; *Insert Up:: GoSub CapsLockX_Up

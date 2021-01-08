@@ -30,7 +30,7 @@ DllCall("User32.dll\SendInput", "UInt", 1, "Ptr", &sendData, "UInt", cbSize)
 ;MsgBox, % sendData
 
 
-;    return, 0
+;    Return, 0
 
 
 ;MsgBox, % re

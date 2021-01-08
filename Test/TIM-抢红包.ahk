@@ -26,7 +26,7 @@ qianghongbao:
     dclr := 0xD13D4B
     PixelGetColor, clr, %cx%, %cy%, RGB
     ToolTip, %clr%
-    If(clr == dclr){
+    if (clr == dclr){
         MouseMove % cx, cy
         Click
         Sleep, 32

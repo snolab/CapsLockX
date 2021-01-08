@@ -38,9 +38,9 @@ global lastTick
 	tick := QPC()
 	seconds := dt(lastTick, tick)
 	lastTick := tick
-	if(seconds > 0){
+	if (seconds > 0){
 		speed := 1 / seconds
-		if(speed > 8){
+		if (speed > 8){
 			svy := 120 * (speed / 8)
 			ToolTip % svy+120
 			SendInput_MouseMsg(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
@@ -53,9 +53,9 @@ global lastTick
 	tick := QPC()
 	seconds := dt(lastTick, tick)
 	lastTick := tick
-	if(seconds > 0){
+	if (seconds > 0){
 		speed := 1 / seconds
-		if(speed > 8){
+		if (speed > 8){
 			svy := -120 * (speed / 8)
 			ToolTip % svy-120
 			SendInput_MouseMsg(0x0800, svy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
