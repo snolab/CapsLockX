@@ -148,7 +148,8 @@ ArrowTickerStop()
 ; *l:: Right
 
 ; ; ; 光标运动处理
- ArrowLeftPressed(){
+ArrowLeftPressed()
+{
     ArrowTickerStart()
     if (arrow_tl) {
         Return
@@ -163,7 +164,8 @@ ArrowTickerStop()
     SendEvent {Blind}{Left}
     Return
 }
-ArrowRightPressed(){
+ArrowRightPressed()
+{
     ArrowTickerStart()
     if (arrow_tr) {
         Return
@@ -178,7 +180,8 @@ ArrowRightPressed(){
     SendEvent {Blind}{Right}
     Return
 }
- ArrowUpPressed(){
+ArrowUpPressed()
+{
     ArrowTickerStart()
     if (arrow_tu) {
         Return
@@ -192,7 +195,8 @@ ArrowRightPressed(){
     SendArrowUp()
     Return
 }
- ArrowDownPressed(){
+ArrowDownPressed()
+{
     ArrowTickerStart()
     if (arrow_td) {
         Return
