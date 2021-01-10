@@ -39,7 +39,7 @@ QPF()
     Return QuadPart
 }
 ; 高性能计时器，精度能够达到微秒级，相比之下 A_Tick 的精度大概只有10几ms。
-QuerySeconds()
+SecondsGet()
 {
     DllCall("QueryPerformanceCounter", "Int64*", Counter)
     DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
@@ -54,26 +54,26 @@ sign(x)
 {
     Return x == 0 ? 0 : x > 0 ? 1 : -1
 }
-calcPos(t)
+PosCalc(t)
 {
-    Return sign( t  ) * Abs( 1 + t * t * A_ScreenWidth ) ; 2次
+    Return sign( t ) * Abs( 1 + t * t * A_ScreenWidth ) ; 2次
     ; Return sign( t ) * Abs( 1 + t * t * t * A_ScreenWidth ) ; 3次
     ; Return sign( t ) * ( 1 + ((Exp(Abs(t))-1)/(Exp(1)-1))  * A_ScreenWidth ) ; 指数
 }
-mTick:
+MouseTicker(){
     tNow := QPC()
     ; 计算用户操作时间, 计算 ADWS 键按下的时长及时长差 (秒)
     tda := dt(mtl, tNow), tdd := dt(mtr, tNow)
     tdw := dt(mtu, tNow), tds := dt(mtd, tNow)
-    
+
     ; 目标为 1 秒划过屏幕
     ; tdx *= 2, tdy *= 2
-    
+
     ; tdx := tdd - tda, tdy := tds - tdw
-    
-    _mtx := calcPos(tdd) - calcPos(tda)
-    _mty := calcPos(tds) - calcPos(tdw)
-    
+
+    _mtx := PosCalc(tdd) - PosCalc(tda)
+    _mty := PosCalc(tds) - PosCalc(tdw)
+
     ; 计算新坐标
     ; _mtx := tdx == 0 ? mtx : sign( tdx ) * Abs( 1 + tdx * tdx* tdx * A_ScreenWidth )
     ; _mty := tdy == 0 ? mty : sign( tdy ) * Abs( 1 + tdy * tdy* tdy * A_ScreenHeight )
@@ -88,36 +88,40 @@ mTick:
     ;     _mty := sign( tdy ) * Abs( 1 + tdy * tdy * tdy * A_ScreenHeight ) ; 3次
     ;     ; _mty := sign( tdy ) * ( 1 + ((Exp(Abs(tdy))-1)/(Exp(1)-1)) * A_ScreenWidth ) ;
     ; }
-    
+
     ; 计算坐标差值，取整
     mdx := (_mtx - mtx) | 0
     mdy := (_mty - mty) | 0
     ; 计算移动后的坐标
     mtx += mdx
     mty += mdy
-    QSeconds := QuerySeconds()
-    
+    QSeconds := SecondsGet()
+
     if (mdx || mdy ) {
         MouseMove(mdx, mdy)
         ; ToolTip, %tdx% %_mtx% %mtx% %mdx%
     }
+}
+
+MouseTicker:
+    MouseTicker()
 Return
 
-mTick()
+MouseTickerStart()
 {
-    SetTimer mTick, 0
+    SetTimer MouseTicker, 0
 }
 ; 只有开启CapsLockX模式能触发
 ; #If CapsLockXMode == CM_CapsLockX
 ; 鼠标运动处理
-*a:: mtl := (mtl ? mtl : QPC()), mTick()
-*d:: mtr := (mtr ? mtr : QPC()), mTick()
-*w:: mtu := (mtu ? mtu : QPC()), mTick()
-*s:: mtd := (mtd ? mtd : QPC()), mTick()
-*a Up:: mtl := 0, mTick()
-*d Up:: mtr := 0, mTick()
-*w Up:: mtu := 0, mTick()
-*s Up:: mtd := 0, mTick()
+*a:: mtl := (mtl ? mtl : QPC()), MouseTickerStart()
+*d:: mtr := (mtr ? mtr : QPC()), MouseTickerStart()
+*w:: mtu := (mtu ? mtu : QPC()), MouseTickerStart()
+*s:: mtd := (mtd ? mtd : QPC()), MouseTickerStart()
+*a Up:: mtl := 0, MouseTickerStart()
+*d Up:: mtr := 0, MouseTickerStart()
+*w Up:: mtu := 0, MouseTickerStart()
+*s Up:: mtd := 0, MouseTickerStart()
 
 ; ; 鼠标滚轮处理
 ; r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()

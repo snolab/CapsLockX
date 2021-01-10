@@ -13,12 +13,12 @@
 AppendHelp( "
 (
 模拟鼠标
-| CapsLockX + w a s d | 鼠标移动（上下左右）    |
-| CapsLockX + r f     | 垂直滚轮（上下）        |
-| CapsLockX + R F     | 水平滚轮（左右）        |
-| CapsLockX + rf      | rf 同时按相当于鼠标中键 |
-| CapsLockX + e       | 鼠标左键                |
-| CapsLockX + q       | 鼠标右键                |
+| CapsLockX + w a s d | 鼠标移动（上下左右） |
+| CapsLockX + r f | 垂直滚轮（上下） |
+| CapsLockX + R F | 水平滚轮（左右） |
+| CapsLockX + rf | rf 同时按相当于鼠标中键 |
+| CapsLockX + e | 鼠标左键 |
+| CapsLockX + q | 鼠标右键 |
 )")
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
@@ -56,7 +56,6 @@ CursorShapeChangedQ(){
     lA_Cursor := GetCursorHandle()
     Return 1
 }
-
 
 sign(v){
     Return v == 0 ? 0 : (v > 0 ? 1 : -1)
@@ -109,7 +108,7 @@ SendInput_MouseMoveR64(x, y){
     NumPut(1 , sendData, 16, "UShort")
     DllCall("SendInput", "UShort", 1, "Point", sendData, "UShort", 28)
     */
-    
+
     cbSize := 24 + A_PtrSize
     VarSetCapacity(sendData, cbSize, 0) ; INPUT OBJECT
     NumPut(0, sendData, 0, "UInt")
@@ -128,7 +127,7 @@ SendInput_MouseMoveR64(x, y){
     a4 := NumGet(sendData, 16, "UInt")
     a5 := NumGet(sendData, 20, "UInt")
     a6 := NumGet(sendData, 24, "UInt")
-    
+
     ret := DllCall("SendInput", "UInt", 1, "Int", 0, "Int", cbSize, "Int")
     ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
@@ -158,7 +157,7 @@ SendInput_MouseMoveR64(x, y){
 ;     }
 ; Return
 
-mouseTicker:
+MouseTicker(){
     ; 在非 CapsLockX 模式下直接停止
     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
@@ -173,17 +172,16 @@ mouseTicker:
         max := ma(tdd - tda) * 0.5 ; * TMouse_MouseSpeedRatio
         may := ma(tds - tdw) * 0.5 ; * TMouse_MouseSpeedRatio
     }
-    
+
     ; ; 摩擦力不阻碍用户意志
     mvx := Friction(mvx + max, max), mvy := Friction(mvy + may, may)
-    
+
     ; 实际移动需要约化
     mdx += mvx, mdy += mvy
-    
+
     if ( mvx == 0 && mvy == 0){
         ; 完成移动，退出定时
-        mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
-        SetTimer, mouseTicker, Off
+        MouseTickerStop()
         Return
     }
 
@@ -191,7 +189,7 @@ mouseTicker:
     If (TMouse_StopAtScreenEdge) {
         MouseGetPos, xa, ya
     }
-    
+
     If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
     {
         SendInput_MouseMoveR32(mdx, mdy)
@@ -200,7 +198,7 @@ mouseTicker:
         MouseMove, %mdx%, %mdy%, 0, R
         mdx -= mdx | 0, mdy -= mdy | 0
     }
-    
+
     ; 撞到屏幕边角就停下来
     If (TMouse_StopAtScreenEdge){
         If(xa == xb)
@@ -209,14 +207,14 @@ mouseTicker:
             mvy := 0
         xb := xa, yb := ya
     }
-    
+
     ; 对区域切换粘附
     ; 放在 MouseMove 后面是粘附的感觉
     ; 放在它前面是撞到东西的感觉
     If(TMouse_StickyCursor And CursorShapeChangedQ()){
         mvx := 0, mvy := 0
     }
-    
+
     ; 对屏幕边角用力穿透，并粘附( 必须放 MouseMove 下面 )
     ; 此设定与StopAtScreenEdge不兼容
     ; If(max And Abs(mvx) > 80 And xa == xb){
@@ -239,13 +237,22 @@ mouseTicker:
     ; }
     ; mvx := 0, mvy := 0
     ; }
-    
-Return
+}
 
 ; 时间处理
-mTick(){
-    SetTimer, mouseTicker, 0
+MouseTickerStart(){
+    SetTimer, MouseTicker, 0
 }
+
+MouseTickerStop(){
+    mtl := 0, mtr := 0, mtu := 0, mtd := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+    SetTimer, MouseTicker, Off
+}
+
+
+MouseTicker:
+    MouseTicker()
+Return
 
 Pos2Long(x, y) {
     Return x | (y << 16)
@@ -255,34 +262,34 @@ ScrollMsg2(msg, zDelta){
     MouseGetPos, mouseX, mouseY, wid, fcontrol
     wParam := zDelta << 16 ;zDelta
     lParam := Pos2Long(mouseX, mouseY)
-    
+
     If(GetKeyState("Shift","p"))
         wParam := wParam | 0x4
     If(GetKeyState("Ctrl","p"))
         wParam := wParam | 0x8
-    
+
     PostMessage, msg, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
 }
 
 ScrollMsg(msg, zDelta){
     wParam := zDelta << 16
-    
+
     MouseGetPos,,,, ControlClass2, 2
     MouseGetPos,,,, ControlClass3, 3
-    
+
     if (A_Is64bitOS)
         ControlClass1 := DllCall( "WindowFromPoint", "int64", m_x | (m_y << 32), "Ptr")
     Else
         ControlClass1 := DllCall("WindowFromPoint", "int", m_x, "int", m_y)
-    
+
     ;Detect modifer keys held down (only Shift and Control work)
     If(GetKeyState("Shift", "p"))
         wParam := wParam | 0x4
     If(GetKeyState("Ctrl", "p"))
         wParam := wParam | 0x8
-    
+
     ; MsgBox, %ControlClass1% "\" %ControlClass2% "\" %ControlClass3%
-    
+
     If(ControlClass2 == ""){
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass1%
     }Else{
@@ -292,7 +299,11 @@ ScrollMsg(msg, zDelta){
     }
 }
 ; 滚轮运动处理
-scrollTicker:
+ScrollTicker:
+    ScrollTicker()
+Return
+ScrollTicker(){
+
     ; RF同时按下相当于中键
     If(GetKeyState("MButton", "P")){
         If(scroll_tu == 0 And scroll_td == 0){
@@ -308,7 +319,7 @@ scrollTicker:
         }
         Return
     }
-    
+
     ; 在非CapsLockX模式下停止
     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0
@@ -326,19 +337,19 @@ scrollTicker:
     ; 计算速度
     lastsvy := scroll_vy
     lastsvx := scroll_vx
-    
+
     scroll_vy := Friction(scroll_vy + say, say), scroll_vx := Friction(scroll_vx + sax, sax)
-    
+
     ; tooltip %scroll_tu%`n%scroll_td%`n%scroll_tl%`n%scroll_tr%`n%scroll_vx%`n%scroll_vy%`n%scroll_dx%`n%scroll_dy%
-    
+
     if ( scroll_vy == 0 && scroll_vx == 0){
         ; 完成滚动，退出定时
         ; tooltip Done
         scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0, scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
-        SetTimer, scrollTicker, Off
+        SetTimer, ScrollTicker, Off
         Return
     }
-    
+
     scroll_dy+= scroll_vy, scroll_dx += scroll_vx
     ; 处理移动
     If ((scroll_dy|0) != 0) {
@@ -355,14 +366,12 @@ scrollTicker:
             ScrollMsg2(0x20E, scroll_dx) ; 在64位下用的是低性能的……
         scroll_dx -= scroll_dx | 0
     }
-Return
-
-; 时间处理
-sTick(){
-    SetTimer, scrollTicker, 0
 }
 
-
+; 时间处理
+ScrollTickerStart(){
+    SetTimer, ScrollTicker, 0
+}
 
 ; CapsLockX和fn模式都能触发
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
@@ -387,26 +396,27 @@ Return
 ; 只有开启CapsLockX模式能触发
 ; #If CapsLockXMode == CM_CapsLockX
 ; 鼠标运动处理
-*a:: mtl := (mtl ? mtl : QPC()), mTick()
-*d:: mtr := (mtr ? mtr : QPC()), mTick()
-*w:: mtu := (mtu ? mtu : QPC()), mTick()
-*s:: mtd := (mtd ? mtd : QPC()), mTick()
-*a Up:: mtl := 0, mTick()
-*d Up:: mtr := 0, mTick()
-*w Up:: mtu := 0, mTick()
-*s Up:: mtd := 0, mTick()
+*a:: mtl := (mtl ? mtl : QPC()), MouseTickerStart()
+*d:: mtr := (mtr ? mtr : QPC()), MouseTickerStart()
+*w:: mtu := (mtu ? mtu : QPC()), MouseTickerStart()
+*s:: mtd := (mtd ? mtd : QPC()), MouseTickerStart()
+*a Up:: mtl := 0, MouseTickerStart()
+*d Up:: mtr := 0, MouseTickerStart()
+*w Up:: mtu := 0, MouseTickerStart()
+*s Up:: mtd := 0, MouseTickerStart()
 
 ; 鼠标滚轮处理
 r::
-    scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
+    scroll_tu := (scroll_tu ? scroll_tu : QPC()), ScrollTickerStart()
     ; KeyWait, r
-    Return
+Return
+
 f::
-    scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
+    scroll_td := (scroll_td ? scroll_td : QPC()), ScrollTickerStart()
     ; KeyWait, f
-    Return
-r Up:: scroll_tu := 0, sTick()
-f Up:: scroll_td := 0, sTick()
+Return
+r Up:: scroll_tu := 0, ScrollTickerStart()
+f Up:: scroll_td := 0, ScrollTickerStart()
 
 ; 单格滚动
 !r:: Send {WheelUp}
@@ -418,13 +428,13 @@ f Up:: scroll_td := 0, sTick()
 ^r:: Send ^{WheelUp}
 ^f:: Send ^{WheelDown}
 
-; ^r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), sTick()
-; ^f:: scroll_td := (scroll_td ? scroll_td : QPC()), sTick()
-; ^r Up:: scroll_tu := 0, sTick()
-; ^f Up:: scroll_td := 0, sTick()
+; ^r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), ScrollTickerStart()
+; ^f:: scroll_td := (scroll_td ? scroll_td : QPC()), ScrollTickerStart()
+; ^r Up:: scroll_tu := 0, ScrollTickerStart()
+; ^f Up:: scroll_td := 0, ScrollTickerStart()
 
 ; 横向滚动
-+r:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), sTick()
-+f:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), sTick()
-+r Up:: scroll_tl := 0, sTick()
-+f Up:: scroll_tr := 0, sTick()
++r:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), ScrollTickerStart()
++f:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), ScrollTickerStart()
++r Up:: scroll_tl := 0, ScrollTickerStart()
++f Up:: scroll_tr := 0, ScrollTickerStart()
