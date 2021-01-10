@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "CapsLockX",
+			"problemMatcher": [],
+			"label": "npm: CapsLockX",
+			"detail": "CapsLockX.exe",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}
