@@ -1,7 +1,6 @@
 *.sublime-*
 *.ini
 *.zip
-/.vscode
 *.bak
 *.user.ahk
 *.user.md
