@@ -64,8 +64,8 @@ RunSilent(command) {
 }
 
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
-	!Up:: RunSilent("模块\雪星转屏.exe =0")
-	!Left:: RunSilent("模块\雪星转屏.exe =90")
-	!Down:: RunSilent("模块\雪星转屏.exe =180")
-	!Right:: RunSilent("模块\雪星转屏.exe =270")
+	!Up:: RunSilent(%CapsLockX_PathModules% "/雪星转屏.exe =0")
+	!Left:: RunSilent(%CapsLockX_PathModules% "/雪星转屏.exe =90")
+	!Down:: RunSilent(%CapsLockX_PathModules% "/雪星转屏.exe =180")
+	!Right:: RunSilent(%CapsLockX_PathModules% "/雪星转屏.exe =270")
 
