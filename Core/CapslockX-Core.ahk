@@ -23,26 +23,6 @@ global lastCapsLockKey
 global CapslockXConfigPath := "./CapsLockX-Config.ini"
 #Include CapsLockX-Settings.ahk
 
-; 管理员模式运行
-AskRunAsAdmin()
-{
-    full_command_line := DllCall("GetCommandLine", "str")
-    if (!A_IsAdmin And !RegExMatch(full_command_line, " /restart(?!\S)")) {
-        try {
-            if A_IsCompiled {
-                Run *RunAs "%A_ScriptFullPath%" /restart, "%A_WorkingDir%"
-            } else {
-                Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", "%A_WorkingDir%"
-            }
-        }
-        ExitApp
-    }
-}
-
-if (T_AskRunAsAdmin) {
-    AskRunAsAdmin()
-}
-
 ; 模式处理
 global CapsLockX := 1 ; 模块运行标识符
 global CapsLockXMode := 0

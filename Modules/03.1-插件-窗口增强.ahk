@@ -197,11 +197,11 @@ GetMonitorIndexFromWindow(hWnd)
             }
         }
     }
-    if (monitorIndex){
+    if (monitorIndex) {
         Return %monitorIndex%
     }
     monitorIndex := GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
-    if (monitorIndex){
+    if (monitorIndex) {
         Return %monitorIndex%
     }
     Return 1
@@ -241,13 +241,13 @@ ArrangeWindows(arrangeFlags = "0")
             ; if (style & WS_EX_TOOLWINDOW)
             ;     Continue
             ; 只显示Alt+TAB里有的窗口
-            if (!(style & WS_EX_APPWINDOW)){
+            if (!(style & WS_EX_APPWINDOW)) {
                 Continue ; ; 跳过弹出窗口
             }
             ; if (style & WS_POPUP)
             ;     Continue
             ; 排除空标题窗口
-            if (!RegExMatch(this_title, ".+")){
+            if (!RegExMatch(this_title, ".+")) {
                 Continue ; If (this_class == "Progman") ; Continue ; 排除 Win10 的常驻窗口管理器
             }
             ; 排除不归属于当前参数显示器的窗口
@@ -328,6 +328,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
+    ; AreaH /= 2
     ; TrayTip DEBUG Area, %AreaX% %AreaY% %AreaW% %AreaH%
     ; calc rows and cols
     ; shorten edge first
@@ -347,7 +348,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
         
-        ; long edge first
+        ; 同一进程窗口长边优先排列
         if (AreaW >= AreaH) {
             ; row first
             nx := Mod(k, col)
@@ -361,12 +362,12 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         y := AreaY + ny * size_y
         
         ; 填满窗口间的缝隙
-        x:=x-8, y:=y, w:=size_x+16, h:=size_y+8
+        x:= x-8, y:=y, w:=size_x+16, h:=size_y+8
         
-        if (n <= 4 ) {
-            ; msgbox, , , x%x% y%y% w%w% h%h% `n X%AreaX% Y%AreaY% W%AreaW% H%AreaH%
-        }
-        ;
+        ; 左上角不要出界，否则不同DPI的显示器连接处宽度计算不正常
+        x:=max(x, AreaX)
+        y:=max(y, AreaY)
+        
         FastResizeWindow(hWnd, x, y, w, h)
         k+=1
     }
