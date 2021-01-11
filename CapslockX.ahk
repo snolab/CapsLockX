@@ -81,7 +81,7 @@ UpdateModulesHelp(sourceREADME, docs="")
         ModuleHelp := Trim(ModuleHelp, " `t`n")
         LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
         
-        help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n"
+        help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n`n"
         ; 替换标题层级
         ModuleHelp := RegExReplace(ModuleHelp, "m)^#", "###")
         
