@@ -8,5 +8,6 @@
 _config.yaml
 /AutoHotKey/
 /docs/README.html
+*.nupkg
 # Test/
 # Settings/
