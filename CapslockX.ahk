@@ -102,11 +102,12 @@ UpdateModulesHelp(sourceREADME, docs="")
         ;     ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./" CapsLockX_PathModules " /$2 ")
         ; }
         
+        ; 没有标题的，给自动加标题
         if (!RegExMatch(ModuleHelp, "^#")) {
             if (T%ModuleName%_Disabled) {
-                help .=  "`n" "### " ModuleName "模块（禁用）" "`n"
+                help .=  "### " ModuleName "模块（禁用）" "`n"
             } else {
-                help .=  "`n" "### " ModuleName "模块" "`n"
+                help .=  "### " ModuleName "模块" "`n"
             }
         }
         help .= ModuleHelp "`n`n"
