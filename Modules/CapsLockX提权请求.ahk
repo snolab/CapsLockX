@@ -17,6 +17,6 @@ AskRunAsAdmin()
                 Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", "%A_WorkingDir%"
             }
         }
-        ExitApp
+        ; ExitApp
     }
 }

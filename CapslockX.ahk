@@ -229,7 +229,7 @@ if (target != source) {
 global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
 
 ; 运行核心
-Send ^!+{Delete} ; 把之前的实例关了
+Send ^!+\ ; 用热键把之前的实例关了
 
 Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 
