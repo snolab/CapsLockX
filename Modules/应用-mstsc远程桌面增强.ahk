@@ -1,9 +1,8 @@
-﻿
-if !CapsLockX
+﻿if !CapsLockX
     ExitApp
 global last_mstsc := 0
 
-; ; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
+; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
 ; SetTimer, toggleBottomOrTop, 1
 ; SetTimer, DetectMSTSC, 1000
 Return

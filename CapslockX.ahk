@@ -13,6 +13,10 @@
 
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
+
+SendMode Event
+SetWorkingDir, %A_ScriptDir% ; 一定要在#Include前
+
 #Include CapsLockX-Settings.ahk
 Process Priority, , High     ; 脚本高优先级
 
