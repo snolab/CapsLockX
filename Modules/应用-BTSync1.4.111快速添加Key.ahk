@@ -9,13 +9,15 @@ Return
     ; 添加一条带Key目录
     ; 例如 C:\Users\snomiao\同步\神key#BCWHZRSLANR64CGPTXRE54ENNSIUE5SMO
     ; 这样格式命名的文件夹会自动拆出Key来填到软件里
-
-    ; CoordMode, Mouse, Screen
+    
+    CoordMode, Mouse, Screen
+    CoordMode, Pixel, Screen
     ; TrayTip 添加一条带Key目录（如未成功，请把鼠标指向设置图标）
     WinGetPos, X, Y, W, H, A
     ClickX := X + W - 50
     ClickY := Y + 80
     ; MouseMove, %ClickX%, %ClickY%
+
     MouseClick, Left, %ClickX%, %ClickY%
     Sleep 100
     Send {Tab}{Tab}{Enter}
@@ -23,4 +25,23 @@ Return
     Send ^v^{Left}+{Home}{Del}{Tab}{Enter}
     Sleep 400
     Send ^v{Enter}{Enter}
+Return
+
+!s::
+    CoordMode, Mouse, Screen
+    CoordMode, Pixel, Screen
+    ; 目录和key分开
+    ; 例如 C:\Users\snomiao\同步\雪星项目 AXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    ; WinGetPos, X, Y, W, H, A
+    ; ClickX := X + W - 50
+    ; ClickY := Y + 80
+
+    MouseClick, Left
+    Sleep 100
+    Send {Tab}{Tab}{Enter}
+    Sleep 600
+    Send ^v^{Left}+{Home}{Del}{Tab}{Enter}
+    Sleep 400
+    Send ^v^{Left}{Left}+{End}{Del}
+    Send {Enter}{Enter}
 Return
