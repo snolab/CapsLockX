@@ -1,5 +1,5 @@
 ﻿
-if (!CapsLockX)
+if !CapsLockX
     ExitApp
 global last_mstsc := 0
 
@@ -40,13 +40,13 @@ DetectMSTSC()
         HWND_BOTTOM := 1
         WinRestore, ahk_id %hWnd%
         ; DllCall("SetWindowPos"
-        ; , "UInt", hWnd ;handle
-        ; , "UInt", HWND_BOTTOM ; z-index
-        ; , "Int", X
-        ; , "Int", Y
-        ; , "Int", W
-        ; , "Int", H
-        ; , "UInt", SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
+        ;, "UInt", hWnd ;handle
+        ;, "UInt", HWND_BOTTOM ; z-index
+        ;, "Int", X
+        ;, "Int", Y
+        ;, "Int", W
+        ;, "Int", H
+        ;, "UInt", SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
         msg .= "MOVE!`n"
     }
     ToolTip %msg%
@@ -72,19 +72,13 @@ DetectMSTSC()
 ; 左右Alt一起按 显示当前mstsc窗口
 mstscShow()
 {
-    
     TrayTip, , 远程桌面显示, 1
-    ; 前置当前mstsc窗口
-    ; WinGet, last_mstsc
-    ; WinGet, OutputVar [, Cmd, ahk_class TscShellContainerClass ahk_exe mstsc.exe
+    ; try to 获取当前mstsc窗口
+    if !last_mstsc
+        WinGet, last_mstsc, , ahk_class TscShellContainerClass ahk_exe mstsc.exe
     WinRestore, ahk_id %last_mstsc%
     WinSet, Top, , ahk_id %last_mstsc%
-    ; WinShow, ahk_id %last_mstsc%
-    
-    ; WinGet, last_mstsc
     WinActivate ahk_id %last_mstsc%
-    ; WinSet, TopMost, , ahk_id %last_mstsc%
-    ; WinMinimizeAllUndo
 }
 mstscHide()
 {

@@ -8,7 +8,7 @@
 ; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
-if (!CapsLockX)
+if !CapsLockX
     ExitApp
 
 

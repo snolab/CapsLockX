@@ -9,7 +9,7 @@
 ; 
 ; save as utf8 with bom
 
-if (!CapsLockX)
+if !CapsLockX
     ExitApp
 
 #Include Modules/WinClip/WinClipAPI.ahk

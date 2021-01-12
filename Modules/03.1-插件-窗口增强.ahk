@@ -10,7 +10,7 @@
 ;
 ; Exit if running without CapsLockX
 ;
-if (!CapsLockX)
+if !CapsLockX
     ExitApp
 
 ; #If WinActive("ahk_class MultitaskingViewFrame")

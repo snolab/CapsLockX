@@ -22,7 +22,7 @@
 ; [PowerShell Gallery | VirtualDesktop.ps1 1.1.0]( https://www.powershellgallery.com/packages/VirtualDesktop/1.1.0/Content/VirtualDesktop.ps1 )
 ; [Windows 10 の仮想デスクトップを制御しようとして失敗した話 | grabacr.nét]( http://grabacr.net/archives/5601 )
 
-if (!CapsLockX)
+if !CapsLockX
     ExitApp
 
 Return

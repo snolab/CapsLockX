@@ -1,5 +1,5 @@
 ﻿#SingleInstance, Force
-if (!CapsLockX)
+if !CapsLockX
     ExitApp
 Return
 
