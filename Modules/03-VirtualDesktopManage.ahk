@@ -9,9 +9,9 @@
 ; ========== CapsLockX ==========
 ;
 ; ref list:
-; 
+;
 ; ahk forum:
-; [[Windows 10] Switch to different virtual desktop on Win+{1,9} - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?t=14881 )
+; [[Windows 10] Switch to different virtual desktop on Win+{1, 9} - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?t=14881 )
 ; [How to call a Win32 API with UUID [IVirtualDesktopManager] - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?t=54202 )
 
 ; m$:
@@ -28,14 +28,8 @@ if !CapsLockX
 Return
 
 ; Define hotkeys
-#If CapsLockXMode == CM_CAPSX || CapsLockXMode == CM_FN
-    
-; Add or delete desktop
--:: SendInput ^#{F4}
-=:: SendInput ^#d
-; Move current window to new desktop
-+=:: MoveActiveWindowWithAction("^#d")
 
+#if CapsLockXMode && ExtraVirtualDesktopManageFunction
 ; Switch desktop left and right
 [:: SendInput ^#{Left}
 ]:: SendInput ^#{Right}
@@ -43,6 +37,14 @@ Return
 ; Move the current window to the left or right desktop
 +[:: MoveActiveWindowWithAction("^#{Left}")
 +]:: MoveActiveWindowWithAction("^#{Right}")
+
+#if CapsLockXMode
+    
+; Add or delete desktop
+-:: SendInput ^#{F4}
+=:: SendInput ^#d
+; Move current window to new desktop
++=:: MoveActiveWindowWithAction("^#d")
 
 ; Switch to desktop
 1:: SwitchToDesktop(1)
@@ -75,8 +77,8 @@ Return
 [Guid("FF72FFDD-BE7E-43FC-9C03-AD81681E88E4")]
 internal interface IVirtualDesktop
 {
-    bool IsViewVisible(IApplicationView view);
-    Guid GetId();
+bool IsViewVisible(IApplicationView view);
+Guid GetId();
 }
 
 [ComImport]
@@ -84,17 +86,17 @@ internal interface IVirtualDesktop
 [Guid("F31574D6-B682-4CDC-BD56-1827860ABEC6")]
 internal interface IVirtualDesktopManagerInternal
 {
-    int GetCount();
-    void MoveViewToDesktop(IApplicationView view, IVirtualDesktop desktop);
-    bool CanViewMoveDesktops(IApplicationView view);
-    IVirtualDesktop GetCurrentDesktop();
-    void GetDesktops(out IObjectArray desktops);
-    [PreserveSig]
-    int GetAdjacentDesktop(IVirtualDesktop from, int direction, out IVirtualDesktop desktop);
-    void SwitchDesktop(IVirtualDesktop desktop);
-    IVirtualDesktop CreateDesktop();
-    void RemoveDesktop(IVirtualDesktop desktop, IVirtualDesktop fallback);
-    IVirtualDesktop FindDesktop(ref Guid desktopid);
+int GetCount();
+void MoveViewToDesktop(IApplicationView view, IVirtualDesktop desktop);
+bool CanViewMoveDesktops(IApplicationView view);
+IVirtualDesktop GetCurrentDesktop();
+void GetDesktops(out IObjectArray desktops);
+[PreserveSig]
+int GetAdjacentDesktop(IVirtualDesktop from, int direction, out IVirtualDesktop desktop);
+void SwitchDesktop(IVirtualDesktop desktop);
+IVirtualDesktop CreateDesktop();
+void RemoveDesktop(IVirtualDesktop desktop, IVirtualDesktop fallback);
+IVirtualDesktop FindDesktop(ref Guid desktopid);
 }
 1
 [ComImport]
@@ -102,9 +104,9 @@ internal interface IVirtualDesktopManagerInternal
 [Guid("A5CD92FF-29BE-454C-8D04-D82879FB3F1B")]
 internal interface IVirtualDesktopManager
 {
-    bool IsWindowOnCurrentVirtualDesktop(IntPtr topLevelWindow);
-    Guid GetWindowDesktopId(IntPtr topLevelWindow);
-    void MoveWindowToDesktop(IntPtr topLevelWindow, ref Guid desktopId);
+bool IsWindowOnCurrentVirtualDesktop(IntPtr topLevelWindow);
+Guid GetWindowDesktopId(IntPtr topLevelWindow);
+void MoveWindowToDesktop(IntPtr topLevelWindow, ref Guid desktopId);
 }
 
 [ComImport]
@@ -112,12 +114,12 @@ internal interface IVirtualDesktopManager
 [Guid("4CE81583-1E4C-4632-A621-07A53543148F")]
 internal interface IVirtualDesktopPinnedApps
 {
-    bool IsAppIdPinned(string appId);
-    void PinAppID(string appId);
-    void UnpinAppID(string appId);
-    bool IsViewPinned(IApplicationView applicationView);
-    void PinView(IApplicationView applicationView);
-    void UnpinView(IApplicationView applicationView);
+bool IsAppIdPinned(string appId);
+void PinAppID(string appId);
+void UnpinAppID(string appId);
+bool IsViewPinned(IApplicationView applicationView);
+void PinView(IApplicationView applicationView);
+void UnpinView(IApplicationView applicationView);
 }
 
 [ComImport]
@@ -125,8 +127,8 @@ internal interface IVirtualDesktopPinnedApps
 [Guid("92CA9DCD-5622-4BBA-A805-5E9F541BD8C9")]
 internal interface IObjectArray
 {
-    void GetCount(out int count);
-    void GetAt(int index, ref Guid iid, [MarshalAs(UnmanagedType.Interface)]out object obj);
+void GetCount(out int count);
+void GetAt(int index, ref Guid iid, [MarshalAs(UnmanagedType.Interface)]out object obj);
 }
 
 [ComImport]
@@ -134,8 +136,8 @@ internal interface IObjectArray
 [Guid("6D5140C1-7436-11CE-8034-00AA006009FA")]
 internal interface IServiceProvider10
 {
-    [Return: MarshalAs(UnmanagedType.IUnknown)]
-    object QueryService(ref Guid service, ref Guid riid);
+[Return: MarshalAs(UnmanagedType.IUnknown)]
+object QueryService(ref Guid service, ref Guid riid);
 }
 
 */
@@ -159,24 +161,27 @@ internal interface IServiceProvider10
 ; GetWindowDesktopId              := vtable(IVirtualDesktopManager, 4)
 ; MoveWindowToDesktop             := vtable(IVirtualDesktopManager, 5)
 
-#If ; Define Functions
-    
+#if ; Define Functions
+
 ; Move the current window to another desktop
-MoveActiveWindowWithAction(action){
+MoveActiveWindowWithAction(action)
+{
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput %action%
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveActiveWindowToNewDesktop(){
+MoveActiveWindowToNewDesktop()
+{
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput ^#d
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveActiveWindowToDesktop(idx){
+MoveActiveWindowToDesktop(idx)
+{
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SwitchToDesktop(idx)
@@ -184,36 +189,41 @@ MoveActiveWindowToDesktop(idx){
     WinActivate ahk_id %activeWin%
 }
 
-SwitchToDesktop(idx){
+SwitchToDesktop(idx)
+{
     re := SwitchToDesktopByInternalAPI(idx)
     ; ToolTip % re
-    if (!re){
+    if (!re) {
         SwitchToDesktopByHotkey(idx)
     }
 }
 
-SwitchToDesktopByHotkey(idx){
+SwitchToDesktopByHotkey(idx)
+{
     ; ToolTip % "^#{Left 10}^#{Right " idx - 1 "}"
     ; SendInput % "^#{Left 10}{Sleep 20}^#{Right "(0 == idx ? "^#d" : idx - 1) "}"
     SendInput ^#{Left 10}
     ; SendInput % "^#{Right " idx - 1 "}"
     idx -= 1
-    Loop, %idx%
+    Loop %idx% {
         SendInput ^#{Right}
+    }
 }
 
-IsWindowOnCurrentVirtualDesktop(hWnd){
+IsWindowOnCurrentVirtualDesktop(hWnd)
+{
     IVirtualDesktopManager          := ComObjCreate("{AA509086-5CA9-4C25-8F95-589D3C07B48A}", "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}")
     ; 如果这个对象不存在那就没有虚拟桌面的说法了，那就默认返回true好了
     if (!IVirtualDesktopManager)
         Return 1
     IsWindowOnCurrentVirtualDesktop := vtable(IVirtualDesktopManager, 3)
     bool := 0
-    DllCall(IsWindowOnCurrentVirtualDesktop, "UPtr", IVirtualDesktopManager, "UInt", hWnd , "UIntP", bool)
+    DllCall(IsWindowOnCurrentVirtualDesktop, "UPtr", IVirtualDesktopManager, "UInt", hWnd, "UIntP", bool)
     ObjRelease(IVirtualDesktopManager)
     Return %bool%
 }
-SwitchToDesktopByInternalAPI(idx) {
+SwitchToDesktopByInternalAPI(idx)
+{
     succ := 0
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
@@ -222,16 +232,16 @@ SwitchToDesktopByInternalAPI(idx) {
         ; GetCount := vtable(IVirtualDesktopManagerInternal, 3)
         GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
         SwitchDesktop := vtable(IVirtualDesktopManagerInternal, 9)
-        ; TrayTip,,% IVirtualDesktopManagerInternal
+        ; TrayTip, , % IVirtualDesktopManagerInternal
         pDesktopIObjectArray := 0
         DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
         if (pDesktopIObjectArray) {
             GetDesktopCount := vtable(pDesktopIObjectArray, 3)
             GetDesktopAt := vtable(pDesktopIObjectArray, 4)
-
+            
             DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
             ; if idx-th desktop doesn't exists then create a new desktop
-            if (idx > DesktopCount){
+            if (idx > DesktopCount) {
                 Send ^#d
                 succ := 1
             }
@@ -256,7 +266,8 @@ GetGUIDFromString(ByRef GUID, sGUID) ; Converts a string to a binary GUID
     DllCall("ole32\CLSIDFromString", "Str", sGUID, "Ptr", &GUID)
 }
 
-vtable(ptr, n) {
+vtable(ptr, n)
+{
     ; NumGet(ptr+0) Returns the address of the object's virtual function
     ; table (vtable for short). The remainder of the expression retrieves
     ; the address of the nth function's address from the vtable.

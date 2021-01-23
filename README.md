@@ -125,9 +125,9 @@
 | 作用域       | 窗口增强模块                | 说明                                         |
 | ------------ | --------------------------- | -------------------------------------------- |
 | 全局         | CapsLockX + M               | 快速排列当前桌面的窗口                       |
-| 全局         | CapsLockX + Shift + M       | 快速排列当前桌面的窗口（不包括最大化的窗口） |
+| 全局         | CapsLockX + Shift + M       | 快速排列当前桌面的窗口（不包括最小化的窗口） |
 | 全局         | CapsLockX + Alt + M         | 快速堆叠当前桌面的窗口                       |
-| 全局         | CapsLockX + Alt + Shift + M | 快速堆叠当前桌面的窗口（不包括最大化的窗口） |
+| 全局         | CapsLockX + Alt + Shift + M | 快速堆叠当前桌面的窗口（不包括最小化的窗口） |
 | 全局         | CapsLockX + [ ]             | 切换到上一个/下一个桌面                      |
 | 全局         | CapsLockX + =               | 新建桌面                                     |
 | 全局         | CapsLockX + -               | 删除当前桌面（会把所有窗口移到上一个桌面）   |
@@ -412,3 +412,7 @@
 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：
 
 - [2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
+
+### 相关话题
+
+- [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )

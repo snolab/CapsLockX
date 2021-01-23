@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
-; 名称：
-; 描述：CapsLockX+P 打开系统设定，拯救笔记本
+; 描述：拯救笔记本
+; 名称：提供常见缺键补全，例如缺失 Esc键、右Ctrl键、左Win键、Pause键、PrtScn键等
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -11,6 +11,7 @@
 if !CapsLockX
     ExitApp
 
+global FLAG_SWAP_ESC_STROKE := false
 
 AppendHelp("
 (
@@ -41,8 +42,20 @@ $#!p::
     Send #{Pause}
 Return
 
-; 对于没有 Win 键的环境，用 2个分号一起按来模拟 Win 键
-*' Up:: Send {Blind}'
-*`; Up:: Send {Blind}`;
-' & `;:: LWin
-`; & ':: LWin
+; 对于没有 Win 键的环境，用 ] [ 一起按来模拟 Win 键
+*] Up:: Send {Blind}]
+] & [:: LWin
+!\:: Send {Blind}{Tab}
+
+; \ & :: #Tab
+
+; 对于没有Esc或没有 Stroke 键的键
+#if CapsLockXMode
+
+`:: FLAG_SWAP_ESC_STROKE := !FLAG_SWAP_ESC_STROKE
+Esc:: FLAG_SWAP_ESC_STROKE := !FLAG_SWAP_ESC_STROKE
+
+#if FLAG_SWAP_ESC_STROKE
+
+*`:: Esc
+*Esc:: `

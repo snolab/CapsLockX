@@ -86,6 +86,7 @@ SendInput_MouseMsg32(dwFlag, mouseData = 0){
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
+
 SendInput_MouseMoveR32(x, y){
     VarSetCapacity(sendData, 28, 0)
     NumPut(0, sendData, 0, "UInt")
@@ -276,26 +277,30 @@ ScrollMsg(msg, zDelta){
 
     MouseGetPos,,,, ControlClass2, 2
     MouseGetPos,,,, ControlClass3, 3
-
-    if (A_Is64bitOS)
+    if (A_Is64bitOS) {
         ControlClass1 := DllCall( "WindowFromPoint", "int64", m_x | (m_y << 32), "Ptr")
-    Else
+    } else{
         ControlClass1 := DllCall("WindowFromPoint", "int", m_x, "int", m_y)
+    }
 
     ;Detect modifer keys held down (only Shift and Control work)
-    If(GetKeyState("Shift", "p"))
+    if GetKeyState("Shift", "p"){
         wParam := wParam | 0x4
-    If(GetKeyState("Ctrl", "p"))
+    }
+    if GetKeyState("Ctrl", "p") {
         wParam := wParam | 0x8
+    }
 
     ; MsgBox, %ControlClass1% "\" %ControlClass2% "\" %ControlClass3%
 
-    If(ControlClass2 == ""){
+    if (ControlClass2 == "") {
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass1%
-    }Else{
+    } else {
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass2%
-        If(ControlClass2 != ControlClass3)
+        If(ControlClass2 != ControlClass3){
             PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass3%
+
+        }
     }
 }
 ; 滚轮运动处理
@@ -303,7 +308,6 @@ ScrollTicker:
     ScrollTicker()
 Return
 ScrollTicker(){
-
     ; RF同时按下相当于中键
     If(GetKeyState("MButton", "P")){
         If(scroll_tu == 0 And scroll_td == 0){
@@ -377,21 +381,23 @@ ScrollTickerStart(){
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
 
 ; 鼠标按键处理
-`:: Send {LButton 5}
-*e:: Send {Blind}{LButton Down}
-*e up:: Send {Blind}{LButton Up}
-*q::
-    If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
-        SendInput_MouseMsg32(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
-    Else
-        Send {Blind}{RButton Down}
-Return
-*q up::
-    If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
-        SendInput_MouseMsg32(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
-    Else
-        Send {Blind}{RButton Up}
-Return
+*q:: RButton
+*e:: LButton
+; `:: Send {LButton 5}
+; *e:: Send {Blind}{LButton Down}
+; *e up:: Send {Blind}{LButton Up}
+; *q::
+;     If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+;         SendInput_MouseMsg32(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
+;     Else
+;         Send {Blind}{RButton Down}
+; Return
+; *q up::
+;     If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
+;         SendInput_MouseMsg32(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
+;     Else
+;         Send {Blind}{RButton Up}
+; Return
 
 ; 只有开启CapsLockX模式能触发
 ; #If CapsLockXMode == CM_CapsLockX

@@ -19,16 +19,24 @@ if !CapsLockX
 
 AppendHelp("
 (
-窗口墙强
-| CapsLockX + O | 快速排列当前桌面的窗口
-| CapsLockX + Shift + O | 快速排列当前桌面的窗口（不包括最大化的窗口）
-| CapsLockX + [ ] | 切换到上一个/下一个桌面
-| CapsLockX + = | 新建桌面
-| CapsLockX + - | 删除当前桌面（会把所有窗口移到上一个桌面）
-| CapsLockX + Shift + [ ] | 把当前窗口移到上一个/下一个桌面
-| CapsLockX + Shift + = | 新建桌面，并把当前窗口移过去
-| CapsLockX + 1 2 ... 9 | 切换到第 n 个桌面
-| CapsLockX + Shift + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话)
+窗口增强
+| 作用域 | 窗口增强模块 | 说明 |
+| ------------ | --------------------------- | -------------------------------------------- |
+| Alt+Tab 界面 | Q E | 左右切换多桌面 |
+| Alt+Tab 界面 | W A S D | 上下左右切换窗口选择 |
+| Alt+Tab 界面 | X C | 关闭选择的窗口（目前 X 和 C 没有区别） |
+| Win+Tab 视图 | Alt + W A S D | 切换窗口选择 |
+| 全局 | CapsLockX + - | 删除当前桌面（会把所有窗口移到上一个桌面） |
+| 全局 | CapsLockX + 1 2 ... 9 | 切换到第 n 个桌面 |
+| 全局 | CapsLockX + = | 新建桌面 |
+| 全局 | CapsLockX + Alt + 1 2 ... 9 | 把当前窗口移到第 n 个桌面(如果有的话) |
+| 全局 | CapsLockX + Alt + = | 新建桌面，并把当前窗口移过去 |
+| 全局 | CapsLockX + Alt + M | 快速堆叠当前桌面的窗口 |
+| 全局 | CapsLockX + Alt + Shift + M | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
+| 全局 | CapsLockX + Alt + [ ] | 把当前窗口移到上一个/下一个桌面 |
+| 全局 | CapsLockX + M | 快速排列当前桌面的窗口 |
+| 全局 | CapsLockX + Shift + M | 快速排列当前桌面的窗口（包括最小化的窗口） |
+| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面 |
 )")
 ; setup done
 
@@ -50,13 +58,13 @@ Return
 #if CapsLockXMode == CM_CAPSX || CapsLockXMode == CM_FN
 
 ; 自动排列窗口
-m:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
 ; 自动排列窗口（包括最小化的窗口）
-+m:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
+!c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
 ; 自动堆叠窗口
-!m:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
++c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
 ; 自动堆叠窗口（包括最小化的窗口）
-!+m:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
+!+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
 
 ; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
 ; !o::
@@ -66,7 +74,15 @@ m:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
 Return
 
 ; WinTab 窗口切换
-\:: Send #{Tab}
+; \::
+;     Send {LAlt Down}{Tab Down}{Tab Up}
+;     KeyWait, \
+;     Return
+; \ Up::
+;     Send {LAlt Down}{Tab Down}{Tab Up}
+;     KeyWait, \
+;     Return
+
 ; 切换当前窗口置顶并透明
 +'::
     WinSet, Transparent, 200, A
@@ -83,16 +99,24 @@ Return
 Return
 
 ; 关闭标签
-; $x:: Send ^w
-; 关闭窗口并切到下一窗口
-$Esc::
+x:: Send ^w
+; 关闭窗口并切到下一窗口，并自动排列窗口
++x::
     hWnd := WinActive("A")
     Send !{Esc}
     WM_CLOSE := 0x0010
-    PostMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+    ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
+Return
++!x::
+    hWnd := WinActive("A")
+    Send !{Esc}
+    WM_CLOSE := 0x0010
+    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+    ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
 Return
 ; 杀死窗口并切到下一窗口
-$^!Esc::
+^!x::
     hWnd := WinActive("A")
     Send !{Esc}
     WinKill ahk_id %hWnd%
@@ -344,7 +368,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     size_x := AreaW / col
     size_y := AreaH / row
     k:=0
-    loop, Parse, listOfWindow, `n
+    loop Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
         
@@ -365,12 +389,21 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         x:= x-8, y:=y, w:=size_x+16, h:=size_y+8
         
         ; 左上角不要出界，否则不同DPI的显示器连接处宽度计算不正常
-        x:=max(x, AreaX)
-        y:=max(y, AreaY)
+        dX := max(AreaX - x, 0)
+        x += dX, w -= dX
+        dY := max(AreaY - y, 0)
+        y += dY, h -= dY
         
         FastResizeWindow(hWnd, x, y, w, h)
         k+=1
     }
+    WinGet, hWnd, , A
+    DllCall( "FlashWindow", UInt, hWnd, Int,True )
+    ; loop Parse, listOfWindow, `n
+    ; {
+    ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+    ;     WinActivate ahk_id %hWnd%
+    ; }
 }
 
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
@@ -399,11 +432,16 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     loop, Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-        
         x := AreaX + k * dx
         y := AreaY + k * dy
-        FastResizeWindow(hWnd, x, y, w, h, "ForceTop")
+        ; FastResizeWindow(hWnd, x, y, w, h, "ForceTop")
+        FastResizeWindow(hWnd, x, y, w, h)
         k+=1
+    }
+    loop, Parse, listOfWindow, `n
+    {
+        hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+        WinActivate ahk_id %hWnd%
     }
 }
 FastResizeWindow(hWnd, x, y, w, h, ForceTOP = "")
@@ -416,12 +454,12 @@ FastResizeWindow(hWnd, x, y, w, h, ForceTOP = "")
     }
     
     ; ref: [SetWindowPos function (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos )
-    SWP_NOACTIVATE := 0x0010
-    SWP_ASYNCWINDOWPOS:= 0x4000
     HWND_TOPMOST := -1
     HWND_BOTTOM := 1
     HWND_TOP := 0
     HWND_NOTOPMOST := -2
+    SWP_NOACTIVATE := 0x0010
+    SWP_ASYNCWINDOWPOS:= 0x4000
     SWP_NOMOVE := 0x0002
     SWP_NOSIE := 0x0001
     ; 先置顶（否则会显示在最大化窗口的后面 -- 被挡住）
