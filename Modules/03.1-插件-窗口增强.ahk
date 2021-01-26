@@ -84,36 +84,37 @@ Return
 ;     Return
 
 ; 切换当前窗口置顶并透明
-+'::
++v::
     WinSet, Transparent, 200, A
     WinSet, Alwaysontop, Toggle, A
 Return
 ; 让当前窗口临时透明
-'::
+v::
     WinSet, Transparent, 100, A
     WinSet, Alwaysontop, On, A
 Return
-' Up::
+v Up::
     WinSet, Transparent, 255, A
     WinSet, Alwaysontop, Off, A
 Return
 
 ; 关闭标签
 x:: Send ^w
-; 关闭窗口并切到下一窗口，并自动排列窗口
+; 关闭窗口并切到下一窗口
 +x::
     hWnd := WinActive("A")
     Send !{Esc}
     WM_CLOSE := 0x0010
     SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
-    ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
+    ; ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
 Return
+; 关闭窗口并切到下一窗口，并自动排列窗口
 +!x::
     hWnd := WinActive("A")
     Send !{Esc}
     WM_CLOSE := 0x0010
     SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
-    ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
+    ; ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
 Return
 ; 杀死窗口并切到下一窗口
 ^!x::
@@ -398,7 +399,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         k+=1
     }
     WinGet, hWnd, , A
-    DllCall( "FlashWindow", UInt, hWnd, Int,True )
+    ; DllCall( "FlashWindow", UInt, hWnd, Int,True )
     ; loop Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")

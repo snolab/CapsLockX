@@ -135,7 +135,6 @@ IniWrite, %RuleStage1%, %ConfigPath%, RuleStage1
 IniWrite, %RuleStage2%, %ConfigPath%, RuleStage2
 IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
 
-
 ; global PressedKeys := ""
 Hotkey, if, (!CapsLockXMode)
 For _, Stage in StageList{
