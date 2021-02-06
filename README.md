@@ -11,8 +11,8 @@
 
 源码打包就是软件本体，无需编译。
 
-1. 下载源码 zip 点击 [Github 仓库](https://github.com/snomiao/CapslockX/archive/master.zip) 或 [Gitee 仓库（墙内）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) 然后解压后使用。
-
+1. 下载源码 zip 点击 [github仓库源码.zip](https://github.com/snomiao/CapsLockX/archive/master.zip) 然后解压后使用。
+<!-- 或 [Gitee 仓库源码（墙内）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) -->
 2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
 #### 方式 2
@@ -346,32 +346,34 @@
 
 | 功能\项目        | [CapsLockX](https://github.com/snomiao/CapsLockX) | [Vonng/CapsLock](https://github.com/Vonng/CapsLock) | [coralsw/CapsEz](https://github.com/coralsw/CapsEz) | [CapsLock+](https://capslox.com/capslock-plus/) |
 | :--------------- | :------------------------------------------------ | :-------------------------------------------------- | :-------------------------------------------------- | :---------------------------------------------- |
-| 鼠标模拟         | ✅ 流畅完整                                       | ✅ 无滚轮                                           | 🈚 无                                               | 🈚 无                                           |
-| 表达式计算       | ✅ Nodejs 或 JScript                              | 🈚 无                                               | 🈚 无                                               | ✅ TabScript (Snippet + Javascript)             |
-| 窗口管理         | ✅ 强                                             | ✅ 有                                               | ✅ 有                                               | ✅ 强                                           |
-| 虚拟桌面管理     | ✅ 有                                             | 🈚 无                                               | 🈚 无                                               | 🈚 无                                           |
-| 编辑增强         | ✅ 有（抛物模型）                                 | ✅ 有                                               | ✅ 有                                               | ✅ 有（很全）                                   |
-| 绿色免安装       | ✅ 是                                             | ✅ 是                                               | ✅ 是                                               | ✅ 是                                           |
-| 增强媒体键       | 不全                                              | ✅ 全                                               | 🈚 无                                               | 🈚 无                                           |
-| 强化的剪贴板     | 弱                                                | 🈚 无                                               | 🈚 无                                               | ✅ 有                                           |
-| 快速启动应用     | ✅ 插件                                           | ✅ 有                                               | ✅ 有                                               | ✅ 有                                           |
-| 应用功能增强     | ✅ 丰富                                           | 🈚 无                                               | ✅ 有                                               | 🈚 无                                           |
-| Bash 控制        | 🈚 无                                             | ✅ 有                                               | 🈚 无                                               | 🈚 无                                           |
-| 快速启动语音输入 | ✅ 讯飞                                           | 🈚 无                                               | 🈚 无                                               | 🈚 无                                           |
-| 快速输入时间日期 | ✅ 有                                             |                                                     | ✅ 有                                               |                                                 |
-| 窗口绑定到热键   | 🈚 无                                             | 🈚 无                                               | 🈚 无                                               | ✅ 有                                           |
-| 快速旋转屏幕     | ✅ 有                                             | 🈚 无                                               | 🈚 无                                               | 🈚 无                                           |
-| 二次开发         | ✅ 文档友好                                       | ✅ 可                                               | ✅ 可                                               | ✅ 可                                           |
-| 内存占用         | ✅ 约 2~3M                                        |                                                     |                                                     |                                                 |
-| 模块化           | ✅                                                | 🈚 无                                               | 🈚 无                                               | 🈚 无                                           |
+| 鼠标模拟         | ✅ 流畅完整                                        | ✅ 无滚轮                                            | 🈚 无                                                | 🈚 无                                            |
+| 表达式计算       | ✅ Nodejs 或 JScript                               | 🈚 无                                                | 🈚 无                                                | ✅ TabScript (Snippet + Javascript)              |
+| 窗口管理         | ✅ 强                                              | ✅ 有                                                | ✅ 有                                                | ✅ 强                                            |
+| 虚拟桌面管理     | ✅ 有                                              | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 编辑增强         | ✅ 有（抛物模型）                                  | ✅ 有                                                | ✅ 有                                                | ✅ 有（很全）                                    |
+| 绿色免安装       | ✅ 是                                              | ✅ 是                                                | ✅ 是                                                | ✅ 是                                            |
+| 增强媒体键       | 不全                                              | ✅ 全                                                | 🈚 无                                                | 🈚 无                                            |
+| 强化的剪贴板     | 弱                                                | 🈚 无                                                | 🈚 无                                                | ✅ 有                                            |
+| 快速启动应用     | ✅ 插件                                            | ✅ 有                                                | ✅ 有                                                | ✅ 有                                            |
+| 应用功能增强     | ✅ 丰富                                            | 🈚 无                                                | ✅ 有                                                | 🈚 无                                            |
+| Bash 控制        | 🈚 无                                              | ✅ 有                                                | 🈚 无                                                | 🈚 无                                            |
+| 快速启动语音输入 | ✅ 讯飞                                            | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 快速输入时间日期 | ✅ 有                                              |                                                     | ✅ 有                                                |                                                 |
+| 窗口绑定到热键   | 🈚 无                                              | 🈚 无                                                | 🈚 无                                                | ✅ 有                                            |
+| 快速旋转屏幕     | ✅ 有                                              | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 二次开发         | ✅ 文档友好                                        | ✅ 可                                                | ✅ 可                                                | ✅ 可                                            |
+| 内存占用         | ✅ 约 2~3M                                         |                                                     |                                                     |                                                 |
+| 模块化           | ✅                                                 | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
 | 系统             | Win                                               | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
 | 支持语言         | 中文                                              | 中文 / English                                      | 中文                                                | 中文 / English                                  |
 
-#### 本项目地址（以下几个仓库同步）：
+#### 本项目地址
+<!-- （以下几个仓库同步）： -->
 
 - GitHub: https://github.com/snomiao/CapsLockX
-- Gitee: https://gitee.com/snomiao/CapslockX
-- Bitbucket: https://bitbucket.org/snomiao/capslockx/
+
+<!-- - Gitee: https://gitee.com/snomiao/CapslockX -->
+<!-- - Bitbucket: https://bitbucket.org/snomiao/capslockx/ -->
 
 #### 相似项目地址：
 
