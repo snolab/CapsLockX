@@ -50,7 +50,7 @@ getAscStr(str)
 }
 
 ; 快速添加事项清单
-OpenToDoList(){
+OpenToDoList_old(){
     if !WinExist("TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
         Run "onenote:#TODO" ; 打开默认分区的 TODO 页面
     WinWait TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
@@ -59,10 +59,23 @@ OpenToDoList(){
     Return
 }
 
+; 打开快速笔记主页
+OpenHomePage(){
+    SendEvent #n
+    ; if !WinExist(".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
+    ; WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
+    ; WinActivate ; Uses the last found window.
+    WinWaitActive  .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
+    SendEvent !{Home}
+    SendEvent ^{Home}
+    ; SendEvent ^{End}{Enter}
+    Return
+}
+
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
-; 打开 TODO
-$#!n:: OpenToDoList()
+; 打开 主页
+$#!n:: OpenHomePage()
 ; 打开 UWP 版 OneNote 的快速笔记
 $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 

@@ -45,7 +45,7 @@ global ARRANGE_SIDE_BY_SIDE := 0
 global ARRANGE_MAXWINDOW := 1
 global ARRANGE_MINWINDOW := 4
 global ARRANGE_STACKED := 2 ; if not then arrange SIDE_BY_SIDE
-
+    
 Return
 
 ; 把当前窗口置顶
@@ -124,7 +124,7 @@ Return
 Return
 
 #if MultitaskingViewFrameQ()
-
+    
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
 !a:: Left
 !d:: Right
@@ -169,7 +169,7 @@ z:: Send ^#{F4}
 
 MultitaskingViewFrameQ()
 {
-Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+    Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
 }
 ; this is improved method for stable
 GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
@@ -188,7 +188,7 @@ GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
             break
         }
     }
-Return %monitorIndex%
+    Return %monitorIndex%
 }
 ; below function is modified from [How to determine a window is in which monitor? - Ask for Help - AutoHotkey Community]( https://autohotkey.com/board/topic/69464-how-to-determine-a-window-is-in-which-monitor/ )
 GetMonitorIndexFromWindow(hWnd)
@@ -208,9 +208,9 @@ GetMonitorIndexFromWindow(hWnd)
         workRight := NumGet(monitorInfo, 28, "Int")
         workBottom := NumGet(monitorInfo, 32, "Int")
         isPrimary := NumGet(monitorInfo, 36, "Int") & 1
-
+        
         ; msgbox, , , workLeft%workLeft% workTop%workTop% workRight%workRight% workBottom%workBottom%
-
+        
         SysGet, monitorCount, MonitorCount
         loop %monitorCount%
         {
@@ -229,7 +229,7 @@ GetMonitorIndexFromWindow(hWnd)
     if (monitorIndex) {
         Return %monitorIndex%
     }
-Return 1
+    Return 1
 }
 ArrangeWindows(arrangeFlags = "0")
 {
@@ -241,13 +241,13 @@ ArrangeWindows(arrangeFlags = "0")
     WS_EX_NOANIMATION := 0x04000000
     WS_EX_NOACTIVATE := 0x08000000
     WS_POPUP := 0x80000000
-
+    
     SysGet, MonitorCount, MonitorCount
     loop %MonitorCount% {
         MonitorIndex := A_Index
         listOfWindow%MonitorIndex% := ""
     }
-
+    
     DetectHiddenWindows, Off
     WinGet, id, List, , , 
     loop %id% {
@@ -295,28 +295,57 @@ ArrangeWindows(arrangeFlags = "0")
             if (!(arrangeFlags & ARRANGE_MINWINDOW) && minmax == -1) {
                 continue
             }
-            ; debug
-            ; WinGet, this_pid, PID, ahk_id %hWnd%
-            ; WinGet, style, style, ahk_id %hWnd%
-            ; WinGet, minmax, minmax, ahk_id %hWnd%
-            ; WinGetClass, this_class, ahk_id %hWnd%
-            ; WinGetTitle, this_title, ahk_id %hWnd%
-            ; WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
-            ; IfMsgBox, NO, break
-            ; WinActivate, ahk_id %hWnd%
-
-            ; msg := ""
-            ; msg = %msg% arrangeFlags%arrangeFlags%`n
-            ; msg = %msg% %A_Index% of %id%`n
-            ; msg = %msg% ahk_id %hWnd%`n
-            ; msg = %msg% ahk_class %this_class%`n
-            ; msg = %msg% ahk_pid %this_pid%`n
-            ; msg = %msg% %X% %Y% %Width% %Height%`n
-            ; msg = %msg% title %this_title%`n
-            ; msg = %msg% minmax %minmax%`n
-            ; msg = %msg% style %style%`n
-            ; msg = %msg% `nContinue?
-            ; MsgBox, 4, , %msg%
+            ; 尝试跳过隐藏窗口
+            GWL_STYLE := -16
+            GWL_EXSTYLE := -20
+            WS_STYLE := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hWnd, "Int", GWL_STYLE, "PTR")
+            WS_VISIBLE := 0x10000000
+            if (!(style & WS_VISIBLE)) {
+                continue
+            }
+            ; 尝试跳过隐藏窗口
+            if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ) {
+                continue
+            }
+            
+            ; BOOL IsWindowVisible(HWND hWnd);
+            if (0) {
+                ; debug
+                ; WinHide, ahk_id %hWnd%
+                WinGet, style_before, style, ahk_id %hWnd%
+                ; WinShow, ahk_id %hWnd%
+                ; WinActivate, ahk_id %hWnd%
+                WinGet, style, style, ahk_id %hWnd%
+                WinGet, style, style, ahk_id %hWnd%
+                visible := !!(style & WS_VISIBLE)
+                ; if (!visible){
+                ;     WinShow, ahk_id %hWnd%c
+                ; }
+                WinGet, this_pid, PID, ahk_id %hWnd%
+                WinGet, minmax, minmax, ahk_id %hWnd%
+                WinGetClass, this_class, ahk_id %hWnd%
+                WinGetTitle, this_title, ahk_id %hWnd%
+                WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
+                ; DllCall("IsWindowVisible", "Ptr", hWnd, "PTR")
+                msg := ""
+                msg = %msg% arrangeFlags%arrangeFlags%`n
+                msg = %msg% %A_Index% of %id%`n
+                msg = %msg% ahk_id %hWnd%`n
+                msg = %msg% ahk_class %this_class%`n
+                msg = %msg% ahk_pid %this_pid%`n
+                msg = %msg% %X% %Y% %Width% %Height%`n
+                msg = %msg% title %this_title%`n
+                msg = %msg% minmax %minmax%`n
+                msg = %msg% style %style%`n
+                msg = %msg% style_before %style_before%`n
+                msg = %msg% visible %visible%`n
+                msg = %msg% `nContinue?
+                MsgBox, 4, , %msg%
+                IfMsgBox, NO, break
+                ; WinShow, ahk_id %hWnd%
+                ; WinActivate, ahk_id %hWnd%
+            }
+            
         }
         this_monitor := GetMonitorIndexFromWindow(hWnd)
         listOfWindow%this_monitor% .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -375,7 +404,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     loop Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-
+        
         ; 同一进程窗口长边优先排列
         if (AreaW >= AreaH) {
             ; row first
@@ -388,29 +417,29 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         }
         x := AreaX + nx * size_x
         y := AreaY + ny * size_y
-
+        
         ; 填满窗口间的缝隙
         x:= x-8, y:=y, w:=size_x+16, h:=size_y+8
-
+        
         ; 左上角不要出界，否则不同DPI的显示器连接处宽度计算不正常
         dX := max(AreaX - x, 0)
         x += dX, w -= dX
         dY := max(AreaY - y, 0)
         y += dY, h -= dY
-
+        
         FastResizeWindow(hWnd, x, y, w, h)
         lasthWnd := hWnd
         k-=1
     }
     WinGet, hWnd, , A
-    ; DllCall( "FlashWindow", UInt, hWnd, Int,True )
-
+    ; DllCall( "FlashWindow", UInt, hWnd, Int, True )
+    
     ; loop Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
     ;     WinActivate ahk_id %hWnd%
     ; }
-
+    
     SWP_NOACTIVATE := 0x0010
     SWP_ASYNCWINDOWPOS:= 0x4000
     SWP_NOMOVE := 0x0002
@@ -430,7 +459,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) ; SWP_ASYNCWINDOWPOS
         lasthWnd := hWnd
     }
-
+    
 }
 
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
@@ -450,7 +479,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
-    ;
+    
     k := 0
     dx := 64
     dy := 64
@@ -460,6 +489,12 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     loop, Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+        ; fix hidden UWP ApplicationFrameWindow Window
+        WinGetClass, this_class, ahk_id %hWnd%
+        if (this_class == "ApplicationFrameWindow") {
+            WinActivate, ahk_id %hWnd%
+        }
+        
         x := AreaX + (n - k) * dx
         y := AreaY + (n - k) * dy
         FastResizeWindow(hWnd, x, y, w, h)
@@ -487,7 +522,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
         lasthWnd := hWnd
     }
-
+    
     ; loop, Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
@@ -513,7 +548,7 @@ FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0)
     SWP_NOMOVE := 0x0002
     SWP_NOSIZE := 0x0001
     ; 先置顶（否则会显示在最大化窗口的后面 -- 被挡住）
-    if (Active){
+    if (Active) {
         WinActivate ahk_id %hWnd%
     }
     if (zIndex) {
@@ -525,7 +560,7 @@ FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0)
         , "Int", w ; width
         , "Int", h ; height
         , "UInt", SWP_NOACTIVATE) ; SWP_ASYNCWINDOWPOS
-    }else{
+    } else {
         DllCall("SetWindowPos"
         , "UInt", hWnd ;handle
         , "UInt", 0 ; z-index
