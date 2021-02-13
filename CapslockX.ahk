@@ -10,19 +10,19 @@
 ;
 ;
 ; 模块名: 不能有这几个字符 ", ``"
+; MsgBox,, %A_ScriptDir%
 
 #SingleInstance Force        ; 跳过对话框并自动替换旧实例
 #NoTrayIcon                ; 隐藏托盘图标
 
 SendMode Event
-SetWorkingDir, %A_ScriptDir% ; 一定要在#Include前
+SetWorkingDir, %A_ScriptDir%
 
-#Include CapsLockX-Settings.ahk
 Process Priority, , High     ; 脚本高优先级
 
 global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore    := "./Core"
-global CapsLockX_Version := "v1.7.0 Beta"
+global CapsLockX_Version     := "v1.7.1 Beta"
 
 global loadingTips := ""
 

@@ -231,6 +231,7 @@ GetMonitorIndexFromWindow(hWnd)
     }
     Return 1
 }
+
 ArrangeWindows(arrangeFlags = "0")
 {
     arrangeFlags += 0 ; string to number
@@ -439,7 +440,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
     ;     WinActivate ahk_id %hWnd%
     ; }
-    
+    Sleep, 1000
     SWP_NOACTIVATE := 0x0010
     SWP_ASYNCWINDOWPOS:= 0x4000
     SWP_NOMOVE := 0x0002
