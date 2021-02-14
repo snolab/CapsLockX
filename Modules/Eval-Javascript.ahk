@@ -85,36 +85,53 @@ EvalNodejs(code)
         Return ""
     
     ; 定义工作临时文件
-    inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"    
+    inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
     FileDelete %inputScriptPath%
-    jsonoutPath := A_Temp . "\eval-javascript.json.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.tmp"
+    jsonoutPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.json"
     FileDelete %jsonoutPath%
 
     ; 生成代码
     realcode := ""
-    realcode .= "const code = " EscapeQuoted(code) "; `n"
-    realcode .= "const ret = (()=>{try{Return JSON.stringify(eval(code))}catch(err){Return err}})(); `n"
-    realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) "; `n"
-    realcode .= "const fs = require('fs'); `n"
-    realcode .= "fs.writeFileSync(jsonoutPath, ret)"
-
+    realcode .= "const r = require;{" "`n"
+    realcode .= "const require=(m)=>{try{r.resolve(m)}catch(e){r('child_process').execSync('npm i '+m)};return r(m)};" "`n"
+    realcode .= "const code = " EscapeQuoted(code) ";" "`n"
+    ; realcode .= "const ret = (()=>{try{return JSON.stringify(eval(code))}catch(err){return JSON.stringify(err.toString())}})();" "`n"
+    realcode .= "const {ret, err} = (()=>{try{return {ret: JSON.stringify(eval(code))}}catch(err){return {err: err.toString()}}})();" "`n"
+    realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) ";" "`n"
+    realcode .= "const fs = require('fs');" "`n"
+    ; realcode .= "fs.writeFileSync(jsonoutPath, ret);" "`n"
+    realcode .= "ret && console.log(ret);" "`n"
+    realcode .= "err && console.error(err);" "`n"
+    realcode .= "}" "`n"
     ; 写入纯 UTF8 脚本文件
     FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
     if (!FileExist(inputScriptPath)){
-        ToolTip % inputScriptPatherr
+        ToolTip % inputScriptPath
         MsgBox 执行失败，未能写入脚本文件
         Return "err"
     }
     ; 执行 node 的指令
     nodejsCommand := """" nodejsPath """" " " """" inputScriptPath """"
-    RunWait, % nodejsCommand, , Hide
 
-    ; 读取纯 UTF8 输出
-    FileRead, out, *P65001 %jsonoutPath%
-
+    if (0){
+        RunWait, % nodejsCommand, , Hide
+        ; 读取纯 UTF8 输出
+        FileRead, out, *P65001 %jsonoutPath%
+        FileDelete %jsonoutPath%
+    }else{
+        shell := comobjcreate("wscript.shell")
+        exec := (shell.exec(nodejsCommand))
+        stderr := exec.stderr.readall()
+        stdout := exec.stdout.readall()
+        out := stdout
+        if(stderr){
+            TrayTip Error, % stderr
+        }
+        ; msgbox % out
+    }
     ; `清掉垃圾文件`
+    ; run "notepad " %inputScriptPath%
     FileDelete %inputScriptPath%
-    FileDelete %jsonoutPath%
     Return out ? out : ""   
 }
 
@@ -127,12 +144,13 @@ SafeEval(code)
         Return EvalJScript(code)
     }
 }
-#If CapsLockXMode
+
+; #If CapsLockXMode
 
 ; 使用 JS 计算并替换所选内容
-Tab::
+#q::
     Clipboard =
-    Send ^c
+    SendEvent ^c
     ClipWait, 1, 1
     code := Clipboard
     codeWithoutEqualEnding := RegExReplace(code, "= ?$", "")
@@ -140,13 +158,13 @@ Tab::
     Clipboard := SafeEval(codeWithoutEqualEnding)
     ; 如果输入代码最后是 = 号就把结果添加到后面
     if (code != codeWithoutEqualEnding){
-        Send {Right}
+        SendEvent {Right}
     }
-    Send ^v
+    SendEvent ^v
 Return
 
 ; 只计算不替换，先从剪贴板取内容，如果没有则自动复制选区
-^Tab::
+#^q::
     code := Clipboard
     if ("" == code){
         Send ^c
