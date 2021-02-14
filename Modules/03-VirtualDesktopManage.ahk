@@ -208,21 +208,21 @@ MoveAllVisibleWindowToDesktop(idx)
     loop %id% {
         hWnd := id%A_Index%
         ; WinHide ahk_id %hWnd%
-        DllCall("ShowWindowAsync", UInt,hWnd, UInt, (SW_HIDE := 0x0) )
+        DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_HIDE := 0x0) )
     }
     Sleep 128
     SwitchToDesktop(idx)
     loop %id% {
         hWnd := id%A_Index%
-        DllCall("ShowWindowAsync", UInt,hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
+        DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
     }
 }
-
 SwitchToDesktop(idx)
 {
     re := SwitchToDesktopByInternalAPI(idx)
     ; ToolTip % re
     if (!re) {
+        TrayTip , WARN, SwitchToDesktopByHotkey
         SwitchToDesktopByHotkey(idx)
     }
 }
@@ -275,7 +275,7 @@ SwitchToDesktopByInternalAPI(idx)
                 }
                 succ := 1
             }
-            GetGUIDFromString(IID_IVirtualDesktop, "{FF72FFD21D-BE7E-43FC-9C03-AD81681E88E4}")
+            GetGUIDFromString(IID_IVirtualDesktop, "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}")
             DllCall(GetDesktopAt, "Ptr", pDesktopIObjectArray, "UInt", idx - 1, "Ptr", &IID_IVirtualDesktop, "Ptr*", VirtualDesktop)
             ObjRelease(pDesktopIObjectArray)
             if (VirtualDesktop) {
