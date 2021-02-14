@@ -10,3 +10,4 @@ _config.yaml
 *.nupkg
 # Test/
 # Settings/
+node_modules

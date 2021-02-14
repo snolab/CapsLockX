@@ -83,25 +83,22 @@ EvalNodejs(code)
     nodejsPath := "C:\Program Files\nodejs\node.exe"
     if (!FileExist(nodejsPath))
         Return ""
-    
     ; 定义工作临时文件
     inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
     FileDelete %inputScriptPath%
-    jsonoutPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.json"
+    jsonoutPath := A_Temp . "eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.json"
     FileDelete %jsonoutPath%
-
+    
     ; 生成代码
     realcode := ""
-    realcode .= "const r = require;{" "`n"
-    realcode .= "const require=(m)=>{try{r.resolve(m)}catch(e){r('child_process').execSync('npm i '+m)};return r(m)};" "`n"
+    realcode .= "const _require = require;{" "`n"
+    realcode .= "const require=(m)=>{try{_require.resolve(m)}catch(e){_require('child_process').execSync('cd %USERPROFILE% && npm i -S '+m)};return _require(m)};" "`n"
+    realcode .= "const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;" "`n"
     realcode .= "const code = " EscapeQuoted(code) ";" "`n"
-    ; realcode .= "const ret = (()=>{try{return JSON.stringify(eval(code))}catch(err){return JSON.stringify(err.toString())}})();" "`n"
-    realcode .= "const {ret, err} = (()=>{try{return {ret: JSON.stringify(eval(code))}}catch(err){return {err: err.toString()}}})();" "`n"
-    realcode .= "const jsonoutPath = " EscapeQuoted(jsonoutPath) ";" "`n"
-    realcode .= "const fs = require('fs');" "`n"
-    ; realcode .= "fs.writeFileSync(jsonoutPath, ret);" "`n"
-    realcode .= "ret && console.log(ret);" "`n"
-    realcode .= "err && console.error(err);" "`n"
+    realcode .= "(async () => await eval(code))() `n"
+	realcode .= "    .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res)) `n"
+	realcode .= "    .then(s=>process.stdout.write(s)) `n"
+	realcode .= "    .catch(e=>process.stderr.write(e.toString())) `n"
     realcode .= "}" "`n"
     ; 写入纯 UTF8 脚本文件
     FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
@@ -148,15 +145,14 @@ SafeEval(code)
 ; #If CapsLockXMode
 
 ; 使用 JS 计算并替换所选内容
-#q::
+#!c::
     Clipboard =
     SendEvent ^c
     ClipWait, 1, 1
     code := Clipboard
-    codeWithoutEqualEnding := RegExReplace(code, "= ?$", "")
-
+    codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
     Clipboard := SafeEval(codeWithoutEqualEnding)
-    ; 如果输入代码最后是 = 号就把结果添加到后面
+    ; 如果输入代码最后是空的就把结果添加到后面
     if (code != codeWithoutEqualEnding){
         SendEvent {Right}
     }
@@ -164,13 +160,13 @@ SafeEval(code)
 Return
 
 ; 只计算不替换，先从剪贴板取内容，如果没有则自动复制选区
-#^q::
-    code := Clipboard
-    if ("" == code){
-        Send ^c
-        ClipWait, 1
-        code := Clipboard
-    }
-    ; ToolTip, % code
-    Clipboard := SafeEval(code)
-Return
+; !+#q::
+;     code := Clipboard
+;     if ("" == code){
+;         Send ^c
+;         ClipWait, 1
+;         code := Clipboard
+;     }
+;     ; ToolTip, % code
+;     Clipboard := SafeEval(code)
+; Return
