@@ -426,44 +426,49 @@ $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
         KeyWait, Alt
         CopySearchResultSectionAndPagesThenPaste()
         Return
-    
-    ; 将当前内容追加到相关页面
-    $!l:: 
-        ; 复制当前内容
-        Clipboard := ""
-        SendEvent ^a^x{Left}{Enter}^k
 
-        ; 可能新建一个页面
-        ClipWait, 2
-        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        ; 输入搜索内容
-        ControlSetText, RICHEDIT60W1, %Clipboard%, A
-        ; 等结果出来
-        
-        KeyWait, Alt       ; 放开Alt确认
-        
-        SendEvent {Enter}
-        WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        
-        ; ; （如果是新建生成的链接可能出bug不能直接点过去）
-        ; Sleep, 1000
-        ; ; 所以这里等新页面好了之后再来一次就能点进去了
-        SendEvent ^a{Delete}{Left}{Enter}^k
-
-        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        ; 输入搜索内容
-        ControlSetText, RICHEDIT60W1, %Clipboard%, A
-        ; 等结果出来
-        KeyWait, Alt, D  ; 按Alt确认
-        SendEvent {Enter}
-        WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        SendEvent {Left}{Enter}
-        ; 在新页面末尾追加粘贴内容
-        SendEvent ^{Home}^{End}+{Tab}{Enter}^v
-        KeyWait, Alt  ; 放开Alt确认
-        SendEvent !{Left}
+    ; 快速将内容做成单独链接
+    $!+k::
+        SendEvent {Home}[[{End}]]
         Return
-    ; $!d:: altSend("dh")
+
+    ; ; 将当前内容追加到相关页面
+    ; $!+k:: 
+    ;     ; 复制当前内容
+    ;     Clipboard := ""
+    ;     SendEvent ^a^x{Left}{Enter}^k
+    ;     ClipWait, 2
+
+    ;     ; 可能新建一个页面
+    ;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+    ;     ; 输入搜索内容
+    ;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
+    ;     ; 等结果出来
+        
+    ;     KeyWait, Alt       ; 放开Alt确认
+        
+    ;     SendEvent {Enter}
+    ;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        
+    ;     ; ; （如果是新建生成的链接可能出bug不能直接点过去）
+    ;     ; Sleep, 1000
+    ;     ; ; 所以这里等新页面好了之后再来一次就能点进去了
+    ;     SendEvent ^a{Delete}{Left}{Enter}^k
+
+    ;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+    ;     ; 输入搜索内容
+    ;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
+    ;     ; 等结果出来
+    ;     KeyWait, Alt, D  ; 按Alt确认
+    ;     SendEvent {Enter}
+    ;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+    ;     SendEvent {Left}{Enter}
+    ;     ; 在新页面末尾追加粘贴内容
+    ;     SendEvent ^{Home}^{End}+{Tab}{Enter}^v
+    ;     KeyWait, Alt  ; 放开Alt确认
+    ;     SendEvent !{Left}
+    ;     Return
+    ; ; $!d:: altSend("dh")
 
     ; 大纲折叠展开
     $!1:: SendEvent !+1
