@@ -427,11 +427,12 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         x:= x-8, y:=y, w:=size_x+16, h:=size_y+8
         
         ; 左上角不要出界，否则不同DPI的显示器连接处宽度计算不正常
-        dX := max(AreaX - x, 0)
-        x += dX, w -= dX
-        dY := max(AreaY - y, 0)
-        y += dY, h -= dY
-        
+        dX := max(AreaX - x, 0), x += dX, w -= dX
+        dY := max(AreaY - y, 0), y += dY, h -= dY
+        ; 右下角也不要出界，下边留出1px让wallpaper engine 的bgm放出来
+        w := min(x + w, AreaX + AreaW) - x
+        h := min(y + h, AreaY + AreaH - 1) - y
+
         FastResizeWindow(hWnd, x, y, w, h)
         lasthWnd := hWnd
         k-=1
