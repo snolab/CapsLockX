@@ -308,7 +308,11 @@ ArrangeWindows(arrangeFlags = "0")
             if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ) {
                 continue
             }
-            
+            ; 跳过不可见的 UWP 窗口 
+            WinGetClass, this_class, ahk_id %hWnd%
+            if ( this_class == "ApplicationFrameWindow"){
+                Continue
+            }
             ; BOOL IsWindowVisible(HWND hWnd);
             if (0) {
                 ; debug
