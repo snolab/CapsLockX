@@ -22,7 +22,7 @@ Process Priority, , High     ; 脚本高优先级
 
 global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore    := "./Core"
-global CapsLockX_Version     := "v1.7.1 Beta"
+global CapsLockX_Version     := "v1.8.0 Beta"
 
 global loadingTips := ""
 
