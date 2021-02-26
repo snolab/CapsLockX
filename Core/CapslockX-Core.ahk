@@ -35,16 +35,20 @@ global CM_CapsLockX := 2 ; CapsLockX 模式
 global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
 global CapsLockPressTimestamp := 0
 
-; 切换模式
-UpdateCapsLockXMode()
-{
-    CapsLockXMode := GetKeyState(T_CapsLockXKey, "P")
-    if (T_UseScrollLockLight) {
-        CapsLockXMode |= GetKeyState("ScrollLock", "T") << 1
-    }
-    Return CapsLockXMode
-}
-UpdateCapsLockXMode()
+; 根据灯的状态来切换到上次程序退出时使用的模式（不再使用）
+; UpdateCapsLockXMode()
+; {
+;     if (T_UseCapsLockLight) {
+;         CapsLockXMode := GetKeyState("CapsLock", "P")
+;     }
+;     if (T_UseScrollLockLight) {
+;         CapsLockXMode |= GetKeyState("ScrollLock", "T") << 1
+;     }
+;     Return CapsLockXMode
+; }
+; UpdateCapsLockXMode()
+
+
 ; 根据当前模式，切换灯
 Menu, tray, icon, %T_SwitchTrayIconDefault%
 
@@ -94,13 +98,14 @@ CapsLockXTurnOn()
     re =: UpdateLight()
     Return re
 }
-
-; Hotkey $*%T_CapsLockXKey%, CapsLockX_Dn
-; Hotkey $*%T_CapsLockXKey% Up, CapsLockX_Up
-Hotkey $*CapsLock, CapsLockX_Dn
-Hotkey $*CapsLock Up, CapsLockX_Up
-Hotkey $Space, CapsLockX_Dn
-Hotkey $Space Up, CapsLockX_Up
+if (T_CapsLockAsXKey) {
+    Hotkey $*CapsLock, CapsLockX_Dn
+    Hotkey $*CapsLock Up, CapsLockX_Up
+}
+if (T_SpaceAsXKey) {
+    Hotkey $Space, CapsLockX_Dn
+    Hotkey $Space Up, CapsLockX_Up
+}
 
 #Include Core\CapsLockX-LoadModules.ahk
 
@@ -110,11 +115,15 @@ Hotkey $Space Up, CapsLockX_Up
 CapsLockX_Dn:
     lastCapsLockKey := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
     ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey%
-
+   
     if (A_PriorKey == "LAlt") {
         lastCapsLockKey =
         Return
     }
+    ; if (WinActive(".* - Notepad3")) {
+    ;     traytip asdf, disable   d
+    ;     Return
+    ; }
     ; A_ThisHotkey == ("$*".T_CapsLockXKey) &&
     if ( CapsLockPressTimestamp == 0) {
         CapsLockPressTimestamp := A_TickCount
