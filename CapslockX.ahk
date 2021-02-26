@@ -233,7 +233,7 @@ Send ^!+\ ; 用热键把之前的实例关了
 
 Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 
-TrayTip, CapsLockX, 已启动
+; TrayTip, CapsLockX, 已启动
 ; 显示Tips 2秒
-Sleep 2000
+; Sleep 2000
 ExitApp

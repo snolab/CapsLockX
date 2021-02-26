@@ -48,7 +48,6 @@ global CapsLockPressTimestamp := 0
 ; }
 ; UpdateCapsLockXMode()
 
-
 ; 根据当前模式，切换灯
 Menu, tray, icon, %T_SwitchTrayIconDefault%
 
@@ -98,13 +97,46 @@ CapsLockXTurnOn()
     re =: UpdateLight()
     Return re
 }
-if (T_CapsLockAsXKey) {
+
+global T_IgnoresByLines
+FileRead, T_IgnoresByLines, CapsLockX.ignores
+if (T_IgnoresByLinesUser) {
+    FileCopy, CapsLockX.defaults.ignores, CapsLockX.ignores
+    FileRead, T_IgnoresByLines, CapsLockX.ignores
+}
+
+WinIgnoresActive(){
+    flag_Ignore := 0
+    Loop, Parse, T_IgnoresByLines, `n, `r
+    {
+        ; TrayTip, asdf, % A_LoopField
+        content := RegExReplace(A_LoopField, "^#.*", "")
+        if(content){
+            flag_Ignore := flag_Ignore || WinActive(content)
+        }
+    }
+    return flag_Ignore
+}
+
+#If !WinIgnoresActive()
+    #If
+    Hotkey, If, !WinIgnoresActive()
+
+if (T_XKeyAsCapsLock) {
     Hotkey $*CapsLock, CapsLockX_Dn
     Hotkey $*CapsLock Up, CapsLockX_Up
 }
-if (T_SpaceAsXKey) {
+if (T_XKeyAsSpace) {
     Hotkey $Space, CapsLockX_Dn
     Hotkey $Space Up, CapsLockX_Up
+}
+if(T_XKeyAsInsert){
+    Hotkey $Insert, CapsLockX_Dn
+    Hotkey $Insert Up, CapsLockX_Up 
+}
+if(T_XKeyAsScrollLock){
+    Hotkey $ScrollLock, CapsLockX_Dn
+    Hotkey $ScrollLock Up, CapsLockX_Up 
 }
 
 #Include Core\CapsLockX-LoadModules.ahk
@@ -115,7 +147,7 @@ if (T_SpaceAsXKey) {
 CapsLockX_Dn:
     lastCapsLockKey := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
     ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey%
-   
+
     if (A_PriorKey == "LAlt") {
         lastCapsLockKey =
         Return

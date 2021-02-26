@@ -1,0 +1,9 @@
+
+# 各种远程桌面
+
+.*? - .* ahk_exe mstsc.exe
+ahk_exe teamviewer.exe
+ahk_exe virtualbox.exe
+
+# 自定义
+

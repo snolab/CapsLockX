@@ -8,10 +8,9 @@
 
 FileEncoding, UTF-8
 
-; 開關
-global EnableSnoChordTyping := 0 ; 默认关
-IniRead, EnableSnoChordTyping, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping, %EnableSnoChordTyping%
-IniWrite, %EnableSnoChordTyping%, %CapslockXConfigPath%, Plugins, EnableSnoChordTyping
+; 開關 默认关
+global EnableSnoChordTyping := ConfigReadUpdate("Plugins", "EnableSnoChordTyping", 0)
+
 if (!EnableSnoChordTyping){
     Return
 }
