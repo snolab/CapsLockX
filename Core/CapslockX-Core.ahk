@@ -21,7 +21,7 @@ SetTitleMatchMode RegEx
 global lastCapsLockKey
 ; 载入设定
 global CapslockXConfigPath := "./CapsLockX-Config.ini"
-#Include CapsLockX-Settings.ahk
+#Include CapsLockX-Config.ahk
 
 ; 模式处理
 global CapsLockX := 1 ; 模块运行标识符
@@ -35,22 +35,21 @@ global CM_CapsLockX := 2 ; CapsLockX 模式
 global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
 global CapsLockPressTimestamp := 0
 
-; 根据灯的状态来切换到上次程序退出时使用的模式（不再使用）
-; UpdateCapsLockXMode()
-; {
-;     if (T_UseCapsLockLight) {
-;         CapsLockXMode := GetKeyState("CapsLock", "P")
-;     }
-;     if (T_UseScrollLockLight) {
-;         CapsLockXMode |= GetKeyState("ScrollLock", "T") << 1
-;     }
-;     Return CapsLockXMode
-; }
-; UpdateCapsLockXMode()
+; 根据灯的状态来切换到上次程序退出时使用的模式（不）
+UpdateCapsLockXMode()
+{
+    if (T_UseCapsLockLight) {
+        CapsLockXMode := GetKeyState("CapsLock", "P")
+    }
+    if (T_UseScrollLockLight) {
+        CapsLockXMode |= GetKeyState("ScrollLock", "T") << 1
+    }
+    Return CapsLockXMode
+}
+UpdateCapsLockXMode()
 
 ; 根据当前模式，切换灯
 Menu, tray, icon, %T_SwitchTrayIconDefault%
-
 UpdateLight()
 {
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
@@ -58,7 +57,6 @@ UpdateLight()
     if (NowLightState == LastLightState) {
         Return
     }
-
     if ( NowLightState && !LastLightState) {
         Menu, tray, icon, %T_SwitchTrayIconOn%
         if (T_SwitchSound && T_SwitchSoundOn) {
@@ -85,16 +83,18 @@ UpdateLight()
     ; tips(CapsLockXMode)
     LastLightState := NowLightState
 }
+UpdateLight()
+
 CapsLockXTurnOff()
 {
     CapsLockXMode &= ~CM_CapsLockX
-    re =: UpdateLight()
+    re := UpdateLight()
     Return re
 }
 CapsLockXTurnOn()
 {
     CapsLockXMode |= CM_CapsLockX
-    re =: UpdateLight()
+    re := UpdateLight()
     Return re
 }
 
@@ -105,39 +105,47 @@ if (T_IgnoresByLinesUser) {
     FileRead, T_IgnoresByLines, CapsLockX.ignores
 }
 
-WinIgnoresActive(){
-    flag_Ignore := 0
+global CapsLockX_Paused := 0
+
+CapsLockX_Avaliable(){
+    flag_IgnoreWindow := 0
     Loop, Parse, T_IgnoresByLines, `n, `r
     {
         ; TrayTip, asdf, % A_LoopField
         content := RegExReplace(A_LoopField, "^#.*", "")
         if(content){
-            flag_Ignore := flag_Ignore || WinActive(content)
+            flag_IgnoreWindow := flag_IgnoreWindow || WinActive(content)
         }
     }
-    return flag_Ignore
+    return !flag_IgnoreWindow && !CapsLockX_Paused
 }
 
-#If !WinIgnoresActive()
-    #If
-    Hotkey, If, !WinIgnoresActive()
+#If CapsLockX_Avaliable()
 
-if (T_XKeyAsCapsLock) {
+#If
+
+Hotkey, If, CapsLockX_Avaliable()
+
+if (T_XKeyAsCapsLock) 
     Hotkey $*CapsLock, CapsLockX_Dn
-    Hotkey $*CapsLock Up, CapsLockX_Up
-}
-if (T_XKeyAsSpace) {
+if (T_XKeyAsSpace) 
     Hotkey $Space, CapsLockX_Dn
-    Hotkey $Space Up, CapsLockX_Up
-}
-if(T_XKeyAsInsert){
+if(T_XKeyAsInsert)
     Hotkey $Insert, CapsLockX_Dn
-    Hotkey $Insert Up, CapsLockX_Up 
-}
-if(T_XKeyAsScrollLock){
+if(T_XKeyAsScrollLock)
     Hotkey $ScrollLock, CapsLockX_Dn
+
+Hotkey, If
+
+if (T_XKeyAsCapsLock) 
+    Hotkey $*CapsLock Up, CapsLockX_Up
+if (T_XKeyAsSpace) 
+    Hotkey $Space Up, CapsLockX_Up
+if(T_XKeyAsInsert)
+    Hotkey $Insert Up, CapsLockX_Up 
+if(T_XKeyAsScrollLock)
     Hotkey $ScrollLock Up, CapsLockX_Up 
-}
+
 
 #Include Core\CapsLockX-LoadModules.ahk
 
@@ -257,4 +265,11 @@ Return
 ; /:: CapslockXShowHelp(globalHelpInfo, 1)
 
 #if
+
+^!End::
+    CapsLockX_Paused := !CapsLockX_Paused
+    if(CapsLockX_Paused) {
+        TrayTip, 暂停, CapsLockX 已暂停
+    }
+Return
 
