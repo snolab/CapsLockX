@@ -338,7 +338,7 @@ ScrollTicker(){
     ; 计算速度
     lastsvx := scroll_vx
     lastsvy := scroll_vy
-    msgbox % say "_" sax "`n" scroll_vy "_" scroll_vx "`n" lastsvy "_" lastsvx
+    ; msgbox % say "_" sax "`n" scroll_vy "_" scroll_vx "`n" lastsvy "_" lastsvx
 
     scroll_vy := Friction(scroll_vy + say, say), scroll_vx := Friction(scroll_vx + sax, sax)
 
