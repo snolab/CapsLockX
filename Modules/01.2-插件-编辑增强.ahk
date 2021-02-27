@@ -13,13 +13,13 @@ global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0
 AppendHelp("
 (
 编辑增强
-| 全局   | CapsLockX + k j h l   | 上下左右 方向键     |
-| 全局   | CapsLockX + hl        | hl 一起按选择当前词 |
-| 全局   | CapsLockX + y o       | Home End            |
-| 全局   | CapsLockX + yo        | yo 一起按选择当前行 |
-| 全局   | CapsLockX + g         | 回车                |
-| 全局   | CapsLockX + t         | BackSpace           |
-| 全局   | CapsLockX + Shift + t | Delete |
+| 全局 | CapsLockX + k j h l | 上下左右 方向键 |
+| 全局 | CapsLockX + hl | hl 一起按选择当前词 |
+| 全局 | CapsLockX + y o | Home End |
+| 全局 | CapsLockX + yo | yo 一起按选择当前行 |
+| 全局 | CapsLockX + g | 回车 |
+| 全局 | CapsLockX + t | BackSpace |
+| 全局 | CapsLockX + Shift + t | Delete |
 )")
 
 Return
@@ -67,19 +67,20 @@ ArrowTicker()
     tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
     ; 计算加速度
     kax := ma(tdd - tda), kay := ma(tds - tdw)
-    
+
     ; 摩擦力不阻碍用户意志
     arrow_vx := Friction(arrow_vx + kax, kax), arrow_vy := Friction(arrow_vy + kay, kay)
-    
+
     ; 稳定化
     arrow_dx += arrow_vx / 200, arrow_dy += arrow_vy / 200
     ; ToolTip, %arrow_tl% _ %arrow_tr% _ %arrow_tu% _ %arrow_td% `n %kax% _ %kay% _ %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
-    
+    ; msgbox % arrow_dx
     ; 完成移动时
     if ( 0 == arrow_vx && 0 == arrow_vy) {
         ArrowTickerStop()
         Return
     }
+    ; ToolTip, % arrow_dx " " arrow_dy
     ; TODO: 输出速度时间曲线，用于DEBUG
     if (arrow_dx >= 1) {
         Loop %arrow_dx% {
@@ -89,8 +90,7 @@ ArrowTicker()
     }
     if (arrow_dx <= -1) {
         arrow_dx := -arrow_dx
-        Loop %arrow_dx%
-        {
+        Loop %arrow_dx% {
             SendEvent {Blind}{Left}
         }
         arrow_dx := -arrow_dx
@@ -112,7 +112,6 @@ ArrowTicker()
         arrow_dy := -arrow_dy
         arrow_dy -= arrow_dy | 0
     }
-    Return
 }
 
 ; 时间处理
@@ -162,7 +161,6 @@ ArrowLeftPressed()
     }
     arrow_tl := QPC()
     SendEvent {Blind}{Left}
-    Return
 }
 ArrowRightPressed()
 {
@@ -178,7 +176,6 @@ ArrowRightPressed()
     }
     arrow_tr := QPC()
     SendEvent {Blind}{Right}
-    Return
 }
 ArrowUpPressed()
 {
@@ -193,7 +190,6 @@ ArrowUpPressed()
     }
     arrow_tu := QPC()
     SendArrowUp()
-    Return
 }
 ArrowDownPressed()
 {
@@ -208,7 +204,6 @@ ArrowDownPressed()
     }
     arrow_td := QPC()
     SendArrowDown()
-    Return
 }
 
 ;

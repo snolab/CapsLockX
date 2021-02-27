@@ -9,7 +9,7 @@
 FileEncoding, UTF-8
 
 ; 開關 默认关
-global EnableSnoChordTyping := ConfigReadUpdate("Plugins", "EnableSnoChordTyping", 0)
+global EnableSnoChordTyping := CapsLockX_Config("Plugins", "EnableSnoChordTyping", 0)
 
 if (!EnableSnoChordTyping){
     Return
