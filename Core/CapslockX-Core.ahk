@@ -105,22 +105,26 @@ if (T_IgnoresByLinesUser) {
     FileRead, T_IgnoresByLines, CapsLockX.ignores
 }
 
-WinIgnoresActive(){
-    flag_Ignore := 0
+global CapsLockX_Paused := 0
+
+CapsLockX_Avaliable(){
+    flag_IgnoreWindow := 0
     Loop, Parse, T_IgnoresByLines, `n, `r
     {
         ; TrayTip, asdf, % A_LoopField
         content := RegExReplace(A_LoopField, "^#.*", "")
         if(content){
-            flag_Ignore := flag_Ignore || WinActive(content)
+            flag_IgnoreWindow := flag_IgnoreWindow || WinActive(content)
         }
     }
-    return flag_Ignore
+    return !flag_IgnoreWindow && !CapsLockX_Paused
 }
 
-#If !WinIgnoresActive()
-    #If
-    Hotkey, If, !WinIgnoresActive()
+#If CapsLockX_Avaliable()
+
+#If
+
+Hotkey, If, CapsLockX_Avaliable()
 
 if (T_XKeyAsCapsLock) {
     Hotkey $*CapsLock, CapsLockX_Dn
@@ -138,6 +142,13 @@ if(T_XKeyAsScrollLock){
     Hotkey $ScrollLock, CapsLockX_Dn
     Hotkey $ScrollLock Up, CapsLockX_Up 
 }
+
+^!End::
+    CapsLockX_Paused := !CapsLockX_Paused
+    if(CapsLockX_Paused) {
+        TrayTip, 暂停, CapsLockX 已暂停
+    }
+Return
 
 #Include Core\CapsLockX-LoadModules.ahk
 

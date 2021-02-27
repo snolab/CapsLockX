@@ -150,7 +150,7 @@ Return
 Return
 
 ; 模拟 Tab 键切换焦点
-!\:: Send {Tab}
+; !\:: Send {Tab}
 ; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
 ; 以及在窗口贴边后，WASD 切换窗口焦点
 

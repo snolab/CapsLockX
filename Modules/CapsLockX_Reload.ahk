@@ -7,8 +7,9 @@
 ; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
-
 return
+
+
 ; 硬重启键
 ^!\::
     ; Run CapsLockX.ahk, %A_WorkingDir%
