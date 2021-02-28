@@ -5,13 +5,14 @@
     <title>CapsLockX - Operate the computer like a hacker!</title>
     <version>1.8.0</version>
     <authors>snomiao</authors>
+    <owner>snomiao</owner>
     <projectUrl>https://snomiao.github.io/CapsLockX/</projectUrl>
     <iconUrl>https://github.com/snomiao/CapsLockX/raw/master/Data/XIconBlue.ico</iconUrl>
     <summary>像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
     <description>CapsLockX</description>
     <releaseNotes>Upload.</releaseNotes>
-    <copyright>copyright (c) Snowstar Laboratory 2017-2021</copyright>
-    <tags>hotkeys autohotkey windows admin ahk </tags>
+    <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
+    <tags>hotkeys autohotkey windows admin ahk</tags>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies></dependencies>
   </metadata>
