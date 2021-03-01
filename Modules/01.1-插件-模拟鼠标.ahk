@@ -10,6 +10,7 @@
 ;
 ; CoordMode, Mouse, Screen
 
+
 AppendHelp( "
 (
 模拟鼠标
