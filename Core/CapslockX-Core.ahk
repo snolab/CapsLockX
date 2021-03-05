@@ -146,20 +146,27 @@ if(T_XKeyAsInsert)
 if(T_XKeyAsScrollLock)
     Hotkey $ScrollLock Up, CapsLockX_Up 
 
-
 #Include Core\CapsLockX-LoadModules.ahk
 
 #If
 
-; CapsLockX模式切换处理
+; CapsLockX 模式切换处理
 CapsLockX_Dn:
     lastCapsLockKey := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
-    ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey%
-
-    if (A_PriorKey == "LAlt") {
-        lastCapsLockKey =
+    ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey% 
+    tooltip % A_PriorKey "_" GetKeyState(A_PriorKey, "P") "_" lastCapsLockKey != A_PriorKey
+    if(!!GetKeyState(A_PriorKey, "P") && lastCapsLockKey != A_PriorKey){
+        ; 按住其它键的时候 不触发 CapsLockX
+        SendEvent {%lastCapsLockKey% Down}
+        KeyWait %lastCapsLockKey%
+        SendEvent {%lastCapsLockKey% Up}
+        lastCapsLockKey := ""
         Return
     }
+    ; if (A_PriorKey == "LAlt") {
+    ;     lastCapsLockKey := ""
+    ;     Return
+    ; }
     ; if (WinActive(".* - Notepad3")) {
     ;     traytip asdf, disable   d
     ;     Return
@@ -185,15 +192,13 @@ CapsLockX_Dn:
         ; SendInput, {CapsLock}
     }
 
-    ; (20200809)长按显示帮助
-    if (A_PriorKey == lastCapsLockKey) {
+    ; (20200809)长按显示帮助（空格除外）
+    if (A_PriorKey == lastCapsLockKey && A_PriorKey != "Space") {
         if ( A_TickCount - CapsLockPressTimestamp > 1000) {
             CapslockXShowHelp(globalHelpInfo, 1, lastCapsLockKey)
-            KeyWait, %lastCapsLockKey%
+            KeyWait %lastCapsLockKey%
             ; KeyWait, CapsLock
         }
-    } else {
-        ; KeyWait, %lastCapsLockKey%
     }
 
     UpdateLight()
@@ -204,19 +209,18 @@ CapsLockX_Up:
     CapsLockPressTimestamp := 0
     ; 退出 Fn 模式
     CapsLockXMode &= ~CM_FN
-
     ; (20200629) 取消长按进入 CapslockX Mode 的功能，改为只要没有用作组合键都算切换 Capslock
     ; if (T_CapsLockXKey =="CapsLock" && A_PriorKey == "CapsLock"){
-    if (A_PriorKey == "CapsLock") {
+    if (lastCapsLockKey == "CapsLock") {
         if (GetKeyState("CapsLock", "T")) {
             SetCapsLockState, Off
         } else {
             SetCapsLockState, On
         }
     }
-    if (A_PriorKey == "Space") {
+    if(lastCapsLockKey == "Space" && A_PriorKey == "Space"){
         Send {Space}
-    }
+    } 
     ; if (A_PriorKey == "\")     Send \\
     UpdateLight()
 
