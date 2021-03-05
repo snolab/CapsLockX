@@ -6,7 +6,7 @@
     "CapsLockX": "CapsLockX.exe",
     "build": "CapsLockX.exe",
     "version": "notepad package.json",
-    "postversion": "git push --follow-version"
+    "postversion": "git push --follow-tag"
   },
   "repository": {
     "type": "git",
