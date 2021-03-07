@@ -5,7 +5,7 @@
   "scripts": {
     "CapsLockX": "CapsLockX.exe",
     "build": "CapsLockX.exe",
-    "version": "notepad package.json",
+    "version": "node publish.node.js",
     "postversion": "git push --follow-tag"
   },
   "repository": {

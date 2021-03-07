@@ -154,8 +154,9 @@ if(T_XKeyAsScrollLock)
 CapsLockX_Dn:
     lastCapsLockKey := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
     ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey% 
-    tooltip % A_PriorKey "_" GetKeyState(A_PriorKey, "P") "_" lastCapsLockKey != A_PriorKey
-    if(!!GetKeyState(A_PriorKey, "P") && lastCapsLockKey != A_PriorKey){
+    ; tooltip % A_PriorKey "_" GetKeyState(A_PriorKey, "P") "_" (lastCapsLockKey != A_PriorKey)
+    StringLeft, first5char, A_PriorKey, 5
+    if(first5char != "Wheel" && GetKeyState(A_PriorKey, "P") && lastCapsLockKey != A_PriorKey){
         ; 按住其它键的时候 不触发 CapsLockX
         SendEvent {%lastCapsLockKey% Down}
         KeyWait %lastCapsLockKey%
@@ -168,7 +169,7 @@ CapsLockX_Dn:
     ;     Return
     ; }
     ; if (WinActive(".* - Notepad3")) {
-    ;     traytip asdf, disable   d
+    ;     traytip asdf, disable
     ;     Return
     ; }
     ; A_ThisHotkey == ("$*".T_CapsLockXKey) &&
