@@ -10,7 +10,6 @@
 ;
 ; CoordMode, Mouse, Screen
 
-
 AppendHelp( "
 (
 模拟鼠标
@@ -24,18 +23,18 @@ AppendHelp( "
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 global 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0
-global mvx := 0, mvy := 0, mdx := 0, mdy := 0
+global 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
 
 ; 滚轮加速度微分对称模型（不要在意这中二的名字hhhh
-global scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0
-global scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
-
+global 轮动中 := 0
+global 轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
+global 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
 If(TMouse_SendInput)
     SendMode Input
 
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
-; msgbox % say "_" sax "`n" scroll_vy "_" scroll_vx "`n" lastsvy "_" lastsvx
+; msgbox % say "_" sax "`n" 轮速纵 "_" 轮速横 "`n" lastsvy "_" lastsvx
 
 Return
 
@@ -105,8 +104,8 @@ SendInput_MouseMoveR64(x, y){
     /*
     VarSetCapacity(sendData, 28, 0)
     NumPut(0 , sendData, 0, "UShort")
-    NumPut(mvx, sendData, 4, "Short")
-    NumPut(mvy, sendData, 8, "Short")
+    NumPut(鼠速横, sendData, 4, "Short")
+    NumPut(鼠速纵, sendData, 8, "Short")
     NumPut(0 , sendData, 12, "UShort")
     NumPut(1 , sendData, 16, "UShort")
     DllCall("SendInput", "UShort", 1, "Point", sendData, "UShort", 28)
@@ -139,7 +138,7 @@ SendInput_MouseMoveR64(x, y){
 ; mouseTicker_dev:
 ;     ; 在非 CapsLockX 模式下直接停止
 ;     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
-;         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+;         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
 ;         max := 0, may := 0
 ;     }else{
 ;         tNow := QPC()
@@ -152,18 +151,32 @@ SendInput_MouseMoveR64(x, y){
 ;     tax := tda * tay
 ;     If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
 ;     {
-;         SendInput_MouseMoveR32(mdx, mdy)
-;         mdx -= mdx | 0, mdy -= mdy | 0
+;         SendInput_MouseMoveR32(鼠差横, 鼠差纵)
+;         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
 ;     }Else{
-;         MouseMove, %mdx%, %mdy%, 0, R
-;         mdx -= mdx | 0, mdy -= mdy | 0
+;         MouseMove, %鼠差横%, %鼠差纵%, 0, R
+;         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
 ;     }
 ; Return
 
+; 鼠标模拟
+MouseTickerStart(){
+    if(!鼠动中) {
+        SetTimer, MouseTicker, 1
+        鼠动中 := 1
+    }
+}
+MouseTickerStop(){
+    鼠动中 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
+    SetTimer, MouseTicker, Off
+}
+MouseTicker:
+    MouseTicker()
+Return
 MouseTicker(){
     ; 在非 CapsLockX 模式下直接停止
     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
-        鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
+        鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
         max := 0, may := 0
     }else{
         tNow := QPC()
@@ -177,12 +190,12 @@ MouseTicker(){
     }
 
     ; ; 摩擦力不阻碍用户意志
-    mvx := Friction(mvx + max, max), mvy := Friction(mvy + may, may)
+    鼠速横 := Friction(鼠速横 + max, max), 鼠速纵 := Friction(鼠速纵 + may, may)
 
     ; 实际移动需要约化
-    mdx += mvx, mdy += mvy
+    鼠差横 += 鼠速横, 鼠差纵 += 鼠速纵
 
-    if ( mvx == 0 && mvy == 0){
+    if ( 鼠速横 == 0 && 鼠速纵 == 0){
         ; 完成移动，退出定时
         MouseTickerStop()
         Return
@@ -195,19 +208,19 @@ MouseTicker(){
 
     If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
     {
-        SendInput_MouseMoveR32(mdx, mdy)
-        mdx -= mdx | 0, mdy -= mdy | 0
+        SendInput_MouseMoveR32(鼠差横, 鼠差纵)
+        鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
     }Else{
-        MouseMove, %mdx%, %mdy%, 0, R
-        mdx -= mdx | 0, mdy -= mdy | 0
+        MouseMove, %鼠差横%, %鼠差纵%, 0, R
+        鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
     }
 
     ; 撞到屏幕边角就停下来
     If (TMouse_StopAtScreenEdge){
         If(xa == xb)
-            mvx := 0
+            鼠速横 := 0
         If(ya == yb)
-            mvy := 0
+            鼠速纵 := 0
         xb := xa, yb := ya
     }
 
@@ -215,44 +228,32 @@ MouseTicker(){
     ; 放在 MouseMove 后面是粘附的感觉
     ; 放在它前面是撞到东西的感觉
     If(TMouse_StickyCursor And CursorShapeChangedQ()){
-        mvx := 0, mvy := 0
+        鼠速横 := 0, 鼠速纵 := 0
     }
 
     ; 对屏幕边角用力穿透，并粘附( 必须放 MouseMove 下面 )
     ; 此设定与StopAtScreenEdge不兼容
-    ; If(max And Abs(mvx) > 80 And xa == xb){
+    ; If(max And Abs(鼠速横) > 80 And xa == xb){
     ; If(xStop){
-    ; MouseMove, (mvx < 0 ? 3 : -3) * A_ScreenWidth, 0, 0, R
+    ; MouseMove, (鼠速横 < 0 ? 3 : -3) * A_ScreenWidth, 0, 0, R
     ; throughedScreen = 1
     ; xStop = 0
     ; }Else{
     ; xStop = 1
     ; }
-    ; mvx := 0, mvy := 0
+    ; 鼠速横 := 0, 鼠速纵 := 0
     ; }
-    ; If(may And Abs(mvy) > 80 And ya == yb){
+    ; If(may And Abs(鼠速纵) > 80 And ya == yb){
     ; If(yStop){
-    ; MouseMove, 0, (mvy < 0 ? 3 : -3) * A_ScreenHeight, 0, R
+    ; MouseMove, 0, (鼠速纵 < 0 ? 3 : -3) * A_ScreenHeight, 0, R
     ; throughedScreen = 1
     ; yStop = 0
     ; }Else{
     ; yStop = 1
     ; }
-    ; mvx := 0, mvy := 0
+    ; 鼠速横 := 0, 鼠速纵 := 0
     ; }
 }
-
-; 鼠标模拟
-MouseTickerStart(){
-    SetTimer, MouseTicker, 0
-}
-MouseTickerStop(){
-    鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, mvx := 0, mvy := 0, mdx := 0, mdy := 0
-    SetTimer, MouseTicker, Off
-}
-MouseTicker:
-    MouseTicker()
-Return
 
 Pos2Long(x, y) {
     Return x | (y << 16)
@@ -296,84 +297,86 @@ ScrollMsg(msg, zDelta){
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass2%
         If(ControlClass2 != ControlClass3){
             PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass3%
-
         }
     }
 }
 ; 滚轮运动处理
+ScrollTickerStart(){
+    if(!轮动中){
+        SetTimer, ScrollTicker, 1
+        轮动中 := 1
+    }
+}
 ScrollTicker:
     ScrollTicker()
 Return
 ScrollTicker(){
     ; RF同时按下相当于中键
     If(GetKeyState("MButton", "P")){
-        If(scroll_tu == 0 && scroll_td == 0){
+        If(轮刻上 == 0 && 轮刻下 == 0){
             Send {MButton Up}
-            scroll_tu := 0, scroll_td := 0
+            轮刻上 := 0, 轮刻下 := 0
             Return
         }
     }
-    If(scroll_tu && scroll_td && Abs(tdr - tdf) < 1){
+    If(轮刻上 && 轮刻下 && Abs(tdr - tdf) < 1){
         If(!GetKeyState("MButton", "P")){
             Send {MButton Down}
-            scroll_tu := 1, scroll_td := 1
+            轮刻上 := 1, 轮刻下 := 1
         }
         Return
     }
 
     ; 在非CapsLockX模式下停止
     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
-        scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0
-        scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
+        轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
+        轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
         sax := 0, say := 0
     }else{
         tNow := QPC()
         ; 计算用户操作时间
-        tdz := dt(scroll_tl, tNow), tdc := dt(scroll_tr, tNow)
-        tdr := dt(scroll_tu, tNow), tdf := dt(scroll_td, tNow)
+        tdz := dt(轮刻左, tNow), tdc := dt(轮刻右, tNow)
+        tdr := dt(轮刻上, tNow), tdf := dt(轮刻下, tNow)
         ; 计算加速度
         say := ma(tdr - tdf) * TMouse_WheelSpeedRatio
         sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
         ; tooltip % say "_" sax
     }
     ; 计算速度
-    lastsvx := scroll_vx
-    lastsvy := scroll_vy
-    ; msgbox % say "_" sax "`n" scroll_vy "_" scroll_vx "`n" lastsvy "_" lastsvx
+    lastsvx := 轮速横
+    lastsvy := 轮速纵
+    ; _ := "_", 换行 := "`n"
+    ; tooltip  % tdr _ tdf 换行 say _ sax 换行 轮速纵 _ 轮速横 换行 lastsvy _ lastsvx
 
-    scroll_vy := Friction(scroll_vy + say, say), scroll_vx := Friction(scroll_vx + sax, sax)
+    轮速纵 := Friction(轮速纵 + say, say), 轮速横 := Friction(轮速横 + sax, sax)
 
-    ; tooltip %scroll_tu%`n%scroll_td%`n%scroll_tl%`n%scroll_tr%`n%scroll_vx%`n%scroll_vy%`n%scroll_dx%`n%scroll_dy%
+    ; tooltip %轮刻上%`n%轮刻下%`n%轮刻左%`n%轮刻右%`n%轮速横%`n%轮速纵%`n%轮差横%`n%轮差纵%
 
-    if ( scroll_vy == 0 && scroll_vx == 0){
+    if ( 轮速纵 == 0 && 轮速横 == 0){
         ; 完成滚动，退出定时
         ; tooltip Done
-        scroll_tu := 0, scroll_td := 0, scroll_tl := 0, scroll_tr := 0, scroll_vx := 0, scroll_vy := 0, scroll_dx := 0, scroll_dy := 0
+        轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0, 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
         SetTimer, ScrollTicker, Off
+        轮动中 := 0
         Return
     }
 
-    scroll_dy+= scroll_vy, scroll_dx += scroll_vx
+    轮差纵+= 轮速纵, 轮差横 += 轮速横
     ; 处理移动
-    If ((scroll_dy|0) != 0) {
+    If ((轮差纵|0) != 0) {
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x0800, scroll_dy) ; 0x0800/*MOUSEEVENTF_WHEEL*/
+            SendInput_MouseMsg32(0x0800, 轮差纵) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
-            ScrollMsg2(0x20A, scroll_dy)
-        scroll_dy -= scroll_dy | 0
+            ScrollMsg2(0x20A, 轮差纵)
+        轮差纵 -= 轮差纵 | 0
     }
-    If ((scroll_dx|0) != 0) {
+    If ((轮差横|0) != 0) {
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x1000, scroll_dx) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
+            SendInput_MouseMsg32(0x1000, 轮差横) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
         Else
-            ScrollMsg2(0x20E, scroll_dx) ; 在64位下用的是低性能的……
-        scroll_dx -= scroll_dx | 0
+            ScrollMsg2(0x20E, 轮差横) ; 在64位下用的是低性能的……
+        轮差横 -= 轮差横 | 0
     }
-}
-
-; 时间处理
-ScrollTickerStart(){
-    SetTimer, ScrollTicker, 0
 }
 
 ; CapsLockX和fn模式都能触发
@@ -411,10 +414,10 @@ ScrollTickerStart(){
 *s Up:: 鼠刻下 := 0, MouseTickerStart()
 
 ; 鼠标滚轮处理
-r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), ScrollTickerStart()
-f:: scroll_td := (scroll_td ? scroll_td : QPC()), ScrollTickerStart()
-r Up:: scroll_tu := 0, ScrollTickerStart()
-f Up:: scroll_td := 0, ScrollTickerStart()
+r:: 轮刻上 := (轮刻上 ? 轮刻上 : QPC()), ScrollTickerStart()
+f:: 轮刻下 := (轮刻下 ? 轮刻下 : QPC()), ScrollTickerStart()
+r Up:: 轮刻上 := 0, ScrollTickerStart()
+f Up:: 轮刻下 := 0, ScrollTickerStart()
 
 ; 单格滚动
 !r:: Send {WheelUp}
@@ -426,14 +429,14 @@ f Up:: scroll_td := 0, ScrollTickerStart()
 ^r:: Send ^{WheelUp}
 ^f:: Send ^{WheelDown}
 
-; ^r:: scroll_tu := (scroll_tu ? scroll_tu : QPC()), ScrollTickerStart()
-; ^f:: scroll_td := (scroll_td ? scroll_td : QPC()), ScrollTickerStart()
-; ^r Up:: scroll_tu := 0, ScrollTickerStart()
-; ^f Up:: scroll_td := 0, ScrollTickerStart()
+; ^r:: 轮刻上 := (轮刻上 ? 轮刻上 : QPC()), ScrollTickerStart()
+; ^f:: 轮刻下 := (轮刻下 ? 轮刻下 : QPC()), ScrollTickerStart()
+; ^r Up:: 轮刻上 := 0, ScrollTickerStart()
+; ^f Up:: 轮刻下 := 0, ScrollTickerStart()
 
 ; 横向滚动
-+r:: scroll_tl := (scroll_tl ? scroll_tl : QPC()), ScrollTickerStart()
-+f:: scroll_tr := (scroll_tr ? scroll_tr : QPC()), ScrollTickerStart()
-+r Up:: scroll_tl := 0, ScrollTickerStart()
-+f Up:: scroll_tr := 0, ScrollTickerStart()
++r:: 轮刻左 := (轮刻左 ? 轮刻左 : QPC()), ScrollTickerStart()
++f:: 轮刻右 := (轮刻右 ? 轮刻右 : QPC()), ScrollTickerStart()
++r Up:: 轮刻左 := 0, ScrollTickerStart()
++f Up:: 轮刻右 := 0, ScrollTickerStart()
 

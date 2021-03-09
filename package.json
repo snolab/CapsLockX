@@ -21,5 +21,8 @@
   "bin": {
     "capslockx": "CapslockX.exe"
   },
-  "main": "CapsLockX.exe"
+  "main": "CapsLockX.exe",
+  "devDependencies": {
+    "xml": "^1.0.1"
+  }
 }

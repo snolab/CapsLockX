@@ -42,7 +42,6 @@ GoSub Setup_37
 GoSub Setup_38
 GoSub Setup_39
 GoSub Setup_40
-GoSub Setup_41
 
 Return
 #If
@@ -113,59 +112,56 @@ Return
         #Include ./Modules\应用-Edge增强.ahk
 #If
     Setup_23:
-        #Include ./Modules\应用-IAR改选项为CMSIS-DAP.ahk
-#If
-    Setup_24:
         #Include ./Modules\应用-LoopbackExemptionManager.ahk
 #If
-    Setup_25:
+    Setup_24:
         #Include ./Modules\应用-MobaXterm.ahk
 #If
-    Setup_26:
+    Setup_25:
         #Include ./Modules\应用-mstsc远程桌面增强.ahk
 #If
-    Setup_27:
+    Setup_26:
         #Include ./Modules\应用-OneNote2016增强.ahk
 #If
-    Setup_28:
+    Setup_27:
         #Include ./Modules\应用-OneNoteMetro拓展.ahk
 #If
-    Setup_29:
+    Setup_28:
         #Include ./Modules\应用-QQ_UWP增强.ahk
 #If
-    Setup_30:
+    Setup_29:
         #Include ./Modules\应用-Telegram.ahk
 #If
-    Setup_31:
+    Setup_30:
         #Include ./Modules\应用-TIM添加常驻功能.ahk
 #If
-    Setup_32:
+    Setup_31:
         #Include ./Modules\应用-TIM连接OneNote2016.ahk
 #If
-    Setup_33:
+    Setup_32:
         #Include ./Modules\应用-UWP应用增强.ahk
 #If
-    Setup_34:
+    Setup_33:
         #Include ./Modules\应用-文明6回车左置.ahk
 #If
-    Setup_35:
+    Setup_34:
         #Include ./Modules\应用-桌面QQ增强.ahk
 #If
-    Setup_36:
+    Setup_35:
         #Include ./Modules\应用-网易云音乐.ahk
 #If
-    Setup_37:
+    Setup_36:
         #Include ./Modules\应用-讯飞输入法语音悬浮窗.ahk
 #If
-    Setup_38:
+    Setup_37:
         #Include ./Modules\插件-VSCode增强.ahk
 #If
-    Setup_39:
+    Setup_38:
         #Include ./Modules\插件-媒体键.ahk
 #If
-    Setup_40:
+    Setup_39:
         #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
 #If
-    Setup_41:
+    Setup_40:
         #Include ./Modules\插件-雪星转屏.ahk
 

@@ -156,11 +156,12 @@ CapsLockX_Dn:
     ; ToolTip, thk %A_ThisHotkey% %lastCapsLockKey% %A_PriorKey% 
     ; tooltip % A_PriorKey "_" GetKeyState(A_PriorKey, "P") "_" (lastCapsLockKey != A_PriorKey)
     StringLeft, first5char, A_PriorKey, 5
-    if(first5char != "Wheel" && GetKeyState(A_PriorKey, "P") && lastCapsLockKey != A_PriorKey){
-        ; 按住其它键的时候 不触发 CapsLockX
+    if(first5char != "Wheel" && GetKeyState(A_在PriorKey, "P") && lastCapsLockKey != A_PriorKey && lastCapsLockKey){
+        ; 按住其它键的时候 不触发 CapsLockX在 
+        Tooltip "lclk" %lastCapsLockKey% Up
         SendEvent {%lastCapsLockKey% Down}
         KeyWait %lastCapsLockKey%
-        SendEvent {%lastCapsLockKey% Up}
+        SendEvent {%lastCapsLockKey% Up}要民民
         lastCapsLockKey := ""
         Return
     }
@@ -220,7 +221,7 @@ CapsLockX_Up:
         }
     }
     if(lastCapsLockKey == "Space" && A_PriorKey == "Space"){
-        Send {Space}
+        SendEvent {Space}
     } 
     ; if (A_PriorKey == "\")     Send \\
     UpdateLight()
