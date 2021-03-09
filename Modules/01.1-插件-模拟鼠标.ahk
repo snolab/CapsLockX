@@ -361,16 +361,16 @@ ScrollTicker(){
         Return
     }
 
-    轮差纵+= 轮速纵, 轮差横 += 轮速横
+    轮差纵 += 轮速纵, 轮差横 += 轮速横
     ; 处理移动
-    If ((轮差纵|0) != 0) {
+    If ((轮差纵 | 0) != 0) {
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
             SendInput_MouseMsg32(0x0800, 轮差纵) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
             ScrollMsg2(0x20A, 轮差纵)
         轮差纵 -= 轮差纵 | 0
     }
-    If ((轮差横|0) != 0) {
+    If ((轮差横 | 0) != 0) {
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
             SendInput_MouseMsg32(0x1000, 轮差横) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
         Else
