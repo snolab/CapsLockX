@@ -5,7 +5,7 @@
   "scripts": {
     "CapsLockX": "CapsLockX.exe",
     "build": "CapsLockX.exe",
-    "version": "node tools/publish.node.mjs",
+    "version": "node tools/versioning.node.mjs",
     "postversion": "git push --follow-tag"
   },
   "repository": {
