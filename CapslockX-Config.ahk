@@ -18,6 +18,7 @@ if (!!CapslockXConfigPath) {
     global T_XKeyAsCapsLock := CapsLockX_Config("Core", "T_XKeyAsCapsLock", 1)
     global T_XKeyAsInsert := CapsLockX_Config("Core", "T_XKeyAsInsert", 0)
     global T_XKeyAsScrollLock := CapsLockX_Config("Core", "T_XKeyAsScrollLock", 0)
+    global T_XKeyAsRAlt := CapsLockX_Config("Core", "T_XKeyAsRAlt", 0)
     ; 是否使用 ScrollLock 灯来显示 CapsLockX 状态（不建议
     global T_UseScrollLockLight := CapsLockX_Config("Core", "T_UseScrollLockLight", 0)
     ; 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议 

@@ -18,6 +18,9 @@
 
 ; InitFlashingWinTrigger
 global lastFlashWinIDs := []
+global winMousePoses := {}
+global T窗口增强_鼠标位置记忆 := CapsLockX_Config("窗口增强", "鼠标位置记忆", 1)
+
 Gui +LastFound
 hWnd := WinExist() , DllCall( "RegisterShellHookWindow", UInt, hWnd )
 MsgNum := DllCall( "RegisterWindowMessage", Str,"SHELLHOOK" )
@@ -30,13 +33,12 @@ Return
 
 #if
 
-
 ReverseArray(oArray)
 {
-	Array := Object()
-	For i,v in oArray
-		Array[oArray.Length()-i+1] := v
-	Return Array
+    Array := Object()
+    For i,v in oArray
+        Array[oArray.Length()-i+1] := v
+    Return Array
 }
 
 arrayDistinctKeepTheLastOne(arr) { ; Hash O(n)
@@ -44,7 +46,7 @@ arrayDistinctKeepTheLastOne(arr) { ; Hash O(n)
     rarr := ReverseArray(arr)
     for e, v in rarr
         if (!hash.Haskey(v))
-            hash[(v)] := 1, newArr.push(v)
+        hash[(v)] := 1, newArr.push(v)
     return ReverseArray(newArr)
 }
 
@@ -61,16 +63,40 @@ ShellMessage( wParam,lParam ) {
     }
 }
 ; activate
+MousePosBackup(){
+    if(!T窗口增强_鼠标位置记忆)
+        return
+    CoordMode, Mouse, Screen
+    MouseGetPos, X, Y, hWnd, hWndCtrl
+    winMousePoses[hWnd] := [X, Y, hWndCtrl]
+}
+MousePosRestore(hWnd:=0){
+    if(!T窗口增强_鼠标位置记忆)
+        return
+    if(!hWnd)
+        WinGet, hWnd, id, A
+    if(winMousePoses[hWnd]) {
+        X := winMousePoses[hWnd][1]
+        Y := winMousePoses[hWnd][2]
+        CoordMode, Mouse, Screen
+        ; ToolTip, hwnd %hWnd%, %X%, %Y%
+        MouseMove, %X%, %Y%, 0
+    }
+}
 
 ActivateLastFlashWindow(){
-    While % lastFlashWinIDs.Count(){
+    MousePosBackup()
+    While % lastFlashWinIDs.Count() {
         hWnd := WinExist("ahk_id " lastFlashWinIDs.Pop())
         if (hWnd){
             WinActivate, ahk_id %hWnd%
             WinGetTitle, this_title, ahk_id %hWnd%
             TrayTip, switched, switched to blinking %this_title%
+            MousePosRestore(hWnd)
             Return
         }
     }
-    Send {Blind}!{Esc}
+    SendEvent {Blind}!{Esc}
+    Sleep 64
+    MousePosRestore()
 }

@@ -134,17 +134,21 @@ if(T_XKeyAsInsert)
     Hotkey $Insert, CapsLockX_Dn
 if(T_XKeyAsScrollLock)
     Hotkey $ScrollLock, CapsLockX_Dn
+if(T_XKeyAsRAlt)
+    Hotkey $RAlt, CapsLockX_Dn
 
 Hotkey, If
 
-if (T_XKeyAsCapsLock) 
+if (T_XKeyAsCapsLock)
     Hotkey $*CapsLock Up, CapsLockX_Up
 if (T_XKeyAsSpace) 
     Hotkey $Space Up, CapsLockX_Up
-if(T_XKeyAsInsert)
-    Hotkey $Insert Up, CapsLockX_Up 
-if(T_XKeyAsScrollLock)
-    Hotkey $ScrollLock Up, CapsLockX_Up 
+if (T_XKeyAsInsert)
+    Hotkey $Insert Up, CapsLockX_Up
+if (T_XKeyAsScrollLock)
+    Hotkey $ScrollLock Up, CapsLockX_Up
+if (T_XKeyAsRAlt)
+    Hotkey $RAlt Up, CapsLockX_Up
 
 #Include Core\CapsLockX-LoadModules.ahk
 
