@@ -1,28 +1,29 @@
 {
-  "name": "capslockx",
-  "version": "1.11.1",
-  "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
-  "scripts": {
-    "CapsLockX": "CapsLockX.exe",
-    "build": "CapsLockX.exe",
-    "version": "node tools/versioning.node.mjs",
-    "postversion": "git push --follow-tag"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/snomiao/CapsLockX.git"
-  },
-  "author": "snomiao@gmail.com",
-  "license": "GPL-3.0-or-later",
-  "bugs": {
-    "url": "https://github.com/snomiao/CapsLockX/issues"
-  },
-  "homepage": "https://github.com/snomiao/CapsLockX#readme",
-  "bin": {
-    "capslockx": "CapslockX.exe"
-  },
-  "main": "CapsLockX.exe",
-  "devDependencies": {
-    "xml": "^1.0.1"
-  }
+    "name": "capslockx",
+    "version": "1.11.1",
+    "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
+    "scripts": {
+        "CapsLockX": "CapsLockX.exe",
+        "start": "CapsLockX.exe",
+        "build:patch": "npm version patch",
+        "version": "node tools/versioning.node.mjs",
+        "postversion": "git push --follow-tag"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/snomiao/CapsLockX.git"
+    },
+    "author": "snomiao@gmail.com",
+    "license": "GPL-3.0-or-later",
+    "bugs": {
+        "url": "https://github.com/snomiao/CapsLockX/issues"
+    },
+    "homepage": "https://github.com/snomiao/CapsLockX#readme",
+    "bin": {
+        "capslockx": "CapslockX.exe"
+    },
+    "main": "CapsLockX.exe",
+    "devDependencies": {
+        "xml": "^1.0.1"
+    }
 }
