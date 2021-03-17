@@ -19,8 +19,7 @@ AppendHelp("
 (
 JavaScript 计算 (建议安装NodeJS)
 | Win + Alt + C| 计算当前选区 JavaScript 表达式，并替换
-)"
-)
+)")
 
 Return
 
