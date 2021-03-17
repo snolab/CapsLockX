@@ -42,8 +42,8 @@ Return
 #if CapsLockXMode
 
 ; Add or delete desktop
-Backspace:: Send ^#{F4}
-+Backspace:: Send ^#d
+!Backspace:: Send ^#{F4}
+!+Backspace:: Send ^#d
 
 ; Switch to desktop
 1:: SwitchToDesktop(1)
