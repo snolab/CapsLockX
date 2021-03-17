@@ -44,7 +44,7 @@ m::
     if (!FileExist(快速窗口热键编辑用户模块路径)){
         FileAppend, %快速窗口热键编辑初始内容%, %快速窗口热键编辑用户模块路径%
     }
-    ifstatement := "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
+    ifstatement := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
     FileAppend, %ifstatement%, %快速窗口热键编辑用户模块路径%
     Run notepad %快速窗口热键编辑用户模块路径%
 return
