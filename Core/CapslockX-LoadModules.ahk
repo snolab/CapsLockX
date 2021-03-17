@@ -1,4 +1,5 @@
-﻿global CapsLockX_PathModules := "./Modules"
+﻿; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)
+global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore := "./Core"
 global CapsLockX_Version := "v1.8.0 Beta"
 
@@ -42,6 +43,8 @@ GoSub Setup_37
 GoSub Setup_38
 GoSub Setup_39
 GoSub Setup_40
+GoSub Setup_41
+GoSub Setup_42
 
 Return
 #If
@@ -154,14 +157,20 @@ Return
         #Include ./Modules\应用-讯飞输入法语音悬浮窗.ahk
 #If
     Setup_37:
-        #Include ./Modules\插件-VSCode增强.ahk
+        #Include ./Modules\快速窗口热键编辑.ahk
 #If
     Setup_38:
-        #Include ./Modules\插件-媒体键.ahk
+        #Include ./Modules\快速窗口热键编辑.user.ahk
 #If
     Setup_39:
-        #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
+        #Include ./Modules\插件-VSCode增强.ahk
 #If
     Setup_40:
+        #Include ./Modules\插件-媒体键.ahk
+#If
+    Setup_41:
+        #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
+#If
+    Setup_42:
         #Include ./Modules\插件-雪星转屏.ahk
 

@@ -81,3 +81,6 @@ CapslockXShowHelp(helpStr, inGlobal = 0, waitKey = "/")
 ; 同理，这个热键可以使用 CapsLockX + Ctrl + / 触发
 ^/:: Run % CapsLockX_IssuesPage
 
+#if
+
+; 在这里你也可以定义无需按下 CapsLockX 就能触发的热键

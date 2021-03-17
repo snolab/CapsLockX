@@ -2,6 +2,8 @@
 # 各种远程桌面
 
 .*? - .* ahk_exe mstsc.exe
+ahk_exe anydesk.exe
+ahk_exe vmconnect.exe
 ahk_exe teamviewer.exe
 ahk_exe virtualbox.exe
 

@@ -180,6 +180,7 @@ LoadModules(ModulesLoader)
     ShowLoadingTips()
     
     ; 拼接代码
+    code_consts .= "; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)" "`n"
     code_consts .= "global CapsLockX_PathModules := " """" CapsLockX_PathModules """" "`n"
     code_consts .= "global CapsLockX_PathCore := "    """" CapsLockX_PathCore    """" "`n"
     code_consts .= "global CapsLockX_Version := "     """" CapsLockX_Version     """" "`n"
