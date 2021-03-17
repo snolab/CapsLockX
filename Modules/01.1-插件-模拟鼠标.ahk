@@ -383,60 +383,40 @@ ScrollTicker(){
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
 
 ; 鼠标按键处理
-*q:: RButton
-*e:: LButton
-; `:: Send {LButton 5}
-; *e:: Send {Blind}{LButton Down}
-; *e up:: Send {Blind}{LButton Up}
-; *q::
-;     If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
-;         SendInput_MouseMsg32(8) ; 8/*_MOUSEEVENTF_RIGHTDOWN*/
-;     Else
-;         Send {Blind}{RButton Down}
-; Return
-; *q up::
-;     If(TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位用
-;         SendInput_MouseMsg32(16) ; 16/*_MOUSEEVENTF_RIGHTUP*/
-;     Else
-;         Send {Blind}{RButton Up}
-; Return
+$*q:: RButton
+$*e:: LButton
 
 ; 只有开启CapsLockX模式能触发
 ; #If CapsLockXMode == CM_CapsLockX
 ; 鼠标运动处理
-*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : QPC()), MouseTickerStart()
-*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : QPC()), MouseTickerStart()
-*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : QPC()), MouseTickerStart()
-*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : QPC()), MouseTickerStart()
-*a Up:: 鼠刻左 := 0, MouseTickerStart()
-*d Up:: 鼠刻右 := 0, MouseTickerStart()
-*w Up:: 鼠刻上 := 0, MouseTickerStart()
-*s Up:: 鼠刻下 := 0, MouseTickerStart()
+$*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : QPC()), MouseTickerStart()
+$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : QPC()), MouseTickerStart()
+$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : QPC()), MouseTickerStart()
+$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : QPC()), MouseTickerStart()
+$*a Up:: 鼠刻左 := 0, MouseTickerStart()
+$*d Up:: 鼠刻右 := 0, MouseTickerStart()
+$*w Up:: 鼠刻上 := 0, MouseTickerStart()
+$*s Up:: 鼠刻下 := 0, MouseTickerStart()
 
 ; 鼠标滚轮处理
-r:: 轮刻上 := (轮刻上 ? 轮刻上 : QPC()), ScrollTickerStart()
-f:: 轮刻下 := (轮刻下 ? 轮刻下 : QPC()), ScrollTickerStart()
-r Up:: 轮刻上 := 0, ScrollTickerStart()
-f Up:: 轮刻下 := 0, ScrollTickerStart()
+$*r:: 轮刻上 := (轮刻上 ? 轮刻上 : QPC()), ScrollTickerStart()
+$*f:: 轮刻下 := (轮刻下 ? 轮刻下 : QPC()), ScrollTickerStart()
+$*r Up:: 轮刻上 := 0, ScrollTickerStart()
+$*f Up:: 轮刻下 := 0, ScrollTickerStart()
 
-; 单格滚动
-!r:: Send {WheelUp}
-!f:: Send {WheelDown}
-!^r:: Send ^{WheelUp}
-!^f:: Send ^{WheelDown}
+; Alt 单格滚动
+$!r:: Send {WheelUp}
+$!f:: Send {WheelDown}
+$!^r:: Send ^{WheelUp}
+$!^f:: Send ^{WheelDown}
 
-; 缩放
-^r:: Send ^{WheelUp}
-^f:: Send ^{WheelDown}
+; Ctrl 缩放
+$^r:: Send ^{WheelUp}
+$^f:: Send ^{WheelDown}
 
-; ^r:: 轮刻上 := (轮刻上 ? 轮刻上 : QPC()), ScrollTickerStart()
-; ^f:: 轮刻下 := (轮刻下 ? 轮刻下 : QPC()), ScrollTickerStart()
-; ^r Up:: 轮刻上 := 0, ScrollTickerStart()
-; ^f Up:: 轮刻下 := 0, ScrollTickerStart()
-
-; 横向滚动
-+r:: 轮刻左 := (轮刻左 ? 轮刻左 : QPC()), ScrollTickerStart()
-+f:: 轮刻右 := (轮刻右 ? 轮刻右 : QPC()), ScrollTickerStart()
-+r Up:: 轮刻左 := 0, ScrollTickerStart()
-+f Up:: 轮刻右 := 0, ScrollTickerStart()
+; Shift 横向滚动
+$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : QPC()), ScrollTickerStart()
+$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : QPC()), ScrollTickerStart()
+$+r Up:: 轮刻左 := 0, ScrollTickerStart()
+$+f Up:: 轮刻右 := 0, ScrollTickerStart()
 
