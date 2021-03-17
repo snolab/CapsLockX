@@ -9,11 +9,11 @@
 ; ========== CapsLockX ==========
 return
 
-
 ; 硬重启键
 ^!\::
     ; Run CapsLockX.ahk, %A_WorkingDir%
     Run CapsLockX.exe, %A_WorkingDir%
+; RunWait, Target [, WorkingDir, Max|Min|Hide|UseErrorLevel, OutputVarPID]
 ExitApp
 Return
 

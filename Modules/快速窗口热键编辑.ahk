@@ -28,7 +28,7 @@ TrayTip CapsLockX, 用户宏已加载
 Return
 
 #if
-; 这里可以写上你的自定义全局热键，由CapsLockX。
+; 这里可以写上你的自定义全局热键
 
 )"
 Return
