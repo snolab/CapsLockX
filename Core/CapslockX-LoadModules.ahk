@@ -44,7 +44,6 @@ GoSub Setup_38
 GoSub Setup_39
 GoSub Setup_40
 GoSub Setup_41
-GoSub Setup_42
 
 Return
 #If
@@ -160,17 +159,14 @@ Return
  #Include ./Modules\快速窗口热键编辑.ahk
 #If
  Setup_38:
- #Include ./Modules\快速窗口热键编辑.user.ahk
-#If
- Setup_39:
  #Include ./Modules\插件-VSCode增强.ahk
 #If
- Setup_40:
+ Setup_39:
  #Include ./Modules\插件-媒体键.ahk
 #If
- Setup_41:
+ Setup_40:
  #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
 #If
- Setup_42:
+ Setup_41:
  #Include ./Modules\插件-雪星转屏.ahk
 
