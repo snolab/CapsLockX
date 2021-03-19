@@ -11,5 +11,5 @@ _config.yaml
 # Test/
 # Settings/
 node_modules
-
+CapsLockX-LoadModules.ahk
 *.!sync
