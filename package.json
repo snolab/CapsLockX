@@ -7,7 +7,7 @@
         "start": "CapsLockX.exe",
         "build:patch": "npm version patch",
         "version": "node tools/versioning.node.mjs",
-        "postversion": "git push --follow-tag"
+        "postversion": "git commit -a -m versioning && git push --follow-tag"
     },
     "repository": {
         "type": "git",
