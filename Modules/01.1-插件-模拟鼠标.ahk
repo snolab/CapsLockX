@@ -256,7 +256,7 @@ MouseTicker(){
 }
 
 Pos2Long(x, y) {
-    Return x | (y << 16)
+Return x | (y << 16)
 }
 
 ScrollMsg2(msg, zDelta){
@@ -379,15 +379,12 @@ ScrollTicker(){
     }
 }
 
-; CapsLockX和fn模式都能触发
-#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
+#If CapsLockXMode
 
 ; 鼠标按键处理
 $*q:: RButton
 $*e:: LButton
 
-; 只有开启CapsLockX模式能触发
-; #If CapsLockXMode == CM_CapsLockX
 ; 鼠标运动处理
 $*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : QPC()), MouseTickerStart()
 $*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : QPC()), MouseTickerStart()
