@@ -1,6 +1,7 @@
 ﻿if !CapsLockX
     ExitApp
 global last_mstsc := 0
+global 上次CtrlShiftAlt时刻 := 0
 
 ; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
 ; SetTimer, toggleBottomOrTop, 1
@@ -14,15 +15,15 @@ return
 DetectMSTSC()
 {
     msg := ""
-    winTitle :=  "ahk_class TscShellContainerClass ahk_exe mstsc.exe"
+    winTitle := "ahk_class TscShellContainerClass ahk_exe mstsc.exe"
     WinWaitActive, % winTitle
     hWnd := WinExist()
     WinGetPos, X, Y, W, H, ahk_id %hWnd%
     msg .= "XYWH " X " " Y " " W " " H "`n"
     SysGet, VirtualWidth, 78
     SysGet, VirtualHeight, 79
-    msg .= "VWVH " VirtualWidth  " " VirtualHeight "`n"
-    
+    msg .= "VWVH " VirtualWidth " " VirtualHeight "`n"
+
     MonitorIndex := 1
     SysGet, MWA%MonitorIndex%, MonitorWorkArea, %MonitorIndex%
     SX := MWA1Left
@@ -30,7 +31,7 @@ DetectMSTSC()
     SW := MWA1Right - MWA1Left
     SH := MWA1Bottom - MWA1Top
     msg .= "MWA " SX " " SY " " SW " " SH "`n"
-    
+
     ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
     ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
     if (VirtualWidth == W && VirtualHeight == H) {
@@ -81,7 +82,7 @@ mstscShow()
 }
 mstscHide()
 {
-    
+
     TrayTip, , 远程桌面最小化, 1
     ; 使远程窗口最小化并失去焦点，显示其它窗口
     ; Tooltip % A_PriorHotkey
@@ -96,15 +97,32 @@ mstscHide()
     WinHide, ahk_id %last_mstsc%
     ; WinRestore, ahk_id %last_mstsc%
     WinShow, ahk_id %last_mstsc%
-    
+
 }
 
 #if
-    
+
+~$<!<+LCtrl Up::
+~$<^<+LAlt Up::
+~$<!<^LShift Up::
+    if(!(A_PriorKey == "LCtrl" || A_PriorKey == "LAlt" || A_PriorKey == "LShift"))
+        Return
+    KeyWait, LCtrl
+    KeyWait, LAlt
+    KeyWait, LShift
+    现在 := A_TickCount
+    间隔 := 现在 - 上次CtrlShiftAlt时刻
+    if(16 < 间隔 && 间隔 < 200){
+        WinMinimize A
+        TrayTip, CapsLockX, 最小化当前窗口（可穿透虚拟机和远程桌面）
+    }
+    上次CtrlShiftAlt时刻 := 现在
+Return
+
 <!RAlt Up:: mstscShow()
 >!LAlt Up::mstscShow()
 
-#IfWinActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
+#If WinActive("ahk_class TscShellContainerClass ahk_exe mstsc.exe")
 
 ; 左右Alt或Ctrl一起按 显示当前mstsc窗口
 <!RAlt Up:: mstscHide()
