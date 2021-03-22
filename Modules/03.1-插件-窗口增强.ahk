@@ -41,10 +41,11 @@ AppendHelp("
 
 ; flags
 global ARRANGE_SIDE_BY_SIDE := 0
-global ARRANGE_MAXWINDOW := 1
+global ARRANGE_STACKED := 1 ; if not then arrange SIDE_BY_SIDE
+global ARRANGE_MAXWINDOW := 2
 global ARRANGE_MINWINDOW := 4
-global ARRANGE_STACKED := 2 ; if not then arrange SIDE_BY_SIDE
-    
+global ARRANGE_DEBUG := 8
+
 Return
 
 ; 把当前窗口置顶
@@ -54,16 +55,16 @@ Return
 ; 确保WinTab模块优先级比Mouse高，否则此处 WASD 无效
 ; Make sure WinTab module has higher priority than Mouse, otherwise WASD is invalid here
 
-#if CapsLockXMode == CM_CAPSX || CapsLockXMode == CM_FN
+#if CapsLockXMode
 
 ; 自动排列窗口
 c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
 ; 自动排列窗口（包括最小化的窗口）
-!c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
+^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
 ; 自动堆叠窗口
 +c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
 ; 自动堆叠窗口（包括最小化的窗口）
-!+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
+^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
 
 ; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
 ; !o::
@@ -123,7 +124,7 @@ Return
 Return
 
 #if MultitaskingViewFrameQ()
-    
+
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
 !a:: Left
 !d:: Right
@@ -168,7 +169,7 @@ z:: Send ^#{F4}
 
 MultitaskingViewFrameQ()
 {
-    Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
 }
 ; this is improved method for stable
 GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
@@ -187,7 +188,7 @@ GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
             break
         }
     }
-    Return %monitorIndex%
+Return %monitorIndex%
 }
 ; below function is modified from [How to determine a window is in which monitor? - Ask for Help - AutoHotkey Community]( https://autohotkey.com/board/topic/69464-how-to-determine-a-window-is-in-which-monitor/ )
 GetMonitorIndexFromWindow(hWnd)
@@ -207,9 +208,9 @@ GetMonitorIndexFromWindow(hWnd)
         workRight := NumGet(monitorInfo, 28, "Int")
         workBottom := NumGet(monitorInfo, 32, "Int")
         isPrimary := NumGet(monitorInfo, 36, "Int") & 1
-        
+
         ; msgbox, , , workLeft%workLeft% workTop%workTop% workRight%workRight% workBottom%workBottom%
-        
+
         SysGet, monitorCount, MonitorCount
         loop %monitorCount%
         {
@@ -228,7 +229,7 @@ GetMonitorIndexFromWindow(hWnd)
     if (monitorIndex) {
         Return %monitorIndex%
     }
-    Return 1
+Return 1
 }
 
 ArrangeWindows(arrangeFlags = "0")
@@ -241,13 +242,13 @@ ArrangeWindows(arrangeFlags = "0")
     WS_EX_NOANIMATION := 0x04000000
     WS_EX_NOACTIVATE := 0x08000000
     WS_POPUP := 0x80000000
-    
+
     SysGet, MonitorCount, MonitorCount
     loop %MonitorCount% {
         MonitorIndex := A_Index
         listOfWindow%MonitorIndex% := ""
     }
-    
+
     DetectHiddenWindows, Off
     WinGet, id, List, , , 
     loop %id% {
@@ -267,7 +268,7 @@ ArrangeWindows(arrangeFlags = "0")
             ;     Continue
             ; 只显示Alt+TAB里有的窗口
             if (!(style & WS_EX_APPWINDOW)) {
-                Continue ; ; 跳过弹出窗口
+                continue ; ; 跳过弹出窗口
             }
             ; if (style & WS_POPUP)
             ;     Continue
@@ -288,11 +289,11 @@ ArrangeWindows(arrangeFlags = "0")
             }
             ; 跳过最大化窗口
             WinGet, minmax, minmax, ahk_id %hWnd%
-            if (!(arrangeFlags & ARRANGE_MAXWINDOW) && minmax == 1) {
+            if (minmax == 1 && !(arrangeFlags & ARRANGE_MAXWINDOW)) {
                 continue
             }
             ; 跳过最小化的窗口
-            if (!(arrangeFlags & ARRANGE_MINWINDOW) && minmax == -1) {
+            if (minmax == -1 && !(arrangeFlags & ARRANGE_MINWINDOW)) {
                 continue
             }
             ; 尝试跳过隐藏窗口
@@ -349,7 +350,7 @@ ArrangeWindows(arrangeFlags = "0")
                 ; WinShow, ahk_id %hWnd%
                 ; WinActivate, ahk_id %hWnd%
             }
-            
+
         }
         this_monitor := GetMonitorIndexFromWindow(hWnd)
         listOfWindow%this_monitor% .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -408,7 +409,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     loop Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-        
+
         ; 同一进程窗口长边优先排列
         if (AreaW >= AreaH) {
             ; row first
@@ -421,10 +422,10 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         }
         x := AreaX + nx * size_x
         y := AreaY + ny * size_y
-        
+
         ; 填满窗口间的缝隙
         x:= x-8, y:=y, w:=size_x+16, h:=size_y+8
-        
+
         ; 左上角不要出界，否则不同DPI的显示器连接处宽度计算不正常
         dX := max(AreaX - x, 0), x += dX, w -= dX
         dY := max(AreaY - y, 0), y += dY, h -= dY
@@ -438,7 +439,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     }
     WinGet, hWnd, , A
     ; DllCall( "FlashWindow", UInt, hWnd, Int, True )
-    
+
     ; loop Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
@@ -464,7 +465,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) ; SWP_ASYNCWINDOWPOS
         lasthWnd := hWnd
     }
-    
+
 }
 
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
@@ -484,7 +485,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
-    
+
     k := 0
     dx := 64
     dy := 64
@@ -499,7 +500,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         if (this_class == "ApplicationFrameWindow") {
             WinActivate, ahk_id %hWnd%
         }
-        
+
         x := AreaX + (n - k) * dx
         y := AreaY + (n - k) * dy
         FastResizeWindow(hWnd, x, y, w, h)
@@ -527,7 +528,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
         lasthWnd := hWnd
     }
-    
+
     ; loop, Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")

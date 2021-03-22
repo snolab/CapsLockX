@@ -160,7 +160,7 @@ Return
  #Include ./Modules\快速窗口热键编辑.ahk
 #If
  Setup_38:
- #Include ./Modules\快速窗口热键编辑.user.ahk
+ #Include ./Modules\快速窗口热键编辑内容.user.ahk
 #If
  Setup_39:
  #Include ./Modules\插件-VSCode增强.ahk

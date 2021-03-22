@@ -1,6 +1,6 @@
 ﻿if !CapsLockX
     ExitApp
-global last_mstsc := 0
+global 上次mstsc窗口hWnd := 0
 global 上次CtrlShiftAlt时刻 := 0
 
 ; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
@@ -56,17 +56,17 @@ DetectMSTSC()
 ; toggleBottomOrTop:
 ;     ; 不用担心 SetTimer 消耗 CPU 性能，因为它会在这一步阻塞
 ;     WinWaitActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-;     WinGet last_mstsc
-;     WinGet mm, MinMax, ahk_id %last_mstsc%
+;     WinGet 上次mstsc窗口hWnd
+;     WinGet mm, MinMax, ahk_id %上次mstsc窗口hWnd%
 ;     WinGetPos, X, Y, Width, Height, A
 ;     SysGet, VirtualWidth, 78
 ;     SysGet, VirtualHeight, 79
 ;     ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
 ;     ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
 ;     if (VirtualWidth == Width && VirtualHeight == Height){
-;         WinSet Bottom, , ahk_id %last_mstsc%
+;         WinSet Bottom, , ahk_id %上次mstsc窗口hWnd%
 ;     }
-;     WinWaitNotActive ahk_id %last_mstsc%
+;     WinWaitNotActive ahk_id %上次mstsc窗口hWnd%
 ;     Return
 
 ; 左右Alt一起按 显示当前mstsc窗口
@@ -74,11 +74,11 @@ mstscShow()
 {
     TrayTip, , 远程桌面显示, 1
     ; try to 获取当前mstsc窗口
-    if !last_mstsc
-        WinGet, last_mstsc, , ahk_class TscShellContainerClass ahk_exe mstsc.exe
-    WinRestore, ahk_id %last_mstsc%
-    WinSet, Top, , ahk_id %last_mstsc%
-    WinActivate ahk_id %last_mstsc%
+    if !上次mstsc窗口hWnd
+        WinGet, 上次mstsc窗口hWnd, , ahk_class TscShellContainerClass ahk_exe mstsc.exe
+    WinRestore, ahk_id %上次mstsc窗口hWnd%
+    WinSet, Top, , ahk_id %上次mstsc窗口hWnd%
+    WinActivate ahk_id %上次mstsc窗口hWnd%
 }
 mstscHide()
 {
@@ -87,16 +87,16 @@ mstscHide()
     ; 使远程窗口最小化并失去焦点，显示其它窗口
     ; Tooltip % A_PriorHotkey
     ; if (A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
-    WinGet, last_mstsc
+    WinGet, 上次mstsc窗口hWnd
     ; WinMinimizeAllUndo
     ; 后置
-    WinSet Bottom, , ahk_id %last_mstsc%
+    WinSet Bottom, , ahk_id %上次mstsc窗口hWnd%
     ; 最小化
-    WinMinimize ahk_id %last_mstsc%
+    WinMinimize ahk_id %上次mstsc窗口hWnd%
     ; 使其失去焦点
-    WinHide, ahk_id %last_mstsc%
-    ; WinRestore, ahk_id %last_mstsc%
-    WinShow, ahk_id %last_mstsc%
+    WinHide, ahk_id %上次mstsc窗口hWnd%
+    ; WinRestore, ahk_id %上次mstsc窗口hWnd%
+    WinShow, ahk_id %上次mstsc窗口hWnd%
 
 }
 
@@ -113,7 +113,15 @@ mstscHide()
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
     if(16 < 间隔 && 间隔 < 200){
-        WinMinimize A
+        WinGet 上次mstsc窗口hWnd
+        ; 后置
+        WinSet Bottom, , ahk_id %上次mstsc窗口hWnd%
+        ; 最小化
+        WinMinimize ahk_id %上次mstsc窗口hWnd%
+        ; 使其失去焦点
+        WinHide, ahk_id %上次mstsc窗口hWnd%
+        ; WinRestore, ahk_id %上次mstsc窗口hWnd%
+        WinShow, ahk_id %上次mstsc窗口hWnd%
         TrayTip, CapsLockX, 最小化当前窗口（可穿透虚拟机和远程桌面）
     }
     上次CtrlShiftAlt时刻 := 现在
