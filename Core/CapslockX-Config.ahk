@@ -21,7 +21,7 @@ if (!!CapslockXConfigPath) {
     global T_XKeyAsRAlt := CapsLockX_Config("Core", "T_XKeyAsRAlt", 0)
     ; 是否使用 ScrollLock 灯来显示 CapsLockX 状态（不建议
     global T_UseScrollLockLight := CapsLockX_Config("Core", "T_UseScrollLockLight", 0)
-    ; 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议 
+    ; 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议
     global T_UseCapsLockLight := CapsLockX_Config("Core", "T_UseCapsLockLight", 0)
     ; 是否开启声音提示（默认不开）
     global T_SwitchSound := CapsLockX_Config("Core", "T_SwitchSound", 0)

@@ -6,7 +6,7 @@
         "CapsLockX": "CapsLockX.exe",
         "start": "CapsLockX.exe",
         "build:patch": "npm version patch",
-        "version": "node tools/versioning.node.mjs",
+        "version": "node tools/versioning.node.mjs && conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
         "postversion": "git commit -a -m versioning && git push --follow-tag"
     },
     "repository": {
@@ -24,6 +24,8 @@
     },
     "main": "CapsLockX.exe",
     "devDependencies": {
-        "xml": "^1.0.1"
+        "@commitlint/cli": "^12.0.1",
+        "@commitlint/config-conventional": "^12.0.1",
+        "conventional-changelog-cli": "^2.1.1"
     }
 }
