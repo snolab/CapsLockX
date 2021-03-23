@@ -43,11 +43,9 @@ $#!p::
 Return
 
 ; 对于没有 Win 键的环境，用 ] [ 一起按来模拟 Win 键
-*] Up:: Send {Blind}]
-] & [:: LWin
-!\:: Send {Blind}{Tab}
-
-; \ & :: #Tab
+; ] & [:: LWin【
+; *] Up:: Send {Blind}]
+*!\:: Send {Blind}{Tab}
 
 ; 对于没有Esc或没有 Stroke 键的键
 #if CapsLockXMode
