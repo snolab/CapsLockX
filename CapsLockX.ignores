@@ -10,5 +10,5 @@ ahk_exe virtualbox.exe
 ahk_exe yuanshen.exe
 ahk_class UnityWndClass ahk_exe YuanShen.exe
 
-# 自定义
+# 高级编辑器
 gvim
