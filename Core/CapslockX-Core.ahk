@@ -99,10 +99,11 @@ CapsLockXTurnOn()
 }
 
 global T_IgnoresByLines
-FileRead, T_IgnoresByLines, CapsLockX.ignores
+global ignoresFilePath = CapsLockX.user.ignores
+FileRead, T_IgnoresByLines,%ignoresFilePath%
 if (T_IgnoresByLinesUser) {
-    FileCopy, CapsLockX.defaults.ignores, CapsLockX.ignores
-    FileRead, T_IgnoresByLines, CapsLockX.ignores
+    FileCopy, CapsLockX.defaults.ignores,%ignoresFilePath%
+    FileRead, T_IgnoresByLines,%ignoresFilePath%
 }
 
 global CapsLockX_Paused := 0

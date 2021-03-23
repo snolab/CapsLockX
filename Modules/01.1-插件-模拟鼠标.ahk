@@ -22,11 +22,12 @@ AppendHelp( "
 )")
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
+global 鼠动中 := 0, 鼠强动 := 0
 global 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0
 global 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
 
 ; 滚轮加速度微分对称模型（不要在意这中二的名字hhhh
-global 轮动中 := 0
+global 轮动中 := 0, 轮强动 := 0
 global 轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
 global 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
 If(TMouse_SendInput)
@@ -167,7 +168,7 @@ MouseTickerStart(){
     }
 }
 MouseTickerStop(){
-    鼠动中 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
+    鼠动中 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
     SetTimer, MouseTicker, Off
 }
 MouseTicker:
@@ -175,7 +176,7 @@ MouseTicker:
 Return
 MouseTicker(){
     ; 在非 CapsLockX 模式下直接停止
-    If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
+    If (!(CapsLockXMode || 鼠强动)){
         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
         max := 0, may := 0
     }else{
@@ -230,29 +231,6 @@ MouseTicker(){
     If(TMouse_StickyCursor And CursorShapeChangedQ()){
         鼠速横 := 0, 鼠速纵 := 0
     }
-
-    ; 对屏幕边角用力穿透，并粘附( 必须放 MouseMove 下面 )
-    ; 此设定与StopAtScreenEdge不兼容
-    ; If(max And Abs(鼠速横) > 80 And xa == xb){
-    ; If(xStop){
-    ; MouseMove, (鼠速横 < 0 ? 3 : -3) * A_ScreenWidth, 0, 0, R
-    ; throughedScreen = 1
-    ; xStop = 0
-    ; }Else{
-    ; xStop = 1
-    ; }
-    ; 鼠速横 := 0, 鼠速纵 := 0
-    ; }
-    ; If(may And Abs(鼠速纵) > 80 And ya == yb){
-    ; If(yStop){
-    ; MouseMove, 0, (鼠速纵 < 0 ? 3 : -3) * A_ScreenHeight, 0, R
-    ; throughedScreen = 1
-    ; yStop = 0
-    ; }Else{
-    ; yStop = 1
-    ; }
-    ; 鼠速横 := 0, 鼠速纵 := 0
-    ; }
 }
 
 Pos2Long(x, y) {
@@ -307,6 +285,12 @@ ScrollTickerStart(){
         轮动中 := 1
     }
 }
+ScrollTickerStop(){
+    轮动中 := 0, 轮强动 := 0
+    轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
+    轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
+    SetTimer, ScrollTicker, Off
+}
 ScrollTicker:
     ScrollTicker()
 Return
@@ -328,10 +312,9 @@ ScrollTicker(){
     }
 
     ; 在非CapsLockX模式下停止
-    If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
-        轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
-        轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
-        sax := 0, say := 0
+    If (!(CapsLockXMode || 轮强动)){
+        ScrollTickerStop()
+        Return
     }else{
         tNow := TM_QPC()
         ; 计算用户操作时间
@@ -379,15 +362,12 @@ ScrollTicker(){
     }
 }
 
-; CapsLockX和fn模式都能触发
-#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
+#If CapsLockXMode
 
 ; 鼠标按键处理
 $*q:: RButton
 $*e:: LButton
 
-; 只有开启CapsLockX模式能触发
-; #If CapsLockXMode == CM_CapsLockX
 ; 鼠标运动处理
 $*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), MouseTickerStart()
 $*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), MouseTickerStart()

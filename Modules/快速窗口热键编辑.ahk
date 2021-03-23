@@ -13,7 +13,7 @@ if (!CapsLockX) {
     ExitApp
 }
 
-global 快速窗口热键编辑用户模块路径 := CapsLockX_PathModules "/快速窗口热键编辑.user.ahk"
+global 快速窗口热键编辑用户模块路径 := CapsLockX_PathModules "/快速窗口热键编辑内容.user.ahk"
 
 global 快速窗口热键编辑初始内容 := "
 (
@@ -28,7 +28,7 @@ TrayTip CapsLockX, 用户宏已加载
 Return
 
 #if
-; 这里可以写上你的自定义全局热键
+    ; 这里可以写上你的自定义全局热键
 
 )"
 Return
