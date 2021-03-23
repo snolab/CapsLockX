@@ -31,10 +31,6 @@ if (!!CapslockXConfigPath) {
     global T_SwitchTrayIconDefault := CapsLockX_Config("Core", "T_SwitchTrayIconDefault", "./Data/XIconWhite.ico")
     global T_SwitchTrayIconOn := CapsLockX_Config("Core", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico")
     global T_SwitchTrayIconOff := CapsLockX_Config("Core", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico")
-    ; 禁止进入 CapsLockX 模式的窗口的正则表达式
-    ; global T_IgnoreProcesses := CapsLockX_Config("Core", "T_IgnoreProcesses", "mstsc.exe|")
-    ; global T_IgnoreWindows := CapsLockX_Config("Core", "T_IgnoreWindows", "notepad.*")
-    global T_Ignores := CapsLockX_Config("Core", "T_Ignores", "KeyWordsTo|IgnoreTheWindows")
 
     ; 禁用模块
     ; [T_Mouse] 鼠标模拟模块

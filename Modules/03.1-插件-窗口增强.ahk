@@ -123,7 +123,21 @@ Return
     WinKill ahk_id %hWnd%
 Return
 
+; Alt+Tab或 Win+Tab
 #if MultitaskingViewFrameQ()
+
+!1:: SwitchToDesktop(1)
+!2:: SwitchToDesktop(2)
+!3:: SwitchToDesktop(3)
+!4:: SwitchToDesktop(4)
+!5:: SwitchToDesktop(5)
+!6:: SwitchToDesktop(6)
+!7:: SwitchToDesktop(7)
+!8:: SwitchToDesktop(8)
+!9:: SwitchToDesktop(9)
+!0:: SwitchToDesktop(10)
+!-:: SwitchToDesktop(11)
+!=:: SwitchToDesktop(12)
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
 !a:: Left

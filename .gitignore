@@ -13,3 +13,4 @@ _config.yaml
 node_modules
 CapsLockX-LoadModules.ahk
 *.!sync
+.user.ignores

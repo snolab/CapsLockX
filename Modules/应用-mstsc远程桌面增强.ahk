@@ -10,22 +10,30 @@ global 上次CtrlShiftAlt锁 := 0
 Return
 
 setCurrentWindowAsBackground(){
-    WinGet 上次mstsc窗口hWnd, id, A
+    WinGet hWnd, id, A
+    ; 后置
+    WinSet Bottom, , ahk_id %hWnd%
     ; 隐藏，使其失去焦点
-    WinHide, ahk_id %上次mstsc窗口hWnd%
-    ; 切换焦点到其它窗口
-    WinWaitNotActive, ahk_id %上次mstsc窗口hWnd%
-    SendEvent !{Esc}
+    WinHide, ahk_id %hWnd%
+    ; 可选切换焦点到其它窗口（现在应该是桌面）
+    WinWaitNotActive, ahk_id %hWnd%
+    ; SendEvent !+{Esc}
     WinGet, 其它窗口, id, A
+    ; ToolTip %其它窗口%
     if(!其它窗口){
         其它窗口 := WinExist(".*")
         WinActivate, ahk_id %其它窗口%
     }
+    WinGetTitle, t, ahk_id %其它窗口%
+    WinGetClass, cc,ahk_id %其它窗口%
+
+    Tooltip %其它窗口% - %t% %c%
+    TrayTip, CapsLockX, 后置当前窗口（主要用于虚拟机和远程桌面）
     ; 让它显示回来
-    WinShow, ahk_id %上次mstsc窗口hWnd%
-    ; 然后后置
-    WinSet Bottom, , ahk_id %上次mstsc窗口hWnd%
+    WinShow, ahk_id %hWnd%
+    上次mstsc窗口hWnd := hWnd
 }
+
 DetectMSTSC:
     DetectMSTSC()
 return
@@ -123,15 +131,18 @@ mstscHide()
 ~$<!<^LShift Up::
     if(!(A_PriorKey == "LCtrl" || A_PriorKey == "LAlt" || A_PriorKey == "LShift"))
         Return
-    上次CtrlShiftAlt锁 := 1 ;防止重复运行
+    ; 防止重复运行
+    if (上次CtrlShiftAlt锁)
+        return
+    上次CtrlShiftAlt锁 := 1
+    ToolTip, 双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面） %上次CtrlShiftAlt时刻%
     KeyWait, LCtrl
     KeyWait, LAlt
     KeyWait, LShift
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
-    if(间隔 < 200 && !上次CtrlShiftAlt锁){
+    if(间隔 < 200){
         setCurrentWindowAsBackground()
-        TrayTip, CapsLockX, 后置当前窗口（主要用于虚拟机和远程桌面）
     }else{
         上次CtrlShiftAlt时刻 := 现在
     }

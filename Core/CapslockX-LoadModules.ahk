@@ -61,7 +61,7 @@ Return
  #Include ./Modules\01.2-插件-编辑增强.ahk
 #If
  Setup_5:
- #Include ./Modules\03-VirtualDesktopManage.ahk
+ #Include ./Modules\03-虚拟桌面增强.ahk
 #If
  Setup_6:
  #Include ./Modules\03.1-插件-窗口增强.ahk
