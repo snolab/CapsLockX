@@ -123,19 +123,19 @@ mstscHide()
 ~$<!<^LShift Up::
     if(!(A_PriorKey == "LCtrl" || A_PriorKey == "LAlt" || A_PriorKey == "LShift"))
         Return
+    上次CtrlShiftAlt锁 := 1 ;防止重复运行
     KeyWait, LCtrl
     KeyWait, LAlt
     KeyWait, LShift
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
     if(间隔 < 200 && !上次CtrlShiftAlt锁){
-        上次CtrlShiftAlt锁 := 1 ;防止重复运行
         setCurrentWindowAsBackground()
         TrayTip, CapsLockX, 后置当前窗口（主要用于虚拟机和远程桌面）
-        上次CtrlShiftAlt锁 := 0
     }else{
         上次CtrlShiftAlt时刻 := 现在
     }
+    上次CtrlShiftAlt锁 := 0
 Return
 
 <!RAlt Up:: mstscShow()
