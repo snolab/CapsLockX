@@ -14,13 +14,12 @@ if (!CapsLockX){
     ExitApp
 }
 
-
 ; 高性能计时器，精度能够达到微秒级，相比之下 A_Tick 的精度大概只有10几ms。
-QPF(){
+TM_QPF(){
     DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
     Return QuadPart
 }
-QPC(){
+TM_QPC(){
     DllCall("QueryPerformanceCounter", "Int64*", Counter)
     Return Counter
 }
@@ -29,10 +28,10 @@ QPC(){
 ma(t){
     ; 二次函数运动模型
     ; Return ma2(t)  ; * TMouse_DPIRatio
-    
+
     ; 三次函数运动模型
     ; Return ma3(t)
-    
+
     ; 指数函数运动模型
     Return maPower(t) * 1.5
 }
@@ -72,7 +71,7 @@ maPower(t){
 
 ; 时间计算
 dt(t, tNow){
-    Return t ? (tNow - t) / QPF() : 0
+    Return t ? (tNow - t) / TM_QPF() : 0
 }
 
 Friction(v, a){ ; 摩擦力
@@ -82,17 +81,17 @@ Friction(v, a){ ; 摩擦力
         v := -maxSpeed
     if (v > maxSpeed)
         v := maxSpeed
-    
+
     ; 摩擦力不阻碍用户意志
     if ((a > 0 And v > 0) Or (a < 0 And v < 0)){
         Return v
     }
-    
+
     ; ; 刹车
     ; if ((a < 0 And v > 0) Or (a > 0 And v < 0)){
     ; Return 0
     ; }
-    
+
     ; 简单粗暴倍数降速
     v *= 0.9
     ; 线性

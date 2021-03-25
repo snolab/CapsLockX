@@ -61,7 +61,7 @@ ArrowTicker()
         Return
     }
     ; else{
-    tNow := QPC()
+    tNow := TM_QPC()
     ; 计算用户操作时间
     tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
     tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
@@ -159,7 +159,7 @@ ArrowLeftPressed()
         arrow_tr := 0
         Return
     }
-    arrow_tl := QPC()
+    arrow_tl := TM_QPC()
     SendEvent {Blind}{Left}
 }
 ArrowRightPressed()
@@ -174,7 +174,7 @@ ArrowRightPressed()
         arrow_tl := 0
         Return
     }
-    arrow_tr := QPC()
+    arrow_tr := TM_QPC()
     SendEvent {Blind}{Right}
 }
 ArrowUpPressed()
@@ -188,7 +188,7 @@ ArrowUpPressed()
         arrow_td := 0
         Return
     }
-    arrow_tu := QPC()
+    arrow_tu := TM_QPC()
     SendArrowUp()
 }
 ArrowDownPressed()
@@ -202,7 +202,7 @@ ArrowDownPressed()
         arrow_tu := 0
         Return
     }
-    arrow_td := QPC()
+    arrow_td := TM_QPC()
     SendArrowDown()
 }
 

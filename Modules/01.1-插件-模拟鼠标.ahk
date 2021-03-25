@@ -135,6 +135,31 @@ SendInput_MouseMoveR64(x, y){
     ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
 
+; 鼠标运动处理
+; mouseTicker_dev:
+;     ; 在非 CapsLockX 模式下直接停止
+;     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
+;         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
+;         max := 0, may := 0
+;     }else{
+;         tNow := TM_QPC()
+;         ; 计算用户操作时间, 计算 ADWS 键按下的时长
+;         tda := dt(鼠刻左, tNow), tdd := dt(鼠刻右, tNow)
+;         tdw := dt(鼠刻上, tNow), tds := dt(鼠刻下, tNow)
+;         tdx := tdd - tda, tdy := tds - tdw
+;     }
+;     sign(tdx) + tdx * tdx
+;     tax := tda * tay
+;     If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
+;     {
+;         SendInput_MouseMoveR32(鼠差横, 鼠差纵)
+;         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
+;     }Else{
+;         MouseMove, %鼠差横%, %鼠差纵%, 0, R
+;         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
+;     }
+; Return
+
 ; 鼠标模拟
 MouseTickerStart(){
     if(!鼠动中) {
@@ -155,7 +180,7 @@ MouseTicker(){
         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
         max := 0, may := 0
     }else{
-        tNow := QPC()
+        tNow := TM_QPC()
         ; 计算用户操作时间, 计算 ADWS 键按下的时长
         tda := dt(鼠刻左, tNow), tdd := dt(鼠刻右, tNow)
         tdw := dt(鼠刻上, tNow), tds := dt(鼠刻下, tNow)
@@ -208,8 +233,8 @@ MouseTicker(){
     }
 }
 
-Pos2Long(x, y){
-return x | (y << 16)
+Pos2Long(x, y) {
+Return x | (y << 16)
 }
 
 ScrollMsg2(msg, zDelta){
@@ -291,7 +316,7 @@ ScrollTicker(){
         ScrollTickerStop()
         Return
     }else{
-        tNow := QPC()
+        tNow := TM_QPC()
         ; 计算用户操作时间
         tdz := dt(轮刻左, tNow), tdc := dt(轮刻右, tNow)
         tdr := dt(轮刻上, tNow), tdf := dt(轮刻下, tNow)
@@ -344,18 +369,18 @@ $*q:: RButton
 $*e:: LButton
 
 ; 鼠标运动处理
-$*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : QPC()), MouseTickerStart()
-$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : QPC()), MouseTickerStart()
-$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : QPC()), MouseTickerStart()
-$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : QPC()), MouseTickerStart()
+$*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), MouseTickerStart()
+$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), MouseTickerStart()
+$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : TM_QPC()), MouseTickerStart()
+$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : TM_QPC()), MouseTickerStart()
 $*a Up:: 鼠刻左 := 0, MouseTickerStart()
 $*d Up:: 鼠刻右 := 0, MouseTickerStart()
 $*w Up:: 鼠刻上 := 0, MouseTickerStart()
 $*s Up:: 鼠刻下 := 0, MouseTickerStart()
 
 ; 鼠标滚轮处理
-$*r:: 轮刻上 := (轮刻上 ? 轮刻上 : QPC()), ScrollTickerStart()
-$*f:: 轮刻下 := (轮刻下 ? 轮刻下 : QPC()), ScrollTickerStart()
+$*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), ScrollTickerStart()
+$*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), ScrollTickerStart()
 $*r Up:: 轮刻上 := 0, ScrollTickerStart()
 $*f Up:: 轮刻下 := 0, ScrollTickerStart()
 
@@ -370,8 +395,8 @@ $^r:: Send ^{WheelUp}
 $^f:: Send ^{WheelDown}
 
 ; Shift 横向滚动
-$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : QPC()), ScrollTickerStart()
-$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : QPC()), ScrollTickerStart()
+$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), ScrollTickerStart()
+$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), ScrollTickerStart()
 $+r Up:: 轮刻左 := 0, ScrollTickerStart()
 $+f Up:: 轮刻右 := 0, ScrollTickerStart()
 
