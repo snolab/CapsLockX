@@ -13,8 +13,9 @@
 ;
 ; 给出一些名称定义
 ; 应用：可以脱离 CapsLockX 独立运行的 AHK 文件
-; 扩展：你的模块需要 CapsLockX 才能执行，且不需要下载外部组件
-; 插件：你的模块需要 CapsLockX 才能执行，且不需要下载外部组件
+; 扩展：你的模块需要 CapsLockX 才能执行，且没有其它依赖
+; 插件：你的模块需要 CapsLockX 才能执行，且没有其它依赖
+; 用户：其它用户分享的模块
 ;
 ; 以下条件语句表示这个模块只能在 CapsLockX 下工作，如果没有用到 CapsLockX 的变量则可以不写
 
@@ -36,10 +37,10 @@ CapsLockX_IssuesPage := "https://github.com/snomiao/CapsLockX/issues"
 AppendHelp("
 (
 = 显示帮助 ====================================================
-| CapsLockX + /         | 临时显示热键提示                    |
-| CapsLockX（长按）     | 临时显示热键提示                    |
-| CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
-| CapsLockX + Shift + / | 🕷 提交 bug、建议等                  |
+| CapsLockX + / | 临时显示热键提示 |
+| CapsLockX（长按） | 临时显示热键提示 |
+| CapsLockX + Alt + / | 🔗 打开 CapsLockX 的 README.md 页面 |
+| CapsLockX + Shift + / | 🕷 提交 bug、建议等 |
 )")
 
 ;
@@ -70,10 +71,10 @@ CapslockXShowHelp(helpStr, inGlobal = 0, waitKey = "/")
 ;
 ; 比如这一行，指的是当前在 CapsLockX 模式时，生效的热键
 #if CapsLockXMode
-; #if CapsLockXMode
+    ; #if CapsLockXMode
 ; 显示使用方法，直接调用前面定义的函数
 /:: CapslockXShowHelp(globalHelpInfo, 1)
-    
+
 ; 你可以按住 CapsLockX 键观察托盘的 CapsLockX 图标，当它变蓝时，按下 Alt + / 就可以快速打开 CapsLockX 的首页
 ; 也就是 CapsLockX + Alt + /
 !/:: Run https://github.com/snomiao/CapsLockX#readme
