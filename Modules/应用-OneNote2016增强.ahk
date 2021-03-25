@@ -18,7 +18,6 @@ global wc := new WinClip
 
 Return
 
-
 ; 定义应用顶栏用到的函数
 altSend(altKeys){
     SetKeyDelay, 1, 60 ; 配置纠错
@@ -65,7 +64,7 @@ OpenHomePage(){
     ; if !WinExist(".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
     ; WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
     ; WinActivate ; Uses the last found window.
-    WinWaitActive  .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
+    WinWaitActive .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
     SendEvent !{Home}
     SendEvent ^{Home}
     ; SendEvent ^{End}{Enter}
@@ -88,7 +87,7 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 ; #If CapsLockXMode and (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") or WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
 #If (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
-    
+
 ; $^f::
 ; $^e::
 ; enhanced_search() {
@@ -121,7 +120,7 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 ; }
 
 #If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-    
+
 ; 上下左右
 ; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
 ; k:: SendEvent {Home}{Left}
@@ -130,490 +129,484 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 ; j:: ControlSend, OneNote::DocumentCanvas1, {Down}, ahk_exe ONENOTE.EXE
 
 #IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
-/:: CapslockXShowHelp("
+    /:: CapslockXShowHelp("
 (
 OneNote 笔记界面（因为热键太多，所以写成了ahk的格式）
-!-  | 自动2维化公式
+!- | 自动2维化公式
 ^+c | 复制纯文本
 ^+v | 粘贴纯文本
-F2  | 重命名笔记
+F2 | 重命名笔记
 +F2 | 重命名分区
-!m  | 移动笔记
+!m | 移动笔记
 !+m | 移动分区
-^n  | 新建笔记
+^n | 新建笔记
 ^!n | 
 !f | 搜索标记
 ; 选择页面
-    $^+PgUp:: SendEvent ^+g{Up}{Enter}
-    $^+PgDn::
+$^+PgUp:: SendEvent ^+g{Up}{Enter}
+$^+PgDn::
 ^s:: ; 同步此笔记本
-    
-!n |  切换为无色背景
+    !n | 切换为无色背景
 +!n::
-
-!Delete ; 快速删除当前页面
-+Delete  ; 快速删除当前行
-^w  | 快速关闭窗口
-; 选中行
+    !Delete ; 快速删除当前页面
+    +Delete ; 快速删除当前行
+    ^w | 快速关闭窗口
+    ; 选中行
     $^+l
-; 输入、套锁、橡皮
+    ; 输入、套锁、橡皮
     $!q
     $!w
     $!e
     ; 输入、套锁、橡皮
     $!s
     ; $!d
-; 视图 - 缩放到页面宽度
+    ; 视图 - 缩放到页面宽度
     $!r
     $!y
-; 视图 - 缩放到1
-; $!+r
-; $!+r
+    ; 视图 - 缩放到1
+    ; $!+r
+    ; $!+r
 
-; 换笔
-$!a ; 换到第2支笔
-$!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
+    ; 换笔
+    $!a ; 换到第2支笔
+    $!d ; 打开换笔盘，定位到第一支笔（只在非全屏时管用）
 
-
-!1 ... !7 | 大纲折叠展开
-; 自定义颜色
+    !1 ... !7 | 大纲折叠展开
+    ; 自定义颜色
     $!`
     $!+`
     $!v
-; 画笔粗细
+    ; 画笔粗细
     $!t
     $!g
-^!+- 和 ^!+= ; 调整页面缩放
-^[ 和 ^] | 调整字体大小
+    ^!+- 和 ^!+= ; 调整页面缩放
+    ^[ 和 ^] | 调整字体大小
     ^[
     ^]
     )")
 
-; 创建链接窗口
-#IfWinActive ahk_class NUIDialog ahk_exe ONENOTE.EXE
-/:: CapslockXShowHelp("
-(
-创建链接窗口
-| !s | 复制当前所有搜索结果页面的链接
-| !+s | 复制当前所有搜索结果页面的链接并粘贴
-)")
+    ; 创建链接窗口
+    #IfWinActive ahk_class NUIDialog ahk_exe ONENOTE.EXE
+        /:: CapslockXShowHelp("
+        (
+        创建链接窗口
+        | !s | 复制当前所有搜索结果页面的链接
+        | !+s | 复制当前所有搜索结果页面的链接并粘贴
+        )")
 
-!+s::
-    CopySearchResultSectionAndPagesThenPaste(){
-        CopySearchResultSectionAndPages()
-        WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        SendEvent ^v
-    }
-!s::
-    ; 复制链接笔记页面的搜索结果
-    CopySearchResultSectionAndPages(){
-        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        ; 标题 ClassNN:	RICHEDIT60W3
-        ; 地址 ClassNN:	RICHEDIT60W2
-        ; 定位到第一项
-        
-        prev_addr := ""
-        this_addr := ""
-
-        links := ""
-        prev_link := ""
-        this_link := ""
-        
-        links_html := ""
-        prev_link_html := ""
-        this_link_html := ""
-
-        samecount := 0
-        k := -1
-        ; 这里不加{Blind}{AltUp} 会出现连 ctrl也一起按下的bug...原因未明
-        SendEvent {Blind}{AltUp}!o{Down}{Home}
-
-        Loop, 10000
-        {
-            ControlGetText, title, RICHEDIT60W3, A
-            ControlGetText, addr , RICHEDIT60W2, A
-            this_addr := addr
-            isPage := !!RegExMatch(addr, "page-id=")
-            Transform, title_html, HTML, %title%
-            if (!isPage ){
-                title := "§ " title
-                title_html := "§ " title_html
+        !+s::
+            CopySearchResultSectionAndPagesThenPaste(){
+                CopySearchResultSectionAndPages()
+                WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+                SendEvent ^v
             }
+        !s::
+            ; 复制链接笔记页面的搜索结果
+            CopySearchResultSectionAndPages(){
+                WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+                ; 标题 ClassNN:	RICHEDIT60W3
+                ; 地址 ClassNN:	RICHEDIT60W2
+                ; 定位到第一项
 
-            this_link := "[" title_html "]" "( " addr " )" "`n"
-            this_link_html := "<a href=""" addr """>" title_html "</a>" "<br />`n"
-        
-            SendEvent {Down}
-            Sleep, 32
-            if (this_addr == prev_addr){
-                samecount++
-                if (samecount >= 2){
-                    Break
-                }
-            }else{
+                prev_addr := ""
+                this_addr := ""
+
+                links := ""
+                prev_link := ""
+                this_link := ""
+
+                links_html := ""
+                prev_link_html := ""
+                this_link_html := ""
+
                 samecount := 0
-                prev_addr := this_addr
-                k += 1
+                k := -1
+                ; 这里不加{Blind}{AltUp} 会出现连 ctrl也一起按下的bug...原因未明
+                SendEvent {Blind}{AltUp}!o{Down}{Home}
 
-                ; 这里用 prev_addr 意在去掉最后一条（一般是新建笔记）
-                ; OneNote搜索默认倒字母序排列，这里把它正过来
-                links := prev_link . links
-                prev_link := this_link
+                Loop, 10000
+                {
+                    ControlGetText, title, RICHEDIT60W3, A
+                    ControlGetText, addr , RICHEDIT60W2, A
+                    this_addr := addr
+                    isPage := !!RegExMatch(addr, "page-id=")
+                    Transform, title_html, HTML, %title%
+                    if (!isPage ){
+                        title := "§ " title
+                        title_html := "§ " title_html
+                    }
 
-                ; 这里用 prev_link_html 意在去掉最后一条（一般是新建笔记）
-                ; OneNote搜索默认倒字母序排列，这里把它正过来
-                links_html := prev_link_html . links_html
-                prev_link_html := this_link_html
+                    this_link := "[" title_html "]" "( " addr " )" "`n"
+                    this_link_html := "<a href=""" addr """>" title_html "</a>" "<br />`n"
+
+                    SendEvent {Down}
+                    Sleep, 32
+                    if (this_addr == prev_addr){
+                        samecount++
+                        if (samecount >= 2){
+                            Break
+                        }
+                    }else{
+                        samecount := 0
+                        prev_addr := this_addr
+                        k += 1
+
+                        ; 这里用 prev_addr 意在去掉最后一条（一般是新建笔记）
+                        ; OneNote搜索默认倒字母序排列，这里把它正过来
+                        links := prev_link . links
+                        prev_link := this_link
+
+                        ; 这里用 prev_link_html 意在去掉最后一条（一般是新建笔记）
+                        ; OneNote搜索默认倒字母序排列，这里把它正过来
+                        links_html := prev_link_html . links_html
+                        prev_link_html := this_link_html
+                    }
+                }
+
+                ; links_html
+                ; Clipboard := links
+                Clipboard := links
+                ; Sleep 128
+                wc.SetText(links)
+                wc.SetHTML(links_html)
+                SendEvent {Escape}
+
+                TrayTip, %k% 条笔记链接已复制, %links%, 1
             }
-        }
-        
-        ; links_html
-        ; Clipboard := links
-        Clipboard := links
-        ; Sleep 128
-        wc.SetText(links)
-        wc.SetHTML(links_html)
-        SendEvent {Escape}
-        
-        TrayTip, %k% 条笔记链接已复制, %links%, 1
-    }
 
-#If ((CapsLockXMode != CM_CapsLockX && CapsLockXMode != CM_FN) && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
-    ; 自动2维化公式
-    $!-::
-        SendEvent !=
-        Sleep, 200
-        altSend("jp")
-    Return
-    ; SendEvent !={AppsKey}p
-    ; 复制纯文本
-    $^+c::
-        Clipboard =
-        SendEvent ^c
-        ClipWait, 1
-        Clipboard := Clipboard
-    Return
-    ; 粘贴纯文本
-    $^+v::
-        Clipboard := Clipboard
-        SendEvent ^v
-    Return
-    
-    ; ; 选择页面
-    ; ^PgUp:: SendEvent ^{PgUp}^+a
-    ; ^PgDn:: SendEvent ^{PgDn}^+a
-    ; ; 将此页面向上合并
-    ; $!j::
-    ;     SendEvent ^+t^a^x
-    ;     SendEvent ^{PgUp}^+t^{End}^v
-    ;     SendEvent ^{PgDn}^+a{Del}
-    ;     SendEvent ^{PgUp}
-    ; Return
-    
-    $!c::
-        SetKeyDelay, 1, 1 ; 配置纠错
-        SendEvent, {AltDown}wi{AltUp}
-    Return
-
-    ; $!+x::
-    ;     Clipboard := ""
-    ;     SendEvent {AppsKey}y
-    ;     ClipWait 1
-    ;     Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
-    ;     SendEvent ^!{Right 3}^v
-    ; Return
-    
-    ; 重命名笔记
-    $F2:: SendEvent ^+t
-
-    ; 重命名分区
-    $+F2:: SendEvent ^+g{AppsKey}r
-    
-    ; 复制页面链接
-    $!F2:: Send ^+a{AppsKey}l
-
-    ; 移动笔记
-    $!m:: SendEvent ^!m
-    
-    ; 移动分区
-    $!+m:: SendEvent ^+g{AppsKey}m
-    
-    ; 交换新建笔记热键
-    ; $^n:: SendEvent ^!n
-    ; $^!n:: SendEvent ^n
-    
-    ; 移动页面
-    ; $!+Up:: SendEvent ^+a!+{Up}
-    ; $!+Down:: SendEvent ^+a!+{Down}
-    ; $!+Left:: SendEvent ^+a!+{Left}
-    ; $!+Right:: SendEvent ^+a!+{Right}
-    
-    ; 搜索标记
-    $!f:: altSend("hg")
-    
-    ; 选择页面
-    $^+PgUp:: SendEvent ^+g{Up}{Enter}
-    $^+PgDn:: SendEvent ^+g{Down}{Enter}
-    
-    ; 同步此笔记本
-    ; $^s:: SendEvent +{F9}
-    
-    ; 切换为无色背景
-    $!n:: altSend("wpcn")
-    $+!n:: altSend("wre")
-    
-    ; 快速删除当前行
-    $+Delete:: SendEvent {Escape}^a{Del}
-
-    ; 快速删除当前页面
-    $!Delete:: SendEvent ^+a{Delete}
-
-    ; 快速删除当前分区（并要求确认）
-    $!+Delete:: SendEvent ^+g{AppsKey}d
-    
-    
-    ; 快速关闭窗口
-    $^w:: altSend("{F4}")
-    
-    ; 选中行
-    $^+l:: SendEvent !+{Down}!+{Up}
-    
-    ; 选中当前词（目前来说会带上词右边的空格）
-    $^d:: SendEvent {Right}^{Left}^+{Right}
-
-    ; 输入、拖动、套锁、橡皮
-    $!s:: altSend("dt")
-    $!q:: altSend("dh") ;换成手形Tools
-    $!w:: altSend("dn")
-    $!e:: altSend("dek")
-    
-    ; 视图 - 缩放到页面宽度
-    $!r:: altSend("w1")
-    $!y:: altSend("wi")
-    ; 视图 - 缩放到1
-    ; $!+r:: altSend("w1")
-    ; $!+r::
-    ; 	SendEvent !w
-    ; 	Sleep, 60
-    ; 	SendEvent !1
-    ; 	Return
-    
-    ; 换笔
-    $!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
-    $!a:: altSendEx("dp", "{Right 1}{Enter}")   ; 笔悬停时是下一支笔，没有笔时是选红色笔
-    
-    ; 换笔（只在非全屏时管用）
-    ; $!a::
-    ; 	SendEvent {Alt}
-    ; 	Sleep 60
-    ; 	SendEvent dp{Left}{Enter}
-    ; 	Return
-    
-    ; $!d::
-    ; 	SendEvent {Alt}
-    ; 	Sleep 60
-    ; 	SendEvent dp{Right}{Enter}
-    ; 	Return
-
-    ; 展开当前关键词的相关页面链接（请等搜索内容加载完之后再松开Alt键）
-    $!k:: 
-        Clipboard := ""
-        SendEvent ^a^c{Right}{Enter}{Tab}^k
-        ClipWait, 2
-        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        ; 输入搜索内容
-        ControlSetText, RICHEDIT60W1, %Clipboard%, A
-        KeyWait, Alt
-        CopySearchResultSectionAndPagesThenPaste()
+            #If ((CapsLockXMode != CM_CapsLockX && CapsLockXMode != CM_FN) && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
+                ; 自动2维化公式
+        $!-::
+            SendEvent !=
+            Sleep, 200
+            altSend("jp")
+        Return
+        ; SendEvent !={AppsKey}p
+        ; 复制纯文本
+        $^+c::
+            Clipboard =
+            SendEvent ^c
+            ClipWait, 1
+            Clipboard := Clipboard
+        Return
+        ; 粘贴纯文本
+        $^+v::
+            Clipboard := Clipboard
+            SendEvent ^v
         Return
 
-    ; 快速将内容做成单独链接
-    $!+k::
-        SendEvent {Home}[[{End}]]
+        ; ; 选择页面
+        ; ^PgUp:: SendEvent ^{PgUp}^+a
+        ; ^PgDn:: SendEvent ^{PgDn}^+a
+        ; ; 将此页面向上合并
+        ; $!j::
+        ;     SendEvent ^+t^a^x
+        ;     SendEvent ^{PgUp}^+t^{End}^v
+        ;     SendEvent ^{PgDn}^+a{Del}
+        ;     SendEvent ^{PgUp}
+        ; Return
+
+        $!c::
+            SetKeyDelay, 1, 1 ; 配置纠错
+            SendEvent, {AltDown}wi{AltUp}
         Return
 
-    ; ; 将当前内容追加到相关页面
-    ; $!+k:: 
-    ;     ; 复制当前内容
-    ;     Clipboard := ""
-    ;     SendEvent ^a^x{Left}{Enter}^k
-    ;     ClipWait, 2
+        ; $!+x::
+        ;     Clipboard := ""
+        ;     SendEvent {AppsKey}y
+        ;     ClipWait 1
+        ;     Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
+        ;     SendEvent ^!{Right 3}^v
+        ; Return
 
-    ;     ; 可能新建一个页面
-    ;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-    ;     ; 输入搜索内容
-    ;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
-    ;     ; 等结果出来
-        
-    ;     KeyWait, Alt       ; 放开Alt确认
-        
-    ;     SendEvent {Enter}
-    ;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-        
-    ;     ; ; （如果是新建生成的链接可能出bug不能直接点过去）
-    ;     ; Sleep, 1000
-    ;     ; ; 所以这里等新页面好了之后再来一次就能点进去了
-    ;     SendEvent ^a{Delete}{Left}{Enter}^k
+        ; 重命名笔记
+        $F2:: SendEvent ^+t
 
-    ;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-    ;     ; 输入搜索内容
-    ;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
-    ;     ; 等结果出来
-    ;     KeyWait, Alt, D  ; 按Alt确认
-    ;     SendEvent {Enter}
-    ;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-    ;     SendEvent {Left}{Enter}
-    ;     ; 在新页面末尾追加粘贴内容
-    ;     SendEvent ^{Home}^{End}+{Tab}{Enter}^v
-    ;     KeyWait, Alt  ; 放开Alt确认
-    ;     SendEvent !{Left}
-    ;     Return
-    ; ; $!d:: altSend("dh")
+        ; 重命名分区
+        $+F2:: SendEvent ^+g{AppsKey}r
 
-    ; 大纲折叠展开
-    $!1:: SendEvent !+1
-    $!2:: SendEvent !+2
-    $!3:: SendEvent !+3
-    $!4:: SendEvent !+4
-    $!5:: SendEvent !+5
-    $!6:: SendEvent !+6
-    $!7:: SendEvent !+7
-    
-    ; 笔收藏夹第一排
-    ; $!1:: altSendEx("dp", "{Home}{Right 0}{Enter}")
-    ; $!2:: altSendEx("dp", "{Home}{Right 1}{Enter}")
-    ; $!3:: altSendEx("dp", "{Home}{Right 2}{Enter}")
-    ; $!4:: altSendEx("dp", "{Home}{Right 3}{Enter}")
-    ; $!5:: altSendEx("dp", "{Home}{Right 4}{Enter}")
-    ; $!6:: altSendEx("dp", "{Home}{Right 5}{Enter}")
-    ; $!7:: altSendEx("dp", "{Home}{Right 6}{Enter}")
-    
-    ; 收藏夹第二排
-    ; $!+1:: altSendEx("dp", "{Home}{Down 1}{Right 0}{Enter}")
-    ; $!+2:: altSendEx("dp", "{Home}{Down 1}{Right 1}{Enter}")
-    ; $!+3:: altSendEx("dp", "{Home}{Down 1}{Right 2}{Enter}")
-    ; $!+4:: altSendEx("dp", "{Home}{Down 1}{Right 3}{Enter}")
-    ; $!+5:: altSendEx("dp", "{Home}{Down 1}{Right 4}{Enter}")
-    ; $!+6:: altSendEx("dp", "{Home}{Down 1}{Right 5}{Enter}")
-    ; $!+7:: altSendEx("dp", "{Home}{Down 1}{Right 6}{Enter}")
-    
-    ; 自定义颜色
-    $!`:: altSendEx("dp", "{Down 2}{Left}")
-    $!+`:: altSend("dc")
-    $!v:: SendEvent !h!i
+        ; 复制页面链接
+        $!F2:: Send ^+a{AppsKey}l
 
-    ; 画笔粗细
-    $!t:: altSendEx("d", "{Down}{Tab 13}{Enter}")
-    $!g:: altSendEx("d", "{Down}{Tab 11}{Enter}")
-    
-    ; 调整缩放
-    $![:: altSendEx("w", "{Down}{Tab 3}{Enter}")
-    $!]:: altSendEx("w", "{Down}{Tab 4}{Enter}")
-    $!\:: altSendEx("w", "{Down}{Tab 5}{Enter}")
-    
-    ; 调整字体
-    $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
-    $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
-    $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
+        ; 移动笔记
+        $!m:: SendEvent ^!m
 
-#IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
-    /:: CapslockXShowHelp("
-    (
-    换笔盘界面
-    1::  ; 换到第 1 行的 1 支笔
-    2::  ; 换到第 1 行的 2 支笔
-    3::  ; 换到第 1 行的 3 支笔
-    4::  ; 换到第 1 行的 4 支笔
-    5::  ; 换到第 1 行的 5 支笔
-    6::  ; 换到第 1 行的 6 支笔
-    7::  ; 换到第 1 行的 7 支笔
-    !1:: ; 换到第 2 行的 1 支笔
-    !2:: ; 换到第 2 行的 2 支笔
-    !3:: ; 换到第 2 行的 3 支笔
-    !4:: ; 换到第 2 行的 4 支笔
-    !5:: ; 换到第 2 行的 5 支笔
-    !6:: ; 换到第 2 行的 6 支笔
-    !7:: ; 换到第 2 行的 7 支笔
-    )")
+        ; 移动分区
+        $!+m:: SendEvent ^+g{AppsKey}m
 
-    $1::  ; 换到第 1 行的 1 支笔
-        if (A_PriorHotkey=="!d")
-            SendEvent {Right 0}{Enter}
-        Return
-    $2::  ; 换到第 1 行的 2 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Right 1}{Enter}
-        Return
-    $3::  ; 换到第 1 行的 3 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Right 2}{Enter}
-        Return
-    $4::  ; 换到第 1 行的 4 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Right 3}{Enter}
-        Return
-    $5::  ; 换到第 1 行的 5 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Right 4}{Enter}
-        Return
-    $6::  ; 换到第 1 行的 6 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Right 5}{Enter}
-        Return
-    $7::  ; 换到第 1 行的 7 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Right 6}{Enter}
-        Return
-    $!1:: ; 换到第 2 行的 1 支笔
-        if (A_PriorHotkey=="!d")
-            SendEvent {Down 1}{Right 0}{Enter}
-        Return
-    $!2:: ; 换到第 2 行的 2 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Down 1}{Right 1}{Enter}
-        Return
-    $!3:: ; 换到第 2 行的 3 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Down 1}{Right 2}{Enter}
-        Return
-    $!4:: ; 换到第 2 行的 4 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Down 1}{Right 3}{Enter}
-        Return
-    $!5:: ; 换到第 2 行的 5 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Down 1}{Right 4}{Enter}
-        Return
-    $!6:: ; 换到第 2 行的 6 支笔
-        if (A_PriorHotkey="!d")
-            SendEvent {Down 1}{Right 5}{Enter}
-        Return
-    $!7:: ; 换到第 2 行的 7 支笔
-        if (A_PriorHotkey="!d")
-            Send {Down 1}{Right 6}{Enter}
+        ; 交换新建笔记热键
+        ; $^n:: SendEvent ^!n
+        ; $^!n:: SendEvent ^n
+
+        ; 移动页面
+        ; $!+Up:: SendEvent ^+a!+{Up}
+        ; $!+Down:: SendEvent ^+a!+{Down}
+        ; $!+Left:: SendEvent ^+a!+{Left}
+        ; $!+Right:: SendEvent ^+a!+{Right}
+
+        ; 搜索标记
+        $!f:: altSend("hg")
+
+        ; 选择页面
+        $^+PgUp:: SendEvent ^+g{Up}{Enter}
+        $^+PgDn:: SendEvent ^+g{Down}{Enter}
+
+        ; 同步此笔记本
+        ; $^s:: SendEvent +{F9}
+
+        ; 切换为无色背景
+        $!n:: altSend("wpcn")
+        $+!n:: altSend("wre")
+
+        ; 快速删除当前行
+        $+Delete:: SendEvent {Escape}^a{Del}
+
+        ; 快速删除当前页面
+        $!Delete:: SendEvent ^+a{Delete}
+
+        ; 快速删除当前分区（并要求确认）
+        $!+Delete:: SendEvent ^+g{AppsKey}d
+
+        ; 快速关闭窗口
+        $^w:: altSend("{F4}")
+
+        ; 选中行
+        $^+l:: SendEvent !+{Down}!+{Up}
+
+        ; 选中当前词（目前来说会带上词右边的空格）
+        $^d:: SendEvent {Right}^{Left}^+{Right}
+
+        ; 输入、拖动、套锁、橡皮
+        $!s:: altSend("dt")
+        $!q:: altSend("dh") ;换成手形Tools
+        $!w:: altSend("dn")
+        $!e:: altSend("dek")
+
+        ; 视图 - 缩放到页面宽度
+        $!r:: altSend("w1")
+        $!y:: altSend("wi")
+        ; 视图 - 缩放到1
+        ; $!+r:: altSend("w1")
+        ; $!+r::
+        ; 	SendEvent !w
+        ; 	Sleep, 60
+        ; 	SendEvent !1
+        ; 	Return
+
+        ; 换笔
+        $!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
+        $!a:: altSendEx("dp", "{Right 1}{Enter}") ; 笔悬停时是下一支笔，没有笔时是选红色笔
+
+        ; 换笔（只在非全屏时管用）
+        ; $!a::
+        ; 	SendEvent {Alt}
+        ; 	Sleep 60
+        ; 	SendEvent dp{Left}{Enter}
+        ; 	Return
+
+        ; $!d::
+        ; 	SendEvent {Alt}
+        ; 	Sleep 60
+        ; 	SendEvent dp{Right}{Enter}
+        ; 	Return
+
+        ; 展开当前关键词的相关页面链接（请等搜索内容加载完之后再松开Alt键）
+        $!k:: 
+            Clipboard := ""
+            SendEvent ^a^c{Right}{Enter}{Tab}^k
+            ClipWait, 2
+            WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+            ; 输入搜索内容
+            ControlSetText, RICHEDIT60W1, %Clipboard%, A
+            KeyWait, Alt
+            CopySearchResultSectionAndPagesThenPaste()
         Return
 
-
-        
-#IfWinExist 剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
-
-~^c::
-    hwndOneNote := WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-    if (!hwndOneNote)
+        ; 快速将内容做成单独链接
+        $!+k::
+            SendEvent {Home}[[{End}]]
         Return
-    ; 通常在弹起时触发
-    Clipboard := ""
-    ClipWait, 2, 1 ; 2 secons
-    if ErrorLevel {
-        ; MsgBox, The attempt 2 copy text onto the clipboard failed.
+
+        ; ; 将当前内容追加到相关页面
+        ; $!+k:: 
+        ;     ; 复制当前内容
+        ;     Clipboard := ""
+        ;     SendEvent ^a^x{Left}{Enter}^k
+        ;     ClipWait, 2
+
+        ;     ; 可能新建一个页面
+        ;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ;     ; 输入搜索内容
+        ;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
+        ;     ; 等结果出来
+
+        ;     KeyWait, Alt       ; 放开Alt确认
+
+        ;     SendEvent {Enter}
+        ;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+
+        ;     ; ; （如果是新建生成的链接可能出bug不能直接点过去）
+        ;     ; Sleep, 1000
+        ;     ; ; 所以这里等新页面好了之后再来一次就能点进去了
+        ;     SendEvent ^a{Delete}{Left}{Enter}^k
+
+        ;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ;     ; 输入搜索内容
+        ;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
+        ;     ; 等结果出来
+        ;     KeyWait, Alt, D  ; 按Alt确认
+        ;     SendEvent {Enter}
+        ;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+        ;     SendEvent {Left}{Enter}
+        ;     ; 在新页面末尾追加粘贴内容
+        ;     SendEvent ^{Home}^{End}+{Tab}{Enter}^v
+        ;     KeyWait, Alt  ; 放开Alt确认
+        ;     SendEvent !{Left}
+        ;     Return
+        ; ; $!d:: altSend("dh")
+
+        ; 大纲折叠展开
+        $!1:: SendEvent !+1
+        $!2:: SendEvent !+2
+        $!3:: SendEvent !+3
+        $!4:: SendEvent !+4
+        $!5:: SendEvent !+5
+        $!6:: SendEvent !+6
+        $!7:: SendEvent !+7
+
+        ; 笔收藏夹第一排
+        ; $!1:: altSendEx("dp", "{Home}{Right 0}{Enter}")
+        ; $!2:: altSendEx("dp", "{Home}{Right 1}{Enter}")
+        ; $!3:: altSendEx("dp", "{Home}{Right 2}{Enter}")
+        ; $!4:: altSendEx("dp", "{Home}{Right 3}{Enter}")
+        ; $!5:: altSendEx("dp", "{Home}{Right 4}{Enter}")
+        ; $!6:: altSendEx("dp", "{Home}{Right 5}{Enter}")
+        ; $!7:: altSendEx("dp", "{Home}{Right 6}{Enter}")
+
+        ; 收藏夹第二排
+        ; $!+1:: altSendEx("dp", "{Home}{Down 1}{Right 0}{Enter}")
+        ; $!+2:: altSendEx("dp", "{Home}{Down 1}{Right 1}{Enter}")
+        ; $!+3:: altSendEx("dp", "{Home}{Down 1}{Right 2}{Enter}")
+        ; $!+4:: altSendEx("dp", "{Home}{Down 1}{Right 3}{Enter}")
+        ; $!+5:: altSendEx("dp", "{Home}{Down 1}{Right 4}{Enter}")
+        ; $!+6:: altSendEx("dp", "{Home}{Down 1}{Right 5}{Enter}")
+        ; $!+7:: altSendEx("dp", "{Home}{Down 1}{Right 6}{Enter}")
+
+        ; 自定义颜色
+        $!`:: altSendEx("dp", "{Down 2}{Left}")
+        $!+`:: altSend("dc")
+        $!v:: SendEvent !h!i
+
+        ; 画笔粗细
+        $!t:: altSendEx("d", "{Down}{Tab 13}{Enter}")
+        $!g:: altSendEx("d", "{Down}{Tab 11}{Enter}")
+
+        ; 调整缩放
+        $![:: altSendEx("w", "{Down}{Tab 3}{Enter}")
+        $!]:: altSendEx("w", "{Down}{Tab 4}{Enter}")
+        $!\:: altSendEx("w", "{Down}{Tab 5}{Enter}")
+
+        ; 调整字体
+        $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
+        $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
+        $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
+
+        #IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
+            /:: CapslockXShowHelp("
+            (
+            换笔盘界面
+        1:: ; 换到第 1 行的 1 支笔
+        2:: ; 换到第 1 行的 2 支笔
+        3:: ; 换到第 1 行的 3 支笔
+        4:: ; 换到第 1 行的 4 支笔
+        5:: ; 换到第 1 行的 5 支笔
+        6:: ; 换到第 1 行的 6 支笔
+        7:: ; 换到第 1 行的 7 支笔
+        !1:: ; 换到第 2 行的 1 支笔
+        !2:: ; 换到第 2 行的 2 支笔
+        !3:: ; 换到第 2 行的 3 支笔
+        !4:: ; 换到第 2 行的 4 支笔
+        !5:: ; 换到第 2 行的 5 支笔
+        !6:: ; 换到第 2 行的 6 支笔
+        !7:: ; 换到第 2 行的 7 支笔
+            )")
+
+        $1:: ; 换到第 1 行的 1 支笔
+            if (A_PriorHotkey=="!d")
+                SendEvent {Right 0}{Enter}
         Return
-    }
-    WinGet, current, ID, A
-    WinActivate, ahk_id %hwndOneNote%
-    FormatTime, timeString, , (yyyyMMdd.HHmmss)
-    SendEvent, ^{End}{Enter}
-    SendEvent, {text}%timeString%
-    SendEvent, ^v
-    Sleep 16
-    WinActivate, ahk_id %current%
-Return
+        $2:: ; 换到第 1 行的 2 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Right 1}{Enter}
+        Return
+        $3:: ; 换到第 1 行的 3 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Right 2}{Enter}
+        Return
+        $4:: ; 换到第 1 行的 4 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Right 3}{Enter}
+        Return
+        $5:: ; 换到第 1 行的 5 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Right 4}{Enter}
+        Return
+        $6:: ; 换到第 1 行的 6 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Right 5}{Enter}
+        Return
+        $7:: ; 换到第 1 行的 7 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Right 6}{Enter}
+        Return
+        $!1:: ; 换到第 2 行的 1 支笔
+            if (A_PriorHotkey=="!d")
+                SendEvent {Down 1}{Right 0}{Enter}
+        Return
+        $!2:: ; 换到第 2 行的 2 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Down 1}{Right 1}{Enter}
+        Return
+        $!3:: ; 换到第 2 行的 3 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Down 1}{Right 2}{Enter}
+        Return
+        $!4:: ; 换到第 2 行的 4 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Down 1}{Right 3}{Enter}
+        Return
+        $!5:: ; 换到第 2 行的 5 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Down 1}{Right 4}{Enter}
+        Return
+        $!6:: ; 换到第 2 行的 6 支笔
+            if (A_PriorHotkey="!d")
+                SendEvent {Down 1}{Right 5}{Enter}
+        Return
+        $!7:: ; 换到第 2 行的 7 支笔
+            if (A_PriorHotkey="!d")
+                Send {Down 1}{Right 6}{Enter}
+        Return
+
+        #IfWinExist 剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
+
+        ~^c::
+            hwndOneNote := WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+            if (!hwndOneNote)
+                Return
+            ; 通常在弹起时触发
+            Clipboard := ""
+            ClipWait, 2, 1 ; 2 secons
+            if ErrorLevel {
+                ; MsgBox, The attempt 2 copy text onto the clipboard failed.
+                Return
+            }
+            WinGet, current, ID, A
+            WinActivate, ahk_id %hwndOneNote%
+            FormatTime, timeString, , (yyyyMMdd.HHmmss)
+            SendEvent, ^{End}{Enter}
+            SendEvent, {text}%timeString%
+            SendEvent, ^v
+            Sleep 16
+            WinActivate, ahk_id %current%
+        Return
