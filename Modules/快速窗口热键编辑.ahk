@@ -48,5 +48,5 @@ UserModuleEdit(路径){
     Run notepad %路径%
 }
 
-m:: UserModuleEdit(路径 := 快速窗口热键编辑用户模块路径 "/快速窗口热键编辑内容.user.ahk")
-!m:: UserModuleEdit(路径 := 快速窗口热键编辑用户模块目录 "/应用-" 进程名 ".user.ahk")
+m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
+!m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/应用-" 进程名 ".user.ahk")
