@@ -407,24 +407,6 @@ $!5:: SendEvent !+5
 $!6:: SendEvent !+6
 $!7:: SendEvent !+7
 
-; 笔收藏夹第一排
-; $!1:: altSendEx("dp", "{Home}{Right 0}{Enter}")
-; $!2:: altSendEx("dp", "{Home}{Right 1}{Enter}")
-; $!3:: altSendEx("dp", "{Home}{Right 2}{Enter}")
-; $!4:: altSendEx("dp", "{Home}{Right 3}{Enter}")
-; $!5:: altSendEx("dp", "{Home}{Right 4}{Enter}")
-; $!6:: altSendEx("dp", "{Home}{Right 5}{Enter}")
-; $!7:: altSendEx("dp", "{Home}{Right 6}{Enter}")
-
-; 收藏夹第二排
-; $!+1:: altSendEx("dp", "{Home}{Down 1}{Right 0}{Enter}")
-; $!+2:: altSendEx("dp", "{Home}{Down 1}{Right 1}{Enter}")
-; $!+3:: altSendEx("dp", "{Home}{Down 1}{Right 2}{Enter}")
-; $!+4:: altSendEx("dp", "{Home}{Down 1}{Right 3}{Enter}")
-; $!+5:: altSendEx("dp", "{Home}{Down 1}{Right 4}{Enter}")
-; $!+6:: altSendEx("dp", "{Home}{Down 1}{Right 5}{Enter}")
-; $!+7:: altSendEx("dp", "{Home}{Down 1}{Right 6}{Enter}")
-
 ; 自定义颜色
 $!`:: altSendEx("dp", "{Down 2}{Left}")
 $!+`:: altSend("dc")
@@ -445,24 +427,6 @@ $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
 #IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
-    /:: CapslockXShowHelp("
-    (
-    换笔盘界面
-1:: ; 换到第 1 行的 1 支笔
-2:: ; 换到第 1 行的 2 支笔
-3:: ; 换到第 1 行的 3 支笔
-4:: ; 换到第 1 行的 4 支笔
-5:: ; 换到第 1 行的 5 支笔
-6:: ; 换到第 1 行的 6 支笔
-7:: ; 换到第 1 行的 7 支笔
-!1:: ; 换到第 2 行的 1 支笔
-!2:: ; 换到第 2 行的 2 支笔
-!3:: ; 换到第 2 行的 3 支笔
-!4:: ; 换到第 2 行的 4 支笔
-!5:: ; 换到第 2 行的 5 支笔
-!6:: ; 换到第 2 行的 6 支笔
-!7:: ; 换到第 2 行的 7 支笔
-    )")
 
 $1:: ; 换到第 1 行的 1 支笔
     if (A_PriorHotkey=="!d")
@@ -492,31 +456,31 @@ $7:: ; 换到第 1 行的 7 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Right 6}{Enter}
 Return
-$!1:: ; 换到第 2 行的 1 支笔
+$+1:: ; 换到第 2 行的 1 支笔
     if (A_PriorHotkey=="!d")
         SendEvent {Down 1}{Right 0}{Enter}
 Return
-$!2:: ; 换到第 2 行的 2 支笔
+$+2:: ; 换到第 2 行的 2 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 1}{Enter}
 Return
-$!3:: ; 换到第 2 行的 3 支笔
+$+3:: ; 换到第 2 行的 3 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 2}{Enter}
 Return
-$!4:: ; 换到第 2 行的 4 支笔
+$+4:: ; 换到第 2 行的 4 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 3}{Enter}
 Return
-$!5:: ; 换到第 2 行的 5 支笔
+$+5:: ; 换到第 2 行的 5 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 4}{Enter}
 Return
-$!6:: ; 换到第 2 行的 6 支笔
+$+6:: ; 换到第 2 行的 6 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 5}{Enter}
 Return
-$!7:: ; 换到第 2 行的 7 支笔
+$+7:: ; 换到第 2 行的 7 支笔
     if (A_PriorHotkey="!d")
         Send {Down 1}{Right 6}{Enter}
 Return
