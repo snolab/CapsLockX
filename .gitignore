@@ -2,15 +2,20 @@
 *.ini
 *.zip
 *.bak
+
 *.user.ahk
 *.user.md
+*.user.ignores
+
 _config.yaml
+
 /AutoHotKey/
 /docs/README.html
 *.nupkg
-# Test/
-# Settings/
 node_modules
-CapsLockX-LoadModules.ahk
+# btsync
+.sync
 *.!sync
-.user.ignores
+
+CapslockX-LoadModules.ahk
+CapsLockX-LoadModules.ahk
