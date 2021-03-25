@@ -29,7 +29,8 @@ Return
 
 #If CapsLockXMode
 
-*z:: ActivateLastFlashWindow()
+*!z:: ActivateLastFlashWindow()
+*z:: SendEvent {Blind}!{Esc}
 
 #if
 
