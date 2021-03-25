@@ -46,6 +46,7 @@ GoSub Setup_40
 GoSub Setup_41
 GoSub Setup_42
 GoSub Setup_43
+GoSub Setup_44
 
 Return
 #If
@@ -149,32 +150,35 @@ Return
  #Include ./Modules\应用-UWP应用增强.ahk
 #If
  Setup_34:
- #Include ./Modules\应用-文明6回车左置.ahk
+ #Include ./Modules\应用-定时任务.ahk
 #If
  Setup_35:
- #Include ./Modules\应用-桌面QQ增强.ahk
+ #Include ./Modules\应用-文明6回车左置.ahk
 #If
  Setup_36:
- #Include ./Modules\应用-网易云音乐.ahk
+ #Include ./Modules\应用-桌面QQ增强.ahk
 #If
  Setup_37:
- #Include ./Modules\应用-讯飞输入法语音悬浮窗.ahk
+ #Include ./Modules\应用-网易云音乐.ahk
 #If
  Setup_38:
- #Include ./Modules\快速窗口热键编辑.ahk
+ #Include ./Modules\应用-讯飞输入法语音悬浮窗.ahk
 #If
  Setup_39:
- #Include ./Modules\快速窗口热键编辑内容.user.ahk
+ #Include ./Modules\快速窗口热键编辑.ahk
 #If
  Setup_40:
- #Include ./Modules\插件-VSCode增强.ahk
+ #Include ./Modules\快速窗口热键编辑内容.user.ahk
 #If
  Setup_41:
- #Include ./Modules\插件-媒体键.ahk
+ #Include ./Modules\插件-VSCode增强.ahk
 #If
  Setup_42:
- #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
+ #Include ./Modules\插件-媒体键.ahk
 #If
  Setup_43:
+ #Include ./Modules\插件-控制台启用CtrlV粘贴.ahk
+#If
+ Setup_44:
  #Include ./Modules\插件-雪星转屏.ahk
 
