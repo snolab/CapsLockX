@@ -12,8 +12,9 @@
 if !CapsLockX
     ExitApp
 
-#Include Modules/WinClip/WinClipAPI.ahk
-#Include Modules/WinClip/WinClip.ahk
+; 引用剪贴板依赖
+#Include Tools/WinClip/WinClipAPI.ahk
+#Include Tools/WinClip/WinClip.ahk
 global wc := new WinClip
 
 Return
@@ -485,17 +486,17 @@ $+7:: ; 换到第 2 行的 7 支笔
         Send {Down 1}{Right 6}{Enter}
 Return
 
-#IfWinExist 剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE
+#If WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
 
 ~^c::
     hwndOneNote := WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
     if (!hwndOneNote)
         Return
-    ; 通常在弹起时触发
-    Clipboard := ""
+    ; ; 通常在弹起时触发
+    ; Clipboard := ""
     ClipWait, 2, 1 ; 2 secons
     if ErrorLevel {
-        ; MsgBox, The attempt 2 copy text onto the clipboard failed.
+        TrayTip, error, The attempt 2 copy text onto the clipboard failed.
         Return
     }
     WinGet, current, ID, A
@@ -504,6 +505,6 @@ Return
     SendEvent, ^{End}{Enter}
     SendEvent, {text}%timeString%
     SendEvent, ^v
-    Sleep 16
+    Sleep 128
     WinActivate, ahk_id %current%
 Return
