@@ -6,17 +6,21 @@
 
 ### 安装
 
-#### 方式 1
+#### 安装方式 1
 
 源码打包就是软件本体，无需编译。
 
 1. 下载源码 zip 点击 [github仓库源码.zip](https://github.com/snomiao/CapsLockX/archive/master.zip) 然后解压后使用。
-<!-- 或 [Gitee 仓库源码（墙内）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) -->
+（或 [Gitee 仓库源码（大陆）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)）
 2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 方式 2
+#### 安装方式 2
 
 如果你有 npm ，可以尝试 `npm i -g capslockx` 以及 `npx capslockx` 来自动安装本软件
+
+#### 安装方式 3
+
+- [ ] Chocolatey（研究中）
 
 ### 使用方式
 
@@ -61,12 +65,12 @@
 
 #### 本模块功能见下
 
-| 作用于 | 按键                  | 功能                                |
-| ------ | --------------------- | ----------------------------------- |
-| 全局   | CapsLockX + /         | 临时显示热键提示                    |
-| 全局   | CapsLockX（长按）     | 临时显示热键提示                    |
-| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等                  |
+| 按键                  | 功能                               |
+| --------------------- | ---------------------------------- |
+| CapsLockX + /         | 临时显示热键提示                   |
+| CapsLockX（长按）     | 临时显示热键提示                   |
+| CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
+| CapsLockX + Shift + / | 🕷 提交 bug、建议等                 |
 
 <!-- 模块文件名：01.1-插件-模拟鼠标.ahk-->
 
@@ -101,15 +105,16 @@
 
 ![光标移动.gif]( ./media/光标移动.gif )
 
-| 作用域 | Edit 模块             | 说明 （欢迎 push）  |
-| ------ | --------------------- | ------------------- |
-| 全局   | CapsLockX + k j h l   | 上下左右 方向键     |
-| 全局   | CapsLockX + hl        | hl 一起按选择当前词 |
-| 全局   | CapsLockX + y o       | Home End            |
-| 全局   | CapsLockX + yo        | yo 一起按选择当前行 |
-| 全局   | CapsLockX + g         | 回车                |
-| 全局   | CapsLockX + t         | BackSpace           |
-| 全局   | CapsLockX + Shift + t | Delete              |
+| 作用域     | Edit 模块             | 说明                |
+| ---------- | --------------------- | ------------------- |
+| 全局(基本) | CapsLockX + h j k l   | 上下左右 方向键     |
+| 全局(基本) | CapsLockX + y o       | Home End            |
+| 全局(基本) | CapsLockX + u i       | PageUp PageDown     |
+| 全局(基本) | CapsLockX + g         | 回车                |
+| 全局(基本) | CapsLockX + t         | BackSpace           |
+| 全局(进阶) | CapsLockX + Shift + t | Delete              |
+| 全局(进阶) | CapsLockX + hl        | hl 一起按选择当前词 |
+| 全局(进阶) | CapsLockX + kj        | kj 一起按选择当前行 |
 
 <!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 
@@ -355,12 +360,12 @@
 | 支持语言         | 中文                                              | 中文 / English                                      | 中文                                                | 中文 / English                                  |
 
 #### 本项目地址
-<!-- （以下几个仓库同步）： -->
+
+以下几个仓库同步：
 
 - GitHub: https://github.com/snomiao/CapsLockX
-
-<!-- - Gitee: https://gitee.com/snomiao/CapslockX -->
-<!-- - Bitbucket: https://bitbucket.org/snomiao/capslockx/ -->
+- Gitee: https://gitee.com/snomiao/CapslockX
+- Bitbucket: https://bitbucket.org/snomiao/capslockx
 
 #### 相似项目地址：
 

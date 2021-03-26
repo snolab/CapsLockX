@@ -4,11 +4,12 @@
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
-; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
-;
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
-global arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0, ArrowTickerTiming := False
+global 方动中 := 0
+global 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0
+global 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
 
 AppendHelp("
 (
@@ -63,158 +64,136 @@ ArrowTicker()
     ; else{
     tNow := TM_QPC()
     ; 计算用户操作时间
-    tda := dt(arrow_tl, tNow), tdd := dt(arrow_tr, tNow)
-    tdw := dt(arrow_tu, tNow), tds := dt(arrow_td, tNow)
+    tda := dt(方刻左, tNow), tdd := dt(方刻右, tNow)
+    tdw := dt(方刻上, tNow), tds := dt(方刻下, tNow)
     ; 计算加速度
     kax := ma(tdd - tda), kay := ma(tds - tdw)
 
     ; 摩擦力不阻碍用户意志
-    arrow_vx := Friction(arrow_vx + kax, kax), arrow_vy := Friction(arrow_vy + kay, kay)
+    方速横 := Friction(方速横 + kax, kax), 方速纵 := Friction(方速纵 + kay, kay)
 
     ; 稳定化
-    arrow_dx += arrow_vx / 200, arrow_dy += arrow_vy / 200
-    ; ToolTip, %arrow_tl% _ %arrow_tr% _ %arrow_tu% _ %arrow_td% `n %kax% _ %kay% _ %arrow_vx% _ %arrow_vy% _ %arrow_dx% _ %arrow_dy%
-    ; msgbox % arrow_dx
+    方位横 += 方速横 / 200, 方位纵 += 方速纵 / 200
+    ; ToolTip, %方刻左% _ %方刻右% _ %方刻上% _ %方刻下% `n %kax% _ %kay% _ %方速横% _ %方速纵% _ %方位横% _ %方位纵%
+    ; msgbox % 方位横
     ; 完成移动时
-    if ( 0 == arrow_vx && 0 == arrow_vy) {
+    if ( 0 == 方速横 && 0 == 方速纵) {
         ArrowTickerStop()
         Return
     }
-    ; ToolTip, % arrow_dx " " arrow_dy
+    ; ToolTip, % 方位横 " " 方位纵
     ; TODO: 输出速度时间曲线，用于DEBUG
-    if (arrow_dx >= 1) {
-        Loop %arrow_dx% {
+    if (方位横 >= 1) {
+        Loop %方位横% {
             SendEvent {Blind}{Right}
         }
-        arrow_dx -= arrow_dx | 0
+        方位横 -= 方位横 | 0
     }
-    if (arrow_dx <= -1) {
-        arrow_dx := -arrow_dx
-        Loop %arrow_dx% {
+    if (方位横 <= -1) {
+        方位横 := -方位横
+        Loop %方位横% {
             SendEvent {Blind}{Left}
         }
-        arrow_dx := -arrow_dx
-        arrow_dx -= arrow_dx | 0
+        方位横 := -方位横
+        方位横 -= 方位横 | 0
     }
-    if (arrow_dy >= 1) {
-        Loop %arrow_dy%
-        {
+    if (方位纵 >= 1) {
+        Loop %方位纵% {
             SendArrowDown()
         }
-        arrow_dy -= arrow_dy | 0
+        方位纵 -= 方位纵 | 0
     }
-    if (arrow_dy <= -1) {
-        arrow_dy := -arrow_dy
-        Loop %arrow_dy%
-        {
+    if (方位纵 <= -1) {
+        方位纵 := -方位纵
+        Loop %方位纵% {
             SendArrowUp()
         }
-        arrow_dy := -arrow_dy
-        arrow_dy -= arrow_dy | 0
+        方位纵 := -方位纵
+        方位纵 -= 方位纵 | 0
     }
 }
 
 ; 时间处理
-ArrowTickerStart()
-{
-    if (!ArrowTickerTiming) {
-        ArrowTickerTiming := True
-    }
+ArrowTickerStart() {
+    方动中 := 1
     SetTimer, ArrowTicker, 0
 }
-ArrowTickerStop()
-{
+ArrowTickerStop() {
     ; 重置相关参数
-    arrow_tl := 0, arrow_tr := 0, arrow_tu := 0, arrow_td := 0, arrow_vx := 0, arrow_vy := 0, arrow_dx := 0, arrow_dy := 0
-    ; 退出定时
-    ArrowTickerTiming := False
+    方动中 := 0, 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0, 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
     SetTimer, ArrowTicker, Off
 }
 
-#if CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN
+#if CapsLockXMode
+
+; 上下左右
+; 光标运动处理
+ArrowLeftPressed(){
+    if (方刻左)
+        Return
+    if (方刻右) {
+        ; 选中当前词
+        SendEvent ^{Right}^+{Left}
+        方刻右 := 0
+        Return
+    }
+    ArrowTickerStart()
+    方刻左 := TM_QPC()
+    SendEvent {Blind}{Left}
+}
+ArrowRightPressed(){
+    if (方刻右)
+        Return
+    if (方刻左) {
+        ; 选中当前词
+        SendEvent ^{Left}^+{Right}
+        方刻左 := 0
+        Return
+    }
+    方刻右 := TM_QPC()
+    SendEvent {Blind}{Right}
+    ArrowTickerStart()
+}
+ArrowUpPressed(){
+    if (方刻上) 
+        Return
+    if (方刻下) {
+        ; KJ一起按选择当前行
+        SendArrowUp()
+        SendEvent {Home}+{End}
+        方刻下 := 0
+        Return
+    }
+    方刻上 := TM_QPC()
+    SendArrowUp()
+    ArrowTickerStart()
+}
+ArrowDownPressed(){
+    if (方刻下)
+        Return
+    if (方刻上) {
+        ; KJ一起按选择当前行
+        SendArrowDown()
+        SendEvent {End}+{Home}
+        方刻上 := 0
+        Return
+    }
+    方刻下 := TM_QPC()
+    SendArrowDown()
+    ArrowTickerStart()
+}
 
 *u:: PgDn
 *i:: PgUp
-; 上下左右
-
-; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
-; 见 OneNote 2016 增强
-
-; 光标运动处理
-; *h:: Left
-; *j:: Down
-; *k:: UP
-; *l:: Right
-
-; ; ; 光标运动处理
-ArrowLeftPressed()
-{
-    ArrowTickerStart()
-    if (arrow_tl) {
-        Return
-    }
-    if (arrow_tr) {
-        ; 选中当前词
-        SendEvent ^{Right}^+{Left}
-        arrow_tr := 0
-        Return
-    }
-    arrow_tl := TM_QPC()
-    SendEvent {Blind}{Left}
-}
-ArrowRightPressed()
-{
-    ArrowTickerStart()
-    if (arrow_tr) {
-        Return
-    }
-    if (arrow_tl) {
-        ; 选中当前词
-        SendEvent ^{Left}^+{Right}
-        arrow_tl := 0
-        Return
-    }
-    arrow_tr := TM_QPC()
-    SendEvent {Blind}{Right}
-}
-ArrowUpPressed()
-{
-    ArrowTickerStart()
-    if (arrow_tu) {
-        Return
-    }
-    if (arrow_td) {
-        ; KJ一起按
-        arrow_td := 0
-        Return
-    }
-    arrow_tu := TM_QPC()
-    SendArrowUp()
-}
-ArrowDownPressed()
-{
-    ArrowTickerStart()
-    if (arrow_td) {
-        Return
-    }
-    if (arrow_tu) {
-        ; KJ一起按
-        arrow_tu := 0
-        Return
-    }
-    arrow_td := TM_QPC()
-    SendArrowDown()
-}
-
 ;
 *h:: ArrowLeftPressed()
 *l:: ArrowRightPressed()
 *k:: ArrowUpPressed()
 *j:: ArrowDownPressed()
-*h Up:: arrow_tl := 0, ArrowTickerStart()
-*l Up:: arrow_tr := 0, ArrowTickerStart()
-*k Up:: arrow_tu := 0, ArrowTickerStart()
-*j Up:: arrow_td := 0, ArrowTickerStart()
+*h Up:: 方刻左 := 0, ArrowTickerStart()
+*l Up:: 方刻右 := 0, ArrowTickerStart()
+*k Up:: 方刻上 := 0, ArrowTickerStart()
+*j Up:: 方刻下 := 0, ArrowTickerStart()
 
 *y:: Home
 *o:: End
@@ -230,4 +209,3 @@ o & y:: Send {End}+{Home}
 
 ; 回车
 *g:: Enter
-

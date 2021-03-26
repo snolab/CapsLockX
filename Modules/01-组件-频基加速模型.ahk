@@ -5,7 +5,7 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：0.0.1(20200606)
-; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 ;
 ; 时序捕获：（事件捕获  按下：t1  放开：t2  按下：t3）
@@ -28,7 +28,10 @@ if (!CapsLockX){
     ExitApp
 }
 
-global FM_Test := FM_Create()
+global FM_Test := {timer: "方向"}
+
+ToolTip, testing
+
 Return
 
 ; 高性能计时器，精度能够达到微秒级，相比之下 A_Tick 的精度大概只有10几ms。
@@ -43,46 +46,62 @@ FM_QPC(){
 FM_QTick(){
     Return FM_QPC() / TM_QPF()
 }
-FM_Create1(){
-    Return {频率列: []}
-}
-FM_Down1(this){
-    按否 := this.放刻 < this.按刻
-    if(!按否){
-        旧 := this.按刻
-        新 := this.按刻 := FM_QTick()
-        时差:= 新 - 旧
+FM_Ticker(this){
+    旧 := this.更新刻, 新 := this.更新刻 := FM_QTick()
+    时差 := 新 - 旧
+    this.速度 += this.加速 * 时差
+    this.位移 += this.速度 * 时差
+    离散位移 += this.位移 | 0
+    this.位移 -= 离散位移
+    ToolTip, % 离散位移
 
+    if((加速 / 10) | 0 == 0){
+        TIMER:= this.timer
+        SetTimer, %TIMER%, Off
     }
 }
-FM_Up1(this){
+
+FM_Acc(this, 加速度){
+    this.加速度 := 加速度
+}
+FM_Down(this){
+    旧 := this.按刻, 新 := this.按刻 := FM_QTick()
+    频率 := 1 / (新 - 旧)
+    this.频率[0] ||= 1
+    TIMER:= this.timer
+    SetTimer, %TIMER%, 1
+}
+
+FM_DownRaw(this){
+    按否 := this.放刻 < this.按刻
+    if(!按否)
+        FM_Down(this)
+}
+FM_Up(this){
     this.放刻 := FM_QTick()
 }
 FM_Out1(this){
 
 }
-FM_Create(){
-    Return {左按刻: 0, 右按刻: 0, 上按刻: 0, 下按刻: 0, 左放刻: 0, 右放刻: 0, 上放刻: 0, 下放刻: 0}
-    ; Push
+FM_Create1(){
+    Return {按刻: 0, 放刻: 0, 频率列: [1,1,1,1]}
 }
-FM_Ticker(this, 事件 := ""){
-
-    ; 左按否 := this.左放刻 < this.左按刻
-    ; 右按否 := this.右放刻 < this.右按刻
-    ; 上按否 := this.上放刻 < this.上按刻
-    ; 下按否 := this.下放刻 < this.下按刻
-    ; ToolTip 左按否 右按否 上按否 下按否
-    ToolTip % 事件 this[事件 + "刻"]
-    Return 
+FM_Create4(){
+    Return {左: FM_Create1(), 右: FM_Create1(), 上: FM_Create1(), 下: FM_Create1()}
 }
-
 #if
 
-$!j:: FM_Ticker(FM_Test, FM_左 | FM_按)
-$!j Up:: FM_Ticker(FM_Test, FM_左 | FM_放)
-$!l:: FM_Ticker(FM_Test, FM_右 | FM_按)
-$!l Up:: FM_Ticker(FM_Test, FM_右 | FM_放)
-$!i:: FM_Ticker(FM_Test, FM_上 | FM_按)
-$!i Up:: FM_Ticker(FM_Test, FM_上 | FM_放)
-$!k:: FM_Ticker(FM_Test, FM_下 | FM_按)
-$!k Up:: FM_Ticker(FM_Test, FM_下 | FM_放)
+方向:
+    FM_Ticker(FM_Test)
+Return
+
+$!h:: FM_DownRaw(FM_Test)
+$!h Up:: FM_Up(FM_Test)
+; $!j:: FM_Ticker(FM_Test, FM_左 | FM_按)
+; $!j Up:: FM_Ticker(FM_Test, FM_左 | FM_放)
+; $!l:: FM_Ticker(FM_Test, FM_右 | FM_按)
+; $!l Up:: FM_Ticker(FM_Test, FM_右 | FM_放)
+; $!i:: FM_Ticker(FM_Test, FM_上 | FM_按)
+; $!i Up:: FM_Ticker(FM_Test, FM_上 | FM_放)
+; $!k:: FM_Ticker(FM_Test, FM_下 | FM_按)
+; $!k Up:: FM_Ticker(FM_Test, FM_下 | FM_放)

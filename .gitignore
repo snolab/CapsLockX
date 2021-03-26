@@ -12,4 +12,6 @@ _config.yaml
 # Settings/
 node_modules
 CapsLockX-LoadModules.ahk
+CapsLockX-ModulesRunner.ahk
+CapsLockX-ModulesLoader.ahk
 *.!sync
