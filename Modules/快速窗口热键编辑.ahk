@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
 ; 名称：快速窗口热键编辑
-; 描述：rt
+; 描述：快速窗口热键编辑
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -13,8 +13,7 @@ if (!CapsLockX) {
     ExitApp
 }
 
-global 快速窗口热键编辑用户模块路径 := CapsLockX_PathModules "/快速窗口热键编辑内容.user.ahk"
-
+global 快速窗口热键编辑用户模块目录 := CapsLockX_PathModules
 global 快速窗口热键编辑初始内容 := "
 (
 ; 1. 本用户模块文件由 CapsLockX 初始生成，扩展名为 .user.ahk ，不会被版本更新覆盖。
@@ -28,23 +27,26 @@ TrayTip CapsLockX, 用户宏已加载
 Return
 
 #if
-    ; 这里可以写上你的自定义全局热键
+
+; 这里可以写上你的自定义全局热键
 
 )"
 Return
 
 #if CapsLockXMode
 
-m:: 
-    WinGet, Active_ID, ID, A
-    WinGetClass, cls, ahk_id %Active_ID%
-    WinGet, Active_Process, ProcessName, ahk_id %Active_ID%
-    WinGetTitle, title, ahk_id %Active_ID%
-    match = %title% ahk_class %cls% ahk_exe %Active_Process%
-    if (!FileExist(快速窗口热键编辑用户模块路径)){
-        FileAppend, %快速窗口热键编辑初始内容%, %快速窗口热键编辑用户模块路径%
-    }
-    ifstatement := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
-    FileAppend, %ifstatement%, %快速窗口热键编辑用户模块路径%
-    Run notepad %快速窗口热键编辑用户模块路径%
-return
+UserModuleEdit(路径){
+    WinGet, hWnd, ID, A
+    WinGetClass, 窗口类名, ahk_id %hWnd%
+    WinGet, 进程名, ProcessName, ahk_id %hWnd%
+    WinGetTitle, title, ahk_id %hWnd%
+    match = %title% ahk_class %窗口类名% ahk_exe %进程名%
+    if (!FileExist(路径))
+        FileAppend, %快速窗口热键编辑初始内容%, %路径%
+    填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
+    FileAppend, %填充内容%, %路径%
+    Run notepad %路径%
+}
+
+m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
+!m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/应用-" 进程名 ".user.ahk")
