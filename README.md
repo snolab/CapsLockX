@@ -50,7 +50,7 @@
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
 下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
-对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + F12` 重新加载即可。
+对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + \` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
@@ -412,10 +412,10 @@
 - Gitee: https://gitee.com/snomiao/CapslockX
 - Bitbucket: https://bitbucket.org/snomiao/capslockx
 
-#### 相似项目地址：
+#### 相似项目地址
 
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
-  设计：[rrCapslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
+  设计：[Capslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
 - [coralsw/CapsEz: KeyMouse Tools](https://github.com/coralsw/CapsEz)
 - [CapsLock+](https://capslox.com/CapsLock-plus/)
 - [Capslox](https://capslox.com/cn/)
@@ -428,19 +428,21 @@
 
 ## 答疑相关第五
 
-本项目使用 [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
-
-相关知乎问题：
-- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
+本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
 
 相关社群：
 
+- CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)
 - CapsLockX 用户 QQ 群：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群： 271105729
 - AHK 高级 QQ 群： 717947647
 - [本项目的 issues （可作论坛使用）](https://github.com/snomiao/CapsLockX/issues)
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
+
+相关知乎问题：
+
+- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
 
 ## 支持第六
 
