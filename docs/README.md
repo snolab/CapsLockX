@@ -411,10 +411,10 @@
 - Gitee: https://gitee.com/snomiao/CapslockX
 - Bitbucket: https://bitbucket.org/snomiao/capslockx
 
-#### 相似项目地址：
+#### 相似项目地址
 
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
-  设计：[rrCapslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
+  设计：[Capslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
 - [coralsw/CapsEz: KeyMouse Tools](https://github.com/coralsw/CapsEz)
 - [CapsLock+](https://capslox.com/CapsLock-plus/)
 - [Capslox](https://capslox.com/cn/)
@@ -427,19 +427,21 @@
 
 ## 答疑相关第五
 
-本项目使用 [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
-
-相关知乎问题：
-- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
+本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
 
 相关社群：
 
+- CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)
 - CapsLockX 用户 QQ 群：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群： 271105729
 - AHK 高级 QQ 群： 717947647
 - [本项目的 issues （可作论坛使用）](https://github.com/snomiao/CapsLockX/issues)
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
+
+相关知乎问题：
+
+- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
 
 ## 支持第六
 
