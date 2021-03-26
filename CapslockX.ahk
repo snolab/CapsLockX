@@ -211,16 +211,16 @@ if (target != source) {
     if (target != source) {
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
     }
-    ; 输出根目录 README.md
-    FileDelete ./README.md
-    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README --->`n"
-    FileAppend %PREFIX% %target%, ./README.md
-
     ; 输出到 docs/readme.md （用于 github-pages ）
     ; docs_target := UpdateModulesHelp(source, 1)
     FileDelete ./docs/README.md
     FileAppend %target%, ./docs/README.md
 
+    ; 输出根目录 README.md （用于 github 首页）
+    FileDelete ./README.md
+    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README --->`n"
+    StringReplace, target, target, ./media/, ./docs/media/, All
+    FileAppend %PREFIX% %target%, ./README.md
     ; Reload
     ; ExitApp
 }
