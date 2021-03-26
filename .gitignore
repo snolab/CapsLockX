@@ -21,5 +21,6 @@ node_modules
 # modules
 CapslockX-LoadModules.ahk
 CapsLockX-LoadModules.ahk
-CapsLockX-ModulesLoader.ahk
 CapsLockX-ModulesRunner.ahk
+CapsLockX-ModulesLoader.ahk
+*.!sync

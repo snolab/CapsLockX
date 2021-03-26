@@ -4,7 +4,7 @@
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
-; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 ; 
 ; save as utf8 with bom
@@ -469,7 +469,7 @@ $+3:: ; 换到第 2 行的 3 支笔
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 2}{Enter}
 Return
-$+4:: ; 换到第 2 行的 4 支笔
+$+4:: ; 换到第 2 行的 4 支笔e
     if (A_PriorHotkey="!d")
         SendEvent {Down 1}{Right 3}{Enter}
 Return

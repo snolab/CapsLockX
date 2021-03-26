@@ -6,8 +6,15 @@
         "CapsLockX": "CapsLockX.exe",
         "start": "CapsLockX.exe",
         "build:patch": "npm version patch",
+        "build:minor": "npm version minor",
+        "build:major": "npm version major",
+        "versioning": "git commit -a -m versioning",
         "version": "node tools/versioning.node.mjs && conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
-        "postversion": "git commit -a -m versioning && git push --follow-tag"
+        "postversion": "npm run versioning && npm run push",
+        "push": "npm run push:gh && npm run push:gh && npm run push:gh",
+        "push:gh": "git push --follow-tag --repo git@github.com:snomiao/CapsLockX.git",
+        "push:cn": "git push --follow-tag --repo git@gitee.com:snomiao/CapslockX.git",
+        "push:bb": "git push --follow-tag --repo git@bitbucket.org:snomiao/capslockx.git"
     },
     "repository": {
         "type": "git",

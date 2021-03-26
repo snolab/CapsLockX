@@ -5,10 +5,8 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.06.27
-; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
-;
-; CoordMode, Mouse, Screen
 
 AppendHelp( "
 (
@@ -399,4 +397,3 @@ $+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), ScrollTickerStart()
 $+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), ScrollTickerStart()
 $+r Up:: 轮刻左 := 0, ScrollTickerStart()
 $+f Up:: 轮刻右 := 0, ScrollTickerStart()
-

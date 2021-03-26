@@ -1,16 +1,14 @@
-﻿; Encoding: UTF-8 with BOM
-; Name: CapsLockX
-; Description: 程序入口
-; Author: snomiao@gmail.com
-;
-; Copyright © 2017-2020 snomiao@gmail.com
-; 创建：Snowstar QQ: 997596439
+﻿; ========== CapsLockX ==========
+; 名称：CapsLockX 程序入口
+; 描述：用于生成模块加载组件、集成模块帮助文件、智能重载 CapsLockX 核心等功能。
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 支持：https://github.com/snomiao/CapsLockX
+; 编码：UTF-8 with BOM
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; 鸣谢：张工 QQ: 45289331 参与调试
 ; LICENCE: GNU GPLv3
-;
-;
-; 模块名: 不能有这几个字符 ", ``"
-; MsgBox,, %A_ScriptDir%
+; ========== CapsLockX ==========
 
 #SingleInstance Force ; 跳过对话框并自动替换旧实例
 #NoTrayIcon ; 隐藏托盘图标
@@ -19,17 +17,18 @@ SendMode Event
 SetWorkingDir, %A_ScriptDir%
 
 Process Priority, , High ; 脚本高优先级
-
 global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore := "./Core"
-global CapsLockX_Version := "v1.8.0 Beta"
-
+global CapsLockX_Version
+FileRead, CapsLockX_Version, ./Tools/version.txt
+if(!CapsLockX_Version)
+    CapsLockX_Version := "未知版本"
+global CapsLockX_VersionName := "v" CapsLockX_Version
 global loadingTips := ""
 
 LoadingTips(msg, clear = 0)
 {
     if (clear || loadingTips == "") {
-
         loadingTips := "CapsLockX " CapsLockX_Version "`n"
     }
     loadingTips .= msg "`n"
@@ -71,7 +70,6 @@ UpdateModulesHelp(sourceREADME, docs="")
         ModuleFile := A_LoopField
         re := RegExMatch(A_LoopField, "O)((?:.*[.-])*)(.*)\.ahk", Match)
         if (!re) {
-
             Continue
         }
         ModuleFileName := Match[1] Match[2]
@@ -79,7 +77,6 @@ UpdateModulesHelp(sourceREADME, docs="")
 
         ModuleHelp := TryLoadModuleHelp(ModuleFileName, ModuleName)
         if (!ModuleHelp) {
-
             Continue
         }
         ModuleHelp := Trim(ModuleHelp, " `t`n")
@@ -133,10 +130,10 @@ UpdateModulesHelp(sourceREADME, docs="")
 
     Return targetREADME
 }
-LoadModules(ModulesLoader)
+LoadModules(ModulesRunner, ModulesLoader)
 {
     FileEncoding UTF-8
-    ; 列出模块文件
+    ; 列出模块文件 然后 排序
     ModuleFiles := ""
     ; loop, Files, %CapsLockX_PathModules%\*.ahk, R ; Recurse into subfolders.
     loop, Files, %CapsLockX_PathModules%\*.ahk, ; NOT Recurse into subfolders.
@@ -144,7 +141,7 @@ LoadModules(ModulesLoader)
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
 
-    ; 生成加载代码
+    ; 生成模块加载代码
     code_setup := ""
     code_include := ""
     i := 0
@@ -171,7 +168,7 @@ LoadModules(ModulesLoader)
 
             ; 导入模块
             code_setup .= "GoSub Setup_" i "`n"
-            code_include .= "#If" "`n"
+            code_include .= "#If" "`n" "`n"
             code_include .= " Setup_" i ":" "`n"
             code_include .= " #Include " CapsLockX_PathModules "\" ModuleFile "`n"
             LoadingTips("运行模块：" i " " ModuleName)
@@ -184,20 +181,21 @@ LoadModules(ModulesLoader)
     code_consts .= "global CapsLockX_PathModules := " """" CapsLockX_PathModules """" "`n"
     code_consts .= "global CapsLockX_PathCore := " """" CapsLockX_PathCore """" "`n"
     code_consts .= "global CapsLockX_Version := " """" CapsLockX_Version """" "`n"
+    code_consts .= "global CapsLockX_VersionName := " """" CapsLockX_VersionName """" "`n"
 
-    code := ""
-    code .= code_consts "`n"
-    code .= code_setup "`n"
-    code .= "Return" "`n"
-    code .= code_include "`n"
+    codeRunner .= code_consts "`n" code_setup "`n"
+    codeLoader .= "Return" "`n" code_include "`n"
 
+    FileDelete %ModulesRunner%
+    FileAppend %codeRunner%, %ModulesRunner%
     FileDelete %ModulesLoader%
-    FileAppend %code%, %ModulesLoader%
+    FileAppend %codeLoader%, %ModulesLoader%
 }
 
 ; 加载模块
-global ModulesLoader := CapsLockX_PathCore "\CapsLockX-LoadModules.ahk"
-LoadModules(ModulesLoader)
+global ModulesRunner := CapsLockX_PathCore "\CapsLockX-ModulesRunner.ahk"
+global ModulesLoader := CapsLockX_PathCore "\CapsLockX-ModulesLoader.ahk"
+LoadModules(ModulesRunner, ModulesLoader)
 
 ; 编译README.md
 INPUT_README_FILE := "./docs/README.md"
@@ -230,7 +228,7 @@ if (target != source) {
 global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
 
 ; 用热键把之前的实例关了
-SendEvent ^!+\
+; SendEvent ^!+\
 
 ; 隐藏 ToolTip
 ToolTip

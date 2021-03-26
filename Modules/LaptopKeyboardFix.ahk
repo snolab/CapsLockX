@@ -5,7 +5,7 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.06.27
-; 版权：Copyright © 2018-2020 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
 if !CapsLockX
