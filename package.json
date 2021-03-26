@@ -10,11 +10,11 @@
         "build:major": "npm version major",
         "versioning": "git commit -a -m versioning",
         "version": "node tools/versioning.node.mjs && conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
-        "postversion": "npm run versioning && npm run push && npm publish",
-        "push": "npm run push:gh && npm run push:gh && npm run push:gh",
-        "push:gh": "git push --follow-tag --repo git@github.com:snomiao/CapsLockX.git",
-        "push:cn": "git push --follow-tag --repo git@gitee.com:snomiao/CapslockX.git",
-        "push:bb": "git push --follow-tag --repo git@bitbucket.org:snomiao/capslockx.git"
+        "postversion": "npm run versioning && npm run gitpush && npm publish",
+        "gitpush": "npm run gitpush:gh && npm run gitpush:gh && npm run gitpush:gh",
+        "gitpush:gh": "git push --follow-tag --repo git@github.com:snomiao/CapsLockX.git",
+        "gitpush:cn": "git push --follow-tag --repo git@gitee.com:snomiao/CapslockX.git",
+        "gitpush:bb": "git push --follow-tag --repo git@bitbucket.org:snomiao/capslockx.git"
     },
     "repository": {
         "type": "git",
