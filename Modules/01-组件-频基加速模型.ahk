@@ -28,15 +28,60 @@ if (!CapsLockX){
     ExitApp
 }
 
-global FM_Test := {timer: "方向"}
+global FM_Test := FM_Create4("myMouseMove")
+global FM_Test1 := FM_Create1("myMouseMove1" )
 
 ToolTip, testing
 
+; msgbox % FM_Vec4Mul1([1,2,3,4],5)[2]
+
 Return
 
+FM_Vec4Mul1(vec, val){
+    return [vec[1]*val,vec[2]*val,vec[3]*val, vec[4]*val]
+}
+FM_Vec4Plus(vec1, vec2){
+    return [vec1[1]+vec2[1],vec1[2]+vec2[2],vec1[3]+vec2[3], vec1[4]+vec2[4]]
+}
+FM_Vec4Minus(vec1, vec2){
+    return [vec1[1]-vec2[1],vec1[2]-vec2[2],vec1[3]-vec2[3], vec1[4]-vec2[4]]
+}
+FM_Vec4Mul(vec1, vec2){
+    return [vec1[1]*vec2[1],vec1[2]*vec2[2],vec1[3]*vec2[3], vec1[4]*vec2[4]]
+}
+FM_Vec4Dot(vec1, vec2){
+    return [vec1[1]*vec2[1]+vec1[2]*vec2[2]+vec1[3]*vec2[3]+vec1[4]*vec2[4]]
+}
+FM_Vec4Lt(vec1, vec2){
+    return [vec1[1]<vec2[1], vec1[2]<vec2[2], vec1[3]<vec2[3], vec1[4]<vec2[4]]
+}
+FM_Vec4BitOr(vec, bit){
+    return [vec[1]|bit, vec[2]|bit, vec[3]|bit, vec[4]|bit]
+}
+FM_Vec4BitNot(vec){
+    return [!vec[1], !vec[2], !vec[3], !vec[4]]
+}
+FM_Vec4And(vec){
+    return vec[1] && vec[2] && vec[3] && vec[4]
+}
+FM_Vec4Or(vec){
+    return vec[1] || vec[2] || vec[3] || vec[4]
+}
+FM_Vec4MulRate(vec, r){
+    return FM_Vec4Plus(FM_Vec4Mul1(vec, r), FM_Vec4Mul1(vec,1 - r))
+}
+FM_Vec4Zeros(){
+    return [0,0,0,0]
+}
+FM_Vec4Ones(){
+    return [1,1,1,1]
+}
+FM_Vec4Print(vec){
+    return "["vec[1]","vec[2]","vec[3]","vec[4]"]"
+}
 ; 高性能计时器，精度能够达到微秒级，相比之下 A_Tick 的精度大概只有10几ms。
 FM_QPF(){
-    DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
+    DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)f
     Return QuadPart
 }
 FM_QPC(){
@@ -47,61 +92,122 @@ FM_QTick(){
     Return FM_QPC() / TM_QPF()
 }
 FM_Ticker(this){
-    旧 := this.更新刻, 新 := this.更新刻 := FM_QTick()
-    时差 := 新 - 旧
-    this.速度 += this.加速 * 时差
-    this.位移 += this.速度 * 时差
-    离散位移 += this.位移 | 0
-    this.位移 -= 离散位移
-    ToolTip, % 离散位移
+    旧 := this.更新刻, 新 := this.更新刻 := FM_QTick(), 时差 := 新 - 旧
+    if(!时差)
+        return [0, 0]
+    this.位移 := FM_Vec4Plus(this.位移, FM_Vec4Mul1(this.速度, 时差))
+    离散位移 := FM_Vec4BitOr(this.位移, 0)
+    this.位移 := FM_Vec4Minus(this.位移, 离散位移)
+    按否 := FM_Vec4Lt( this.放刻, this.按刻)
+    ; this.速度 := FM_Vec4Mul(this.速度, FM_Vec4Mul1(按否,(1 - (0.1 * 时差 * 100)))) ; 阻力
 
-    if((加速 / 10) | 0 == 0){
-        TIMER:= this.timer
-        SetTimer, %TIMER%, Off
+    ; this.频率 := this.频率 * 时差 * 0.01 + 1 * (1-时差 * 0.01) ; 频率阻力
+    _=_
+    ToolTip, % 时差 _ FM_Vec4Print(按否) _ FM_Vec4Print(this.速度) _ FM_Vec4Print(this.位移) _ FM_Vec4Print(离散位移) _ FM_Vec4Print(this.频率)
+    if(this.加速 < 0 )
+        this.加速 := 0
+    if(this.速度 | 0 == 0){
+        this.更新刻 := ""
+        timerLabel := this.timerLabel
+        SetTimer, %timerLabel%, Off
     }
+    out := [离散位移[2]-离散位移[1], 离散位移[4]-离散位移[3]]
+    return out
 }
 
-FM_Acc(this, 加速度){
-    this.加速度 := 加速度
+FM_Ticker1(this){
+    旧 := this.更新刻, 新 := this.更新刻 := FM_QTick()
+    按否 := this.放刻 < this.按刻
+    时差 := 新 - 旧
+    if(!时差)
+        return 0
+    this.位移 += this.速度 * 时差
+    离散位移 := this.位移 | 0
+    ; MouseMove, -离散位移, 0, 0, R
+    this.位移 -= 离散位移r
+
+    if(!按否)
+        this.速度 := this.速度 * (1 - (0.1 * 时差 * 100)) ; 阻力
+    this.频率 := this.频率 * 时差 * 0.01 + 1 * (1-时差 * 0.01) ; 频率阻力
+    if(this.加速 < 0 )
+        this.加速 := 0
+    if(this.速度 | 0 == 0){
+        this.更新刻 := ""
+        timerLabel := this.timerLabel
+        SetTimer, %timerLabel%, Off
+    }
+    return 离散位移
 }
-FM_Down(this){
+
+FM_按下1(this){
+    if(this.放刻 < this.按刻)
+        return
     旧 := this.按刻, 新 := this.按刻 := FM_QTick()
     频率 := 1 / (新 - 旧)
-    this.频率[0] ||= 1
-    TIMER:= this.timer
-    SetTimer, %TIMER%, 1
+    this.频率 := this.频率 * 0.9 + 频率 * 0.1
+    if(!this.频率 || this.频率 <1)
+        this.频率 := 1
+    this.速度 += this.频率 ** 1.5 * 100
+    timerLabel := this.timerLabel
+    SetTimer, %timerLabel%, 1
 }
-
-FM_DownRaw(this){
-    按否 := this.放刻 < this.按刻
-    if(!按否)
-        FM_Down(this)
-}
-FM_Up(this){
+FM_弹起1(this){
     this.放刻 := FM_QTick()
 }
-FM_Out1(this){
-
+FM_按下(this,dir){
+    if(this.放刻[dir] < this.按刻[dir])
+        return
+    旧 := this.按刻[dir], 新 := this.按刻[dir] := FM_QTick()
+    频率 := (1 / (新 - 旧)) || 1
+    this.频率[dir] := this.频率[dir] * 0.8 + 频率[dir] * 0.2
+    if(!this.频率[dir] || this.频率[dir] <1)
+        this.频率[dir] := 1
+    this.速度[dir] += this.频率[dir] ** 1.5 * 200
+    timerLabel := this.timerLabel
+    SetTimer, %timerLabel%, 1
 }
-FM_Create1(){
-    Return {按刻: 0, 放刻: 0, 频率列: [1,1,1,1]}
+FM_弹起(this, dir){
+    this.放刻[dir] := FM_QTick()
 }
-FM_Create4(){
-    Return {左: FM_Create1(), 右: FM_Create1(), 上: FM_Create1(), 下: FM_Create1()}
+FM_Create1(timerLabel){
+    Return {按刻: 0, 放刻: 0, 频率: 0, 加速: 0, 速度:0, 位移: 0, timerLabel: timerLabel}
+}
+FM_Create4(timerLabel){
+    o := {timerLabel: timerLabel}
+    o.按刻:= FM_Vec4Zeros(), o.放刻:= FM_Vec4Zeros(),
+    o.频率:= FM_Vec4Zeros(), o.加速:= FM_Vec4Zeros(),
+    o.速度:= FM_Vec4Zeros(), o.位移:= FM_Vec4Zeros(),
+    return o
 }
 #if
 
-方向:
-    FM_Ticker(FM_Test)
-Return
+myMouseMove1:
+    vec := FM_Ticker1(FM_Test1)
+    myMouseMove1(vec)
+return
+myMouseMove1(x){
+    MouseMove, %x%,0,0,R
+}
 
-$!h:: FM_DownRaw(FM_Test)
-$!h Up:: FM_Up(FM_Test)
-; $!j:: FM_Ticker(FM_Test, FM_左 | FM_按)
-; $!j Up:: FM_Ticker(FM_Test, FM_左 | FM_放)
-; $!l:: FM_Ticker(FM_Test, FM_右 | FM_按)
-; $!l Up:: FM_Ticker(FM_Test, FM_右 | FM_放)
-; $!i:: FM_Ticker(FM_Test, FM_上 | FM_按)
-; $!i Up:: FM_Ticker(FM_Test, FM_上 | FM_放)
-; $!k:: FM_Ticker(FM_Test, FM_下 | FM_按)
-; $!k Up:: FM_Ticker(FM_Test, FM_下 | FM_放)
+myMouseMove:
+    vec := FM_Ticker(FM_Test)
+    myMouseMove(vec)
+return
+myMouseMove(vec){
+    x := vec[1], y := vec[2]
+    MouseMove, %x%, %y%, 0, R
+}
+; FM_Ticker:
+;     FM_Ticker(FM_Test)
+; Return
+
+; $!h:: FM_按下1(FM_Test1)
+; $!h Up:: FM_弹起1(FM_Test1)
+; $!j:: FM_按下(FM_Test, 1) ; FM_左)
+; $!j Up:: FM_弹起(FM_Test, 1) ; FM_左)
+; $!l:: FM_按下(FM_Test, 2) ; FM_右)
+; $!l Up:: FM_弹起(FM_Test, 2) ; FM_右)
+; $!i:: FM_按下(FM_Test, 3) ; FM_上)
+; $!i Up:: FM_弹起(FM_Test, 3) ; FM_上)
+; $!k:: FM_按下(FM_Test, 4) ; FM_下)
+; $!k Up:: FM_弹起(FM_Test, 4) ; FM_下)
