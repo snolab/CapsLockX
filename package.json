@@ -1,6 +1,6 @@
 {
     "name": "capslockx",
-    "version": "1.12.0",
+    "version": "1.13.0",
     "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
     "scripts": {
         "CapsLockX": "CapsLockX.exe",
@@ -10,7 +10,7 @@
         "build:major": "npm version major",
         "versioning": "git commit -a -m versioning",
         "version": "node tools/versioning.node.mjs && conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
-        "postversion": "npm run versioning && npm run push",
+        "postversion": "npm run versioning && npm run push && npm publish",
         "push": "npm run push:gh && npm run push:gh && npm run push:gh",
         "push:gh": "git push --follow-tag --repo git@github.com:snomiao/CapsLockX.git",
         "push:cn": "git push --follow-tag --repo git@gitee.com:snomiao/CapslockX.git",
