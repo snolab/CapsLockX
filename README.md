@@ -7,17 +7,21 @@
 
 ### 安装
 
-#### 方式 1
+#### 安装方式 1
 
 源码打包就是软件本体，无需编译。
 
 1. 下载源码 zip 点击 [github仓库源码.zip](https://github.com/snomiao/CapsLockX/archive/master.zip) 然后解压后使用。
-<!-- 或 [Gitee 仓库源码（墙内）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip) -->
+（或 [Gitee 仓库源码（大陆）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)）
 2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 方式 2
+#### 安装方式 2
 
 如果你有 npm ，可以尝试 `npm i -g capslockx` 以及 `npx capslockx` 来自动安装本软件
+
+#### 安装方式 3
+
+- [ ] Chocolatey（研究中）
 
 ### 使用方式
 
@@ -46,7 +50,7 @@
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
 下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
-对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + F12` 重新加载即可。
+对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + \` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
@@ -62,12 +66,12 @@
 
 #### 本模块功能见下
 
-| 作用于 | 按键                  | 功能                                |
-| ------ | --------------------- | ----------------------------------- |
-| 全局   | CapsLockX + /         | 临时显示热键提示                    |
-| 全局   | CapsLockX（长按）     | 临时显示热键提示                    |
-| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等                  |
+| 按键                  | 功能                               |
+| --------------------- | ---------------------------------- |
+| CapsLockX + /         | 临时显示热键提示                   |
+| CapsLockX（长按）     | 临时显示热键提示                   |
+| CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
+| CapsLockX + Shift + / | 🕷 提交 bug、建议等                 |
 
 <!-- 模块文件名：01.1-插件-模拟鼠标.ahk-->
 
@@ -79,7 +83,7 @@
 - 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 - 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 - 效果如图：
-  ![鼠标模拟.gif]( ./media/鼠标模拟.gif )
+  ![鼠标模拟.gif]( ./docs/media/鼠标模拟.gif )
 
 #### 使用方法如下
 
@@ -100,17 +104,18 @@
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![光标移动.gif]( ./media/光标移动.gif )
+![光标移动.gif]( ./docs/media/光标移动.gif )
 
-| 作用域 | Edit 模块             | 说明 （欢迎 push）  |
-| ------ | --------------------- | ------------------- |
-| 全局   | CapsLockX + k j h l   | 上下左右 方向键     |
-| 全局   | CapsLockX + hl        | hl 一起按选择当前词 |
-| 全局   | CapsLockX + y o       | Home End            |
-| 全局   | CapsLockX + yo        | yo 一起按选择当前行 |
-| 全局   | CapsLockX + g         | 回车                |
-| 全局   | CapsLockX + t         | BackSpace           |
-| 全局   | CapsLockX + Shift + t | Delete              |
+| 作用域     | Edit 模块             | 说明                |
+| ---------- | --------------------- | ------------------- |
+| 全局(基本) | CapsLockX + h j k l   | 上下左右 方向键     |
+| 全局(基本) | CapsLockX + y o       | Home End            |
+| 全局(基本) | CapsLockX + u i       | PageUp PageDown     |
+| 全局(基本) | CapsLockX + g         | 回车                |
+| 全局(基本) | CapsLockX + t         | BackSpace           |
+| 全局(进阶) | CapsLockX + Shift + t | Delete              |
+| 全局(进阶) | CapsLockX + hl        | hl 一起按选择当前词 |
+| 全局(进阶) | CapsLockX + kj        | kj 一起按选择当前行 |
 
 <!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 
@@ -127,9 +132,9 @@
 #### 效果图
 
 - Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif]( ./media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif )
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif]( ./docs/media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif )
 - 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
-  ![02-插件-窗口增强_一键排列窗口.gif]( ./media/02-插件-窗口增强_一键排列窗口.gif )
+  ![02-插件-窗口增强_一键排列窗口.gif]( ./docs/media/02-插件-窗口增强_一键排列窗口.gif )
 
 #### 使用方法如下
 
@@ -316,7 +321,7 @@
 
 #### 效果如下图
 
-![应用-讯飞语音输入法悬浮窗演示.gif]( ./media/应用-讯飞语音输入法悬浮窗演示.gif )
+![应用-讯飞语音输入法悬浮窗演示.gif]( ./docs/media/应用-讯飞语音输入法悬浮窗演示.gif )
 
 <!-- 模块文件名：插件-媒体键.ahk-->
 
@@ -363,13 +368,13 @@
 
 本项目的核心理念是：简化系统操作逻辑，提升操作效率，且尽量不与原有习惯键位冲突。
 
-1. [x] 长按 CapsLockX 键显示对应帮助
-2. [ ] 初次使用上手教程
-3. [ ] 自动更新
-4. [ ] 插件管理器
-5. [ ] 自动配置同步功能
-6. [ ] 易用的选项配置的 UI 界面
-7. [ ] 执行外部代码（Python、Nodejs、Bash、……）
+1. [x] 按 CapsLockX + / 键显示对应帮助（目前的显示样式相当草率）
+2. [ ] 初次使用上手教程（这个真没有……）
+3. [ ] 自动更新（虽然git pull一下也不是不行）
+4. [ ] 插件管理器（虽然文件系统也可以搞定）
+5. [ ] 自动配置同步功能（虽然一般来说扔onedrive就够）
+6. [ ] 易用的选项配置的 UI 界面（虽然改ini也不是什么难事）
+7. [ ] 执行外部代码（Python、Nodejs、Bash、……）（虽然写个脚本run一下也并不算麻烦）
 
 如果你有任何想法或建议，请在这里提出：
 [Issues · snomiao/CapslockX](https://github.com/snomiao/CapsLockX/issues)
@@ -400,17 +405,17 @@
 | 支持语言         | 中文                                              | 中文 / English                                      | 中文                                                | 中文 / English                                  |
 
 #### 本项目地址
-<!-- （以下几个仓库同步）： -->
+
+以下几个仓库同步：
 
 - GitHub: https://github.com/snomiao/CapsLockX
+- Gitee: https://gitee.com/snomiao/CapslockX
+- Bitbucket: https://bitbucket.org/snomiao/capslockx
 
-<!-- - Gitee: https://gitee.com/snomiao/CapslockX -->
-<!-- - Bitbucket: https://bitbucket.org/snomiao/capslockx/ -->
-
-#### 相似项目地址：
+#### 相似项目地址
 
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
-  设计：[rrCapslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
+  设计：[Capslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
 - [coralsw/CapsEz: KeyMouse Tools](https://github.com/coralsw/CapsEz)
 - [CapsLock+](https://capslox.com/CapsLock-plus/)
 - [Capslox](https://capslox.com/cn/)
@@ -423,19 +428,21 @@
 
 ## 答疑相关第五
 
-本项目使用 [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
-
-相关知乎问题：
-- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
+本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
 
 相关社群：
 
+- CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)
 - CapsLockX 用户 QQ 群：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群： 271105729
 - AHK 高级 QQ 群： 717947647
 - [本项目的 issues （可作论坛使用）](https://github.com/snomiao/CapsLockX/issues)
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
+
+相关知乎问题：
+
+- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
 
 ## 支持第六
 

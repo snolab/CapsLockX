@@ -3,6 +3,7 @@
 *.zip
 *.bak
 
+# user
 *.user.ahk
 *.user.md
 *.user.ignores
@@ -17,5 +18,9 @@ node_modules
 .sync
 *.!sync
 
+# modules
 CapslockX-LoadModules.ahk
 CapsLockX-LoadModules.ahk
+CapsLockX-ModulesRunner.ahk
+CapsLockX-ModulesLoader.ahk
+*.!sync
