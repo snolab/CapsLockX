@@ -77,7 +77,7 @@ sign(v){
 ; q右键
 
 ; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646273(v=vs.85).aspx
-SendInput_MouseMsg32(dwFlag, mouseData = 0){
+SendInput_MouseMsg32(dwFlag, mouseData := 0){
     VarSetCapacity(sendData, 28, 0)
     NumPut(0, sendData, 0, "UInt")
     NumPut(0, sendData, 4, "Int") 
@@ -132,31 +132,6 @@ SendInput_MouseMoveR64(x, y){
     ret := DllCall("SendInput", "UInt", 1, "Int", 0, "Int", cbSize, "Int")
     ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
-
-; 鼠标运动处理
-; mouseTicker_dev:
-;     ; 在非 CapsLockX 模式下直接停止
-;     If (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
-;         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
-;         max := 0, may := 0
-;     }else{
-;         tNow := TM_QPC()
-;         ; 计算用户操作时间, 计算 ADWS 键按下的时长
-;         tda := dt(鼠刻左, tNow), tdd := dt(鼠刻右, tNow)
-;         tdw := dt(鼠刻上, tNow), tds := dt(鼠刻下, tNow)
-;         tdx := tdd - tda, tdy := tds - tdw
-;     }
-;     sign(tdx) + tdx * tdx
-;     tax := tda * tay
-;     If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
-;     {
-;         SendInput_MouseMoveR32(鼠差横, 鼠差纵)
-;         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
-;     }Else{
-;         MouseMove, %鼠差横%, %鼠差纵%, 0, R
-;         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
-;     }
-; Return
 
 ; 鼠标模拟
 MouseTickerStart(){
