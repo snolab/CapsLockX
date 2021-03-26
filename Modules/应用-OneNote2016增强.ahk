@@ -274,8 +274,15 @@ $+F2:: SendEvent ^+g{AppsKey}r
 ; 复制页面链接
 $!F2:: Send ^+a{AppsKey}l
 
-; 移动笔记
-$!m:: SendEvent ^!m
+; 移动笔记（尝试自动填入剪贴板）
+$!m::
+    SendEvent ^c
+    SendEvent ^!m
+    WinWaitActive, ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 1
+    if(ErrorLevel)
+        return
+    SendEvent ^v
+return
 
 ; 移动分区
 $!+m:: SendEvent ^+g{AppsKey}m
