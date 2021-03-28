@@ -209,12 +209,12 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 #IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
 
-; /:: CapslockXShowHelp OneNote2016窗口
+; /:: CapsLockX_ShowHelp OneNote2016窗口
 
 ; OneNote2016创建链接窗口
 #If WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
 
-; /:: CapslockXShowHelp OneNote2016创建链接窗口
+; /:: CapsLockX_ShowHelp OneNote2016创建链接窗口
 
 ; 复制链接笔记页面的搜索结果
 !+s:: CopySearchResultSectionAndPagesThenPaste()

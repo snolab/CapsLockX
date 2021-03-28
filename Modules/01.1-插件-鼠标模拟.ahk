@@ -8,16 +8,18 @@
 ; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
-AppendHelp( "
-(
-模拟鼠标
-| CapsLockX + w a s d | 鼠标移动（上下左右） |
-| CapsLockX + r f | 垂直滚轮（上下） |
-| CapsLockX + R F | 水平滚轮（左右） |
-| CapsLockX + rf | rf 同时按相当于鼠标中键 |
-| CapsLockX + e | 鼠标左键 |
-| CapsLockX + q | 鼠标右键 |
-)")
+global TMouse_Disabled := CapsLockX_Config("TMouse", "Disabled", 0, "禁用模拟鼠标模块")
+global TMouse_SendInput := CapsLockX_Config("TMouse", "SendInput", 1, "使用 SendInput 方法提高模拟鼠标点击、移动性能")
+global TMouse_SendInputAPI := CapsLockX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")
+global TMouse_StickyCursor := CapsLockX_Config("TMouse", "StickyCursor", 1, "启用自动粘附各种按钮，编辑框")
+global TMouse_StopAtScreenEdge := CapsLockX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
+; 根据屏幕 DPI 比率，自动计算，得出，如果数值不对，才需要纠正
+global TMouse_UseDPIRatio := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
+global TMouse_MouseSpeedRatio := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_WheelSpeedRatio := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
+
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
 global 鼠动中 := 0, 鼠强动 := 0
@@ -184,8 +186,8 @@ MouseTicker(){
         tdw := dt(鼠刻上, tNow), tds := dt(鼠刻下, tNow)
         ; 计算这段时长的加速度
         ; tooltip % TMouse_MouseSpeedRatio
-        max := ma(tdd - tda) * 0.5 ; * TMouse_MouseSpeedRatio
-        may := ma(tds - tdw) * 0.5 ; * TMouse_MouseSpeedRatio
+        max := ma(tdd - tda) * TMouse_MouseSpeedRatio * TMouse_DPIRatio
+        may := ma(tds - tdw) * TMouse_MouseSpeedRatio * TMouse_DPIRatio
     }
 
     ; ; 摩擦力不阻碍用户意志
@@ -319,8 +321,8 @@ ScrollTicker(){
         tdz := dt(轮刻左, tNow), tdc := dt(轮刻右, tNow)
         tdr := dt(轮刻上, tNow), tdf := dt(轮刻下, tNow)
         ; 计算加速度
-        say := ma(tdr - tdf) * TMouse_WheelSpeedRatio
-        sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio
+        say := ma(tdr - tdf) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
+        sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
         ; tooltip % say "_" sax
     }
     ; 计算速度

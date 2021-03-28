@@ -7,7 +7,7 @@
 Global Anki增强_Lock := 0
 #WinActivateForce 
 Return
-     
+
 AnkiEnlock(key, to){
     If Anki增强_Lock{
         Send {%key% up}
@@ -24,179 +24,175 @@ AnkiUnlock(x){
 
 ;#UseHook On
 
-
 ; ANKI 2.0 and 2.1
 #If CapsLockXMode && ( WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") || WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
 
-/:: CapslockXShowHelp("
+/:: CapsLockX_ShowHelp("
 (
 # Anki 增强
-| 模式                 | Anki 增强模块 | 说明                                                        |
+| 模式 | Anki 增强模块 | 说明 |
 | -------------------- | :-----------: | ----------------------------------------------------------- |
-| 在 Anki-学习界面     |  w 或 k 或 ↑  | 按下=撤销，松开显示答案                                     |
-| 在 Anki-学习界面     |  a 或 h 或 ←  | 按下=顺利，松开显示答案                                     |
-| 在 Anki-学习界面     |  s 或 j 或 ↓  | 按下=困难，松开显示答案                                     |
-| 在 Anki-学习界面     |  d 或 l 或 →  | 按下=生疏，松开显示答案                                     |
-| 在 Anki-学习界面     |       q       | 返回上个界面                                                |
-| 在 Anki-学习界面     |       c       | 添加新卡片                                                  |
-| 在 Anki-学习界面     | 1 或 NumPad1  | 困难（原键位不动）                                          |
-| 在 Anki-学习界面     | 2 或 NumPad2  | 生疏（原键位不动）                                          |
-| 在 Anki-学习界面     | 3 或 NumPad3  | 一般（原键位不动）                                          |
-| 在 Anki-学习界面     | 4 或 NumPad4  | 顺利（原键位不动）                                          |
-| 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
-| 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
-| 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-学习界面 | w 或 k 或 ↑ | 按下=撤销，松开显示答案 |
+| 在 Anki-学习界面 | a 或 h 或 ← | 按下=顺利，松开显示答案 |
+| 在 Anki-学习界面 | s 或 j 或 ↓ | 按下=困难，松开显示答案 |
+| 在 Anki-学习界面 | d 或 l 或 → | 按下=生疏，松开显示答案 |
+| 在 Anki-学习界面 | q | 返回上个界面 |
+| 在 Anki-学习界面 | c | 添加新卡片 |
+| 在 Anki-学习界面 | 1 或 NumPad1 | 困难（原键位不动） |
+| 在 Anki-学习界面 | 2 或 NumPad2 | 生疏（原键位不动） |
+| 在 Anki-学习界面 | 3 或 NumPad3 | 一般（原键位不动） |
+| 在 Anki-学习界面 | 4 或 NumPad4 | 顺利（原键位不动） |
+| 在 Anki-学习界面 | 5 或 NumPad5 | 撤销 |
+| 在 Anki-学习界面 | 6 或 NumPad6 | 暂停卡片 |
+| 在 Anki-学习界面 | Alt + i | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
+| 在 Anki-添加卡片界面 | Alt + s | 按下 添加 按钮 |
 )")
 
 #If !CapsLockXMode && (WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
     $x:: SendEvent s ; study
-    $q:: SendEvent d ; quit
-    $c:: SendEvent a ; create
- 
-    ; 撤销
-    $5:: SendEvent ^z
-    $Numpad5:: SendEvent ^z
-    
-    ; 暂停卡片
-    $`:: SendEvent {Space}
-    $6:: SendEvent @
-    $Numpad6:: SendEvent @
+$q:: SendEvent d ; quit
+$c:: SendEvent a ; create
 
-    ; 方向键控制
-    $w::                 AnkiEnlock("w"                ,"^z")
-    $a::                 AnkiEnlock("a"                ,"432")
-    $s::                 AnkiEnlock("s"                ,"2")
-    $d::                 AnkiEnlock("d"                ,"1")
-    $w up::              AnkiUnlock("{space}")
-    $a up::              AnkiUnlock("{space}")
-    $s up::              AnkiUnlock("{space}")
-    $d up::              AnkiUnlock("{space}")
-    
-    ; 方向键控制
-    $k::                 AnkiEnlock("k"                ,"^z")
-    $h::                 AnkiEnlock("h"                ,"432")
-    $j::                 AnkiEnlock("j"                ,"2")
-    $l::                 AnkiEnlock("l"                ,"1")
-    $k up::              AnkiUnlock("{space}")
-    $h up::              AnkiUnlock("{space}")
-    $j up::              AnkiUnlock("{space}")
-    $l up::              AnkiUnlock("{space}")
+; 撤销
+$5:: SendEvent ^z
+$Numpad5:: SendEvent ^z
 
-    ; 方向键控制
-    $Up::                AnkiEnlock("Up"               ,"^z")
-    $Left::              AnkiEnlock("Left"             ,"432")
-    $Down::              AnkiEnlock("Down"             ,"2")
-    $Right::             AnkiEnlock("Right"            ,"1")
-    $Up up::             AnkiUnlock("{space}")
-    $Left up::           AnkiUnlock("{space}")
-    $Down up::           AnkiUnlock("{space}")
-    $Right up::          AnkiUnlock("{space}")
-    
-    ; 快速从剪贴板导入卡片列表
-    $!i:: AnkiImport()
-    AnkiImport(){
-        ; 获取剪贴板内容
-        ClipWait, 0, text
-        If ErrorLevel {
-            MsgBox, 剪贴板里没有内容
-            Return
-        }
+; 暂停卡片
+$`:: SendEvent {Space}
+$6:: SendEvent @
+$Numpad6:: SendEvent @
 
-        ToolTip, %text%
+; 方向键控制
+$w:: AnkiEnlock("w" ,"^z")
+$a:: AnkiEnlock("a" ,"432")
+$s:: AnkiEnlock("s" ,"2")
+$d:: AnkiEnlock("d" ,"1")
+$w up:: AnkiUnlock("{space}")
+$a up:: AnkiUnlock("{space}")
+$s up:: AnkiUnlock("{space}")
+$d up:: AnkiUnlock("{space}")
 
-        ; 让 Anki 打开导入框
-        Send ^+i
-        
-        ; 获取到文本后保存到临时文件……
-        FileName = %APPDATA%\Anki2\剪贴板导入.txt
-        file := FileOpen(FileName, "w", "UTF-8")
-        If !IsObject(file) {
-            MsgBox Can't open "%FileName%" for writing.
-            Return
-        }  
-        file.Write(Clipboard)
-        file.Close()
+; 方向键控制
+$k:: AnkiEnlock("k" ,"^z")
+$h:: AnkiEnlock("h" ,"432")
+$j:: AnkiEnlock("j" ,"2")
+$l:: AnkiEnlock("l" ,"1")
+$k up:: AnkiUnlock("{space}")
+$h up:: AnkiUnlock("{space}")
+$j up:: AnkiUnlock("{space}")
+$l up:: AnkiUnlock("{space}")
 
-        ; 把临时文件路径粘贴到 Anki 文件框
-        Clipboard = %FileName%
-        WinWait, 导入 ahk_class Qt5QWindowIcon ahk_exe anki.exe, , 3
-        Send ^v
+; 方向键控制
+$Up:: AnkiEnlock("Up" ,"^z")
+$Left:: AnkiEnlock("Left" ,"432")
+$Down:: AnkiEnlock("Down" ,"2")
+$Right:: AnkiEnlock("Right" ,"1")
+$Up up:: AnkiUnlock("{space}")
+$Left up:: AnkiUnlock("{space}")
+$Down up:: AnkiUnlock("{space}")
+$Right up:: AnkiUnlock("{space}")
 
-        ; 打开
-        Send {Enter}
-
-        Sleep 1000
-        ToolTip
-
+; 快速从剪贴板导入卡片列表
+$!i:: AnkiImport()
+AnkiImport(){
+    ; 获取剪贴板内容
+    ClipWait, 0, text
+    If ErrorLevel {
+        MsgBox, 剪贴板里没有内容
         Return
-        }
-
-   AnkiAddWindowActiveQ(){
-       return WinActive("添加|Add ahk_exe anki.exe ahk_class QWidget") || WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
-   } 
-
-    CaptureScreenNoteAdd(){
-        a := WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe")
-        b := WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
-        addWindow := a ? a : b
-        WinActivate ahk_id %addWindow%
-        WinHide ahk_id %addWindow%
-        Clipboard := ""
-        Send #+s
-        ClipWait, 10, 1
-        WinShow ahk_id %addWindow%
-        if ErrorLevel {
-            MsgBox, 没有获取到剪贴板的内容
-            Return False
-        }
-        While !WinActive("ahk_id" addWindow) && WinExist("ahk_id" addWindow)
-            WinActivate ahk_id %addWindow%
-        Return True
     }
+
+    ToolTip, %text%
+
+    ; 让 Anki 打开导入框
+    Send ^+i
+
+    ; 获取到文本后保存到临时文件……
+    FileName = %APPDATA%\Anki2\剪贴板导入.txt
+    file := FileOpen(FileName, "w", "UTF-8")
+    If !IsObject(file) {
+        MsgBox Can't open "%FileName%" for writing.
+            Return
+    } 
+    file.Write(Clipboard)
+    file.Close()
+
+    ; 把临时文件路径粘贴到 Anki 文件框
+    Clipboard = %FileName%
+    WinWait, 导入 ahk_class Qt5QWindowIcon ahk_exe anki.exe, , 3
+    Send ^v
+
+    ; 打开
+    Send {Enter}
+
+    Sleep 1000
+    ToolTip
+
+    Return
+}
+
+AnkiAddWindowActiveQ(){
+    return WinActive("添加|Add ahk_exe anki.exe ahk_class QWidget") || WinActive("添加|Add ahk_exe anki.exe ahk_class Qt5QWindowIcon")
+} 
+
+CaptureScreenNoteAdd(){
+    a := WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe")
+    b := WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
+    addWindow := a ? a : b
+    WinActivate ahk_id %addWindow%
+    WinHide ahk_id %addWindow%
+    Clipboard := ""
+    Send #+s
+    ClipWait, 10, 1
+    WinShow ahk_id %addWindow%
+    if ErrorLevel {
+        MsgBox, 没有获取到剪贴板的内容
+        Return False
+    }
+    While !WinActive("ahk_id" addWindow) && WinExist("ahk_id" addWindow)
+        WinActivate ahk_id %addWindow%
+    Return True
+}
 #If AnkiAddWindowActiveQ()
 
-    
-    $!c::
+$!c::
     ; 快速添加内容
-        WinActive("A")
-        WinHide
-        Clipboard := ""
-        ; Send ^!a
-        Send #+s
-        Sleep, 128
-        WinShow
-        ClipWait, 10, 1
-        if ErrorLevel   
-        {    
-            ToolTip, 没有获取到剪贴板的内容, 2
-            Return
-        }
-        SendEvent ^v
+    WinActive("A")
+    WinHide
+    Clipboard := ""
+    ; Send ^!a
+    Send #+s
+    Sleep, 128
+    WinShow
+    ClipWait, 10, 1
+    if ErrorLevel 
+    { 
+        ToolTip, 没有获取到剪贴板的内容, 2
         Return
+    }
+    SendEvent ^v
+Return
 
-    $!s:: SendEvent ^{Enter}
-    $!x:: SendEvent ^+x
-
-
+$!s:: SendEvent ^{Enter}
+$!x:: SendEvent ^+x
 
 #If WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe") or WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")
 
-    $F1::
-        if (!CaptureScreenNoteAdd())
-            Return
-        SendEvent ^v
-        Sleep 200
-        SendEvent {Tab}
+$F1::
+    if (!CaptureScreenNoteAdd())
         Return
-    $F2::
-        if (!CaptureScreenNoteAdd())
-            Return
-        SendEvent ^v
-        Sleep 200
-        SendEvent ^{Enter}
-    $F3::
-        if (!CaptureScreenNoteAdd())
-            Return
-        SendEvent ^+o
+    SendEvent ^v
+    Sleep 200
+    SendEvent {Tab}
+Return
+$F2::
+    if (!CaptureScreenNoteAdd())
         Return
+    SendEvent ^v
+    Sleep 200
+    SendEvent ^{Enter}
+$F3::
+    if (!CaptureScreenNoteAdd())
+        Return
+    SendEvent ^+o
+Return

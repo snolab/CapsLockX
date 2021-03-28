@@ -2,6 +2,7 @@
 
 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。
 
+[![jsdelivr](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 ## 入门教程第一
 
 ### 安装
@@ -65,14 +66,14 @@
 
 #### 本模块功能见下
 
-| 按键                  | 功能                               |
-| --------------------- | ---------------------------------- |
-| CapsLockX + /         | 临时显示热键提示                   |
-| CapsLockX（长按）     | 临时显示热键提示                   |
-| CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
-| CapsLockX + Shift + / | 🕷 提交 bug、建议等                 |
+| 作用于 | 按键                  | 功能                               |
+| ------ | --------------------- | ---------------------------------- |
+| 全局   | CapsLockX + /         | 临时显示热键提示                   |
+| 全局   | CapsLockX（长按）     | 临时显示热键提示                   |
+| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的 README.md 页面 |
+| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等                 |
 
-<!-- 模块文件名：01.1-插件-模拟鼠标.ahk-->
+<!-- 模块文件名：01.1-插件-鼠标模拟.ahk-->
 
 ### 模拟鼠标插件（ WASD QERF ）
 
@@ -328,18 +329,18 @@
 
 | 作用于 | 媒体键模块      | 说明                                        |
 | ------ | --------------- | ------------------------------------------- |
-| 全局   | CapslockX + F1  | 打开：我的电脑                              |
-| 全局   | CapslockX + F2  | 打开：计算器                                |
-| 全局   | CapslockX + F3  | 打开：浏览器主页                            |
-| 全局   | CapslockX + F4  | 打开：媒体库（默认是 Windows Media Player） |
-| 全局   | CapslockX + F5  | 播放：暂停/播放                             |
-| 全局   | CapslockX + F6  | 播放：上一首                                |
-| 全局   | CapslockX + F7  | 播放：下一首                                |
-| 全局   | CapslockX + F8  | 播放：停止                                  |
-| 全局   | CapslockX + F9  | 音量加                                      |
-| 全局   | CapslockX + F10 | 音量减                                      |
-| 全局   | CapslockX + F11 | 静音                                        |
-| 全局   | CapslockX + F12 |                                             |
+| 全局   | CapsLockX + F1  | 打开：我的电脑                              |
+| 全局   | CapsLockX + F2  | 打开：计算器                                |
+| 全局   | CapsLockX + F3  | 打开：浏览器主页                            |
+| 全局   | CapsLockX + F4  | 打开：媒体库（默认是 Windows Media Player） |
+| 全局   | CapsLockX + F5  | 播放：暂停/播放                             |
+| 全局   | CapsLockX + F6  | 播放：上一首                                |
+| 全局   | CapsLockX + F7  | 播放：下一首                                |
+| 全局   | CapsLockX + F8  | 播放：停止                                  |
+| 全局   | CapsLockX + F9  | 音量加                                      |
+| 全局   | CapsLockX + F10 | 音量减                                      |
+| 全局   | CapsLockX + F11 | 静音                                        |
+| 全局   | CapsLockX + F12 |                                             |
 
 <!-- 模块文件名：插件-雪星转屏.ahk-->
 

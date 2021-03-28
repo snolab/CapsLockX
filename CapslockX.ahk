@@ -225,15 +225,12 @@ if (target != source) {
     ; Reload
     ; ExitApp
 }
-; 编译核心文件
 global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
-
-; 用热键把之前的实例关了
-; SendEvent ^!+\
-
+global UpdatorAHK := CapsLockX_PathCore "\CapsLockX-Update.ahk"
 ; 隐藏 ToolTip
 ToolTip
-
+; 运行更新组件
+Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %UpdatorAHK%, %A_WorkingDir%
 ; 运行核心
 RunWait %CapsLockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 

@@ -11,7 +11,7 @@ global 方动中 := 0
 global 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0
 global 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
 
-AppendHelp("
+CapsLockX_AppendHelp("
 (
 编辑增强
 | 全局 | CapsLockX + k j h l | 上下左右 方向键 |

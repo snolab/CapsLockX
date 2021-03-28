@@ -27,7 +27,7 @@
     },
     "homepage": "https://github.com/snomiao/CapsLockX#readme",
     "bin": {
-        "capslockx": "CapslockX.exe"
+        "capslockx": "CapsLockX.exe"
     },
     "main": "CapsLockX.exe",
     "devDependencies": {

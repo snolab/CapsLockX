@@ -9,11 +9,9 @@
 FileEncoding, UTF-8
 
 ; 開關 默认关
-global EnableSnoChordTyping := CapsLockX_Config("Plugins", "EnableSnoChordTyping", 0)
-
-if (!EnableSnoChordTyping){
+global EnableSnoChordTyping := CapsLockX_Config("Plugins", "EnableSnoChordTyping", 0, "启用雪星并击（实验中），")
+if (!EnableSnoChordTyping)
     Return
-}
 
 ; 配置
 global ChordIntervalThreshold := 32
@@ -41,12 +39,12 @@ IniWrite, %AppendSpace%, %ConfigPath%, Common, AppendSpace
 
 RuleStage1 :="
 (
-=|         |         |         |         |         |
-=|    -    |    -    |    -    |    -    |    -    |
-=| 1  => 1 | 2  => 2 | 3  => 3 | 4  => 4 | 5  => 5 |
-=| q  => q | w  => w | e  => e | r  => r | t  => t |
-=| a  => a | s  => s | d  => d | f  => f | g  => g |
-=| z  => z | x  => x | c  => c | v  => v | b  => b |
+=| | | | | |
+=| - | - | - | - | - |
+=| 1 => 1 | 2 => 2 | 3 => 3 | 4 => 4 | 5 => 5 |
+=| q => q | w => w | e => e | r => r | t => t |
+=| a => a | s => s | d => d | f => f | g => g |
+=| z => z | x => x | c => c | v => v | b => b |
 =| 12 => 0 | 13 => 9 | 23 => 8 | 24 => 7 | 34 => 6 |
 =| 21 => 0 | 31 => 9 | 32 => 8 | 42 => 7 | 43 => 6 |
 =| qw => p | qe => o | we => i | wr => u | er => y |
@@ -59,12 +57,12 @@ RuleStage1 :="
 )"
 RuleStage2 := "
 (
-=|         |         |         |         |         |
-=|    -    |    -    |    -    |    -    |    -    |
-=| 6  => 6 | 7  => 7 | 8  => 8 | 9  => 9 | 0  => 0 |
-=| y  => y | u  => u | i  => i | o  => o | p  => p |
-=| h  => h | j  => j | k  => k | l  => l | ;  => ; |
-=| n  => n | m  => m | ,  => , | .  => . | /  => / |
+=| | | | | |
+=| - | - | - | - | - |
+=| 6 => 6 | 7 => 7 | 8 => 8 | 9 => 9 | 0 => 0 |
+=| y => y | u => u | i => i | o => o | p => p |
+=| h => h | j => j | k => k | l => l | ;  => ; |
+=| n => n | m => m | , => , | . => . | / => / |
 =| 78 => 5 | 79 => 4 | 89 => 3 | 08 => 2 | 09 => 1 |
 =| 87 => 5 | 97 => 4 | 98 => 3 | 80 => 2 | 90 => 1 |
 =| ui => t | uo => r | io => e | pi => w | po => q |
@@ -77,10 +75,10 @@ RuleStage2 := "
 )"
 RuleStage3 := "
 (
-=|         |         |         |         |         |
-=|    -    |    -    |    -    |    -    |    -    |
-=| -  => - | =  => = | [  => [ | ]  => ] | \  => \ |
-=| '  => ' | _  => _ |
+=| | | | | |
+=| - | - | - | - | - |
+=| - => - | = => = | [ => [ | ] => ] | \ => \ |
+=| ' => ' | _ => _ |
 )"
 
 StageIndex := 1
@@ -91,7 +89,7 @@ while(1){
         Break
     RuleStage%StageIndex% := RuleStage
     ; MsgBox, , , RuleStage: %RuleStage%
-    
+
     objRule := {}
     FoundPos := 0
     while(FoundPos := RegExMatch(RuleStage, "O)\s(\S+)\s*?=>\s*?(\S+)\s", SubPat, FoundPos+1))
@@ -217,6 +215,3 @@ KeyUp:
     ;     ToolTip % TypedKeys " | " PressedKeys "(" lenTyped ")" " => " OutputKey "("  OutputLength ")"
     ; PressedKeys := ""
 Return
-
-#If !CapslockX
-F12:: ExitApp

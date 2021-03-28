@@ -4,7 +4,7 @@
 ; @author       snomiao@gmail.com
 ; @version      2.1.1(20200606)
 
-AppendHelp("
+CapsLockX_AppendHelp("
 (
 讯飞语音悬浮窗
 | Win + H | 启动 / 切换讯飞语音输入 |
