@@ -1,3 +1,12 @@
+## [1.14.2](https://github.com/snomiao/CapsLockX/compare/v1.14.1...v1.14.2) (2021-03-28)
+
+
+### Bug Fixes
+
+* gitsync ([274fd57](https://github.com/snomiao/CapsLockX/commit/274fd5748fe14743b8e0e55aa6dd6d364c79e7c9))
+
+
+
 ## [1.14.1](https://github.com/snomiao/CapsLockX/compare/v1.14.0...v1.14.1) (2021-03-28)
 
 
