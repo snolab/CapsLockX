@@ -9,7 +9,7 @@
         "build:major": "npm version major",
         "versioning": "git commit -a -m versioning",
         "version": "node tools/versioning.node.mjs && conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
-        "postversion": "npm run versioning && npm run gitsync && npm publish",
+        "postversion": "npm run versioning && npm run gitsync",
         "gitsync": "npm run gitsync:gh && npm run gitsync:cn && npm run gitsync:bb",
         "gitpush:gh": "git push --follow-tag --repo git@github.com:snomiao/CapsLockX.git",
         "gitpull:gh": "git pull git@github.com:snomiao/CapsLockX.git",
