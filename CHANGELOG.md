@@ -1,3 +1,12 @@
+## [1.14.1](https://github.com/snomiao/CapsLockX/compare/v1.14.0...v1.14.1) (2021-03-28)
+
+
+### Bug Fixes
+
+* gitpush ([1897e09](https://github.com/snomiao/CapsLockX/commit/1897e09ff67b2f9cb985ae7dbc2bac83ce105ea5))
+
+
+
 # [1.14.0](https://github.com/snomiao/CapsLockX/compare/v1.13.1...v1.14.0) (2021-03-28)
 
 

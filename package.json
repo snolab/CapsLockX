@@ -1,6 +1,6 @@
 {
     "name": "capslockx",
-    "version": "1.14.0",
+    "version": "1.14.1",
     "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
     "scripts": {
         "CapsLockX": "CapsLockX.exe",
