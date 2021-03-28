@@ -1,3 +1,12 @@
+## [1.14.3](https://github.com/snomiao/CapsLockX/compare/v1.14.2...v1.14.3) (2021-03-28)
+
+
+### Bug Fixes
+
+* 添加github publish 工作流 ([10b4e22](https://github.com/snomiao/CapsLockX/commit/10b4e22f707db41ab980d67aca15d7b2320729f2))
+
+
+
 ## [1.14.2](https://github.com/snomiao/CapsLockX/compare/v1.14.1...v1.14.2) (2021-03-28)
 
 
