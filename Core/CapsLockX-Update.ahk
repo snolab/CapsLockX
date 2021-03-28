@@ -21,8 +21,8 @@ Sleep, 5000
 return
 
 CapsLockX_更新提示(msg){
-    TrayTip CapsLockX 更新, %msg%
-    ToolTip, %msg%
+    ; TrayTip CapsLockX 更新, %msg%
+    ToolTip, CapsLockX 更新：%msg%
 }
 
 CapsLockX检查更新通过gitpull(){
@@ -59,11 +59,23 @@ CapsLockX检查更新通过github(){
 }
 CapsLockX_检查更新(){
     CapsLockX_更新提示("正在检查更新")
-    UrlDownloadToFile, https://cdn.jsdelivr.net/gh/snomiao/CapsLockX@master/Tools/version.txt, Tools/new-version-cdn.txt
-    FileRead, newVersion, Tools/new-version-cdn.txt
+
+    UrlDownloadToFile, https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt, Tools/new-version.txt
+    FileRead, newVersion, Tools/new-version.txt
+    if(!newVersion){
+        UrlDownloadToFile, https://cdn.jsdelivr.net/gh/snomiao/CapsLockX@master/Tools/version.txt, Tools/new-version-cdn.txt
+        FileRead, newVersion, Tools/new-version-cdn.txt
+    }
+    if(!newVersion){
+        CapsLockX_更新提示("更新检查失败，请检查网络")
+        Return
+    }
+
     FileRead, version, Tools/version.txt
-    if (version == newVersion)
-        return
+    if (version == newVersion){
+        CapsLockX_更新提示("已经是最新版本")
+        return 1
+    }
     CapsLockX_更新提示("发现新版本：" newVersion "`n当前版本：" version "`n准备更新")
     if(!T_DownloadUpdate)
         Return 1
