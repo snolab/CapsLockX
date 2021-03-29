@@ -25,7 +25,7 @@ CapsLockX_更新提示(msg){
     ToolTip, CapsLockX 更新：%msg%
 }
 
-CapsLockX检查更新通过gitpull(){
+CapsLockX更新通过gitpull(){
     gitUpdateResult := CapsLockX_RunSilent("cmd /c git fetch && git pull")
     if(Trim(gitUpdateResult, "`t`r`n ") == "Already up to date."){
         CapsLockX_更新提示("CapsLockX 已是最新")
@@ -38,7 +38,7 @@ CapsLockX检查更新通过gitpull(){
     }
 }
 
-CapsLockX检查更新通过github(){
+CapsLockX更新通过github(){
     UrlDownloadToFile, https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt, Tools/new-version.txt
     FileRead, newVersion, Tools/new-version.txt
     url := "https://github.com/snomiao/CapsLockX/archive/refs/tags/v" newVersion ".zip" ; release
@@ -59,7 +59,7 @@ CapsLockX检查更新通过github(){
 }
 CapsLockX_检查更新(){
     CapsLockX_更新提示("正在检查更新")
-
+    ; 
     UrlDownloadToFile, https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt, Tools/new-version.txt
     FileRead, newVersion, Tools/new-version.txt
     if(!newVersion){
@@ -79,9 +79,9 @@ CapsLockX_检查更新(){
     CapsLockX_更新提示("发现新版本：" newVersion "`n当前版本：" version "`n准备更新")
     if(!T_DownloadUpdate)
         Return 1
-    if(CapsLockX检查更新通过gitpull())
+    if(CapsLockX更新通过gitpull())
         Return 1
-    if(CapsLockX检查更新通过github())
+    if(CapsLockX更新通过github())
         Return 1
 }
 
