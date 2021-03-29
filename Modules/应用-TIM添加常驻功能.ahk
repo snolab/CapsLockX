@@ -14,7 +14,7 @@ TIM_MouseShift(times){
         x := 117 * TMouse_DPIRatio
         y := 30 * TMouse_DPIRatio
         Click %x%, %y%
-        Return
+    Return
     !q::
         CoordMode, Mouse, Relative
         WinGetPos, X, Y, W, H, A
@@ -22,7 +22,7 @@ TIM_MouseShift(times){
         y := 70
         Click %x%, %y%
         TIM_MouseShift(1)
-        Return
+    Return
     !b::
         CoordMode, Mouse, Relative
         MouseClick, Right
@@ -39,36 +39,16 @@ TIM_MouseShift(times){
         ; Sleep 200
         ; MouseClick, Left
         ; MouseMove 200, 60, 0, R
-        Return
+    Return
     !Up::
         TIM_MouseShift(-1)
-        Return
-    !y::
-        WinGetPos, X, Y, W, H, A
-        X1 := X, Y1 := Y, X2 := X + W, Y2 := Y + H
-        CoordMode, Pixel, Screen
-        CoordMode, Mouse, Screen
-        Loop {
-            FILE := "./Modules/TIM同意按钮.png"
-            If ( !FileExist(FILE) ){
-                Msgbox 文件不存在：%FILE%
-                Return
-            }
-
-            ImageSearch, OX, OY, X1, Y1, X2, Y2, %FILE%
-            finded := OX || OY
-            If (finded){
-                Y1 := OY + 1
-                Click %OX%, %OY%
-            }
-        } Until !finded
-        Return
+    Return
     !Down::
         TIM_MouseShift(1)
-        Return
+    Return
     !Enter::
         Click
-        Return
+    Return
     !h::
         CoordMode, ToolTip, Relative
 
@@ -77,14 +57,14 @@ TIM_MouseShift(times){
         x := 117 + 1
         y := 30 + 1
         ToolTip, f, x, y, 2
-        
+
         x := W -20 + 1
         y := 70 + 1
         ToolTip, q, x, y, 3
-        Return
+    Return
     !h Up::
         ToolTip
-        Return
+    Return
     ^PgDn:: Send ^{Tab}
     ^PgUp:: Send +^{Tab}
     ; !w:: Send +{Tab}{AppsKey}{Down 2}{Enter}
