@@ -224,8 +224,6 @@ CapsLockX_Up:
     CapsLockX_Up()
 Return
 
-; ^!\:: run notepad ./CapsLockXConfigPath
-
 ; 软重启键
 ^!\:: CapsLockX_Reload()
 

@@ -7,9 +7,9 @@
 ; 版本：v2021.03.26
 ; ========== CapsLockX ==========
 
-global T_使用番茄报时 := CapsLockX_Config("定时任务", "T_使用番茄报时", 0)
+global T_ScheduleTasks_UseTomatoLife := CapsLockX_Config("ScheduleTasks", "UseTomatoLife", 0, "使用番茄报时")
+global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("ScheduleTasks", "UseTomatoLifeSwitchVirtualDesktop", 1, "使用番茄报时自动切换桌面（休息桌面为1，工作桌面为2）")
 GoSub CapsLockX定时任务
-
 Return
 
 番茄状态计算(){
@@ -25,11 +25,13 @@ Return
     ; 状态动作
     if("工作时间" == 番茄状态){
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
-        Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
+        if(T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
+            Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
     }
     if("休息时间" == 番茄状态){
         SoundPlay % "Data/NoteG_C.mp3" ; 降调
-        Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
+        if(T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
+            Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
     }
 }
 
@@ -41,7 +43,7 @@ UnixTimeGet(){
 }
 
 CapsLockX定时任务:
-    if(T_使用番茄报时)
+    if(T_ScheduleTasks_UseTomatoLife)
         番茄报时()
     间隔 := 60 ; 精度到1分钟
     延时 := 1000 * (间隔 - Mod(UnixTimeGet(), 间隔))

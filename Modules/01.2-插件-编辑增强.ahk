@@ -11,6 +11,9 @@ global 方动中 := 0
 global 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0
 global 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
 
+global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+
 CapsLockX_AppendHelp("
 (
 编辑增强
@@ -67,7 +70,7 @@ ArrowTicker()
     tda := dt(方刻左, tNow), tdd := dt(方刻右, tNow)
     tdw := dt(方刻上, tNow), tds := dt(方刻下, tNow)
     ; 计算加速度
-    kax := ma(tdd - tda), kay := ma(tds - tdw)
+    kax := ma(tdd - tda)*编辑增强_SpeedRatioX, kay := ma(tds - tdw)*编辑增强_SpeedRatioY
 
     ; 摩擦力不阻碍用户意志
     方速横 := Friction(方速横 + kax, kax), 方速纵 := Friction(方速纵 + kay, kay)
