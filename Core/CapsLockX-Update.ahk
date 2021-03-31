@@ -81,11 +81,12 @@ CapsLockX_检查更新(){
         Return
     }
     FileRead, version, Tools/version.txt
-    if(CapsLockX更新_Util_VersionCompare(remoteVersion, version))
-        CapsLockX_更新提示("发现新版本：" remoteVersion "`n当前版本：" version "`n准备更新")
-    else
-        CapsLockX_更新提示("已经是最新版本")
-    return 1
+    if(CapsLockX更新_Util_VersionCompare(remoteVersion, version)){
+        CapsLockX_更新提示("发现新版本！准备更新：" "`n仓库版本：" remoteVersion "`n我的版本：" version)
+    }else{
+        CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remoteVersion "`n我的版本：" version)
+        return 1
+    }
     if(!T_DownloadUpdate)
         Return 1
     if(CapsLockX更新通过gitpull())
@@ -93,8 +94,3 @@ CapsLockX_检查更新(){
     if(CapsLockX更新通过github())
         Return 1
 }
-
-; CapsLockX_检查更新:
-;     CapsLockX_检查更新()
-;     SetTimer, CapsLockX_检查更新, Off
-; return
