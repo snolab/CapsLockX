@@ -49,7 +49,8 @@ AnkiUnlock(x){
 )")
 
 #If !CapsLockXMode && (WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
-    $x:: SendEvent s ; study
+
+$x:: SendEvent s ; study
 $q:: SendEvent d ; quit
 $c:: SendEvent a ; create
 

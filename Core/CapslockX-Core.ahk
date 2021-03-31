@@ -19,7 +19,7 @@ SetTitleMatchMode RegEx
 #MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的。。）
 #InstallMouseHook ; 安装鼠标钩子
 
-global lastCapsLockKey := ""
+global CapsLockX_上次触发键 := ""
 ; 载入设定
 global CapsLockXConfigPath := "./CapsLockX-Config.ini"
 #Include Core/CapsLockX-Config.ahk
@@ -83,15 +83,15 @@ if(T_XKeyAs && T_XKeyAsRAlt)
 Hotkey, If
 
 if (T_XKeyAs && T_XKeyAsCapsLock)
-    Hotkey $*CapsLock Up, CapsLockX_Up
+    Hotkey ~$*CapsLock Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsSpace) 
-    Hotkey $Space Up, CapsLockX_Up
+    Hotkey ~$Space Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsInsert)
-    Hotkey $Insert Up, CapsLockX_Up
+    Hotkey ~$Insert Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsScrollLock)
-    Hotkey $ScrollLock Up, CapsLockX_Up
+    Hotkey ~$ScrollLock Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsRAlt)
-    Hotkey $RAlt Up, CapsLockX_Up
+    Hotkey ~$RAlt Up, CapsLockX_Up
 
 #Include Core\CapsLockX-ModulesRunner.ahk
 CapsLockX_Loaded()
@@ -169,13 +169,14 @@ CapsLockX_Reload(){
 }
 CapsLockX_Dn(){
     ; 按住其它键的时候 不触发 CapsLockX 避免影响打字
-    lastCapsLockKey := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
+    CapsLockX_上次触发键 := 触发键 := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
     StringLeft, first5char, A_PriorKey, 5
-    if(first5char != "Wheel" && GetKeyState(A_在PriorKey, "P") && lastCapsLockKey != A_PriorKey && lastCapsLockKey){
-        SendEvent {%lastCapsLockKey% Down}
-        KeyWait %lastCapsLockKey%
-        SendEvent {%lastCapsLockKey% Up}
-        lastCapsLockKey := ""
+    if(first5char != "Wheel" && GetKeyState(A_PriorKey, "P") && 触发键 != A_PriorKey && 触发键){
+        CapsLockX_上次触发键 := ""
+        ; ToolTip, % first5char "_" 触发键
+        SendEvent {%触发键% Down}
+        KeyWait %触发键%
+        SendEvent {%触发键% Up}
         Return
     }
     ; 记录 CapsLockX 按住的时间
@@ -186,9 +187,9 @@ CapsLockX_Dn(){
     CapsLockXMode |= CM_FN
 
     ; (20200809)长按显示帮助（空格除外）
-    if (A_PriorKey == lastCapsLockKey && A_PriorKey != "Space") {
+    if (A_PriorKey == CapsLockX_上次触发键 && A_PriorKey != "Space") {
         if ( A_TickCount - CapsLockPressTimestamp > 1000) {
-            CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, lastCapsLockKey)
+            CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
         }
     }
     UpdateLight()
@@ -197,19 +198,20 @@ CapsLockX_Up(){
     CapsLockPressTimestamp := 0
     ; 退出 Fn 模式
     CapsLockXMode &= ~CM_FN
-
-    if (lastCapsLockKey == "CapsLock") {
-        if (GetKeyState("CapsLock", "T")) {
-            SetCapsLockState, Off
-        } else {
-            SetCapsLockState, On
+    if(A_PriorKey == CapsLockX_上次触发键){
+        if (CapsLockX_上次触发键 == "CapsLock") {
+            if (GetKeyState("CapsLock", "T")) {
+                SetCapsLockState, Off
+            } else {
+                SetCapsLockState, On
+            }
+        }
+        if(CapsLockX_上次触发键 == "Space"){
+            SendEvent {Space}
         }
     }
-    if(lastCapsLockKey == "Space" && A_PriorKey == "Space"){
-        SendEvent {Space}
-    }
     UpdateLight()
-    lastCapsLockKey := ""
+    CapsLockX_上次触发键 := ""
 }
 
 ; 接下来是流程控制

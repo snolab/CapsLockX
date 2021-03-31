@@ -328,19 +328,9 @@ ScrollTicker(){
     ; 计算速度
     lastsvx := 轮速横
     lastsvy := 轮速纵
-    ; _ := "_", 换行 := "`n"
-    ; tooltip  % tdr _ tdf 换行 say _ sax 换行 轮速纵 _ 轮速横 换行 lastsvy _ lastsvx
-
     轮速纵 := Friction(轮速纵 + say, say), 轮速横 := Friction(轮速横 + sax, sax)
-
-    ; tooltip %轮刻上%`n%轮刻下%`n%轮刻左%`n%轮刻右%`n%轮速横%`n%轮速纵%`n%轮差横%`n%轮差纵%
-
     if ( 轮速纵 == 0 && 轮速横 == 0){
-        ; 完成滚动，退出定时
-        ; tooltip Done
-        轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0, 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
-        SetTimer, ScrollTicker, Off
-        轮动中 := 0
+        ScrollTickerStop()
         Return
     }
 
@@ -365,9 +355,17 @@ ScrollTicker(){
 #If CapsLockXMode
 
 ; 鼠标按键处理
-$*q:: RButton
-$*e:: LButton
 
+$*e::
+    SendEvent {LButton Down}
+    KeyWait, e
+Return
+$*e Up:: SendEvent {LButton Up}
+$*q::
+    SendEvent {RButton Down}
+    KeyWait, q
+Return
+$*q Up:: SendEvent {RButton Up}
 ; 鼠标运动处理
 $*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), MouseTickerStart()
 $*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), MouseTickerStart()
