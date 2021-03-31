@@ -1,3 +1,15 @@
+## [1.14.4](https://github.com/snomiao/CapsLockX/compare/v1.14.3...v1.14.4) (2021-03-31)
+
+
+### Bug Fixes
+
+* 修复 T_使用番茄报时 选项 ([d0c176c](https://github.com/snomiao/CapsLockX/commit/d0c176c4faebc7a340ee685d0d895f2f89367fa0))
+* 修改CapsLockX_更新提示 ([e366247](https://github.com/snomiao/CapsLockX/commit/e366247b5a0b3b2edcc0e0a10180bef7e09ca6bd))
+* 删掉意外出现的配置文件 ([b51e79d](https://github.com/snomiao/CapsLockX/commit/b51e79d3af1393ad906e949595b6d36ecc08b718))
+* 按住其它键的时候 不触发 CapsLockX 避免影响打字 ([3daab90](https://github.com/snomiao/CapsLockX/commit/3daab90391aa1e66b9f929f508d7f9844d2495bb))
+
+
+
 ## [1.14.3](https://github.com/snomiao/CapsLockX/compare/v1.14.2...v1.14.3) (2021-03-28)
 
 
