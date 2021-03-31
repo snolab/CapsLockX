@@ -37,15 +37,25 @@ CapsLockX更新通过gitpull(){
         return 0
     }
 }
-
+CapsLockX更新_Util_VersionCompare(other,local) {
+    ; from [(1) Simple version comparison - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5959)
+    ver_other:=StrSplit(other,".")
+    ver_local:=StrSplit(local,".")
+    for _index, _num in ver_local
+        if ( (ver_other[_index]+0) > (_num+0) )
+        return 1
+    else if ( (ver_other[_index]+0) < (_num+0) )
+        return 0
+    return 0
+}
 CapsLockX更新通过github(){
     UrlDownloadToFile, https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt, Tools/new-version.txt
-    FileRead, newVersion, Tools/new-version.txt
-    url := "https://github.com/snomiao/CapsLockX/archive/refs/tags/v" newVersion ".zip" ; release
+    FileRead, remoteVersion, Tools/new-version.txt
+    url := "https://github.com/snomiao/CapsLockX/archive/refs/tags/v" remoteVersion ".zip" ; release
     ; url := "https://github.com/snomiao/CapsLockX/archive/refs/heads/master.zip" ; newest.. CapsLockX-master
-    file := A_Temp "\CapsLockX-Update-" newVersion ".zip"
-    folder := A_Temp "\CapsLockX-Update-" newVersion
-    programFolder := A_Temp "\CapsLockX-Update-" newVersion "\CapsLockX-" newVersion
+    file := A_Temp "\CapsLockX-Update-" remoteVersion ".zip"
+    folder := A_Temp "\CapsLockX-Update-" remoteVersion
+    programFolder := A_Temp "\CapsLockX-Update-" remoteVersion "\CapsLockX-" remoteVersion
     FileCreateDir %folder%
     CapsLockX_更新提示("正在从github下载新版本...")
     UrlDownloadToFile %url%, %file%
@@ -61,22 +71,21 @@ CapsLockX_检查更新(){
     CapsLockX_更新提示("正在检查更新")
     ; 
     UrlDownloadToFile, https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt, Tools/new-version.txt
-    FileRead, newVersion, Tools/new-version.txt
-    if(!newVersion){
+    FileRead, remoteVersion, Tools/new-version.txt
+    if(!remoteVersion){
         UrlDownloadToFile, https://cdn.jsdelivr.net/gh/snomiao/CapsLockX@master/Tools/version.txt, Tools/new-version-cdn.txt
-        FileRead, newVersion, Tools/new-version-cdn.txt
+        FileRead, remoteVersion, Tools/new-version-cdn.txt
     }
-    if(!newVersion){
+    if(!remoteVersion){
         CapsLockX_更新提示("更新检查失败，请检查网络")
         Return
     }
-
     FileRead, version, Tools/version.txt
-    if (version == newVersion){
+    if(CapsLockX更新_Util_VersionCompare(remoteVersion, version))
+        CapsLockX_更新提示("发现新版本：" remoteVersion "`n当前版本：" version "`n准备更新")
+    else
         CapsLockX_更新提示("已经是最新版本")
-        return 1
-    }
-    CapsLockX_更新提示("发现新版本：" newVersion "`n当前版本：" version "`n准备更新")
+    return 1
     if(!T_DownloadUpdate)
         Return 1
     if(CapsLockX更新通过gitpull())

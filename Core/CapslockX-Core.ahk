@@ -167,6 +167,7 @@ CapsLockX_Reload(){
     }
 
 }
+
 CapsLockX_Dn(){
     ; 按住其它键的时候 不触发 CapsLockX 避免影响打字
     CapsLockX_上次触发键 := 触发键 := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
