@@ -167,10 +167,11 @@ LoadModules(ModulesRunner, ModulesLoader)
             FileAppend %ModuleCode%, %CapsLockX_PathModules%\%ModuleFile%
 
             ; 导入模块
-            code_setup .= "GoSub Setup_" i "`n"
-            code_include .= "#If" "`n" "`n"
-            code_include .= " Setup_" i ":" "`n"
-            code_include .= " #Include " CapsLockX_PathModules "\" ModuleFile "`n"
+            code_setup .= "GoSub CapsLockX_ModuleSetup_" i "`n"
+            code_include .= "`n" "#If" "`n" "`n"
+            code_include .= "CapsLockX_ModuleSetup_" i ":" "`n"
+            code_include .= " " " " " " " " "#Include " CapsLockX_PathModules "\" ModuleFile "`n"
+            code_include .= "Return" "`n"
             LoadingTips("运行模块：" i " " ModuleName)
         }
     }
@@ -183,8 +184,8 @@ LoadModules(ModulesRunner, ModulesLoader)
     code_consts .= "global CapsLockX_Version := " """" CapsLockX_Version """" "`n"
     code_consts .= "global CapsLockX_VersionName := " """" CapsLockX_VersionName """" "`n"
 
-    codeRunner .= code_consts "`n" code_setup "`n"
-    codeLoader .= "Return" "`n" code_include "`n"
+    codeRunner .= code_consts "`n" code_setup
+    codeLoader .= "Return" "`n" code_include
 
     FileDelete %ModulesRunner%
     FileAppend %codeRunner%, %ModulesRunner%
@@ -224,15 +225,12 @@ if (target != source) {
     ; Reload
     ; ExitApp
 }
-; 编译核心文件
 global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
-
-; 用热键把之前的实例关了
-; SendEvent ^!+\
-
+global UpdatorAHK := CapsLockX_PathCore "\CapsLockX-Update.ahk"
 ; 隐藏 ToolTip
 ToolTip
-
+; 运行更新组件
+Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %UpdatorAHK%, %A_WorkingDir%
 ; 运行核心
 RunWait %CapsLockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
 

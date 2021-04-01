@@ -17,7 +17,7 @@ if !CapsLockX
 ; #IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
 ; #If
 
-AppendHelp("
+CapsLockX_AppendHelp("
 (
 窗口增强
 | 作用域 | 窗口增强模块 | 说明 |

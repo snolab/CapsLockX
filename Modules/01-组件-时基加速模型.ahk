@@ -7,13 +7,17 @@
 ; 版本：0.0.1(20200606)
 ; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
-;
 
-if (!CapsLockX){
+if (!CapsLockX) {
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
 
+global T_TimeAccModel_maPower := CapsLockX_Config("TimeAccModel", "maPower", 1, "使用指数运动模型（雪星宇宙的物理），影响鼠标和光标的加速手感，比下一项优先")
+global T_TimeAccModel_ma3 := CapsLockX_Config("TimeAccModel", "ma3", 0, "使用三次函数运动模型（也许你是四维生物？），影响鼠标和光标的加速手感，比下一项优先")
+global T_TimeAccModel_ma2 := CapsLockX_Config("TimeAccModel", "ma2", 0, "使用二次函数运动模型（直观物理），影响鼠标和光标的加速手感（若没有启用任何模型则鼠标和光标不会移动）")
+
+Return
 ; 高性能计时器，精度能够达到微秒级，相比之下 A_Tick 的精度大概只有10几ms。
 TM_QPF(){
     DllCall("QueryPerformanceFrequency", "Int64*", QuadPart)
@@ -26,14 +30,13 @@ TM_QPC(){
 
 ; 构造加速模型相关函数
 ma(t){
-    ; 二次函数运动模型
-    ; Return ma2(t)  ; * TMouse_DPIRatio
-
-    ; 三次函数运动模型
-    ; Return ma3(t)
-
-    ; 指数函数运动模型
-    Return maPower(t) * 1.5
+    if(T_TimeAccModel_maPower) 
+        Return maPower(t) * 1
+    if(T_TimeAccModel_ma3) 
+        Return ma3(t)
+    if(T_TimeAccModel_ma2) 
+        Return ma2(t) ; * TMouse_DPIRatio
+    return 0
 }
 ma2(t){
     ; x-t 二次曲线加速运动模型
@@ -82,15 +85,10 @@ Friction(v, a){ ; 摩擦力
     if (v > maxSpeed)
         v := maxSpeed
 
-    ; 摩擦力不阻碍用户意志
+    ; 摩擦力不阻碍用户意志，加速度存在时不使用摩擦力
     if ((a > 0 And v > 0) Or (a < 0 And v < 0)){
         Return v
     }
-
-    ; ; 刹车
-    ; if ((a < 0 And v > 0) Or (a > 0 And v < 0)){
-    ; Return 0
-    ; }
 
     ; 简单粗暴倍数降速
     v *= 0.9
@@ -103,4 +101,3 @@ Friction(v, a){ ; 摩擦力
         v:=0
     Return v
 }
-Return

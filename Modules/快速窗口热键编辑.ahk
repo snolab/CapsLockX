@@ -50,3 +50,5 @@ UserModuleEdit(路径){
 
 m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
 !m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/应用-" 进程名 ".user.ahk")
+; 修改配置
+^!m:: run notepad %CapsLockXConfigPath%

@@ -13,7 +13,7 @@ if !CapsLockX
 Return
 
 #IfWinActive .*的资料 ahk_class TXGuiFoundation ahk_exe QQ.exe
-    /:: CapslockXShowHelp("
+    /:: CapsLockX_ShowHelp("
     (
     QQ 资料卡界面
     F2:: ; 改备注名
@@ -36,7 +36,7 @@ Return
 
     #IfWinActive .*等\d+个会话 ahk_class TXGuiFoundation ahk_exe QQ.exe
 
-        /:: CapslockXShowHelp("
+        /:: CapsLockX_ShowHelp("
         (
         QQ 多人会话界面
     F2:: ; 看资料
@@ -78,7 +78,7 @@ Return
     Return
 
     #IfWinActive ahk_class TXGuiFoundation ahk_exe QQ.exe
-        /:: CapslockXShowHelp("
+        /:: CapsLockX_ShowHelp("
         (
         QQ 单人会话界面
     !m:: ; 屏蔽鼠标指向的群

@@ -13,7 +13,7 @@ if !CapsLockX
 
 global FLAG_SWAP_ESC_STROKE := false
 
-AppendHelp("
+CapsLockX_AppendHelp("
 (
 笔记本功能键补充
 | Win + Alt + P | 打开系统设定 |

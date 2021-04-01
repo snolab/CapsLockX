@@ -209,12 +209,12 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 #IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
 
-; /:: CapslockXShowHelp OneNote2016窗口
+; /:: CapsLockX_ShowHelp OneNote2016窗口
 
 ; OneNote2016创建链接窗口
 #If WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
 
-; /:: CapslockXShowHelp OneNote2016创建链接窗口
+; /:: CapsLockX_ShowHelp OneNote2016创建链接窗口
 
 ; 复制链接笔记页面的搜索结果
 !+s:: CopySearchResultSectionAndPagesThenPaste()
@@ -274,8 +274,15 @@ $+F2:: SendEvent ^+g{AppsKey}r
 ; 复制页面链接
 $!F2:: Send ^+a{AppsKey}l
 
-; 移动笔记
-$!m:: SendEvent ^!m
+; 移动笔记（尝试自动填入剪贴板）
+$!m::
+    SendEvent ^c
+    SendEvent ^!m
+    WinWaitActive, ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 1
+    if(ErrorLevel)
+        return
+    SendEvent ^v
+return
 
 ; 移动分区
 $!+m:: SendEvent ^+g{AppsKey}m

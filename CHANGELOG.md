@@ -1,3 +1,60 @@
+## [1.14.4](https://github.com/snomiao/CapsLockX/compare/v1.14.3...v1.14.4) (2021-03-31)
+
+
+### Bug Fixes
+
+* 修复 T_使用番茄报时 选项 ([d0c176c](https://github.com/snomiao/CapsLockX/commit/d0c176c4faebc7a340ee685d0d895f2f89367fa0))
+* 修改CapsLockX_更新提示 ([e366247](https://github.com/snomiao/CapsLockX/commit/e366247b5a0b3b2edcc0e0a10180bef7e09ca6bd))
+* 删掉意外出现的配置文件 ([b51e79d](https://github.com/snomiao/CapsLockX/commit/b51e79d3af1393ad906e949595b6d36ecc08b718))
+* 按住其它键的时候 不触发 CapsLockX 避免影响打字 ([3daab90](https://github.com/snomiao/CapsLockX/commit/3daab90391aa1e66b9f929f508d7f9844d2495bb))
+
+
+
+## [1.14.3](https://github.com/snomiao/CapsLockX/compare/v1.14.2...v1.14.3) (2021-03-28)
+
+
+### Bug Fixes
+
+* 添加github publish 工作流 ([10b4e22](https://github.com/snomiao/CapsLockX/commit/10b4e22f707db41ab980d67aca15d7b2320729f2))
+
+
+
+## [1.14.2](https://github.com/snomiao/CapsLockX/compare/v1.14.1...v1.14.2) (2021-03-28)
+
+
+### Bug Fixes
+
+* gitsync ([274fd57](https://github.com/snomiao/CapsLockX/commit/274fd5748fe14743b8e0e55aa6dd6d364c79e7c9))
+
+
+
+## [1.14.1](https://github.com/snomiao/CapsLockX/compare/v1.14.0...v1.14.1) (2021-03-28)
+
+
+### Bug Fixes
+
+* gitpush ([1897e09](https://github.com/snomiao/CapsLockX/commit/1897e09ff67b2f9cb985ae7dbc2bac83ce105ea5))
+
+
+
+# [1.14.0](https://github.com/snomiao/CapsLockX/compare/v1.13.1...v1.14.0) (2021-03-28)
+
+
+### Bug Fixes
+
+* ActivateLastFlashWindow键位修改 ([922664f](https://github.com/snomiao/CapsLockX/commit/922664f2a67010cfa5f42630248926066d2ad230))
+* rename npm run gitpush ([fa89220](https://github.com/snomiao/CapsLockX/commit/fa89220c9d2cd39b1fbf5b17df852d3400521c08))
+* 修复根目录readme图片显示问题 ([523b861](https://github.com/snomiao/CapsLockX/commit/523b861cd1f3a99456f48c27258a35156c99459c))
+* 模块加载robust增强 ([fa8d84d](https://github.com/snomiao/CapsLockX/commit/fa8d84d7df1254c160ab269af656d92d66c2d0da))
+
+
+### Features
+
+* 增加定时任务 ([26e729e](https://github.com/snomiao/CapsLockX/commit/26e729e711ed78a91f6f82af912af59eb1d612f0))
+* 自动更新模块原型完成、大面积重构、配置文档优化、 ([415e7ac](https://github.com/snomiao/CapsLockX/commit/415e7ace5bdd3e3acd5f034d8c7018c50c2f4a40))
+
+
+
 ## [1.13.1](https://github.com/snomiao/CapsLockX/compare/v1.12.0...v1.13.1) (2021-03-26)
 
 

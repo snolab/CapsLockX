@@ -1,26 +1,23 @@
-*.sublime-*
-*.ini
-*.zip
-*.bak
-
-# user
-*.user.ahk
-*.user.md
-*.user.ignores
-
-_config.yaml
-
-/AutoHotKey/
-/docs/README.html
-*.nupkg
-node_modules
-# btsync
+# sync services
 .sync
 *.!sync
 
-# modules
+# generated
+*.nupkg
+node_modules
+/docs/README.html
+*.sublime-*
+*.zip
+*.bak
 CapslockX-LoadModules.ahk
 CapsLockX-LoadModules.ahk
 CapsLockX-ModulesRunner.ahk
 CapsLockX-ModulesLoader.ahk
 *.!sync
+Tools/new-version*.txt
+
+# user
+*.ini
+*.user.ahk
+*.user.md
+*.user.ignores
