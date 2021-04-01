@@ -113,7 +113,7 @@ CopySearchResultSectionAndPages(){
         }
 
         this_link := "[" title_html "]" "( " addr " )" "`n"
-        this_link_html := "<a href=""" addr """>" title_html "</a>" "<br />`n"
+        this_link_html := "<a title=""" title_html """ href=""" addr """>" title_html "</a>" "<br />`n"
 
         SendEvent {Down}
         Sleep, 32
@@ -128,12 +128,12 @@ CopySearchResultSectionAndPages(){
             k += 1
 
             ; 这里用 prev_addr 意在去掉最后一条（一般是新建笔记）
-            ; OneNote搜索默认倒字母序排列，这里把它正过来
+            ; OneNote搜索默认倒字母序排列，这里把它正过来 /(20210401)发现不是这样的 ，决定在下面另外排序
             links := prev_link . links
             prev_link := this_link
 
             ; 这里用 prev_link_html 意在去掉最后一条（一般是新建笔记）
-            ; OneNote搜索默认倒字母序排列，这里把它正过来
+            ; OneNote搜索默认倒字母序排列，这里把它正过来 /(20210401)发现不是这样的 ，决定在下面另外排序
             links_html := prev_link_html . links_html
             prev_link_html := this_link_html
         }
@@ -141,6 +141,8 @@ CopySearchResultSectionAndPages(){
 
     ; links_html
     ; Clipboard := links
+    Sort links
+    Sort links_html
     Clipboard := links
     ; Sleep 128
     wc.SetText(links)
