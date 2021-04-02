@@ -43,10 +43,10 @@ Return
 ;msgbox % DllCall("MonitorFromPoint", "UInt", 0, "UInt", 0, "UInt", 0)
 
 GetCursorHandle(){
-    VarSetCapacity( PCURSORINFO, 20, 0) ;为鼠标信息 结构 设置出20字节空间
+    VarSetCapacity(PCURSORINFO, 20, 0) ;为鼠标信息 结构 设置出20字节空间
     NumPut(20, PCURSORINFO, 0, "UInt") ;*声明出 结构 的大小cbSize = 20字节
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
-    If(NumGet( PCURSORINFO, 4, "UInt") == 0 ) ;当光标隐藏时，直接输出特征码为0
+    If(NumGet(PCURSORINFO, 4, "UInt") == 0 ) ;当光标隐藏时，直接输出特征码为0
         Return 0
     Return NumGet(PCURSORINFO, 8)
 }
@@ -61,6 +61,10 @@ CursorShapeChangedQ(){
 
 sign(v){
     Return v == 0 ? 0 : (v > 0 ? 1 : -1)
+}
+
+Pos2Long(x, y){
+    Return x | (y << 16)
 }
 
 ;global dpiX := 0, dpiY := 0
@@ -182,8 +186,8 @@ MouseTicker(){
         MouseGetPos, xa, ya
     }
 
-    If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这只能32位用
-    {
+    If (TMouse_SendInputAPI && A_PtrSize == 4){
+        ; 这只能32位用
         SendInput_MouseMoveR32(鼠差横, 鼠差纵)
         鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
     }Else{
@@ -206,10 +210,6 @@ MouseTicker(){
     If(TMouse_StickyCursor And CursorShapeChangedQ()){
         鼠速横 := 0, 鼠速纵 := 0
     }
-}
-
-Pos2Long(x, y){
-Return x | (y << 16)
 }
 
 ScrollMsg2(msg, zDelta){
@@ -243,7 +243,6 @@ ScrollMsg(msg, zDelta){
     if GetKeyState("Ctrl", "p"){
         wParam := wParam | 0x8
     }
-
     if (ControlClass2 == ""){
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass1%
     } else {
