@@ -34,8 +34,8 @@ setCurrentWindowAsBackground(){
     }
     WinGetTitle, t, ahk_id %其它窗口%
     WinGetClass, cc,ahk_id %其它窗口%
-
-    Tooltip %其它窗口% - %t% %c%
+    if(0)
+        Tooltip %其它窗口% - %t% %c%
     TrayTip, CapsLockX, 后置当前窗口（主要用于虚拟机和远程桌面）
     ; 让它显示回来
     WinShow, ahk_id %hWnd%
@@ -72,7 +72,8 @@ DetectMSTSC(){
         WinRestore, ahk_id %hWnd%
         msg .= "MOVE!`n"
     }
-    ToolTip %msg%
+    if(0)
+        ToolTip %msg%
 }
 ; 左右Alt一起按 显示当前mstsc窗口
 mstscShow(){

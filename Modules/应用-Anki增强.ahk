@@ -102,8 +102,7 @@ AnkiImport(){
         MsgBox, 剪贴板里没有内容
         Return
     }
-
-    ToolTip, %text%
+    ToolTip, 获取到 %text%
 
     ; 让 Anki 打开导入框
     Send ^+i

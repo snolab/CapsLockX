@@ -132,7 +132,7 @@ SendInput_MouseMoveR64(x, y){
     a6 := NumGet(sendData, 24, "UInt")
 
     ret := DllCall("SendInput", "UInt", 1, "Int", 0, "Int", cbSize, "Int")
-    ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
+    ; ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
 }
 
 ; 鼠标模拟

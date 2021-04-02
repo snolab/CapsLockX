@@ -1,5 +1,5 @@
 ﻿
-if !CapsLockX
+if(!CapsLockX)
     ExitApp
 Return
 
@@ -36,11 +36,6 @@ Return
     Send {Up}
     Sleep 50
     Send {Enter}
-    ; Send {Space}
-    ; MouseMove 20, 180, 0, R
-    ; Sleep 200
-    ; MouseClick, Left
-    ; MouseMove 200, 60, 0, R
 Return
 !Up::
     TIM_MouseShift(-1)
@@ -50,22 +45,6 @@ Return
 Return
 !Enter::
     Click
-Return
-!h::
-    CoordMode, ToolTip, Relative
-
-    WinGetPos, X, Y, W, H, A
-
-    x := 117 + 1
-    y := 30 + 1
-    ToolTip, f, x, y, 2
-
-    x := W -20 + 1
-    y := 70 + 1
-    ToolTip, q, x, y, 3
-Return
-!h Up::
-    ToolTip
 Return
 ^PgDn:: Send ^{Tab}
 ^PgUp:: Send +^{Tab}
