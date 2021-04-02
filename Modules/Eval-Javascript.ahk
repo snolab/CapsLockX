@@ -23,8 +23,7 @@ JavaScript 计算 (建议安装NodeJS)
 
 Return
 
-GetObjJScript()
-{
+GetObjJScript(){
     if !FileExist(ComObjFile := A_Temp "\JS.wsc")
         FileAppend,
     (LTrim
@@ -35,8 +34,7 @@ GetObjJScript()
     ), % ComObjFile
     Return ComObjGet("script:" . ComObjFile)
 }
-EscapeQuoted(code)
-{
+EscapeQuoted(code){
     encodedCode := code
     encodedCode := RegExReplace(encodedCode, "\\", "\\")
     encodedCode := RegExReplace(encodedCode, "'", "\'")
@@ -44,8 +42,7 @@ EscapeQuoted(code)
     encodedCode := RegExReplace(encodedCode, "\r", "\r")
     Return "'" encodedCode "'"
 }
-EscapeDoubleQuotedForBatch(code)
-{
+EscapeDoubleQuotedForBatch(code){
     encodedCode := code
     encodedCode := RegExReplace(encodedCode, "\\", "\\")
     encodedCode := RegExReplace(encodedCode, """", "^""")
@@ -53,8 +50,7 @@ EscapeDoubleQuotedForBatch(code)
     encodedCode := RegExReplace(encodedCode, "\r", "\r")
     Return """" encodedCode """"
 }
-EvalJScript(code)
-{
+EvalJScript(code){
     ; 生成代码
     realcode := "(function(){try{Return eval(" . EscapeQuoted(code) . ")}catch(e){Return e.toString()}})()"
     ; 执行代码
@@ -63,8 +59,7 @@ EvalJScript(code)
     Return re
 }
 
-EvalNodejs(code)
-{
+EvalNodejs(code){
     ; 检查 Node.js 是否安装
     nodejsPath := "C:\Program Files\nodejs\node.exe"
     if (!FileExist(nodejsPath))

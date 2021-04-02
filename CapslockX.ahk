@@ -26,31 +26,27 @@ if(!CapsLockX_Version)
 global CapsLockX_VersionName := "v" CapsLockX_Version
 global loadingTips := ""
 
-LoadingTips(msg, clear = 0)
-{
-    if (clear || loadingTips == "") {
+LoadingTips(msg, clear = 0){
+    if (clear || loadingTips == ""){
         loadingTips := "CapsLockX " CapsLockX_Version "`n"
     }
     loadingTips .= msg "`n"
 }
-ShowLoadingTips()
-{
+ShowLoadingTips(){
     ToolTip % loadingTips
 }
-TryLoadModuleHelp(ModuleFileName, ModuleName)
-{
-    if (FileExist(CapsLockX_PathModules "\" ModuleName ".md")) {
+TryLoadModuleHelp(ModuleFileName, ModuleName){
+    if (FileExist(CapsLockX_PathModules "\" ModuleName ".md")){
         FileRead, ModuleHelp, %CapsLockX_PathModules%\%ModuleName%.md
         Return ModuleHelp
     }
-    if (FileExist(CapsLockX_PathModules "\" ModuleFileName ".md")) {
+    if (FileExist(CapsLockX_PathModules "\" ModuleFileName ".md")){
         FileRead, ModuleHelp, %CapsLockX_PathModules%\%ModuleFileName%.md
         Return ModuleHelp
     }
     Return ""
 }
-UpdateModulesHelp(sourceREADME, docs="")
-{
+UpdateModulesHelp(sourceREADME, docs=""){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles := ""
@@ -69,14 +65,14 @@ UpdateModulesHelp(sourceREADME, docs="")
         ; 匹配模块名
         ModuleFile := A_LoopField
         re := RegExMatch(A_LoopField, "O)((?:.*[.-])*)(.*)\.ahk", Match)
-        if (!re) {
+        if (!re){
             Continue
         }
         ModuleFileName := Match[1] Match[2]
         ModuleName := Match[2]
 
         ModuleHelp := TryLoadModuleHelp(ModuleFileName, ModuleName)
-        if (!ModuleHelp) {
+        if (!ModuleHelp){
             Continue
         }
         ModuleHelp := Trim(ModuleHelp, " `t`n")
@@ -104,8 +100,8 @@ UpdateModulesHelp(sourceREADME, docs="")
         ; }
 
         ; 没有标题的，给自动加标题
-        if (!RegExMatch(ModuleHelp, "^#")) {
-            if (T%ModuleName%_Disabled) {
+        if (!RegExMatch(ModuleHelp, "^#")){
+            if (T%ModuleName%_Disabled){
                 help .= "### " ModuleName "模块（禁用）" "`n"
             } else {
                 help .= "### " ModuleName "模块" "`n"
@@ -122,7 +118,7 @@ UpdateModulesHelp(sourceREADME, docs="")
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
 
     ; 检查替换情况
-    if (!Replaces) {
+    if (!Replaces){
         MsgBox % "加载模块帮助遇到错误。`n请更新 CapsLockX"
         MsgBox % targetREADME
         Return sourceREADME
@@ -130,8 +126,7 @@ UpdateModulesHelp(sourceREADME, docs="")
 
     Return targetREADME
 }
-LoadModules(ModulesRunner, ModulesLoader)
-{
+LoadModules(ModulesRunner, ModulesLoader){
     FileEncoding UTF-8
     ; 列出模块文件 然后 排序
     ModuleFiles := ""
@@ -151,13 +146,13 @@ LoadModules(ModulesRunner, ModulesLoader)
         ; 匹配模块名
         ModuleFile := A_LoopField
         re := RegExMatch(A_LoopField, "O)(?:.*[.-])*(.*)\.ahk", Match)
-        if (!re) {
+        if (!re){
 
             Continue
         }
         ModuleName := Match[1]
 
-        if (T%ModuleName%_Disabled) {
+        if (T%ModuleName%_Disabled){
             LoadingTips("禁用模块：" i " " ModuleName)
         } else {
             ; 这里引入模块代码
@@ -204,12 +199,12 @@ FileRead, source, %INPUT_README_FILE%
 
 ; 加载模块帮助
 target := UpdateModulesHelp(source)
-if (target != source) {
+if (target != source){
     LoadingTips("模块帮助有变更")
 
     ; 稳定性检查
     source := UpdateModulesHelp(target)
-    if (target != source) {
+    if (target != source){
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
     }
     ; 输出到 docs/readme.md （用于 github-pages ）

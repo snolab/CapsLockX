@@ -41,7 +41,7 @@ CapsLockX更新通过gitpull(tryAgainFlag:=0){
     }
     return CLXU_Fail
 }
-CapsLockX更新_Util_VersionCompare(remote, local) {
+CapsLockX更新_Util_VersionCompare(remote, local){
     ; from [(1) Simple version comparison - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5959)
     ver_other:=StrSplit(remote,".")
     ver_local:=StrSplit(local,".")

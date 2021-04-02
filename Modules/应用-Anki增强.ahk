@@ -111,7 +111,7 @@ AnkiImport(){
     ; 获取到文本后保存到临时文件……
     FileName = %APPDATA%\Anki2\剪贴板导入.txt
     file := FileOpen(FileName, "w", "UTF-8")
-    If !IsObject(file) {
+    If !IsObject(file){
         MsgBox Can't open "%FileName%" for writing.
             Return
     } 

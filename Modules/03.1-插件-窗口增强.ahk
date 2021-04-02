@@ -181,13 +181,11 @@ z:: Send ^#{F4}
 
 #if False && "FUNCTIION DEFINES"
 
-MultitaskingViewFrameQ()
-{
+MultitaskingViewFrameQ(){
 Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
 }
 ; this is improved method for stable
-GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
-{
+GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd){
     WinGetPos, X, Y, W, H, ahk_id %hWnd%
     CX := X + W / 2
     CY := Y + H / 2
@@ -196,7 +194,7 @@ GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
     loop %monitorCount% {
         SysGet, M, Monitor, %A_Index%
         ; Compare center position to determine the monitor index.
-        if (( abs(min(max(MLeft, CX), MRight) - CX) <= 1)&& ( abs(min(max(MTop, CY), MBottom) - CY) <= 1)) {
+        if (( abs(min(max(MLeft, CX), MRight) - CX) <= 1)&& ( abs(min(max(MTop, CY), MBottom) - CY) <= 1)){
             msgbox, , %title%, %A_Index% %MLeft% %CX% %MRight% %EQ%
             monitorIndex := A_Index
             break
@@ -205,14 +203,13 @@ GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
 Return %monitorIndex%
 }
 ; below function is modified from [How to determine a window is in which monitor? - Ask for Help - AutoHotkey Community]( https://autohotkey.com/board/topic/69464-how-to-determine-a-window-is-in-which-monitor/ )
-GetMonitorIndexFromWindow(hWnd)
-{
+GetMonitorIndexFromWindow(hWnd){
     ; default is 0 to prevent ...
     monitorIndex := ""
     VarSetCapacity(monitorInfo, 40)
     NumPut(40, monitorInfo)
     monitorHandle := DllCall("MonitorFromWindow", "uint", hWnd, "uint", 0x2)
-    if (monitorHandle && DllCall("GetMonitorInfo", "uint", monitorHandle, "uint", &monitorInfo)) {
+    if (monitorHandle && DllCall("GetMonitorInfo", "uint", monitorHandle, "uint", &monitorInfo)){
         monitorLeft := NumGet(monitorInfo, 4, "Int")
         monitorTop := NumGet(monitorInfo, 8, "Int")
         monitorRight := NumGet(monitorInfo, 12, "Int")
@@ -230,24 +227,23 @@ GetMonitorIndexFromWindow(hWnd)
         {
             SysGet, tempMon, Monitor, %A_Index%
             ; Compare location to determine the monitor index.
-            if ((monitorLeft = tempMonLeft) and (monitorTop = tempMonTop)and (monitorRight = tempMonRight) and (monitorBottom = tempMonBottom)) {
+            if ((monitorLeft = tempMonLeft) and (monitorTop = tempMonTop)and (monitorRight = tempMonRight) and (monitorBottom = tempMonBottom)){
                 monitorIndex := A_Index
                 break
             }
         }
     }
-    if (monitorIndex) {
+    if (monitorIndex){
         Return %monitorIndex%
     }
     monitorIndex := GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd)
-    if (monitorIndex) {
+    if (monitorIndex){
         Return %monitorIndex%
     }
 Return 1
 }
 
-ArrangeWindows(arrangeFlags = "0")
-{
+ArrangeWindows(arrangeFlags = "0"){
     arrangeFlags += 0 ; string to number
     ; 常量定义
     WS_EX_TOOLWINDOW := 0x00000080
@@ -272,7 +268,7 @@ ArrangeWindows(arrangeFlags = "0")
         WinGetTitle, this_title, ahk_id %hWnd%
         WinGetClass, this_class, ahk_id %hWnd%
         ; Process, , PID-or-Name [, Param3]
-        if (1) {
+        if (1){
             ; 黑名单
             ; ; 跳过无标题窗口
             ; if !(style & WS_CAPTION)
@@ -281,13 +277,13 @@ ArrangeWindows(arrangeFlags = "0")
             ; if (style & WS_EX_TOOLWINDOW)
             ;     Continue
             ; 只显示Alt+TAB里有的窗口
-            if (!(style & WS_EX_APPWINDOW)) {
+            if (!(style & WS_EX_APPWINDOW)){
                 continue ; ; 跳过弹出窗口
             }
             ; if (style & WS_POPUP)
             ;     Continue
             ; 排除空标题窗口
-            if (!RegExMatch(this_title, ".+")) {
+            if (!RegExMatch(this_title, ".+")){
                 Continue ; If (this_class == "Progman") ; Continue ; 排除 Win10 的常驻窗口管理器
             }
             ; 排除不归属于当前参数显示器的窗口
@@ -298,16 +294,16 @@ ArrangeWindows(arrangeFlags = "0")
             ;     }
             ; }
             ; 跳过不在当前虚拟桌面的窗口
-            if (!IsWindowOnCurrentVirtualDesktop(hWnd)) {
+            if (!IsWindowOnCurrentVirtualDesktop(hWnd)){
                 continue
             }
             ; 跳过最大化窗口
             WinGet, minmax, minmax, ahk_id %hWnd%
-            if (minmax == 1 && !(arrangeFlags & ARRANGE_MAXWINDOW)) {
+            if (minmax == 1 && !(arrangeFlags & ARRANGE_MAXWINDOW)){
                 continue
             }
             ; 跳过最小化的窗口
-            if (minmax == -1 && !(arrangeFlags & ARRANGE_MINWINDOW)) {
+            if (minmax == -1 && !(arrangeFlags & ARRANGE_MINWINDOW)){
                 continue
             }
             ; 尝试跳过隐藏窗口
@@ -315,11 +311,11 @@ ArrangeWindows(arrangeFlags = "0")
             GWL_EXSTYLE := -20
             WS_STYLE := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hWnd, "Int", GWL_STYLE, "PTR")
             WS_VISIBLE := 0x10000000
-            if (!(style & WS_VISIBLE)) {
+            if (!(style & WS_VISIBLE)){
                 continue
             }
             ; 尝试跳过隐藏窗口
-            if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ) {
+            if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ){
                 continue
             }
             ; 跳过不可见的 UWP 窗口 
@@ -328,7 +324,7 @@ ArrangeWindows(arrangeFlags = "0")
                 Continue
             }
             ; BOOL IsWindowVisible(HWND hWnd);
-            if (0) {
+            if (0){
                 ; debug
                 ; WinHide, ahk_id %hWnd%
                 WinGet, style_before, style, ahk_id %hWnd%
@@ -377,20 +373,19 @@ ArrangeWindows(arrangeFlags = "0")
         ; MsgBox, , , low %listOfWindow1%
         tooltip % listOfWindow
         Sort listOfWindow%A_Index%
-        if (arrangeFlags & ARRANGE_STACKED) {
+        if (arrangeFlags & ARRANGE_STACKED){
             ArrangeWindowsStacked(listOfWindow%A_Index%, arrangeFlags, A_Index)
         } else {
             ArrangeWindowsSideBySide(listOfWindow%A_Index%, arrangeFlags, A_Index)
         }
     }
 }
-ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
-{
+ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; TrayTip DEBUG_AW_listOfWindow_%n%, %listOfWindow%
     ; try parse work rect from monitor
-    if (!MonitorIndex) {
+    if (!MonitorIndex){
         AreaX := 0
         AreaY := 0
         AreaW := A_ScreenWidth
@@ -407,7 +402,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     ; TrayTip DEBUG Area, %AreaX% %AreaY% %AreaW% %AreaH%
     ; calc rows and cols
     ; shorten edge first
-    if (AreaW <= AreaH) {
+    if (AreaW <= AreaH){
         ; row more than cols
         col := Sqrt(n) | 0
         row := Ceil(n / col)
@@ -425,7 +420,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
 
         ; 同一进程窗口长边优先排列
-        if (AreaW >= AreaH) {
+        if (AreaW >= AreaH){
             ; row first
             nx := Mod(k, col)
             ny := k / col | 0
@@ -482,12 +477,11 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 
 }
 
-ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
-{
+ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; try parse work rect from monitor
-    if (!MonitorIndex) {
+    if (!MonitorIndex){
         AreaX := 0
         AreaY := 0
         AreaW := A_ScreenWidth
@@ -511,7 +505,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
         ; fix hidden UWP ApplicationFrameWindow Window
         WinGetClass, this_class, ahk_id %hWnd%
-        if (this_class == "ApplicationFrameWindow") {
+        if (this_class == "ApplicationFrameWindow"){
             WinActivate, ahk_id %hWnd%
         }
 
@@ -549,11 +543,10 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     ;     WinActivate ahk_id %hWnd%
     ; }
 }
-FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0)
-{
+FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0){
     ; 如有必要则还原最大化最小化的窗口
     WinGet, minmax, minmax, ahk_id %hWnd%
-    if (minmax != 0) {
+    if (minmax != 0){
         WinRestore, ahk_id %hWnd%
         ; needSetTOPMOST := 1
     }
@@ -568,10 +561,10 @@ FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0)
     SWP_NOMOVE := 0x0002
     SWP_NOSIZE := 0x0001
     ; 先置顶（否则会显示在最大化窗口的后面 -- 被挡住）
-    if (Active) {
+    if (Active){
         WinActivate ahk_id %hWnd%
     }
-    if (zIndex) {
+    if (zIndex){
         DllCall("SetWindowPos"
         , "UInt", hWnd ; handle
         , "UInt", zIndex ; z-index

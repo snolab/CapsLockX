@@ -67,7 +67,7 @@ DetectMSTSC(){
     if(0)
         Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
     ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
-    if (VirtualWidth == W && VirtualHeight == H) {
+    if (VirtualWidth == W && VirtualHeight == H){
         HWND_BOTTOM := 1
         WinRestore, ahk_id %hWnd%
         msg .= "MOVE!`n"

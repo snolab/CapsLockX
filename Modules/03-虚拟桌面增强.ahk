@@ -180,32 +180,28 @@ object QueryService(ref Guid service, ref Guid riid);
 #if ; Define Functions
 
 ; Move the current window to another desktop
-MoveActiveWindowWithAction(action)
-{
+MoveActiveWindowWithAction(action){
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput %action%
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveActiveWindowToNewDesktop()
-{
+MoveActiveWindowToNewDesktop(){
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput ^#d
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveActiveWindowToDesktop(idx)
-{
+MoveActiveWindowToDesktop(idx){
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SwitchToDesktop(idx)
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveAllVisibleWindowToDesktop(idx)
-{
+MoveAllVisibleWindowToDesktop(idx){
     hwndArray := []
     WinGet, id, List, , ,
     DetectHiddenWindows, Off
@@ -221,17 +217,15 @@ MoveAllVisibleWindowToDesktop(idx)
         DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
     }
 }
-SwitchToDesktop(idx)
-{
+SwitchToDesktop(idx){
     re := SwitchToDesktopByInternalAPI(idx)
     ; ToolTip % re
-    if (!re) {
+    if (!re){
         TrayTip , WARN, SwitchToDesktopByHotkey
         SwitchToDesktopByHotkey(idx)
     }
 }
-SwitchToDesktopByHotkey(idx)
-{
+SwitchToDesktopByHotkey(idx){
     ; ToolTip % "^#{Left 10}^#{Right " idx - 1 "}"
     ; SendInput % "^#{Left 10}{Sleep 20}^#{Right "(0 == idx ? "^#d" : idx - 1) "}"
     SendInput ^#{Left 10}
@@ -242,8 +236,7 @@ SwitchToDesktopByHotkey(idx)
     }
 }
 
-IsWindowOnCurrentVirtualDesktop(hWnd)
-{
+IsWindowOnCurrentVirtualDesktop(hWnd){
     IVirtualDesktopManager := ComObjCreate("{AA509086-5CA9-4C25-8F95-589D3C07B48A}", "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}")
     ; 如果这个对象不存在那就没有虚拟桌面的说法了，那就默认返回true好了
     if (!IVirtualDesktopManager)
@@ -254,25 +247,24 @@ IsWindowOnCurrentVirtualDesktop(hWnd)
     ObjRelease(IVirtualDesktopManager)
     Return %bool%
 }
-SwitchToDesktopByInternalAPI(idx)
-{
+SwitchToDesktopByInternalAPI(idx){
     succ := 0
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
     ObjRelease(IServiceProvider)
-    if (IVirtualDesktopManagerInternal) {
+    if (IVirtualDesktopManagerInternal){
         GetCount := vtable(IVirtualDesktopManagerInternal, 3)
         GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
         SwitchDesktop := vtable(IVirtualDesktopManagerInternal, 9)
         ; TrayTip, , % IVirtualDesktopManagerInternal
         pDesktopIObjectArray := 0
         DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
-        if (pDesktopIObjectArray) {
+        if (pDesktopIObjectArray){
             GetDesktopCount := vtable(pDesktopIObjectArray, 3)
             GetDesktopAt := vtable(pDesktopIObjectArray, 4)
             DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
             ; if idx-th desktop doesn't exists then create a new desktop
-            if (idx > DesktopCount) {
+            if (idx > DesktopCount){
                 diff := idx - DesktopCount
                 loop %diff% {
                     Send ^#d
@@ -282,7 +274,7 @@ SwitchToDesktopByInternalAPI(idx)
             GetGUIDFromString(IID_IVirtualDesktop, "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}")
             DllCall(GetDesktopAt, "Ptr", pDesktopIObjectArray, "UInt", idx - 1, "Ptr", &IID_IVirtualDesktop, "Ptr*", VirtualDesktop)
             ObjRelease(pDesktopIObjectArray)
-            if (VirtualDesktop) {
+            if (VirtualDesktop){
                 DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", VirtualDesktop)
                 ObjRelease(VirtualDesktop)
                 succ := 1
@@ -299,8 +291,7 @@ GetGUIDFromString(ByRef GUID, sGUID) ; Converts a string to a binary GUID
     DllCall("ole32\CLSIDFromString", "Str", sGUID, "Ptr", &GUID)
 }
 
-vtable(ptr, n)
-{
+vtable(ptr, n){
     ; NumGet(ptr+0) Returns the address of the object's virtual function
     ; table (vtable for short). The remainder of the expression retrieves
     ; the address of the nth function's address from the vtable.
@@ -336,7 +327,7 @@ vtable(ptr, n)
 ;         WinGetTitle, this_title, ahk_id %hWnd%
 ;         WinGetClass, this_class, ahk_id %hWnd%
 ;         ; Process, , PID-or-Name [, Param3]
-;         if (1) {
+;         if (1){
 ;             ; 黑名单
 ;             ; ; 跳过无标题窗口
 ;             ; if !(style & WS_CAPTION)
@@ -345,13 +336,13 @@ vtable(ptr, n)
 ;             ; if (style & WS_EX_TOOLWINDOW)
 ;             ;     Continue
 ;             ; 只显示Alt+TAB里有的窗口
-;             if (!(style & WS_EX_APPWINDOW)) {
+;             if (!(style & WS_EX_APPWINDOW)){
 ;                 Continue ; ; 跳过弹出窗口
 ;             }
 ;             ; if (style & WS_POPUP)
 ;             ;     Continue
 ;             ; 排除空标题窗口
-;             if (!RegExMatch(this_title, ".+")) {
+;             if (!RegExMatch(this_title, ".+")){
 ;                 Continue ; If (this_class == "Progman") ; Continue ; 排除 Win10 的常驻窗口管理器
 ;             }
 ;             ; 排除不归属于当前参数显示器的窗口
@@ -362,16 +353,16 @@ vtable(ptr, n)
 ;             ;     }
 ;             ; }
 ;             ; 跳过不在当前虚拟桌面的窗口
-;             if (!IsWindowOnCurrentVirtualDesktop(hWnd)) {
+;             if (!IsWindowOnCurrentVirtualDesktop(hWnd)){
 ;                 continue
 ;             }
 ;             ; 跳过最大化窗口
 ;             WinGet, minmax, minmax, ahk_id %hWnd%
-;             if (!(arrangeFlags & ARRANGE_MAXWINDOW) && minmax == 1) {
+;             if (!(arrangeFlags & ARRANGE_MAXWINDOW) && minmax == 1){
 ;                 continue
 ;             }
 ;             ; 跳过最小化的窗口
-;             if (!(arrangeFlags & ARRANGE_MINWINDOW) && minmax == -1) {
+;             if (!(arrangeFlags & ARRANGE_MINWINDOW) && minmax == -1){
 ;                 continue
 ;             }
 ;             ; 尝试跳过隐藏窗口
@@ -379,16 +370,16 @@ vtable(ptr, n)
 ;             GWL_EXSTYLE := -20
 ;             WS_STYLE := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hWnd, "Int", GWL_STYLE, "PTR")
 ;             WS_VISIBLE := 0x10000000
-;             if (!(style & WS_VISIBLE)) {
+;             if (!(style & WS_VISIBLE)){
 ;                 continue
 ;             }
 ;             ; 尝试跳过隐藏窗口
-;             if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ) {
+;             if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ){
 ;                 continue
 ;             }
 
 ;             ; BOOL IsWindowVisible(HWND hWnd);
-;             if (0) {
+;             if (0){
 ;                 ; debug
 ;                 ; WinHide, ahk_id %hWnd%
 ;                 WinGet, style_before, style, ahk_id %hWnd%

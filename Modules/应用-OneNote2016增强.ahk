@@ -30,7 +30,7 @@ altSendEx(altKeys, suffix){
     SendEvent {AltDown}%altKeys%{AltUp}%suffix%
 }
 
-StrJoin(sep, params*) {
+StrJoin(sep, params*){
     for index, param in params
         str .= param . sep
     Return SubStr(str, 2, -StrLen(sep))
@@ -41,8 +41,7 @@ GetFocusControlName(){
 }
 
 ; 获取与IME无冲的编码字符串，用于 SendEvent （SEO： SendRaw SendInput）
-getAscStr(str)
-{
+getAscStr(str){
     charList := StrSplit(str)
     for key, val in charList
         out .= "{Asc " . asc(val) . "}"
@@ -175,7 +174,7 @@ $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 ; $^f::
 ; $^e::
-; enhanced_search() {
+; enhanced_search(){
 ; ; 增强搜索，自动替换空格和引号等。
 ; if (A_ThisHotkey = "$^e"){
 ; SendEvent ^e

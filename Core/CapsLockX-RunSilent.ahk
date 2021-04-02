@@ -17,7 +17,7 @@
 ; ..............: Jun. 02, 2014 - Corrected exit code error.
 ; ..............: Nov. 02, 2016 - Fixed blocking behavior due to ReadFile thanks to PeekNamedPipe.
 ; ----------------------------------------------------------------------------------------------------------------------
-StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0) {
+StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0){
     DllCall( "CreatePipe", PtrP,hStdOutRd, PtrP,hStdOutWr, Ptr,0, UInt,0 )
     DllCall( "SetHandleInformation", Ptr,hStdOutWr, UInt,1, UInt,1 )
 
@@ -57,6 +57,6 @@ StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0) 
     Return sOutput
 }
 
-CapsLockX_RunSilent(command) {
+CapsLockX_RunSilent(command){
     return StdoutToVar_CreateProcess(command)
 }

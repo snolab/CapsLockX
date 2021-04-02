@@ -12,7 +12,7 @@ CapsLockX_Config(field, varName, defaultValue, comment := ""){
     return content
 }
 
-if (!!CapsLockXConfigPath) {
+if (!!CapsLockXConfigPath){
     ; 基本设定
     ; [Core]
     global T_AskRunAsAdmin := CapsLockX_Config("Core", "T_AskRunAsAdmin", 1, "是否请求提升权限（例如模拟鼠标等功能需要管理员权限才能正常运行，如果不需要可以关掉）")

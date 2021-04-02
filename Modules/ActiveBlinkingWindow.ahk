@@ -34,15 +34,14 @@ Return
 
 #if
 
-ReverseArray(oArray)
-{
+ReverseArray(oArray){
     Array := Object()
     For i,v in oArray
         Array[oArray.Length()-i+1] := v
     Return Array
 }
 
-arrayDistinctKeepTheLastOne(arr) { ; Hash O(n)
+arrayDistinctKeepTheLastOne(arr){ ; Hash O(n)
     hash := {}, newArr := []
     rarr := ReverseArray(arr)
     for e, v in rarr
@@ -51,9 +50,9 @@ arrayDistinctKeepTheLastOne(arr) { ; Hash O(n)
     return ReverseArray(newArr)
 }
 
-ShellMessage( wParam,lParam ) {
+ShellMessage( wParam,lParam ){
     HSHELL_FLASH := 0x8006 ;  0x8006 is 32774 as shown in Spy!
-    if (wParam = HSHELL_FLASH) {
+    if (wParam = HSHELL_FLASH){
         global lastFlashWinIDs
         hWnd := lParam
         lastFlashWinIDs.Push(hWnd)
@@ -76,7 +75,7 @@ MousePosRestore(hWnd:=0){
         return
     if(!hWnd)
         WinGet, hWnd, id, A
-    if(winMousePoses[hWnd]) {
+    if(winMousePoses[hWnd]){
         X := winMousePoses[hWnd][1]
         Y := winMousePoses[hWnd][2]
         CoordMode, Mouse, Screen
@@ -87,7 +86,7 @@ MousePosRestore(hWnd:=0){
 
 ActivateLastFlashWindow(){
     MousePosBackup()
-    While % lastFlashWinIDs.Count() {
+    While % lastFlashWinIDs.Count(){
         hWnd := WinExist("ahk_id " lastFlashWinIDs.Pop())
         if (hWnd){
             WinActivate, ahk_id %hWnd%

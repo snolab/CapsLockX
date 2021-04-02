@@ -137,7 +137,7 @@ SendInput_MouseMoveR64(x, y){
 
 ; 鼠标模拟
 MouseTickerStart(){
-    if(!鼠动中) {
+    if(!鼠动中){
         SetTimer, MouseTicker, 1
         鼠动中 := 1
     }
@@ -178,7 +178,7 @@ MouseTicker(){
     }
 
     ; 撞到屏幕边角就停下来
-    If (TMouse_StopAtScreenEdge) {
+    If (TMouse_StopAtScreenEdge){
         MouseGetPos, xa, ya
     }
 
@@ -208,7 +208,7 @@ MouseTicker(){
     }
 }
 
-Pos2Long(x, y) {
+Pos2Long(x, y){
 Return x | (y << 16)
 }
 
@@ -230,7 +230,7 @@ ScrollMsg(msg, zDelta){
 
     MouseGetPos,,,, ControlClass2, 2
     MouseGetPos,,,, ControlClass3, 3
-    if (A_Is64bitOS) {
+    if (A_Is64bitOS){
         ControlClass1 := DllCall( "WindowFromPoint", "int64", m_x | (m_y << 32), "Ptr")
     } else{
         ControlClass1 := DllCall("WindowFromPoint", "int", m_x, "int", m_y)
@@ -240,11 +240,11 @@ ScrollMsg(msg, zDelta){
     if GetKeyState("Shift", "p"){
         wParam := wParam | 0x4
     }
-    if GetKeyState("Ctrl", "p") {
+    if GetKeyState("Ctrl", "p"){
         wParam := wParam | 0x8
     }
 
-    if (ControlClass2 == "") {
+    if (ControlClass2 == ""){
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass1%
     } else {
         PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass2%
@@ -311,14 +311,14 @@ ScrollTicker(){
 
     轮差纵 += 轮速纵, 轮差横 += 轮速横
     ; 处理移动
-    If ((轮差纵 | 0) != 0) {
+    If ((轮差纵 | 0) != 0){
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
             SendInput_MouseMsg32(0x0800, 轮差纵) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
             ScrollMsg2(0x20A, 轮差纵)
         轮差纵 -= 轮差纵 | 0
     }
-    If ((轮差横 | 0) != 0) {
+    If ((轮差横 | 0) != 0){
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
             SendInput_MouseMsg32(0x1000, 轮差横) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
         Else

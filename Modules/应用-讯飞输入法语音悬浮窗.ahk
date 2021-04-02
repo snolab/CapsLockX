@@ -15,7 +15,7 @@ Return
 #IF !CapsLockXMode
 
 #h::
-    If (WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe")) {
+    If (WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe")){
         ; 原方案使用热键触发
         ; Send ^+h
         ; 新方案直接发送模拟点击消息

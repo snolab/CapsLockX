@@ -8,7 +8,7 @@
 ; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
-if (!CapsLockX) {
+if (!CapsLockX){
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }

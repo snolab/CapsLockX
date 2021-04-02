@@ -1,7 +1,6 @@
 ﻿SetTitleMatchMode RegEx
 
-FaXiaoXi(title, msg)
-{
+FaXiaoXi(title, msg){
     win := title . " ahk_class TXGuiFoundation ahk_exe TIM.exe"
     ControlSend, , %msg%, %win%
     Sleep, 64

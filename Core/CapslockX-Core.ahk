@@ -37,12 +37,11 @@ global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_
 global CapsLockPressTimestamp := 0
 
 ; 根据灯的状态来切换到上次程序退出时使用的模式（不）
-UpdateCapsLockXMode()
-{
-    if (T_UseCapsLockLight) {
+UpdateCapsLockXMode(){
+    if (T_UseCapsLockLight){
         CapsLockXMode := GetKeyState("CapsLock", "P")
     }
-    if (T_UseScrollLockLight) {
+    if (T_UseScrollLockLight){
         CapsLockXMode |= GetKeyState("ScrollLock", "T") << 1
     }
     Return CapsLockXMode
@@ -56,7 +55,7 @@ UpdateLight()
 global T_IgnoresByLines
 ignoresFilePath := "CapsLockX.user.ignores"
 FileRead, T_IgnoresByLines, %ignoresFilePath%
-if (T_IgnoresByLinesUser) {
+if (T_IgnoresByLinesUser){
     FileCopy, CapsLockX.defaults.ignores, %ignoresFilePath%
     FileRead, T_IgnoresByLines, %ignoresFilePath%
 }
@@ -99,39 +98,37 @@ CapsLockX_Loaded()
 #Include Core\CapsLockX-RunSilent.ahk
 
 #If
-UpdateLight() {
+UpdateLight(){
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
-    if (NowLightState == LastLightState) {
+    if (NowLightState == LastLightState){
         Return
     }
-    if (T_UseScrollLockLight && GetKeyState("ScrollLock", "T") != NowLightState) {
+    if (T_UseScrollLockLight && GetKeyState("ScrollLock", "T") != NowLightState){
         Send {ScrollLock}
     }
-    if (T_UseCursor) {
+    if (T_UseCursor){
         UpdateCapsCursor(NowLightState)
     }
-    if ( NowLightState && !LastLightState) {
+    if ( NowLightState && !LastLightState){
         Menu, tray, icon, %T_SwitchTrayIconOn%
-        if (T_SwitchSound && T_SwitchSoundOn) {
+        if (T_SwitchSound && T_SwitchSoundOn){
             SoundPlay %T_SwitchSoundOn%
         }
     }
-    if ( !NowLightState && LastLightState ) {
+    if ( !NowLightState && LastLightState ){
         Menu, tray, icon, %T_SwitchTrayIconOff%
-        if (T_SwitchSound && T_SwitchSoundOff) {
+        if (T_SwitchSound && T_SwitchSoundOff){
             SoundPlay %T_SwitchSoundOff%
         }
     }
     LastLightState := NowLightState
 }
-CapsLockXTurnOff()
-{
+CapsLockXTurnOff(){
     CapsLockXMode &= ~CM_CapsLockX
     re := UpdateLight()
     Return re
 }
-CapsLockXTurnOn()
-{
+CapsLockXTurnOn(){
     CapsLockXMode |= CM_CapsLockX
     re := UpdateLight()
     Return re
@@ -181,15 +178,15 @@ CapsLockX_Dn(){
         Return
     }
     ; 记录 CapsLockX 按住的时间
-    if ( CapsLockPressTimestamp == 0) {
+    if ( CapsLockPressTimestamp == 0){
         CapsLockPressTimestamp := A_TickCount
     }
     ; 进入 Fn 模式
     CapsLockXMode |= CM_FN
 
     ; (20200809)长按显示帮助（空格除外）
-    if (A_PriorKey == CapsLockX_上次触发键 && A_PriorKey != "Space") {
-        if ( A_TickCount - CapsLockPressTimestamp > 1000) {
+    if (A_PriorKey == CapsLockX_上次触发键 && A_PriorKey != "Space"){
+        if ( A_TickCount - CapsLockPressTimestamp > 1000){
             CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
         }
     }
@@ -200,8 +197,8 @@ CapsLockX_Up(){
     ; 退出 Fn 模式
     CapsLockXMode &= ~CM_FN
     if(A_PriorKey == CapsLockX_上次触发键){
-        if (CapsLockX_上次触发键 == "CapsLock") {
-            if (GetKeyState("CapsLock", "T")) {
+        if (CapsLockX_上次触发键 == "CapsLock"){
+            if (GetKeyState("CapsLock", "T")){
                 SetCapsLockState, Off
             } else {
                 SetCapsLockState, On

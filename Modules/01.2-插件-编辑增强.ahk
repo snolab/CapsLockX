@@ -33,35 +33,31 @@ ArrowTicker:
     ArrowTicker()
 Return
 
-OnSwitch()
-{
+OnSwitch(){
     ; 这里改注册表是为了禁用 Win + L 锁定机器，让 Win+hjkl 可以挪窗口位置，不过只有用管理员运行才管用。
     value := !!(ModuleState & MF_EditX) ? 0 : 1
     RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, %value%
 }
 
-SendArrowUp()
-{
-    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") {
+SendArrowUp(){
+    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"){
         ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
     } else {
         SendEvent {Blind}{up}
     }
 }
-SendArrowDown()
-{
+SendArrowDown(){
     ; sendplay {Blind}{down}
-    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") {
+    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"){
         ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
     } else {
         SendEvent {Blind}{down}
     }
 }
 
-ArrowTicker()
-{
+ArrowTicker(){
     ; 在非 CapsLockX 模式下直接停止
-    if (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)) {
+    if (!(CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN)){
         ArrowTickerStop()
         Return
     }
@@ -81,19 +77,19 @@ ArrowTicker()
     ; ToolTip, %方刻左% _ %方刻右% _ %方刻上% _ %方刻下% `n %kax% _ %kay% _ %方速横% _ %方速纵% _ %方位横% _ %方位纵%
     ; msgbox % 方位横
     ; 完成移动时
-    if ( 0 == 方速横 && 0 == 方速纵) {
+    if ( 0 == 方速横 && 0 == 方速纵){
         ArrowTickerStop()
         Return
     }
     ; ToolTip, % 方位横 " " 方位纵
     ; TODO: 输出速度时间曲线，用于DEBUG
-    if (方位横 >= 1) {
+    if (方位横 >= 1){
         Loop %方位横% {
             SendEvent {Blind}{Right}
         }
         方位横 -= 方位横 | 0
     }
-    if (方位横 <= -1) {
+    if (方位横 <= -1){
         方位横 := -方位横
         Loop %方位横% {
             SendEvent {Blind}{Left}
@@ -101,13 +97,13 @@ ArrowTicker()
         方位横 := -方位横
         方位横 -= 方位横 | 0
     }
-    if (方位纵 >= 1) {
+    if (方位纵 >= 1){
         Loop %方位纵% {
             SendArrowDown()
         }
         方位纵 -= 方位纵 | 0
     }
-    if (方位纵 <= -1) {
+    if (方位纵 <= -1){
         方位纵 := -方位纵
         Loop %方位纵% {
             SendArrowUp()
@@ -118,11 +114,11 @@ ArrowTicker()
 }
 
 ; 时间处理
-ArrowTickerStart() {
+ArrowTickerStart(){
     方动中 := 1
     SetTimer, ArrowTicker, 1
 }
-ArrowTickerStop() {
+ArrowTickerStop(){
     ; 重置相关参数
     方动中 := 0, 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0, 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
     SetTimer, ArrowTicker, Off
@@ -135,7 +131,7 @@ ArrowTickerStop() {
 ArrowLeftPressed(){
     if (方刻左)
         Return
-    if (方刻右) {
+    if (方刻右){
         ; 选中当前词
         SendEvent ^{Right}^+{Left}
         方刻右 := 0
@@ -148,7 +144,7 @@ ArrowLeftPressed(){
 ArrowRightPressed(){
     if (方刻右)
         Return
-    if (方刻左) {
+    if (方刻左){
         ; 选中当前词
         SendEvent ^{Left}^+{Right}
         方刻左 := 0
@@ -161,7 +157,7 @@ ArrowRightPressed(){
 ArrowUpPressed(){
     if (方刻上) 
         Return
-    if (方刻下) {
+    if (方刻下){
         ; KJ一起按选择当前行
         SendArrowUp()
         SendEvent {Home}+{End}
@@ -175,7 +171,7 @@ ArrowUpPressed(){
 ArrowDownPressed(){
     if (方刻下)
         Return
-    if (方刻上) {
+    if (方刻上){
         ; KJ一起按选择当前行
         SendArrowDown()
         SendEvent {End}+{Home}

@@ -20,7 +20,7 @@
 ;
 ; 以下条件语句表示这个模块只能在 CapsLockX 下工作，如果没有用到 CapsLockX 的变量则可以不写。
 
-if (!CapsLockX) {
+if (!CapsLockX){
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
@@ -54,9 +54,8 @@ CapsLockX_AppendHelp(helpStr){
     if(helpStr)
         CapsLockX_HelpInfo .= helpStr "`n`n"
 }
-CapsLockX_ShowHelp(helpStr, inGlobal = 0, waitKey = "/")
-{
-    if (!inGlobal && !CapsLockXMode) {
+CapsLockX_ShowHelp(helpStr, inGlobal = 0, waitKey = "/"){
+    if (!inGlobal && !CapsLockXMode){
         SendEvent, /
         Return
     }

@@ -8,7 +8,7 @@
 ; 注释：
 ; ========== CapsLockX ==========
 
-if (!CapsLockX) {
+if (!CapsLockX){
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
