@@ -1,5 +1,6 @@
 ﻿; ========== CapsLockX ==========
 ; 名称：编辑增强
+; 描述：HJKL操作光标
 ; 版本：v2020.06.27
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
@@ -119,7 +120,7 @@ ArrowTicker()
 ; 时间处理
 ArrowTickerStart() {
     方动中 := 1
-    SetTimer, ArrowTicker, 0
+    SetTimer, ArrowTicker, 1
 }
 ArrowTickerStop() {
     ; 重置相关参数

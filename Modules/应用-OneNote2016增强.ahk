@@ -81,6 +81,10 @@ CopySearchResultSectionAndPagesThenPaste(){
 ; 复制链接笔记页面的搜索结果
 CopySearchResultSectionAndPages(){
     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+    if(ErrorLevel){
+        TrayTip, 错误, 搜索结果窗口不正确
+        return
+    }
     ; 标题 ClassNN:	RICHEDIT60W3
     ; 地址 ClassNN:	RICHEDIT60W2
     ; 定位到第一项
@@ -422,10 +426,6 @@ $!`:: altSendEx("dp", "{Down 2}{Left}")
 $!+`:: altSend("dc")
 $!v:: SendEvent !h!i
 
-; 画笔粗细
-$!t:: altSendEx("d", "{Down}{Tab 13}{Enter}")
-$!g:: altSendEx("d", "{Down}{Tab 11}{Enter}")
-
 ; 调整缩放
 $![:: altSendEx("w", "{Down}{Tab 3}{Enter}")
 $!]:: altSendEx("w", "{Down}{Tab 4}{Enter}")
@@ -495,6 +495,25 @@ $+7:: ; 换到第 2 行的 7 支笔
         Send {Down 1}{Right 6}{Enter}
 Return
 
+#if WinActive("ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+
+; 把笔记时间显式填充到标题
+!t::
+    backup := ClipboardAll
+    Clipboard:=""
+    ; copy date then focus to title
+    SendEvent ^+t^{Down}^c{Left}^{Up}
+    ClipWait ,2
+    if(ErrorLevel){
+        Clipboard:=backup
+        return
+    }
+    inx := Trim(Clipboard, "`r`n `t")
+    result := Func("EvalNodeJS").Call("'('+new Date(+new Date(""" inx """.replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3).toISOString().slice(0,10).replace(/-/g,'')+')'")
+    SendEvent, {Text}%result%
+    Clipboard := backup
+return
+
 #If WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
 
 ~^c::
@@ -517,3 +536,4 @@ Return
     Sleep 128
     WinActivate, ahk_id %current%
 Return
+

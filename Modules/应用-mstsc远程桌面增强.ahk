@@ -1,12 +1,19 @@
-﻿if !CapsLockX
+﻿; ========== CapsLockX ==========
+; 名称：远程桌面与虚拟机功能增强
+; 描述：提供一种允许远程桌面与当前桌面窗口同时操作的解决方案。
+; 版本：v2021.04.02
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 支持：https://github.com/snomiao/CapsLockX
+; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
+; ========== CapsLockX ==========
+
+if !CapsLockX
     ExitApp
 global 上次mstsc窗口hWnd := 0
 global 上次CtrlShiftAlt时刻 := 0
 global 上次CtrlShiftAlt锁 := 0
 
-; 如果当前操作的远程桌面窗口是全屏窗口，则自动置底，这样可以跟当前电脑桌面上的窗口共同操作
-; SetTimer, toggleBottomOrTop, 1
-; SetTimer, DetectMSTSC, 1000
 Return
 
 setCurrentWindowAsBackground(){
@@ -19,7 +26,8 @@ setCurrentWindowAsBackground(){
     WinWaitNotActive, ahk_id %hWnd%
     ; SendEvent !+{Esc}
     WinGet, 其它窗口, id, A
-    ; ToolTip %其它窗口%
+    if(0)
+        ToolTip %其它窗口%
     if(!其它窗口){
         其它窗口 := WinExist(".*")
         WinActivate, ahk_id %其它窗口%
@@ -38,8 +46,7 @@ DetectMSTSC:
     DetectMSTSC()
 return
 
-DetectMSTSC()
-{
+DetectMSTSC(){
     msg := ""
     winTitle := "ahk_class TscShellContainerClass ahk_exe mstsc.exe"
     WinWaitActive, % winTitle
@@ -49,7 +56,7 @@ DetectMSTSC()
     SysGet, VirtualWidth, 78
     SysGet, VirtualHeight, 79
     msg .= "VWVH " VirtualWidth " " VirtualHeight "`n"
-
+    ; 
     MonitorIndex := 1
     SysGet, MWA%MonitorIndex%, MonitorWorkArea, %MonitorIndex%
     SX := MWA1Left
@@ -57,63 +64,29 @@ DetectMSTSC()
     SW := MWA1Right - MWA1Left
     SH := MWA1Bottom - MWA1Top
     msg .= "MWA " SX " " SY " " SW " " SH "`n"
-
-    ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
+    if(0)
+        Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
     ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
     if (VirtualWidth == W && VirtualHeight == H) {
-        ; WinMove, ahk_id %hWnd%, , SX, SY, SW, SH
-        ; WinSet Bottom, , ahk_id %hWnd%
         HWND_BOTTOM := 1
         WinRestore, ahk_id %hWnd%
-        ; DllCall("SetWindowPos"
-        ;, "UInt", hWnd ;handle
-        ;, "UInt", HWND_BOTTOM ; z-index
-        ;, "Int", X
-        ;, "Int", Y
-        ;, "Int", W
-        ;, "Int", H
-        ;, "UInt", SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
         msg .= "MOVE!`n"
     }
     ToolTip %msg%
 }
-; WinWaitActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-
-; toggleBottomOrTop:
-;     ; 不用担心 SetTimer 消耗 CPU 性能，因为它会在这一步阻塞
-;     WinWaitActive ahk_class TscShellContainerClass ahk_exe mstsc.exe
-;     WinGet 上次mstsc窗口hWnd
-;     WinGet mm, MinMax, ahk_id %上次mstsc窗口hWnd%
-;     WinGetPos, X, Y, Width, Height, A
-;     SysGet, VirtualWidth, 78
-;     SysGet, VirtualHeight, 79
-;     ; Tooltip %X% %Y% %VirtualWidth% %VirtualHeight% %Width% %Height% %A_ScreenWidth% %A_ScreenHeight%
-;     ; 如果当前操作的远程桌面窗口是全屏窗口，就把它置底
-;     if (VirtualWidth == Width && VirtualHeight == Height){
-;         WinSet Bottom, , ahk_id %上次mstsc窗口hWnd%
-;     }
-;     WinWaitNotActive ahk_id %上次mstsc窗口hWnd%
-;     Return
-
 ; 左右Alt一起按 显示当前mstsc窗口
-mstscShow()
-{
+mstscShow(){
     TrayTip, , 远程桌面显示, 1
-    ; try to 获取当前mstsc窗口
     if !上次mstsc窗口hWnd
         WinGet, 上次mstsc窗口hWnd, , ahk_class TscShellContainerClass ahk_exe mstsc.exe
     WinRestore, ahk_id %上次mstsc窗口hWnd%
     WinSet, Top, , ahk_id %上次mstsc窗口hWnd%
     WinActivate ahk_id %上次mstsc窗口hWnd%
 }
-mstscHide()
-{
+mstscHide(){
     TrayTip, , 远程桌面最小化, 1
     ; 使远程窗口最小化并失去焦点，显示其它窗口
-    ; Tooltip % A_PriorHotkey
-    ; if (A_PriorHotkey == "<!LCtrl Up" || A_PriorHotkey == "<^LAlt Up" ){
     WinGet, 上次mstsc窗口hWnd
-    ; WinMinimizeAllUndo
     ; 后置
     WinSet Bottom, , ahk_id %上次mstsc窗口hWnd%
     ; 最小化

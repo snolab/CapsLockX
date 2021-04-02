@@ -115,7 +115,7 @@ EvalNodejs(code)
     ; `清掉垃圾文件`
     ; run "notepad " %inputScriptPath%
     FileDelete %inputScriptPath%
-    Return out ? out : "" 
+    Return out ? out : ""
     }
 
     SafeEval(code)
