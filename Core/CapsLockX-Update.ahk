@@ -7,6 +7,9 @@
 ; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
+
+; 防多开
+#SingleInstance, ignore
 #Include Core/CapsLockX-RunSilent.ahk
 ; 载入设定
 global CapsLockXConfigPath := "./CapsLockX-Config.ini"
