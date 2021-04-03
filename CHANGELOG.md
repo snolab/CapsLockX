@@ -1,3 +1,20 @@
+## [1.14.5](https://github.com/snomiao/CapsLockX/compare/v1.14.4...v1.14.5) (2021-04-03)
+
+
+### Bug Fixes
+
+* CapsLockX定时任务提高时间精度 ([c969651](https://github.com/snomiao/CapsLockX/commit/c96965183fe12ac40c95a332256a18f76ba0b8c1))
+* KeyWait错误处理 ([29e5449](https://github.com/snomiao/CapsLockX/commit/29e54495a9b9d951f35052a9ec6e564ca54c53a9))
+* OneNote 2016 外链功能排序增强 ([534cc45](https://github.com/snomiao/CapsLockX/commit/534cc453e49b30d84592e2e3f7e73b655f841ab9))
+* 优化后置远程桌面窗口的逻辑 ([7832d67](https://github.com/snomiao/CapsLockX/commit/7832d67273a2c0176605ed882513adbfb50e6538))
+* 修复版本比较 ([0f31b8b](https://github.com/snomiao/CapsLockX/commit/0f31b8b58a081e77e57f8820cab77c7fbbe2019e))
+* 自动更新完善 ([04f6f69](https://github.com/snomiao/CapsLockX/commit/04f6f6982a743b1ab4a1c37b7ecac36c09e48f19))
+* 自动更新防多开 ([a14e339](https://github.com/snomiao/CapsLockX/commit/a14e3391288bd7103478a6f760bbe5dc9dbd75b8))
+* 解决配置文件编码问题 ([90af027](https://github.com/snomiao/CapsLockX/commit/90af027751f53e388f0c106c68ba0aa3cebc1c56))
+* 解决配置文件编码问题，使用UTF-16编码编写ini ([fe3bf32](https://github.com/snomiao/CapsLockX/commit/fe3bf326e75b9c915242e256ab292107ba3683c5))
+
+
+
 ## [1.14.4](https://github.com/snomiao/CapsLockX/compare/v1.14.3...v1.14.4) (2021-03-31)
 
 
