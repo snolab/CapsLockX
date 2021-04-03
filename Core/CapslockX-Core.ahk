@@ -173,7 +173,7 @@ CapsLockX_Dn(){
         CapsLockX_上次触发键 := ""
         ; ToolTip, % first5char "_" 触发键
         SendEvent {%触发键% Down}
-        KeyWait %触发键%
+        KeyWait %触发键%, T5 ; wait for 5 seconds
         SendEvent {%触发键% Up}
         Return
     }

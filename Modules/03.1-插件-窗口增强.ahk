@@ -73,16 +73,6 @@ c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
 ;     Send {AppsKey}i
 Return
 
-; WinTab 窗口切换
-; \::
-;     Send {LAlt Down}{Tab Down}{Tab Up}
-;     KeyWait, \
-;     Return
-; \ Up::
-;     Send {LAlt Down}{Tab Down}{Tab Up}
-;     KeyWait, \
-;     Return
-
 ; 切换当前窗口置顶并透明
 +v::
     WinSet, Transparent, 200, A

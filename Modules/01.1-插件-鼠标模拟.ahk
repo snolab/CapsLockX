@@ -332,12 +332,12 @@ ScrollTicker(){
 
 $*e::
     SendEvent {LButton Down}
-    KeyWait, e
+    KeyWait, e, T60 ; wait for 60 seconds
 Return
 $*e Up:: SendEvent {LButton Up}
 $*q::
     SendEvent {RButton Down}
-    KeyWait, q
+    KeyWait, q, T60 ; wait for 60 seconds
 Return
 $*q Up:: SendEvent {RButton Up}
 ; 鼠标运动处理

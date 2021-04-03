@@ -65,7 +65,7 @@ CapsLockX_ShowHelp(helpStr, inGlobal = 0, waitKey = "/"){
     Gui, Add, Text,, %helpStr%
     Gui, Show
 
-    KeyWait, %waitKey%
+    KeyWait, %waitKey%, T60 ; wait for 60 seconds
     ; Gui, Hide
     Gui, Destroy
     ; ToolTip

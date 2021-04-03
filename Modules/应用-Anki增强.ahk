@@ -15,7 +15,7 @@ AnkiEnlock(key, to){
     }
     Anki增强_Lock := 1
     Send %to%
-    KeyWait, %key%
+    KeyWait, %key%, T60 ; wait for 60 seconds
 }
 AnkiUnlock(x){
     Anki增强_Lock := 0

@@ -121,9 +121,10 @@ return
 
     上次CtrlShiftAlt锁 := 1
     ToolTip, 双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）
-    KeyWait, LCtrl
-    KeyWait, LAlt
-    KeyWait, LShift
+    KeyWait, LCtrl, T5 ; wait for 5 seconds
+    KeyWait, LAlt, T5 ; wait for 5 seconds
+    KeyWait, LShift, T5 ; wait for 5 seconds
+    SetTimer, MSTSC_ENHANCE_RemoveToolTip, -1024
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
     if(间隔 < 200){
@@ -131,7 +132,6 @@ return
     }else{
         上次CtrlShiftAlt时刻 := 现在
     }
-    SetTimer, MSTSC_ENHANCE_RemoveToolTip, -1024
     上次CtrlShiftAlt锁 := 0
 return
 

@@ -48,23 +48,17 @@ getAscStr(str){
     Return out
 }
 
-; 快速添加事项清单
-OpenToDoList_old(){
-    if !WinExist("TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
-        Run "onenote:#TODO" ; 打开默认分区的 TODO 页面
-    WinWait TODO - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
-    WinActivate ; Uses the last found window.
-    SendEvent ^{End}{Enter}
-    Return
-}
-
 ; 打开快速笔记主页
 OpenHomePage(){
     SendEvent #n
     ; if !WinExist(".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
     ; WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
     ; WinActivate ; Uses the last found window.
-    WinWaitActive .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
+    WinWaitActive .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 5 ; wait for 5 seconds
+    if(ErrorLevel){
+        TrayTip, 错误, 未找到OneNote窗口
+        return
+    }
     SendEvent !{Home}
     SendEvent ^{Home}
     ; SendEvent ^{End}{Enter}
@@ -73,7 +67,12 @@ OpenHomePage(){
 
 CopySearchResultSectionAndPagesThenPaste(){
     CopySearchResultSectionAndPages()
-    WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+    ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
+    WinWaitActive ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 5 ; wait for 5 seconds
+    if(ErrorLevel){
+        TrayTip, 错误, 未找到OneNote窗口
+        return
+    }
     SendEvent ^v
 }
 
@@ -362,8 +361,18 @@ $!k::
     ; 输入搜索内容
     ControlSetText, RICHEDIT60W1, %Clipboard%, A
     ToolTip, 放开Alt键继续
-    KeyWait, Alt, D
-    KeyWait, Alt
+    KeyWait, Alt, D T60 ; wait for 60 seconds
+    if(ErrorLevel){
+        ToolTip
+        TrayTip, 错误, 超时未按下Alt键
+        return
+    }
+    KeyWait, Alt, T60 ; wait for 60 seconds
+    if(ErrorLevel){
+        ToolTip
+        TrayTip, 错误, 超时未放开Alt键
+        return
+    }
     ToolTip
     CopySearchResultSectionAndPagesThenPaste()
 Return
@@ -372,44 +381,6 @@ Return
 $!+k::
     SendEvent {Home}[[{End}]]
 Return
-
-; ; 将当前内容追加到相关页面
-; $!+k:: 
-;     ; 复制当前内容
-;     Clipboard := ""
-;     SendEvent ^a^x{Left}{Enter}^k
-;     ClipWait, 2
-
-;     ; 可能新建一个页面
-;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-;     ; 输入搜索内容
-;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
-;     ; 等结果出来
-
-;     KeyWait, Alt       ; 放开Alt确认
-
-;     SendEvent {Enter}
-;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-
-;     ; ; （如果是新建生成的链接可能出bug不能直接点过去）
-;     ; Sleep, 1000
-;     ; ; 所以这里等新页面好了之后再来一次就能点进去了
-;     SendEvent ^a{Delete}{Left}{Enter}^k
-
-;     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-;     ; 输入搜索内容
-;     ControlSetText, RICHEDIT60W1, %Clipboard%, A
-;     ; 等结果出来
-;     KeyWait, Alt, D  ; 按Alt确认
-;     SendEvent {Enter}
-;     WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-;     SendEvent {Left}{Enter}
-;     ; 在新页面末尾追加粘贴内容
-;     SendEvent ^{Home}^{End}+{Tab}{Enter}^v
-;     KeyWait, Alt  ; 放开Alt确认
-;     SendEvent !{Left}
-;     Return
-; ; $!d:: altSend("dh")
 
 ; 大纲折叠展开
 $!1:: SendEvent !+1
@@ -522,7 +493,7 @@ return
     ; ; 通常在弹起时触发
     ; Clipboard := ""
     ClipWait, 2, 1 ; 2 secons
-    if ErrorLevel {
+    if(ErrorLevel){
         TrayTip, error, The attempt 2 copy text onto the clipboard failed.
         Return
     }
