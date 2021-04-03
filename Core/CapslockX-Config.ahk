@@ -1,13 +1,25 @@
 ﻿; save with UTF8 with DOM
+CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
+    content := setValue
+    ; 对配置自动重新排序
+    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
+    if(comment){
+        IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
+        IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
+    }
+    IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
+    return content
+}
 
 CapsLockX_Config(field, varName, defaultValue, comment := ""){
     IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
     ; 对配置自动重新排序
     IniDelete, %CapsLockXConfigPath%, %field%, %varName%
-    IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
-    if(comment)
+    if(comment){
+        IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
+    }
     IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
     return content
 }

@@ -7,13 +7,40 @@
 ; 版本：v2021.03.26
 ; ========== CapsLockX ==========
 
-global T_ScheduleTasks_UseTomatoLife := CapsLockX_Config("ScheduleTasks", "UseTomatoLife", 0, "使用番茄报时")
-global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("ScheduleTasks", "UseTomatoLifeSwitchVirtualDesktop", 1, "使用番茄报时自动切换桌面（休息桌面为1，工作桌面为2）")
-GoSub CapsLockX定时任务
-Return
+global T_ScheduleTasks := CapsLockX_Config("ScheduleTasks", "Enable", 0, "使用定时任务")
+global T_ScheduleTasks_UseTomatoLife := CapsLockX_Config("ScheduleTasks", "UseTomatoLife", 1, "使用番茄报时（需要先开启定时任务）")
+global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("ScheduleTasks", "UseTomatoLifeSwitchVirtualDesktop", 1, "使用番茄报时时，自动切换桌面（休息桌面为1，工作桌面为2）")
 
+if(T_ScheduleTasks){
+    高精度时间配置()
+}
+
+GoSub CapsLockX定时任务
+
+Return
+高精度时间配置(){
+    ; global T_ScheduleTasks := CapsLockX_Config("ScheduleTasks", "", 0, "使用定时任务")
+    ; MsgBox, 你开启了定时任务，是否现在配置高精度时间？
+    ; IfMsgBox, Cancel
+    ; return
+
+    global T_ScheduleTasks_UsingHighPerformanceTime := CapsLockX_Config("ScheduleTasks", "T_UsingHighPerformanceTime", "0", "")
+    if(T_ScheduleTasks_UsingHighPerformanceTime)
+        return
+    ToolTip, 正在配置系统高精度时间
+    RunWait reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v "FrequencyCorrectRate" /t REG_DWORD /d 2 /f
+    RunWait reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v "UpdateInterval" /t REG_DWORD /d 100 /f
+    RunWait reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v "MaxPollInterval" /t REG_DWORD /d 6 /f
+    RunWait reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v "MinPollInterval" /t REG_DWORD /d 6 /f
+    RunWait reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v "MaxAllowedPhaseOffset" /t REG_DWORD /d 0 /f
+    RunWait reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v "SpecialPollInterval" /t REG_DWORD /d 64 /f
+    RunWait net stop w32time
+    RunWait net start w32time
+    CapsLockX_ConfigSet("ScheduleTasks", "T_UsingHighPerformanceTime", "1", "")
+    ToolTip
+}
 番茄状态计算(){
-    Return ((Mod((UnixTimeGet() / 60), 30) < 25) ? "工作时间" : "休息时间")
+    Return ((Mod((UnixTimeGet() / 60e3), 30) < 25) ? "工作时间" : "休息时间")
 }
 番茄报时(force:=0){
     番茄状态 := 番茄状态计算()
@@ -39,13 +66,13 @@ UnixTimeGet(){
     ; ref: https://www.autohotkey.com/boards/viewtopic.php?t=17333
     Time := A_NowUTC
     EnvSub, Time, 19700101000000, Seconds
-    Return Time
+    Return Time * 1000 + A_MSec
 }
 
 CapsLockX定时任务:
     if(T_ScheduleTasks_UseTomatoLife)
         番茄报时()
-    间隔 := 60 ; 精度到1分钟
-    延时 := 1000 * (间隔 - Mod(UnixTimeGet(), 间隔))
+    间隔 := 60e3 ; 间隔为1分钟，精度到毫秒级
+    延时 := (间隔 - Mod(UnixTimeGet(), 间隔))
     SetTimer CapsLockX定时任务, %延时%
 Return

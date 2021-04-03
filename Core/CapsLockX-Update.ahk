@@ -33,7 +33,7 @@ CapsLockX_更新提示(msg){
 CapsLockX更新通过gitpull(tryAgainFlag:=0){
     gitUpdateResult := CapsLockX_RunSilent("cmd /c git fetch && git pull")
     if(Trim(gitUpdateResult, "`t`r`n ") == "Already up to date."){
-        CapsLockX_更新提示("CapsLockX 已是最新")
+        ; CapsLockX_更新提示("CapsLockX 已是最新")
         return CLXU_AlreadyLatest
     }
     if(gitUpdateResult){
@@ -97,22 +97,22 @@ CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀){
 }
 
 CapsLockX_检查更新(){
-    CapsLockX_更新提示("正在检查更新： gitpull")
+    ; CapsLockX_更新提示("正在检查更新： gitpull")
     if(CLXU_AlreadyLatest & CapsLockX更新通过gitpull())
         return CLXU_AlreadyLatest
     版本文件地址:="https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt,"
     归档文件前缀:="https://github.com/snomiao/CapsLockX/archive"
-    CapsLockX_更新提示("正在检查更新： github")
+    ; CapsLockX_更新提示("正在检查更新： github")
     if(CLXU_Updated & CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀))
         return
     版本文件地址:="https://gitee.com/snomiao/CapslockX/raw/master/Tools/version.txt"
     归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
-    CapsLockX_更新提示("正在检查更新： gitee")
+    ; CapsLockX_更新提示("正在检查更新： gitee")
     if(CLXU_Updated & CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀))
         return
     版本文件地址:="https://cdn.jsdelivr.net/gh/snomiao/CapsLockX@master/Tools/version.txt"
     归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
-    CapsLockX_更新提示("正在检查更新： cdn")
+    ; CapsLockX_更新提示("正在检查更新： cdn")
     if(CLXU_Updated & CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀))
         return
 }
