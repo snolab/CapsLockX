@@ -45,7 +45,7 @@ UserModuleEdit(路径){
         FileAppend, %快速窗口热键编辑初始内容%, %路径%
     填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
     FileAppend, %填充内容%, %路径%
-    Run notepad %路径%
+    Run cmd /c code %路径% || notepad %路径%,, Hide
 }
 
 m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")

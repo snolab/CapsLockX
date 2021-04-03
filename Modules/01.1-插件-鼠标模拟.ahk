@@ -150,9 +150,6 @@ MouseTickerStop(){
     鼠动中 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
     SetTimer, MouseTicker, Off
 }
-MouseTicker:
-    MouseTicker()
-Return
 MouseTicker(){
     ; 在非 CapsLockX 模式下直接停止
     If (!(CapsLockXMode || 鼠强动)){
@@ -265,9 +262,6 @@ ScrollTickerStop(){
     轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
     SetTimer, ScrollTicker, Off
 }
-ScrollTicker:
-    ScrollTicker()
-Return
 ScrollTicker(){
     ; RF同时按下相当于中键
     If(GetKeyState("MButton", "P")){
@@ -342,19 +336,19 @@ Return
 $*q Up:: SendEvent {RButton Up}
 ; 鼠标运动处理
 $*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), MouseTickerStart()
-$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), MouseTickerStart()
-$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : TM_QPC()), MouseTickerStart()
-$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : TM_QPC()), MouseTickerStart()
 $*a Up:: 鼠刻左 := 0, MouseTickerStart()
+$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), MouseTickerStart()
 $*d Up:: 鼠刻右 := 0, MouseTickerStart()
+$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : TM_QPC()), MouseTickerStart()
 $*w Up:: 鼠刻上 := 0, MouseTickerStart()
+$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : TM_QPC()), MouseTickerStart()
 $*s Up:: 鼠刻下 := 0, MouseTickerStart()
 
 ; 鼠标滚轮处理
-$*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), ScrollTickerStart()
-$*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), ScrollTickerStart()
-$*r Up:: 轮刻上 := 0, ScrollTickerStart()
-$*f Up:: 轮刻下 := 0, ScrollTickerStart()
+*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), ScrollTickerStart()
+*r Up:: 轮刻上 := 0, ScrollTickerStart()
+*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), ScrollTickerStart()
+*f Up:: 轮刻下 := 0, ScrollTickerStart()
 
 ; Alt 单格滚动
 $!r:: Send {WheelUp}
@@ -368,6 +362,6 @@ $^f:: Send ^{WheelDown}
 
 ; Shift 横向滚动
 $+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), ScrollTickerStart()
-$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), ScrollTickerStart()
 $+r Up:: 轮刻左 := 0, ScrollTickerStart()
+$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), ScrollTickerStart()
 $+f Up:: 轮刻右 := 0, ScrollTickerStart()

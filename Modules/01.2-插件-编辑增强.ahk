@@ -29,10 +29,6 @@ CapsLockX_AppendHelp("
 
 Return
 
-ArrowTicker:
-    ArrowTicker()
-Return
-
 OnSwitch(){
     ; 这里改注册表是为了禁用 Win + L 锁定机器，让 Win+hjkl 可以挪窗口位置，不过只有用管理员运行才管用。
     value := !!(ModuleState & MF_EditX) ? 0 : 1

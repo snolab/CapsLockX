@@ -240,13 +240,6 @@ CapsLockX_Up(){
 CapsLockX_NotAvaliable:
     ToolTip, CapsLockX_NotAvaliable
 Return
-CapsLockX_Dn:
-    CapsLockX_Dn()
-Return
-
-CapsLockX_Up:
-    CapsLockX_Up()
-Return
 
 ; 软重启键
 ^!\:: CapsLockX_Reload()

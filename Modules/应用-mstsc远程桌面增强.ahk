@@ -80,6 +80,6 @@ return
     上次CtrlShiftAlt锁 := 0
 return
 
-MSTSC_ENHANCE_RemoveToolTip:
+MSTSC_ENHANCE_RemoveToolTip(){
     ToolTip
-return
+}
