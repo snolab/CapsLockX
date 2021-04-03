@@ -218,18 +218,13 @@ MoveAllVisibleWindowToDesktop(idx){
     }
 }
 SwitchToDesktop(idx){
-    re := SwitchToDesktopByInternalAPI(idx)
-    ; ToolTip % re
-    if (!re){
+    if (!SwitchToDesktopByInternalAPI(idx)){
         TrayTip , WARN, SwitchToDesktopByHotkey
         SwitchToDesktopByHotkey(idx)
     }
 }
 SwitchToDesktopByHotkey(idx){
-    ; ToolTip % "^#{Left 10}^#{Right " idx - 1 "}"
-    ; SendInput % "^#{Left 10}{Sleep 20}^#{Right "(0 == idx ? "^#d" : idx - 1) "}"
     SendInput ^#{Left 10}
-    ; SendInput % "^#{Right " idx - 1 "}"
     idx -= 1
     Loop %idx% {
         SendInput ^#{Right}
@@ -297,128 +292,3 @@ vtable(ptr, n){
     ; the address of the nth function's address from the vtable.
     Return NumGet(NumGet(ptr+0), n*A_PtrSize)
 }
-
-; MonitorWindowList(){
-;     arrangeFlags += 0 ; string to number
-;     ; 常量定义
-;     WS_EX_TOOLWINDOW := 0x00000080
-;     WS_EX_APPWINDOW := 0x00040000
-;     WS_CAPTION := 0x00C00000
-;     WS_EX_NOANIMATION := 0x04000000
-;     WS_EX_NOACTIVATE := 0x08000000
-;     WS_POPUP := 0x80000000
-;     SysGet, MonitorCount, MonitorCount
-;     loop %MonitorCount% {
-;         MonitorIndex := A_Index
-;         listOfWindow%MonitorIndex% := ""
-;     }
-;     DetectHiddenWindows, Off
-;     hWndArray := []
-;     WinGet, id, List, , , 
-;     loop %id% {
-;         hWnd := id%A_Index%
-;         hWndArray.Push(hWnd)
-;         ; MsgBox, , asdf, % hWnd
-;         ; break
-;     }
-;     MsgBox, , zxcv, % (hWndArray.Count())
-;         WinGet, this_pid, PID, ahk_id %hWnd%
-;         WinGet, style, style, ahk_id %hWnd%
-;         WinGetTitle, this_title, ahk_id %hWnd%
-;         WinGetClass, this_class, ahk_id %hWnd%
-;         ; Process, , PID-or-Name [, Param3]
-;         if (1){
-;             ; 黑名单
-;             ; ; 跳过无标题窗口
-;             ; if !(style & WS_CAPTION)
-;             ;     Continue
-;             ; ; 跳过工具窗口
-;             ; if (style & WS_EX_TOOLWINDOW)
-;             ;     Continue
-;             ; 只显示Alt+TAB里有的窗口
-;             if (!(style & WS_EX_APPWINDOW)){
-;                 Continue ; ; 跳过弹出窗口
-;             }
-;             ; if (style & WS_POPUP)
-;             ;     Continue
-;             ; 排除空标题窗口
-;             if (!RegExMatch(this_title, ".+")){
-;                 Continue ; If (this_class == "Progman") ; Continue ; 排除 Win10 的常驻窗口管理器
-;             }
-;             ; 排除不归属于当前参数显示器的窗口
-;             ; if (!!MonitorIndex){
-;             ; this_monitor := GetMonitorIndexFromWindow(hWnd)
-;             ;     if (MonitorIndex != this_monitor){
-;             ;         continue
-;             ;     }
-;             ; }
-;             ; 跳过不在当前虚拟桌面的窗口
-;             if (!IsWindowOnCurrentVirtualDesktop(hWnd)){
-;                 continue
-;             }
-;             ; 跳过最大化窗口
-;             WinGet, minmax, minmax, ahk_id %hWnd%
-;             if (!(arrangeFlags & ARRANGE_MAXWINDOW) && minmax == 1){
-;                 continue
-;             }
-;             ; 跳过最小化的窗口
-;             if (!(arrangeFlags & ARRANGE_MINWINDOW) && minmax == -1){
-;                 continue
-;             }
-;             ; 尝试跳过隐藏窗口
-;             GWL_STYLE := -16
-;             GWL_EXSTYLE := -20
-;             WS_STYLE := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hWnd, "Int", GWL_STYLE, "PTR")
-;             WS_VISIBLE := 0x10000000
-;             if (!(style & WS_VISIBLE)){
-;                 continue
-;             }
-;             ; 尝试跳过隐藏窗口
-;             if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ){
-;                 continue
-;             }
-
-;             ; BOOL IsWindowVisible(HWND hWnd);
-;             if (0){
-;                 ; debug
-;                 ; WinHide, ahk_id %hWnd%
-;                 WinGet, style_before, style, ahk_id %hWnd%
-;                 ; WinShow, ahk_id %hWnd%
-;                 ; WinActivate, ahk_id %hWnd%
-;                 WinGet, style, style, ahk_id %hWnd%
-;                 WinGet, style, style, ahk_id %hWnd%
-;                 visible := !!(style & WS_VISIBLE)
-;                 ; if (!visible){
-;                 ;     WinShow, ahk_id %hWnd%c
-;                 ; }
-;                 WinGet, this_pid, PID, ahk_id %hWnd%
-;                 WinGet, minmax, minmax, ahk_id %hWnd%
-;                 WinGetClass, this_class, ahk_id %hWnd%
-;                 WinGetTitle, this_title, ahk_id %hWnd%
-;                 WinGetPos, X, Y, Width, Height, ahk_id %hWnd%
-;                 ; DllCall("IsWindowVisible", "Ptr", hWnd, "PTR")
-;                 msg := ""
-;                 msg = %msg% arrangeFlags%arrangeFlags%`n
-;                 msg = %msg% %A_Index% of %id%`n
-;                 msg = %msg% ahk_id %hWnd%`n
-;                 msg = %msg% ahk_class %this_class%`n
-;                 msg = %msg% ahk_pid %this_pid%`n
-;                 msg = %msg% %X% %Y% %Width% %Height%`n
-;                 msg = %msg% title %this_title%`n
-;                 msg = %msg% minmax %minmax%`n
-;                 msg = %msg% style %style%`n
-;                 msg = %msg% style_before %style_before%`n
-;                 msg = %msg% visible %visible%`n
-;                 msg = %msg% `nContinue?
-;                 MsgBox, 4, , %msg%
-;                 IfMsgBox, NO, break
-;                 ; WinShow, ahk_id %hWnd%
-;                 ; WinActivate, ahk_id %hWnd%
-;             }
-
-;         }
-;         this_monitor := GetMonitorIndexFromWindow(hWnd)
-;         listOfWindow%this_monitor% .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
-;         ; listOfWindow%this_monitor% .= "ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
-;         ; TrayTip, listOfWindow%this_monitor%, % listOfWindow%this_monitor%
-; }

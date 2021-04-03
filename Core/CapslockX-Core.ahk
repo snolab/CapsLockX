@@ -64,33 +64,48 @@ global CapsLockX_Paused := 0
 
 #If CapsLockX_Avaliable()
 
+#If !CapsLockX_Avaliable()
+
 #If
 
 Hotkey, If, CapsLockX_Avaliable()
 
 if(T_XKeyAs && T_XKeyAsCapsLock) 
-    Hotkey $*CapsLock, CapsLockX_Dn
+    Hotkey CapsLock, CapsLockX_Dn
 if(T_XKeyAs && T_XKeyAsSpace) 
-    Hotkey $Space, CapsLockX_Dn
+    Hotkey Space, CapsLockX_Dn
 if(T_XKeyAs && T_XKeyAsInsert)
-    Hotkey $Insert, CapsLockX_Dn
+    Hotkey Insert, CapsLockX_Dn
 if(T_XKeyAs && T_XKeyAsScrollLock)
-    Hotkey $ScrollLock, CapsLockX_Dn
+    Hotkey ScrollLock, CapsLockX_Dn
 if(T_XKeyAs && T_XKeyAsRAlt)
-    Hotkey $RAlt, CapsLockX_Dn
+    Hotkey RAlt, CapsLockX_Dn
+
+Hotkey, If, !CapsLockX_Avaliable()
+
+if(T_XKeyAs && T_XKeyAsCapsLock) 
+    Hotkey CapsLock, CapsLockX_NotAvaliable
+if(T_XKeyAs && T_XKeyAsSpace) 
+    Hotkey Space, CapsLockX_NotAvaliable
+if(T_XKeyAs && T_XKeyAsInsert)
+    Hotkey Insert, CapsLockX_NotAvaliable
+if(T_XKeyAs && T_XKeyAsScrollLock)
+    Hotkey ScrollLock, CapsLockX_NotAvaliable
+if(T_XKeyAs && T_XKeyAsRAlt)
+    Hotkey RAlt, CapsLockX_NotAvaliable
 
 Hotkey, If
 
 if (T_XKeyAs && T_XKeyAsCapsLock)
-    Hotkey ~$*CapsLock Up, CapsLockX_Up
+    Hotkey CapsLock Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsSpace) 
-    Hotkey ~$Space Up, CapsLockX_Up
+    Hotkey Space Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsInsert)
-    Hotkey ~$Insert Up, CapsLockX_Up
+    Hotkey Insert Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsScrollLock)
-    Hotkey ~$ScrollLock Up, CapsLockX_Up
+    Hotkey ScrollLock Up, CapsLockX_Up
 if (T_XKeyAs && T_XKeyAsRAlt)
-    Hotkey ~$RAlt Up, CapsLockX_Up
+    Hotkey RAlt Up, CapsLockX_Up
 
 #Include Core\CapsLockX-ModulesRunner.ahk
 CapsLockX_Loaded()
@@ -98,6 +113,7 @@ CapsLockX_Loaded()
 #Include Core\CapsLockX-RunSilent.ahk
 
 #If
+
 UpdateLight(){
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
     if (NowLightState == LastLightState){
@@ -125,7 +141,7 @@ UpdateLight(){
 }
 CapsLockXTurnOff(){
     CapsLockXMode &= ~CM_CapsLockX
-    re := UpdateLight()
+    re := UpdateLight()3
     Return re
 }
 CapsLockXTurnOn(){
@@ -134,15 +150,20 @@ CapsLockXTurnOn(){
     Return re
 }
 CapsLockX_Avaliable(){
+    return 1
     flag_IgnoreWindow := 0
     Loop, Parse, T_IgnoresByLines, `n, `r
     {
-        content := RegExReplace(A_LoopField, "^#.*", "")
+        content := Trim(RegExReplace(A_LoopField, "^#.*", ""))
         if(content){
-            flag_IgnoreWindow := flag_IgnoreWindow || WinActive(content)
+            ; flag_IgnoreWindow := flag_IgnoreWindow || WinActive(content)
+            If(WinActive(content)){
+                ToolTip, ignored by %content%
+                return false
+            }
         }
     }
-    return !flag_IgnoreWindow && !CapsLockX_Paused
+    return !CapsLockX_Paused
 }
 CapsLockX_Loaded(){
     ; 使用退出键退出其它实例
@@ -216,6 +237,9 @@ CapsLockX_Up(){
 #if
 
 ; CapsLockX 模式切换处理
+CapsLockX_NotAvaliable:
+    ToolTip, CapsLockX_NotAvaliable
+Return
 CapsLockX_Dn:
     CapsLockX_Dn()
 Return
