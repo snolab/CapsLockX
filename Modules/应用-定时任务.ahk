@@ -40,7 +40,7 @@ Return
     ToolTip
 }
 番茄状态计算(){
-    Return ((Mod((UnixTimeGet() / 60e3), 30) < 25) ? "工作时间" : "休息时间")
+    Return ((Mod((UnixTimeGet() / 60000), 30) < 25) ? "工作时间" : "休息时间")
 }
 番茄报时(force:=0){
     番茄状态 := 番茄状态计算()
@@ -64,15 +64,16 @@ Return
 
 UnixTimeGet(){
     ; ref: https://www.autohotkey.com/boards/viewtopic.php?t=17333
-    Time := A_NowUTC
-    EnvSub, Time, 19700101000000, Seconds
-    Return Time * 1000 + A_MSec
+    t := A_NowUTC
+    EnvSub, t, 19700101000000, Seconds
+    Return t*1000+A_MSec
 }
 
 CapsLockX定时任务:
     if(T_ScheduleTasks_UseTomatoLife)
         番茄报时()
-    间隔 := 60e3 ; 间隔为1分钟，精度到毫秒级
+    间隔 := 60000 ; 间隔为1分钟，精度到毫秒级
     延时 := (间隔 - Mod(UnixTimeGet(), 间隔))
+    ; ToolTip, % 延时
     SetTimer CapsLockX定时任务, %延时%
 Return
