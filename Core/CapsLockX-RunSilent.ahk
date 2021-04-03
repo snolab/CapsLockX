@@ -1,4 +1,4 @@
-; ----------------------------------------------------------------------------------------------------------------------
+﻿; ----------------------------------------------------------------------------------------------------------------------
 ; Function .....: StdoutToVar_CreateProcess
 ; Description ..: Runs a command line program and Returns its output.
 ; Parameters ...: sCmd      - Commandline to execute.

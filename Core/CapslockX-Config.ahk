@@ -1,4 +1,5 @@
-﻿; save with UTF8 with DOM
+﻿; 保存为 save with UTF8 with DOM
+; 
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     content := setValue
     ; 对配置自动重新排序

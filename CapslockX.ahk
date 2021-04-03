@@ -26,16 +26,21 @@ if(!CapsLockX_Version)
 global CapsLockX_VersionName := "v" CapsLockX_Version
 global loadingTips := ""
 
-LoadingTips(msg, clear = 0){
+清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-Config.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-Core.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-RunSilent.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-Update.ahk")
+
+加载提示追加(msg, clear = 0){
     if (clear || loadingTips == ""){
         loadingTips := "CapsLockX " CapsLockX_Version "`n"
     }
     loadingTips .= msg "`n"
 }
-ShowLoadingTips(){
+加载提示显示(){
     ToolTip % loadingTips
 }
-TryLoadModuleHelp(ModuleFileName, ModuleName){
+模块帮助加载尝试(ModuleFileName, ModuleName){
     if (FileExist(CapsLockX_PathModules "\" ModuleName ".md")){
         FileRead, ModuleHelp, %CapsLockX_PathModules%\%ModuleName%.md
         Return ModuleHelp
@@ -46,7 +51,12 @@ TryLoadModuleHelp(ModuleFileName, ModuleName){
     }
     Return ""
 }
-UpdateModulesHelp(sourceREADME, docs=""){
+清洗为_UTF8_WITH_BOM_型编码(path){
+    FileRead ModuleCode, %path%
+    FileDelete %path%
+    FileAppend %ModuleCode%, %path%, UTF-8
+}
+模块帮助README更新(sourceREADME, docs=""){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles := ""
@@ -71,12 +81,12 @@ UpdateModulesHelp(sourceREADME, docs=""){
         ModuleFileName := Match[1] Match[2]
         ModuleName := Match[2]
 
-        ModuleHelp := TryLoadModuleHelp(ModuleFileName, ModuleName)
+        ModuleHelp := 模块帮助加载尝试(ModuleFileName, ModuleName)
         if (!ModuleHelp){
             Continue
         }
         ModuleHelp := Trim(ModuleHelp, " `t`n")
-        LoadingTips("加载模块帮助：" + i + "-" + ModuleName)
+        加载提示追加("加载模块帮助：" + i + "-" + ModuleName)
 
         help .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n`n"
         ; 替换标题层级
@@ -109,7 +119,7 @@ UpdateModulesHelp(sourceREADME, docs=""){
         }
         help .= ModuleHelp "`n`n"
     }
-    ShowLoadingTips()
+    加载提示显示()
     help := Trim(help, " `t`n")
 
     ; 生成替换代码
@@ -153,13 +163,10 @@ LoadModules(ModulesRunner, ModulesLoader){
         ModuleName := Match[1]
 
         if (T%ModuleName%_Disabled){
-            LoadingTips("禁用模块：" i " " ModuleName)
+            加载提示追加("禁用模块：" i " " ModuleName)
         } else {
             ; 这里引入模块代码
-            ; 清洗为 UTF-8 WITH BOM 型编码
-            FileRead ModuleCode, %CapsLockX_PathModules%\%ModuleFile%
-            FileDelete %CapsLockX_PathModules%\%ModuleFile%
-            FileAppend %ModuleCode%, %CapsLockX_PathModules%\%ModuleFile%
+            清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathModules "\" ModuleFile)
 
             ; 导入模块
             code_setup .= "GoSub CapsLockX_ModuleSetup_" i "`n"
@@ -167,10 +174,10 @@ LoadModules(ModulesRunner, ModulesLoader){
             code_include .= "CapsLockX_ModuleSetup_" i ":" "`n"
             code_include .= " " " " " " " " "#Include " CapsLockX_PathModules "\" ModuleFile "`n"
             code_include .= "Return" "`n"
-            LoadingTips("运行模块：" i " " ModuleName)
+            加载提示追加("运行模块：" i " " ModuleName)
         }
     }
-    ShowLoadingTips()
+    加载提示显示()
 
     ; 拼接代码
     code_consts .= "; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)" "`n"
@@ -198,17 +205,17 @@ INPUT_README_FILE := "./docs/README.md"
 FileRead, source, %INPUT_README_FILE%
 
 ; 加载模块帮助
-target := UpdateModulesHelp(source)
+target := 模块帮助README更新(source)
 if (target != source){
-    LoadingTips("模块帮助有变更")
+    加载提示追加("模块帮助有变更")
 
     ; 稳定性检查
-    source := UpdateModulesHelp(target)
+    source := 模块帮助README更新(target)
     if (target != source){
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
     }
     ; 输出到 docs/readme.md （用于 github-pages ）
-    ; docs_target := UpdateModulesHelp(source, 1)
+    ; docs_target := 模块帮助README更新(source, 1)
     FileDelete ./docs/README.md
     FileAppend %target%, ./docs/README.md
 
