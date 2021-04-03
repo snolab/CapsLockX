@@ -1,6 +1,16 @@
 ﻿; 保存为 save with UTF8 with DOM
 ; 
+清洗为_UTF16_WITH_BOM_型编码(path){
+    FileRead ModuleCode, %path%
+    FileDelete %path%
+    FileAppend %ModuleCode%, %path%, UTF-16
+}
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
+    if(!CapsLockXConfigPath){
+        MsgBox, 配置文件目录设定异常
+        return 
+    }
+    清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
     content := setValue
     ; 对配置自动重新排序
     IniDelete, %CapsLockXConfigPath%, %field%, %varName%
@@ -13,6 +23,11 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
 }
 
 CapsLockX_Config(field, varName, defaultValue, comment := ""){
+    if(!CapsLockXConfigPath){
+        MsgBox, 配置文件目录设定异常
+        return 
+    }
+    清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
     IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
     ; 对配置自动重新排序
