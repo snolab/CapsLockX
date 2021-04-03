@@ -7,7 +7,7 @@
 ; 版本：v2021.03.26
 ; ========== CapsLockX ==========
 
-global T_ScheduleTasks := CapsLockX_Config("ScheduleTasks", "Enable", 0, "使用定时任务")
+global T_ScheduleTasks := CapsLockX_Config("ScheduleTasks", "EnableScheduleTasks", 0, "使用定时任务")
 global T_ScheduleTasks_UseTomatoLife := CapsLockX_Config("ScheduleTasks", "UseTomatoLife", 1, "使用番茄报时（需要先开启定时任务）")
 global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("ScheduleTasks", "UseTomatoLifeSwitchVirtualDesktop", 1, "使用番茄报时时，自动切换桌面（休息桌面为1，工作桌面为2）")
 
