@@ -1,9 +1,14 @@
 ﻿; 保存为 save with UTF8 with DOM
 ; 
 清洗为_UTF16_WITH_BOM_型编码(path){
+    static 锁 := 0
+    if(锁)
+        Return
+    锁 := 1
     FileRead ModuleCode, %path%
     FileDelete %path%
     FileAppend %ModuleCode%, %path%, UTF-16
+    锁:=0
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     if(!CapsLockXConfigPath){

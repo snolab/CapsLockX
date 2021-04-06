@@ -162,8 +162,8 @@ MouseTicker(){
         tdw := dt(鼠刻上, tNow), tds := dt(鼠刻下, tNow)
         ; 计算这段时长的加速度
         ; tooltip % TMouse_MouseSpeedRatio
-        max := ma(tdd - tda) * TMouse_MouseSpeedRatio * TMouse_DPIRatio
-        may := ma(tds - tdw) * TMouse_MouseSpeedRatio * TMouse_DPIRatio
+        max := ma(tdd - tda) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
+        may := ma(tds - tdw) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
     }
 
     ; ; 摩擦力不阻碍用户意志
