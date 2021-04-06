@@ -13,11 +13,11 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
     content := setValue
     ; 对配置自动重新排序
-    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
     if(comment){
         IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
     }
+    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
     IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
     return content
 }
@@ -31,11 +31,11 @@ CapsLockX_Config(field, varName, defaultValue, comment := ""){
     IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
     ; 对配置自动重新排序
-    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
     if(comment){
         IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
     }
+    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
     IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
     return content
 }
