@@ -325,15 +325,15 @@ ScrollTicker(){
 ; 鼠标按键处理
 
 $*e::
-    SendEvent {LButton Down}
+    SendEvent {Blind}{LButton Down}
     KeyWait, e, T60 ; wait for 60 seconds
 Return
-$*e Up:: SendEvent {LButton Up}
+$*e Up:: SendEvent {Blind}{LButton Up}
 $*q::
-    SendEvent {RButton Down}
+    SendEvent {Blind}{RButton Down}
     KeyWait, q, T60 ; wait for 60 seconds
 Return
-$*q Up:: SendEvent {RButton Up}
+$*q Up:: SendEvent {Blind}{RButton Up}
 ; 鼠标运动处理
 $*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), MouseTickerStart()
 $*a Up:: 鼠刻左 := 0, MouseTickerStart()
