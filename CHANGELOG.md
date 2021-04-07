@@ -1,3 +1,15 @@
+## [1.14.7](https://github.com/snomiao/CapsLockX/compare/v1.14.5...v1.14.7) (2021-04-07)
+
+
+### Bug Fixes
+
+* 优化滚动、清除标签 ([e83ec2a](https://github.com/snomiao/CapsLockX/commit/e83ec2a0a7e54ffc6cd4108996c0245cc61ff109))
+* 修复定时任务时间间隔 ([a09030a](https://github.com/snomiao/CapsLockX/commit/a09030ac62a57d0f15ea08f05eb7ccf83d94596e))
+* 修复鼠标按键加ctrl ([4a145b1](https://github.com/snomiao/CapsLockX/commit/4a145b14418889b60fd8cc959b48b574b59861eb))
+* 调整鼠标模拟速度默认配置 ([26b8cf4](https://github.com/snomiao/CapsLockX/commit/26b8cf42957e8864755801de0676a7c6e92ed643))
+
+
+
 ## [1.14.5](https://github.com/snomiao/CapsLockX/compare/v1.14.4...v1.14.5) (2021-04-03)
 
 
