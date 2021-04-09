@@ -43,6 +43,15 @@ Return
     Return ((Mod((UnixTimeGet() / 60000), 30) < 25) ? "工作时间" : "休息时间")
 }
 番茄报时(force:=0){
+    ; CapsLockX 暂停时，番茄状态也暂停
+    if(!CapsLockX_Paused)
+        Return
+
+    ; 检测睡眠标记文件以跳过报时
+    FileRead SLEEPING_FLAG, %TEMP%/SLEEPING_FLAG
+    if(SLEEPING_FLAG)
+        Return
+
     番茄状态 := 番茄状态计算()
     ; 边沿触发过滤器
     static 上次番茄状态 := 番茄状态计算()

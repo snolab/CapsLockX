@@ -246,9 +246,3 @@ Return
 
 ; 退出键、结束键
 ~^!+\:: ExitApp
-
-^!End::
-    CapsLockX_Paused := !CapsLockX_Paused
-    if(CapsLockX_Paused)
-        TrayTip, 暂停, CapsLockX 已暂停
-Return
