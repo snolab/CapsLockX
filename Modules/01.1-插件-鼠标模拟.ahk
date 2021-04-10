@@ -280,6 +280,7 @@ ScrollMsg(msg, zDelta){
     ; RF同时按下相当于中键
     If(轮刻上 && 轮刻下 && Abs(tdr - tdf) < 1){
         SendInput {MButton Down}
+        轮动终()
         KeyWait, r
         KeyWait, f
         SendInput {MButton Up}
