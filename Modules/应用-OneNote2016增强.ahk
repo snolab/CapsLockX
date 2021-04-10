@@ -276,16 +276,22 @@ $F2:: SendEvent ^+t
 $+F2:: SendEvent ^+g{AppsKey}r
 
 ; 复制页面链接
-$!F2:: Send ^+a{AppsKey}l
+$!F2:: SendEvent ^+a{AppsKey}l
+
+; 精确查找笔记
+$F3::
+    SendEvent ^e{Text}""
+    SendEvent {Left}
+Return
 
 ; 移动笔记（尝试自动填入剪贴板）
 $!m::
-    SendEvent ^c
+    ; SendEvent ^c
     SendEvent ^!m
-    WinWaitActive, ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 1
-    if(ErrorLevel)
-        return
-    SendEvent ^v
+    ; WinWaitActive, ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 1
+    ; if(ErrorLevel)
+    ;     return
+    ; SendEvent ^v
 return
 
 ; 移动分区
@@ -303,6 +309,8 @@ $^s:: SendEvent +{F9}
 
 ; 切换为无色背景
 $!n:: altSend("wpcn")
+
+; 切换为无格子背景
 $+!n:: altSend("wre")
 
 ; 快速删除当前行
@@ -323,23 +331,24 @@ $^+l:: SendEvent !+{Down}!+{Up}
 ; 选中当前词（目前来说会带上词右边的空格）
 $^d:: SendEvent {Right}^{Left}^+{Right}
 
-; 输入
-$!s:: altSend("dt")
 ; 拖动
 $!q:: altSend("dh") ;换成手形Tools
 ; 套锁
-$!w:: altSend("dn")
+$!w:: altSend("dl")
 ; 橡皮
 $!e:: altSend("dek")
-
+; 输入
+$!s:: altSend("dt")
+; 增加空白
+$!a:: altSend("dn")
 ; 视图 - 缩放到1
-$!r:: altSend("w1")
+$!+r:: altSend("w1")
 ; 视图 - 缩放到页面宽度
-$!y:: altSend("wi")
+$!r:: altSend("wi")
 
 ; 换笔
 $!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
-$!a:: altSendEx("dp", "{Right 1}{Enter}") ; 笔悬停时是下一支笔，没有笔时是选红色笔
+; $!a:: altSendEx("dp", "{Right 1}{Enter}") ; 笔悬停时是下一支笔，没有笔时是选红色笔
 
 ; 换笔（只在非全屏时管用）
 
