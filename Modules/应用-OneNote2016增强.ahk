@@ -162,8 +162,8 @@ $#!n:: OneNote2016_OpenHomePage()
 $#+n:: OneNote2016_OpenSearch()
 OneNote2016_OpenSearch(){
     winTitle := "ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
-    needActive := 0
-    hWnd := WinActive(winTitle)
+    needActive := 1
+    hWnd := WinExist(winTitle)
     if(!hWnd){
         SendEvent #n
         WinWaitActive %winTitle%, , 1 ; wait for 1 seconds
@@ -249,8 +249,17 @@ OneNote2016_OpenSearch(){
 !+s:: CopySearchResultSectionAndPagesThenPaste()
 !s:: CopySearchResultSectionAndPages()
 
-#If ((CapsLockXMode != CM_CapsLockX && CapsLockXMode != CM_FN) && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
-    ; 自动2维化公式
+#If !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+
+; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
+$~Enter::
+    waitWindow := "ahk_class NUIDialog ahk_exe ONENOTE.EXE"
+    WinWaitActive %waitWindow%,, 1
+    if (!ErrorLevel)
+        SendEvent !y
+Return
+
+; 自动2维化公式
 $!-::
     SendEvent !=
     Sleep, 200
