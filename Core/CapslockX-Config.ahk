@@ -8,7 +8,7 @@
     FileRead ModuleCode, %path%
     FileDelete %path%
     FileAppend %ModuleCode%, %path%, UTF-16
-    锁:=0
+    锁 := 0
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     if(!CapsLockXConfigPath){
