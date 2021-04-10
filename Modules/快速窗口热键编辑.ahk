@@ -31,10 +31,17 @@ Return
 ; 这里可以写上你的自定义全局热键
 
 )"
+Menu, Tray, Add ; Creates a separator line.
+Menu, Tray, Add, 配置文件编辑, 配置文件编辑 ; Creates a new menu item.
+
 Return
 
 #if CapsLockXMode
 
+CapsLockX_LauncherEditor(路径){
+    ; 有 vscode 用 vscode，没有就用 notepad
+    Run cmd /c code %路径% || notepad %路径%,, Hide
+}
 UserModuleEdit(路径){
     WinGet, hWnd, ID, A
     WinGetClass, 窗口类名, ahk_id %hWnd%
@@ -45,10 +52,14 @@ UserModuleEdit(路径){
         FileAppend, %快速窗口热键编辑初始内容%, %路径%
     填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
     FileAppend, %填充内容%, %路径%
-    Run cmd /c code %路径% || notepad %路径%,, Hide
+    CapsLockX_LauncherEditor(路径)
 }
 
 m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
 !m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/应用-" 进程名 ".user.ahk")
+
 ; 修改配置
-^!m:: run notepad %CapsLockXConfigPath%
+^!m:: 配置文件编辑()
+配置文件编辑(){
+    CapsLockX_LauncherEditor(CapsLockXConfigPath)
+}
