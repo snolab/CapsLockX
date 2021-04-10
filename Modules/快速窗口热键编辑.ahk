@@ -42,10 +42,12 @@ CapsLockX_LauncherEditor(路径){
     ; 有 vscode 用 vscode，没有就用 notepad
     Run cmd /c code %路径% || notepad %路径%,, Hide
 }
-UserModuleEdit(路径){
+UserModuleEdit(路径, 使用进程名AHK := 0){
     WinGet, hWnd, ID, A
     WinGetClass, 窗口类名, ahk_id %hWnd%
     WinGet, 进程名, ProcessName, ahk_id %hWnd%
+    if(使用进程名AHK)
+        路径 := 路径 "/应用-" 进程名 ".user.ahk"
     WinGetTitle, title, ahk_id %hWnd%
     match = %title% ahk_class %窗口类名% ahk_exe %进程名%
     if (!FileExist(路径))
@@ -56,7 +58,7 @@ UserModuleEdit(路径){
 }
 
 m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
-!m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/应用-" 进程名 ".user.ahk")
+!m:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
 
 ; 修改配置
 ^!m:: 配置文件编辑()
