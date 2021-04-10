@@ -49,7 +49,7 @@ getAscStr(str){
 }
 
 ; 打开快速笔记主页
-OpenHomePage(){
+OneNote2016_OpenHomePage(){
     SendEvent #n
     ; if !WinExist(".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
     ; WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
@@ -157,9 +157,34 @@ CopySearchResultSectionAndPages(){
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
-$#!n:: OpenHomePage()
+$#!n:: OneNote2016_OpenHomePage()
+; 打开 OneNote 并精确匹配查找搜索笔记
+$#+n:: OneNote2016_OpenSearch()
+OneNote2016_OpenSearch(){
+    winTitle := "ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    needActive := 0
+    hWnd := WinActive(winTitle)
+    if(!hWnd){
+        SendEvent #n
+        WinWaitActive %winTitle%, , 1 ; wait for 1 seconds
+        if(ErrorLevel){
+            needActive := 1
+            WinWait %winTitle%, , 1 ; wait for 1 seconds
+            if(ErrorLevel){
+                TrayTip, 错误, 未找到OneNote窗口
+                return
+            }
+        }
+        hWnd := LastFound
+    }
+    if(needActive)
+        WinActivate ahk_id %hWnd%
+    SendEvent ^e{Text}""
+    SendEvent {Left}
+    Return
+}
 ; 打开 UWP 版 OneNote 的快速笔记
-$#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
+; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 ; #If !!(CapsLockXMode & CM_FN)
 ; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"

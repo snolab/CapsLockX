@@ -36,19 +36,26 @@ OnSwitch(){
 }
 
 SendArrowUp(){
-    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"){
-        ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
-    } else {
-        SendEvent {Blind}{up}
+    ; 在 OneNote 笔记内部直接 SendEvent 上下方向键无反应， 故使用 ControlSend 。
+    if (hWnd := WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")) {
+        ControlGetFocus, focusedClassNN, ahk_id %hWnd%
+        if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
+            ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
+            return
+        }
     }
+    SendEvent {Blind}{up}
 }
 SendArrowDown(){
-    ; sendplay {Blind}{down}
-    if WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"){
-        ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
-    } else {
-        SendEvent {Blind}{down}
+    ; 在 OneNote 笔记内部直接 SendEvent 上下方向键无反应， 故使用 ControlSend 。
+    if (hWnd := WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")) {
+        ControlGetFocus, focusedClassNN, ahk_id %hWnd%
+        if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
+            ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
+            return
+        }
     }
+    SendEvent {Blind}{down}
 }
 
 ArrowTicker(){
