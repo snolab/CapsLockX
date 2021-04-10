@@ -22,12 +22,12 @@ global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
-global 鼠动中 := 0, 鼠强动 := 0
+global 鼠动否 := 0, 鼠强动 := 0
 global 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0
 global 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
 
 ; 滚轮加速度微分对称模型（不要在意这中二的名字hhhh
-global 轮动中 := 0, 轮强动 := 0
+global 轮动否 := 0, 轮强动 := 0
 global 轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
 global 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
 If(TMouse_SendInput)
@@ -140,17 +140,17 @@ SendInput_MouseMoveR64(x, y){
 }
 
 ; 鼠标模拟
-MouseTickerStart(){
-    if(!鼠动中){
-        SetTimer, MouseTicker, 1
-        鼠动中 := 1
+鼠动始(){
+    if(!鼠动否){
+        SetTimer, 鼠动, 1
+        鼠动否 := 1
     }
 }
-MouseTickerStop(){
-    鼠动中 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
-    SetTimer, MouseTicker, Off
+鼠动终(){
+    鼠动否 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
+    SetTimer, 鼠动, Off
 }
-MouseTicker(){
+鼠动(){
     ; 在非 CapsLockX 模式下直接停止
     If (!(CapsLockXMode || 鼠强动)){
         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
@@ -174,7 +174,7 @@ MouseTicker(){
 
     if ( 鼠速横 == 0 && 鼠速纵 == 0){
         ; 完成移动，退出定时
-        MouseTickerStop()
+        鼠动终()
         Return
     }
 
@@ -250,38 +250,22 @@ ScrollMsg(msg, zDelta){
     }
 }
 ; 滚轮运动处理
-ScrollTickerStart(){
-    if(!轮动中){
-        SetTimer, ScrollTicker, 1
-        轮动中 := 1
+轮动始(){
+    if(!轮动否){
+        SetTimer, 轮动, 1
+        轮动否 := 1
     }
 }
-ScrollTickerStop(){
-    轮动中 := 0, 轮强动 := 0
+轮动终(){
+    轮动否 := 0, 轮强动 := 0
     轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
     轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
-    SetTimer, ScrollTicker, Off
+    SetTimer, 轮动, Off
 }
-ScrollTicker(){
-    ; RF同时按下相当于中键
-    If(GetKeyState("MButton", "P")){
-        If(轮刻上 == 0 && 轮刻下 == 0){
-            Send {MButton Up}
-            轮刻上 := 0, 轮刻下 := 0
-            Return
-        }
-    }
-    If(轮刻上 && 轮刻下 && Abs(tdr - tdf) < 1){
-        If(!GetKeyState("MButton", "P")){
-            Send {MButton Down}
-            轮刻上 := 1, 轮刻下 := 1
-        }
-        Return
-    }
-
+轮动(){
     ; 在非CapsLockX模式下停止
     If (!(CapsLockXMode || 轮强动)){
-        ScrollTickerStop()
+        轮动终()
         Return
     }else{
         tNow := TM_QPC()
@@ -293,12 +277,20 @@ ScrollTicker(){
         sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
         ; tooltip % say "_" sax
     }
+    ; RF同时按下相当于中键
+    If(轮刻上 && 轮刻下 && Abs(tdr - tdf) < 1){
+        SendInput {MButton Down}
+        KeyWait, r
+        KeyWait, f
+        SendInput {MButton Up}
+        Return
+    }
     ; 计算速度
     lastsvx := 轮速横
     lastsvy := 轮速纵
     轮速纵 := Friction(轮速纵 + say, say), 轮速横 := Friction(轮速横 + sax, sax)
     if ( 轮速纵 == 0 && 轮速横 == 0){
-        ScrollTickerStop()
+        轮动终()
         Return
     }
 
@@ -335,20 +327,16 @@ $*q::
 Return
 $*q Up:: SendEvent {Blind}{RButton Up}
 ; 鼠标运动处理
-$*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), MouseTickerStart()
-$*a Up:: 鼠刻左 := 0, MouseTickerStart()
-$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), MouseTickerStart()
-$*d Up:: 鼠刻右 := 0, MouseTickerStart()
-$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : TM_QPC()), MouseTickerStart()
-$*w Up:: 鼠刻上 := 0, MouseTickerStart()
-$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : TM_QPC()), MouseTickerStart()
-$*s Up:: 鼠刻下 := 0, MouseTickerStart()
+$*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), 鼠动始()
+$*a Up:: 鼠刻左 := 0, 鼠动始()
+$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), 鼠动始()
+$*d Up:: 鼠刻右 := 0, 鼠动始()
+$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : TM_QPC()), 鼠动始()
+$*w Up:: 鼠刻上 := 0, 鼠动始()
+$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : TM_QPC()), 鼠动始()
+$*s Up:: 鼠刻下 := 0, 鼠动始()
 
 ; 鼠标滚轮处理
-*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), ScrollTickerStart()
-*r Up:: 轮刻上 := 0, ScrollTickerStart()
-*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), ScrollTickerStart()
-*f Up:: 轮刻下 := 0, ScrollTickerStart()
 
 ; Alt 单格滚动
 $!r:: Send {WheelUp}
@@ -361,7 +349,14 @@ $^r:: Send ^{WheelUp}
 $^f:: Send ^{WheelDown}
 
 ; Shift 横向滚动
-$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), ScrollTickerStart()
-$+r Up:: 轮刻左 := 0, ScrollTickerStart()
-$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), ScrollTickerStart()
-$+f Up:: 轮刻右 := 0, ScrollTickerStart()
+$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), 轮动始()
+$+r Up:: 轮刻左 := 0, 轮动始()
+$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), 轮动始()
+$+f Up:: 轮刻右 := 0, 轮动始()
+
+; 纵向连续滚动（一定要放最下面。
+; 否则有时候无法正常弹起，具体还要研究 AHK 的热键覆盖规则）
+*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), 轮动始()
+*r Up:: 轮刻上 := 0, 轮动始()
+*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), 轮动始()
+*f Up:: 轮刻下 := 0, 轮动始()
