@@ -1,3 +1,21 @@
+## [1.14.8](https://github.com/snomiao/CapsLockX/compare/v1.14.5...v1.14.8) (2021-04-10)
+
+
+### Bug Fixes
+
+* changelog ([99328b1](https://github.com/snomiao/CapsLockX/commit/99328b120510ccb6a68f560e05977696b80078c0))
+* OneNote2016 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes ([f581142](https://github.com/snomiao/CapsLockX/commit/f581142c16797c255e3671d494e7b970fa9efd18))
+* 优化滚动、清除标签 ([e83ec2a](https://github.com/snomiao/CapsLockX/commit/e83ec2a0a7e54ffc6cd4108996c0245cc61ff109))
+* 修复定时任务时间间隔 ([a09030a](https://github.com/snomiao/CapsLockX/commit/a09030ac62a57d0f15ea08f05eb7ccf83d94596e))
+* 修复鼠标按键加ctrl ([4a145b1](https://github.com/snomiao/CapsLockX/commit/4a145b14418889b60fd8cc959b48b574b59861eb))
+* 在 OneNote 笔记内部直接 SendEvent 上下方向键无反应， 故使用 ControlSend ([6b1db7e](https://github.com/snomiao/CapsLockX/commit/6b1db7e38547c7409486ed3c22156ac430ec6989))
+* 模拟中键将暂停滚动 ([3e1fe75](https://github.com/snomiao/CapsLockX/commit/3e1fe75294d29bedd3baf2fda778e8a133e8b23e))
+* 滚动模拟鲁棒性增强、调整滚动热键冲突、简化中键触发逻辑 ([29a72bb](https://github.com/snomiao/CapsLockX/commit/29a72bba5a13d1566e419893c35ac0fd05a17e61))
+* 调整鼠标模拟速度默认配置 ([26b8cf4](https://github.com/snomiao/CapsLockX/commit/26b8cf42957e8864755801de0676a7c6e92ed643))
+* 锁屏息屏优化 ([5fc30d9](https://github.com/snomiao/CapsLockX/commit/5fc30d9bbed25aed573eda2154a419643a961b94))
+
+
+
 ## [1.14.7](https://github.com/snomiao/CapsLockX/compare/v1.14.5...v1.14.7) (2021-04-07)
 
 
