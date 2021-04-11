@@ -1,3 +1,11 @@
+## <small>1.14.20 (2021-04-11)</small>
+
+* chore:versioning ([8b1acdb](https://github.com/snomiao/CapsLockX/commit/8b1acdb))
+* chore: remove branches trigger ([921798f](https://github.com/snomiao/CapsLockX/commit/921798f))
+* chore: Upload binaries to release ([b837a4f](https://github.com/snomiao/CapsLockX/commit/b837a4f))
+
+
+
 ## <small>1.14.19 (2021-04-11)</small>
 
 * chore:versioning ([06b2330](https://github.com/snomiao/CapsLockX/commit/06b2330))
