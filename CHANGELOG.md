@@ -1,3 +1,24 @@
+## <small>1.14.16 (2021-04-11)</small>
+
+* chore:versioning ([b80eff9](https://github.com/snomiao/CapsLockX/commit/b80eff9))
+* chore:versioning ([ec07fa8](https://github.com/snomiao/CapsLockX/commit/ec07fa8))
+* chore:versioning ([635817a](https://github.com/snomiao/CapsLockX/commit/635817a))
+* chore:versioning ([fa1f1a6](https://github.com/snomiao/CapsLockX/commit/fa1f1a6))
+* chore:versioning ([717f2f1](https://github.com/snomiao/CapsLockX/commit/717f2f1))
+* fix: ([4630ce4](https://github.com/snomiao/CapsLockX/commit/4630ce4))
+* refactor ([26b7836](https://github.com/snomiao/CapsLockX/commit/26b7836))
+* versioning ([f3ae941](https://github.com/snomiao/CapsLockX/commit/f3ae941))
+* versioning ([20345d7](https://github.com/snomiao/CapsLockX/commit/20345d7))
+* chore: delay changelog ([e36a2ea](https://github.com/snomiao/CapsLockX/commit/e36a2ea))
+* chore: fix: npm run version:changelog ([87677b3](https://github.com/snomiao/CapsLockX/commit/87677b3))
+* chore: package chore ([e1d7ff3](https://github.com/snomiao/CapsLockX/commit/e1d7ff3))
+* chore: version sync and commit ([8e34c73](https://github.com/snomiao/CapsLockX/commit/8e34c73))
+* chore: versioning ([5ec7479](https://github.com/snomiao/CapsLockX/commit/5ec7479))
+* chore: 简化github actions ([bce999b](https://github.com/snomiao/CapsLockX/commit/bce999b))
+* fix: remove default task ([f0cb7ce](https://github.com/snomiao/CapsLockX/commit/f0cb7ce))
+
+
+
 ## <small>1.14.12 (2021-04-11)</small>
 
 * chore: package chore ([e1d7ff3](https://github.com/snomiao/CapsLockX/commit/e1d7ff3))
