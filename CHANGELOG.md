@@ -1,3 +1,10 @@
+## <small>1.14.21 (2021-04-11)</small>
+
+* chore:versioning ([e6b497a](https://github.com/snomiao/CapsLockX/commit/e6b497a))
+* chore: fix lower case for workflow ([b8c07ff](https://github.com/snomiao/CapsLockX/commit/b8c07ff))
+
+
+
 ## <small>1.14.20 (2021-04-11)</small>
 
 * chore:versioning ([8b1acdb](https://github.com/snomiao/CapsLockX/commit/8b1acdb))
