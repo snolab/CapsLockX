@@ -1,8 +1,6 @@
 # ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
 on:
   push:
-    branches:
-      - "master"
     tags:
       - "v*"
 name: Publish
@@ -35,14 +33,14 @@ jobs:
       # 打包
       - uses: montudor/action-zip@v0.1.1
         with:
-          args: zip -r CapsLockX${{ env.RELEASE_VERSION }}.zip Core Data Docs Modules Tools CapsLockX*.* LICENCE README.md SECURITY.md "启动 CapsLockX.lnk"
+          args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data Docs Modules Tools CapsLockX*.* LICENCE README.md SECURITY.md "启动 CapsLockX.lnk"
       # 上传
       - uses: actions/upload-artifact@v2
         with:
-          path: CapsLockX${{ env.RELEASE_VERSION }}.zip
-          name: CapsLockX${{ env.RELEASE_VERSION }}.zip
+          path: CapsLockX-${{ env.RELEASE_VERSION }}.zip
+          name: CapsLockX-${{ env.RELEASE_VERSION }}.zip
       # 压缩包和 Docs 一起同步到 gh-pages
-      - run: mv CapsLockX${{ env.RELEASE_VERSION }}.zip Docs/CapsLockX${{ env.RELEASE_VERSION }}.zip
+      - run: mv CapsLockX-${{ env.RELEASE_VERSION }}.zip Docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
