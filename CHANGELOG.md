@@ -1,3 +1,15 @@
+## [1.14.9](https://github.com/snomiao/CapsLockX/compare/v1.14.8...v1.14.9) (2021-04-11)
+
+
+### Bug Fixes
+
+* 使用进程名AHK ([d348514](https://github.com/snomiao/CapsLockX/commit/d348514e57218d789c8e46e72b3d059f6b2edc9c))
+* 修复会清掉配置的bug ([790d5b4](https://github.com/snomiao/CapsLockX/commit/790d5b4450feae0616c970130e66b2924641bdf0))
+* 完善配置锁 ([654d201](https://github.com/snomiao/CapsLockX/commit/654d201a1469f35c5eb279e0fc78c39e499658a8))
+* 番茄报时配置修复 ([542e3af](https://github.com/snomiao/CapsLockX/commit/542e3af23740b354b8e2c02ae73b8c1480e345c7))
+
+
+
 ## [1.14.8](https://github.com/snomiao/CapsLockX/compare/v1.14.5...v1.14.8) (2021-04-10)
 
 
