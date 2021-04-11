@@ -1,3 +1,15 @@
+## <small>1.14.12 (2021-04-11)</small>
+
+* chore: package chore ([e1d7ff3](https://github.com/snomiao/CapsLockX/commit/e1d7ff3))
+* chore: 简化github actions ([bce999b](https://github.com/snomiao/CapsLockX/commit/bce999b))
+* fix: ([4630ce4](https://github.com/snomiao/CapsLockX/commit/4630ce4))
+* refactor ([26b7836](https://github.com/snomiao/CapsLockX/commit/26b7836))
+* versioning ([f3ae941](https://github.com/snomiao/CapsLockX/commit/f3ae941))
+* versioning ([20345d7](https://github.com/snomiao/CapsLockX/commit/20345d7))
+* fix: remove default task ([f0cb7ce](https://github.com/snomiao/CapsLockX/commit/f0cb7ce))
+
+
+
 ## [1.14.10](https://github.com/snomiao/CapsLockX/compare/v1.14.9...v1.14.10) (2021-04-11)
 
 
