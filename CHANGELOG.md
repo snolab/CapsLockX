@@ -1,3 +1,12 @@
+## [1.14.10](https://github.com/snomiao/CapsLockX/compare/v1.14.9...v1.14.10) (2021-04-11)
+
+
+### Bug Fixes
+
+* 升级git push方式：合并remote ([c8c40a8](https://github.com/snomiao/CapsLockX/commit/c8c40a84071c63bd2f7f94da5852b3cc51db79a5))
+
+
+
 ## [1.14.9](https://github.com/snomiao/CapsLockX/compare/v1.14.8...v1.14.9) (2021-04-11)
 
 
