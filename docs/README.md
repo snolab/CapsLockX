@@ -1,4 +1,4 @@
-﻿# CapsLockX - 像**黑客**一样操作电脑！
+# CapsLockX - 像**黑客**一样操作电脑
 
 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。
 
@@ -62,7 +62,7 @@
 
 如果你想学习如何开发 CapsLockX 的插件，请：
 
-1. 打开这个文件中： `Modules/01-Help.ahk`， 你可以了解到 CapsLockX 插件的基本格式
+1. 打开 `Modules/01-Help.ahk` ， 你可以了解到 CapsLockX 插件的基本格式
 2. 将它复制一份，命名为你自己的插件名称
 3. 将它本来的功能改成你自己需要的功能，插件的开发就完成啦！
 
@@ -138,7 +138,7 @@
 - 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
   ![02-插件-窗口增强_一键排列窗口.gif]( ./media/02-插件-窗口增强_一键排列窗口.gif )
 
-#### 使用方法如下
+#### 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
 | 作用域       | 窗口增强模块                        | 说明                                       |
 | ------------ | ----------------------------------- | ------------------------------------------ |
@@ -207,7 +207,7 @@
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -299,11 +299,11 @@
 
 ### TIM添加常驻功能模块
 
-| 模式        |    按键     | 功能                   |
-| ----------- | :---------: | ---------------------- |
-| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
-| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
-| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
+|模式|按键|功能|
+| - | :-: | - |
+| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
+| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
+| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -311,9 +311,9 @@
 
 #### 用法
 
-| 作用于 |  按键   | 功能说明              |
-| ------ | :-----: | --------------------- |
-| 全局   | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 | 按键| 功能说明 |
+| - | :-: | - |
+| 全局 | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
@@ -421,9 +421,9 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 以下几个仓库同步：
 
-- GitHub: https://github.com/snomiao/CapsLockX
-- Gitee: https://gitee.com/snomiao/CapslockX
-- Bitbucket: https://bitbucket.org/snomiao/capslockx
+- GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+- Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
+- Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
 
 #### 相似项目地址
 
@@ -467,8 +467,8 @@ Ctrl + Alt + 同上，但一般为全局热键
 4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snomiao/CapsLockX/issues)
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
 6. 欢迎在此捐助本项目的开发，每一笔捐赠都会记录到下方的列表中：
-   - 爱发电：https://afdian.net/@snomiao
-   - PAYPAL: https://paypal.me/snomiao
+   - 爱发电：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
+   - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
 
 你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)

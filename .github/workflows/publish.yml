@@ -23,20 +23,23 @@ jobs:
       - run: github-release-from-changelog
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-  package:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+      # package:
+      #   runs-on: ubuntu-latest
+      #   steps:
+      #     - uses: actions/checkout@v2
       # 获取版本号 [continuous integration - Get the current pushed tag in Github Actions - Stack Overflow]( https://stackoverflow.com/questions/58177786/get-the-current-pushed-tag-in-github-actions )
-      - name: Get Version
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       # 打包
       - uses: montudor/action-zip@v0.1.1
         with:
           args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENCE *.md "启动 CapsLockX.lnk"
-      # 上传
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      # 暂存
+      - uses: actions/upload-artifact@v1
+        with:
+          name: CapsLockX-latest.zip
+          path: CapsLockX-${{ env.RELEASE_VERSION }}.zip
+      # 附件
+      - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: CapsLockX-${{ env.RELEASE_VERSION }}.zip
@@ -46,19 +49,24 @@ jobs:
           body: "CapsLockX Package"
       # 压缩包和 docs 一起同步到 gh-pages
       - run: mv CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - run: cp Tools/version.txt docs/version.txt
+      - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
-  # chocolatey:
-  #   needs: release
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     # Cocolatey 发布
-  #     - name: Choco help
-  #       uses: crazy-max/ghaction-chocolatey@v1
-  #       with:
-  #         args: pack
+  chocolatey:
+    needs: release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      # 取回
+      - uses: actions/download-artifact@v1
+        with:
+          name: CapsLockX-latest.zip
+          path: CapsLockX-latest.zip
+      - run: choco install checksum
+      - run: cat file.txt
+      # Cocolatey 发布（调试中）
+      - uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: pack

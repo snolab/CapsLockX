@@ -217,13 +217,13 @@ if (target != source){
     ; 输出到 docs/readme.md （用于 github-pages ）
     ; docs_target := 模块帮助README更新(source, 1)
     FileDelete ./docs/README.md
-    FileAppend %target%, ./docs/README.md
+    FileAppend %target%, ./docs/README.md, UTF-8-Raw
 
     ; 输出根目录 README.md （用于 github 首页）
     FileDelete ./README.md
-    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README --->`n"
+    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->`n`n"
     StringReplace, target, target, ./media/, ./docs/media/, All
-    FileAppend %PREFIX% %target%, ./README.md
+    FileAppend %PREFIX%%target%, ./README.md, UTF-8-Raw
     ; Reload
     ; ExitApp
 }
