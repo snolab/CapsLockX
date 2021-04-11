@@ -521,10 +521,10 @@ Return
         Clipboard:=backup
         return
     }
-    inx := Trim(Clipboard, "`r`n `t")
-    result := Func("EvalNodeJS").Call("'('+new Date(+new Date(""" inx """.replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3).toISOString().slice(0,10).replace(/-/g,'')+')'")
-    SendEvent, {Text}%result%
+    inp := Clipboard
     Clipboard := backup
+    result := Func("EvalNodeJS").Call("'('+new Date(+new Date(""" inp """.replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3).toISOString().slice(0,10).replace(/-/g,'')+')'")
+    SendEvent, {Text}%result%
 return
 
 #If WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")

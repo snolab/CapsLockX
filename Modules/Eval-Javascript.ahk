@@ -59,6 +59,32 @@ EvalJScript(code){
     Return re
 }
 
+EvalNodejs2_test(code){
+    ; 检查 Node.js 是否安装
+    nodejsPath := "C:\Program Files\nodejs\node.exe"
+    if (!FileExist(nodejsPath))
+        Return ""
+    ; 生成代码
+    realcode := ""
+    realcode .= "const _require = require;{" "`n"
+    realcode .= "const require=(m)=>{try{_require.resolve(m)}catch(e){_require('child_process').execSync('cd %USERPROFILE% && npm i -S '+m)};return _require(m)};" "`n"
+        realcode .= "const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;" "`n"
+    realcode .= "const code = " EscapeQuoted(code) ";" "`n"
+    realcode .= "(async () => await eval(code))() `n"
+    realcode .= " .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res)) `n"
+    realcode .= " .then(s=>process.stdout.write(s)) `n"
+    realcode .= " .catch(e=>process.stderr.write(e.toString())) `n"
+    realcode .= "}" "`n"
+    node := ComObjCreate("WScript.Shell").Exec("""" nodejsPath """")
+    node.StdIn.WriteLine(realcode)
+    return node.StdOut.ReadAll()
+}
+SafeEval(code){
+    nodejsPath := "C:\Program Files\nodejs\node.exe"
+    if(FileExist(nodejsPath))
+        Return EvalNodejs(code)
+    Return EvalJScript(code)
+}
 EvalNodejs(code){
     ; 检查 Node.js 是否安装
     nodejsPath := "C:\Program Files\nodejs\node.exe"
@@ -110,30 +136,23 @@ EvalNodejs(code){
     ; `清掉垃圾文件`
     ; run "notepad " %inputScriptPath%
     FileDelete %inputScriptPath%
-    Return out ? out : ""
-    }
+    re := out ? out : ""
+    Return re
+}
 
-    SafeEval(code)
-    {
-        nodejsPath := "C:\Program Files\nodejs\node.exe"
-        if (FileExist(nodejsPath)){
-            Return EvalNodejs(code)
-        }else{
-            Return EvalJScript(code)
-        }
-    }
+#If CapsLockXMode
 
-    ; 使用 JS 计算并替换所选内容
-    #!c::
-        Clipboard =
-        SendEvent ^c
-        ClipWait, 1, 1
-        code := Clipboard
-        codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
-        Clipboard := SafeEval(codeWithoutEqualEnding)
-        ; 如果输入代码最后是空的就把结果添加到后面
-        if (code != codeWithoutEqualEnding){
-            SendEvent {Right}
-        }
-        SendEvent ^v
-    Return
+; 使用 JS 计算并替换所选内容
+n::
+    Clipboard =
+    SendEvent ^c
+    ClipWait, 1, 1
+    code := Clipboard
+    codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
+    Clipboard := SafeEval(codeWithoutEqualEnding)
+    ; 如果输入代码最后是空的就把结果添加到后面
+    if (code != codeWithoutEqualEnding){
+        SendEvent {Right}
+    }
+    SendEvent ^v
+Return
