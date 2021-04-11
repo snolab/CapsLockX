@@ -12,16 +12,6 @@
         "version:commit": "git commit -a -m chore:versioning",
         "version:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
         "postversion": "git push --follow-tag",
-        "gitsync": "npm run gitsync:gh && npm run gitsync:cn && npm run gitsync:bb",
-        "gitpush:gh": "git push --follow-tag --repo git@github.com:snomiao/CapsLockX.git",
-        "gitpull:gh": "git pull git@github.com:snomiao/CapsLockX.git",
-        "gitsync:gh": "npm run gitpull:gh && npm run gitpush:gh",
-        "gitpush:cn": "git push --follow-tag --repo git@gitee.com:snomiao/CapslockX.git",
-        "gitpull:cn": "git pull git@gitee.com:snomiao/CapslockX.git",
-        "gitsync:cn": "npm run gitpull:cn && npm run gitpush:cn",
-        "gitpush:bb": "git push --follow-tag --repo git@bitbucket.org:snomiao/capslockx.git",
-        "gitpull:bb": "git pull git@bitbucket.org:snomiao/capslockx.git",
-        "gitsync:bb": "npm run gitpull:bb && npm run gitpush:bb",
         "start": "CapsLockX.exe"
     },
     "repository": {
