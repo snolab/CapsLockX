@@ -1,3 +1,13 @@
+## <small>1.14.18 (2021-04-11)</small>
+
+* chore:versioning ([a35ee10](https://github.com/snomiao/CapsLockX/commit/a35ee10))
+* chore: ci for zip ([d91e945](https://github.com/snomiao/CapsLockX/commit/d91e945))
+* chore: fix choco ([ebe3ce7](https://github.com/snomiao/CapsLockX/commit/ebe3ce7))
+* chore: publish workflow for master ([e7d542e](https://github.com/snomiao/CapsLockX/commit/e7d542e))
+* chore: remove git sync ([6fec6b5](https://github.com/snomiao/CapsLockX/commit/6fec6b5))
+
+
+
 ## <small>1.14.16 (2021-04-11)</small>
 
 * chore:versioning ([b80eff9](https://github.com/snomiao/CapsLockX/commit/b80eff9))
