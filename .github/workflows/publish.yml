@@ -1,6 +1,8 @@
 # ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
 on:
   push:
+    branches:
+      - "master"
     tags:
       - "v*"
 name: Publish
