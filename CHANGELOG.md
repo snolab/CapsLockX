@@ -1,3 +1,10 @@
+## <small>1.14.22 (2021-04-11)</small>
+
+* chore:versioning ([6aee8d4](https://github.com/snomiao/CapsLockX/commit/6aee8d4))
+* chore: fix ignores ([9a6fc11](https://github.com/snomiao/CapsLockX/commit/9a6fc11))
+
+
+
 ## <small>1.14.21 (2021-04-11)</small>
 
 * chore:versioning ([e6b497a](https://github.com/snomiao/CapsLockX/commit/e6b497a))
