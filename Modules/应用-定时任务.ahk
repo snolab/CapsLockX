@@ -44,7 +44,7 @@ Return
 }
 番茄报时(force:=0){
     ; CapsLockX 暂停时，番茄状态也暂停
-    if(!CapsLockX_Paused)
+    if(CapsLockX_Paused)
         Return
 
     ; 检测睡眠标记文件以跳过报时
