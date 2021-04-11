@@ -56,8 +56,8 @@ Return
 8:: SwitchToDesktop(8)
 9:: SwitchToDesktop(9)
 0:: SwitchToDesktop(10)
--:: SwitchToDesktop(11)
-=:: SwitchToDesktop(12)
+; -:: SwitchToDesktop(11)
+; =:: SwitchToDesktop(12)
 
 ; Move the current window to the X-th desktop
 +1:: MoveActiveWindowToDesktop(1)
@@ -70,8 +70,8 @@ Return
 +8:: MoveActiveWindowToDesktop(8)
 +9:: MoveActiveWindowToDesktop(9)
 +0:: MoveActiveWindowToDesktop(10)
-+-:: MoveActiveWindowToDesktop(11)
-+=:: MoveActiveWindowToDesktop(12)
+; +-:: MoveActiveWindowToDesktop(11)
+; +=:: MoveActiveWindowToDesktop(12)
 ; Move the ALL visible window to the X-th desktop
 !+1:: MoveAllVisibleWindowToDesktop(1)
 !+2:: MoveAllVisibleWindowToDesktop(2)
@@ -83,8 +83,8 @@ Return
 !+8:: MoveAllVisibleWindowToDesktop(8)
 !+9:: MoveAllVisibleWindowToDesktop(9)
 !+0:: MoveAllVisibleWindowToDesktop(10)
-!+-:: MoveAllVisibleWindowToDesktop(11)
-!+=:: MoveAllVisibleWindowToDesktop(12)
+; !+-:: MoveAllVisibleWindowToDesktop(11)
+; !+=:: MoveAllVisibleWindowToDesktop(12)
 
 ; API definitions
 /*

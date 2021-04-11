@@ -43,7 +43,7 @@ if (!!CapsLockXConfigPath){
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     if(!CapsLockXConfigPath){
-        MsgBox, 配置文件目录设定异常
+        MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置。
         return 
     }
     content := setValue
@@ -56,10 +56,18 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
     return content
 }
-
+CapsLockX_ConfigGet(field, varName, defaultValue){
+    if(!CapsLockXConfigPath){
+        MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置。
+        return 
+    }
+    IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%
+    content := %varName% ; 千层套路XD
+    return content
+}
 CapsLockX_Config(field, varName, defaultValue, comment := ""){
     if(!CapsLockXConfigPath){
-        MsgBox, 配置文件目录设定异常
+        MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置。
         return 
     }
     IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%

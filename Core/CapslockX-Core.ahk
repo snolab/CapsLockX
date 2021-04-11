@@ -14,7 +14,7 @@
 Process Priority, , High ; 脚本高优先级
 SetTitleMatchMode RegEx
 #SingleInstance Force ; 跳过对话框并自动替换旧实例（在启动成功后有效）
-#NoEnv ; 不检查空变量是否为环境变量
+; #NoEnv ; 不检查空变量是否为环境变量
 #Persistent
 #MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的。。）
 #InstallMouseHook ; 安装鼠标钩子

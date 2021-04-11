@@ -515,15 +515,25 @@ Return
     backup := ClipboardAll
     Clipboard:=""
     ; copy date then focus to title
+    SetKeyDelay, 0, 0
     SendEvent ^+t^{Down}^c{Left}^{Up}
     ClipWait ,2
     if(ErrorLevel){
-        Clipboard:=backup
+        Clipboard := backup
         return
     }
-    inp := Clipboard
+    dateString := Trim(Clipboard, "`r`n")
     Clipboard := backup
-    result := Func("EvalNodeJS").Call("'('+new Date(+new Date(""" inp """.replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3).toISOString().slice(0,10).replace(/-/g,'')+')'")
+    calcCode =
+    (
+    '('
+    + new Date(+new Date("%dateString%".replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3)
+    .toISOString()
+    .slice(0,10)
+    .replace(/-/g,'')
+    + ')'
+    )
+    result := Func("SafetyEvalJavascript").Call(calcCode)
     SendEvent, {Text}%result%
 return
 
