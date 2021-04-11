@@ -21,3 +21,4 @@ Tools/new-version*.txt
 *.user.ahk
 *.user.md
 *.user.ignores
+*.user.ignores.txt

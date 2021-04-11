@@ -1,6 +1,7 @@
 ﻿; 保存为 save with UTF8 with DOM
 
 if (!!CapsLockXConfigPath){
+    CapsLockX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
     清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
     ; 基本设定
     ; [Core]
@@ -23,13 +24,21 @@ if (!!CapsLockXConfigPath){
 }
 
 清洗为_UTF16_WITH_BOM_型编码(path){
+    FileRead CLX配置锁状态, CapsLockX_Config.lock
+    if(CLX配置锁状态){
+        return
+    }
     static 锁 := 0
     if(锁)
         Return
     锁 := 1
+    FileAppend, 1, CapsLockX_Config.lock
     FileRead ModuleCode, %path%
-    FileDelete %path%
-    FileAppend %ModuleCode%, %path%, UTF-16
+    if(ModuleCode){
+        FileDelete %path%
+        FileAppend %ModuleCode%, %path%, UTF-16
+    }
+    FileDelete, CapsLockX_Config.lock
     锁 := 0
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){

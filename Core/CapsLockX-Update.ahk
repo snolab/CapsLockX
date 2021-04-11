@@ -20,6 +20,7 @@ global T_DownloadUpdate := CapsLockX_Config("Core", "T_DownloadUpdate", 1, "自�
 global CLXU_Updated :=1
 global CLXU_Fail := 2
 global CLXU_AlreadyLatest := 4
+Sleep, 5000
 if(T_CheckUpdate)
     CapsLockX_检查更新()
 Sleep, 5000

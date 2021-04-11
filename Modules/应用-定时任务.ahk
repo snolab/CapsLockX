@@ -24,7 +24,7 @@ Return
     ; IfMsgBox, Cancel
     ; return
 
-    global T_ScheduleTasks_UsingHighPerformanceTime := CapsLockX_Config("ScheduleTasks", "T_UsingHighPerformanceTime", "0", "")
+    global T_ScheduleTasks_UsingHighPerformanceTime := CapsLockX_Config("ScheduleTasks", "T_UsingHighPerformanceTime", "0", "已经配置过高精度时间的Flag")
     if(T_ScheduleTasks_UsingHighPerformanceTime)
         return
     ToolTip, 定时任务开启，正在为您配置系统高精度时间
