@@ -1,3 +1,10 @@
+## <small>1.14.19 (2021-04-11)</small>
+
+* chore:versioning ([06b2330](https://github.com/snomiao/CapsLockX/commit/06b2330))
+* chore: seprate package ([00c1b05](https://github.com/snomiao/CapsLockX/commit/00c1b05))
+
+
+
 ## <small>1.14.18 (2021-04-11)</small>
 
 * chore:versioning ([a35ee10](https://github.com/snomiao/CapsLockX/commit/a35ee10))
