@@ -7,7 +7,7 @@
         "build:patch": "npm version patch",
         "build:minor": "npm version minor",
         "build:major": "npm version major",
-        "versioning": "git commit -a -m versioning",
+        "versioning": "git commit -a -m chore:versioning",
         "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
         "version": "node tools/versioning.node.mjs && npm run changelog",
         "postversion": "npm run versioning && git push --follow-tag",
