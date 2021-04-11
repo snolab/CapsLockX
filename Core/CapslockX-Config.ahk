@@ -1,51 +1,7 @@
 ﻿; 保存为 save with UTF8 with DOM
-; 
-清洗为_UTF16_WITH_BOM_型编码(path){
-    static 锁 := 0
-    if(锁)
-        Return
-    锁 := 1
-    FileRead ModuleCode, %path%
-    FileDelete %path%
-    FileAppend %ModuleCode%, %path%, UTF-16
-    锁 := 0
-}
-CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
-    if(!CapsLockXConfigPath){
-        MsgBox, 配置文件目录设定异常
-        return 
-    }
-    清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
-    content := setValue
-    ; 对配置自动重新排序
-    if(comment){
-        IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
-        IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
-    }
-    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
-    IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
-    return content
-}
-
-CapsLockX_Config(field, varName, defaultValue, comment := ""){
-    if(!CapsLockXConfigPath){
-        MsgBox, 配置文件目录设定异常
-        return 
-    }
-    清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
-    IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%
-    content := %varName% ; 千层套路XD
-    ; 对配置自动重新排序
-    if(comment){
-        IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
-        IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
-    }
-    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
-    IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
-    return content
-}
 
 if (!!CapsLockXConfigPath){
+    清洗为_UTF16_WITH_BOM_型编码(CapsLockXConfigPath)
     ; 基本设定
     ; [Core]
     global T_AskRunAsAdmin := CapsLockX_Config("Core", "T_AskRunAsAdmin", 1, "是否请求提升权限（例如模拟鼠标等功能需要管理员权限才能正常运行，如果不需要可以关掉）")
@@ -64,4 +20,47 @@ if (!!CapsLockXConfigPath){
     ; global T_SwitchTrayIconDefault := CapsLockX_Config("Core", "T_SwitchTrayIconDefault", "./Data/XIconWhite.ico", "CapsLockX默认托盘显示图标，默认" "./Data/XIconWhite.ico")
     global T_SwitchTrayIconOff := CapsLockX_Config("Core", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认" "./Data/XIconWhite.ico")
     global T_SwitchTrayIconOn := CapsLockX_Config("Core", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认" "./Data/XIconBlue.ico")
+}
+
+清洗为_UTF16_WITH_BOM_型编码(path){
+    static 锁 := 0
+    if(锁)
+        Return
+    锁 := 1
+    FileRead ModuleCode, %path%
+    FileDelete %path%
+    FileAppend %ModuleCode%, %path%, UTF-16
+    锁 := 0
+}
+CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
+    if(!CapsLockXConfigPath){
+        MsgBox, 配置文件目录设定异常
+        return 
+    }
+    content := setValue
+    ; 对配置自动重新排序
+    if(comment){
+        IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
+        IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
+    }
+    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
+    IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
+    return content
+}
+
+CapsLockX_Config(field, varName, defaultValue, comment := ""){
+    if(!CapsLockXConfigPath){
+        MsgBox, 配置文件目录设定异常
+        return 
+    }
+    IniRead, %varName%, %CapsLockXConfigPath%, %field%, %varName%, %defaultValue%
+    content := %varName% ; 千层套路XD
+    ; 对配置自动重新排序
+    if(comment){
+        IniDelete, %CapsLockXConfigPath%, %field%, %varName%#注释
+        IniWrite, %comment%, %CapsLockXConfigPath%, %field%, %varName%#注释
+    }
+    IniDelete, %CapsLockXConfigPath%, %field%, %varName%
+    IniWrite, %content%, %CapsLockXConfigPath%, %field%, %varName%
+    return content
 }
