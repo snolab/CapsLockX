@@ -1,0 +1,811 @@
+﻿<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: "HelveticaNeueLight", "HelveticaNeue-Light",
+      "Helvetica Neue Light", "Helvetica Neue", "Muli", "Helvetica",
+      "Lucida Grande", sans-serif;
+    font-weight: 300;
+    background-color: #f1f1f1;
+  }
+
+  .top {
+    height: 70px;
+    margin: 0 auto;
+    width: 1150px;
+    position: relative;
+    margin-top: 5px;
+  }
+
+  .toptop {
+    height: 70px;
+    width: 100%;
+    background-color: white;
+    font-size: 25px;
+    line-height: 45px;
+    border-bottom: 1px solid #d8d8de;
+    text-align: center;
+    padding-top: 10px;
+    position: fixed;
+    z-index: 100;
+    padding-bottom: -10px;
+  }
+
+  .toptoptop {
+    width: 100%;
+    height: 70px;
+    background-color: #e6e6e9;
+  }
+
+  .bg {
+    width: 100%;
+    height: 430px;
+    background-color: #e6e6e9;
+  }
+
+  h1 {
+    font-size: 30px;
+    line-height: 45px;
+    font-weight: normal;
+    width: 640px;
+    margin: 0 auto;
+    color: #333333;
+    font-family: "HelveticaNeue-Medium", "Cabin", sans-serif;
+  }
+
+  #small {
+    font-size: 18px;
+    font-family: "Helvetica Neue", "Cabin", sans-serif;
+  }
+
+  .img1 {
+    padding-left: 10px;
+    padding-top: 10px;
+  }
+
+  .img2 {
+    padding-left: 5px;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  a.title {
+    color: inherit;
+    /* blue colors for links too */
+    text-decoration: inherit;
+    /* no underline */
+  }
+
+  h2 {
+    font-size: 17px;
+    font-weight: 300;
+    margin-top: 12px;
+    padding-left: 30px;
+    padding-right: 30px;
+    text-align: center;
+  }
+
+  .bold {
+    font-weight: bold;
+  }
+
+  .broken {
+    margin-top: -18px;
+    padding-top: 0;
+  }
+
+  .iconlist {
+    padding-left: 35px;
+    background-position: 15px 50%;
+    background-size: 10px 10px;
+    background-repeat: no-repeat;
+    background-image: url("right2.svg");
+    opacity: 0.25;
+    padding-bottom: 2px;
+  }
+
+  .icon {
+    padding-left: 60px;
+    padding-top: 12px;
+    background-position: 5px 50%;
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-image: url("keyboard.svg");
+  }
+
+  .iconlist:hover {
+    opacity: 0.75;
+  }
+
+  .h2bar {
+    width: 100%;
+    background-color: #ffffff;
+    overflow: auto;
+    min-height: 38px;
+    border-bottom: 1px solid #d8d8de;
+    padding-top: 5px;
+  }
+
+  .container {
+    margin: 0 auto;
+    width: 1150px;
+    padding-top: 30px;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .keyboard {
+    height: 400px;
+    margin: 5px auto 0;
+    width: 845px;
+    position: relative;
+    padding: 0 22px;
+    display: inline-block;
+  }
+
+  #numpadblock {
+    height: 400px;
+    width: 210px;
+    margin: 5px auto 0;
+    display: inline-block;
+    position: relative;
+    padding: 0 22px;
+  }
+
+  .numpadfiller {
+    width: 210px;
+    height: 90px;
+    display: inline-block;
+  }
+
+  .hidenumpad {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .hidenumpad:hover {
+    background-color: #c5c5c5;
+    border-color: white;
+    border-bottom: 1px solid #d8d8de;
+    border-right: 1px solid #d8d8de;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .hidenumpad:active {
+    background: linear-gradient(to bottom right, #8fd700, #17d700);
+    opacity: 1;
+    color: #fff;
+    border-color: white;
+    border-bottom: 1px solid #d8d8de;
+    border-right: 1px solid #d8d8de;
+  }
+
+  .key {
+    border-bottom: 1px solid #d8d8de;
+    border-right: 1px solid #d8d8de;
+    opacity: 0.98;
+    color: #898989;
+    display: inline-block;
+    font-size: 18px;
+    height: 52px;
+    text-align: center;
+    vertical-align: top;
+    width: 50px;
+    margin: 5px 1px;
+    border-radius: 3px;
+    background-color: #ffffff;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .key:hover {
+    font-weight: bold;
+    box-shadow: inset 0 20px 20px -20px #e7e7e7;
+  }
+
+  .extra {
+    font-size: 13px;
+  }
+
+  .vh {
+    visibility: hidden;
+  }
+
+  .toprow {
+    height: 26px;
+    font-size: 13px;
+    line-height: 0px;
+    width: 52px;
+  }
+
+  .tilde {
+    font-size: 16px;
+    line-height: 15px;
+  }
+
+  .del {
+    text-align: right;
+    padding-right: 6px;
+    width: 72px;
+    font-size: 13px;
+    line-height: 40px;
+  }
+
+  .plus {
+    line-height: 15px;
+  }
+
+  .min {
+    line-height: 5px;
+  }
+
+  .Tab {
+    text-align: left;
+    padding-left: 6px;
+    width: 72px;
+    font-size: 13px;
+    line-height: 40px;
+  }
+
+  .bracket {
+    line-height: 4px;
+    font-size: 15px;
+  }
+
+  .CapsLock {
+    text-align: left;
+    padding-left: 6px;
+    width: 85px;
+    font-size: 13px;
+    line-height: 40px;
+  }
+
+  .Return {
+    text-align: right;
+    padding-right: 6px;
+    width: 90px;
+    font-size: 13px;
+    line-height: 40px;
+  }
+
+  .bottomrow {
+    font-size: 13px;
+    line-height: 56px;
+    height: 58px;
+  }
+
+  .fn {
+    text-align: left;
+    padding-left: 6px;
+    width: 46px;
+  }
+
+  .cmd {
+    width: 60px;
+  }
+
+  .press {
+    background-color: #c5c5c5;
+    border-color: #c5c5c5;
+    color: #fff;
+    font-weight: bold;
+  }
+
+  .active {
+    background: linear-gradient(to bottom right, #8fd700, #17d700);
+    opacity: 1;
+    color: #fff;
+    border-color: #d8d8de;
+  }
+
+  .shiftleft {
+    text-align: left;
+    padding-left: 6px;
+    width: 114px;
+    font-size: 13px;
+    line-height: 40px;
+  }
+
+  .shiftright {
+    text-align: right;
+    padding-right: 6px;
+    width: 120px;
+    font-size: 13px;
+    line-height: 40px;
+  }
+
+  .Space {
+    width: 284px;
+    height: 58px;
+  }
+
+  .left {
+    height: 26px;
+    margin-top: 37px;
+    font-size: 10px;
+    line-height: 27px;
+    width: 52px;
+  }
+
+  .updown {
+    font-size: 10px;
+    height: 58px;
+    width: 52px;
+  }
+
+  .up {
+    height: 29px;
+    line-height: 30px;
+    border-bottom: 1px solid #e7e7e7;
+  }
+
+  .down {
+    height: 28px;
+    line-height: 30px;
+  }
+
+  .hidden {
+    visibility: hidden;
+  }
+
+  .nowork {
+    background-color: #868686;
+    color: white;
+  }
+
+  .test {
+    color: #000000;
+  }
+
+  .infotext {
+    display: inline;
+  }
+
+  .keycounter {
+    border-bottom: 1px solid #d8d8de;
+    border-right: 1px solid #d8d8de;
+    opacity: 0.98;
+    color: white;
+    border-radius: 3px;
+    background: linear-gradient(to bottom right, #ff512f, #f09819);
+    padding: 3px;
+    padding-left: 5px;
+    padding-right: 5px;
+    white-space: nowrap;
+  }
+
+  .footer {
+    width: 100%;
+    border-top: 1px solid #d8d8de;
+  }
+
+  .green {
+    border-bottom: 1px solid #d8d8de;
+    border-right: 1px solid #d8d8de;
+    opacity: 0.98;
+    color: white;
+    border-radius: 3px;
+    background: linear-gradient(to bottom right, #8fd700, #17d700);
+    padding: 3px;
+    display: inline;
+    padding-left: 5px;
+    padding-right: 5px;
+    white-space: nowrap;
+  }
+
+  .cardscontainer {
+    width: 100%;
+    /* border-top:1px solid #D8D8DE; */
+    background-color: #f1f1f1;
+    padding-top: 20px;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding-left: 5px;
+    padding-right: 5px;
+    box-sizing: border-box;
+  }
+
+  .cards {
+    width: 99%;
+    margin-left: 0.5%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  #card {
+    box-sizing: border-box;
+    width: 31%;
+    overflow: auto;
+    background-color: #ffffff;
+    margin-left: 10px;
+    margin-right: 10px;
+    border-bottom: 1px solid #d8d8de;
+    border-right: 1px solid #d8d8de;
+    margin-bottom: 40px;
+    padding: 12px;
+    border-radius: 3px;
+    padding-bottom: 25px;
+  }
+
+  #card.split {
+    width: 47.7%;
+  }
+
+  .img1 {
+    display: block;
+    margin: 0 auto;
+    padding-right: 25px;
+  }
+
+  .amazonimg {
+    min-height: 147px;
+    max-width: 93%;
+  }
+
+  .h3lastkey {
+    padding-right: 0px;
+    margin-right: 0px;
+  }
+
+  h3 {
+    font-size: 24px;
+    padding-left: 29px;
+    font-weight: 300;
+    padding-right: 25px;
+  }
+
+  .list {
+    padding-left: 49px;
+    text-indent: -35px;
+    padding-right: 30px;
+    line-height: 22px;
+  }
+
+  .cardtext {
+    padding-left: 30px;
+    line-height: 22px;
+    padding-right: 30px;
+  }
+
+  img.cardtop {
+    margin: -12px;
+    width: calc(100% + 24px);
+    min-height: 150px;
+    max-height: 233px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    display: flex;
+  }
+
+  img.cardbottom {
+    margin: -12px;
+    width: calc(100% + 24px);
+    min-height: 150px;
+    max-height: 233px;
+    overflow: hidden;
+    margin-bottom: -28px;
+    margin-top: 6px;
+  }
+
+  img.cardmiddle {
+    margin: -12px;
+    width: calc(100% + 24px);
+    min-height: 150px;
+    max-height: 233px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    margin-top: 6px;
+  }
+
+  .cardbackground {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+      url("mactypeweb.jpg");
+    background-size: cover;
+    position: relative;
+    background-position: 40%;
+  }
+
+  h3.white {
+    color: white;
+    text-shadow: 0.5px 0.5px 0px #333;
+    font-size: 30px;
+    line-height: 40px;
+  }
+
+  p.white {
+    color: white;
+    text-shadow: 0.5px 0.5px 0px #333;
+    font-size: 18px;
+  }
+
+  .amazon {
+    background-color: #ffffff;
+    margin: 0 auto;
+    padding: 0;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    font-size: 12px;
+    min-height: 60px;
+    border-top: 1px solid #d8d8de;
+    box-sizing: border-box;
+  }
+
+  .ctabar {
+    background-color: #ffffff;
+    margin: 0 auto;
+    padding: 0;
+    padding-bottom: 10px;
+    width: 100%;
+    text-align: center;
+    border-top: 1px solid #d8d8de;
+    border-bottom: 1px solid #d8d8de;
+    overflow: auto;
+    font-size: 21px;
+    /* display:none; */
+  }
+  /* Small screens */
+
+  @media all and (max-width: 1050px) {
+    #card {
+      width: 47%;
+    }
+  }
+
+  @media all and (max-width: 700px) {
+    #card {
+      width: 99%;
+    }
+  }
+</style>
+<div class="keyboard">
+  <div class="key Escape toprow">
+    <p>esc</p>
+  </div>
+  <div class="key F1 toprow">
+    <p>F1</p>
+  </div>
+  <div class="key F2 toprow">
+    <p>F2</p>
+  </div>
+  <div class="key F3 toprow">
+    <p>F3</p>
+  </div>
+  <div class="key F4 toprow">
+    <p>F4</p>
+  </div>
+  <div class="key F5 toprow">
+    <p>F5</p>
+  </div>
+  <div class="key F6 toprow">
+    <p>F6</p>
+  </div>
+  <div class="key F7 toprow">
+    <p>F7</p>
+  </div>
+  <div class="key F8 toprow">
+    <p>F8</p>
+  </div>
+  <div class="key F9 toprow">
+    <p>F9</p>
+  </div>
+  <div class="key F10 toprow">
+    <p>F10</p>
+  </div>
+  <div class="key F11 toprow">
+    <p>F11</p>
+  </div>
+  <div class="key F12 toprow">
+    <p>F12</p>
+  </div>
+  <div class="key nowork toprow">
+    <p>del</p>
+  </div>
+  <div class="key backquote tilde">
+    <p>~<br />`</p>
+  </div>
+  <div class="key 1 bracket exclamation">
+    <p>!<br /><br /><br /><br /><br />1</p>
+  </div>
+  <div class="key 2 bracket at">
+    <p>@<br /><br /><br /><br /><br />2</p>
+  </div>
+  <div class="key 3 bracket hashtag">
+    <p>#<br /><br /><br /><br /><br />3</p>
+  </div>
+  <div class="key 4 bracket dollarsign">
+    <p>$<br /><br /><br /><br /><br />4</p>
+  </div>
+  <div class="key 5 bracket percent">
+    <p>%<br /><br /><br /><br /><br />5</p>
+  </div>
+  <div class="key 6 bracket circumflex">
+    <p>^<br /><br /><br /><br /><br />6</p>
+  </div>
+  <div class="key 7 bracket and">
+    <p>&amp;<br /><br /><br /><br /><br />7</p>
+  </div>
+  <div class="key 8 bracket asterisk">
+    <p>*<br /><br /><br /><br /><br />8</p>
+  </div>
+  <div class="key 9 bracket roundbracketleft">
+    <p>(<br /><br /><br /><br /><br />9</p>
+  </div>
+  <div class="key 0 bracket roundbracketright">
+    <p>)<br /><br /><br /><br /><br />0</p>
+  </div>
+  <div class="key minus bracket Underscore">
+    <p>-<br /><br /><br /><br />_</p>
+  </div>
+  <div class="key equal bracket plus">
+    <p>+<br /><br /><br /><br /><br />=</p>
+  </div>
+  <div class="key Backspace del">
+    <p>backspace</p>
+  </div>
+  <div class="key Tab">
+    <p>tab</p>
+  </div>
+  <div class="key q Q">
+    <p>Q</p>
+  </div>
+  <div class="key w W">
+    <p>W</p>
+  </div>
+  <div class="key e E">
+    <p>E</p>
+  </div>
+  <div class="key r R">
+    <p>R</p>
+  </div>
+  <div class="key t T">
+    <p>T</p>
+  </div>
+  <div class="key y Y">
+    <p>Y</p>
+  </div>
+  <div class="key u U">
+    <p>U</p>
+  </div>
+  <div class="key i I">
+    <p>I</p>
+  </div>
+  <div class="key o O">
+    <p>O</p>
+  </div>
+  <div class="key p P">
+    <p>P</p>
+  </div>
+  <div class="key bracketleft bracket CurlyBracketL">
+    <p>{<br /><br /><br /><br /><br />[</p>
+  </div>
+  <div class="key bracketright bracket CurlyBracketR">
+    <p>}<br /><br /><br /><br /><br />]</p>
+  </div>
+  <div class="key backslash bracket stick">
+    <p>|<br /><br /><br /><br /><br />\</p>
+  </div>
+  <div class="key CapsLock">
+    <p>caps lock</p>
+  </div>
+  <div class="key a A">
+    <p>A</p>
+  </div>
+  <div class="key s S">
+    <p>S</p>
+  </div>
+  <div class="key d D">
+    <p>D</p>
+  </div>
+  <div class="key f F">
+    <p>F</p>
+  </div>
+  <div class="key g G">
+    <p>G</p>
+  </div>
+  <div class="key h H">
+    <p>H</p>
+  </div>
+  <div class="key j J">
+    <p>J</p>
+  </div>
+  <div class="key k K">
+    <p>K</p>
+  </div>
+  <div class="key l L">
+    <p>L</p>
+  </div>
+  <div class="key semicolon bracket colon">
+    <p>:<br /><br /><br /><br /><br />;</p>
+  </div>
+  <div class="key quote bracket doublequote">
+    <p>"<br /><br /><br /><br /><br />'</p>
+  </div>
+  <div class="key Enter Return">
+    <p>enter</p>
+  </div>
+  <div class="key Shift shiftleft">
+    <p>shift</p>
+  </div>
+  <div class="key z Z">
+    <p>Z</p>
+  </div>
+  <div class="key x X">
+    <p>X</p>
+  </div>
+  <div class="key c C">
+    <p>C</p>
+  </div>
+  <div class="key v V">
+    <p>V</p>
+  </div>
+  <div class="key b B">
+    <p>B</p>
+  </div>
+  <div class="key n N">
+    <p>N</p>
+  </div>
+  <div class="key m M">
+    <p>M</p>
+  </div>
+  <div class="key comma bracket flexleft">
+    <p>&lt;<br /><br /><br /><br /><br />,</p>
+  </div>
+  <div class="key punt bracket flexright">
+    <p>&gt;<br /><br /><br /><br /><br />.</p>
+  </div>
+  <div class="key slash bracket question">
+    <p>?<br /><br /><br /><br /><br />/</p>
+  </div>
+  <div class="key Shift shiftright">
+    <p>shift</p>
+  </div>
+  <div class="key nowork bottomrow fn">
+    <p>fn</p>
+  </div>
+  <div class="key Control bottomrow">
+    <p>control</p>
+  </div>
+  <div class="key Alt bottomrow">
+    <p>alt</p>
+  </div>
+  <div class="key Meta bottomrow cmd">
+    <p>windows</p>
+  </div>
+  <div class="key Space"></div>
+  <div class="key bottomrow Meta cmd">
+    <p>windows</p>
+  </div>
+  <div class="key bottomrow Alt">
+    <p>alt</p>
+  </div>
+  <div class="key ArrowLeft left">◀</div>
+  <div class="key updown">
+    <div class="up ArrowUp">▲</div>
+    <div class="down ArrowDown">▼</div>
+  </div>
+  <div class="key left ArrowRight">▶</div>
+</div>
