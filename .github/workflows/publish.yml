@@ -33,7 +33,7 @@ jobs:
       # 打包
       - uses: montudor/action-zip@v0.1.1
         with:
-          args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX*.* LICENCE README.md SECURITY.md "启动 CapsLockX.lnk"
+          args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENCE *.md "启动 CapsLockX.lnk"
       # 上传
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2

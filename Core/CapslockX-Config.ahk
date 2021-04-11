@@ -24,7 +24,8 @@ if (!!CapsLockXConfigPath){
 }
 
 清洗为_UTF16_WITH_BOM_型编码(path){
-    FileRead CLX配置锁状态, CapsLockX_Config.lock
+    ; 锁住的话就先不清洗
+    FileRead CLX配置锁状态, %A_Temp%/CapsLockX_Config.lock
     if(CLX配置锁状态){
         return
     }
@@ -32,13 +33,13 @@ if (!!CapsLockXConfigPath){
     if(锁)
         Return
     锁 := 1
-    FileAppend, 1, CapsLockX_Config.lock
+    FileAppend, 1, %A_Temp%/CapsLockX_Config.lock
     FileRead ModuleCode, %path%
     if(ModuleCode){
         FileDelete %path%
         FileAppend %ModuleCode%, %path%, UTF-16
     }
-    FileDelete, CapsLockX_Config.lock
+    FileDelete, %A_Temp%/CapsLockX_Config.lock
     锁 := 0
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){

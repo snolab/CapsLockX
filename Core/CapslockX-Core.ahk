@@ -53,11 +53,12 @@ Menu, tray, icon, %T_SwitchTrayIconOff%
 UpdateLight()
 
 global T_IgnoresByLines
-ignoresFilePath := "CapsLockX.user.ignores"
-FileRead, T_IgnoresByLines, %ignoresFilePath%
+defaultIgnoreFilePath := "Data/CapsLockX.defaults.ignore.txt"
+userIgnoreFilePath := "CapsLockX.user.ignore.txt"
+FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 if (T_IgnoresByLinesUser){
-    FileCopy, CapsLockX.defaults.ignores, %ignoresFilePath%
-    FileRead, T_IgnoresByLines, %ignoresFilePath%
+    FileCopy, %defaultIgnoreFilePath%, %userIgnoreFilePath%
+    FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 }
 
 global CapsLockX_Paused := 0

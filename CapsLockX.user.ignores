@@ -1,7 +1,0 @@
-# 各种游戏
-ahk_exe yuanshen.exe
-ahk_class UnityWndClass ahk_exe YuanShen.exe
-ahk_exe YuanShen.exe
-
-# 高级编辑器
-gvim
