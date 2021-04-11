@@ -17,8 +17,5 @@ CapsLockX-ModulesLoader.ahk
 Tools/new-version*.txt
 
 # user
-*.ini
-*.user.ahk
-*.user.md
-*.user.ignores
-*.user.ignores.txt
+/*.ini
+*.user.*
