@@ -19,13 +19,15 @@
 （或 [Gitee 仓库源码（大陆）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)）
 2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 安装方式 2
+#### 命令行安装
 
-如果你有 npm ，可以【尝试 `npm i -g capslockx` 来自动安装 以及 `npx capslockx` 来启动】本软件
+以下几种任选其一，推荐第一个。
 
-#### 安装方式 3
-
-- [ ] Chocolatey（研究中）
+1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snomiao/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+3. `npm i -g capslockx && capslockx`
+4. `npx capslockx`
+5. `choco install capslockx && capslockx`
 
 ### 使用方式
 
