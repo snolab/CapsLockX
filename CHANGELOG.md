@@ -1,3 +1,15 @@
+## <small>1.14.30 (2021-04-12)</small>
+
+* chore:versioning ([dd151fa](https://github.com/snomiao/CapsLockX/commit/dd151fa))
+* debug-done ([377ff04](https://github.com/snomiao/CapsLockX/commit/377ff04))
+* fix npm ignore ([5f8d832](https://github.com/snomiao/CapsLockX/commit/5f8d832))
+* ignore tgz ([a2eed8e](https://github.com/snomiao/CapsLockX/commit/a2eed8e))
+* chore: add VERIFICATION for chocolatey ([835b932](https://github.com/snomiao/CapsLockX/commit/835b932))
+* chore: package-test ([c066895](https://github.com/snomiao/CapsLockX/commit/c066895))
+* doc: 安装方式 ([971522a](https://github.com/snomiao/CapsLockX/commit/971522a))
+
+
+
 ## <small>1.14.29 (2021-04-12)</small>
 
 * chore:versioning ([7055434](https://github.com/snomiao/CapsLockX/commit/7055434))
