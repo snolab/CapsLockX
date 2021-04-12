@@ -32,7 +32,7 @@ jobs:
       # 打包
       - uses: montudor/action-zip@v0.1.1
         with:
-          args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENCE *.md "启动 CapsLockX.lnk"
+          args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENSE *.md "启动 CapsLockX.lnk"
       # 暂存
       # - uses: actions/upload-artifact@v1
       #   with:
@@ -64,9 +64,9 @@ jobs:
       # 打包 校验
       - run: |
           choco install zip checksum
-          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX* LICENCE *.md "启动 CapsLockX.lnk"
+          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX* LICENSE *.md "启动 CapsLockX.lnk"
           checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
-          cp -force LICENSE           tools/choco/tools/LICENCE.txt
+          cp -force LICENSE           tools/choco/tools/LICENSE.txt
           cp -force CapsLockX.zip     tools/choco/tools/
           cp -force CapsLockX.sha256  tools/choco/tools/
           cpack Tools/choco/CapsLockX.nuspec
