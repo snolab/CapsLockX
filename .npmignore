@@ -25,3 +25,8 @@ Tools/new-version*.txt
 .github
 .vscode
 Test
+
+# bug fix
+Tools/choco
+commitlint.config.js
+*.bat
