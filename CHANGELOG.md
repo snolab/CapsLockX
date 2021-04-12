@@ -1,3 +1,12 @@
+## <small>1.14.28 (2021-04-12)</small>
+
+* chore:versioning ([7617e98](https://github.com/snomiao/CapsLockX/commit/7617e98))
+* chore: debug name workflow ([bf771d6](https://github.com/snomiao/CapsLockX/commit/bf771d6))
+* chore: enable_jekyll: true ([1346b00](https://github.com/snomiao/CapsLockX/commit/1346b00))
+* chore: workflow debug ([1815aab](https://github.com/snomiao/CapsLockX/commit/1815aab))
+
+
+
 ## <small>1.14.27 (2021-04-12)</small>
 
 * chore:versioning ([ecb403d](https://github.com/snomiao/CapsLockX/commit/ecb403d))
