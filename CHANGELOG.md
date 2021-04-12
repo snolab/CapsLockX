@@ -1,3 +1,10 @@
+## <small>1.14.24 (2021-04-12)</small>
+
+* chore:versioning ([2d11382](https://github.com/snomiao/CapsLockX/commit/2d11382))
+* chore: chocolatey setup ([5dd66fe](https://github.com/snomiao/CapsLockX/commit/5dd66fe))
+
+
+
 ## <small>1.14.23 (2021-04-11)</small>
 
 * chore:versioning ([99ea551](https://github.com/snomiao/CapsLockX/commit/99ea551))
