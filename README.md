@@ -13,15 +13,17 @@
 
 #### 安装方式 1
 
-源码打包就是软件本体，无需编译。
+源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包：
 
-1. 下载源码 zip 点击 [github仓库源码.zip](https://github.com/snomiao/CapsLockX/archive/master.zip) 然后解压后使用。
-（或 [Gitee 仓库源码（大陆）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)）
-2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
+- [下载 大陆用户-Gitee-仓库程序包.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
+- [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snomiao/CapsLockX/archive/master.zip)
+- [下载 灾难备份-BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
+
+解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
 #### 命令行安装
 
-以下几种任选其一，推荐第一个。
+以下几种任选其一，推荐第一个（最快）
 
 1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
 2. `git clone https://github.com/snomiao/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
