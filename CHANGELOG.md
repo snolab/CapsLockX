@@ -1,3 +1,10 @@
+## <small>1.14.27 (2021-04-12)</small>
+
+* chore:versioning ([ecb403d](https://github.com/snomiao/CapsLockX/commit/ecb403d))
+* chore: fix: The workflow is not valid. Job chocolatey depends on unknown job release. ([30241fe](https://github.com/snomiao/CapsLockX/commit/30241fe))
+
+
+
 ## <small>1.14.26 (2021-04-12)</small>
 
 * chore:versioning ([6dd21c7](https://github.com/snomiao/CapsLockX/commit/6dd21c7))
