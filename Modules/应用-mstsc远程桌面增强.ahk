@@ -16,31 +16,13 @@ global FLAG_CtrlShiftAlt按下 := 0
 
 Return
 
-setCurrentWindowAsBackground(){
-    ; 获取窗口
+CurrentWindowSetAsBackground(){
+    ; 后置当前窗口
     WinGet hWnd, id, A
-    ; 隐藏
-    WinHide, ahk_id %hWnd%
-    ; 获取其它窗口
-    其它窗口 := WinExist(".*")
-    ; 异步后置并显示
-    ; HWND_BOTTOM := 1
-    ; SWP_SHOWWINDOW := 0x0040
-    ; SWP_NOACTIVATE := 0x0010
-    ; SWP_ASYNCWINDOWPOS:= 0x4000
-    ; SWP_NOMOVE := 0x0002
-    ; SWP_NOSIZE := 0x0001
-    ; DllCall("SetWindowPos"
-    ; , "UInt", hWnd ; handle
-    ; , "UInt", HWND_BOTTOM ; z-index
-    ; , "Int", 0, "Int", 0, "Int", 0, "Int", 0
-    ; , "UInt", SWP_SHOWWINDOW| SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS)
-    WinShow, ahk_id %hWnd%
-    WinSet Bottom,, ahk_id %hWnd%
-    ; 把焦点给其它窗口
-    WinActivate, ahk_id %其它窗口%
-    TrayTip, CapsLockX, 后置当前窗口（主要用于虚拟机和远程桌面）
     上次mstsc窗口hWnd := hWnd
+    WinSet Bottom,, ahk_id %hWnd%
+    ; 激活任务栏，夺走焦点
+    WinActivate ahk_class Shell_TrayWnd
 }
 
 #if
@@ -49,7 +31,6 @@ setCurrentWindowAsBackground(){
 ~$<^<+LAlt::
 ~$<!<^LShift::
     FLAG_CtrlShiftAlt按下:=1
-
 return
 
 ~$<!<+LCtrl Up::
@@ -73,7 +54,7 @@ return
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
     if(间隔 < 200){
-        setCurrentWindowAsBackground()
+        CurrentWindowSetAsBackground()
     }else{
         上次CtrlShiftAlt时刻 := 现在
     }
