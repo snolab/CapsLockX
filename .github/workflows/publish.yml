@@ -5,7 +5,7 @@ on:
       - "v*"
 name: Publish
 jobs:
-  release:
+  npm-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -18,27 +18,26 @@ jobs:
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+  github-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 10
+          registry-url: https://registry.npmjs.org/
       # Github 源码发布
       - run: npm i -g github-release-from-changelog
       - run: github-release-from-changelog
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      # package:
-      #   runs-on: ubuntu-latest
-      #   steps:
-      #     - uses: actions/checkout@v2
       # 获取版本号 [continuous integration - Get the current pushed tag in Github Actions - Stack Overflow]( https://stackoverflow.com/questions/58177786/get-the-current-pushed-tag-in-github-actions )
       - run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       # 打包
       - uses: montudor/action-zip@v0.1.1
         with:
           args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENSE *.md "启动 CapsLockX.lnk"
-      # 暂存
-      # - uses: actions/upload-artifact@v1
-      #   with:
-      #     name: CapsLockX-latest.zip
-      #     path: CapsLockX-${{ env.RELEASE_VERSION }}.zip
-      # 附件
+      # 扔附件
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
