@@ -34,10 +34,10 @@ jobs:
         with:
           args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENCE *.md "启动 CapsLockX.lnk"
       # 暂存
-      - uses: actions/upload-artifact@v1
-        with:
-          name: CapsLockX-latest.zip
-          path: CapsLockX-${{ env.RELEASE_VERSION }}.zip
+      # - uses: actions/upload-artifact@v1
+      #   with:
+      #     name: CapsLockX-latest.zip
+      #     path: CapsLockX-${{ env.RELEASE_VERSION }}.zip
       # 附件
       - uses: svenstaro/upload-release-action@v2
         with:
@@ -55,18 +55,25 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
   chocolatey:
+    env:
+      RELEASE_VERSION: ${GITHUB_REF#refs/*/}
     needs: release
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      # 取回
-      - uses: actions/download-artifact@v1
-        with:
-          name: CapsLockX-latest.zip
-          path: CapsLockX-latest.zip
-      - run: choco install checksum
-      - run: cat file.txt
-      # Cocolatey 发布（调试中）
-      - uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: pack
+      # 打包 校验
+      - run: |
+          choco install zip checksum
+          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX* LICENCE *.md "启动 CapsLockX.lnk"
+          checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
+          cp -force LICENSE           tools/choco/tools/LICENCE.txt
+          cp -force CapsLockX.zip     tools/choco/tools/
+          cp -force CapsLockX.sha256  tools/choco/tools/
+          cpack Tools/choco/CapsLockX.nuspec
+      # 测试
+      - run: |
+          cinst CapsLockX -s .
+      # 发布
+      - run: |
+          choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
+          choco push

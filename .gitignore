@@ -8,6 +8,7 @@ node_modules
 /docs/README.html
 *.sublime-*
 *.zip
+*.sha256
 *.bak
 CapslockX-LoadModules.ahk
 CapsLockX-LoadModules.ahk
