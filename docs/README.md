@@ -4,6 +4,7 @@
 
 [![jsdelivr](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)
+[![Package-Test](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml)
 
 ## 入门教程第一
 
@@ -11,19 +12,23 @@
 
 #### 安装方式 1
 
-源码打包就是软件本体，无需编译。
+源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包：
 
-1. 下载源码 zip 点击 [github仓库源码.zip](https://github.com/snomiao/CapsLockX/archive/master.zip) 然后解压后使用。
-（或 [Gitee 仓库源码（大陆）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)）
-2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
+- [下载 大陆用户-Gitee-仓库程序包.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
+- [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snomiao/CapsLockX/archive/master.zip)
+- [下载 灾难备份-BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
 
-#### 安装方式 2
+解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-如果你有 npm ，可以【尝试 `npm i -g capslockx` 来自动安装 以及 `npx capslockx` 来启动】本软件
+#### 命令行安装
 
-#### 安装方式 3
+以下几种任选其一，推荐第一个（最快）
 
-- [ ] Chocolatey（研究中）
+1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snomiao/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+3. `npm i -g capslockx && capslockx`
+4. `npx capslockx`
+5. `choco install capslockx && capslockx`
 
 ### 使用方式
 
@@ -207,7 +212,7 @@
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -299,11 +304,11 @@
 
 ### TIM添加常驻功能模块
 
-|模式|按键|功能|
-| - | :-: | - |
-| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
-| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
-| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
+| 模式        |    按键     | 功能                   |
+| ----------- | :---------: | ---------------------- |
+| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
+| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
+| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -311,9 +316,9 @@
 
 #### 用法
 
-| 作用于 | 按键| 功能说明 |
-| - | :-: | - |
-| 全局 | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 |  按键   | 功能说明              |
+| ------ | :-----: | --------------------- |
+| 全局   | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 

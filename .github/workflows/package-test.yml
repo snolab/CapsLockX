@@ -7,21 +7,35 @@ name: package-test
 jobs:
   cn:
     runs-on: windows-latest
+    env:
+      ENVIROMENT: CI_TEST
     steps:
-      - run: git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe --test
+      - run: git clone https://gitee.com/snomiao/CapslockX.git
+      - run: .\CapsLockX\CapsLockX.exe
   gh:
     runs-on: windows-latest
+    env:
+      ENVIROMENT: CI_TEST
     steps:
-      - run: git clone https://github.com/snomiao/CapsLockX.git && .\CapsLockX\CapsLockX.exe --test
+      - run: git clone https://github.com/snomiao/CapsLockX.git
+      - run: .\CapsLockX\CapsLockX.exe
   npm:
     runs-on: windows-latest
+    env:
+      ENVIROMENT: CI_TEST
     steps:
-      - run: npm i -g capslockx && capslockx --test
+      - run: npm i -g capslockx
+      - run: capslockx
   npx:
     runs-on: windows-latest
+    env:
+      ENVIROMENT: CI_TEST
     steps:
-      - run: npx capslockx --test
+      - run: npx capslockx
   choco:
     runs-on: windows-latest
+    env:
+      ENVIROMENT: CI_TEST
     steps:
-      - run: choco install capslockx && capslockx --test
+      - run: choco install capslockx
+      - run: capslockx

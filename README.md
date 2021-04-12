@@ -10,7 +10,7 @@
 ## 入门教程第一
 
 ### 安装
-
+[![package-test](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml)
 #### 安装方式 1
 
 源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包：

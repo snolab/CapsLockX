@@ -231,6 +231,13 @@ global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
 global UpdatorAHK := CapsLockX_PathCore "\CapsLockX-Update.ahk"
 ; 隐藏 ToolTip
 ToolTip
+
+EnvGet ENVIROMENT, ENVIROMENT
+if("CI_TEST" == ENVIROMENT){
+    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
+    ExitApp
+}
+
 ; 运行更新组件
 Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %UpdatorAHK%, %A_WorkingDir%
 ; 运行核心
