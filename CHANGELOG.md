@@ -1,3 +1,11 @@
+## <small>1.14.29 (2021-04-12)</small>
+
+* chore:versioning ([7055434](https://github.com/snomiao/CapsLockX/commit/7055434))
+* doc ([dcfbc1f](https://github.com/snomiao/CapsLockX/commit/dcfbc1f))
+* chore: versioning 过长文档 CDATA包装 ([c2586f6](https://github.com/snomiao/CapsLockX/commit/c2586f6))
+
+
+
 ## <small>1.14.28 (2021-04-12)</small>
 
 * chore:versioning ([7617e98](https://github.com/snomiao/CapsLockX/commit/7617e98))
