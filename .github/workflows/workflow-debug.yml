@@ -16,12 +16,13 @@ jobs:
       #   with:
       #     path: # TODO
       #     key: ${{ runner.os }}-# TODO
+      # 这个 step 需要干净的环境所以不要在本地运行。
       - run: |
-          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX* LICENSE *.md "启动 CapsLockX.lnk"
+          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md "启动 CapsLockX.lnk"
           checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
           cp -force LICENSE           tools/choco/tools/LICENSE.txt
-          cp -force CapsLockX.zip     tools/choco/tools/
-          cp -force CapsLockX.sha256  tools/choco/tools/
+          mv -force CapsLockX.zip     tools/choco/tools/
+          mv -force CapsLockX.sha256  tools/choco/tools/
           choco pack Tools/choco/CapsLockX.nuspec
       # 测试
       - run: |
@@ -30,4 +31,4 @@ jobs:
       - run: |
           choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
       - run: |
-          choco push
+          choco push --source https://push.chocolatey.org/
