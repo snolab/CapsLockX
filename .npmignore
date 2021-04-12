@@ -1,0 +1,27 @@
+# sync services
+.sync
+*.!sync
+
+# generated
+*.nupkg
+node_modules
+/docs/README.html
+*.sublime-*
+*.zip
+*.sha256
+*.bak
+CapslockX-LoadModules.ahk
+CapsLockX-LoadModules.ahk
+CapsLockX-ModulesRunner.ahk
+CapsLockX-ModulesLoader.ahk
+*.!sync
+Tools/new-version*.txt
+
+# user
+/*.ini
+*.user.*
+
+# dev
+.github
+.vscode
+Test
