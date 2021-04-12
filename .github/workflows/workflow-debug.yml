@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - master
-name: Publish
+name: debug
 jobs:
   chocolatey-publish:
     runs-on: windows-latest
