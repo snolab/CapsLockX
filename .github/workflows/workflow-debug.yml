@@ -1,0 +1,30 @@
+# ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
+on:
+  push:
+    branches:
+      - master
+name: Publish
+jobs:
+  chocolatey-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      # 打包 校验
+      - run: choco install zip checksum
+      - env:
+          RELEASE_VERSION: ${GITHUB_REF#refs/*/}
+        run: |
+          echo CapsLockX-${{ env.RELEASE_VERSION }}.zip
+          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX* LICENSE *.md "启动 CapsLockX.lnk"
+          checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
+          cp -force LICENSE           tools/choco/tools/LICENSE.txt
+          cp -force CapsLockX.zip     tools/choco/tools/
+          cp -force CapsLockX.sha256  tools/choco/tools/
+          choco pack Tools/choco/CapsLockX.nuspec
+      # 测试
+      - run: |
+          cinst CapsLockX -s .
+      # 发布
+      - run: |
+          choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
+          choco push
