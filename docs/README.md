@@ -1,6 +1,6 @@
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。
+像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
 [![jsdelivr](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)
@@ -212,7 +212,7 @@
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -304,11 +304,11 @@
 
 ### TIM添加常驻功能模块
 
-|模式|按键|功能|
-| - | :-: | - |
-| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
-| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
-| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
+| 模式        |    按键     | 功能                   |
+| ----------- | :---------: | ---------------------- |
+| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
+| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
+| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -316,9 +316,9 @@
 
 #### 用法
 
-| 作用于 | 按键| 功能说明 |
-| - | :-: | - |
-| 全局 | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 |  按键   | 功能说明              |
+| ------ | :-----: | --------------------- |
+| 全局   | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
