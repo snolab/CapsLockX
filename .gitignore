@@ -7,6 +7,7 @@
 node_modules
 /docs/README.html
 *.sublime-*
+*.tgz
 *.zip
 *.sha256
 *.bak
