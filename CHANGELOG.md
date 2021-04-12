@@ -1,3 +1,12 @@
+## <small>1.14.26 (2021-04-12)</small>
+
+* chore:versioning ([6dd21c7](https://github.com/snomiao/CapsLockX/commit/6dd21c7))
+* fix typo ([13318e9](https://github.com/snomiao/CapsLockX/commit/13318e9))
+* fix: npm ignores for unacceptable content ([553ad94](https://github.com/snomiao/CapsLockX/commit/553ad94))
+* chore: seprate github-publish ([1f47ce3](https://github.com/snomiao/CapsLockX/commit/1f47ce3))
+
+
+
 ## <small>1.14.25 (2021-04-12)</small>
 
 * chore:versioning ([89e8326](https://github.com/snomiao/CapsLockX/commit/89e8326))
