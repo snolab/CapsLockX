@@ -5,7 +5,18 @@ on:
       - "v*"
 name: gh-pages
 jobs:
-  github-publish:
+  # github-package:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/setup-node@v2
+  #       with:
+  #         node-version: 14
+  #         registry-url: "https://npm.pkg.github.com"
+  #     # Github 包发布
+  #     - run: npm publish
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  github-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -13,10 +24,6 @@ jobs:
         with:
           node-version: 14
           registry-url: https://npm.pkg.github.com
-      # Github 包发布
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Github 源码发布
       - run: npm i -g github-release-from-changelog
       - run: github-release-from-changelog
