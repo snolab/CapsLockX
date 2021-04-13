@@ -48,6 +48,7 @@ jobs:
           body: "CapsLockX Package"
       # 压缩包和 docs 一起同步到 gh-pages
       - run: mv CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
+      - run: mv CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
       - run: cp Tools/version.txt docs/version.txt
       - uses: peaceiris/actions-gh-pages@v3
         with:
@@ -60,6 +61,7 @@ jobs:
       - uses: actions/checkout@v2
       # 打包 校验
       - run: choco install zip checksum
+      # TODO 搞个缓存
       # - uses: actions/cache@v1
       #   id: env_cache
       #   with:
