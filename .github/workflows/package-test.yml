@@ -2,7 +2,7 @@ on:
   push:
     tags:
       - "v*"
-name: package-test
+name: Packages Test
 jobs:
   # cn:
   #   runs-on: windows-latest
