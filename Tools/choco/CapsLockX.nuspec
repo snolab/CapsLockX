@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.14.31</version>
+    <version>1.14.32</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -26,8 +26,11 @@
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
-[![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)
-[![Package-Test](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml)
+
+[![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
+[![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
+[![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
+[![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml)
 
 ## 入门教程第一
 
@@ -79,7 +82,7 @@
 
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
-下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
+CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下方列出。
 对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + \` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
@@ -122,22 +125,24 @@
 | 全局   | CapsLockX + w a s d | 鼠标移动（上下左右）    |
 | 全局   | CapsLockX + r f     | 垂直滚轮（上下）        |
 | 全局   | CapsLockX + R F     | 水平滚轮（左右）        |
-| 全局   | CapsLockX + rf      | rf 同时按相当于鼠标中键 |
-| 全局   | CapsLockX + e       | 鼠标左键                |
-| 全局   | CapsLockX + q       | 鼠标右键                |
-
-<!-- 模块文件名：01.2-插件-编辑增强.ahk-->
-
-### 编辑增强插件（ TG YUIO HJKL ）
-
-这个世界上还有比 Vim 模式的 HJKL 移动光标更棒的东西吗？
-这个必须有！
-那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
-
-![光标移动.gif]( ./docs/media/光标移动.gif )
-]]></description>
+| 全局   | CapsLockX + rf      | rf 同时按相当于鼠标中键 |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.14.30 (2021-04-12)</small>
+    <releaseNotes><![CDATA[## <small>1.14.31 (2021-04-13)</small>
+
+* chore:versioning ([eb304a4](https://github.com/snomiao/CapsLockX/commit/eb304a4))
+* doc ([0f8e292](https://github.com/snomiao/CapsLockX/commit/0f8e292))
+* doc ([6ac326c](https://github.com/snomiao/CapsLockX/commit/6ac326c))
+* doc ([c29fc58](https://github.com/snomiao/CapsLockX/commit/c29fc58))
+* docs ([36bbce9](https://github.com/snomiao/CapsLockX/commit/36bbce9))
+* chore: CI_TEST ([539ae48](https://github.com/snomiao/CapsLockX/commit/539ae48))
+* chore: publish as CapsLockX-latest.zip ([3b397b2](https://github.com/snomiao/CapsLockX/commit/3b397b2))
+* chore: remove snomiao/CapsLockX.git ([d693ddf](https://github.com/snomiao/CapsLockX/commit/d693ddf))
+* fix: 双击Ctrl+Alt+Shift 后置当前窗口时，自动激活任务栏。 ([8feea0d](https://github.com/snomiao/CapsLockX/commit/8feea0d))
+* fix: 观察到 r up 和 f Up 偶尔其中一个会随机失效，原因不明，尝试修复 ([d092f5e](https://github.com/snomiao/CapsLockX/commit/d092f5e))
+
+
+
+## <small>1.14.30 (2021-04-12)</small>
 
 * chore:versioning ([dd151fa](https://github.com/snomiao/CapsLockX/commit/dd151fa))
 * debug-done ([377ff04](https://github.com/snomiao/CapsLockX/commit/377ff04))
@@ -211,31 +216,7 @@
 
 
 ## <small>1.14.21 (2021-04-11)</small>
-
-* chore:versioning ([e6b497a](https://github.com/snomiao/CapsLockX/commit/e6b497a))
-* chore: fix lower case for workflow ([b8c07ff](https://github.com/snomiao/CapsLockX/commit/b8c07ff))
-
-
-
-## <small>1.14.20 (2021-04-11)</small>
-
-* chore:versioning ([8b1acdb](https://github.com/snomiao/CapsLockX/commit/8b1acdb))
-* chore: remove branches trigger ([921798f](https://github.com/snomiao/CapsLockX/commit/921798f))
-* chore: Upload binaries to release ([b837a4f](https://github.com/snomiao/CapsLockX/commit/b837a4f))
-
-
-
-## <small>1.14.19 (2021-04-11)</small>
-
-* chore:versioning ([06b2330](https://github.com/snomiao/CapsLockX/commit/06b2330))
-* chore: seprate package ([00c1b05](https://github.com/snomiao/CapsLockX/commit/00c1b05))
-
-
-
-## <small>1.14.18 (2021-04-11)</small>
-
-* chore:versioning ([a35ee10](https://github.com/snomiao/CapsLockX/commit/a35ee10))
-* chore: ci for zip ([d91e945](https://github.com/snomiao/CapsLockX/commit/d91e945))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
