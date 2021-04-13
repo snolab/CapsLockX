@@ -1,3 +1,10 @@
+## <small>1.14.33 (2021-04-13)</small>
+
+* chore:versioning ([f1a9e43](https://github.com/snomiao/CapsLockX/commit/f1a9e43))
+* chore: disable Github 包发布 ([ad9aaec](https://github.com/snomiao/CapsLockX/commit/ad9aaec))
+
+
+
 ## <small>1.14.32 (2021-04-13)</small>
 
 * chore:versioning ([f16488f](https://github.com/snomiao/CapsLockX/commit/f16488f))
