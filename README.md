@@ -6,8 +6,11 @@
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
-[![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)
-[![Package-Test](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml)
+
+[![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
+[![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
+[![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
+[![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml)
 
 ## 入门教程第一
 
@@ -59,7 +62,7 @@
 
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
-下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
+CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下方列出。
 对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + \` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
