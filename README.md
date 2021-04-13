@@ -1,9 +1,14 @@
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。
+像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
-[![jsdelivr](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
-[![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)
+[![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
+[![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
+
+[![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
+[![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
+[![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
+[![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml)
 
 ## 入门教程第一
 
@@ -11,19 +16,23 @@
 
 #### 安装方式 1
 
-源码打包就是软件本体，无需编译。
+源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包：
 
-1. 下载源码 zip 点击 [github仓库源码.zip](https://github.com/snomiao/CapsLockX/archive/master.zip) 然后解压后使用。
-（或 [Gitee 仓库源码（大陆）.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)）
-2. 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
+- [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snomiao/CapsLockX/archive/master.zip)
+- [下载 灾难备份-BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
+- [下载 大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 
-#### 安装方式 2
+解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-如果你有 npm ，可以【尝试 `npm i -g capslockx` 来自动安装 以及 `npx capslockx` 来启动】本软件
+#### 命令行安装
 
-#### 安装方式 3
+以下几种任选其一，推荐第一个（最快）
 
-- [ ] Chocolatey（研究中）
+1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snomiao/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+3. `npm i -g capslockx && capslockx`
+4. `npx capslockx`
+5. `choco install capslockx && capslockx`
 
 ### 使用方式
 
@@ -51,7 +60,7 @@
 
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
-下面列出的每个模块都可以单独禁用，请见 `CapsLockX-Settings.ahk` 文件，
+CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下方列出。
 对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + \` 重新加载即可。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
