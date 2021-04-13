@@ -3,29 +3,20 @@ on:
   push:
     tags:
       - "v*"
-name: Publish
+name: Release Github
 jobs:
-  npm-publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 10
-          registry-url: https://registry.npmjs.org/
-      # NPM 源码发布
-      - run: npm i
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
   github-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: 10
-          registry-url: https://registry.npmjs.org/
+          node-version: 14
+          registry-url: https://npm.pkg.github.com
+      # Github 包发布
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Github 源码发布
       - run: npm i -g github-release-from-changelog
       - run: github-release-from-changelog
@@ -55,31 +46,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
           enable_jekyll: true
-  chocolatey-publish:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      # 打包 校验
-      - run: choco install zip checksum
-      # TODO 搞个缓存
-      # - uses: actions/cache@v1
-      #   id: env_cache
-      #   with:
-      #     path: # TODO
-      #     key: ${{ runner.os }}-# TODO
-      # 这个 step 需要干净的环境所以不要在本地运行。
-      - run: |
-          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md "启动 CapsLockX.lnk"
-          checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
-          cp -force LICENSE           tools/choco/tools/LICENSE.txt
-          mv -force CapsLockX.zip     tools/choco/tools/
-          mv -force CapsLockX.sha256  tools/choco/tools/
-          choco pack Tools/choco/CapsLockX.nuspec
-      # 测试
-      - run: |
-          cinst CapsLockX -s .
-      # 发布
-      - run: |
-          choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
-      - run: |
-          choco push --source https://push.chocolatey.org/
