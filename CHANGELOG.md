@@ -1,3 +1,10 @@
+## <small>1.14.34 (2021-04-13)</small>
+
+* chore:versioning ([d4a2ae9](https://github.com/snomiao/CapsLockX/commit/d4a2ae9))
+* chore: 修复打包 ([3d713a7](https://github.com/snomiao/CapsLockX/commit/3d713a7))
+
+
+
 ## <small>1.14.33 (2021-04-13)</small>
 
 * chore:versioning ([f1a9e43](https://github.com/snomiao/CapsLockX/commit/f1a9e43))
