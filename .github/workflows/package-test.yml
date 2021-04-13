@@ -1,41 +1,40 @@
-# ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
 on:
   push:
     tags:
       - "v*"
 name: package-test
 jobs:
-  cn:
-    runs-on: windows-latest
-    env:
-      ENVIROMENT: CI_TEST
-    steps:
-      - run: git clone https://gitee.com/snomiao/CapslockX.git
-      - run: .\CapsLockX\CapsLockX.exe
+  # cn:
+  #   runs-on: windows-latest
+  #   env:
+  #     ENVIROMENT: CI_TEST
+  #   steps:
+  #     - run: git clone https://gitee.com/snomiao/CapslockX.git
+  #     - run: .\CapsLockX\CapsLockX.exe
   gh:
     runs-on: windows-latest
-    env:
-      ENVIROMENT: CI_TEST
     steps:
       - run: git clone https://github.com/snomiao/CapsLockX.git
       - run: .\CapsLockX\CapsLockX.exe
+        env:
+          ENVIROMENT: CI_TEST
   npm:
     runs-on: windows-latest
-    env:
-      ENVIROMENT: CI_TEST
     steps:
       - run: npm i -g capslockx
       - run: capslockx
-  npx:
-    runs-on: windows-latest
-    env:
-      ENVIROMENT: CI_TEST
-    steps:
-      - run: npx capslockx
+        env:
+          ENVIROMENT: CI_TEST
+  # npx:
+  #   runs-on: windows-latest
+  #   env:
+  #     ENVIROMENT: CI_TEST
+  #   steps:
+  #     - run: npx capslockx
   choco:
     runs-on: windows-latest
-    env:
-      ENVIROMENT: CI_TEST
     steps:
       - run: choco install capslockx
       - run: capslockx
+        env:
+          ENVIROMENT: CI_TEST

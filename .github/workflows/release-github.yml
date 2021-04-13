@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - "v*"
-name: Release Github
+name: gh-pages
 jobs:
   github-publish:
     runs-on: ubuntu-latest
