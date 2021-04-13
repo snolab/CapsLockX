@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.14.33</version>
+    <version>1.14.34</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -127,7 +127,14 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + R F     | 水平滚轮（左右）        |
 | 全局   | CapsLockX + rf      | rf 同时按相当于鼠标中键 |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.14.32 (2021-04-13)</small>
+    <releaseNotes><![CDATA[## <small>1.14.33 (2021-04-13)</small>
+
+* chore:versioning ([f1a9e43](https://github.com/snomiao/CapsLockX/commit/f1a9e43))
+* chore: disable Github 包发布 ([ad9aaec](https://github.com/snomiao/CapsLockX/commit/ad9aaec))
+
+
+
+## <small>1.14.32 (2021-04-13)</small>
 
 * chore:versioning ([f16488f](https://github.com/snomiao/CapsLockX/commit/f16488f))
 * doc ([9cc8bff](https://github.com/snomiao/CapsLockX/commit/9cc8bff))
@@ -200,14 +207,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ## <small>1.14.25 (2021-04-12)</small>
 
-* chore:versioning ([89e8326](https://github.com/snomiao/CapsLockX/commit/89e8326))
-* chore: versioning ([aa66330](https://github.com/snomiao/CapsLockX/commit/aa66330))
-
-
-
-## <small>1.14.24 (2021-04-12)</small>
-
-* chore:versioning ([2d11382](https://github.com/snomiao/CapsLockX/commit/2d11382))]]></releaseNotes>
+* chore:versioning ([89e8326](https://github.com/snomiao/CapsLockX/commit/89e8326))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
