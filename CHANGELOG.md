@@ -1,3 +1,18 @@
+## <small>1.14.31 (2021-04-13)</small>
+
+* chore:versioning ([eb304a4](https://github.com/snomiao/CapsLockX/commit/eb304a4))
+* doc ([0f8e292](https://github.com/snomiao/CapsLockX/commit/0f8e292))
+* doc ([6ac326c](https://github.com/snomiao/CapsLockX/commit/6ac326c))
+* doc ([c29fc58](https://github.com/snomiao/CapsLockX/commit/c29fc58))
+* docs ([36bbce9](https://github.com/snomiao/CapsLockX/commit/36bbce9))
+* chore: CI_TEST ([539ae48](https://github.com/snomiao/CapsLockX/commit/539ae48))
+* chore: publish as CapsLockX-latest.zip ([3b397b2](https://github.com/snomiao/CapsLockX/commit/3b397b2))
+* chore: remove snomiao/CapsLockX.git ([d693ddf](https://github.com/snomiao/CapsLockX/commit/d693ddf))
+* fix: 双击Ctrl+Alt+Shift 后置当前窗口时，自动激活任务栏。 ([8feea0d](https://github.com/snomiao/CapsLockX/commit/8feea0d))
+* fix: 观察到 r up 和 f Up 偶尔其中一个会随机失效，原因不明，尝试修复 ([d092f5e](https://github.com/snomiao/CapsLockX/commit/d092f5e))
+
+
+
 ## <small>1.14.30 (2021-04-12)</small>
 
 * chore:versioning ([dd151fa](https://github.com/snomiao/CapsLockX/commit/dd151fa))
