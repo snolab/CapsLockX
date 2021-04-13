@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.14.32</version>
+    <version>1.14.33</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -127,7 +127,18 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + R F     | 水平滚轮（左右）        |
 | 全局   | CapsLockX + rf      | rf 同时按相当于鼠标中键 |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.14.31 (2021-04-13)</small>
+    <releaseNotes><![CDATA[## <small>1.14.32 (2021-04-13)</small>
+
+* chore:versioning ([f16488f](https://github.com/snomiao/CapsLockX/commit/f16488f))
+* doc ([9cc8bff](https://github.com/snomiao/CapsLockX/commit/9cc8bff))
+* sync docs ([3e9b9b7](https://github.com/snomiao/CapsLockX/commit/3e9b9b7))
+* chore: disable unreachable gitee ([7424e9f](https://github.com/snomiao/CapsLockX/commit/7424e9f))
+* chore: fix copy as CapsLockX-latest.zip ([2992e3b](https://github.com/snomiao/CapsLockX/commit/2992e3b))
+* chore: seperate workflows ([89240f2](https://github.com/snomiao/CapsLockX/commit/89240f2))
+
+
+
+## <small>1.14.31 (2021-04-13)</small>
 
 * chore:versioning ([eb304a4](https://github.com/snomiao/CapsLockX/commit/eb304a4))
 * doc ([0f8e292](https://github.com/snomiao/CapsLockX/commit/0f8e292))
@@ -196,27 +207,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ## <small>1.14.24 (2021-04-12)</small>
 
-* chore:versioning ([2d11382](https://github.com/snomiao/CapsLockX/commit/2d11382))
-* chore: chocolatey setup ([5dd66fe](https://github.com/snomiao/CapsLockX/commit/5dd66fe))
-
-
-
-## <small>1.14.23 (2021-04-11)</small>
-
-* chore:versioning ([99ea551](https://github.com/snomiao/CapsLockX/commit/99ea551))
-* chore: format and CI configuing ([9112511](https://github.com/snomiao/CapsLockX/commit/9112511))
-
-
-
-## <small>1.14.22 (2021-04-11)</small>
-
-* chore:versioning ([6aee8d4](https://github.com/snomiao/CapsLockX/commit/6aee8d4))
-* chore: fix ignores ([9a6fc11](https://github.com/snomiao/CapsLockX/commit/9a6fc11))
-
-
-
-## <small>1.14.21 (2021-04-11)</small>
-]]></releaseNotes>
+* chore:versioning ([2d11382](https://github.com/snomiao/CapsLockX/commit/2d11382))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
