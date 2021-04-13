@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.14.30</version>
+    <version>1.14.31</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -22,10 +22,12 @@
 
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。
+像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
-[![jsdelivr](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
+[![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
+[![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
 [![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)
+[![Package-Test](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/package-test.yml)
 
 ## 入门教程第一
 
@@ -35,9 +37,9 @@
 
 源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包：
 
-- [下载 大陆用户-Gitee-仓库程序包.zip](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 - [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snomiao/CapsLockX/archive/master.zip)
 - [下载 灾难备份-BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
+- [下载 大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
@@ -133,15 +135,21 @@
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
 ![光标移动.gif]( ./docs/media/光标移动.gif )
-
-| 作用域     | Edit 模块             | 说明                |
-| ---------- | --------------------- | ------------------- |
-| 全局(基本) | CapsLockX + h j k l   | 上下左右 方向键     |
-| 全局(基本) | CapsLockX + y o       | Home End            |
-| 全局(基本) | CapsLockX + u i       | PageUp PageDown     |
-| 全局(基本) | CapsLockX + g         | 回车                |]]></description>
+]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.14.29 (2021-04-12)</small>
+    <releaseNotes><![CDATA[## <small>1.14.30 (2021-04-12)</small>
+
+* chore:versioning ([dd151fa](https://github.com/snomiao/CapsLockX/commit/dd151fa))
+* debug-done ([377ff04](https://github.com/snomiao/CapsLockX/commit/377ff04))
+* fix npm ignore ([5f8d832](https://github.com/snomiao/CapsLockX/commit/5f8d832))
+* ignore tgz ([a2eed8e](https://github.com/snomiao/CapsLockX/commit/a2eed8e))
+* chore: add VERIFICATION for chocolatey ([835b932](https://github.com/snomiao/CapsLockX/commit/835b932))
+* chore: package-test ([c066895](https://github.com/snomiao/CapsLockX/commit/c066895))
+* doc: 安装方式 ([971522a](https://github.com/snomiao/CapsLockX/commit/971522a))
+
+
+
+## <small>1.14.29 (2021-04-12)</small>
 
 * chore:versioning ([7055434](https://github.com/snomiao/CapsLockX/commit/7055434))
 * doc ([dcfbc1f](https://github.com/snomiao/CapsLockX/commit/dcfbc1f))
@@ -227,18 +235,7 @@
 ## <small>1.14.18 (2021-04-11)</small>
 
 * chore:versioning ([a35ee10](https://github.com/snomiao/CapsLockX/commit/a35ee10))
-* chore: ci for zip ([d91e945](https://github.com/snomiao/CapsLockX/commit/d91e945))
-* chore: fix choco ([ebe3ce7](https://github.com/snomiao/CapsLockX/commit/ebe3ce7))
-* chore: publish workflow for master ([e7d542e](https://github.com/snomiao/CapsLockX/commit/e7d542e))
-* chore: remove git sync ([6fec6b5](https://github.com/snomiao/CapsLockX/commit/6fec6b5))
-
-
-
-## <small>1.14.16 (2021-04-11)</small>
-
-* chore:versioning ([b80eff9](https://github.com/snomiao/CapsLockX/commit/b80eff9))
-* chore:versioning ([ec07fa8](https://github.com/snomiao/CapsLockX/commit/ec07fa8))
-* chore:versioning ([635817a](https://github.com/snomiao/CapsLockX/commit/635817a))]]></releaseNotes>
+* chore: ci for zip ([d91e945](https://github.com/snomiao/CapsLockX/commit/d91e945))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
