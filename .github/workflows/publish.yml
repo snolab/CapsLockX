@@ -47,8 +47,8 @@ jobs:
           overwrite: true
           body: "CapsLockX Package"
       # 压缩包和 docs 一起同步到 gh-pages
-      - run: mv CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
-      - run: mv CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
+      - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
+      - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
       - run: cp Tools/version.txt docs/version.txt
       - uses: peaceiris/actions-gh-pages@v3
         with:
