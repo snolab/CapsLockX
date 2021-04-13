@@ -112,7 +112,7 @@ EvalJavaScriptByNodeServer(code){
     sno.md5("asdf")
     ; 不存在则启动
     if(!nodePID){
-        ToolTip, 正在启动 NodeJS...
+        TrayTip, EvalJS 模块, 正在启动 NodeJS...
         EnvGet, USERPROFILE, USERPROFILE
         escaped_USERPROFILE := RegExReplace(USERPROFILE, "\\", "\\")
         ; 生成服务端代码
@@ -135,114 +135,114 @@ EvalJavaScriptByNodeServer(code){
                 req.on('data', (chunk) => {
                     body.push(chunk);
                 }).on('end', () => {
-                    let code = Buffer.concat(body).toString() || req.url.split('?').slice(1).join('?');
-                    _eval(code)
-                    .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res))
-                    .catch(e => (console.error('错误', e), e.toString()))
-                        .then(s => (console.log(s), res.end(s)))
-                });
-            }).listen(%port%)
+                    let code = Buffer.concat(body).toString() || decodeURI(req.url.split('?').slice(1).join('?'))
+                    res.writeHead(200, {"Content-Type": "text/plain; charset=utf-8"});
+                        _eval(code)
+                        .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res))
+                        .catch(e => (console.error('错误', e), e.toString()))
+                            .then(s => (res.end(s), console.log('入：', code, '\n出：', s)))
+                    });
+                }).listen(%port%)
+            }
+            )
+            serverScriptPath := A_Temp . "\eval-javascript-server.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
+            FileDelete %serverScriptPath%
+            FileAppend, %serverCode%, %serverScriptPath%, UTF-8-Raw
+            ; 最小化启动 nodejs 并启用调试，注意工作目录在用户文件夹
+            Run, node --inspect "%serverScriptPath%", %USERPROFILE%, Minimize, nodePID
+            FileDelete, %A_Temp%\EvalNodeJS.pid
+            FileAppend, %nodePID%, %A_Temp%\EvalNodeJS.pid, UTF-8-Raw
+            TrayTip, EvalJS 模块, NodeJS 服务已最小化启动。j
         }
-        )
-        serverScriptPath := A_Temp . "\eval-javascript-server.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
-        FileDelete %serverScriptPath%
-        FileAppend, %serverCode%, %serverScriptPath%, UTF-8-Raw
-        ; 最小化启动 nodejs 并启用调试，注意工作目录在用户文件夹
-        Run, node --inspect "%serverScriptPath%", %USERPROFILE%, Minimize, nodePID
-        FileDelete, %A_Temp%\EvalNodeJS.pid
-        FileAppend, %nodePID%, %A_Temp%\EvalNodeJS.pid, UTF-8-Raw
-        TrayTip, EvalJS 模块, NodeJS 服务已最小化启动。
+        ; 若没有代码需要执行则将进程退出
+        if(!code){
+            Process Exist, %nodePID%
+            if (ErrorLevel == nodePID)
+                Process Close, %nodePID%
+            return
+        }
+        ; 发送 eval 请求
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        whr.Open("POST", "http://localhost:" port "/", true)
+        whr.Send(code)
+        whr.WaitForResponse()
+        result := whr.ResponseText
+        return result
     }
-    ; 若没有代码需要执行则将进程退出
-    if(!code){
-        Process Exist, %nodePID%
-        if (ErrorLevel == nodePID)
-            Process Close, %nodePID%
-        return
-    }
-    ; 发送 eval 请求
-    whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-    whr.Open("POST", "http://localhost:" port "/", true)
-    whr.Send(code)
-    whr.WaitForResponse()
-    result := whr.ResponseText
-    return result
-}
-EvalJavaScriptByNodeStdIO(code){
-    ; 定义工作临时文件
-    inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
-    FileDelete %inputScriptPath%
-    jsonoutPath := A_Temp . "eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.json"
-    FileDelete %jsonoutPath%
-
-    ; 生成代码
-    realcode := ""
-    realcode .= "const _require = require;{" "`n"
-    realcode .= "const require=(m)=>{try{_require.resolve(m)}catch(e){_require('child_process').execSync('cd %USERPROFILE% && npm i -S '+m)};return _require(m)};" "`n"
-        realcode .= "const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;" "`n"
-    realcode .= "const code = " EscapeQuoted(code) ";" "`n"
-    realcode .= "(async () => await eval(code))() `n"
-    realcode .= " .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res)) `n"
-    realcode .= " .then(s=>process.stdout.write(s)) `n"
-    realcode .= " .catch(e=>process.stderr.write(e.toString())) `n"
-    realcode .= "}" "`n"
-    ; 写入纯 UTF8 脚本文件
-    FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
-    if (!FileExist(inputScriptPath)){
-        ToolTip % inputScriptPath
-        MsgBox 执行失败，未能写入脚本文件
-        Return "err"
-    }
-    ; 执行 node 的指令
-    nodejsCommand := """" nodejsPath """" " " """" inputScriptPath """"
-
-    if (0){
-        RunWait, % nodejsCommand, , Hide
-        ; 读取纯 UTF8 输出
-        FileRead, out, *P65001 %jsonoutPath%
+    EvalJavaScriptByNodeStdIO(code){
+        ; 定义工作临时文件
+        inputScriptPath := A_Temp . "\eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
+        FileDelete %inputScriptPath%
+        jsonoutPath := A_Temp . "eval-javascript.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.json"
         FileDelete %jsonoutPath%
-    }else{
-        shell := ComObjCreate("wscript.shell")
-        exec := shell.exec(nodejsCommand)
-        stderr := exec.stderr.readall()
-        stdout := exec.stdout.readall()
-        out := stdout
-        if(stderr){
-            TrayTip Error, % stderr
+
+        ; 生成代码
+        realcode := ""
+        realcode .= "const _require = require;{" "`n"
+        realcode .= "const require=(m)=>{try{_require.resolve(m)}catch(e){_require('child_process').execSync('cd %USERPROFILE% && npm i -S '+m)};return _require(m)};" "`n"
+            realcode .= "const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;" "`n"
+        realcode .= "const code = " EscapeQuoted(code) ";" "`n"
+        realcode .= "(async () => await eval(code))() `n"
+        realcode .= " .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res)) `n"
+        realcode .= " .then(s=>process.stdout.write(s)) `n"
+        realcode .= " .catch(e=>process.stderr.write(e.toString())) `n"
+        realcode .= "}" "`n"
+        ; 写入纯 UTF8 脚本文件
+        FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
+        if (!FileExist(inputScriptPath)){
+            TrayTip 错误, % inputScriptPath "执行失败，未能写入脚本文件"
+            Return "err"
         }
-        ; msgbox % out
+        ; 执行 node 的指令
+        nodejsCommand := """" nodejsPath """" " " """" inputScriptPath """"
+
+        if (0){
+            RunWait, % nodejsCommand, , Hide
+            ; 读取纯 UTF8 输出
+            FileRead, out, *P65001 %jsonoutPath%
+            FileDelete %jsonoutPath%
+        }else{
+            shell := ComObjCreate("wscript.shell")
+            exec := shell.exec(nodejsCommand)
+            stderr := exec.stderr.readall()
+            stdout := exec.stdout.readall()
+            out := stdout
+            if(stderr){
+                TrayTip Error, % stderr
+            }
+            ; msgbox % out
+        }
+        ; `清掉垃圾文件`
+        ; run "notepad " %inputScriptPath%
+        FileDelete %inputScriptPath%
+        re := out ? out : ""
+        Return re
     }
-    ; `清掉垃圾文件`
-    ; run "notepad " %inputScriptPath%
-    FileDelete %inputScriptPath%
-    re := out ? out : ""
-    Return re
-}
 
-#If CapsLockXMode
+    #If CapsLockXMode
 
-; 使用 JS 计算并替换所选内容
--::
-    Clipboard =
-    SendEvent ^c
-    ClipWait, 1, 1
-    code := Clipboard
-    codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
-    Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
-    SendEvent ^v
-return
+    ; 使用 JS 计算并替换所选内容
+    -::
+        Clipboard =
+        SendEvent ^c
+        ClipWait, 1, 1
+        code := Clipboard
+        codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
+        Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
+        SendEvent ^v
+    return
 
-; 使用 JS 计算并试图追加或替换所选内容
-=::
-    Clipboard =
-    SendEvent ^c
-    ClipWait, 1, 1
-    code := Clipboard
-    codeWithoutEqualEnding := RegExReplace(code, "=?\s*$", "")
-    Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
-    ; 如果输入代码最后是空的就把结果添加到后面
-    if (code != codeWithoutEqualEnding){
-        SendEvent {Right}
-    }
-    SendEvent ^v
-Return
+    ; 使用 JS 计算并试图追加或替换所选内容
+    =::
+        Clipboard =
+        SendEvent ^c
+        ClipWait, 1, 1
+        code := Clipboard
+        codeWithoutEqualEnding := RegExReplace(code, "=?\s*$", "")
+        Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
+        ; 如果输入代码最后是空的就把结果添加到后面
+        if (code != codeWithoutEqualEnding){
+            SendEvent {Right}
+        }
+        SendEvent ^v
+    Return

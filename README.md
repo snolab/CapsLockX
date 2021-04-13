@@ -2,7 +2,7 @@
 
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。
+像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
 [![jsdelivr](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![Publish](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml/badge.svg)](https://github.com/snomiao/CapsLockX/actions/workflows/publish.yml)

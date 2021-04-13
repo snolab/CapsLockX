@@ -265,7 +265,7 @@ $!-::
     Sleep, 200
     altSend("jp")
 Return
-; SendEvent !={AppsKey}p
+
 ; 复制纯文本
 $^+c::
     Clipboard =
@@ -273,35 +273,22 @@ $^+c::
     ClipWait, 1
     Clipboard := Clipboard
 Return
+
 ; 粘贴纯文本
 $^+v::
     Clipboard := Clipboard
     SendEvent ^v
 Return
 
-; ; 选择页面
-; ^PgUp:: SendEvent ^{PgUp}^+a
-; ^PgDn:: SendEvent ^{PgDn}^+a
-; ; 将此页面向上合并
-; $!j::
-;     SendEvent ^+t^a^x
-;     SendEvent ^{PgUp}^+t^{End}^v
-;     SendEvent ^{PgDn}^+a{Del}
-;     SendEvent ^{PgUp}
-; Return
-
-$!c::
-    SetKeyDelay, 1, 1 ; 配置纠错
-    SendEvent, {AltDown}wi{AltUp}
+; 复制段落链接（并清洗成 onenote 链接
+$!p::
+    Clipboard := ""
+    SendEvent {AppsKey}pp{Enter}
+    ClipWait, 1
+    if(ErrorLevel)
+        Return
+    Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
 Return
-
-; $!+x::
-;     Clipboard := ""
-;     SendEvent {AppsKey}y
-;     ClipWait 1
-;     Clipboard := RegExReplace(Clipboard, "([一-龥]) ", "$1")
-;     SendEvent ^!{Right 3}^v
-; Return
 
 ; 重命名笔记
 $F2:: SendEvent ^+t
@@ -318,15 +305,8 @@ $F3::
     SendEvent {Left}
 Return
 
-; 移动笔记（尝试自动填入剪贴板）
-$!m::
-    ; SendEvent ^c
-    SendEvent ^!m
-    ; WinWaitActive, ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 1
-    ; if(ErrorLevel)
-    ;     return
-    ; SendEvent ^v
-return
+; 移动笔记
+$!m:: SendEvent ^!m
 
 ; 移动分区
 $!+m:: SendEvent ^+g{AppsKey}m
