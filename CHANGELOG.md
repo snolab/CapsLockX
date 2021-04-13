@@ -1,3 +1,14 @@
+## <small>1.14.32 (2021-04-13)</small>
+
+* chore:versioning ([f16488f](https://github.com/snomiao/CapsLockX/commit/f16488f))
+* doc ([9cc8bff](https://github.com/snomiao/CapsLockX/commit/9cc8bff))
+* sync docs ([3e9b9b7](https://github.com/snomiao/CapsLockX/commit/3e9b9b7))
+* chore: disable unreachable gitee ([7424e9f](https://github.com/snomiao/CapsLockX/commit/7424e9f))
+* chore: fix copy as CapsLockX-latest.zip ([2992e3b](https://github.com/snomiao/CapsLockX/commit/2992e3b))
+* chore: seperate workflows ([89240f2](https://github.com/snomiao/CapsLockX/commit/89240f2))
+
+
+
 ## <small>1.14.31 (2021-04-13)</small>
 
 * chore:versioning ([eb304a4](https://github.com/snomiao/CapsLockX/commit/eb304a4))
