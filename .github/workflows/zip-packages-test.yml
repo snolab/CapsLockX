@@ -1,0 +1,24 @@
+# on:
+#   push:
+#     tags:
+#       - "v*"
+# name: ZIP packages test
+# jobs:
+#   jsdelivr-cdn:
+#     runs-on: windows-latest
+#       https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip
+#   cf-cdn:
+#     runs-on: windows-latest
+#       https://capslockx.snomiao.com/CapsLockX-latest.zip
+#   github:
+#     runs-on: windows-latest
+#       https://github.com/snomiao/CapsLockX/archive/master.zip
+#   bitbucket:
+#     runs-on: windows-latest
+#       https://bitbucket.org/snomiao/capslockx/get/master.zip
+#   # jsdelivr:
+#   #   runs-on: windows-latest
+#   #     https://gitee.com/snomiao/CapslockX/repository/archive/master.zip
+#       - run: capslockx
+#         env:
+#           ENVIROMENT: CI_TEST

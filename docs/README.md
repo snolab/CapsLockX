@@ -7,8 +7,8 @@
 
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
-[![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
-[![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml)
+<!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
+<!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
 ## 入门教程第一
 
@@ -20,8 +20,8 @@
 
 - [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 - [下载 CloudFlareCDN-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
-- [下载 全球用户-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
-- [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snomiao/CapsLockX/archive/master.zip)
+- [下载 全球用户-GitHub-发布程序包.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
+- [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
 - [下载 灾难备份-BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
 - [下载 大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 
@@ -32,7 +32,7 @@
 以下几种任选其一，推荐第一个（最快）
 
 1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snomiao/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snolab/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
 3. `npm i -g capslockx && capslockx`
 4. `npx capslockx`
 5. `choco install capslockx && capslockx`
@@ -219,7 +219,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -311,11 +311,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### TIM添加常驻功能模块
 
-| 模式        |    按键     | 功能                   |
-| ----------- | :---------: | ---------------------- |
-| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
-| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
-| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
+|模式|按键|功能|
+| - | :-: | - |
+| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
+| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
+| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -323,9 +323,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 用法
 
-| 作用于 |  按键   | 功能说明              |
-| ------ | :-----: | --------------------- |
-| 全局   | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 | 按键| 功能说明 |
+| - | :-: | - |
+| 全局 | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
@@ -390,7 +390,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 7. [ ] 执行外部代码（Python、Nodejs、外部AHK、Bash、……）（虽然写个脚本run一下也并不算麻烦）
 
 如果你有任何想法或建议，请在这里提出：
-[Issues · snomiao/CapslockX](https://github.com/snomiao/CapsLockX/issues)
+[Issues · snomiao/CapslockX](https://github.com/snolab/CapsLockX/issues)
 
 ### 组合键含义设计
 
@@ -406,34 +406,34 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 ### 本项目与类似项目的功能对比 / 更新于(20200627) 其中的信息可能慢慢过时
 
-| 功能\项目        | [CapsLockX](https://github.com/snomiao/CapsLockX) | [Vonng/CapsLock](https://github.com/Vonng/CapsLock) | [coralsw/CapsEz](https://github.com/coralsw/CapsEz) | [CapsLock+](https://capslox.com/capslock-plus/) |
-| :--------------- | :------------------------------------------------ | :-------------------------------------------------- | :-------------------------------------------------- | :---------------------------------------------- |
-| 鼠标模拟         | ✅ 流畅完整                                        | ✅ 无滚轮                                            | 🈚 无                                                | 🈚 无                                            |
-| 表达式计算       | ✅ Nodejs 或 JScript                               | 🈚 无                                                | 🈚 无                                                | ✅ TabScript (Snippet + Javascript)              |
-| 窗口管理         | ✅ 强                                              | ✅ 有                                                | ✅ 有                                                | ✅ 强                                            |
-| 虚拟桌面管理     | ✅ 有                                              | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
-| 编辑增强         | ✅ 有（抛物模型）                                  | ✅ 有                                                | ✅ 有                                                | ✅ 有（很全）                                    |
-| 绿色免安装       | ✅ 是                                              | ✅ 是                                                | ✅ 是                                                | ✅ 是                                            |
-| 增强媒体键       | 不全                                              | ✅ 全                                                | 🈚 无                                                | 🈚 无                                            |
-| 强化的剪贴板     | 弱                                                | 🈚 无                                                | 🈚 无                                                | ✅ 有                                            |
-| 快速启动应用     | ✅ 插件                                            | ✅ 有                                                | ✅ 有                                                | ✅ 有                                            |
-| 应用功能增强     | ✅ 丰富                                            | 🈚 无                                                | ✅ 有                                                | 🈚 无                                            |
-| Bash 控制        | 🈚 无                                              | ✅ 有                                                | 🈚 无                                                | 🈚 无                                            |
-| 快速启动语音输入 | ✅ 讯飞                                            | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
-| 快速输入时间日期 | ✅ 有                                              |                                                     | ✅ 有                                                |                                                 |
-| 窗口绑定到热键   | 🈚 无                                              | 🈚 无                                                | 🈚 无                                                | ✅ 有                                            |
-| 快速旋转屏幕     | ✅ 有                                              | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
-| 二次开发         | ✅ 文档友好                                        | ✅ 可                                                | ✅ 可                                                | ✅ 可                                            |
-| 内存占用         | ✅ 约 2~3M                                         |                                                     |                                                     |                                                 |
-| 模块化           | ✅                                                 | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
-| 系统             | Win                                               | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
-| 支持语言         | 中文                                              | 中文 / English                                      | 中文                                                | 中文 / English                                  |
+| 功能\项目        | [CapsLockX](https://github.com/snolab/CapsLockX) | [Vonng/CapsLock](https://github.com/Vonng/CapsLock) | [coralsw/CapsEz](https://github.com/coralsw/CapsEz) | [CapsLock+](https://capslox.com/capslock-plus/) |
+| :--------------- | :----------------------------------------------- | :-------------------------------------------------- | :-------------------------------------------------- | :---------------------------------------------- |
+| 鼠标模拟         | ✅ 流畅完整                                       | ✅ 无滚轮                                            | 🈚 无                                                | 🈚 无                                            |
+| 表达式计算       | ✅ Nodejs 或 JScript                              | 🈚 无                                                | 🈚 无                                                | ✅ TabScript (Snippet + Javascript)              |
+| 窗口管理         | ✅ 强                                             | ✅ 有                                                | ✅ 有                                                | ✅ 强                                            |
+| 虚拟桌面管理     | ✅ 有                                             | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 编辑增强         | ✅ 有（抛物模型）                                 | ✅ 有                                                | ✅ 有                                                | ✅ 有（很全）                                    |
+| 绿色免安装       | ✅ 是                                             | ✅ 是                                                | ✅ 是                                                | ✅ 是                                            |
+| 增强媒体键       | 不全                                             | ✅ 全                                                | 🈚 无                                                | 🈚 无                                            |
+| 强化的剪贴板     | 弱                                               | 🈚 无                                                | 🈚 无                                                | ✅ 有                                            |
+| 快速启动应用     | ✅ 插件                                           | ✅ 有                                                | ✅ 有                                                | ✅ 有                                            |
+| 应用功能增强     | ✅ 丰富                                           | 🈚 无                                                | ✅ 有                                                | 🈚 无                                            |
+| Bash 控制        | 🈚 无                                             | ✅ 有                                                | 🈚 无                                                | 🈚 无                                            |
+| 快速启动语音输入 | ✅ 讯飞                                           | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 快速输入时间日期 | ✅ 有                                             |                                                     | ✅ 有                                                |                                                 |
+| 窗口绑定到热键   | 🈚 无                                             | 🈚 无                                                | 🈚 无                                                | ✅ 有                                            |
+| 快速旋转屏幕     | ✅ 有                                             | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 二次开发         | ✅ 文档友好                                       | ✅ 可                                                | ✅ 可                                                | ✅ 可                                            |
+| 内存占用         | ✅ 约 2~3M                                        |                                                     |                                                     |                                                 |
+| 模块化           | ✅                                                | 🈚 无                                                | 🈚 无                                                | 🈚 无                                            |
+| 系统             | Win                                              | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
+| 支持语言         | 中文                                             | 中文 / English                                      | 中文                                                | 中文 / English                                  |
 
 #### 本项目地址
 
 以下几个仓库同步：
 
-- GitHub: [https://github.com/snomiao/CapsLockX](https://github.com/snomiao/CapsLockX)
+- GitHub: [https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 - Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
 - Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
 
@@ -461,7 +461,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 - CapsLockX 用户 QQ 群：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群： 271105729
 - AHK 高级 QQ 群： 717947647
-- [本项目的 issues （可作论坛使用）](https://github.com/snomiao/CapsLockX/issues)
+- [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues)
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
@@ -476,7 +476,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 1. 欢迎在 Github 上点星
 2. 欢迎把我转发分享给你身边的朋友们。
 3. 欢迎帮我翻译 readme.md 到各国语言。
-4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snomiao/CapsLockX/issues)
+4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues)
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
 6. 欢迎在此捐助本项目的开发，每一笔捐赠都会记录到下方的列表中：
    - 爱发电：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
