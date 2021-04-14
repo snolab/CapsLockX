@@ -298,7 +298,6 @@ ScrollMsg(msg, zDelta){
         If !(CapsLockXMode || GetKeyState("Ctrl" , "P") || GetKeyState("Alt" , "P") || GetKeyState("Shift" , "P")) {
             轮速纵 += sign(轮自纵) * 0.005 * (1.5 ** abs(轮自纵))
             轮速横 += sign(轮自横) * 0.005 * (1.5 ** abs(轮自横))
-            ToolTip 滚轮自动 %轮自横%横 %轮自纵%纵
         }
     }
     ; 速度归 0 时，结束定时器
