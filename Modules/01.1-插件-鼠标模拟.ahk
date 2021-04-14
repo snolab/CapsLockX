@@ -22,12 +22,12 @@ global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 
 ; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
-global 鼠动否 := 0, 鼠强动 := 0
+global 鼠动中 := 0, 鼠强动 := 0
 global 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0
 global 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
 
-; 滚轮加速度微分对称模型（不要在意这中二的名字hhhh
-global 轮动否 := 0, 轮强动 := 0
+; 滚轮加速度微分对称模型（不要在意这中二的名字hhhhj
+global 轮动中 := 0, 轮自刻 := 0, 轮自横 := 0, 轮自纵 := 0
 global 轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
 global 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
 If(TMouse_SendInput)
@@ -35,7 +35,6 @@ If(TMouse_SendInput)
 
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
-; msgbox % say "_" sax "`n" 轮速纵 "_" 轮速横 "`n" lastsvy "_" lastsvx
 
 Return
 
@@ -141,13 +140,13 @@ SendInput_MouseMoveR64(x, y){
 
 ; 鼠标模拟
 鼠动始(){
-    if(!鼠动否){
+    if(!鼠动中){
         SetTimer, 鼠动, 1
-        鼠动否 := 1
+        鼠动中 := 1
     }
 }
 鼠动终(){
-    鼠动否 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
+    鼠动中 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
     SetTimer, 鼠动, Off
 }
 鼠动(){
@@ -156,10 +155,10 @@ SendInput_MouseMoveR64(x, y){
         鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
         max := 0, may := 0
     }else{
-        tNow := TM_QPC()
+        现刻 := TM_QPC()
         ; 计算用户操作时间, 计算 ADWS 键按下的时长
-        tda := dt(鼠刻左, tNow), tdd := dt(鼠刻右, tNow)
-        tdw := dt(鼠刻上, tNow), tds := dt(鼠刻下, tNow)
+        tda := dt(鼠刻左, 现刻), tdd := dt(鼠刻右, 现刻)
+        tdw := dt(鼠刻上, 现刻), tds := dt(鼠刻下, 现刻)
         ; 计算这段时长的加速度
         ; tooltip % TMouse_MouseSpeedRatio
         max := ma(tdd - tda) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
@@ -251,57 +250,69 @@ ScrollMsg(msg, zDelta){
 }
 ; 滚轮运动处理
 轮动始(){
-    if(!轮动否){
+    if(!轮动中){
         SetTimer, 轮动, 1
-        轮动否 := 1
+        轮动中 := 1
     }
 }
 轮动终(){
-    轮动否 := 0, 轮强动 := 0
+    轮动中 := 0, 轮自刻 := 0, 轮自横 := 0, 轮自纵 := 0
     轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
     轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
     SetTimer, 轮动, Off
 }
 轮动(){
     ; 在非CapsLockX模式下停止
-    If (!(CapsLockXMode || 轮强动)){
+    If (!(CapsLockXMode || 轮自横 || 轮自纵))
+        Return 轮动终()
+    现刻 := TM_QPC()
+    ; 计算用户操作时间
+    轮时左 := dt(轮刻左, 现刻), 轮时右 := dt(轮刻右, 现刻)
+    轮时上 := dt(轮刻上, 现刻), 轮时下 := dt(轮刻下, 现刻)
+
+    ; 计算加速度
+    轮加横 := ma(轮时右 - 轮时左) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
+    轮加纵 := ma(轮时下 - 轮时上) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
+
+    ; RF 同时按下相当于中键（同时也会取消轮自动）
+    If(轮刻上 && 轮刻下 && Abs(轮时上 - 轮时下) < 1){
+        if(轮自刻)
+            Return 轮动终()
         轮动终()
-        Return
-    }else{
-        tNow := TM_QPC()
-        ; 计算用户操作时间
-        tdz := dt(轮刻左, tNow), tdc := dt(轮刻右, tNow)
-        tdr := dt(轮刻上, tNow), tdf := dt(轮刻下, tNow)
-        ; 计算加速度
-        say := ma(tdr - tdf) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
-        sax := ma(tdc - tdz) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
-        ; tooltip % say "_" sax
-    }
-    ; RF同时按下相当于中键
-    If(轮刻上 && 轮刻下 && Abs(tdr - tdf) < 1){
         SendInput {MButton Down}
-        轮动终()
         KeyWait, r
         KeyWait, f
         SendInput {MButton Up}
         Return
     }
     ; 计算速度
-    lastsvx := 轮速横
-    lastsvy := 轮速纵
-    轮速纵 := Friction(轮速纵 + say, say), 轮速横 := Friction(轮速横 + sax, sax)
-    if ( 轮速纵 == 0 && 轮速横 == 0){
-        轮动终()
-        Return
-    }
+    轮速纵 := Friction(轮速纵 + 轮加纵, 轮加纵) 
+    轮速横 := Friction(轮速横 + 轮加横, 轮加横)
 
-    轮差纵 += 轮速纵, 轮差横 += 轮速横
+    ; 处理自动滚动
+    ; 如果现在处于主动滚动状态，则 将自动滚动延后到 3 秒后
+    if(轮自刻 && (轮刻左 || 轮刻上 || 轮刻右 || 轮刻下))
+        轮自刻 := 现刻 + 3000
+    if(轮自刻 <= 现刻){
+        ; 不处理修饰键按下时的自动滚动
+        If !(CapsLockXMode || GetKeyState("Ctrl" , "P") || GetKeyState("Alt" , "P") || GetKeyState("Shift" , "P")) {
+            轮速纵 += sign(轮自纵) * 0.005 * (1.5 ** abs(轮自纵))
+            轮速横 += sign(轮自横) * 0.005 * (1.5 ** abs(轮自横))
+            ToolTip 滚轮自动 %轮自横%横 %轮自纵%纵
+        }
+    }
+    ; 速度归 0 时，结束定时器
+    if ( !轮速纵 && !轮速横 && !轮自刻)
+        Return 轮动终()
     ; 处理移动
+    轮差纵 += 轮速纵
+    轮差横 += 轮速横
+
     If ((轮差纵 | 0) != 0){
         If (TMouse_SendInputAPI && A_PtrSize == 4) ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x0800, 轮差纵) ; 0x0800/*MOUSEEVENTF_WHEEL*/
+            SendInput_MouseMsg32(0x0800, -轮差纵) ; 0x0800/*MOUSEEVENTF_WHEEL*/
         Else
-            ScrollMsg2(0x20A, 轮差纵)
+            ScrollMsg2(0x20A, -轮差纵)
         轮差纵 -= 轮差纵 | 0
     }
     If ((轮差横 | 0) != 0){
@@ -339,15 +350,19 @@ $*s Up:: 鼠刻下 := 0, 鼠动始()
 
 ; 鼠标滚轮处理
 
-; Alt 单格滚动
-$!r:: Send {WheelUp}
-$!f:: Send {WheelDown}
-$!^r:: Send ^{WheelUp}
-$!^f:: Send ^{WheelDown}
+; Alt 调整自动滚动
+$!r:: 轮自刻 := TM_QPC(), 轮自纵 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
+$!f:: 轮自刻 := TM_QPC(), 轮自纵 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
+$!+r:: 轮自刻 := TM_QPC(), 轮自横 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
+$!+f:: 轮自刻 := TM_QPC(), 轮自横 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
 
-; Ctrl 缩放
-$^r:: Send ^{WheelUp}
-$^f:: Send ^{WheelDown}
+; 组合键单格滚动与缩放
+$^r:: SendEvent ^{WheelUp}
+$^f:: SendEvent ^{WheelDown}
+$^!r:: SendEvent ^{WheelUp}
+$^!f:: SendEvent ^{WheelDown}
+$^!+r:: SendEvent ^{WheelUp}
+$^!+f:: SendEvent ^{WheelDown}
 
 ; Shift 横向滚动
 $+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), 轮动始()
@@ -364,3 +379,11 @@ $+f Up:: 轮刻右 := 0, 轮动始()
 *f Up:: 轮刻下 := 0, 轮动始()
 
 #if
+
+鼠标模拟_ToolTip(tips){
+    ToolTip %tips%
+    SetTimer 鼠标模拟_ToolTipRemove, -3000
+}
+鼠标模拟_ToolTipRemove(){
+    ToolTip
+}
