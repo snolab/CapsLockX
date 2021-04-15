@@ -30,7 +30,8 @@ global 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
 global 轮动中 := 0, 轮自刻 := 0, 轮自横 := 0, 轮自纵 := 0
 global 轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
 global 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
-If(TMouse_SendInput)
+
+if(TMouse_SendInput)
     SendMode Input
 
 ; 解决多屏 DPI 问题
