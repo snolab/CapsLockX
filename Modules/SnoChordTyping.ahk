@@ -9,33 +9,33 @@
 FileEncoding, UTF-8
 
 ; 開關 默认关
-global EnableSnoChordTyping := CapsLockX_Config("Plugins", "EnableSnoChordTyping", 0, "启用雪星并击（实验中），")
-if (!EnableSnoChordTyping)
+global SnoChordTypingEnable := CapsLockX_Config("Plugins", "EnableSnoChordTyping", 0, "启用雪星并击（实验中），")
+if (!SnoChordTypingEnable)
     Return
 
 ; 配置
-global ChordIntervalThreshold := 32
-global AllowRewriteString := "qwertasdfgzxcvbpyuiohjklnm"
-global AllowRewrite := 0
-global AppendSpace := 0
-global StageList := []
+global SnoChordTypingChordIntervalThreshold := 32
+global SnoChordTypingAllowRewriteString := "qwertasdfgzxcvbpyuiohjklnm"
+global SnoChordTypingAllowRewrite := 0
+global SnoChordTypingAppendSpace := 0
+global SnoChordTypingStageList := []
 
 ; 变量
-global PressedKeySet := {}
-global TypedKeys := ""
-global LastKeyDownTick := 0
+global SnoChordTypingPressedKeySet := {}
+global SnoChordTypingTypedKeys := ""
+global SnoChordTypingLastKeyDownTick := 0
 
 ; 读入配置
 ConfigPath := "./雪星并击配置.ini"
-IniRead, ChordIntervalThreshold, %ConfigPath%, Common, ChordIntervalThreshold, %ChordIntervalThreshold%
-IniWrite, %ChordIntervalThreshold%, %ConfigPath%, Common, ChordIntervalThreshold
-IniRead, AllowRewriteString, %ConfigPath%, Common, AllowRewriteString, %AllowRewriteString%
-IniWrite, %AllowRewriteString%, %ConfigPath%, Common, AllowRewriteString
-IniRead, AllowRewrite, %ConfigPath%, Common, AllowRewrite, %AllowRewrite%
-IniWrite, %AllowRewrite%, %ConfigPath%, Common, AllowRewrite
-IniRead, AppendSpace, %ConfigPath%, Common, AppendSpace, %AppendSpace%
-IniWrite, %AppendSpace%, %ConfigPath%, Common, AppendSpace
-; MsgBox, , , AllowRewriteString: %AllowRewriteString%
+IniRead, SnoChordTypingChordIntervalThreshold, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold, %SnoChordTypingChordIntervalThreshold%
+IniWrite, %SnoChordTypingChordIntervalThreshold%, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold
+IniRead, SnoChordTypingAllowRewriteString, %ConfigPath%, Common, SnoChordTypingAllowRewriteString, %SnoChordTypingAllowRewriteString%
+IniWrite, %SnoChordTypingAllowRewriteString%, %ConfigPath%, Common, SnoChordTypingAllowRewriteString
+IniRead, SnoChordTypingAllowRewrite, %ConfigPath%, Common, SnoChordTypingAllowRewrite, %SnoChordTypingAllowRewrite%
+IniWrite, %SnoChordTypingAllowRewrite%, %ConfigPath%, Common, SnoChordTypingAllowRewrite
+IniRead, SnoChordTypingAppendSpace, %ConfigPath%, Common, SnoChordTypingAppendSpace, %SnoChordTypingAppendSpace%
+IniWrite, %SnoChordTypingAppendSpace%, %ConfigPath%, Common, SnoChordTypingAppendSpace
+; MsgBox, , , SnoChordTypingAllowRewriteString: %SnoChordTypingAllowRewriteString%
 
 RuleStage1 :="
 (
@@ -124,7 +124,7 @@ while(1){
         lsKey.Push(Key)
     }
     Stage := {"objKeys": objKeys, "lsKey": lsKey, "objRule": objRule, "Pressed": "", "Typed": ""}
-    StageList.Push(Stage)
+    SnoChordTypingStageList.Push(Stage)
     StageIndex++
 }
 
@@ -132,13 +132,12 @@ IniWrite, %RuleStage1%, %ConfigPath%, RuleStage1
 IniWrite, %RuleStage2%, %ConfigPath%, RuleStage2
 IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
 
-; global PressedKeys := ""
 Hotkey, if, (!CapsLockXMode)
-For _, Stage in StageList{
+For _, Stage in SnoChordTypingStageList{
     For _, KeyName in Stage["lsKey"]{
         KeyName := StrReplace(KeyName, " ", "Space")
         ; 只有字母直接按下会不导致输入法上屏
-        if (AllowRewrite && InStr(AllowRewriteString, KeyName)){
+        if (SnoChordTypingAllowRewrite && InStr(SnoChordTypingAllowRewriteString, KeyName)){
             Hotkey, ~$%KeyName%, KeyDown
             Hotkey, ~$+%KeyName%, KeyDown
         }else{
@@ -157,18 +156,18 @@ Return
 
 snochorded_output_recored_keys(){
     OutputKey := ""
-    For _, Stage in StageList {
+    For _, Stage in SnoChordTypingStageList {
         StagePressed := Stage["Pressed"]
         Replaced := Stage["objRule"][StagePressed ""]
         OutputKey .= Replaced ? Replaced : StagePressed
         Stage["Pressed"] := ""
     }
-    lenTyped := StrLen(TypedKeys)
+    lenTyped := StrLen(SnoChordTypingTypedKeys)
     OutputLength := StrLen(OutputKey)
-    OutputChanged := TypedKeys != OutputKey
+    OutputChanged := SnoChordTypingTypedKeys != OutputKey
     ; Clean
-    LastKeyDownTick := 0
-    TypedKeys := ""
+    SnoChordTypingLastKeyDownTick := 0
+    SnoChordTypingTypedKeys := ""
     if (OutputChanged && OutputLength){
         ; OutputKey .= " "
         OutputKey := "{blind}" . OutputKey
@@ -177,7 +176,7 @@ snochorded_output_recored_keys(){
         ; send event is most stable
         SendEvent % OutputKey
     }
-    if (AppendSpace){
+    if (SnoChordTypingAppendSpace){
         SendEvent % " "
     }
 }
@@ -190,28 +189,28 @@ KeyDown:
     ThisKey := StrReplace(ThisKey, "+")
     ThisKey := StrReplace(ThisKey, "Space", " ")
 
-    if ( LastKeyDownTick == 0
-    || NowTick - LastKeyDownTick <= ChordIntervalThreshold){
+    if ( SnoChordTypingLastKeyDownTick == 0
+    || NowTick - SnoChordTypingLastKeyDownTick <= SnoChordTypingChordIntervalThreshold){
         if (SubStr(A_ThisHotkey, 1, 1)=="~"){
-            TypedKeys .= ThisKey
+            SnoChordTypingTypedKeys .= ThisKey
         }
     }else{
         snochorded_output_recored_keys()
     }
 
-    For StageIndex, Stage in StageList{
+    For StageIndex, Stage in SnoChordTypingStageList{
         if (Stage["objKeys"].HasKey(ThisKey)){
             Stage["Pressed"] .= ThisKey
             Break
         }
     }
-    LastKeyDownTick := NowTick
+    SnoChordTypingLastKeyDownTick := NowTick
 Return
 
 KeyUp:
     snochorded_output_recored_keys()
     ; PressedKeys is only for debug
     ; if (PressedKeys)
-    ;     ToolTip % TypedKeys " | " PressedKeys "(" lenTyped ")" " => " OutputKey "("  OutputLength ")"
+    ;     ToolTip % SnoChordTypingTypedKeys " | " PressedKeys "(" lenTyped ")" " => " OutputKey "("  OutputLength ")"
     ; PressedKeys := ""
 Return

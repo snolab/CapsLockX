@@ -429,69 +429,41 @@ $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
 $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
-#IfWinActive ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE
+#if WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
 
-$1:: ; 换到第 1 行的 1 支笔
-    if (A_PriorHotkey=="!d")
-        SendEvent {Right 0}{Enter}
-Return
-$2:: ; 换到第 1 行的 2 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Right 1}{Enter}
-Return
-$3:: ; 换到第 1 行的 3 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Right 2}{Enter}
-Return
-$4:: ; 换到第 1 行的 4 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Right 3}{Enter}
-Return
-$5:: ; 换到第 1 行的 5 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Right 4}{Enter}
-Return
-$6:: ; 换到第 1 行的 6 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Right 5}{Enter}
-Return
-$7:: ; 换到第 1 行的 7 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Right 6}{Enter}
-Return
-$+1:: ; 换到第 2 行的 1 支笔
-    if (A_PriorHotkey=="!d")
-        SendEvent {Down 1}{Right 0}{Enter}
-Return
-$+2:: ; 换到第 2 行的 2 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Down 1}{Right 1}{Enter}
-Return
-$+3:: ; 换到第 2 行的 3 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Down 1}{Right 2}{Enter}
-Return
-$+4:: ; 换到第 2 行的 4 支笔e
-    if (A_PriorHotkey="!d")
-        SendEvent {Down 1}{Right 3}{Enter}
-Return
-$+5:: ; 换到第 2 行的 5 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Down 1}{Right 4}{Enter}
-Return
-$+6:: ; 换到第 2 行的 6 支笔
-    if (A_PriorHotkey="!d")
-        SendEvent {Down 1}{Right 5}{Enter}
-Return
-$+7:: ; 换到第 2 行的 7 支笔
-    if (A_PriorHotkey="!d")
-        Send {Down 1}{Right 6}{Enter}
-Return
+; 换到第 1 行的 1 支笔
+$1:: SendEvent {Right 0}{Enter}
+; 换到第 1 行的 2 支笔
+$2:: SendEvent {Right 1}{Enter}
+; 换到第 1 行的 3 支笔
+$3:: SendEvent {Right 2}{Enter}
+; 换到第 1 行的 4 支笔
+$4:: SendEvent {Right 3}{Enter}
+; 换到第 1 行的 5 支笔
+$5:: SendEvent {Right 4}{Enter}
+; 换到第 1 行的 6 支笔
+$6:: SendEvent {Right 5}{Enter}
+; 换到第 1 行的 7 支笔
+$7:: SendEvent {Right 6}{Enter}
+; 换到第 2 行的 1 支笔
+$+1:: SendEvent {Down 1}{Right 0}{Enter}
+; 换到第 2 行的 2 支笔
+$+2:: SendEvent {Down 1}{Right 1}{Enter}
+; 换到第 2 行的 3 支笔
+$+3:: SendEvent {Down 1}{Right 2}{Enter}
+; 换到第 2 行的 4 支笔e
+$+4:: SendEvent {Down 1}{Right 3}{Enter}
+; 换到第 2 行的 5 支笔
+$+5:: SendEvent {Down 1}{Right 4}{Enter}
+; 换到第 2 行的 6 支笔
+$+6:: SendEvent {Down 1}{Right 5}{Enter}
+; 换到第 2 行的 7 支笔
+$+7:: Send {Down 1}{Right 6}{Enter}
 
 #if WinActive("ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
 
-; 把笔记时间显式填充到标题
-!t::
+!t:: 把笔记时间显式填充到标题()
+把笔记时间显式填充到标题(){
     backup := ClipboardAll
     Clipboard:=""
     ; copy date then focus to title
@@ -515,7 +487,7 @@ Return
     )
     result := Func("SafetyEvalJavascript").Call(calcCode)
     SendEvent, {Text}%result%
-return
+}
 
 #If WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
 

@@ -64,11 +64,13 @@ UserModuleEdit(路径, 使用进程名AHK := 0){
     CapsLockX_LauncherEditor(路径)
 }
 
-m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
-!m:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
-
 ; 修改配置
-^!m:: 配置文件编辑()
+m:: 配置文件编辑()
+; 快速宏
+!m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
++!m:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
+
 配置文件编辑(){
     CapsLockX_LauncherEditor(CapsLockXConfigPath)
 }
+

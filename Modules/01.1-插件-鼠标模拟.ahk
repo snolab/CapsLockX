@@ -160,7 +160,6 @@ SendInput_MouseMoveR64(x, y){
         tda := dt(鼠刻左, 现刻), tdd := dt(鼠刻右, 现刻)
         tdw := dt(鼠刻上, 现刻), tds := dt(鼠刻下, 现刻)
         ; 计算这段时长的加速度
-        ; tooltip % TMouse_MouseSpeedRatio
         max := ma(tdd - tda) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
         may := ma(tds - tdw) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
     }
@@ -290,15 +289,12 @@ ScrollMsg(msg, zDelta){
     轮速横 := Friction(轮速横 + 轮加横, 轮加横)
 
     ; 处理自动滚动
-    ; 如果现在处于主动滚动状态，则 将自动滚动延后到 3 秒后
-    if(轮自刻 && (轮刻左 || 轮刻上 || 轮刻右 || 轮刻下))
-        轮自刻 := 现刻 + 3000
-    if(轮自刻 <= 现刻){
-        ; 不处理修饰键按下时的自动滚动
-        If !(CapsLockXMode || GetKeyState("Ctrl" , "P") || GetKeyState("Alt" , "P") || GetKeyState("Shift" , "P")) {
-            轮速纵 += sign(轮自纵) * 0.005 * (1.5 ** abs(轮自纵))
-            轮速横 += sign(轮自横) * 0.005 * (1.5 ** abs(轮自横))
-        }
+    ; if(轮自刻 && (轮刻左 || 轮刻上 || 轮刻右 || 轮刻下))
+    ;     轮自刻 := 现刻 + 1000  
+    ; 如果现在处于主动滚动状态，则 将自动滚动延后到 1 秒后
+    if(轮自刻 <= 现刻 && 1000 < A_TimeIdlePhysical && A_TimeIdlePhysical < 30 * 60 * 1000){
+        轮差纵 += sign(轮自纵) * 0.01 * (1.5 ** abs(轮自纵))
+        轮差横 += sign(轮自横) * 0.01 * (1.5 ** abs(轮自横))
     }
     ; 速度归 0 时，结束定时器
     if ( !轮速纵 && !轮速横 && !轮自刻)

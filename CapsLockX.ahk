@@ -93,12 +93,6 @@ global loadingTips := ""
         ModuleHelp := RegExReplace(ModuleHelp, "m)^#", "###")
 
         ; 替换资源链接的相对目录（图片gif等）
-
-        ; position := RegExMatch(ModuleHelp, "Om)\[(.*)\]\(\s*?\.\/(.*?)\)", matchObject)
-        ; loop, matchObject.Count()
-        ; {
-        ;     MsgBox % matchObject[A_Index]
-        ; }
         FileCopy, %CapsLockX_PathModules%\*.gif, .\docs\media\, 1
         FileCopy, %CapsLockX_PathModules%\*.png, .\docs\media\, 1
         ModuleHelp := RegExReplace(ModuleHelp, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./media/$2 )")
