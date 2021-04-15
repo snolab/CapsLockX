@@ -13,8 +13,8 @@ if !CapsLockX
     ExitApp
 
 ; 引用剪贴板依赖
-#Include Tools/WinClip/WinClipAPI.ahk
-#Include Tools/WinClip/WinClip.ahk
+#Include Modules/WinClip/WinClipAPI.ahk
+#Include Modules/WinClip/WinClip.ahk
 global wc := new WinClip
 
 Return

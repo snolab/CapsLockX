@@ -45,7 +45,7 @@ Return
 ;
 ; 定义函数，这里定义了 2 个用来操作帮助的函数。
 CapsLockX_LoadHelpFrom(file){
-    FileRead, helpStr, %file%
+    FileRead, helpStr, %file%, *P65001
     helpStr := RegExReplace(helpStr, "m)^[^|#].*$")
     helpStr := RegExReplace(helpStr, "m)\r?\n(\r?\n)+", "`n")
     return helpStr
@@ -54,15 +54,14 @@ CapsLockX_AppendHelp(helpStr){
     if(helpStr)
         CapsLockX_HelpInfo .= helpStr "`n`n"
 }
-CapsLockX_ShowHelp(helpStr, inGlobal = 0, waitKey = "/"){
+CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/"){
     if (!inGlobal && !CapsLockXMode){
         SendEvent, /
         Return
     }
-    ; ToolTip % helpStr
 
     Gui, Font, , SimHei
-    Gui, Add, Text,, %helpStr%
+    Gui, Add, Edit,, %helpStr% 
     Gui, Show
 
     KeyWait, %waitKey%, T60 ; wait for 60 seconds

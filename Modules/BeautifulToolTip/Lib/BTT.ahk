@@ -300,12 +300,13 @@ Class BeautifulToolTip
         pBrushBorder := Gdip_BrushCreateSolid(O.BorderColor)                  ; 纯色画刷 画细边框
 
       if (O.Border>0)
-        switch, R
-        {
+        switch (R){
           ; 圆角为0则使用矩形画。不单独处理，会画出显示异常的图案。
-          case, "0": Gdip_FillRectangle(this["G" WhichToolTip]                ; 矩形细边框
+          case "0":
+		  Gdip_FillRectangle(this["G" WhichToolTip]                ; 矩形细边框
           , pBrushBorder, 0, 0, RectWithBorderWidth, RectWithBorderHeight)
-          Default  : Gdip_FillRoundedRectanglePath(this["G" WhichToolTip]     ; 圆角细边框
+          Default: 
+		  Gdip_FillRoundedRectanglePath(this["G" WhichToolTip]     ; 圆角细边框
           , pBrushBorder, 0, 0, RectWithBorderWidth, RectWithBorderHeight, R)
         }
 
@@ -316,11 +317,13 @@ Class BeautifulToolTip
       else
         pBrushBackground := Gdip_BrushCreateSolid(O.BackgroundColor)          ; 纯色画刷 画文本框
 
-      switch, R
+      switch (R)
       {
-        case, "0": Gdip_FillRectangle(this["G" WhichToolTip]                  ; 矩形文本框
+        case, "0": 
+		Gdip_FillRectangle(this["G" WhichToolTip]                  ; 矩形文本框
         , pBrushBackground, O.Border, O.Border, RectWidth, RectHeight)
-        Default  : Gdip_FillRoundedRectanglePath(this["G" WhichToolTip]       ; 圆角文本框
+        Default  : 
+		Gdip_FillRoundedRectanglePath(this["G" WhichToolTip]       ; 圆角文本框
         , pBrushBackground, O.Border, O.Border, RectWidth, RectHeight
         , (R>O.Border) ? R-O.Border : R)                                      ; 确保内外圆弧看起来同心
       }
@@ -350,7 +353,8 @@ Class BeautifulToolTip
       if (this.DebugMode)
       {
         pBrush := Gdip_BrushCreateSolid(0x20ff0000)
-        Gdip_FillRectangle(this["G" WhichToolTip], pBrush, O.Border+O.Margin, O.Border+O.Margin, TextWidth, TextHeight)
+        
+		Gdip_FillRectangle(this["G" WhichToolTip], pBrush, O.Border+O.Margin, O.Border+O.Margin, TextWidth, TextHeight)
         Gdip_DeleteBrush(pBrush)
       }
 
@@ -502,12 +506,12 @@ Class BeautifulToolTip
     ; Mode=8 Angle 0=左到右 90=上到下 180=右到左 270=下到上
     ; Mode=3 Angle 0=左到右 90=近似上到下
     ; Mode=4 Angle 0=左到右 90=下到上
-    switch, Mode
+    switch (M)ode
     {
       case, 1,3,5,7:pBrush:=Gdip_CreateLinearGrBrush(x, y, x+w, y, StartColor, EndColor)
       case, 2,4,6,8:pBrush:=Gdip_CreateLinearGrBrush(x, y+h//2, x+w, y+h//2, StartColor, EndColor)
     }
-    switch, Mode
+    switch (M)ode
     {
       case, 1,2: Gdip_RotateLinearGrBrushTransform(pBrush, Angle, 0)  ; 性能比模式3、4高10倍左右
       case, 3,4: Gdip_RotateLinearGrBrushTransform(pBrush, Angle, 1)

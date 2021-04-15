@@ -12,11 +12,11 @@
 #SingleInstance, ignore
 #Include Core/CapsLockX-RunSilent.ahk
 ; 载入设定
-global CapsLockXConfigPath := "./CapsLockX-Config.ini"
+global CapsLockX_配置路径 := "./CapsLockX-Config.ini"
 #Include Core/CapsLockX-Config.ahk
 
-global T_CheckUpdate := CapsLockX_Config("Core", "T_CheckUpdate", 1, "自动检查更新")
-global T_DownloadUpdate := CapsLockX_Config("Core", "T_DownloadUpdate", 1, "自动下载更新包")
+global T_CheckUpdate := CapsLockX_Config("Update", "T_CheckUpdate", 1, "自动检查更新")
+global T_DownloadUpdate := CapsLockX_Config("Update", "T_DownloadUpdate", 1, "自动下载更新包")
 global CLXU_Updated :=1
 global CLXU_Fail := 2
 global CLXU_AlreadyLatest := 4

@@ -45,10 +45,6 @@ Return
 
 #if CapsLockXMode
 
-CapsLockX_LauncherEditor(路径){
-    ; 有 vscode 用 vscode，没有就用 notepad
-    Run cmd /c code %路径% || notepad %路径%,, Hide
-}
 UserModuleEdit(路径, 使用进程名AHK := 0){
     WinGet, hWnd, ID, A
     WinGetClass, 窗口类名, ahk_id %hWnd%
@@ -61,16 +57,11 @@ UserModuleEdit(路径, 使用进程名AHK := 0){
         FileAppend, %快速窗口热键编辑初始内容%, %路径%
     填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
     FileAppend, %填充内容%, %路径%
-    CapsLockX_LauncherEditor(路径)
+    Run notepad %路径%
+
 }
 
-; 修改配置
-m:: 配置文件编辑()
 ; 快速宏
 !m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/快速窗口热键编辑内容.user.ahk")
 +!m:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
-
-配置文件编辑(){
-    CapsLockX_LauncherEditor(CapsLockXConfigPath)
-}
 

@@ -21,7 +21,7 @@ SetTitleMatchMode RegEx
 
 global CapsLockX_上次触发键 := ""
 ; 载入设定
-global CapsLockXConfigPath := "./CapsLockX-Config.ini"
+global CapsLockX_配置路径 := "./CapsLockX-Config.ini"
 #Include Core/CapsLockX-Config.ahk
 
 ; 模式处理
@@ -71,41 +71,41 @@ global CapsLockX_Paused := 0
 
 Hotkey, If, CapsLockX_Avaliable()
 
-if(T_XKeyAs && T_XKeyAsCapsLock) 
+if(T_XKeyAsCapsLock) 
     Hotkey CapsLock, CapsLockX_Dn
-if(T_XKeyAs && T_XKeyAsSpace) 
+if(T_XKeyAsSpace) 
     Hotkey Space, CapsLockX_Dn
-if(T_XKeyAs && T_XKeyAsInsert)
+if(T_XKeyAsInsert)
     Hotkey Insert, CapsLockX_Dn
-if(T_XKeyAs && T_XKeyAsScrollLock)
+if(T_XKeyAsScrollLock)
     Hotkey ScrollLock, CapsLockX_Dn
-if(T_XKeyAs && T_XKeyAsRAlt)
+if(T_XKeyAsRAlt)
     Hotkey RAlt, CapsLockX_Dn
 
 Hotkey, If, !CapsLockX_Avaliable()
 
-if(T_XKeyAs && T_XKeyAsCapsLock) 
+if(T_XKeyAsCapsLock) 
     Hotkey CapsLock, CapsLockX_NotAvaliable
-if(T_XKeyAs && T_XKeyAsSpace) 
+if(T_XKeyAsSpace) 
     Hotkey Space, CapsLockX_NotAvaliable
-if(T_XKeyAs && T_XKeyAsInsert)
+if(T_XKeyAsInsert)
     Hotkey Insert, CapsLockX_NotAvaliable
-if(T_XKeyAs && T_XKeyAsScrollLock)
+if(T_XKeyAsScrollLock)
     Hotkey ScrollLock, CapsLockX_NotAvaliable
-if(T_XKeyAs && T_XKeyAsRAlt)
+if(T_XKeyAsRAlt)
     Hotkey RAlt, CapsLockX_NotAvaliable
 
 Hotkey, If
 
-if (T_XKeyAs && T_XKeyAsCapsLock)
+if(T_XKeyAsCapsLock)
     Hotkey CapsLock Up, CapsLockX_Up
-if (T_XKeyAs && T_XKeyAsSpace) 
+if(T_XKeyAsSpace) 
     Hotkey Space Up, CapsLockX_Up
-if (T_XKeyAs && T_XKeyAsInsert)
+if(T_XKeyAsInsert)
     Hotkey Insert Up, CapsLockX_Up
-if (T_XKeyAs && T_XKeyAsScrollLock)
+if(T_XKeyAsScrollLock)
     Hotkey ScrollLock Up, CapsLockX_Up
-if (T_XKeyAs && T_XKeyAsRAlt)
+if(T_XKeyAsRAlt)
     Hotkey RAlt Up, CapsLockX_Up
 
 #Include Core\CapsLockX-ModulesRunner.ahk
@@ -180,7 +180,7 @@ CapsLockX_Reload(){
         ; 如果重载的新实例启动成功，则会自动使用热键结束掉本实例
         ; 而如果没有启动成功则保留本实例，以方便修改语法错误的模块
     }else{
-        ; 但如果用户多次要求重载，那就退出掉好了
+        ; 但如果用户要求重载，那就退出掉好了
         Run CapsLockX.exe, %A_WorkingDir%
         ExitApp
     }
@@ -240,7 +240,7 @@ CapsLockX_Up(){
 
 ; CapsLockX 模式切换处理
 CapsLockX_NotAvaliable:
-    ToolTip, CapsLockX_NotAvaliable
+    TrayTip, CapsLockX, NotAvaliable
 Return
 
 ; 软重启键
