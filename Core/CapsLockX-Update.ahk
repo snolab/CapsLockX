@@ -88,8 +88,10 @@ CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀){
     CapsLockX_更新提示("正在解压...")
     RunWait PowerShell.exe -Command Expand-Archive -LiteralPath '%file%' -DestinationPath '%unzipFolder%' -Force,, Hide
     CapsLockX_更新提示("解压完成...")
-    ; migrate configs
+    ; 迁移配置
     FileCopy, ./CapsLockX-Config.ini, %programFolder%/CapsLockX-Config.ini, 1
+    FileCopy, ./Modules/*.user.ahk, %programFolder%/Modules/, 1
+    FileCopy, ./Modules/*.user.md, %programFolder%/Modules/, 1
     Run explorer /select`,%programFolder%
     Run explorer /select`,.
     CapsLockX_更新提示("已自动打开新版本文件夹，请把它手动复制到当前软件目录。")

@@ -769,4 +769,4 @@ Fnt_GetNonClientMetrics()
 	return &NONCLIENTMETRICS
 }
 
-#Include Gdip_all.ahk
+; #Include Gdip_all.ahk
