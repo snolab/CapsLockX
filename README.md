@@ -16,7 +16,7 @@
 
 ### 安装与使用
 
-#### 绿色程序包
+#### 绿色程序包（新手适用，稳定版）
 
 源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包，推荐第一个（最快）。
 
@@ -29,15 +29,15 @@
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 命令行方式安装
+#### 命令行方式安装（进阶用户推荐，可自动更新）
 
 以下几种任选其一，推荐第一个（最快）
 
 1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 3. `npm i -g capslockx && capslockx`
 4. `npx capslockx`
-5. `choco install capslockx && capslockx`
+<!-- 5. `choco install capslockx && capslockx` -->
 
 ### 使用方式
 
@@ -144,7 +144,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 12 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、
 
 1. 快速排列窗口：CapsLockX + M
-2. 左手窗口管理：在 Alt + Tab 的时候，用 `WASD` 切换窗口，C 关掉窗口
+2. 左手窗口管理：在 Alt + Tab 的时候，用 `WASD` 切换窗口，X 关掉窗口
 3. 高效使用虚拟桌面：`CapsLockX + 0123456789-=` 切换、增减虚拟桌面，加上 Alt 键可以转移当前窗口
 
 #### 效果图
