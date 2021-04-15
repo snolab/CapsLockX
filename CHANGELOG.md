@@ -1,3 +1,13 @@
+## <small>1.14.36 (2021-04-15)</small>
+
+* chore:versioning ([a71d8b6](https://github.com/snomiao/CapsLockX/commit/a71d8b6))
+* format ([c5319b7](https://github.com/snomiao/CapsLockX/commit/c5319b7))
+* doc: update github link ([4e03eae](https://github.com/snomiao/CapsLockX/commit/4e03eae))
+* doc: 滚轮自动滚动 ([5f2aae0](https://github.com/snomiao/CapsLockX/commit/5f2aae0))
+* feat: 滚轮自动滚动 ([5fbbc38](https://github.com/snomiao/CapsLockX/commit/5fbbc38))
+
+
+
 ## <small>1.14.35 (2021-04-13)</small>
 
 * chore:versioning ([275ce7d](https://github.com/snomiao/CapsLockX/commit/275ce7d))
