@@ -1,10 +1,9 @@
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
-
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
@@ -12,9 +11,15 @@
 
 ## 入门教程第一
 
+### 太长不看版 TL;DR
+
+下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+
+装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
+
 ### 安装与使用
 
-#### 绿色程序包
+#### 绿色程序包（新手适用，稳定版）
 
 源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包，推荐第一个（最快）。
 
@@ -27,15 +32,15 @@
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 命令行方式安装
+#### 命令行方式安装（进阶用户推荐，可自动更新）
 
 以下几种任选其一，推荐第一个（最快）
 
 1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 3. `npm i -g capslockx && capslockx`
 4. `npx capslockx`
-5. `choco install capslockx && capslockx`
+<!-- 5. `choco install capslockx && capslockx` -->
 
 ### 使用方式
 
@@ -141,15 +146,15 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 12 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、
 
-1. 快速排列窗口：CapsLockX + M
-2. 左手窗口管理：在 Alt + Tab 的时候，用 `WASD` 切换窗口，C 关掉窗口
+1. 快速排列窗口：CapsLockX + C
+2. 左手窗口管理：在 Alt + Tab 的时候，用 `WASD` 切换窗口，X 关掉窗口
 3. 高效使用虚拟桌面：`CapsLockX + 0123456789-=` 切换、增减虚拟桌面，加上 Alt 键可以转移当前窗口
 
 #### 效果图
 
 - Alt + Tab 管理窗口增强
   ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif]( ./media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif )
-- 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
+- CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
   ![02-插件-窗口增强_一键排列窗口.gif]( ./media/02-插件-窗口增强_一键排列窗口.gif )
 
 #### 使用方法如下 ( Alt+Tab 与 CapsLockX )
@@ -221,7 +226,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -313,11 +318,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### TIM添加常驻功能模块
 
-|模式|按键|功能|
-| - | :-: | - |
-| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
-| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
-| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
+| 模式        |    按键     | 功能                   |
+| ----------- | :---------: | ---------------------- |
+| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
+| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
+| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -325,9 +330,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 用法
 
-| 作用于 | 按键| 功能说明 |
-| - | :-: | - |
-| 全局 | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 |  按键   | 功能说明              |
+| ------ | :-----: | --------------------- |
+| 全局   | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
@@ -467,10 +472,6 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
-相关知乎问题：
-
-- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
-
 ## 支持第六
 
 如何帮助本项目生存下去？如果本项目有帮助到你：
@@ -493,10 +494,15 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 ### 鸣谢
 
-感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：
-
-- [2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
+- 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
+- 感谢 @河许人 帮助推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
 
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )
+- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/questionz/23443944/answer/1670521971 )
+- [有哪位残友用的是单手键盘？ - 知乎]( https://www.zhihu.com/question/50621709/answer/1681247637 )
+- [(5 封私信 / 50 条消息) 怎么样才能只用键盘不用鼠标，包括任何指针触控设备，并优雅地使用电脑？ - 知乎]( https://www.zhihu.com/question/21281518/answer/1770669886 )
+- [(5 封私信 / 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
+- [我是职场达人，AutoHotKey让我成为职场超人 - 知乎]( https://zhuanlan.zhihu.com/p/60372361 )
+- [AutoHotKey 中文网专栏 - 知乎]( https://www.zhihu.com/column/autoahk )
