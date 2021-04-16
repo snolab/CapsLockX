@@ -57,7 +57,7 @@ CapsLockX更新_Util_VersionCompare(remote, local){
             ; CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
             return -1
         }
-        CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
+        ; CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
         return 0
     }
 }
