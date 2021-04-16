@@ -2,17 +2,22 @@
 
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
-
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
 ## 入门教程第一
+
+### 太长不看版 TL;DR
+
+下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+
+装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
 
 ### 安装与使用
 
@@ -33,10 +38,10 @@
 
 以下几种任选其一，推荐第一个（最快）
 
-1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
-3. `npm i -g capslockx && capslockx`
-4. `npx capslockx`
+- `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+- `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
+- `npm i -g capslockx && capslockx`
+- `npx capslockx`
 <!-- 5. `choco install capslockx && capslockx` -->
 
 ### 使用方式

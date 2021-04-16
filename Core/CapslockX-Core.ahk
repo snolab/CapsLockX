@@ -207,9 +207,13 @@ CapsLockX_Dn(){
     CapsLockXMode |= CM_FN
 
     ; (20200809)长按显示帮助（空格除外）
-    if (A_PriorKey == CapsLockX_上次触发键 && A_PriorKey != "Space"){
-        if ( A_TickCount - CapsLockPressTimestamp > 1000){
-            CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
+    if (A_PriorKey == CapsLockX_上次触发键){
+        if(A_PriorKey != "Space"){
+            if ( A_TickCount - CapsLockPressTimestamp > 1000){
+                CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
+            }
+        }else{
+            SendEvent, {Space}
         }
     }
     UpdateLight()
