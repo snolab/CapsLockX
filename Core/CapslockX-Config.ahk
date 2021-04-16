@@ -1,12 +1,12 @@
 ﻿; 保存为 save with UTF8 with DOM
 
+global _NIL := 清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
 CapsLockX_ConfigInit()
 
 CapsLockX_ConfigInit(){
     if (!CapsLockX_配置路径)
         Return
     CapsLockX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
-    清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
     ; 基本设定
     ; [Core]
     global T_XKeyAsSpace := CapsLockX_Config("Core", "T_XKeyAsSpace", 1, "使用 Space 作为引导键（默认启用，游戏玩家可在 .user.ignore.txt 里配置忽略游戏窗口）")
@@ -15,21 +15,23 @@ CapsLockX_ConfigInit(){
     global T_XKeyAsScrollLock := CapsLockX_Config("Core", "T_XKeyAsScrollLock", 0, "使用 ScrollLock 作为引导键")
     global T_XKeyAsRAlt := CapsLockX_Config("Core", "T_XKeyAsRAlt", 0, "使用 右 Alt 作为引导键")
 
-    global T_UseScrollLockLight := CapsLockX_Config("Advanced", "T_UseScrollLockLight", 0, "进阶： 是否使用 ScrollLock 灯来显示 CapsLockX 状态（不建议")
-    global T_UseCapsLockLight := CapsLockX_Config("Advanced", "T_UseCapsLockLight", 0, "进阶： 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议")
+    global T_UseScrollLockLight := CapsLockX_Config("Advanced", "T_UseScrollLockLight", 0, "进阶： 是否使用 ScrollLock 灯来显示 CapsLockX 状态（不建议）")
+    global T_UseCapsLockLight := CapsLockX_Config("Advanced", "T_UseCapsLockLight", 0, "进阶： 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议）")
     global T_SwitchSound := CapsLockX_Config("Advanced", "T_SwitchSound", 0, "进阶： 是否开启CapsLockX模式切换声音提示（默认不开）")
     global T_SwitchSoundOn := CapsLockX_Config("Advanced", "T_SwitchSoundOn", "./Data/NoteG.mp3", "CapsLockX 按下声音提示路径")
     global T_SwitchSoundOff := CapsLockX_Config("Advanced", "T_SwitchSoundOff", "./Data/NoteC.mp3", "CapsLockX 弹起声音提示路径")
     ; 不同模式下的拖盘图标
     ; global T_SwitchTrayIconDefault := CapsLockX_Config("Core", "T_SwitchTrayIconDefault", "./Data/XIconWhite.ico", "CapsLockX默认托盘显示图标，默认" "./Data/XIconWhite.ico")
-    global T_SwitchTrayIconOff := CapsLockX_Config("Advanced", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认" "./Data/XIconWhite.ico")
-    global T_SwitchTrayIconOn := CapsLockX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认" "./Data/XIconBlue.ico")
+    global T_SwitchTrayIconOff := CapsLockX_Config("Advanced", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认为 " "./Data/XIconWhite.ico")
+    global T_SwitchTrayIconOn := CapsLockX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认为 " "./Data/XIconBlue.ico")
 }
 
 清洗为_UTF16_WITH_BOM_型编码(path){
     ; 锁住的话就先不清洗
     FileRead CLX配置锁状态, %A_Temp%/CapsLockX_Config.lock
     if(CLX配置锁状态){
+        ; 但解掉锁
+        FileDelete, %A_Temp%/CapsLockX_Config.lock
         return
     }
     static 锁 := 0
