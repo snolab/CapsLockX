@@ -12,6 +12,12 @@
 
 ## 入门教程第一
 
+### 太长不看版 TL;DR
+
+下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+
+装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
+
 ### 安装与使用
 
 #### 绿色程序包（新手适用，稳定版）

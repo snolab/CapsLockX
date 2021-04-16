@@ -469,10 +469,6 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
-相关知乎问题：
-
-- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
-
 ## 支持第六
 
 如何帮助本项目生存下去？如果本项目有帮助到你：
@@ -495,10 +491,15 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 ### 鸣谢
 
-感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：
-
-- [2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
+- 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
+- 感谢 @河许人 帮助推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
 
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )
+- [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/questionz/23443944/answer/1670521971 )
+- [有哪位残友用的是单手键盘？ - 知乎]( https://www.zhihu.com/question/50621709/answer/1681247637 )
+- [(5 封私信 / 50 条消息) 怎么样才能只用键盘不用鼠标，包括任何指针触控设备，并优雅地使用电脑？ - 知乎]( https://www.zhihu.com/question/21281518/answer/1770669886 )
+- [(5 封私信 / 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/question/23443944/answer/1670521971 )
+- [我是职场达人，AutoHotKey让我成为职场超人 - 知乎]( https://zhuanlan.zhihu.com/p/60372361 )
+- [AutoHotKey 中文网专栏 - 知乎]( https://www.zhihu.com/column/autoahk )
