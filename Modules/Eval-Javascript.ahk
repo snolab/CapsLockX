@@ -1,24 +1,21 @@
 ﻿; ========== CapsLockX ==========
-; 名称：Javascript 表达式计算
+; 名称：JavaScript 表达式计算
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.06.27
 ; ========== CapsLockX ==========
-; 
 
 if (!CapsLockX){
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
 
-; 
-; 注释：在这里，你可以使用 CapsLockX_AppendHelp 添加帮助信息
-; 
 CapsLockX_AppendHelp("
 (
-JavaScript 计算 (建议安装NodeJS)
-| Win + Alt + C| 计算当前选区 JavaScript 表达式，并替换
+JavaScript 计算 (建议安装 NodeJS )
+| 全局 | CapsLockX + - | 计算当前选区 JavaScript 表达式，并替换
+| 全局 | CapsLockX + = | 计算当前选区 JavaScript 表达式，并替换
 )")
 
 Return

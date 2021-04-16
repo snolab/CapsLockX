@@ -102,7 +102,7 @@ AnkiImport(){
         MsgBox, 剪贴板里没有内容
         Return
     }
-    ToolTip, 获取到 %text%
+    TrayTip, Anki导入, 获取到 %text%
 
     ; 让 Anki 打开导入框
     Send ^+i
@@ -146,7 +146,7 @@ CaptureScreenNoteAdd(){
     ClipWait, 10, 1
     WinShow ahk_id %addWindow%
     if ErrorLevel {
-        MsgBox, 没有获取到剪贴板的内容
+        TrayTip, CapsLockX, 没有获取到剪贴板的内容
         Return False
     }
     While !WinActive("ahk_id" addWindow) && WinExist("ahk_id" addWindow)
@@ -167,7 +167,7 @@ $!c::
     ClipWait, 10, 1
     if ErrorLevel 
     { 
-        ToolTip, 没有获取到剪贴板的内容, 2
+        TrayTip, CapsLockX, 没有获取到剪贴板的内容
         Return
     }
     SendEvent ^v

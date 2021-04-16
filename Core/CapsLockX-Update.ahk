@@ -12,11 +12,11 @@
 #SingleInstance, ignore
 #Include Core/CapsLockX-RunSilent.ahk
 ; 载入设定
-global CapsLockXConfigPath := "./CapsLockX-Config.ini"
+global CapsLockX_配置路径 := "./CapsLockX-Config.ini"
 #Include Core/CapsLockX-Config.ahk
 
-global T_CheckUpdate := CapsLockX_Config("Core", "T_CheckUpdate", 1, "自动检查更新")
-global T_DownloadUpdate := CapsLockX_Config("Core", "T_DownloadUpdate", 1, "自动下载更新包")
+global T_CheckUpdate := CapsLockX_Config("Update", "T_CheckUpdate", 1, "自动检查更新")
+global T_DownloadUpdate := CapsLockX_Config("Update", "T_DownloadUpdate", 1, "自动下载更新包")
 global CLXU_Updated :=1
 global CLXU_Fail := 2
 global CLXU_AlreadyLatest := 4
@@ -57,7 +57,7 @@ CapsLockX更新_Util_VersionCompare(remote, local){
             ; CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
             return -1
         }
-        CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
+        ; CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
         return 0
     }
 }
@@ -88,8 +88,10 @@ CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀){
     CapsLockX_更新提示("正在解压...")
     RunWait PowerShell.exe -Command Expand-Archive -LiteralPath '%file%' -DestinationPath '%unzipFolder%' -Force,, Hide
     CapsLockX_更新提示("解压完成...")
-    ; migrate configs
+    ; 迁移配置
     FileCopy, ./CapsLockX-Config.ini, %programFolder%/CapsLockX-Config.ini, 1
+    FileCopy, ./Modules/*.user.ahk, %programFolder%/Modules/, 1
+    FileCopy, ./Modules/*.user.md, %programFolder%/Modules/, 1
     Run explorer /select`,%programFolder%
     Run explorer /select`,.
     CapsLockX_更新提示("已自动打开新版本文件夹，请把它手动复制到当前软件目录。")

@@ -12,8 +12,8 @@ global 方动中 := 0
 global 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0
 global 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
 
-global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 
 CapsLockX_AppendHelp("
 (
