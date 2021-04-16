@@ -1,3 +1,10 @@
+## <small>1.15.3 (2021-04-16)</small>
+
+* chore:versioning ([af261ab](https://github.com/snomiao/CapsLockX/commit/af261ab))
+* fix: 配置文件编码清洗优化 ([71c79d1](https://github.com/snomiao/CapsLockX/commit/71c79d1))
+
+
+
 ## <small>1.15.2 (2021-04-16)</small>
 
 * chore:versioning ([91d2697](https://github.com/snomiao/CapsLockX/commit/91d2697))
