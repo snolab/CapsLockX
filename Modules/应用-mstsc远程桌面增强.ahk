@@ -46,7 +46,7 @@ return
     FLAG_CtrlShiftAlt按下:=0
 
     上次CtrlShiftAlt锁 := 1
-    ToolTip, 双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）
+    ToolTip, % "双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）"
     KeyWait, LCtrl, T5 ; wait for 5 seconds
     KeyWait, LAlt, T5 ; wait for 5 seconds
     KeyWait, LShift, T5 ; wait for 5 seconds
