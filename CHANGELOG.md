@@ -1,3 +1,24 @@
+## 1.15.0 (2021-04-16)
+
+* chore:versioning ([bfe606f](https://github.com/snomiao/CapsLockX/commit/bfe606f))
+* doc ([e4092c2](https://github.com/snomiao/CapsLockX/commit/e4092c2))
+* doc ([662180b](https://github.com/snomiao/CapsLockX/commit/662180b))
+* doc ([2d6cca9](https://github.com/snomiao/CapsLockX/commit/2d6cca9))
+* readme补充 ([ca0217e](https://github.com/snomiao/CapsLockX/commit/ca0217e))
+* stage ([431b59c](https://github.com/snomiao/CapsLockX/commit/431b59c))
+* update ahk ([705b20b](https://github.com/snomiao/CapsLockX/commit/705b20b))
+* UPDATE CORE and add btt ([7889362](https://github.com/snomiao/CapsLockX/commit/7889362))
+* doc: X关掉窗口 ([22ba6fb](https://github.com/snomiao/CapsLockX/commit/22ba6fb))
+* doc: 太长不看 ([0359a0d](https://github.com/snomiao/CapsLockX/commit/0359a0d))
+* doc: 简介 ([6c5a1d5](https://github.com/snomiao/CapsLockX/commit/6c5a1d5))
+* fix: 优化帮助界面 ([16cdab2](https://github.com/snomiao/CapsLockX/commit/16cdab2))
+* fix: 移除无更新提示 ([9cbbc27](https://github.com/snomiao/CapsLockX/commit/9cbbc27))
+* fix: 讯飞语音输入法切换路径读取和窗口点击切换修复 ([759748e](https://github.com/snomiao/CapsLockX/commit/759748e))
+* fix: 配置文件编辑 CapsLockXMode ([e8b2a82](https://github.com/snomiao/CapsLockX/commit/e8b2a82))
+* chore: clean ([705becf](https://github.com/snomiao/CapsLockX/commit/705becf))
+
+
+
 ## <small>1.14.37 (2021-04-15)</small>
 
 * chore:versioning ([2e95779](https://github.com/snomiao/CapsLockX/commit/2e95779))
