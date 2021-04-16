@@ -15,7 +15,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
+装上之后，按住 CapsLockX，然后按 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，1234567890 切换虚拟桌面，M 打开配置。
 
 ### 安装与使用
 
@@ -50,15 +50,6 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 > 在 CapsLockX-Settings.ahk 中
 > 手动修改 global T_AskRunAsAdmin := 1 即可
 > 如不需要，可以改为 0
-
-### CapsLockX + 键位简述
-
-按住 CapsLock 或 空格 然后再按……
-
-- 鼠标模拟 `WASD EQ RF` 分别是鼠标的 移动 左右键 滚轮
-- 编辑增强 `HJKL YUIO TG` 分别是光标的 左上下右 页面键 退格回车
-- 窗口管理 `ZXCV` 分别是窗口的 切换 关闭 排列 透视
-- 剩下的 `BNM P` 目前保留中
 
 ## 目录第二
 
@@ -226,7 +217,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -318,11 +309,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### TIM添加常驻功能模块
 
-|模式|按键|功能|
-| - | :-: | - |
-| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
-| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
-| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
+| 模式        |    按键     | 功能                   |
+| ----------- | :---------: | ---------------------- |
+| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
+| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
+| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -330,9 +321,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 用法
 
-| 作用于 | 按键| 功能说明 |
-| - | :-: | - |
-| 全局 | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 |  按键   | 功能说明              |
+| ------ | :-----: | --------------------- |
+| 全局   | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 

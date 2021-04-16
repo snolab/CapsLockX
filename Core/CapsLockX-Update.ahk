@@ -22,7 +22,7 @@ global CLXU_Fail := 2
 global CLXU_AlreadyLatest := 4
 Sleep, 5000
 if(T_CheckUpdate)
-    CapsLockX_检查更新()
+    CapsLockX_更新检查()
 Sleep, 5000
 return
 
@@ -31,7 +31,7 @@ CapsLockX_更新提示(msg){
     ToolTip, CapsLockX 更新：%msg%
 }
 
-CapsLockX更新通过gitpull(tryAgainFlag:=0){
+CapsLockX_通过gitpull_更新(tryAgainFlag:=0){
     gitUpdateResult := CapsLockX_RunSilent("cmd /c git fetch && git pull")
     if(Trim(gitUpdateResult, "`t`r`n ") == "Already up to date."){
         ; CapsLockX_更新提示("CapsLockX 已是最新")
@@ -41,14 +41,14 @@ CapsLockX更新通过gitpull(tryAgainFlag:=0){
         ; MsgBox, %gitUpdateResult%
         ; CapsLockX_更新提示(gitUpdateResult)
         if(!tryAgainFlag)
-            return CapsLockX更新通过gitpull("tryAgainFlag")
+            return CapsLockX_通过gitpull_更新("tryAgainFlag")
     }
     return CLXU_Fail
 }
-CapsLockX更新_Util_VersionCompare(remote, local){
+CapsLockX_更新_VersionCompare(remote, local){
     ; from [(1) Simple version comparison - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5959)
-    ver_other:=StrSplit(remote,".")
-    ver_local:=StrSplit(local,".")
+    ver_other := StrSplit(remote,".")
+    ver_local := StrSplit(local,".")
     for _index, _num in ver_local{
         if ( (ver_other[_index]+0) > (_num+0) ){
             CapsLockX_更新提示("发现新版本！准备更新：" "`n仓库版本：" remote "`n我的版本：" local)
@@ -61,7 +61,7 @@ CapsLockX更新_Util_VersionCompare(remote, local){
         return 0
     }
 }
-CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀){
+CapsLockX_通过git仓库HTTP_更新(版本文件地址, 归档文件前缀){
     ; get latest version
     UrlDownloadToFile, %版本文件地址%, Tools/new-version.txt
     FileRead, version, Tools/version.txt
@@ -71,11 +71,13 @@ CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀){
     if(!version)
         return CLXU_Fail
     ; version compare
-    ver_cmp := CapsLockX更新_Util_VersionCompare(remoteVersion, version)
+    ver_cmp := CapsLockX_更新_VersionCompare(remoteVersion, version)
     if(ver_cmp<0)
         return CLXU_AlreadyLatest
     if(ver_cmp==0)
         return CLXU_AlreadyLatest
+    if(!T_DownloadUpdate)
+        return
     ; url := 归档文件前缀 "/master.zip" ; latest
     url := 归档文件前缀 "/v" remoteVersion ".zip" ; release
     ; download and unzip
@@ -99,7 +101,7 @@ CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀){
     Return CLXU_Updated
 }
 
-CapsLockX_检查更新(){
+CapsLockX_更新检查(){
     ; CapsLockX_更新提示("正在检查更新： gitpull")
     if(CLXU_AlreadyLatest & CapsLockX更新通过gitpull())
         return CLXU_AlreadyLatest
