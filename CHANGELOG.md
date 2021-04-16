@@ -1,3 +1,14 @@
+## <small>1.15.2 (2021-04-16)</small>
+
+* chore:versioning ([91d2697](https://github.com/snomiao/CapsLockX/commit/91d2697))
+* chore: build patch ([6bf7b68](https://github.com/snomiao/CapsLockX/commit/6bf7b68))
+* chore: modified start and build ([d07c75b](https://github.com/snomiao/CapsLockX/commit/d07c75b))
+* chore: remove cleanup ([f0f4dbe](https://github.com/snomiao/CapsLockX/commit/f0f4dbe))
+* doc: 定时任务 ([00c2ea5](https://github.com/snomiao/CapsLockX/commit/00c2ea5))
+* fix: 定时任务默认禁用 [有一个难以复现的 bug・Issue #17・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/ ([181dd03](https://github.com/snomiao/CapsLockX/commit/181dd03)), closes [#17](https://github.com/snomiao/CapsLockX/issues/17)
+
+
+
 ## <small>1.15.1 (2021-04-16)</small>
 
 * chore:versioning ([ebbca34](https://github.com/snomiao/CapsLockX/commit/ebbca34))
