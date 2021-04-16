@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.15.2</version>
+    <version>1.15.3</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -121,7 +121,18 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 #### 功能
 ]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.15.1 (2021-04-16)</small>
+    <releaseNotes><![CDATA[## <small>1.15.2 (2021-04-16)</small>
+
+* chore:versioning ([91d2697](https://github.com/snomiao/CapsLockX/commit/91d2697))
+* chore: build patch ([6bf7b68](https://github.com/snomiao/CapsLockX/commit/6bf7b68))
+* chore: modified start and build ([d07c75b](https://github.com/snomiao/CapsLockX/commit/d07c75b))
+* chore: remove cleanup ([f0f4dbe](https://github.com/snomiao/CapsLockX/commit/f0f4dbe))
+* doc: 定时任务 ([00c2ea5](https://github.com/snomiao/CapsLockX/commit/00c2ea5))
+* fix: 定时任务默认禁用 [有一个难以复现的 bug・Issue #17・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/ ([181dd03](https://github.com/snomiao/CapsLockX/commit/181dd03)), closes [#17](https://github.com/snomiao/CapsLockX/issues/17)
+
+
+
+## <small>1.15.1 (2021-04-16)</small>
 
 * chore:versioning ([ebbca34](https://github.com/snomiao/CapsLockX/commit/ebbca34))
 * doc ([cd5d633](https://github.com/snomiao/CapsLockX/commit/cd5d633))
@@ -192,20 +203,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 * chore:versioning ([f16488f](https://github.com/snomiao/CapsLockX/commit/f16488f))
 * doc ([9cc8bff](https://github.com/snomiao/CapsLockX/commit/9cc8bff))
 * sync docs ([3e9b9b7](https://github.com/snomiao/CapsLockX/commit/3e9b9b7))
-* chore: disable unreachable gitee ([7424e9f](https://github.com/snomiao/CapsLockX/commit/7424e9f))
-* chore: fix copy as CapsLockX-latest.zip ([2992e3b](https://github.com/snomiao/CapsLockX/commit/2992e3b))
-* chore: seperate workflows ([89240f2](https://github.com/snomiao/CapsLockX/commit/89240f2))
-
-
-
-## <small>1.14.31 (2021-04-13)</small>
-
-* chore:versioning ([eb304a4](https://github.com/snomiao/CapsLockX/commit/eb304a4))
-* doc ([0f8e292](https://github.com/snomiao/CapsLockX/commit/0f8e292))
-* doc ([6ac326c](https://github.com/snomiao/CapsLockX/commit/6ac326c))
-* doc ([c29fc58](https://github.com/snomiao/CapsLockX/commit/c29fc58))
-* docs ([36bbce9](https://github.com/snomiao/CapsLockX/commit/36bbce9))
-* chore: CI_TEST ([539ae48](https://github.com/snomiao/CapsLockX/commit/539ae48))]]></releaseNotes>
+* chore: disable unreachable gitee ([7424e9f](https://github.com/snomiao/CapsLockX/commit/7424e9f))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
