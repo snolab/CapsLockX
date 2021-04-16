@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.14.37</version>
+    <version>1.15.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -36,7 +36,7 @@
 
 ### 安装与使用
 
-#### 绿色程序包
+#### 绿色程序包（新手适用，稳定版）
 
 源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包，推荐第一个（最快）。
 
@@ -49,15 +49,15 @@
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 命令行方式安装
+#### 命令行方式安装（进阶用户推荐，可自动更新）
 
 以下几种任选其一，推荐第一个（最快）
 
 1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX.git && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 3. `npm i -g capslockx && capslockx`
 4. `npx capslockx`
-5. `choco install capslockx && capslockx`
+<!-- 5. `choco install capslockx && capslockx` -->
 
 ### 使用方式
 
@@ -120,11 +120,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 - 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 - 效果如图：
   ![鼠标模拟.gif]( ./docs/media/鼠标模拟.gif )
-
-#### 使用方法如下
 ]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.14.36 (2021-04-15)</small>
+    <releaseNotes><![CDATA[## <small>1.14.37 (2021-04-15)</small>
+
+* chore:versioning ([2e95779](https://github.com/snomiao/CapsLockX/commit/2e95779))
+* fix: || ([ee2687a](https://github.com/snomiao/CapsLockX/commit/ee2687a))
+
+
+
+## <small>1.14.36 (2021-04-15)</small>
 
 * chore:versioning ([a71d8b6](https://github.com/snomiao/CapsLockX/commit/a71d8b6))
 * format ([c5319b7](https://github.com/snomiao/CapsLockX/commit/c5319b7))
@@ -203,14 +208,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 ## <small>1.14.28 (2021-04-12)</small>
 
 * chore:versioning ([7617e98](https://github.com/snomiao/CapsLockX/commit/7617e98))
-* chore: debug name workflow ([bf771d6](https://github.com/snomiao/CapsLockX/commit/bf771d6))
-* chore: enable_jekyll: true ([1346b00](https://github.com/snomiao/CapsLockX/commit/1346b00))
-* chore: workflow debug ([1815aab](https://github.com/snomiao/CapsLockX/commit/1815aab))
-
-
-
-## <small>1.14.27 (2021-04-12)</small>
-]]></releaseNotes>
+* chore: debug name workflow ([bf771d6](https://github.com/snomiao/CapsLockX/commit/bf771d6))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
