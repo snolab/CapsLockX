@@ -11,18 +11,18 @@ jobs:
   #   steps:
   #     - run: git clone https://gitee.com/snomiao/CapslockX.git
   #     - run: .\CapsLockX\CapsLockX.exe
-  gh:
+  gh-source:
     runs-on: windows-latest
     steps:
       - run: git clone https://github.com/snomiao/CapsLockX.git
       - run: .\CapsLockX\CapsLockX.exe
         env:
           ENVIROMENT: CI_TEST
-  npm:
+  npm-package:
     runs-on: windows-latest
     steps:
       - run: npm i -g capslockx
-      - run: capslockx
+      - run: npx capslockx
         env:
           ENVIROMENT: CI_TEST
   # npx:
@@ -31,10 +31,10 @@ jobs:
   #     ENVIROMENT: CI_TEST
   #   steps:
   #     - run: npx capslockx
-  choco:
-    runs-on: windows-latest
-    steps:
-      - run: choco install capslockx
-      - run: capslockx
-        env:
-          ENVIROMENT: CI_TEST
+  # choco:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - run: choco install capslockx
+  #     - run: capslockx
+  #       env:
+  #         ENVIROMENT: CI_TEST
