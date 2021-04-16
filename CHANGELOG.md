@@ -1,3 +1,11 @@
+## <small>1.15.1 (2021-04-16)</small>
+
+* chore:versioning ([ebbca34](https://github.com/snomiao/CapsLockX/commit/ebbca34))
+* doc ([cd5d633](https://github.com/snomiao/CapsLockX/commit/cd5d633))
+* fix: 空格键长按还原输出空格功能 ([91cef7f](https://github.com/snomiao/CapsLockX/commit/91cef7f))
+
+
+
 ## 1.15.0 (2021-04-16)
 
 * chore:versioning ([bfe606f](https://github.com/snomiao/CapsLockX/commit/bfe606f))
