@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.15.0</version>
+    <version>1.15.1</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -22,17 +22,22 @@
 
 # CapsLockX - 像**黑客**一样操作电脑
 
-像**黑客**一样操作电脑！CapsLockX 是一款基于 AutoHotkey 的热键脚本合集。让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
-
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
 ## 入门教程第一
+
+### 太长不看版 TL;DR
+
+下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+
+装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
 
 ### 安装与使用
 
@@ -53,10 +58,10 @@
 
 以下几种任选其一，推荐第一个（最快）
 
-1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
-3. `npm i -g capslockx && capslockx`
-4. `npx capslockx`
+- `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+- `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
+- `npm i -g capslockx && capslockx`
+- `npx capslockx`
 <!-- 5. `choco install capslockx && capslockx` -->
 
 ### 使用方式
@@ -114,15 +119,30 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 ### 模拟鼠标插件（ WASD QERF ）
 
 #### 功能
-
-- 本模块使用按键区：CapsLockX + QWER ASDF
-- 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
-- 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
-- 效果如图：
-  ![鼠标模拟.gif]( ./docs/media/鼠标模拟.gif )
 ]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.14.37 (2021-04-15)</small>
+    <releaseNotes><![CDATA[## 1.15.0 (2021-04-16)
+
+* chore:versioning ([bfe606f](https://github.com/snomiao/CapsLockX/commit/bfe606f))
+* doc ([e4092c2](https://github.com/snomiao/CapsLockX/commit/e4092c2))
+* doc ([662180b](https://github.com/snomiao/CapsLockX/commit/662180b))
+* doc ([2d6cca9](https://github.com/snomiao/CapsLockX/commit/2d6cca9))
+* readme补充 ([ca0217e](https://github.com/snomiao/CapsLockX/commit/ca0217e))
+* stage ([431b59c](https://github.com/snomiao/CapsLockX/commit/431b59c))
+* update ahk ([705b20b](https://github.com/snomiao/CapsLockX/commit/705b20b))
+* UPDATE CORE and add btt ([7889362](https://github.com/snomiao/CapsLockX/commit/7889362))
+* doc: X关掉窗口 ([22ba6fb](https://github.com/snomiao/CapsLockX/commit/22ba6fb))
+* doc: 太长不看 ([0359a0d](https://github.com/snomiao/CapsLockX/commit/0359a0d))
+* doc: 简介 ([6c5a1d5](https://github.com/snomiao/CapsLockX/commit/6c5a1d5))
+* fix: 优化帮助界面 ([16cdab2](https://github.com/snomiao/CapsLockX/commit/16cdab2))
+* fix: 移除无更新提示 ([9cbbc27](https://github.com/snomiao/CapsLockX/commit/9cbbc27))
+* fix: 讯飞语音输入法切换路径读取和窗口点击切换修复 ([759748e](https://github.com/snomiao/CapsLockX/commit/759748e))
+* fix: 配置文件编辑 CapsLockXMode ([e8b2a82](https://github.com/snomiao/CapsLockX/commit/e8b2a82))
+* chore: clean ([705becf](https://github.com/snomiao/CapsLockX/commit/705becf))
+
+
+
+## <small>1.14.37 (2021-04-15)</small>
 
 * chore:versioning ([2e95779](https://github.com/snomiao/CapsLockX/commit/2e95779))
 * fix: || ([ee2687a](https://github.com/snomiao/CapsLockX/commit/ee2687a))
@@ -180,35 +200,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 * chore: CI_TEST ([539ae48](https://github.com/snomiao/CapsLockX/commit/539ae48))
 * chore: publish as CapsLockX-latest.zip ([3b397b2](https://github.com/snomiao/CapsLockX/commit/3b397b2))
 * chore: remove snomiao/CapsLockX.git ([d693ddf](https://github.com/snomiao/CapsLockX/commit/d693ddf))
-* fix: 双击Ctrl+Alt+Shift 后置当前窗口时，自动激活任务栏。 ([8feea0d](https://github.com/snomiao/CapsLockX/commit/8feea0d))
-* fix: 观察到 r up 和 f Up 偶尔其中一个会随机失效，原因不明，尝试修复 ([d092f5e](https://github.com/snomiao/CapsLockX/commit/d092f5e))
-
-
-
-## <small>1.14.30 (2021-04-12)</small>
-
-* chore:versioning ([dd151fa](https://github.com/snomiao/CapsLockX/commit/dd151fa))
-* debug-done ([377ff04](https://github.com/snomiao/CapsLockX/commit/377ff04))
-* fix npm ignore ([5f8d832](https://github.com/snomiao/CapsLockX/commit/5f8d832))
-* ignore tgz ([a2eed8e](https://github.com/snomiao/CapsLockX/commit/a2eed8e))
-* chore: add VERIFICATION for chocolatey ([835b932](https://github.com/snomiao/CapsLockX/commit/835b932))
-* chore: package-test ([c066895](https://github.com/snomiao/CapsLockX/commit/c066895))
-* doc: 安装方式 ([971522a](https://github.com/snomiao/CapsLockX/commit/971522a))
-
-
-
-## <small>1.14.29 (2021-04-12)</small>
-
-* chore:versioning ([7055434](https://github.com/snomiao/CapsLockX/commit/7055434))
-* doc ([dcfbc1f](https://github.com/snomiao/CapsLockX/commit/dcfbc1f))
-* chore: versioning 过长文档 CDATA包装 ([c2586f6](https://github.com/snomiao/CapsLockX/commit/c2586f6))
-
-
-
-## <small>1.14.28 (2021-04-12)</small>
-
-* chore:versioning ([7617e98](https://github.com/snomiao/CapsLockX/commit/7617e98))
-* chore: debug name workflow ([bf771d6](https://github.com/snomiao/CapsLockX/commit/bf771d6))]]></releaseNotes>
+* fix: 双击Ctrl+Alt+Shift 后置当前窗口时，自动激活任务栏。 ([8feea0d](https://github.com/snomiao/CapsLockX/commit/8feea0d))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
