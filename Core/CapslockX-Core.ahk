@@ -169,6 +169,7 @@ CapsLockX_Avaliable(){
 CapsLockX_Loaded(){
     ; 使用退出键退出其它实例
     SendEvent ^!+\
+    SendEvent ^!+\
     TrayTip CapsLockX %CapsLockX_VersionName%, 加载成功
 }
 CapsLockX_Reload(){

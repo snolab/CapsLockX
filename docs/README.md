@@ -40,7 +40,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 - `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 - `npm i -g capslockx && capslockx`
 - `npx capslockx`
-<!-- 5. `choco install capslockx && capslockx` -->
+- `choco install capslockx && capslockx` （注：2021-04-17 程序包审核中）
 
 ### 使用方式
 
@@ -217,7 +217,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -309,11 +309,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### TIM添加常驻功能模块
 
-| 模式        |    按键     | 功能                   |
-| ----------- | :---------: | ---------------------- |
-| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
-| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
-| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
+|模式|按键|功能|
+| - | :-: | - |
+| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
+| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
+| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -321,9 +321,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 用法
 
-| 作用于 |  按键   | 功能说明              |
-| ------ | :-----: | --------------------- |
-| 全局   | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 | 按键| 功能说明 |
+| - | :-: | - |
+| 全局 | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
@@ -504,7 +504,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 ### 鸣谢
 
 - 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
-- 感谢 @河许人 帮助推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
+- 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
 

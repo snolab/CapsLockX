@@ -16,7 +16,6 @@
 SendMode Event
 SetWorkingDir, %A_ScriptDir%
 
-Process Priority, , High ; 脚本高优先级
 global CapsLockX_PathModules := "./Modules"
 global CapsLockX_PathCore := "./Core"
 global CapsLockX_Version
@@ -26,10 +25,56 @@ if(!CapsLockX_Version)
 global CapsLockX_VersionName := "v" CapsLockX_Version
 global loadingTips := ""
 
+; 对 核心模块 进行 编码清洗
 清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-Config.ahk")
 清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-Core.ahk")
 清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-RunSilent.ahk")
 清洗为_UTF8_WITH_BOM_型编码(CapsLockX_PathCore "/CapsLockX-Update.ahk")
+
+; 加载模块
+global ModulesRunner := CapsLockX_PathCore "\CapsLockX-ModulesRunner.ahk"
+global ModulesLoader := CapsLockX_PathCore "\CapsLockX-ModulesLoader.ahk"
+LoadModules(ModulesRunner, ModulesLoader)
+
+; 编译README.md
+INPUT_README_FILE := "./docs/README.md"
+FileRead, source, %INPUT_README_FILE%
+
+; 加载模块帮助
+target := 模块帮助README更新(source)
+if (target != source){
+    加载提示追加("模块帮助有变更")
+
+    ; 稳定性检查
+    source := 模块帮助README更新(target)
+    if (target != source){
+        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
+    }
+    ; 输出到 docs/readme.md （用于 github-pages ）
+    ; docs_target := 模块帮助README更新(source, 1)
+    FileDelete ./docs/README.md
+    FileAppend %target%, ./docs/README.md, UTF-8-Raw
+
+    ; 输出根目录 README.md （用于 github 首页）
+    FileDelete ./README.md
+    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->`n`n"
+    StringReplace, target, target, ./media/, ./docs/media/, All
+    FileAppend %PREFIX%%target%, ./README.md, UTF-8-Raw
+    ; Reload
+    ; ExitApp
+}
+; 隐藏 ToolTip
+ToolTip
+
+; 当 CI_TEST 启用时，仅测试编译效果，不启动核心
+EnvGet ENVIROMENT, ENVIROMENT
+if("CI_TEST" == ENVIROMENT){
+    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
+    ExitApp
+}
+CapslockX_启动()
+
+Return
 
 加载提示追加(msg, clear = 0){
     if (clear || loadingTips == ""){
@@ -189,61 +234,31 @@ LoadModules(ModulesRunner, ModulesLoader){
     FileAppend %codeLoader%, %ModulesLoader%
 }
 
-; 加载模块
-global ModulesRunner := CapsLockX_PathCore "\CapsLockX-ModulesRunner.ahk"
-global ModulesLoader := CapsLockX_PathCore "\CapsLockX-ModulesLoader.ahk"
-LoadModules(ModulesRunner, ModulesLoader)
+CapslockX_启动(){
+    CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
+    UpdatorAHK := CapsLockX_PathCore "\CapsLockX-Update.ahk"
+    ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再运行核心。
+    AHK_EXE_ROOT_PATH := "CapsLockX.exe"
+    AHK_EXE_CORE_PATH := "./Core/CapsLockX.exe"
+    AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX.exe"
+    FileCopy, %AHK_EXE_ROOT_PATH%, %AHK_EXE_TEMP_PATH%, 1
+    if !FileExist(AHK_EXE_TEMP_PATH)
+        FileCopy, %AHK_EXE_CORE_PATH%, %AHK_EXE_TEMP_PATH%, 1
+    if !FileExist(AHK_EXE_TEMP_PATH)
+        AHK_EXE_TEMP_PATH := AHK_EXE_ROOT_PATH
+    ; 运行更新组件
+    Run %AHK_EXE_TEMP_PATH% %UpdatorAHK%, %A_ScriptDir%
+    ; 运行核心
+    RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
 
-; 编译README.md
-INPUT_README_FILE := "./docs/README.md"
-FileRead, source, %INPUT_README_FILE%
-
-; 加载模块帮助
-target := 模块帮助README更新(source)
-if (target != source){
-    加载提示追加("模块帮助有变更")
-
-    ; 稳定性检查
-    source := 模块帮助README更新(target)
-    if (target != source){
-        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
+    if (ErrorLevel){
+        MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
+        IfMsgBox No
+        return
+        Reload
+    }else{
+        TrayTip, CapsLockX 退出, CapsLockX 已退出。
+        Sleep, 1000
     }
-    ; 输出到 docs/readme.md （用于 github-pages ）
-    ; docs_target := 模块帮助README更新(source, 1)
-    FileDelete ./docs/README.md
-    FileAppend %target%, ./docs/README.md, UTF-8-Raw
-
-    ; 输出根目录 README.md （用于 github 首页）
-    FileDelete ./README.md
-    PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->`n`n"
-    StringReplace, target, target, ./media/, ./docs/media/, All
-    FileAppend %PREFIX%%target%, ./README.md, UTF-8-Raw
-    ; Reload
-    ; ExitApp
-}
-global CoreAHK := CapsLockX_PathCore "\CapsLockX-Core.ahk"
-global UpdatorAHK := CapsLockX_PathCore "\CapsLockX-Update.ahk"
-; 隐藏 ToolTip
-ToolTip
-
-EnvGet ENVIROMENT, ENVIROMENT
-if("CI_TEST" == ENVIROMENT){
-    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
     ExitApp
 }
-
-; 运行更新组件
-Run %CapsLockX_PathCore%\AutoHotkeyU32.exe %UpdatorAHK%, %A_WorkingDir%
-; 运行核心
-RunWait %CapsLockX_PathCore%\AutoHotkeyU32.exe %CoreAHK%, %A_WorkingDir%
-
-if (ErrorLevel){
-    MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
-    IfMsgBox No
-    return
-    Reload
-}else{
-    TrayTip, CapsLockX 退出, CapsLockX 已退出。
-    Sleep, 1000
-}
-ExitApp

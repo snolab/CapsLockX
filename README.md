@@ -17,7 +17,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
+装上之后，按住 CapsLockX，然后按 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，1234567890 切换虚拟桌面，M 打开配置。
 
 ### 安装与使用
 
@@ -42,7 +42,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 - `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 - `npm i -g capslockx && capslockx`
 - `npx capslockx`
-<!-- 5. `choco install capslockx && capslockx` -->
+- `choco install capslockx && capslockx` （注：2021-04-17 程序包审核中）
 
 ### 使用方式
 
@@ -52,15 +52,6 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 > 在 CapsLockX-Settings.ahk 中
 > 手动修改 global T_AskRunAsAdmin := 1 即可
 > 如不需要，可以改为 0
-
-### CapsLockX + 键位简述
-
-按住 CapsLock 或 空格 然后再按……
-
-- 鼠标模拟 `WASD EQ RF` 分别是鼠标的 移动 左右键 滚轮
-- 编辑增强 `HJKL YUIO TG` 分别是光标的 左上下右 页面键 退格回车
-- 窗口管理 `ZXCV` 分别是窗口的 切换 关闭 排列 透视
-- 剩下的 `BNM P` 目前保留中
 
 ## 目录第二
 
@@ -515,7 +506,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 ### 鸣谢
 
 - 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
-- 感谢 @河许人 帮助推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
+- 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
 
