@@ -36,10 +36,10 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 以下几种任选其一，推荐第一个（最快）
 
-1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
-3. `npm i -g capslockx && capslockx`
-4. `npx capslockx`
+- `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+- `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
+- `npm i -g capslockx && capslockx`
+- `npx capslockx`
 <!-- 5. `choco install capslockx && capslockx` -->
 
 ### 使用方式
