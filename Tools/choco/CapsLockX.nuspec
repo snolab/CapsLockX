@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.15.1</version>
+    <version>1.15.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -121,7 +121,15 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 #### 功能
 ]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## 1.15.0 (2021-04-16)
+    <releaseNotes><![CDATA[## <small>1.15.1 (2021-04-16)</small>
+
+* chore:versioning ([ebbca34](https://github.com/snomiao/CapsLockX/commit/ebbca34))
+* doc ([cd5d633](https://github.com/snomiao/CapsLockX/commit/cd5d633))
+* fix: 空格键长按还原输出空格功能 ([91cef7f](https://github.com/snomiao/CapsLockX/commit/91cef7f))
+
+
+
+## 1.15.0 (2021-04-16)
 
 * chore:versioning ([bfe606f](https://github.com/snomiao/CapsLockX/commit/bfe606f))
 * doc ([e4092c2](https://github.com/snomiao/CapsLockX/commit/e4092c2))
@@ -197,10 +205,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 * doc ([6ac326c](https://github.com/snomiao/CapsLockX/commit/6ac326c))
 * doc ([c29fc58](https://github.com/snomiao/CapsLockX/commit/c29fc58))
 * docs ([36bbce9](https://github.com/snomiao/CapsLockX/commit/36bbce9))
-* chore: CI_TEST ([539ae48](https://github.com/snomiao/CapsLockX/commit/539ae48))
-* chore: publish as CapsLockX-latest.zip ([3b397b2](https://github.com/snomiao/CapsLockX/commit/3b397b2))
-* chore: remove snomiao/CapsLockX.git ([d693ddf](https://github.com/snomiao/CapsLockX/commit/d693ddf))
-* fix: 双击Ctrl+Alt+Shift 后置当前窗口时，自动激活任务栏。 ([8feea0d](https://github.com/snomiao/CapsLockX/commit/8feea0d))]]></releaseNotes>
+* chore: CI_TEST ([539ae48](https://github.com/snomiao/CapsLockX/commit/539ae48))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
