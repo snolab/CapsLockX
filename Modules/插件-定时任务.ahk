@@ -8,7 +8,7 @@
 ; ========== CapsLockX ==========
 
 global T_ScheduleTasks := CapsLockX_Config("ScheduleTasks", "EnableScheduleTasks", 0, "使用定时任务（默认禁用，改为 1 开启）")
-global T_ScheduleTasks_UseTomatoLife := CapsLockX_Config("ScheduleTasks", "UseTomatoLife", 1, "使用番茄报时（需要先开启定时任务）")
+global T_ScheduleTasks_UseTomatoLife := CapsLockX_Config("ScheduleTasks", "UseTomatoLife", 1, "使用番茄报时（00分和30分播放工作铃声，每小时的25分和55分播放休息铃声）（需要先开启定时任务）")
 global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("ScheduleTasks", "UseTomatoLifeSwitchVirtualDesktop", 1, "使用番茄报时时，自动切换桌面（休息桌面为1，工作桌面为2）")
 
 if(T_ScheduleTasks){
