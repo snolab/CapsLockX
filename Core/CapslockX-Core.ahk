@@ -213,7 +213,9 @@ CapsLockX_Dn(){
                 CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
             }
         }else{
-            SendEvent, {Space}
+            if ( A_TickCount - CapsLockPressTimestamp > 200){
+                SendEvent, {Space}
+            }
         }
     }
     UpdateLight()
