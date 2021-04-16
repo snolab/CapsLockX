@@ -20,7 +20,7 @@ if(!FileExist(CapsLockX_配置路径)){
     MsgBox 更新失败：配置文件不存在
     ExitApp
 }
-; 加载模块
+; 加载模块（这里更新模块可能由 CapsLockX 加载也可能自己启动）
 #Include *i Core/CapsLockX-Config.ahk
 #Include *i Core/CapsLockX-RunSilent.ahk
 #Include *i ./CapsLockX-Config.ahk
@@ -35,7 +35,7 @@ if(FileExist(CapsLockX_配置路径)){
 global CapsLockX_Update_Updated :=1
 global CapsLockX_Update_Fail := 2
 global CapsLockX_Update_AlreadyLatest := 4
-Sleep, 5000
+; Sleep, 5000
 if(T_CheckUpdate)
     CapsLockX_更新检查()
 Sleep, 5000
@@ -71,7 +71,8 @@ CapsLockX_尝试通过gitpull_更新(tryAgainFlag:=0){
         ; MsgBox, %gitUpdateResult%
         if(tryAgainFlag){
             ; 通常是有错误发生。
-            ; CapsLockX_更新提示(gitUpdateResult)
+            ; CapsLockX_更新提示("错误：" gitUpdateResult)
+            Return CapsLockX_Update_Fail
         }else{
             return CapsLockX_尝试通过gitpull_更新("tryAgainFlag")
         }
@@ -80,6 +81,7 @@ CapsLockX_尝试通过gitpull_更新(tryAgainFlag:=0){
 }
 CapsLockX_通过git仓库HTTP_更新(版本文件地址, 归档文件前缀){
     ; get latest version
+    CapsLockX_更新提示("正在获取新版本号...地址：" 版本文件地址)
     UrlDownloadToFile, %版本文件地址%, Tools/new-version.txt
     FileRead, version, Tools/version.txt
     FileRead, remoteVersion, Tools/new-version.txt
@@ -102,7 +104,7 @@ CapsLockX_通过git仓库HTTP_更新(版本文件地址, 归档文件前缀){
     unzipFolder := A_Temp "\CapsLockX-Update-" remoteVersion
     programFolder := A_Temp "\CapsLockX-Update-" remoteVersion "\CapsLockX-" remoteVersion
     FileCreateDir %unzipFolder%
-    CapsLockX_更新提示("正在从github下载新版本...")
+    CapsLockX_更新提示("正在下载新版本...地址：" 归档文件前缀)
     UrlDownloadToFile %url%, %file%
     CapsLockX_更新提示("正在解压...")
     RunWait PowerShell.exe -Command Expand-Archive -LiteralPath '%file%' -DestinationPath '%unzipFolder%' -Force,, Hide
@@ -112,8 +114,8 @@ CapsLockX_通过git仓库HTTP_更新(版本文件地址, 归档文件前缀){
     FileCopy, ./Modules/*.user.ahk, %programFolder%/Modules/, 1
     FileCopy, ./Modules/*.user.md, %programFolder%/Modules/, 1
     Run explorer /select`, %programFolder%
-    Run explorer /select`, %A_ScriptDir%/..
-    CapsLockX_更新提示("已自动打开新版本文件夹，请把它手动复制到当前软件目录。")
+    Run explorer /select`, %A_ScriptDir%
+    CapsLockX_更新提示("解压完成，已打开新版本文件夹，请把它手动复制到当前软件目录。")
     ; TODO REPLACE CURRENT FOLDER
     Return CapsLockX_Update_Updated
 }
