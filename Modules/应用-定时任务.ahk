@@ -13,9 +13,9 @@ global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("Sc
 
 if(T_ScheduleTasks){
     高精度时间配置()
+    GoSub CapsLockX定时任务
+    ; [有一个难以复现的 bug・Issue #17・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/17 )
 }
-
-GoSub CapsLockX定时任务
 
 Return
 高精度时间配置(){
