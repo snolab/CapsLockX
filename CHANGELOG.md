@@ -1,3 +1,12 @@
+## [1.16.2](https://github.com/snomiao/CapsLockX/compare/v1.16.1...v1.16.2) (2021-04-17)
+
+
+### Bug Fixes
+
+* working dir ([e4333ab](https://github.com/snomiao/CapsLockX/commit/e4333abed42baa7f751ca02102753f67b40117ca))
+
+
+
 ## [1.16.1](https://github.com/snomiao/CapsLockX/compare/v1.16.0...v1.16.1) (2021-04-17)
 
 
