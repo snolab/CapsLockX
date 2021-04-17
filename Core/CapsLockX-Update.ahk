@@ -9,115 +9,253 @@
 ; ========== CapsLockX ==========
 
 ; 防多开
-#SingleInstance, ignore
-#Include Core/CapsLockX-RunSilent.ahk
-; 载入设定
-global CapsLockX_配置路径 := "./CapsLockX-Config.ini"
-#Include Core/CapsLockX-Config.ahk
+#SingleInstance, force
 
-global T_CheckUpdate := CapsLockX_Config("Update", "T_CheckUpdate", 1, "自动检查更新")
-global T_DownloadUpdate := CapsLockX_Config("Update", "T_DownloadUpdate", 1, "自动下载更新包")
-global CLXU_Updated :=1
-global CLXU_Fail := 2
-global CLXU_AlreadyLatest := 4
-Sleep, 5000
+; 载入设定、检查配置文件
+global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
+global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
+FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
+
+if(!FileExist(CapsLockX_配置路径)){
+    SetWorkingDir, ../
+}
+if(!FileExist(CapsLockX_配置路径)){
+    MsgBox 更新失败：配置文件不存在
+    ExitApp
+}
+; 加载模块（这里更新模块可能由 CapsLockX 加载也可能自己启动）
+#Include *i Core/CapsLockX-Config.ahk
+#Include *i Core/CapsLockX-RunSilent.ahk
+; #Include *i ./CapsLockX-Config.ahk
+; #Include *i ./CapsLockX-RunSilent.ahk
+
+if(FileExist(CapsLockX_配置路径)){
+    global T_CheckUpdate
+    global T_DownloadUpdate
+    T_CheckUpdate := CapsLockX_Config("Update", "T_CheckUpdate", 1, "自动检查更新")
+    T_DownloadUpdate := CapsLockX_Config("Update", "T_DownloadUpdate", 1, "自动下载更新包")
+}
+global CapsLockX_Update_Updated := 0x01
+global CapsLockX_Update_Fail := 0x02
+global CapsLockX_Update_AlreadyLatest := 0x04
+global CapsLockX_Update_NeedUpdate := 0x08
+global CapsLockX_Update_Stop := 0x10
+
+; Sleep, 5000
 if(T_CheckUpdate)
-    CapsLockX_更新检查()
+    CapsLockX_更新()
+; CapsLockX_更新记录("发现新版本！准备更新：" "`n仓库版本：" remote "`n我的版本：" local)
+TrayTip, CapsLockX 更新模块, 更新完成
 Sleep, 5000
 return
 
-CapsLockX_更新提示(msg){
+CapsLockX_更新记录(msg){
     ; TrayTip CapsLockX 更新, %msg%
     ToolTip, CapsLockX 更新：%msg%
+    ; MsgBox, CapsLockX 更新：%msg%
 }
-
-CapsLockX_通过gitpull_更新(tryAgainFlag:=0){
-    gitUpdateResult := CapsLockX_RunSilent("cmd /c git fetch && git pull")
-    if(Trim(gitUpdateResult, "`t`r`n ") == "Already up to date."){
-        ; CapsLockX_更新提示("CapsLockX 已是最新")
-        return CLXU_AlreadyLatest
-    }
-    if(gitUpdateResult){
-        ; MsgBox, %gitUpdateResult%
-        ; CapsLockX_更新提示(gitUpdateResult)
-        if(!tryAgainFlag)
-            return CapsLockX_通过gitpull_更新("tryAgainFlag")
-    }
-    return CLXU_Fail
+CapsLockX_更新提示(msg){
+    ; TrayTip CapsLockX 更新, %msg%
+    ; ToolTip, CapsLockX 更新：%msg%
+    MsgBox, CapsLockX 更新：%msg%
 }
-CapsLockX_更新_VersionCompare(remote, local){
+CapsLockX_仓库版本号比对(remote, local){
     ; from [(1) Simple version comparison - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5959)
-    ver_other := StrSplit(remote,".")
     ver_local := StrSplit(local,".")
+    ver_other := StrSplit(remote,".")
     for _index, _num in ver_local{
         if ( (ver_other[_index]+0) > (_num+0) ){
-            CapsLockX_更新提示("发现新版本！准备更新：" "`n仓库版本：" remote "`n我的版本：" local)
+            CapsLockX_更新记录("发现新版本！准备更新：" "`n仓库版本：" remote "`n我的版本：" local)
             return 1
         }else if ( (ver_other[_index]+0) < (_num+0) ){
-            ; CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
+            ; CapsLockX_更新记录("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
             return -1
         }
-        ; CapsLockX_更新提示("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
+        ; CapsLockX_更新记录("当前已经是最新版本" "`n仓库版本：" remote "`n我的版本：" local)
         return 0
     }
 }
-CapsLockX_通过git仓库HTTP_更新(版本文件地址, 归档文件前缀){
-    ; get latest version
+CapsLockX_通过npm更新(){
+    EnvGet, APPDATA, APPDATA
+    是NPM全局安装 := InStr(A_ScriptFullPath, APPDATA) == 1
+    if(!是NPM全局安装)
+        return CapsLockX_Update_Fail
+    CapsLockX_更新记录("当前版本由 npm i -g 安装，正在尝试通过 npm update -g capslockx 更新")
+    更新成功 := 
+    || "SUCC" == CapsLockX_RunSilent("cmd /c cnpm update -g capslockx && echo SUCC || echo FAIL")
+    || "SUCC" == CapsLockX_RunSilent("cmd /c npm update -g capslockx && echo SUCC || echo FAIL")
+    return 更新成功 ? CapsLockX_Update_AlreadyLatest : CapsLockX_Update_Fail
+}
+CapsLockX_通过gitpull更新(tryAgainFlag := 0){
+    是GIT仓库 := "true" == Trim(CapsLockX_RunSilent("cmd /c git rev-parse --is-inside-work-tree"), "`r`n`t` ")
+    if(!是GIT仓库)
+        return CapsLockX_Update_Fail
+    CapsLockX_更新记录("当前版本由 git clone 安装，正在尝试通过 git pull 更新" tryAgainFlag)
+    命令返回 := CapsLockX_RunSilent("cmd /c git fetch && git pull")
+    if(Trim(命令返回, "`t`r`n ") == "Already up to date."){
+        CapsLockX_更新记录("CapsLockX 已是最新")
+        return CapsLockX_Update_AlreadyLatest
+    }
+    if(命令返回){
+        if(tryAgainFlag){
+            ; 通常是有错误发生。
+            CapsLockX_更新记录("git pull 错误：" 命令返回)
+            Return CapsLockX_Update_Fail | CapsLockX_Update_Stop
+        }else{
+            return CapsLockX_通过gitpull更新("tryAgainFlag")
+        }
+    }
+    return CapsLockX_Update_Fail | CapsLockX_Update_Stop
+}
+CapsLockX_通过发布包_更新(版本文件地址, 包网址){
+    CapsLockX_更新记录("正在获取新版本号...地址：" 版本文件地址)
     UrlDownloadToFile, %版本文件地址%, Tools/new-version.txt
     FileRead, version, Tools/version.txt
     FileRead, remoteVersion, Tools/new-version.txt
-    if(!remoteVersion)
-        return CLXU_Fail
-    if(!version)
-        return CLXU_Fail
-    ; version compare
-    ver_cmp := CapsLockX_更新_VersionCompare(remoteVersion, version)
+    if(!remoteVersion || !version)
+        return CapsLockX_Update_Fail
+    CapsLockX_更新记录("正在比对版本号...地址：" 版本文件地址)
+    ver_cmp := CapsLockX_仓库版本号比对(remoteVersion, version)
     if(ver_cmp<0)
-        return CLXU_AlreadyLatest
-    if(ver_cmp==0)
-        return CLXU_AlreadyLatest
+        return CapsLockX_Update_Updated
+    ; if(ver_cmp==0)
+    ;     return CapsLockX_Update_AlreadyLatest
     if(!T_DownloadUpdate)
         return
-    ; url := 归档文件前缀 "/master.zip" ; latest
-    url := 归档文件前缀 "/v" remoteVersion ".zip" ; release
-    ; download and unzip
-    file := A_Temp "\CapsLockX-Update-" remoteVersion ".zip"
-    unzipFolder := A_Temp "\CapsLockX-Update-" remoteVersion
-    programFolder := A_Temp "\CapsLockX-Update-" remoteVersion "\CapsLockX-" remoteVersion
-    FileCreateDir %unzipFolder%
-    CapsLockX_更新提示("正在从github下载新版本...")
-    UrlDownloadToFile %url%, %file%
-    CapsLockX_更新提示("正在解压...")
-    RunWait PowerShell.exe -Command Expand-Archive -LiteralPath '%file%' -DestinationPath '%unzipFolder%' -Force,, Hide
-    CapsLockX_更新提示("解压完成...")
-    ; 迁移配置
-    FileCopy, ./CapsLockX-Config.ini, %programFolder%/CapsLockX-Config.ini, 1
-    FileCopy, ./Modules/*.user.ahk, %programFolder%/Modules/, 1
-    FileCopy, ./Modules/*.user.md, %programFolder%/Modules/, 1
-    Run explorer /select`,%programFolder%
-    Run explorer /select`,.
-    CapsLockX_更新提示("已自动打开新版本文件夹，请把它手动复制到当前软件目录。")
+    包路径 := A_Temp "/CapsLockX-UpdatePackage" "/" remoteVersion ".zip"
+    解压目录 := A_Temp "/CapsLockX-UpdatePackage" "/CapsLockX-" remoteVersion
+    程序目录 := A_Temp "/CapsLockX-UpdatePackage" "/CapsLockX-" remoteVersion
+    return CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录)
+}
+CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀){
+    CapsLockX_更新记录("正在获取新版本号...地址：" 版本文件地址)
+    UrlDownloadToFile, %版本文件地址%, Tools/new-version.txt
+    FileRead, version, Tools/version.txt
+    FileRead, remoteVersion, Tools/new-version.txt
+    if(!remoteVersion || !version)
+        return CapsLockX_Update_Fail
+    CapsLockX_更新记录("正在比对版本号...地址：" 版本文件地址)
+    ver_cmp := CapsLockX_仓库版本号比对(remoteVersion, version)
+    if(ver_cmp<0)
+        return CapsLockX_Update_Updated
+    ; if(ver_cmp==0)
+    ;     return CapsLockX_Update_AlreadyLatest
+    if(!T_DownloadUpdate)
+        return
+    包网址 := 归档文件前缀 "/v" remoteVersion ".zip" ; release
+    包路径 := A_Temp "\CapsLockX-UpdateArchive" "/" remoteVersion ".zip"
+    解压目录 := A_Temp "\CapsLockX-UpdateArchive" "/" remoteVersion
+    程序目录 := A_Temp "\CapsLockX-UpdateArchive" "/" remoteVersion "/CapsLockX-" remoteVersion
+    return CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录)
+}
+CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录){
+    FileCreateDir %解压目录%
+    CapsLockX_更新记录("正在下载新版本...地址：" 包网址)
+    UrlDownloadToFile %包网址%, %包路径%
+    if(ErrorLevel){
+        return CapsLockX_Update_Fail
+    }
+    CapsLockX_更新记录("下载完成，正在解压...")
+    RunWait PowerShell.exe -Command Expand-Archive -LiteralPath '%包路径%' -DestinationPath '%解压目录%' -Force,, Hide 
+    if(ErrorLevel){
+        msgbox CapsLockX 更新解压错误
+        Run explorer /select`, %包路径%
+        return CapsLockX_Update_Fail | CapsLockX_Update_Stop
+    }
+    ; 删除压缩包
+    FileDelete, %包路径%
+
+    if(!FileExist(程序目录)){
+        CapsLockX_更新记录("解压错误：未找到程序目录，将打开解压目录")
+        Run explorer %解压目录%
+        return CapsLockX_Update_Fail | CapsLockX_Update_Stop
+    }
+    CapsLockX_更新记录("解压完成...")
+
+    ; 迁移用户配置
+    FileCreateDir, %程序目录%/User/
+    FileCopy, ./User/*.*, %程序目录%/User/, 1
+    ; FileCopy, ./UserModules/*.user.ahk, %程序目录%/UserModules/, 1
+    ; FileCopy, ./UserModules/*.user.md, %程序目录%/UserModules/, 1
+    CapsLockX_更新提示("解压完成，将打开新版本文件夹，请把它手动复制到当前软件目录。")
+    Run explorer /select`, %程序目录%
+    Run explorer /select`, %A_ScriptDir%
     ; TODO REPLACE CURRENT FOLDER
-    Return CLXU_Updated
+    Return CapsLockX_Update_Updated
+}
+CapsLockX_更新(){
+    stopFlag := CapsLockX_Update_AlreadyLatest | CapsLockX_Update_Updated | CapsLockX_Update_Stop
+    return false ; 依次尝试，直到更新成功或已是最新
+        || stopFlag & CapsLockX_通过gitpull更新()
+        || stopFlag & CapsLockX_通过npm更新()
+        || stopFlag & CapsLockX_通过jsdelivr发布包更新()
+        || stopFlag & CapsLockX_通过snomiao发布包更新()
+        || stopFlag & CapsLockX_通过github发布包更新()
+        || stopFlag & CapsLockX_通过github仓库包更新()
+        || stopFlag & CapsLockX_通过gitee仓库包更新()
+        || stopFlag & CapsLockX_通过gitlab仓库包更新()
+}
+CapsLockX_更新测试(){
+    msgbox 将 通过gitpull更新
+    通过gitpull更新结果 := CapsLockX_通过gitpull更新()
+    msgbox 通过gitpull更新结果
+    msgbox 将 通过npm更新
+    通过npm更新结果 := CapsLockX_通过npm更新()
+    msgbox 通过npm更新结果
+    msgbox 将 通过jsdelivr发布包更新
+    通过jsdelivr发布包更新结果 := CapsLockX_通过jsdelivr发布包更新()
+    msgbox 通过jsdelivr发布包更新结果
+    msgbox 将 通过snomiao发布包更新
+    通过snomiao发布包更新结果 := CapsLockX_通过snomiao发布包更新()
+    msgbox 通过snomiao发布包更新结果
+    msgbox 将 通过github发布包更新
+    通过github发布包更新结果 := CapsLockX_通过github发布包更新()
+    msgbox 通过github发布包更新结果
+    msgbox 将 通过github仓库包更新
+    通过github仓库包更新结果 := CapsLockX_通过github仓库包更新()
+    msgbox 通过github仓库包更新结果
+    msgbox 将 通过gitee仓库包更新
+    通过gitee仓库包更新结果 := CapsLockX_通过gitee仓库包更新()
+    msgbox 通过gitee仓库包更新结果
+    msgbox 将 通过gitlab仓库包更新
+    通过gitlab仓库包更新结果 := CapsLockX_通过gitlab仓库包更新()
+    msgbox 通过gitlab仓库包更新结果
 }
 
-CapsLockX_更新检查(){
-    ; CapsLockX_更新提示("正在检查更新： gitpull")
-    if(CLXU_AlreadyLatest & CapsLockX更新通过gitpull())
-        return CLXU_AlreadyLatest
-    版本文件地址:="https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt,"
+CapsLockX_通过jsdelivr发布包更新(){
+    CapsLockX_更新记录("正在通过jsdelivr发布包更新")
+    版本文件地址:="https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/version.txt"
+    发布包文件地址:="https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip"
+    return CapsLockX_通过发布包_更新(版本文件地址, 发布包文件地址)
+}
+CapsLockX_通过snomiao发布包更新(){
+    CapsLockX_更新记录("正在通过snomiao发布包更新")
+    版本文件地址:="https://capslockx.snomiao.com/version.txt"
+    发布包文件地址:="https://capslockx.snomiao.com/CapsLockX-latest.zip"
+    return CapsLockX_通过发布包_更新(版本文件地址, 发布包文件地址)
+}
+CapsLockX_通过github发布包更新(){
+    CapsLockX_更新记录("正在通过github发布包更新")
+    版本文件地址:="https://github.com/snolab/CapsLockX/raw/gh-pages/version.txt"
+    发布包文件地址:="https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip"
+    return CapsLockX_通过发布包_更新(版本文件地址, 发布包文件地址)
+}
+
+CapsLockX_通过github仓库包更新(){
+    CapsLockX_更新记录("正在检查更新： github")
+    版本文件地址:="https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt"
     归档文件前缀:="https://github.com/snomiao/CapsLockX/archive"
-    ; CapsLockX_更新提示("正在检查更新： github")
-    if(CLXU_Updated & CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀))
-        return
+    return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
+}
+CapsLockX_通过gitee仓库包更新(){
+    CapsLockX_更新记录("正在检查更新： gitee")
     版本文件地址:="https://gitee.com/snomiao/CapslockX/raw/master/Tools/version.txt"
     归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
-    ; CapsLockX_更新提示("正在检查更新： gitee")
-    if(CLXU_Updated & CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀))
-        return
-    版本文件地址:="https://cdn.jsdelivr.net/gh/snomiao/CapsLockX@master/Tools/version.txt"
-    归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
-    ; CapsLockX_更新提示("正在检查更新： cdn")
-    if(CLXU_Updated & CapsLockX更新通过git仓库HTTP(版本文件地址, 归档文件前缀))
-        return
+    return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
+}
+CapsLockX_通过gitlab仓库包更新(){
+    CapsLockX_更新记录("正在检查更新： gitlab")
+    版本文件地址:="https://gitlab.com/snomiao/CapsLockX/-/raw/master/Tools/version.txt"
+    归档文件前缀:="https://gitlab.com/snomiao/CapsLockX/-/archive/master/CapsLockX-master.zip"
+    return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
 }

@@ -2,7 +2,7 @@
 
 # CapsLockX - 像**黑客**一样操作电脑
 
-CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
@@ -42,7 +42,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 - `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 - `npm i -g capslockx && capslockx`
 - `npx capslockx`
-<!-- 5. `choco install capslockx && capslockx` -->
+- `choco install capslockx && capslockx` （注：2021-04-17 程序包审核中）
 
 ### 使用方式
 
@@ -449,11 +449,12 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 #### 本项目地址
 
-以下几个仓库同步：
+以下几个仓库同步更新：
 
 - GitHub: [https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 - Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
 - Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
+- Gitlab: [https://gitlab.com/snomiao/CapsLockX/](https://gitlab.com/snomiao/CapsLockX/)
 
 #### 相似项目地址
 
@@ -506,7 +507,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 ### 鸣谢
 
 - 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
-- 感谢 @河许人 帮助推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
+- 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
 

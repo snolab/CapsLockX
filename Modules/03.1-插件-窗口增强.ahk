@@ -10,8 +10,11 @@
 ;
 ; Exit if running without CapsLockX
 ;
-if !CapsLockX
+
+if (!CapsLockX){
+    MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
+}
 
 ; #If WinActive("ahk_class MultitaskingViewFrame")
 ; #IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe

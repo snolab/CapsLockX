@@ -58,5 +58,5 @@ StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0){
 }
 
 CapsLockX_RunSilent(command){
-    return StdoutToVar_CreateProcess(command)
+    Return StdoutToVar_CreateProcess(command)
 }

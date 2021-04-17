@@ -26,7 +26,7 @@
     "bin": {
         "capslockx": "CapsLockX.exe"
     },
-    "main": "CapsLockX.exe",
+    "main": "Tools/CapsLockX.mjs",
     "devDependencies": {
         "@commitlint/cli": "^12.0.1",
         "@commitlint/config-conventional": "^12.0.1",

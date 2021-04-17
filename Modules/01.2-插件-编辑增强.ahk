@@ -8,6 +8,12 @@
 ; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
+
+if (!CapsLockX){
+    MsgBox, % "本模块只为 CapsLockX 工作"
+    ExitApp
+}
+
 global 方动中 := 0
 global 方刻左 := 0, 方刻右 := 0, 方刻上 := 0, 方刻下 := 0
 global 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
@@ -206,7 +212,7 @@ o & y:: Send {End}+{Home}
 
 ; 前删，后删
 *t:: Send {Blind}{BackSpace}
-*+t:: Send {Blind}{Delete}
+*+t:: Send {Blind}{Shift Up}{Delete} 
 *^t:: Send ^{BackSpace}
 *^+t:: Send ^{Delete}
 

@@ -9,3 +9,9 @@
 ; ========== CapsLockX ==========
 
 return
+
+; 软重启键
+^!\:: CapsLockX_Reload()
+
+; 退出键、结束键
+~^!+\:: ExitApp

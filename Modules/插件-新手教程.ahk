@@ -6,7 +6,7 @@
 ; 版本：v0.0.1
 ; ========== CapsLockX ==========
 
-global CapsLockX_FIRST_LAUNCH := CapsLockX_Config("_NOTICE_", "FIRST_LAUNCH", 1, "首次启动？")
+global CapsLockX_FIRST_LAUNCH := CapsLockX_Config("_NOTICE_", "FIRST_LAUNCH", 1, "首次启动？若想重新进入首次使用教学，请改为 1 并保存，然后使用 Ctrl+Alt+\ 重载 CapsLockX。")
 if(CapsLockX_FIRST_LAUNCH)
     CapsLockX_首次使用教学()
 return
@@ -16,10 +16,25 @@ return
     m:: 配置文件编辑()
 
 CapsLockX_首次使用教学(){
-    MsgBox, 4, CapsLockX 教程, 首次启动 CapsLockX ，是否打开配置文件进行基本调整？`n`n（你可以随时按 CapsLockX + M 打开配置文件）
+    MsgBox, 4, CapsLockX 教程, 首次启动 CapsLockX ，是否进行基本偏好设置？`n`n（你可以随时按 CapsLockX + M 修改配置文件）
     IfMsgBox No
     return
+
+    MsgBox, 4, CapsLockX 教程, 是否使用空格作为 CapsLockX 引导键？（例如，启用后，使用空格组合键 空格 + WASD 可控制鼠标，而单独按下时将保持原空格的功能，不影响打字）
+    IfMsgBox Yes
+    CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 1, "使用 CapsLock 作为引导键（默认启用，用户启用）")
+    IfMsgBox No
+    CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 0, "使用 CapsLock 作为引导键（默认启用，用户禁用）")
+
+    ; Gui, Configs:Destroy
+    ; Gui, Configs:Font, , SimHei
+    ; Gui, Configs:Add, Edit, H768 ReadOnly, %helpStr% 
+    ; Gui, Configs:Show, AutoSize Center
+
+    MsgBox, 4, CapsLockX 教程, 完成，是否打开进阶配置编辑器？
+    IfMsgBox Yes
     SetTimer, 配置文件编辑, -1000
+
     CapsLockX_ConfigSet("_NOTICE_", "FIRST_LAUNCH", 0)
 }
 配置文件编辑(){
