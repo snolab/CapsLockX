@@ -32,8 +32,9 @@ if(!FileExist(CapsLockX_配置路径)){
 if(FileExist(CapsLockX_配置路径)){
     global T_CheckUpdate
     global T_DownloadUpdate
-    T_CheckUpdate := CapsLockX_Config("Update", "T_CheckUpdate", 1, "自动检查更新")
-    T_DownloadUpdate := CapsLockX_Config("Update", "T_DownloadUpdate", 1, "自动下载更新包")
+    ; 用ConfigGet防止触发自动重载
+    T_CheckUpdate := CapsLockX_ConfigGet("Update", "T_CheckUpdate", 1, "自动检查更新")
+    T_DownloadUpdate := CapsLockX_ConfigGet("Update", "T_DownloadUpdate", 1, "自动下载更新包")
 }
 global CapsLockX_Update_Updated := 0x01
 global CapsLockX_Update_Fail := 0x02
