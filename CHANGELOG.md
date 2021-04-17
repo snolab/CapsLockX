@@ -1,3 +1,12 @@
+## [1.16.3](https://github.com/snomiao/CapsLockX/compare/v1.16.2...v1.16.3) (2021-04-17)
+
+
+### Bug Fixes
+
+* auto reload when config changed ([e8b1840](https://github.com/snomiao/CapsLockX/commit/e8b184087832d625d15deeedc5daf7b1a1981f81))
+
+
+
 ## [1.16.2](https://github.com/snomiao/CapsLockX/compare/v1.16.1...v1.16.2) (2021-04-17)
 
 
