@@ -1,3 +1,7 @@
+## [1.16.1](https://github.com/snomiao/CapsLockX/compare/v1.16.0...v1.16.1) (2021-04-17)
+
+
+
 # [1.16.0](https://github.com/snomiao/CapsLockX/compare/v1.15.3...v1.16.0) (2021-04-17)
 
 
