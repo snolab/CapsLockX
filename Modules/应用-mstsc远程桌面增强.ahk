@@ -30,7 +30,7 @@ CurrentWindowSetAsBackground(){
 ~$<!<+LCtrl::
 ~$<^<+LAlt::
 ~$<!<^LShift::
-    FLAG_CtrlShiftAlt按下:=1
+    FLAG_CtrlShiftAlt按下 := 1
 return
 
 ~$<!<+LCtrl Up::
@@ -43,7 +43,7 @@ return
         return
     if(!FLAG_CtrlShiftAlt按下)
         return
-    FLAG_CtrlShiftAlt按下:=0
+    FLAG_CtrlShiftAlt按下 := 0
 
     上次CtrlShiftAlt锁 := 1
     ToolTip, % "双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）"
