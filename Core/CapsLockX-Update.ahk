@@ -192,8 +192,8 @@ CapsLockX_更新(){
         || stopFlag & CapsLockX_通过snomiao发布包更新()
         || stopFlag & CapsLockX_通过github发布包更新()
         || stopFlag & CapsLockX_通过github仓库包更新()
-        || stopFlag & CapsLockX_通过gitee仓库包更新()
-        || stopFlag & CapsLockX_通过gitlab仓库包更新()
+        ; || stopFlag & CapsLockX_通过gitee仓库包更新()
+        ; || stopFlag & CapsLockX_通过gitlab仓库包更新()
 }
 CapsLockX_更新测试(){
     msgbox 将 通过gitpull更新
@@ -214,12 +214,12 @@ CapsLockX_更新测试(){
     msgbox 将 通过github仓库包更新
     通过github仓库包更新结果 := CapsLockX_通过github仓库包更新()
     msgbox 通过github仓库包更新结果
-    msgbox 将 通过gitee仓库包更新
-    通过gitee仓库包更新结果 := CapsLockX_通过gitee仓库包更新()
-    msgbox 通过gitee仓库包更新结果
-    msgbox 将 通过gitlab仓库包更新
-    通过gitlab仓库包更新结果 := CapsLockX_通过gitlab仓库包更新()
-    msgbox 通过gitlab仓库包更新结果
+    ; msgbox 将 通过gitee仓库包更新
+    ; ; 通过gitee仓库包更新结果 := CapsLockX_通过gitee仓库包更新()
+    ; msgbox 通过gitee仓库包更新结果
+    ; msgbox 将 通过gitlab仓库包更新
+    ; ; 通过gitlab仓库包更新结果 := CapsLockX_通过gitlab仓库包更新()
+    ; msgbox 通过gitlab仓库包更新结果
 }
 
 CapsLockX_通过jsdelivr发布包更新(){
@@ -247,15 +247,15 @@ CapsLockX_通过github仓库包更新(){
     归档文件前缀:="https://github.com/snomiao/CapsLockX/archive"
     return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
 }
-CapsLockX_通过gitee仓库包更新(){
-    CapsLockX_更新记录("正在检查更新： gitee")
-    版本文件地址:="https://gitee.com/snomiao/CapslockX/raw/master/Tools/version.txt"
-    归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
-    return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
-}
-CapsLockX_通过gitlab仓库包更新(){
-    CapsLockX_更新记录("正在检查更新： gitlab")
-    版本文件地址:="https://gitlab.com/snomiao/CapsLockX/-/raw/master/Tools/version.txt"
-    归档文件前缀:="https://gitlab.com/snomiao/CapsLockX/-/archive/master/CapsLockX-master.zip"
-    return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
-}
+; CapsLockX_通过gitee仓库包更新(){
+;     CapsLockX_更新记录("正在检查更新： gitee")
+;     版本文件地址:="https://gitee.com/snomiao/CapslockX/raw/master/Tools/version.txt"
+;     归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
+;     return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
+; }
+; CapsLockX_通过gitlab仓库包更新(){
+;     CapsLockX_更新记录("正在检查更新： gitlab")
+;     版本文件地址:="https://gitlab.com/snomiao/CapsLockX/-/raw/master/Tools/version.txt"
+;     归档文件前缀:="https://gitlab.com/snomiao/CapsLockX/-/archive/master/CapsLockX-master.zip"
+;     return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
+; }
