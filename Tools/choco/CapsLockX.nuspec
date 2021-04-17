@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.15.3</version>
+    <version>1.16.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -22,7 +22,7 @@
 
 # CapsLockX - 像**黑客**一样操作电脑
 
-CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
@@ -37,7 +37,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-装上之后，按住 CapsLockX，然后 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，M 打开配置。
+装上之后，按住 CapsLockX，然后按 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，1234567890 切换虚拟桌面，M 打开配置。
 
 ### 安装与使用
 
@@ -62,7 +62,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 - `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 - `npm i -g capslockx && capslockx`
 - `npx capslockx`
-<!-- 5. `choco install capslockx && capslockx` -->
+- `choco install capslockx && capslockx` （注：2021-04-17 程序包审核中）
 
 ### 使用方式
 
@@ -72,15 +72,6 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 > 在 CapsLockX-Settings.ahk 中
 > 手动修改 global T_AskRunAsAdmin := 1 即可
 > 如不需要，可以改为 0
-
-### CapsLockX + 键位简述
-
-按住 CapsLock 或 空格 然后再按……
-
-- 鼠标模拟 `WASD EQ RF` 分别是鼠标的 移动 左右键 滚轮
-- 编辑增强 `HJKL YUIO TG` 分别是光标的 左上下右 页面键 退格回车
-- 窗口管理 `ZXCV` 分别是窗口的 切换 关闭 排列 透视
-- 剩下的 `BNM P` 目前保留中
 
 ## 目录第二
 
@@ -119,9 +110,17 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 ### 模拟鼠标插件（ WASD QERF ）
 
 #### 功能
-]]></description>
+
+- 本模块使用按键区：CapsLockX + QWER ASDF]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## <small>1.15.2 (2021-04-16)</small>
+    <releaseNotes><![CDATA[## <small>1.15.3 (2021-04-16)</small>
+
+* chore:versioning ([af261ab](https://github.com/snomiao/CapsLockX/commit/af261ab))
+* fix: 配置文件编码清洗优化 ([71c79d1](https://github.com/snomiao/CapsLockX/commit/71c79d1))
+
+
+
+## <small>1.15.2 (2021-04-16)</small>
 
 * chore:versioning ([91d2697](https://github.com/snomiao/CapsLockX/commit/91d2697))
 * chore: build patch ([6bf7b68](https://github.com/snomiao/CapsLockX/commit/6bf7b68))
@@ -199,11 +198,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 
 ## <small>1.14.32 (2021-04-13)</small>
-
-* chore:versioning ([f16488f](https://github.com/snomiao/CapsLockX/commit/f16488f))
-* doc ([9cc8bff](https://github.com/snomiao/CapsLockX/commit/9cc8bff))
-* sync docs ([3e9b9b7](https://github.com/snomiao/CapsLockX/commit/3e9b9b7))
-* chore: disable unreachable gitee ([7424e9f](https://github.com/snomiao/CapsLockX/commit/7424e9f))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
