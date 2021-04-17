@@ -8,7 +8,27 @@
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
 
+WatchFolder(A_WorkingDir "\User\", "CapsLockX_UserFolderChanged", true, 0x03 | 0x10)
+
+#include Modules/WatchFolder/WatchFolder.ahk
 return
+
+CapsLockX_UserFolderChanged(Folder, Changes){
+    global CapsLockX_ConfigFunctionTickCount
+    ; 跳过 CapsLockX 自己改的配置，容差 2-5 秒
+    Sleep, 2000
+    if ( CapsLockX_ConfigFunctionTickCount && A_TickCount - CapsLockX_ConfigFunctionTickCount < 5000)
+        return
+
+    if(T_AutoReloadOnConfigsChange){
+        TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
+        CapsLockX_Reload()
+    }else{
+        MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否重载？
+        IfMsgBox Yes
+        CapsLockX_Reload()
+    }
+}
 
 ; 软重启键
 ^!\:: CapsLockX_Reload()

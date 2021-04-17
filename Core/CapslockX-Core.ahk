@@ -13,8 +13,14 @@
 
 Process Priority, , High ; 脚本高优先级
 SetTitleMatchMode RegEx
-#SingleInstance Force ; 跳过对话框并自动替换旧实例（在启动成功后有效）
 ; #NoEnv ; 不检查空变量是否为环境变量
+
+#SingleInstance Force ; 跳过对话框并自动替换旧实例（在启动成功后有效）
+; if(A_IsAdmin){
+;     #SingleInstance Force ; 跳过对话框并自动替换旧实例（在启动成功后有效）
+; }else{
+;     #SingleInstance, Off ; 允许多开，然后在下面用热键把其它实例关掉
+; }
 #Persistent
 #MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的。。）
 #InstallMouseHook ; 安装鼠标钩子
@@ -181,16 +187,16 @@ CapsLockX_Reload(){
     static times := 0
     times += 1
     if(times == 1){
-        Run %A_WorkingDir%/CapsLockX.exe, %A_WorkingDir%
+        ; 避免重载出现 Could not close the previous instance of this script.  Keep waiting?
+        RunAsSameUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
         ; 这里启动新实例后不用急着退出当前实例
         ; 如果重载的新实例启动成功，则会自动使用热键结束掉本实例
         ; 而如果没有启动成功则保留本实例，以方便修改语法错误的模块
     }else{
         ; 但如果用户多次要求重载，那就退出掉好了（即，双击重载会强制退出当前实例）
-        Run %A_WorkingDir%/CapsLockX.exe, %A_WorkingDir%
+        RunAsSameUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
         ExitApp
     }
-
 }
 
 CapsLockX_Dn(){
@@ -246,7 +252,26 @@ CapsLockX_Up(){
     UpdateLight()
     CapsLockX_上次触发键 := ""
 }
+RunAsSameUser(CMD, WorkingDir){
+    Run, %CMD%, %WorkingDir%
+}
 
+RunAsLimitiedUser(CMD, WorkingDir){
+    ; ref: [Run as normal user (not as admin) when user is admin - Ask for Help - AutoHotkey Community]( https://autohotkey.com/board/topic/79136-run-as-normal-user-not-as-admin-when-user-is-admin/ )
+    ; 
+    ; TEST DEMO
+    ; schtasks /Create /tn CapsLockX_RunAsLimitedUser /sc ONCE /tr "cmd /k cd \"C:\\users\\snomi\\\" && notepad \".\\tmp.txt\"" /F /ST 00:00
+    ; schtasks /Run /tn CapsLockX_RunAsLimitedUser
+    ; schtasks /Delete /tn CapsLockX_RunAsLimitedUser /F
+    ; 
+    ; Safe_WorkingDir := RegExReplace("C:\users\snomi\", "\\", "\\")
+    ; Safe_CMD := RegExReplace(RegExReplace("notepad "".\temp.txt""", "\\", "\\"), "\""", "\""")
+    Safe_WorkingDir := RegExReplace(WorkingDir, "\\", "\\")
+    Safe_CMD := RegExReplace(RegExReplace(CMD, "\\", "\\"), "\""", "\""")
+    RunWait schtasks /Create /tn CapsLockX_RunAsLimitedUser /sc ONCE /tr "cmd /c cd \"%Safe_WorkingDir% && %Safe_CMD%\" /F /ST 00:00,, Hide
+    RunWait schtasks /Run /tn CapsLockX_RunAsLimitedUser,, Hide
+    RunWait schtasks /Delete /tn CapsLockX_RunAsLimitedUser /F,, Hide
+}
 ; 接下来是流程控制
 #if
 

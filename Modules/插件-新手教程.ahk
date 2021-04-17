@@ -26,10 +26,11 @@ CapsLockX_首次使用教学(){
     IfMsgBox No
     CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 0, "使用 CapsLock 作为引导键（默认启用，用户禁用）")
 
-    ; Gui, Configs:Destroy
-    ; Gui, Configs:Font, , SimHei
-    ; Gui, Configs:Add, Edit, H768 ReadOnly, %helpStr% 
-    ; Gui, Configs:Show, AutoSize Center
+    MsgBox, 4, CapsLockX 教程, 是否在启动时询问管理员权限？（权限受限时，权限受限，例如鼠标模拟等功能无法正常运行，默认请求提升权限，如果不需要管理权限下的功能，可以改为0）
+    IfMsgBox Yes
+    CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", 1, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
+    IfMsgBox No
+    CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", 0, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
 
     MsgBox, 4, CapsLockX 教程, 完成，是否打开进阶配置编辑器？
     IfMsgBox Yes
@@ -39,4 +40,6 @@ CapsLockX_首次使用教学(){
 }
 配置文件编辑(){
     Run notepad %CapsLockX_配置路径%
+    ; TrayTip, 配置文件关, 自动重载
+    ; CapsLockX_Reload()
 }

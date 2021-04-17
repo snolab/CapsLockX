@@ -11,11 +11,12 @@
 ; ========== CapsLockX ==========
 
 #SingleInstance Force ; 跳过对话框并自动替换旧实例
-#NoTrayIcon ; 隐藏托盘图标
+; #NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%j
 
 global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
 global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
+
 FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
 global CapsLockX_模块路径 := "./Modules"
 global CapsLockX_核心路径 := "./Core"
@@ -256,7 +257,7 @@ CapslockX启动(){
     ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再运行核心。
     AHK_EXE_ROOT_PATH := "CapsLockX.exe"
     AHK_EXE_CORE_PATH := "./Core/CapsLockX.exe"
-    AHK_EXE_TEMP_PATH := A_Temp "/$CapsLockX.exe"
+    AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX.exe"
     FileCopy, %AHK_EXE_ROOT_PATH%, %AHK_EXE_TEMP_PATH%, 1
     if !FileExist(AHK_EXE_TEMP_PATH)
         FileCopy, %AHK_EXE_CORE_PATH%, %AHK_EXE_TEMP_PATH%, 1
