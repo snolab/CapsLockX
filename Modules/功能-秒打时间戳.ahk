@@ -13,11 +13,11 @@ Return
     FormatTime, TimeString, , yyyy-MM-dd-
     SendInput {Text}%TimeString%
 Return
-:*:#F#::
+:*:#DD#::
     FormatTime, DateString, , (yyyyMMdd)
     SendInput {Text}%DateString%
 Return
-:*:#DT#::
+:*:#DS#::
     FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
     SendInput {Text}%TimeString%
 Return

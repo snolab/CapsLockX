@@ -14,7 +14,6 @@ CapsLockX_ConfigInit(){
     global T_XKeyAsScrollLock := CapsLockX_Config("Core", "T_XKeyAsScrollLock", 0, "使用 ScrollLock 作为引导键")
     global T_XKeyAsRAlt := CapsLockX_Config("Core", "T_XKeyAsRAlt", 0, "使用 右 Alt 作为引导键")
 
-    global T_AutoReloadOnConfigsChange := CapsLockX_Config("Advanced", "T_AutoReloadOnConfigsChange", 1, "用户配置修改保存时自动重载")
     global T_UseScrollLockLight := CapsLockX_Config("Advanced", "T_UseScrollLockLight", 0, "进阶： 是否使用 ScrollLock 灯来显示 CapsLockX 状态（不建议）")
     global T_UseCapsLockLight := CapsLockX_Config("Advanced", "T_UseCapsLockLight", 0, "进阶： 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议）")
     global T_SwitchSound := CapsLockX_Config("Advanced", "T_SwitchSound", 0, "进阶： 是否开启CapsLockX模式切换声音提示（默认不开）")
@@ -26,7 +25,8 @@ CapsLockX_ConfigInit(){
     global T_SwitchTrayIconOn := CapsLockX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认为 " "./Data/XIconBlue.ico")
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
-    global CapsLockX_ConfigFunctionTickCount := A_TickCount
+    global CapsLockX_ConfigChangedTickCount
+    CapsLockX_ConfigChangedTickCount := A_TickCount
     if(!CapsLockX_配置路径){
         MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置，并尝试将其延迟赋值。
         return 
@@ -42,7 +42,8 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     return content
 }
 CapsLockX_ConfigGet(field, varName, defaultValue){
-    global CapsLockX_ConfigFunctionTickCount := A_TickCount
+    global CapsLockX_ConfigChangedTickCount
+    CapsLockX_ConfigChangedTickCount := A_TickCount
     if(!CapsLockX_配置路径){
         MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置，并尝试将其延迟赋值。
         return 
@@ -52,7 +53,8 @@ CapsLockX_ConfigGet(field, varName, defaultValue){
     return content 
 }
 CapsLockX_Config(field, varName, defaultValue, comment := ""){
-    global CapsLockX_ConfigFunctionTickCount := A_TickCount
+    global CapsLockX_ConfigChangedTickCount
+    CapsLockX_ConfigChangedTickCount := A_TickCount
     if(!CapsLockX_配置路径){
         MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置，并尝试将其延迟赋值。
         return 

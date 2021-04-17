@@ -62,9 +62,7 @@ UpdateLight()
 
 global T_IgnoresByLines
 defaultIgnoreFilePath := "Data/CapsLockX.defaults.ignore.txt"
-userIgnoreFilePath_旧 := "CapsLockX.user.ignore.txt"
 userIgnoreFilePath := "./User/CapsLockX.user.ignore.txt"
-FileMove userIgnoreFilePath_旧, userIgnoreFilePath
 FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 if (T_IgnoresByLinesUser){
     FileCopy, %defaultIgnoreFilePath%, %userIgnoreFilePath%

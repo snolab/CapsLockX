@@ -263,9 +263,16 @@ CapslockX启动(){
         AHK_EXE_TEMP_PATH := AHK_EXE_ROOT_PATH
     ; 运行更新组件
     ; ToolTip % A_ScriptDir
+
     Run %AHK_EXE_TEMP_PATH% %UpdatorAHK%, %A_ScriptDir%
+
     ; 运行核心
-    RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
+    global T_AskRunAsAdmin := CapsLockX_ConfigGet("Core", "T_AskRunAsAdmin", 0)
+    if(T_AskRunAsAdmin){
+        RunWait *RunAs %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
+    }else{
+        RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
+    }
 
     if (ErrorLevel){
         MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
@@ -277,4 +284,10 @@ CapslockX启动(){
         Sleep, 1000
     }
     ExitApp
+}
+
+CapsLockX_ConfigGet(field, varName, defaultValue){
+    IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
+    content := %varName% ; 千层套路XD
+    return content 
 }

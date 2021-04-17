@@ -14,12 +14,13 @@ WatchFolder(A_WorkingDir "\User\", "CapsLockX_UserFolderChanged", true, 0x03 | 0
 return
 
 CapsLockX_UserFolderChanged(Folder, Changes){
-    global CapsLockX_ConfigFunctionTickCount
+    global CapsLockX_ConfigChangedTickCount
     ; 跳过 CapsLockX 自己改的配置，容差 2-5 秒
     Sleep, 2000
-    if ( CapsLockX_ConfigFunctionTickCount && A_TickCount - CapsLockX_ConfigFunctionTickCount < 5000)
+    if ( CapsLockX_ConfigChangedTickCount && A_TickCount - CapsLockX_ConfigChangedTickCount < 5000)
         return
 
+    global T_AutoReloadOnConfigsChange := CapsLockX_Config("Advanced", "T_AutoReloadOnConfigsChange", 1, "用户配置修改保存时自动重载")
     if(T_AutoReloadOnConfigsChange){
         TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
         CapsLockX_Reload()
