@@ -1,3 +1,19 @@
+# [1.16.0](https://github.com/snomiao/CapsLockX/compare/v1.15.3...v1.16.0) (2021-04-17)
+
+
+### Bug Fixes
+
+* disable gitee and gitlab 仓库包 ([f5f4023](https://github.com/snomiao/CapsLockX/commit/f5f402374d91f78b9adcf2ac47d9cbc9d694b32e))
+* ignore user/ ([4209631](https://github.com/snomiao/CapsLockX/commit/4209631151f78edc21331b5060afc0fa1c05f476))
+* tray version number ([495d217](https://github.com/snomiao/CapsLockX/commit/495d2176b9937af957d80e63b48446b0907fadf3))
+
+
+### Features
+
+* 优化提权询问流程、增加配置保存自动重载功能 ([25c3c63](https://github.com/snomiao/CapsLockX/commit/25c3c635761fa74d256f52ed14fa81359202cdeb))
+
+
+
 ## <small>1.15.3 (2021-04-16)</small>
 
 * chore:versioning ([af261ab](https://github.com/snomiao/CapsLockX/commit/af261ab))
