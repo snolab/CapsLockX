@@ -9,8 +9,10 @@
 ; 
 ; save as utf8 with bom
 
-if !CapsLockX
+if (!CapsLockX){
+    MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
+}
 
 ; 引用剪贴板依赖
 #Include Modules/WinClip/WinClipAPI.ahk
@@ -76,6 +78,29 @@ CopySearchResultSectionAndPagesThenPaste(){
     SendEvent ^v
 }
 
+OneNote2016_OpenSearch(){
+    winTitle := "ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    needActive := 1
+    hWnd := WinExist(winTitle)
+    if(!hWnd){
+        SendEvent #n
+        WinWaitActive %winTitle%, , 1 ; wait for 1 seconds
+        if(ErrorLevel){
+            needActive := 1
+            WinWait %winTitle%, , 1 ; wait for 1 seconds
+            if(ErrorLevel){
+                TrayTip, 错误, 未找到OneNote窗口
+                return
+            }
+        }
+        hWnd := LastFound
+    }
+    if(needActive)
+        WinActivate ahk_id %hWnd%
+    SendEvent ^e{Text}""
+    SendEvent {Left}
+    Return
+}
 ; 复制链接笔记页面的搜索结果
 CopySearchResultSectionAndPages(){
     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
@@ -160,38 +185,13 @@ CopySearchResultSectionAndPages(){
 $#!n:: OneNote2016_OpenHomePage()
 ; 打开 OneNote 并精确匹配查找搜索笔记
 $#+n:: OneNote2016_OpenSearch()
-OneNote2016_OpenSearch(){
-    winTitle := "ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
-    needActive := 1
-    hWnd := WinExist(winTitle)
-    if(!hWnd){
-        SendEvent #n
-        WinWaitActive %winTitle%, , 1 ; wait for 1 seconds
-        if(ErrorLevel){
-            needActive := 1
-            WinWait %winTitle%, , 1 ; wait for 1 seconds
-            if(ErrorLevel){
-                TrayTip, 错误, 未找到OneNote窗口
-                return
-            }
-        }
-        hWnd := LastFound
-    }
-    if(needActive)
-        WinActivate ahk_id %hWnd%
-    SendEvent ^e{Text}""
-    SendEvent {Left}
-    Return
-}
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
-; #If !!(CapsLockXMode & CM_FN)
-; h:: Run "https://support.office.com/zh-cn/article/OneNote-2013-%25E4%25B8%25AD%25E7%259A%2584%25E9%2594%25AE%25E7%259B%2598%25E5%25BF%25AB%25E6%258D%25B7%25E6%2596%25B9%25E5%25BC%258F-65dc79fa-de36-4ca0-9a6e-dfe7f3452ff8?ui=zh-CN&rs=zh-CN&ad=CN&fromAR=1"
-; 和编辑增强冲突
+; 单独运行
+#if (!CapsLockX)
 
-#If (!CapsLockX)
-    ^+!F12:: ExitApp ; 退出脚本
+^+!F12:: ExitApp ; 退出脚本
 
 ; OneNote2016搜索界面
 #If (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
@@ -226,19 +226,6 @@ OneNote2016_OpenSearch(){
 ; SendEvent ^v
 ; Return
 ; }
-
-#If CapsLockXMode == CM_CapsLockX || CapsLockXMode == CM_FN && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
-
-; 上下左右
-; 不知为啥这个kj在OneNote里有时候会不管用, 于是就设定了特殊的编辑操作
-; k:: SendEvent {Home}{Left}
-; j:: SendEvent {End}{Right}
-; k:: ControlSend, OneNote::DocumentCanvas1, {Up}, ahk_exe ONENOTE.EXE
-; j:: ControlSend, OneNote::DocumentCanvas1, {Down}, ahk_exe ONENOTE.EXE
-
-#IF (CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE"))
-
-; /:: CapsLockX_ShowHelp OneNote2016窗口
 
 ; OneNote2016创建链接窗口
 #If WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")

@@ -8,6 +8,11 @@
 ; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
+if (!CapsLockX){
+    MsgBox, % "本模块只为 CapsLockX 工作"
+    ExitApp
+}
+
 global TMouse_Disabled := CapsLockX_Config("TMouse", "Disabled", 0, "禁用模拟鼠标模块")
 global TMouse_SendInput := CapsLockX_Config("TMouse", "SendInput", 1, "使用 SendInput 方法提高模拟鼠标点击、移动性能")
 global TMouse_SendInputAPI := CapsLockX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")

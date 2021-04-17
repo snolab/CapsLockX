@@ -9,11 +9,11 @@
 ; ========== CapsLockX ==========
 
 if (!CapsLockX){
-    MsgBox, % "本模块只在 CapsLockX 下工作"
+    MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
 
-global 快速窗口热键编辑用户模块目录 := CapsLockX_PathModules
+global 快速窗口热键编辑用户模块目录 := "./User/"
 global 快速窗口热键编辑初始内容 := "
 (
 ; ========== CapsLockX ==========
@@ -58,7 +58,6 @@ UserModuleEdit(路径, 使用进程名AHK := 0){
     填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
     FileAppend, %填充内容%, %路径%
     Run notepad %路径%
-
 }
 
 ; 快速宏

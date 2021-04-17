@@ -1,6 +1,6 @@
 # CapsLockX - 像**黑客**一样操作电脑
 
-CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
@@ -447,11 +447,12 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 #### 本项目地址
 
-以下几个仓库同步：
+以下几个仓库同步更新：
 
 - GitHub: [https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 - Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
 - Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
+- Gitlab: [https://gitlab.com/snomiao/CapsLockX/](https://gitlab.com/snomiao/CapsLockX/)
 
 #### 相似项目地址
 

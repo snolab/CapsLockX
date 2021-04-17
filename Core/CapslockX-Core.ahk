@@ -21,7 +21,9 @@ SetTitleMatchMode RegEx
 
 global CapsLockX_上次触发键 := ""
 ; 载入设定
-global CapsLockX_配置路径 := "./CapsLockX-Config.ini"
+global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
+global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
+FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
 #Include Core/CapsLockX-Config.ahk
 
 ; 模式处理
@@ -54,7 +56,9 @@ UpdateLight()
 
 global T_IgnoresByLines
 defaultIgnoreFilePath := "Data/CapsLockX.defaults.ignore.txt"
-userIgnoreFilePath := "CapsLockX.user.ignore.txt"
+userIgnoreFilePath_旧 := "CapsLockX.user.ignore.txt"
+userIgnoreFilePath := "./User/CapsLockX.user.ignore.txt"
+FileMove userIgnoreFilePath_旧, userIgnoreFilePath
 FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 if (T_IgnoresByLinesUser){
     FileCopy, %defaultIgnoreFilePath%, %userIgnoreFilePath%

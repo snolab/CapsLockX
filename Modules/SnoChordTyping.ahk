@@ -140,7 +140,7 @@ Return
     IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
 
     ; 挂载并击热键
-    Hotkey, if, (!CapsLockXMode)
+    Hotkey, if, !CapsLockXMode
     For _, Stage in SnoChordTypingStageList{
         For _, KeyName in Stage["lsKey"]{
             KeyName := StrReplace(KeyName, " ", "Space")
@@ -226,3 +226,5 @@ return
 SnoChordKeyUp:
     SnoChordKeyUp()
 return
+
+#if !CapsLockXMode

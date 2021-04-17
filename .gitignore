@@ -21,3 +21,4 @@ Tools/new-version*.txt
 # user
 /*.ini
 *.user.*
+/User

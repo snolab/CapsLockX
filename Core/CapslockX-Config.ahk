@@ -1,6 +1,5 @@
 ﻿; 保存为 save with UTF8 with DOM
 
-global _NIL := 清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
 CapsLockX_ConfigInit()
 
 CapsLockX_ConfigInit(){
@@ -24,28 +23,6 @@ CapsLockX_ConfigInit(){
     ; global T_SwitchTrayIconDefault := CapsLockX_Config("Core", "T_SwitchTrayIconDefault", "./Data/XIconWhite.ico", "CapsLockX默认托盘显示图标，默认" "./Data/XIconWhite.ico")
     global T_SwitchTrayIconOff := CapsLockX_Config("Advanced", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认为 " "./Data/XIconWhite.ico")
     global T_SwitchTrayIconOn := CapsLockX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认为 " "./Data/XIconBlue.ico")
-}
-
-清洗为_UTF16_WITH_BOM_型编码(path){
-    ; 锁住的话就先不清洗
-    FileRead CLX配置锁状态, %A_Temp%/CapsLockX_Config.lock
-    if(CLX配置锁状态){
-        ; 但解掉锁
-        FileDelete, %A_Temp%/CapsLockX_Config.lock
-        return
-    }
-    static 锁 := 0
-    if(锁)
-        Return
-    锁 := 1
-    FileAppend, 1, %A_Temp%/CapsLockX_Config.lock
-    FileRead ModuleCode, %path%
-    if(ModuleCode){
-        FileDelete %path%
-        FileAppend %ModuleCode%, %path%, UTF-16
-    }
-    FileDelete, %A_Temp%/CapsLockX_Config.lock
-    锁 := 0
 }
 CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
     if(!CapsLockX_配置路径){

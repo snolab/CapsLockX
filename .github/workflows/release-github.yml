@@ -32,10 +32,6 @@ jobs:
       # 获取版本号 [continuous integration - Get the current pushed tag in Github Actions - Stack Overflow]( https://stackoverflow.com/questions/58177786/get-the-current-pushed-tag-in-github-actions )
       - run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       # 打包
-      # - uses: montudor/action-zip@v0.1.1
-      #   with:
-      #     args: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip Core Data docs Modules Tools CapsLockX* LICENSE *.md "启动 CapsLockX.lnk"
-      # 打包
       - name: Archive Release
         uses: thedoctor0/zip-release@master
         with:
