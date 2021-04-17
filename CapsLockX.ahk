@@ -12,12 +12,10 @@
 
 #SingleInstance Force ; 跳过对话框并自动替换旧实例
 ; #NoTrayIcon ; 隐藏托盘图标
-SetWorkingDir, %A_ScriptDir%j
+SetWorkingDir, %A_ScriptDir%
 
-global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
+FileCreateDir ./User
 global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
-
-FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
 global CapsLockX_模块路径 := "./Modules"
 global CapsLockX_核心路径 := "./Core"
 ; 版本
@@ -42,8 +40,8 @@ global loadingTips := ""
 FileCopy ./User/*.user.ahk, %CapsLockX_模块路径%/
 FileCopy ./User/*.user.md, %CapsLockX_模块路径%/
 ; 备份旧版本的用户模块（注意顺序，不要把新版用户模块覆盖了）
-FileCopy %CapsLockX_模块路径%/*.user.ahk, ./User/
-FileCopy %CapsLockX_模块路径%/*.user.md, ./User/
+; FileCopy %CapsLockX_模块路径%/*.user.ahk, ./User/
+; FileCopy %CapsLockX_模块路径%/*.user.md, ./User/
 
 ; 加载模块
 ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
