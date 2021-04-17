@@ -47,7 +47,7 @@ Return
 ; 解决DPI比率问题
 ;msgbox % DllCall("MonitorFromPoint", "UInt", 0, "UInt", 0, "UInt", 0)
 
-GetCursorHandle(){
+CursorHandleGet(){
     VarSetCapacity(PCURSORINFO, 20, 0) ;为鼠标信息 结构 设置出20字节空间
     NumPut(20, PCURSORINFO, 0, "UInt") ;*声明出 结构 的大小cbSize = 20字节
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
@@ -57,10 +57,10 @@ GetCursorHandle(){
 }
 
 CursorShapeChangedQ(){
-    static lA_Cursor := GetCursorHandle()
-    If(lA_Cursor == GetCursorHandle())
+    static lA_Cursor := CursorHandleGet()
+    If(lA_Cursor == CursorHandleGet())
         Return 0
-    lA_Cursor := GetCursorHandle()
+    lA_Cursor := CursorHandleGet()
     Return 1
 }
 
@@ -328,16 +328,9 @@ ScrollMsg(msg, zDelta){
 #If CapsLockXMode
 
 ; 鼠标按键处理
-
-$*e::
-    SendEvent {Blind}{LButton Down}
-    KeyWait, e, T60 ; wait for 60 seconds
-Return
+$*e::CapsLockX_左键按下()
 $*e Up:: SendEvent {Blind}{LButton Up}
-$*q::
-    SendEvent {Blind}{RButton Down}
-    KeyWait, q, T60 ; wait for 60 seconds
-Return
+$*q:: CapsLockX_右键按下()
 $*q Up:: SendEvent {Blind}{RButton Up}
 ; 鼠标运动处理
 $*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), 鼠动始()
@@ -351,35 +344,45 @@ $*s Up:: 鼠刻下 := 0, 鼠动始()
 
 ; 鼠标滚轮处理
 
-; Alt 调整自动滚动
-$!r:: 轮自刻 := TM_QPC(), 轮自纵 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
-$!f:: 轮自刻 := TM_QPC(), 轮自纵 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
-$!+r:: 轮自刻 := TM_QPC(), 轮自横 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
-$!+f:: 轮自刻 := TM_QPC(), 轮自横 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
-
 ; 组合键单格滚动与缩放
-$^r:: SendEvent ^{WheelUp}
 $^f:: SendEvent ^{WheelDown}
-$^!r:: SendEvent ^{WheelUp}
+$^r:: SendEvent ^{WheelUp}
 $^!f:: SendEvent ^{WheelDown}
-$^!+r:: SendEvent ^{WheelUp}
+$^!r:: SendEvent ^{WheelUp}
 $^!+f:: SendEvent ^{WheelDown}
+$^!+r:: SendEvent ^{WheelUp}
+
+; Alt 调整自动滚动
+$!f:: 轮自刻 := TM_QPC(), 轮自纵 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
+$!r:: 轮自刻 := TM_QPC(), 轮自纵 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
+$!+f:: 轮自刻 := TM_QPC(), 轮自横 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
+$!+r:: 轮自刻 := TM_QPC(), 轮自横 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
 
 ; Shift 横向滚动
-$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), 轮动始()
-$+r Up:: 轮刻左 := 0, 轮动始()
 $+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), 轮动始()
+$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), 轮动始()
 $+f Up:: 轮刻右 := 0, 轮动始()
+$+r Up:: 轮刻左 := 0, 轮动始()
+
+$*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), 轮动始()
+$*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), 轮动始()
+$*f Up:: 轮刻下 := 0, 轮动始()
+$*r Up:: 轮刻上 := 0, 轮动始()
 
 ; 纵向连续滚动（一定要放最下面。
 ; 否则有时候无法正常弹起，具体还要研究 AHK 的热键覆盖规则）
 ; (20210412) 观察到 r up 和 f Up 偶尔其中一个会随机失效，原因不明，尝试修复
-*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), 轮动始()
-*r Up:: 轮刻上 := 0, 轮动始()
-*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), 轮动始()
-*f Up:: 轮刻下 := 0, 轮动始()
 
 #if
+
+CapsLockX_左键按下(){
+    SendEvent {Blind}{LButton Down}
+    KeyWait, e, T60 ; wait for 60 seconds
+}
+CapsLockX_右键按下(){
+    SendEvent {Blind}{RButton Down}
+    KeyWait, q, T60 ; wait for 60 seconds
+}
 
 鼠标模拟_ToolTip(tips){
     ToolTip %tips%
