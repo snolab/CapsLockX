@@ -1,3 +1,20 @@
+## [1.16.4](https://github.com/snolab/CapsLockX/compare/v1.16.3...v1.16.4) (2021-04-18)
+
+
+### Bug Fixes
+
+* date time input ([a53c4c5](https://github.com/snolab/CapsLockX/commit/a53c4c5fdb2ca01702a44104634cc8f6bdb2ec8f))
+* delete unused modules ([73770bb](https://github.com/snolab/CapsLockX/commit/73770bbd99ae017fa88a3d28677adbc0631bf998))
+* overwrite user module ([5795a3b](https://github.com/snolab/CapsLockX/commit/5795a3b26787289d0c1999d88be60623065fa52d))
+* update 用ConfigGet防止触发自动重载 ([aaaa851](https://github.com/snolab/CapsLockX/commit/aaaa8517a938a0c007ebb1bea9df9ce5961e68b9))
+* 前删，后删逻辑优化 ([0c1a58b](https://github.com/snolab/CapsLockX/commit/0c1a58bad641fdec48f0786a0b7c7946448dd0de))
+* 启用 docsify ([7c81c0b](https://github.com/snolab/CapsLockX/commit/7c81c0b172afdff8d74496bbca9e7e9070f17cb8))
+* 时间戳指令标准化 ([3cdfedc](https://github.com/snolab/CapsLockX/commit/3cdfedc3973ac601e1d5c1110651c89a41eded1f))
+* 用ConfigGet防止触发自动重载 ([1b0585e](https://github.com/snolab/CapsLockX/commit/1b0585ef023fff8e9598ce470f03458298802255))
+* 重载权限优化 ([40107c1](https://github.com/snolab/CapsLockX/commit/40107c1b592bab4a0ce77277ca30620d8a4035ea))
+
+
+
 ## [1.16.3](https://github.com/snomiao/CapsLockX/compare/v1.16.2...v1.16.3) (2021-04-17)
 
 
