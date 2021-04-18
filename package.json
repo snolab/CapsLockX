@@ -15,14 +15,14 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/snomiao/CapsLockX.git"
+        "url": "git+https://github.com/snolab/CapsLockX.git"
     },
     "author": "snomiao@gmail.com",
     "license": "GPL-3.0-or-later",
     "bugs": {
-        "url": "https://github.com/snomiao/CapsLockX/issues"
+        "url": "https://github.com/snolab/CapsLockX/issues"
     },
-    "homepage": "https://github.com/snomiao/CapsLockX#readme",
+    "homepage": "https://github.com/snolab/CapsLockX#readme",
     "bin": {
         "capslockx": "CapsLockX.exe"
     },
