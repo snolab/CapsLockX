@@ -11,7 +11,7 @@
 ; ========== CapsLockX ==========
 
 #SingleInstance Force ; 跳过对话框并自动替换旧实例
-; #NoTrayIcon ; 隐藏托盘图标
+#NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
 FileCreateDir ./User
@@ -47,9 +47,7 @@ FileCopy ./User/*.user.md, %CapsLockX_模块路径%/, 1
 ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
 ModulesLoader := CapsLockX_核心路径 "/CapsLockX-ModulesLoader.ahk"
 LoadModules(ModulesRunner, ModulesLoader)
-
 模块帮助向README编译()
-
 ; 隐藏 ToolTip
 ToolTip
 
@@ -59,8 +57,9 @@ if("CI_TEST" == ENVIROMENT){
     OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
     ExitApp
 }
-CapslockX启动()
 
+#Persistent
+SetTimer, CapsLockX启动, -1
 Return
 
 模块帮助向README编译(){
@@ -97,7 +96,7 @@ Return
     loadingTips .= msg "`n"
 }
 加载提示显示(){
-    ToolTip % loadingTips
+    ; ToolTip % loadingTips
 }
 模块帮助尝试加载(模块文件名称, 模块名称){
     if (FileExist(CapsLockX_模块路径 "\" 模块名称 ".md")){
@@ -248,8 +247,7 @@ LoadModules(ModulesRunner, ModulesLoader){
     FileDelete %ModulesLoader%
     FileAppend %codeLoader%, %ModulesLoader%
 }
-
-CapslockX启动(){
+CapsLockX启动(){
     CoreAHK := CapsLockX_核心路径 "\CapsLockX-Core.ahk"
     UpdatorAHK := CapsLockX_核心路径 "\CapsLockX-Update.ahk"
     ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再运行核心。

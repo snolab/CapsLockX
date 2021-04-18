@@ -185,13 +185,13 @@ CapsLockX_Reload(){
     static times := 0
     times += 1
     if(times == 1){
-        ; 避免重载出现 Could not close the previous instance of this script.  Keep waiting?
-        RunAsSameUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
+        ; 使用 RunAsLimitiedUser 避免重载时出现 Could not close the previous instance of this script.  Keep waiting?
+        RunAsLimitiedUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
         ; 这里启动新实例后不用急着退出当前实例
         ; 如果重载的新实例启动成功，则会自动使用热键结束掉本实例
         ; 而如果没有启动成功则保留本实例，以方便修改语法错误的模块
     }else{
-        ; 但如果用户多次要求重载，那就退出掉好了（即，双击重载会强制退出当前实例）
+        ; 但如果用户多次要求重载，那就直接退出掉好了（即，双击重载会强制退出当前实例）
         RunAsSameUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
         ExitApp
     }
