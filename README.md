@@ -374,6 +374,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
     UseTomatoLifeSwitchVirtualDesktop=1
     ```
 
+注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
+
 <!-- 模块文件名：插件-雪星转屏.ahk-->
 
 ### 雪星转屏模块
@@ -457,6 +459,13 @@ Ctrl + Alt + 同上，但一般为全局热键
 - Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
 - Gitlab: [https://gitlab.com/snomiao/CapsLockX/](https://gitlab.com/snomiao/CapsLockX/)
 
+文档地址：
+
+- 中文文档 Netlify CDN：[https://capslockx.netlify.com](https://capslockx.netlify.com)
+- 中文文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
+- 中文文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
+- 中文文档 Github Pages：[http://snolab.github.io/CapsLockX](http://snolab.github.io/CapsLockX)
+
 #### 相似项目地址
 
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
@@ -511,7 +520,8 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
-
+   
+- [CapsLockX - 像黑客一样操作电脑 - V2EX]( https://v2ex.com/t/772052#reply1 )
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )
 - [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/questionz/23443944/answer/1670521971 )
 - [有哪位残友用的是单手键盘？ - 知乎]( https://www.zhihu.com/question/50621709/answer/1681247637 )

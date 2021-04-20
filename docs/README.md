@@ -218,7 +218,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -310,11 +310,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### TIM添加常驻功能模块
 
-| 模式        |    按键     | 功能                   |
-| ----------- | :---------: | ---------------------- |
-| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
-| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
-| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
+|模式|按键|功能|
+| - | :-: | - |
+| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
+| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
+| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -322,9 +322,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 用法
 
-| 作用于 |  按键   | 功能说明              |
-| ------ | :-----: | --------------------- |
-| 全局   | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 | 按键| 功能说明 |
+| - | :-: | - |
+| 全局 | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
@@ -371,6 +371,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
     ```ini
     UseTomatoLifeSwitchVirtualDesktop=1
     ```
+
+注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
 
 <!-- 模块文件名：插件-雪星转屏.ahk-->
 
@@ -516,7 +518,8 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
-
+   
+- [CapsLockX - 像黑客一样操作电脑 - V2EX]( https://v2ex.com/t/772052#reply1 )
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )
 - [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/questionz/23443944/answer/1670521971 )
 - [有哪位残友用的是单手键盘？ - 知乎]( https://www.zhihu.com/question/50621709/answer/1681247637 )
