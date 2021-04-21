@@ -16,7 +16,7 @@ if (!CapsLockX){
     ExitApp
 }
 
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/03.1-插件-窗口增强.md" ))
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
 ; setup done
 ; flags

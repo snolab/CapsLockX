@@ -13,13 +13,8 @@ if !CapsLockX
 
 global FLAG_SWAP_ESC_STROKE := false
 
-CapsLockX_AppendHelp("
-(
-笔记本功能键补充
-| Win + Alt + P | 打开系统设定 |
-| 按住 Menu键 + 其它键 | 相当于按住 右Ctrl + 其它键 |
-| 单击右Ctrl | 相当于单击Menu键 |
-)")
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+
 Return
 ; 专治 Surface 的残破键盘，合并右Ctrl与Menu键！
 ; 单击 Menu 键为 Menu 键功能，按住 Menu 键再按别的键则表现为 Ctrl 组合键

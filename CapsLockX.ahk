@@ -44,9 +44,9 @@ FileCopy ./User/*.user.md, %CapsLockX_模块路径%/, 1
 ; FileCopy %CapsLockX_模块路径%/*.user.md, ./User/
 
 ; 加载模块
-ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
-ModulesLoader := CapsLockX_核心路径 "/CapsLockX-ModulesLoader.ahk"
-LoadModules(ModulesRunner, ModulesLoader)
+global CapsLockX_ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
+global CapsLockX_ModulesLoader := CapsLockX_核心路径 "/CapsLockX-ModulesLoader.ahk"
+; LoadModules(CapsLockX_ModulesRunner, CapsLockX_ModulesLoader)
 模块帮助向README编译()
 ; 隐藏 ToolTip
 ToolTip
@@ -67,17 +67,17 @@ Return
     INPUT_README_FILE := "./docs/README.md"
     FileRead, source, %INPUT_README_FILE%
     ; 编译一次
-    target := 模块帮助README更新(source)
+    target := 模块和帮助README更新(source)
     if (target == source)
         return "NOT_CHANGED"
     ; 如果不一样，就再编译一次
     加载提示追加("模块帮助有变更")
     ; 然后进行稳定性检查
-    source := 模块帮助README更新(target)
+    source := 模块和帮助README更新(target)
     if (target != source)
         MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
     ; 输出到 docs/readme.md （用于 github-pages ）
-    ; docs_target := 模块帮助README更新(source, 1)
+    ; docs_target := 模块和帮助README更新(source, 1)
     FileDelete ./docs/README.md
     FileAppend %target%, ./docs/README.md, UTF-8-Raw
 
@@ -97,17 +97,7 @@ Return
 }
 加载提示显示(){
     ; ToolTip % loadingTips
-}
-模块帮助尝试加载(模块文件名称, 模块名称){
-    if (FileExist(CapsLockX_模块路径 "\" 模块名称 ".md")){
-        FileRead, 模块帮助, %CapsLockX_模块路径%\%模块名称%.md
-        Return 模块帮助
-    }
-    if (FileExist(CapsLockX_模块路径 "\" 模块文件名称 ".md")){
-        FileRead, 模块帮助, %CapsLockX_模块路径%\%模块文件名称%.md
-        Return 模块帮助
-    }
-    Return ""
+    ; sleep 2000
 }
 清洗为_UTF8_WITH_BOM_型编码(path){
     FileRead ModuleCode, %path%
@@ -119,7 +109,7 @@ Return
     FileDelete %path%
     FileAppend %ModuleCode%, %path%, UTF-16
 }
-模块帮助README更新(sourceREADME, docs=""){
+模块和帮助README更新(sourceREADME, docs=""){
     FileEncoding UTF-8
     ; 列出模块文件
     ModuleFiles := ""
@@ -142,46 +132,86 @@ Return
             Continue
         模块文件名称 := Match[1] Match[2]
         模块名称 := Match[2]
-        模块帮助 := 模块帮助尝试加载(模块文件名称, 模块名称)
-        if (!模块帮助)
-            Continue
-        模块帮助 := Trim(模块帮助, " `t`n")
-        加载提示追加("加载模块帮助：" + i + "-" + 模块名称)
-
-        全部帮助 .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n`n"
-        ; 替换标题层级
-        模块帮助 := RegExReplace(模块帮助, "m)^#", "###")
-
-        ; 替换资源链接的相对目录（图片gif等）
-        FileCopy, %CapsLockX_模块路径%\*.gif, .\docs\media\, 1
-        FileCopy, %CapsLockX_模块路径%\*.png, .\docs\media\, 1
-        模块帮助 := RegExReplace(模块帮助, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./media/$2 )")
-
-        ; if (docs){
-        ;     模块帮助 := RegExReplace(模块帮助, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./$2 )")
-        ; }else{
-        ;     模块帮助 := RegExReplace(模块帮助, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./" CapsLockX_模块路径 " /$2 ")
-        ; }
-
-        ; 没有标题的，给自动加标题
-        if (!RegExMatch(模块帮助, "^#")){
-            if (T%模块名称%_Disabled){
-                全部帮助 .= "### " 模块名称 "模块（禁用）" "`n"
-            } else {
-                全部帮助 .= "### " 模块名称 "模块" "`n"
+        模块帮助内容 := ""
+        模块帮助文件 := ""
+        if(!模块帮助内容){
+            模块帮助文件 := CapsLockX_模块路径 "/" 模块名称 ".md"
+            if (FileExist(模块帮助文件)){
+                FileRead, 模块帮助内容, %模块帮助文件%
             }
         }
-        全部帮助 .= 模块帮助 "`n`n"
+        if(!模块帮助内容){
+            模块帮助文件 := CapsLockX_模块路径 "/" 模块文件名称 ".md"
+            if (FileExist(模块帮助文件)){
+                FileRead, 模块帮助内容, %模块帮助文件%
+            }
+        }
+        if (模块帮助内容){
+            模块帮助内容 := Trim(模块帮助内容, " `t`n")
+            加载提示追加("加载模块帮助：" + i + "-" + 模块名称)
+
+            全部帮助 .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n`n"
+            ; 替换标题层级
+            模块帮助内容 := RegExReplace(模块帮助内容, "m)^#", "###")
+
+            ; 替换资源链接的相对目录（图片gif等）
+            FileCopy, %CapsLockX_模块路径%\*.gif, .\docs\media\, 1
+            FileCopy, %CapsLockX_模块路径%\*.png, .\docs\media\, 1
+            模块帮助内容 := RegExReplace(模块帮助内容, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./media/$2 )")
+            ; 没有标题的，给自动加标题
+            if (!RegExMatch(模块帮助内容, "^#")){
+                if (T%模块名称%_Disabled){
+                    全部帮助 .= "### " 模块名称 "模块（禁用）" "`n"
+                } else {
+                    全部帮助 .= "### " 模块名称 "模块" "`n"
+                }
+            }
+            全部帮助 .= 模块帮助内容 "`n`n"
+        }
+        if (T%模块名称%_Disabled){
+            加载提示追加("禁用模块：" i " " 模块名称)
+        } else {
+            ; 这里引入模块代码
+            清洗为_UTF8_WITH_BOM_型编码(CapsLockX_模块路径 "/" 模块文件)
+            ; 导入模块
+            模块初始化代码 .= "GoSub CapsLockX_ModuleSetup_" i "`n"
+            模块导入代码 .= "`n" "#If" "`n" "`n"
+            模块导入代码 .= "CapsLockX_ModuleSetup_" i ":" "`n"
+            if (模块帮助内容 && 模块帮助文件)
+                模块导入代码 .= " " " " " " " " "CapsLockX_THIS_MODULE_HELP_FILE_PATH = " 模块帮助文件 "`n"
+            else
+                模块导入代码 .= " " " " " " " " "CapsLockX_THIS_MODULE_HELP_FILE_PATH := """"" "`n"
+            模块导入代码 .= " " " " " " " " "#Include " CapsLockX_模块路径 "/" 模块文件 "`n"
+            模块导入代码 .= "Return" "`n"
+            加载提示追加("运行模块：" i " " 模块名称)
+        }
     }
+    加载提示显示()
+
+    ; 拼接模块加载器代码
+    常量语句 .= "; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)" "`n"
+    常量语句 .= "global CapsLockX_模块路径 := " """" CapsLockX_模块路径 """" "`n"
+    常量语句 .= "global CapsLockX_核心路径 := " """" CapsLockX_核心路径 """" "`n"
+    常量语句 .= "global CapsLockX_Version := " """" CapsLockX_Version """" "`n"
+    常量语句 .= "global CapsLockX_VersionName := " """" CapsLockX_VersionName """" "`n"
+
+    模块运行器 .= 常量语句 "`n" 模块初始化代码
+    模块加载器 .= "Return" "`n" 模块导入代码
+
+    FileDelete %CapsLockX_ModulesRunner%
+    FileAppend %模块运行器%, %CapsLockX_ModulesRunner%
+    FileDelete %CapsLockX_ModulesLoader%
+    FileAppend %模块加载器%, %CapsLockX_ModulesLoader%
+    
     加载提示显示()
     全部帮助 := Trim(全部帮助, " `t`n")
 
-    ; 生成替换代码
+    ; 生成 README 替换代码
     NeedleRegEx := "m)(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n(\s*)(<!-- 结束：抽取模块帮助 -->)"
     Replacement := "$1$2`n" 全部帮助 "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
 
-    ; 检查替换情况
+    ; 检查 README 替换情况
     if (!Replaces){
         MsgBox % "加载模块帮助遇到错误。`n请更新 CapsLockX"
         MsgBox % targetREADME
@@ -189,63 +219,6 @@ Return
     }
 
     Return targetREADME
-}
-LoadModules(ModulesRunner, ModulesLoader){
-    FileEncoding UTF-8
-    ; 列出模块文件 然后 排序
-    ModuleFiles := ""
-    loop, Files, %CapsLockX_模块路径%\*.ahk ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
-        ModuleFiles .= A_LoopFileName "`n"
-    ModuleFiles := Trim(ModuleFiles, "`n")
-    Sort ModuleFiles
-
-    ; 生成模块加载代码
-    code_setup := ""
-    code_include := ""
-    i := 0
-    loop, Parse, ModuleFiles, `n
-    {
-        i++
-        ; 匹配模块名
-        模块文件 := A_LoopField
-        匹配结果 := RegExMatch(A_LoopField, "O)(?:.*[.-])*(.*)\.ahk", Match)
-        if (!匹配结果){
-
-            Continue
-        }
-        模块名称 := Match[1]
-
-        if (T%模块名称%_Disabled){
-            加载提示追加("禁用模块：" i " " 模块名称)
-        } else {
-            ; 这里引入模块代码
-            清洗为_UTF8_WITH_BOM_型编码(CapsLockX_模块路径 "\" 模块文件)
-
-            ; 导入模块
-            code_setup .= "GoSub CapsLockX_ModuleSetup_" i "`n"
-            code_include .= "`n" "#If" "`n" "`n"
-            code_include .= "CapsLockX_ModuleSetup_" i ":" "`n"
-            code_include .= " " " " " " " " "#Include " CapsLockX_模块路径 "\" 模块文件 "`n"
-            code_include .= "Return" "`n"
-            加载提示追加("运行模块：" i " " 模块名称)
-        }
-    }
-    加载提示显示()
-
-    ; 拼接代码
-    code_consts .= "; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)" "`n"
-    code_consts .= "global CapsLockX_模块路径 := " """" CapsLockX_模块路径 """" "`n"
-    code_consts .= "global CapsLockX_核心路径 := " """" CapsLockX_核心路径 """" "`n"
-    code_consts .= "global CapsLockX_Version := " """" CapsLockX_Version """" "`n"
-    code_consts .= "global CapsLockX_VersionName := " """" CapsLockX_VersionName """" "`n"
-
-    codeRunner .= code_consts "`n" code_setup
-    codeLoader .= "Return" "`n" code_include
-
-    FileDelete %ModulesRunner%
-    FileAppend %codeRunner%, %ModulesRunner%
-    FileDelete %ModulesLoader%
-    FileAppend %codeLoader%, %ModulesLoader%
 }
 CapsLockX启动(){
     CoreAHK := CapsLockX_核心路径 "\CapsLockX-Core.ahk"

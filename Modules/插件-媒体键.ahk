@@ -2,25 +2,7 @@
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
-
-CapsLockX_AppendHelp("
-(
-媒体键
-| CapsLockX + F1 | 打开：我的电脑
-| CapsLockX + F2 | 打开：计算器
-| CapsLockX + F3 | 打开：浏览器主页
-| CapsLockX + F4 | 打开：媒体库（默认是 Windows Media Player）
-| CapsLockX + F5 | 播放：暂停/播放
-| CapsLockX + F6 | 播放：上一首
-| CapsLockX + F7 | 播放：下一首
-| CapsLockX + F8 | 播放：停止
-| CapsLockX + F9 | 音量加
-| CapsLockX + F10 | 音量减
-| CapsLockX + F11 | 静音
-| CapsLockX + F12 | 打开：计算器
-| CapsLockX + Pause |
-)")
-
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 Return
 
 #If !!(CapsLockXMode & CM_FN) || !!(CapsLockXMode & CM_CapsLockX)

@@ -11,12 +11,7 @@ if (!CapsLockX){
     ExitApp
 }
 
-CapsLockX_AppendHelp("
-(
-JavaScript 计算 (建议安装 NodeJS )
-| 全局 | CapsLockX + - | 计算当前选区 JavaScript 表达式，并替换
-| 全局 | CapsLockX + = | 计算当前选区 JavaScript 表达式，并替换
-)")
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 

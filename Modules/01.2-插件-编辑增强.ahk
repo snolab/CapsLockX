@@ -21,17 +21,7 @@ global 方速横 := 0, 方速纵 := 0, 方位横 := 0, 方位纵 := 0
 global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 
-CapsLockX_AppendHelp("
-(
-编辑增强
-| 全局 | CapsLockX + k j h l | 上下左右 方向键 |
-| 全局 | CapsLockX + hl | hl 一起按选择当前词 |
-| 全局 | CapsLockX + y o | Home End |
-| 全局 | CapsLockX + yo | yo 一起按选择当前行 |
-| 全局 | CapsLockX + g | 回车 |
-| 全局 | CapsLockX + t | BackSpace |
-| 全局 | CapsLockX + Shift + t | Delete |
-)")
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 

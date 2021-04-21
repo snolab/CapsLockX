@@ -35,7 +35,8 @@ CapsLockX_IssuesPage := "https://github.com/snomiao/CapsLockX/issues"
 
 ; 注释：在这里，你可以使用 CapsLockX_AppendHelp 添加帮助信息
 ; 在 AHK 中，所有的函数都在编译时就定义好了，声明顺序是无所谓的。
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/00-Help.md" ))
+; CapsLockX_THIS_MODULE_HELP_FILE_PATH 在当前模块中的值为 "./Modules/00-Help.md"
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 ;
 ; 初始化完成之后就可以返回了, 在这个 Return 之后，可以定义函数和热键
 ; 注：CapsLockX 模块【必须】 Return，才能顺利地执行后面的模块。
