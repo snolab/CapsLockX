@@ -8,30 +8,30 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
-[![all downloads](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=All%20downloads)](https://github.com/snolab/CapsLockX/releases)
+[![Downloads-From-GitHub-Releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=Downloads-From-GitHub-Releases)](https://github.com/snolab/CapsLockX/releases)
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
 ## 入门教程第一
 
-### 太长不看版 TL;DR
+### 太长不看 / TL;DR
 
-下这个： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+下载这个包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-装上之后，按住 CapsLockX，然后按 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，1234567890 切换虚拟桌面，M 打开配置。
+解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后，按住 CapsLockX，然后按 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，1234567890 切换虚拟桌面，M 打开配置。
 
 ### 安装与使用
 
-#### 绿色程序包（新手适用，稳定版）
+#### 绿色便携程序包（新手适用，稳定版）
 
-源码打包就是软件本体，无需编译，纯绿色软件解压即用。源码 + 程序包，推荐第一个（最快）。
+源码打包就是软件本体，无需编译，纯绿色便携软件解压即用。源码 + 程序包，推荐第一个（最快）。
 
 - [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
-- [下载 CloudFlareCDN-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
-- [下载 全球用户-GitHub-发布程序包.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
-- [下载 全球用户-GitHub-仓库程序包.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
-- [下载 灾难备份-BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
-- [下载 大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
+- [备选下载 CloudFlareCDN-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
+- [备选下载 GitHub-发布程序包.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
+- [备选下载 GitHub-仓库程序包.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
+- [备选下载 BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
+- [备选下载 中国大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
@@ -43,27 +43,18 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 - `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 - `npm i -g capslockx && capslockx`
 - `npx capslockx`
-- `choco install capslockx && capslockx` （注：2021-04-17 程序包审核中）
+- `choco install capslockx && capslockx` （注：2021-04-21 chocolatey的程序包还在审核中）
 
-### 使用方式
-
-启动脚本后, 你可以尝试：按下 `Alt`, 按住 `Tab`, 然后按 `WASD` 切换选中窗口, 再按 `C` 关闭窗口，
-
-> 某些功能需要使用管理员身份运行（如鼠标模拟）
-> 在 CapsLockX-Settings.ahk 中
-> 手动修改 global T_AskRunAsAdmin := 1 即可
-> 如不需要，可以改为 0
-
-## 目录第二
-
-## 使用手册第三
+## 使用手册
 
 <!-- * 按 `CapsLock` 切换 CapsLockX 模式 -->
 
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
 CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下方列出。
-对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的文件，然后按 `Ctrl + Alt + \` 重新加载即可。
+对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的 `.ahk` 文件，然后按 `Ctrl + Alt + \` 重新加载即可。
+
+你也可以编写自己的 `my-ahk.user.ahk` 然后放到 `./User/` 目录下，CapsLockX 会自动识别并加载它们。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
@@ -134,7 +125,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 <!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 
-### 窗口增强插件 (123456789-=XC)
+### 窗口增强插件 (CLX + 1234567890 ZXCV)
 
 #### 功能简述
 
@@ -145,8 +136,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 1. 窗口排列：`CapsLockX + [Shift] + C`
 1. 窗口置顶：`CapsLockX + [Shift] + V`
 1. 左手窗口管理：在 `Alt + Tab` 的界面，用 `WASD` 切换窗口，`X` 关掉窗口。
-1. 高效使用虚拟桌面：`CapsLockX + 0123456789` 切换、增减虚拟桌面，加上 Alt 键可以转移当前窗口
-1. 虚拟机与远程桌面快速脱离：双击左边 `Shift+Ctrl+Alt`。
+1. 高效使用虚拟桌面：`CapsLockX + 0123456789` 切换、增减虚拟桌面，加上 `Shift` 键可以转移当前窗口
+1. 虚拟机与远程桌面快速脱离：双击左边 `Shift + Ctrl + Alt`。
 
 #### 效果图
 
@@ -163,20 +154,20 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | Alt+Tab 界面 | W A S D                             | 上下左右切换窗口选择                       |
 | Alt+Tab 界面 | X C                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
 | Win+Tab 视图 | Alt + W A S D                       | 切换窗口选择                               |
-| 全局         | CapsLockX + 1 2 ... 9 0 - =         | 切换到第 1 .. 12 个桌面                    |
-| 全局         | CapsLockX + Backspace               | 删除当前桌面（会把所有窗口移到上一个桌面） |
+| 全局         | CapsLockX + 1 2 ... 9 0             | 切换到第 1 .. 12 个桌面                    |
 | 全局         | CapsLockX + Shift + 1 2 ... 9 0 - = | 把当前窗口移到第 n 个桌面(如果有的话)      |
+| 全局         | CapsLockX + Alt + Backspace         | 删除当前桌面（会把所有窗口移到上一个桌面） |
 | 全局         | CapsLockX + C                       | 快速排列当前桌面的窗口                     |
 | 全局         | CapsLockX + Ctrl + C                | 快速排列当前桌面的窗口（包括最小化的窗口） |
 | 全局         | CapsLockX + Shift + C               | 快速堆叠当前桌面的窗口                     |
 | 全局         | CapsLockX + Shift + Ctrl + C        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
 | 全局         | CapsLockX + Shift + [ ]             | 把当前窗口移到上一个/下一个桌面            |
 | 全局         | CapsLockX + Z                       | 循环切到最近使用的窗口                     |
-| 全局         | CapsLockX + Shift+ Z                | 循环切到最不近使用的窗口                   |
+| 全局         | CapsLockX + Shift + Z               | 循环切到最不近使用的窗口                   |
 | 全局         | CapsLockX + X                       | 关掉当前标签页 Ctrl+W                      |
-| 全局         | CapsLockX + Shift+ X                | 关掉当前窗口 Alt+F4                        |
+| 全局         | CapsLockX + Shift + X               | 关掉当前窗口 Alt+F4                        |
 | 全局         | CapsLockX + V                       | 让窗口透明                                 |
-| 全局         | CapsLockX + Shift+ V                | 让窗口保持透明（并置顶）                   |
+| 全局         | CapsLockX + Shift + V               | 让窗口保持透明（并置顶）                   |
 | 任意窗口     | 双击左边 Shift+Ctrl+Alt             | 后置当前窗口， * 见下方注                  |
 
 *注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
@@ -405,13 +396,13 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局 | CapsLockX + Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
-## 过去与未来第四
+## 过去与未来
 
 ### 制作背景 ( 2017 年秋)
 
 > 本人比较经常写代码…
-> 起初我是右鼠……后来觉得鼠标放右边有点远……改成了左鼠
-> 左鼠之后发现手还是要离开键盘……于是做了个 WASD 模拟鼠标的东西。（然后就能一直用右手托着下巴玩电脑了）
+> 起初我习惯右手用鼠标……后来觉得鼠标放右边有点远……改成了左手用鼠标
+> 左手用鼠标之后发现手还是要离开键盘……于是做了个 WASD 模拟鼠标的脚本。（然后就能一直用右手托着下巴玩电脑了）
 > 后来写的脚本越来越多，就把其中一些常用的放到一起加载……
 
 ### 发展路线
@@ -420,7 +411,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 1. [x] 按 CapsLockX + / 键显示对应帮助（目前的显示样式相当草率）
 2. [ ] 自动更新（虽然git pull一下也不是不行）
-3. [ ] 初次使用上手教程（这个真没有……）
+3. [ ] 初次使用上手教程（这个现在有点简陋……）
 4. [ ] 插件管理器（虽然文件系统也可以搞定）
 5. [ ] 自动配置同步功能（虽然一般来说扔onedrive就够）
 6. [ ] 易用的选项配置的 UI 界面（虽然改ini也不是什么难事）
@@ -496,21 +487,21 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。<!-- （雪星的推荐码： 55396-2857） -->
 - [Everything](https://www.voidtools.com/zh-cn/)
 
-## 答疑相关第五
+## 答疑相关
 
 本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
 
 相关社群：
 
+- [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues)
 - CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)
 - CapsLockX 用户 QQ 群：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群： 271105729
 - AHK 高级 QQ 群： 717947647
-- [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues)
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
-## 支持第六
+## 支持
 
 如何帮助本项目生存下去？如果本项目有帮助到你：
 
@@ -536,8 +527,9 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
-   
+
 - [CapsLockX - 像黑客一样操作电脑 - V2EX]( https://v2ex.com/t/772052#reply1 )
+- [CapsLockX - 像黑客一样操作电脑！ - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?f=28&t=88593 )
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )
 - [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/questionz/23443944/answer/1670521971 )
 - [有哪位残友用的是单手键盘？ - 知乎]( https://www.zhihu.com/question/50621709/answer/1681247637 )
