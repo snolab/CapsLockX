@@ -49,6 +49,7 @@ jobs:
       # 压缩包和 docs 一起同步到 gh-pages
       - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
       - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
+      - run: cp CHANGELOG.md docs/CHANGELOG.md
       - run: cp Tools/version.txt docs/version.txt
       - uses: peaceiris/actions-gh-pages@v3
         with:
