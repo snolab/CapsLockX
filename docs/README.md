@@ -6,6 +6,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
+[![all downloads](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=All%20downloads)](https://github.com/snolab/CapsLockX/releases)
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
@@ -229,7 +230,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -313,11 +314,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### TIM添加常驻功能模块
 
-|模式|按键|功能|
-| - | :-: | - |
-| 在Tim窗口内 |Alt + f| 焦点定位到左上角搜索框|
-| 在Tim窗口内 |Ctrl + PgUp| 切换上一个窗口|
-| 在Tim窗口内 |Ctrl + PgDn| 切换下一个窗口|
+| 模式        |    按键     | 功能                   |
+| ----------- | :---------: | ---------------------- |
+| 在Tim窗口内 |   Alt + f   | 焦点定位到左上角搜索框 |
+| 在Tim窗口内 | Ctrl + PgUp | 切换上一个窗口         |
+| 在Tim窗口内 | Ctrl + PgDn | 切换下一个窗口         |
 
 <!-- 模块文件名：应用-讯飞输入法语音悬浮窗.ahk-->
 
@@ -325,9 +326,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 用法
 
-| 作用于 | 按键| 功能说明 |
-| - | :-: | - |
-| 全局 | Win + H | 启动/切换讯飞语音输入 |
+| 作用于 |  按键   | 功能说明              |
+| ------ | :-----: | --------------------- |
+| 全局   | Win + H | 启动/切换讯飞语音输入 |
 
 #### 注
 
