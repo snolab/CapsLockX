@@ -137,11 +137,15 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 功能简述
 
-12 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、
+用好 Win 10 自带的 10 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、
 
-1. 快速排列窗口：CapsLockX + C
-2. 左手窗口管理：在 Alt + Tab 的时候，用 `WASD` 切换窗口，X 关掉窗口
-3. 高效使用虚拟桌面：`CapsLockX + 0123456789-=` 切换、增减虚拟桌面，加上 Alt 键可以转移当前窗口
+1. 窗口切换：`CapsLockX + [Shift] + Z`
+1. 窗口关闭：`CapsLockX + [Shift] + X`
+1. 窗口排列：`CapsLockX + [Shift] + C`
+1. 窗口置顶：`CapsLockX + [Shift] + V`
+1. 左手窗口管理：在 `Alt + Tab` 的界面，用 `WASD` 切换窗口，`X` 关掉窗口。
+1. 高效使用虚拟桌面：`CapsLockX + 0123456789` 切换、增减虚拟桌面，加上 Alt 键可以转移当前窗口
+1. 虚拟机与远程桌面快速脱离：双击左边 `Shift+Ctrl+Alt`。
 
 #### 效果图
 
@@ -172,6 +176,13 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局         | CapsLockX + Shift+ X                | 关掉当前窗口 Alt+F4                        |
 | 全局         | CapsLockX + V                       | 让窗口透明                                 |
 | 全局         | CapsLockX + Shift+ V                | 让窗口保持透明（并置顶）                   |
+| 任意窗口     | 双击左边 Shift+Ctrl+Alt             | 后置当前窗口， * 见下方注                  |
+
+*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
+例如 mstsc.exe、TeamViewer、VirtualBox、HyperV、VMWare 等远程桌面或虚拟机程序，配合 CapsLockX + Shift + V 透明置顶功能，让你在 Windows 的界面上同时使用 Linux 界面或 MacOS 界面再也不是难题。
+  
+此处借用 [@yangbin9317 的评论]( https://v2ex.com/t/772052#r_10458792 )
+> 以 CapsLock 为抓手,打通底层逻辑,拉齐 Windows 和 Linux WM,解决了 Windows 难用的痛点
 
 <!-- 模块文件名：LaptopKeyboardFix.ahk-->
 
@@ -240,14 +251,6 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在Edge内 | Alt + / | 显示目录                              |
 | 在Edge内 | Alt + ; | 切换自适应页面大小模式                |
 | 在Edge内 | Alt + ' | 切换双页布局模式                      |
-
-<!-- 模块文件名：应用-mstsc远程桌面增强.ahk-->
-
-### MSTSC 远程桌面增强
-
-| 模式     | 按键                    | 功能说明                                                         |
-| -------- | :---------------------- | ---------------------------------------------------------------- |
-| 任意窗口 | 双击左边 Shift+Ctrl+Alt | 后置当前窗口，用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示 |
 
 <!-- 模块文件名：应用-OneNote2016增强.ahk-->
 

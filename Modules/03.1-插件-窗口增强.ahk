@@ -15,34 +15,13 @@ if (!CapsLockX){
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
-
-; #If WinActive("ahk_class MultitaskingViewFrame")
-; #IfWinActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-; #If
-
-CapsLockX_AppendHelp("
-(
-窗口增强
-| 作用域 | 窗口增强模块 | 说明 |
-| ------------ | --------------------------- | -------------------------------------------- |
-| Alt+Tab 界面 | Q E | 左右切换多桌面 |
-| Alt+Tab 界面 | W A S D | 上下左右切换窗口选择 |
-| Alt+Tab 界面 | X C | 关闭选择的窗口（目前 X 和 C 没有区别） |
-| Win+Tab 视图 | Alt + W A S D | 切换窗口选择 |
-| 全局 | CapsLockX + Backspace | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局 | CapsLockX + 1 2 ... 9 0 | 切换到第 n 个桌面 |
-| 全局 | CapsLockX + Alt + 1 2 ... 9 0 | 把当前窗口移到第 n 个桌面 |
-| 全局 | CapsLockX + Alt + = | 新建桌面，并把当前窗口移过去 |
-| 全局 | CapsLockX + Alt + M | 快速堆叠当前桌面的窗口 |
-| 全局 | CapsLockX + Alt + Shift + M | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
-| 全局 | CapsLockX + Alt + [ ] | 把当前窗口移到上一个/下一个桌面 |
-| 全局 | CapsLockX + M | 快速排列当前桌面的窗口 |
-| 全局 | CapsLockX + Shift + M | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局 | CapsLockX + [ ] | 切换到上一个/下一个桌面 |
-)")
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/03.1-插件-窗口增强.ahk" ))
 ; setup done
-
 ; flags
+global 上次CtrlShiftAlt时刻 := 0
+global 上次CtrlShiftAlt锁 := 0
+global FLAG_CtrlShiftAlt按下 := 0j
+
 global ARRANGE_SIDE_BY_SIDE := 0
 global ARRANGE_STACKED := 1 ; if not then arrange SIDE_BY_SIDE
 global ARRANGE_MAXWINDOW := 2
@@ -51,131 +30,10 @@ global ARRANGE_DEBUG := 8
 
 Return
 
-; 把当前窗口置顶
-
-; #If !!(CapsLockXMode & CM_FN)
-
-; 确保WinTab模块优先级比Mouse高，否则此处 WASD 无效
-; Make sure WinTab module has higher priority than Mouse, otherwise WASD is invalid here
-
-#if CapsLockXMode
-
-; 自动排列窗口
-c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
-; 自动排列窗口（包括最小化的窗口）
-^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
-; 自动堆叠窗口
-+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
-; 自动堆叠窗口（包括最小化的窗口）
-^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
-
-; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
-; !o::
-;     WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
-;     ; side by side 排列
-;     Send {AppsKey}i
-Return
-
-; 切换当前窗口置顶并透明
-+v::
-    WinSet, Transparent, 200, A
-    WinSet, Alwaysontop, Toggle, A
-Return
-; 让当前窗口临时透明
-v::
-    WinSet, Transparent, 100, A
-    WinSet, Alwaysontop, On, A
-Return
-v Up::
-    WinSet, Transparent, 255, A
-    WinSet, Alwaysontop, Off, A
-Return
-
-; 关闭标签
-x:: Send ^w
-; 关闭窗口并切到下一窗口
-+x::
-    hWnd := WinActive("A")
-    Send !{Esc}
-    WM_CLOSE := 0x0010
-    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
-    ; ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
-Return
-; 关闭窗口并切到下一窗口，并自动排列窗口
-+!x::
-    hWnd := WinActive("A")
-    Send !{Esc}
-    WM_CLOSE := 0x0010
-    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
-    ; ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
-Return
-; 杀死窗口并切到下一窗口
-^!x::
-    hWnd := WinActive("A")
-    Send !{Esc}
-    WinKill ahk_id %hWnd%
-Return
-
-; Alt+Tab或 Win+Tab
-#if MultitaskingViewFrameQ()
-
-!1:: SwitchToDesktop(1)
-!2:: SwitchToDesktop(2)
-!3:: SwitchToDesktop(3)
-!4:: SwitchToDesktop(4)
-!5:: SwitchToDesktop(5)
-!6:: SwitchToDesktop(6)
-!7:: SwitchToDesktop(7)
-!8:: SwitchToDesktop(8)
-!9:: SwitchToDesktop(9)
-!0:: SwitchToDesktop(10)
-!-:: SwitchToDesktop(11)
-!=:: SwitchToDesktop(12)
-
-; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
-!a:: Left
-!d:: Right
-!w:: Up
-!s:: Down
-
-; cx 关闭应用
-!c:: SendEvent {Blind}{Delete}{Right}
-!x:: SendEvent {Blind}{Delete}{Right}
-
-; 新建桌面
-!z::
-    SendEvent {Blind}{Esc}
-    ; Sleep 200
-    Send ^#d
-Return
-
-; 新建桌面并移动窗口
-!v::
-    SendEvent {Blind}{Esc}
-    ; Sleep 200
-    MoveActiveWindowWithAction("^#d")
-Return
-
-; 模拟 Tab 键切换焦点
-; !\:: Send {Tab}
-; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
-; 以及在窗口贴边后，WASD 切换窗口焦点
-
-; 切换桌面概览
-!q:: Send ^#{Left}
-!e:: Send ^#{Right}
-![:: Send ^#{Left}
-!]:: Send ^#{Right}
-
-; 增删桌面
-=:: Send ^#d
--:: Send ^#{F4}
-z:: Send ^#{F4}
-
 #if False && "FUNCTIION DEFINES"
 
 MultitaskingViewFrameQ(){
-Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+    Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
 }
 ; this is improved method for stable
 GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd){
@@ -193,7 +51,7 @@ GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd){
             break
         }
     }
-Return %monitorIndex%
+    Return %monitorIndex%
 }
 ; below function is modified from [How to determine a window is in which monitor? - Ask for Help - AutoHotkey Community]( https://autohotkey.com/board/topic/69464-how-to-determine-a-window-is-in-which-monitor/ )
 GetMonitorIndexFromWindow(hWnd){
@@ -233,7 +91,7 @@ GetMonitorIndexFromWindow(hWnd){
     if (monitorIndex){
         Return %monitorIndex%
     }
-Return 1
+    Return 1
 }
 
 ArrangeWindows(arrangeFlags = "0"){
@@ -576,4 +434,174 @@ FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0){
         , "Int", h
         , "UInt", SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
     }
+}
+
+CurrentWindowSetAsBackground(){
+    ; 后置当前窗口
+    WinGet hWnd, id, A
+    上次mstsc窗口hWnd := hWnd
+    WinSet Bottom,, ahk_id %hWnd%
+    ; 激活任务栏，夺走焦点
+    WinActivate ahk_class Shell_TrayWnd
+}
+
+; 把当前窗口置顶
+
+; #If !!(CapsLockXMode & CM_FN)
+
+; 确保WinTab模块优先级比Mouse高，否则此处 WASD 无效
+; Make sure WinTab module has higher priority than Mouse, otherwise WASD is invalid here
+
+#if CapsLockXMode
+
+; 自动排列窗口
+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
+; 自动排列窗口（包括最小化的窗口）
+^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
+; 自动堆叠窗口
++c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
+; 自动堆叠窗口（包括最小化的窗口）
+^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
+
+; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
+; !o::
+;     WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
+;     ; side by side 排列
+;     Send {AppsKey}i
+Return
+
+; 切换当前窗口置顶并透明
++v::
+    WinSet, Transparent, 200, A
+    WinSet, Alwaysontop, Toggle, A
+Return
+; 让当前窗口临时透明
+v::
+    WinSet, Transparent, 100, A
+    WinSet, Alwaysontop, On, A
+Return
+v Up::
+    WinSet, Transparent, 255, A
+    WinSet, Alwaysontop, Off, A
+Return
+
+; 关闭标签
+x:: Send ^w
+; 关闭窗口并切到下一窗口
++x::
+    hWnd := WinActive("A")
+    Send !{Esc}
+    WM_CLOSE := 0x0010
+    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+    ; ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
+Return
+; 关闭窗口并切到下一窗口，并自动排列窗口
++!x::
+    hWnd := WinActive("A")
+    Send !{Esc}
+    WM_CLOSE := 0x0010
+    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+    ; ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
+Return
+; 杀死窗口并切到下一窗口
+^!x::
+    hWnd := WinActive("A")
+    Send !{Esc}
+    WinKill ahk_id %hWnd%
+Return
+
+; Alt+Tab或 Win+Tab
+#if MultitaskingViewFrameQ()
+
+!1:: SwitchToDesktop(1)
+!2:: SwitchToDesktop(2)
+!3:: SwitchToDesktop(3)
+!4:: SwitchToDesktop(4)
+!5:: SwitchToDesktop(5)
+!6:: SwitchToDesktop(6)
+!7:: SwitchToDesktop(7)
+!8:: SwitchToDesktop(8)
+!9:: SwitchToDesktop(9)
+!0:: SwitchToDesktop(10)
+!-:: SwitchToDesktop(11)
+!=:: SwitchToDesktop(12)
+
+; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
+!a:: Left
+!d:: Right
+!w:: Up
+!s:: Down
+
+; cx 关闭应用
+!c:: SendEvent {Blind}{Delete}{Right}
+!x:: SendEvent {Blind}{Delete}{Right}
+
+; 新建桌面
+!z::
+    SendEvent {Blind}{Esc}
+    ; Sleep 200
+    Send ^#d
+Return
+
+; 新建桌面并移动窗口
+!v::
+    SendEvent {Blind}{Esc}
+    ; Sleep 200
+    MoveActiveWindowWithAction("^#d")
+Return
+
+; 模拟 Tab 键切换焦点
+; !\:: Send {Tab}
+; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
+; 以及在窗口贴边后，WASD 切换窗口焦点
+
+; 切换桌面概览
+!q:: Send ^#{Left}
+!e:: Send ^#{Right}
+![:: Send ^#{Left}
+!]:: Send ^#{Right}
+
+; 增删桌面
+=:: Send ^#d
+-:: Send ^#{F4}
+z:: Send ^#{F4}
+
+#if
+
+~$<!<+LCtrl::
+~$<^<+LAlt::
+~$<!<^LShift::
+    FLAG_CtrlShiftAlt按下 := 1
+return
+
+~$<!<+LCtrl Up::
+~$<^<+LAlt Up::
+~$<!<^LShift Up::
+    if(!(A_PriorKey == "LCtrl" || A_PriorKey == "LAlt" || A_PriorKey == "LShift"))
+        Return
+    ; 防止重复触发
+    if (上次CtrlShiftAlt锁)
+        return
+    if(!FLAG_CtrlShiftAlt按下)
+        return
+    FLAG_CtrlShiftAlt按下 := 0
+
+    上次CtrlShiftAlt锁 := 1
+    ToolTip, % "双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）"
+    KeyWait, LCtrl, T5 ; wait for 5 seconds
+    KeyWait, LAlt, T5 ; wait for 5 seconds
+    KeyWait, LShift, T5 ; wait for 5 seconds
+    SetTimer, CapsLockX_RemoveToolTip, -1024
+    现在 := A_TickCount
+    间隔 := 现在 - 上次CtrlShiftAlt时刻
+    if(间隔 < 200){
+        CurrentWindowSetAsBackground()
+    }else{
+        上次CtrlShiftAlt时刻 := 现在
+    }
+    上次CtrlShiftAlt锁 := 0
+return
+
+CapsLockX_RemoveToolTip(){
+    ToolTip
 }
