@@ -1,3 +1,15 @@
+## [1.16.5](https://github.com/snolab/CapsLockX/compare/v1.16.4...v1.16.5) (2021-04-21)
+
+
+### Bug Fixes
+
+* i18n ([127be0f](https://github.com/snolab/CapsLockX/commit/127be0fc1128ec8d2348241a5be6c684382a47a8))
+* 把远程桌面增强合并到窗口增强模块 ([d92df0a](https://github.com/snolab/CapsLockX/commit/d92df0a3801cf9166f274a3ac97875a8d99822dc))
+* 提供EvalJS端口配置选项 ([cdacfbb](https://github.com/snolab/CapsLockX/commit/cdacfbbe0b6dc3007ae41ab911f8ab2b1c6a0ff9))
+* 改进帮助界面 ([6ac26e7](https://github.com/snolab/CapsLockX/commit/6ac26e7a623953c2aba37243a9575372600fd249))
+
+
+
 ## [1.16.4](https://github.com/snolab/CapsLockX/compare/v1.16.3...v1.16.4) (2021-04-18)
 
 
