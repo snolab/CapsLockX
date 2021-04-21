@@ -62,10 +62,11 @@ CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/"){
     }
     Gui, Help:Destroy
     Gui, Help:Font, , SimHei
+    Gui, Help:Add, Edit, ReadOnly, ==== CapsLockX Help ====
     Gui, Help:Add, Edit, H768 ReadOnly, %helpStr% 
     Gui, Help:Show, AutoSize Center
 
-    KeyWait, %waitKey%, T60 ; wait for 60 seconds
+    KeyWait, %waitKey%, T60 ; wait for 60 seconds, then auto close
     ; Gui, Hide
     Gui, Help:Destroy
     ; ToolTip

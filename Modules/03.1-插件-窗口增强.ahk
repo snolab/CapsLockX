@@ -15,7 +15,9 @@ if (!CapsLockX){
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/03.1-插件-窗口增强.ahk" ))
+
+CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/03.1-插件-窗口增强.md" ))
+
 ; setup done
 ; flags
 global 上次CtrlShiftAlt时刻 := 0
