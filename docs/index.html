@@ -12,10 +12,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
     />
-    <link
-      rel="stylesheet"
-      href="//cdn.jsdelivr.net/npm/docsify/themes/buble.css"
-    />
+    <link rel="stylesheet" href="./buble.css" />
+    <!-- https://cdn.jsdelivr.net/npm/docsify/themes/buble.css -->
   </head>
   <body>
     <div id="app"></div>
@@ -27,7 +25,6 @@
     </script>
     <!-- Docsify v4 -->
     <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
-    <!-- [利用Google翻译实现网站国际化——js插件_wokuailewozihao的专栏-CSDN博客]( https://blog.csdn.net/wokuailewozihao/article/details/82021709 ) -->
     <!--把button放在右下角，这个是可以随意修改的，你可以改成一个链接一个图片之类的-->
     <div
       id="google_translate_element"
@@ -35,19 +32,50 @@
     ></div>
     <script>
       function googleTranslateElementInit() {
+        // ref: [利用Google翻译实现网站国际化——js插件_wokuailewozihao的专栏-CSDN博客]( https://blog.csdn.net/wokuailewozihao/article/details/82021709 )
         new google.translate.TranslateElement(
           {
-            pageLanguage: "zh-CN",
+            // pageLanguage: "zh-CN",
             // includedLanguages:
             //   "en,zh-CN,hr,cs,da,nl,fr,de,el,iw,hu,ga,it,ja,ko,pt,ro,ru,sr,es,th,vi",
             //选择语言的样式，这个是面板，还有下拉框的样式，具体的记不到了，找不到api~~
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            // layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            layout: google.translate.TranslateElement.FloatPosition.SIMPLE,
             //自动显示翻译横幅，就是翻译后顶部出现的那个，有点丑，这个属性没有用的话，请看文章底部的其他方法
             autoDisplay: true,
             //还有些其他参数，由于原插件不再维护，找不到详细api了，将就了，实在不行直接上dom操作
           },
           "google_translate_element" //触发按钮的id
         );
+        // auto translate if needed
+        let docLang = document.documentElement.lang;
+        let shortDocLang = docLang.split("-")[0];
+        let navLangs = navigator.languages.map((e) => e.toLowerCase());
+        let navLang = navigator.language.toLowerCase();
+        let shortNavLangs = navLangs.map((e) => e.split("-")[0]);
+        let shortNavLang = navLang.split("-")[0];
+
+        if (!shortNavLangs.includes(shortDocLang)) {
+          let autoTranslateIntervalID = setInterval(() => {
+            // ref: https://stackoverflow.com/questions/46966839/using-google-translate-code-to-auto-translate-webpage-onload
+            let select = document.querySelector(".goog-te-combo");
+            if (!select) return; // wait for element
+            let langOptions = [...select.options];
+            let langValues = langOptions.map((e) => e.value.toLowerCase());
+            let langValuesShort = langValues.map((e) => e.split("-")[0]);
+            let i = 1 + langValues.findIndex((e) => e === navLang);
+            i ||=
+              1 + langValuesShort.findIndex((e) => e === navLang.split("-")[0]);
+            if (i) {
+              select.selectedIndex = i - 1;
+              select.addEventListener("click", function () {
+                select.dispatchEvent(new Event("change"));
+              });
+              select.click();
+            }
+            clearInterval(autoTranslateIntervalID);
+          }, 200);
+        }
       }
     </script>
     <script src="//translate.google.cn/translate_a/element.js?cb=googleTranslateElementInit"></script>
