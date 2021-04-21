@@ -525,8 +525,9 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
 
 ### 相关话题
-   
+
 - [CapsLockX - 像黑客一样操作电脑 - V2EX]( https://v2ex.com/t/772052#reply1 )
+- [CapsLockX - 像黑客一样操作电脑！ - AutoHotkey Community]( https://www.autohotkey.com/boards/viewtopic.php?f=28&t=88593 )
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora]( https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI )
 - [如何将电脑桌面划分为独立的两半？ - 知乎]( https://www.zhihu.com/questionz/23443944/answer/1670521971 )
 - [有哪位残友用的是单手键盘？ - 知乎]( https://www.zhihu.com/question/50621709/answer/1681247637 )
