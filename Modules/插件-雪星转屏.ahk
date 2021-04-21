@@ -1,4 +1,12 @@
-﻿Return
+﻿; ========== CapsLockX ==========
+; 名称：雪星转屏
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 支持：https://github.com/snomiao/CapsLockX
+; 版本：v1.0.0
+; ========== CapsLockX ==========
+
+Return
 
 #If CapsLockXMode
 
