@@ -359,7 +359,6 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + F9  | 音量加                                      |
 | 全局   | CapsLockX + F10 | 音量减                                      |
 | 全局   | CapsLockX + F11 | 静音                                        |
-| 全局   | CapsLockX + F12 |                                             |
 
 <!-- 模块文件名：插件-定时任务.ahk-->
 
