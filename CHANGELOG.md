@@ -1,3 +1,12 @@
+## [1.16.6](https://github.com/snolab/CapsLockX/compare/v1.16.5...v1.16.6) (2021-04-22)
+
+
+### Bug Fixes
+
+* 清理旧代码、分离开发工具目录、修复第一次重载失效的问题、清理发布包中的开发文件 ([244d08a](https://github.com/snolab/CapsLockX/commit/244d08ac2fb71e7e306f52101bb96b7cff079a39))
+
+
+
 ## [1.16.5](https://github.com/snolab/CapsLockX/compare/v1.16.4...v1.16.5) (2021-04-21)
 
 
