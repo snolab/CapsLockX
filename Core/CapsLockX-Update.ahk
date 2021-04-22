@@ -78,7 +78,7 @@ CapsLockX_仓库版本号比对(remote, local){
 }
 CapsLockX_通过npm更新(){
     EnvGet, APPDATA, APPDATA
-    是NPM全局安装 := InStr(A_ScriptFullPath, APPDATA) == 1
+    是NPM全局安装 := InStr(A_ScriptFullPath, APPDATA) == 1 && InStr("node_modules", A_ScriptFullPath)
     if(!是NPM全局安装)
         return CapsLockX_Update_Fail
     CapsLockX_更新记录("当前版本由 npm i -g 安装，正在尝试通过 npm update -g capslockx 更新")
@@ -110,9 +110,9 @@ CapsLockX_通过gitpull更新(tryAgainFlag := 0){
 }
 CapsLockX_通过发布包_更新(版本文件地址, 包网址){
     CapsLockX_更新记录("正在获取新版本号...地址：" 版本文件地址)
-    UrlDownloadToFile, %版本文件地址%, Tools/new-version.txt
-    FileRead, version, Tools/version.txt
-    FileRead, remoteVersion, Tools/new-version.txt
+    UrlDownloadToFile, %版本文件地址%, Core/version-remote.txt
+    FileRead, version, Core/version.txt
+    FileRead, remoteVersion, Core/version-remote.txt
     if(!remoteVersion || !version)
         return CapsLockX_Update_Fail
     CapsLockX_更新记录("正在比对版本号...地址：" 版本文件地址)
@@ -130,9 +130,9 @@ CapsLockX_通过发布包_更新(版本文件地址, 包网址){
 }
 CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀){
     CapsLockX_更新记录("正在获取新版本号...地址：" 版本文件地址)
-    UrlDownloadToFile, %版本文件地址%, Tools/new-version.txt
-    FileRead, version, Tools/version.txt
-    FileRead, remoteVersion, Tools/new-version.txt
+    UrlDownloadToFile, %版本文件地址%, Core/version-remote.txt
+    FileRead, version, Core/version.txt
+    FileRead, remoteVersion, Core/version-remote.txt
     if(!remoteVersion || !version)
         return CapsLockX_Update_Fail
     CapsLockX_更新记录("正在比对版本号...地址：" 版本文件地址)
@@ -175,7 +175,8 @@ CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录
 
     ; 迁移用户配置
     FileCreateDir, %程序目录%/User/
-    FileCopy, ./User/*.*, %程序目录%/User/, 1
+    ; FileCopy, ./User/*.*, %程序目录%/User/, 1
+    FileCopyDir, ./User/, %程序目录%/User/, 1
     ; FileCopy, ./UserModules/*.user.ahk, %程序目录%/UserModules/, 1
     ; FileCopy, ./UserModules/*.user.md, %程序目录%/UserModules/, 1
     CapsLockX_更新提示("解压完成，将打开新版本文件夹，请把它手动复制到当前软件目录。")
@@ -244,19 +245,19 @@ CapsLockX_通过github发布包更新(){
 
 CapsLockX_通过github仓库包更新(){
     CapsLockX_更新记录("正在检查更新： github")
-    版本文件地址:="https://github.com/snomiao/CapsLockX/raw/master/Tools/version.txt"
+    版本文件地址:="https://github.com/snomiao/CapsLockX/raw/master/Core/version.txt"
     归档文件前缀:="https://github.com/snomiao/CapsLockX/archive"
     return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
 }
 ; CapsLockX_通过gitee仓库包更新(){
 ;     CapsLockX_更新记录("正在检查更新： gitee")
-;     版本文件地址:="https://gitee.com/snomiao/CapslockX/raw/master/Tools/version.txt"
+;     版本文件地址:="https://gitee.com/snomiao/CapslockX/raw/master/Core/version.txt"
 ;     归档文件前缀:="https://gitee.com/snomiao/CapslockX/repository/archive"
 ;     return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
 ; }
 ; CapsLockX_通过gitlab仓库包更新(){
 ;     CapsLockX_更新记录("正在检查更新： gitlab")
-;     版本文件地址:="https://gitlab.com/snomiao/CapsLockX/-/raw/master/Tools/version.txt"
+;     版本文件地址:="https://gitlab.com/snomiao/CapsLockX/-/raw/master/Core/version.txt"
 ;     归档文件前缀:="https://gitlab.com/snomiao/CapsLockX/-/archive/master/CapsLockX-master.zip"
 ;     return CapsLockX_通过git仓库包_更新(版本文件地址, 归档文件前缀)
 ; }

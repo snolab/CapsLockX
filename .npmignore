@@ -11,12 +11,10 @@ node_modules
 *.zip
 *.sha256
 *.bak
-CapslockX-LoadModules.ahk
-CapsLockX-LoadModules.ahk
 CapsLockX-ModulesRunner.ahk
 CapsLockX-ModulesLoader.ahk
 *.!sync
-Tools/new-version*.txt
+*version*.txt
 
 # user
 /*.ini
@@ -29,6 +27,6 @@ Tools/new-version*.txt
 Test
 
 # bug fix
-Tools/choco
+DevTools
 commitlint.config.js
 *.bat

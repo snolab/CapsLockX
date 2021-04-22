@@ -21,10 +21,10 @@ jobs:
       - run: |
           zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md "启动 CapsLockX.lnk"
           checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
-          cp -force LICENSE           tools/choco/tools/LICENSE.txt
-          mv -force CapsLockX.zip     tools/choco/tools/
-          mv -force CapsLockX.sha256  tools/choco/tools/
-          choco pack Tools/choco/CapsLockX.nuspec
+          cp -force LICENSE           ./DevTools/choco/tools/LICENSE.txt
+          mv -force CapsLockX.zip     ./DevTools/choco/tools/
+          mv -force CapsLockX.sha256  ./DevTools/choco/tools/
+          choco pack ./DevTools/choco/CapsLockX.nuspec
       # 测试
       - run: |
           cinst CapsLockX -s .

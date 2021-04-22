@@ -20,7 +20,7 @@ global CapsLockX_模块路径 := "./Modules"
 global CapsLockX_核心路径 := "./Core"
 ; 版本
 global CapsLockX_Version
-FileRead, CapsLockX_Version, ./Tools/version.txt
+FileRead, CapsLockX_Version, ./Core/version.txt
 if(!CapsLockX_Version)
     CapsLockX_Version := "未知版本"
 global CapsLockX_VersionName := "v" CapsLockX_Version

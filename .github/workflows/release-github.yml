@@ -36,7 +36,7 @@ jobs:
         uses: thedoctor0/zip-release@master
         with:
           filename: CapsLockX-${{ env.RELEASE_VERSION }}.zip
-          exclusions: "*.git* /*node_modules/*"
+          exclusions: "*.git* package*.json CNAME *.config.js *.npmignore /*node_modules/* DevTools"
       # 扔附件
       - uses: svenstaro/upload-release-action@v2
         with:
@@ -50,7 +50,7 @@ jobs:
       - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
       - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
       - run: cp CHANGELOG.md docs/CHANGELOG.md
-      - run: cp Tools/version.txt docs/version.txt
+      - run: cp Core/version.txt docs/version.txt
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
