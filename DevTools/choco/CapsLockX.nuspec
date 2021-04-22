@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.16.5</version>
+    <version>1.16.6</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -24,11 +24,13 @@
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
+<!-- clicks / downloads -->
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
+[![Downloads-From-GitHub-Releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=Downloads-From-GitHub-Releases)](https://github.com/snolab/CapsLockX/releases)
+<!-- building status -->
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
-[![Downloads-From-GitHub-Releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=Downloads-From-GitHub-Releases)](https://github.com/snolab/CapsLockX/releases)
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
@@ -46,24 +48,24 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 源码打包就是软件本体，无需编译，纯绿色便携软件解压即用。源码 + 程序包，推荐第一个（最快）。
 
-- [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
-- [备选下载 CloudFlareCDN-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
-- [备选下载 GitHub-发布程序包.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
-- [备选下载 GitHub-仓库程序包.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
-- [备选下载 BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
-- [备选下载 中国大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
+1. [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+1. [备选下载 CloudFlareCDN-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
+1. [备选下载 GitHub-发布程序包.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
+1. [备选下载 GitHub-仓库程序包.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
+1. [备选下载 BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
+1. [备选下载 中国大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
 #### 命令行方式安装（进阶用户推荐，可自动更新）
 
-以下几种任选其一，推荐第一个（最快）
+以下几种任选其一，中国大陆用户推荐第一个（最快），其它地区用户推荐第2个
 
-- `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-- `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
-- `npm i -g capslockx && capslockx`
-- `npx capslockx`
-- `choco install capslockx && capslockx` （注：2021-04-21 chocolatey的程序包还在审核中）
+1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
+2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
+3. `npm i -g capslockx && npx capslockx`
+4. `npx capslockx`
+5. `choco install capslockx --version=1.14.30 && capslockx` （注：2021-04-21 chocolatey的程序包还在审核中）
 
 ## 使用手册
 
@@ -72,9 +74,9 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 - 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
 
 CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下方列出。
-对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的 `.ahk` 文件，然后按 `Ctrl + Alt + \` 重新加载即可。
+对于不需要的模块，你也可以直接删除 `./docs/Modules` 目录下对应的 `.ahk` 文件，然后按 `Ctrl + Alt + \` 重新加载即可。
 
-你也可以编写自己的 `my-ahk.user.ahk` 然后放到 `./User/` 目录下，CapsLockX 会自动识别并加载它们。
+你也可以编写自己的 `my-ahk.user.ahk` 然后放到 `./docs/User/` 目录下，CapsLockX 会自动识别并加载它们。
 
 <!-- 下面这堆东西是自动从各个模块里抽取的，如需改动请到对应模块.md 里操作, 在这里修改会被覆盖 -->
 <!-- 开始：抽取模块帮助 -->
@@ -93,14 +95,21 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 作用于 | 按键                  | 功能                            |
 | ------ | --------------------- | ------------------------------- |
 | 全局   | CapsLockX + /         | 临时显示热键提示                |
-| 全局   | CapsLockX（长按）     | 临时显示热键提示                |
-| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等              |
-
-<!-- 模块文件名：01.1-插件-鼠标模拟.ahk-->
-]]></description>
+| 全局   | CapsLockX（长按）     | 临时显示热键提示                |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.16.4](https://github.com/snolab/CapsLockX/compare/v1.16.3...v1.16.4) (2021-04-18)
+    <releaseNotes><![CDATA[## [1.16.5](https://github.com/snolab/CapsLockX/compare/v1.16.4...v1.16.5) (2021-04-21)
+
+
+### Bug Fixes
+
+* i18n ([127be0f](https://github.com/snolab/CapsLockX/commit/127be0fc1128ec8d2348241a5be6c684382a47a8))
+* 把远程桌面增强合并到窗口增强模块 ([d92df0a](https://github.com/snolab/CapsLockX/commit/d92df0a3801cf9166f274a3ac97875a8d99822dc))
+* 提供EvalJS端口配置选项 ([cdacfbb](https://github.com/snolab/CapsLockX/commit/cdacfbbe0b6dc3007ae41ab911f8ab2b1c6a0ff9))
+* 改进帮助界面 ([6ac26e7](https://github.com/snolab/CapsLockX/commit/6ac26e7a623953c2aba37243a9575372600fd249))
+
+
+
+## [1.16.4](https://github.com/snolab/CapsLockX/compare/v1.16.3...v1.16.4) (2021-04-18)
 
 
 ### Bug Fixes
@@ -174,19 +183,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 
 ## <small>1.15.1 (2021-04-16)</small>
-
-* chore:versioning ([ebbca34](https://github.com/snomiao/CapsLockX/commit/ebbca34))
-* doc ([cd5d633](https://github.com/snomiao/CapsLockX/commit/cd5d633))
-* fix: 空格键长按还原输出空格功能 ([91cef7f](https://github.com/snomiao/CapsLockX/commit/91cef7f))
-
-
-
-## 1.15.0 (2021-04-16)
-
-* chore:versioning ([bfe606f](https://github.com/snomiao/CapsLockX/commit/bfe606f))
-* doc ([e4092c2](https://github.com/snomiao/CapsLockX/commit/e4092c2))
-* doc ([662180b](https://github.com/snomiao/CapsLockX/commit/662180b))
-* doc ([2d6cca9](https://github.com/snomiao/CapsLockX/commit/2d6cca9))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
