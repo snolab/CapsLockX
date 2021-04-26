@@ -1,3 +1,18 @@
+# [1.17.0](https://github.com/snolab/CapsLockX/compare/v1.16.6...v1.17.0) (2021-04-26)
+
+
+### Bug Fixes
+
+* 尝试重置滚动不停问题 ([5b69426](https://github.com/snolab/CapsLockX/commit/5b6942663cbf70379638b74f4db194945396e630))
+* 清除不必要的keywait ([b9b8975](https://github.com/snolab/CapsLockX/commit/b9b89753424e29f012f178deb8d7ec5bf42d4984))
+
+
+### Features
+
+* 在托盘图标或任务栏任务上，选择退出按钮 ([4e4da34](https://github.com/snolab/CapsLockX/commit/4e4da34da7996880d82a5258c06fb5eda8eb5e17))
+
+
+
 ## [1.16.6](https://github.com/snolab/CapsLockX/compare/v1.16.5...v1.16.6) (2021-04-22)
 
 
