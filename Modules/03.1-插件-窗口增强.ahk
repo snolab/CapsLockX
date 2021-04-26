@@ -604,3 +604,24 @@ return
 CapsLockX_RemoveToolTip(){
     ToolTip
 }
+
+#if WinActive("ahk_class Shell_TrayWnd ahk_exe explorer.exe")
+
+^w::
+Delete::
+    SendEvent {AppsKey}
+    WinWaitNotActive ahk_class Shell_TrayWnd ahk_exe explorer.exe, ,3
+    if(ErrorLevel)
+        Return
+    SendEvent {Up}
+Return
+
+#if
+
+#+b::
+    SendEvent #b
+    WinWaitActive ahk_class Shell_TrayWnd ahk_exe explorer.exe, ,3
+    if(ErrorLevel)
+        Return
+    SendEvent +{Tab}
+Return
