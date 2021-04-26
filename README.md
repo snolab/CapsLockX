@@ -1,6 +1,6 @@
-# CapsLockX - 像**黑客**一样操作电脑
+# CapsLockX - 像**黑客**一样操作电脑💻
 
-CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
+CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX) 
 
 <!-- clicks / downloads -->
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
@@ -12,17 +12,17 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
-## 入门教程第一
+## 入门教程📖
 
-### 太长不看 / TL;DR
+### 太长不看 / TL;DR 📄
 
-下载这个包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后，按住 CapsLockX，然后按 WASD 鼠标移动，QE 点击 RF 滚轮，HJKL 光标移动，YOUI 页面移动，ZXCV 窗口管理，1234567890 切换虚拟桌面，M 打开配置。
+解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后，按住 CapsLockX，然后按 `WASD` 鼠标移动，`QE` 点击 `RF` 滚轮，`HJKL` 光标移动，`YOUI` 页面移动，`ZXCV` 窗口管理，`1234567890` 切换虚拟桌面，`M` 打开配置。
 
-### 安装与使用
+### 安装与使用 🛠
 
-#### 绿色便携程序包（新手适用，稳定版）
+#### 绿色便携程序包（新手适用，稳定版） 📦
 
 源码打包就是软件本体，无需编译，纯绿色便携软件解压即用。源码 + 程序包，推荐第一个（最快）。
 
@@ -35,7 +35,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
 
-#### 命令行方式安装（进阶用户推荐，可自动更新）
+#### 命令行方式安装（进阶用户推荐，可自动更新）🖥️
 
 以下几种任选其一，中国大陆用户推荐第一个（最快），其它地区用户推荐第2个
 
@@ -45,7 +45,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 4. `npx capslockx`
 5. `choco install capslockx --version=1.14.30 && capslockx` （注：2021-04-21 chocolatey的程序包还在审核中）
 
-## 使用手册
+## 使用手册📖
 
 <!-- * 按 `CapsLock` 切换 CapsLockX 模式 -->
 
@@ -154,6 +154,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | Alt+Tab 界面 | W A S D                             | 上下左右切换窗口选择                       |
 | Alt+Tab 界面 | X C                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
 | Win+Tab 视图 | Alt + W A S D                       | 切换窗口选择                               |
+| 全局         | Win + [Shift]+ b                    | 定位到托盘或任务栏任务                     |
+| 任务栏       | Ctrl + W 或 Delete                  | 在托盘图标或任务栏任务上，选择退出按钮     |
 | 全局         | CapsLockX + 1 2 ... 9 0             | 切换到第 1 .. 12 个桌面                    |
 | 全局         | CapsLockX + Shift + 1 2 ... 9 0 - = | 把当前窗口移到第 n 个桌面(如果有的话)      |
 | 全局         | CapsLockX + Alt + Backspace         | 删除当前桌面（会把所有窗口移到上一个桌面） |
@@ -395,16 +397,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局 | CapsLockX + Alt + 方向键 上 下 左 右 | 同时旋转所有屏幕到你指定的方向 |
 <!-- 结束：抽取模块帮助 -->
 
-## 过去与未来
+## 过去与未来 🛰
 
-### 制作背景 ( 2017 年秋)
+### 制作背景 ( 2017 年秋) 🍁
 
 > 本人比较经常写代码…
 > 起初我习惯右手用鼠标……后来觉得鼠标放右边有点远……改成了左手用鼠标
 > 左手用鼠标之后发现手还是要离开键盘……于是做了个 WASD 模拟鼠标的脚本。（然后就能一直用右手托着下巴玩电脑了）
 > 后来写的脚本越来越多，就把其中一些常用的放到一起加载……
 
-### 发展路线
+### 发展路线 🛰️
 
 本项目的核心理念是：简化系统操作逻辑，提升操作效率，且尽量不与原有习惯键位冲突。
 
@@ -456,7 +458,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 | 系统             | Win                                              | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
 | 支持语言         | 中文                                             | 中文 / English                                      | 中文                                                | 中文 / English                                  |
 
-#### 本项目地址
+#### 本项目地址 🔗
 
 以下几个仓库同步更新：
 
@@ -465,14 +467,13 @@ Ctrl + Alt + 同上，但一般为全局热键
 - Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
 - Gitlab: [https://gitlab.com/snomiao/CapsLockX/](https://gitlab.com/snomiao/CapsLockX/)
 
-文档地址：
+文档地址📄
 
-- 中文文档 Netlify CDN：[https://capslockx.netlify.com](https://capslockx.netlify.com)
-- 中文文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
-- 中文文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
-- 中文文档 Github Pages：[http://snolab.github.io/CapsLockX](http://snolab.github.io/CapsLockX)
+- 自动翻译文档 Netlify CDN：[https://capslockx.netlify.com](https://capslockx.netlify.com)
+- 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
+- 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 
-#### 相似项目地址
+#### 相似项目地址 🔗
 
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
   设计：[Capslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
@@ -481,46 +482,46 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [Capslox](https://capslox.com/cn/)
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.](https://github.com/matrix1001/CapsLock-plus-plus)
 
-#### 其它效率软件推荐
+#### 其它效率软件推荐 🔗
 
-- [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。<!-- （雪星的推荐码： 55396-2857） -->
+- [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。（如果需要的话，你可以用雪星的推荐码： 55396-2857）
 - [Everything](https://www.voidtools.com/zh-cn/)
 
-## 答疑相关
+## 答疑相关 ❓
 
 本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
 
 相关社群：
 
-- [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues)
-- CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)
-- CapsLockX 用户 QQ 群：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
-- QZ/VimD/TC/AHK QQ 群： 271105729
-- AHK 高级 QQ 群： 717947647
+- [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues) ✉️
+- CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)📱
+- CapsLockX 用户 QQ 群🐧：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
+- QZ/VimD/TC/AHK QQ 群🐧： 271105729
+- AHK 高级 QQ 群🐧： 717947647
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
-## 支持
+## 支持 ⭐️
 
 如何帮助本项目生存下去？如果本项目有帮助到你：
 
-1. 欢迎在 Github 上点星
+1. 欢迎在 Github 上点星 ⭐️
 2. 欢迎把我转发分享给你身边的朋友们。
-3. 欢迎帮我翻译 readme.md 到各国语言。
-4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues)
+3. 欢迎帮我翻译 readme.md 到各国语言。 🌐
+4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues) 🐞
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
-6. 欢迎在此捐助本项目的开发，每一笔捐赠都会记录到下方的列表中：
-   - 爱发电：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
+6. 欢迎在此捐助本项目的开发，每一笔捐赠都会记录到下方的列表中：💰
+   - 爱发电⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
 
-你的支持会实际地，帮助到本项目的未来开发工作，开发计划见此：[发展路线](#发展路线)
+[发展路线](#发展路线)
 
-### 捐赠记录
+### 捐赠记录 📄
 
 暂无
 
-### 鸣谢
+### 鸣谢 🙏🏻
 
 - 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
