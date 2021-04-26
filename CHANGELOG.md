@@ -1,3 +1,13 @@
+## [1.17.1](https://github.com/snolab/CapsLockX/compare/v1.17.0...v1.17.1) (2021-04-26)
+
+
+### Bug Fixes
+
+* let lmb & rmb keywait forever ([655b695](https://github.com/snolab/CapsLockX/commit/655b695df9873ff4d2feed28c301d978764f0797))
+* 尝试修复滚轮不停问题 ([2b066ed](https://github.com/snolab/CapsLockX/commit/2b066edaffb827eaa4e4d56d08c1934a2e0f6427))
+
+
+
 # [1.17.0](https://github.com/snolab/CapsLockX/compare/v1.16.6...v1.17.0) (2021-04-26)
 
 

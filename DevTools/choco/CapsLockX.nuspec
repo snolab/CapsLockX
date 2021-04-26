@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.17.0</version>
+    <version>1.17.1</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -97,7 +97,22 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + /         | 临时显示热键提示                |
 | 全局   | CapsLockX（长按）     | 临时显示热键提示                |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.16.6](https://github.com/snolab/CapsLockX/compare/v1.16.5...v1.16.6) (2021-04-22)
+    <releaseNotes><![CDATA[# [1.17.0](https://github.com/snolab/CapsLockX/compare/v1.16.6...v1.17.0) (2021-04-26)
+
+
+### Bug Fixes
+
+* 尝试重置滚动不停问题 ([5b69426](https://github.com/snolab/CapsLockX/commit/5b6942663cbf70379638b74f4db194945396e630))
+* 清除不必要的keywait ([b9b8975](https://github.com/snolab/CapsLockX/commit/b9b89753424e29f012f178deb8d7ec5bf42d4984))
+
+
+### Features
+
+* 在托盘图标或任务栏任务上，选择退出按钮 ([4e4da34](https://github.com/snolab/CapsLockX/commit/4e4da34da7996880d82a5258c06fb5eda8eb5e17))
+
+
+
+## [1.16.6](https://github.com/snolab/CapsLockX/compare/v1.16.5...v1.16.6) (2021-04-22)
 
 
 ### Bug Fixes
@@ -181,12 +196,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 
 ## <small>1.15.2 (2021-04-16)</small>
-
-* chore:versioning ([91d2697](https://github.com/snomiao/CapsLockX/commit/91d2697))
-* chore: build patch ([6bf7b68](https://github.com/snomiao/CapsLockX/commit/6bf7b68))
-* chore: modified start and build ([d07c75b](https://github.com/snomiao/CapsLockX/commit/d07c75b))
-* chore: remove cleanup ([f0f4dbe](https://github.com/snomiao/CapsLockX/commit/f0f4dbe))
-* doc: 定时任务 ([00c2ea5](https://github.com/snomiao/CapsLockX/commit/00c2ea5))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
