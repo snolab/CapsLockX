@@ -9,7 +9,7 @@
 ; ========== CapsLockX ==========
 
 ; 防多开
-#SingleInstance, force
+#SingleInstance, ignore
 
 ; 载入设定、检查配置文件
 global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
