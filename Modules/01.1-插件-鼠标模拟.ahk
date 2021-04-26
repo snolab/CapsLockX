@@ -368,11 +368,13 @@ $*f Up:: 轮刻下 := 0, 轮动始()
 
 CapsLockX_左键按下(){
     SendEvent {Blind}{LButton Down}
-    KeyWait, e, T60 ; wait for 60 seconds
+    ; KeyWait, e, T60 ; wait for 60 seconds
+    KeyWait, e, ; wait forever
 }
 CapsLockX_右键按下(){
     SendEvent {Blind}{RButton Down}
-    KeyWait, q, T60 ; wait for 60 seconds
+    ; KeyWait, q, T60 ; wait for 60 seconds
+    KeyWait, q, ; wait forever
 }
 
 鼠标模拟_ToolTip(tips){
