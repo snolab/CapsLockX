@@ -65,7 +65,9 @@ Return
 模块帮助向README编译(){
     ; 编译README.md
     INPUT_README_FILE := "./docs/README.md"
+    FileEncoding, UTF-8-Raw
     FileRead, source, %INPUT_README_FILE%
+
     ; 编译一次
     target := 模块和帮助README更新(source)
     if (target == source)
@@ -111,7 +113,7 @@ Return
     FileAppend %ModuleCode%, %path%, UTF-16
 }
 模块和帮助README更新(sourceREADME, docs=""){
-    FileEncoding UTF-8
+    FileEncoding UTF-8-Raw
     ; 列出模块文件
     ModuleFiles := ""
     loop, Files, %CapsLockX_模块路径%\*.ahk ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
@@ -199,6 +201,7 @@ Return
     模块运行器 .= 常量语句 "`n" 模块初始化代码
     模块加载器 .= "Return" "`n" 模块导入代码
 
+    FileEncoding UTF-8
     FileDelete %CapsLockX_ModulesRunner%
     FileAppend %模块运行器%, %CapsLockX_ModulesRunner%
     FileDelete %CapsLockX_ModulesLoader%
