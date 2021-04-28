@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.17.1</version>
+    <version>1.17.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -97,7 +97,17 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + /         | 临时显示热键提示                |
 | 全局   | CapsLockX（长按）     | 临时显示热键提示                |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[# [1.17.0](https://github.com/snolab/CapsLockX/compare/v1.16.6...v1.17.0) (2021-04-26)
+    <releaseNotes><![CDATA[## [1.17.1](https://github.com/snolab/CapsLockX/compare/v1.17.0...v1.17.1) (2021-04-26)
+
+
+### Bug Fixes
+
+* let lmb & rmb keywait forever ([655b695](https://github.com/snolab/CapsLockX/commit/655b695df9873ff4d2feed28c301d978764f0797))
+* 尝试修复滚轮不停问题 ([2b066ed](https://github.com/snolab/CapsLockX/commit/2b066edaffb827eaa4e4d56d08c1934a2e0f6427))
+
+
+
+# [1.17.0](https://github.com/snolab/CapsLockX/compare/v1.16.6...v1.17.0) (2021-04-26)
 
 
 ### Bug Fixes
@@ -183,19 +193,6 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 
 ### Features
-
-* 优化提权询问流程、增加配置保存自动重载功能 ([25c3c63](https://github.com/snomiao/CapsLockX/commit/25c3c635761fa74d256f52ed14fa81359202cdeb))
-
-
-
-## <small>1.15.3 (2021-04-16)</small>
-
-* chore:versioning ([af261ab](https://github.com/snomiao/CapsLockX/commit/af261ab))
-* fix: 配置文件编码清洗优化 ([71c79d1](https://github.com/snomiao/CapsLockX/commit/71c79d1))
-
-
-
-## <small>1.15.2 (2021-04-16)</small>
 ]]></releaseNotes>
     
     <dependencies></dependencies>
