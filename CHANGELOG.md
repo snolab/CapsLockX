@@ -1,3 +1,13 @@
+## [1.17.2](https://github.com/snolab/CapsLockX/compare/v1.17.1...v1.17.2) (2021-04-28)
+
+
+### Bug Fixes
+
+* ignore update conflit ([504c6be](https://github.com/snolab/CapsLockX/commit/504c6be02d8b1cee9b804f4b3b4d8ea1735acfd8))
+* 修复帮助文件加载时编码报错问题 ([e1f00c7](https://github.com/snolab/CapsLockX/commit/e1f00c751b75d91ba40162e4a1058038ac74c0bd))
+
+
+
 ## [1.17.1](https://github.com/snolab/CapsLockX/compare/v1.17.0...v1.17.1) (2021-04-26)
 
 
