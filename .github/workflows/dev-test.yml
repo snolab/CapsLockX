@@ -1,0 +1,10 @@
+on:
+  push:
+    
+name: Packages Test
+  chocolatey-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: my-branch
