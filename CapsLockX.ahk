@@ -99,8 +99,8 @@ Return
     loadingTips .= msg "`n"
 }
 加载提示显示(){
-    ; ToolTip % loadingTips
-    ; sleep 2000
+    ToolTip % loadingTips
+    sleep 2000
 }
 清洗为_UTF8_WITH_BOM_型编码(path){
     FileRead ModuleCode, %path%

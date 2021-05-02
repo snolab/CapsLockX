@@ -14,7 +14,7 @@ node_modules
 CapsLockX-ModulesRunner.ahk
 CapsLockX-ModulesLoader.ahk
 *.!sync
-*version*.txt
+version-*.txt
 
 # user
 /*.ini

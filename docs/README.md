@@ -154,7 +154,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | Alt+Tab 界面 | W A S D                             | 上下左右切换窗口选择                       |
 | Alt+Tab 界面 | X C                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
 | Win+Tab 视图 | Alt + W A S D                       | 切换窗口选择                               |
-| 全局         | Win + [Shift]+ b                    | 定位到托盘或任务栏任务                     |
+| 全局         | Win + [Shift] + b                   | 定位到托盘或任务栏任务                     |
+| 全局         | Win + Shift + hjkl                  | 在窗口之间按方向切换焦点                   |
 | 任务栏       | Ctrl + W 或 Delete                  | 在托盘图标或任务栏任务上，选择退出按钮     |
 | 全局         | CapsLockX + 1 2 ... 9 0             | 切换到第 1 .. 12 个桌面                    |
 | 全局         | CapsLockX + Shift + 1 2 ... 9 0 - = | 把当前窗口移到第 n 个桌面(如果有的话)      |
