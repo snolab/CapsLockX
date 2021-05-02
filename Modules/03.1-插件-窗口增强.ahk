@@ -34,8 +34,14 @@ Return
 
 #if False && "FUNCTIION DEFINES"
 
+AltTabWindowGet(){
+    return WinActive("ahk_class MultitaskingViewFrame") 
+}
+WinTabWindowGet(){
+    return WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+}
 MultitaskingViewFrameQ(){
-    Return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+    Return AltTabWindowGet() || WinTabWindowGet()
 }
 ; this is improved method for stable
 GetMonitorIndexFromWindowByWindowsCenterPoint(hWnd){
@@ -512,21 +518,91 @@ Return
     WinKill ahk_id %hWnd%
 Return
 
-; Alt+Tab或 Win+Tab
+; Alt+Tab 或 Win+Tab
 #if MultitaskingViewFrameQ()
 
-!1:: SwitchToDesktop(1)
-!2:: SwitchToDesktop(2)
-!3:: SwitchToDesktop(3)
-!4:: SwitchToDesktop(4)
-!5:: SwitchToDesktop(5)
-!6:: SwitchToDesktop(6)
-!7:: SwitchToDesktop(7)
-!8:: SwitchToDesktop(8)
-!9:: SwitchToDesktop(9)
-!0:: SwitchToDesktop(10)
-!-:: SwitchToDesktop(11)
-!=:: SwitchToDesktop(12)
+; !1:: SwitchToDesktop(1)
+; !2:: SwitchToDesktop(2)
+; !3:: SwitchToDesktop(3)
+; !4:: SwitchToDesktop(4)
+; !5:: SwitchToDesktop(5)
+; !6:: SwitchToDesktop(6)
+; !7:: SwitchToDesktop(7)
+; !8:: SwitchToDesktop(8)
+; !9:: SwitchToDesktop(9)
+; !0:: SwitchToDesktop(10)
+
+; Move the current window to the X-th desktop
+!1::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(1)
+    SendEvent !{Tab}
+return
+!2::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(2)
+    SendEvent !{Tab}
+return
+!3::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(3)
+    SendEvent !{Tab}
+return
+!4::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(4)
+    SendEvent !{Tab}
+return
+!5::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(5)
+    SendEvent !{Tab}
+return
+!6::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(6)
+    SendEvent !{Tab}
+return
+!7::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(7)
+    SendEvent !{Tab}
+return
+!8::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(8)
+    SendEvent !{Tab}
+return
+!9::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(9)
+    SendEvent !{Tab}
+return
+!0::
+    SendEvent {Space}
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    MoveActiveWindowToDesktop(10)
+    SendEvent !{Tab}
+return
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
 !a:: Left
@@ -538,35 +614,9 @@ Return
 !c:: SendEvent {Blind}{Delete}{Right}
 !x:: SendEvent {Blind}{Delete}{Right}
 
-; 新建桌面
-!z::
-    SendEvent {Blind}{Esc}
-    ; Sleep 200
-    Send ^#d
-Return
-
-; 新建桌面并移动窗口
-!v::
-    SendEvent {Blind}{Esc}
-    ; Sleep 200
-    MoveActiveWindowWithAction("^#d")
-Return
-
-; 模拟 Tab 键切换焦点
-; !\:: Send {Tab}
-; 在 Win10 下的 Win+Tab 界面，WASD 切换窗口焦点
-; 以及在窗口贴边后，WASD 切换窗口焦点
-
 ; 切换桌面概览
 !q:: Send ^#{Left}
 !e:: Send ^#{Right}
-![:: Send ^#{Left}
-!]:: Send ^#{Right}
-
-; 增删桌面
-=:: Send ^#d
--:: Send ^#{F4}
-z:: Send ^#{F4}
 
 #if
 
