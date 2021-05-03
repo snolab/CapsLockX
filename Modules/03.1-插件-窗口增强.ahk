@@ -608,7 +608,8 @@ Return
 ; Alt+Tab
 ; #if AltTabWindowGet()
 
-#if 
+; 使普通的按方向窗口切换的热键与CapsLockXMode互不干扰
+#if !CapsLockXMode
 
 #+h::
     WinWaitNotActive ahk_class MultitaskingViewFrame
