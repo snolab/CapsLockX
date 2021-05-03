@@ -1,3 +1,19 @@
+# [1.18.0](https://github.com/snolab/CapsLockX/compare/v1.17.2...v1.18.0) (2021-05-03)
+
+
+### Bug Fixes
+
+* AltTab时，按数字键让窗口在虚拟桌面间转移 ([27e3b2e](https://github.com/snolab/CapsLockX/commit/27e3b2eb06081d26c1f1f46e0327c5ad101de8cd))
+* 使普通的按方向窗口切换的热键与CapsLockXMode互不干扰 ([a2d6d7e](https://github.com/snolab/CapsLockX/commit/a2d6d7e0c21a85392796572cba7174b1d51bc792))
+* 删除转屏模块 ([e4793e7](https://github.com/snolab/CapsLockX/commit/e4793e77ebf3f316e1736c1c3a36cd71d214347e))
+
+
+### Features
+
+* Win + Shift + hjkl                  | 在窗口之间按方向切换焦点                   | ([4d7d6c0](https://github.com/snolab/CapsLockX/commit/4d7d6c067608322898a384fb7b7a87741f049bfb))
+
+
+
 ## [1.17.2](https://github.com/snolab/CapsLockX/compare/v1.17.1...v1.17.2) (2021-04-28)
 
 
