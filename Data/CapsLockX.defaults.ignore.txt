@@ -5,6 +5,7 @@ ahk_exe anydesk.exe
 ahk_exe vmconnect.exe
 ahk_exe teamviewer.exe
 ahk_exe virtualbox.exe
+ahk_exe synergyd.exe
 
 # 各种游戏
 ahk_exe yuanshen.exe

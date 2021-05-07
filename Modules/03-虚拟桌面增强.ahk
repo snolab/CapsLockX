@@ -206,15 +206,21 @@ MoveAllVisibleWindowToDesktop(idx){
     WinGet, id, List, , ,
     DetectHiddenWindows, Off
     loop %id% {
+        ; 跳过不在当前虚拟桌面的窗口
+        if (!IsWindowOnCurrentVirtualDesktop(hWnd)){
+            id%A_Index% := ""
+            continue
+        }
         hWnd := id%A_Index%
         ; WinHide ahk_id %hWnd%
         DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_HIDE := 0x0) )
     }
-    Sleep 128
     SwitchToDesktop(idx)
+    Sleep 128
     loop %id% {
         hWnd := id%A_Index%
-        DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
+        if(hWnd)
+            DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
     }
 }
 SwitchToDesktop(idx){
