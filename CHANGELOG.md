@@ -1,3 +1,12 @@
+## [1.18.2](https://github.com/snolab/CapsLockX/compare/v1.18.1...v1.18.2) (2021-05-07)
+
+
+### Bug Fixes
+
+* 修复 ignores 文件并加入synergyd.exe ([a1c4676](https://github.com/snolab/CapsLockX/commit/a1c46763ac7f98e30d362d99a347785fef2176cc))
+
+
+
 ## [1.18.1](https://github.com/snolab/CapsLockX/compare/v1.18.0...v1.18.1) (2021-05-04)
 
 

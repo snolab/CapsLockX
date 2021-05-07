@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.18.1</version>
+    <version>1.18.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -97,7 +97,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + /         | 临时显示热键提示                |
 | 全局   | CapsLockX（长按）     | 临时显示热键提示                |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[# [1.18.0](https://github.com/snolab/CapsLockX/compare/v1.17.2...v1.18.0) (2021-05-03)
+    <releaseNotes><![CDATA[## [1.18.1](https://github.com/snolab/CapsLockX/compare/v1.18.0...v1.18.1) (2021-05-04)
+
+
+
+# [1.18.0](https://github.com/snolab/CapsLockX/compare/v1.17.2...v1.18.0) (2021-05-03)
 
 
 ### Bug Fixes
@@ -185,11 +189,6 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 * 重载权限优化 ([40107c1](https://github.com/snolab/CapsLockX/commit/40107c1b592bab4a0ce77277ca30620d8a4035ea))
 
 
-
-## [1.16.3](https://github.com/snomiao/CapsLockX/compare/v1.16.2...v1.16.3) (2021-04-17)
-
-
-### Bug Fixes
 ]]></releaseNotes>
     
     <dependencies></dependencies>
