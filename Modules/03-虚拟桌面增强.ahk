@@ -202,25 +202,25 @@ MoveActiveWindowToDesktop(idx){
     WinActivate ahk_id %activeWin%
 }
 MoveAllVisibleWindowToDesktop(idx){
-    hwndArray := []
-    WinGet, id, List, , ,
-    DetectHiddenWindows, Off
-    loop %id% {
-        ; 跳过不在当前虚拟桌面的窗口
-        if (!IsWindowOnCurrentVirtualDesktop(hWnd)){
-            id%A_Index% := ""
+    listOfWindow := WindowsListOfMonitorFast(arrangeFlags | ARRANGE_MAXWINDOW | ARRANGE_MINWINDOW)
+
+    loop Parse, listOfWindow, `n
+    {
+        hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+        if(!hWnd)
             continue
-        }
-        hWnd := id%A_Index%
         ; WinHide ahk_id %hWnd%
         DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_HIDE := 0x0) )
     }
     SwitchToDesktop(idx)
     Sleep 128
-    loop %id% {
-        hWnd := id%A_Index%
-        if(hWnd)
-            DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
+    loop Parse, listOfWindow, `n
+    {
+        hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+        if(!hWnd)
+            continue
+
+        DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
     }
 }
 SwitchToDesktop(idx){

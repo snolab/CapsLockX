@@ -780,12 +780,9 @@ Delete::
     SendEvent {Up}
 Return
 
-#if
+#if CapsLockXMode
 
-#+b::
-    SendEvent #b
-    WinWaitActive ahk_class Shell_TrayWnd ahk_exe explorer.exe, ,3
-    if(ErrorLevel)
-        Return
-    SendEvent +{Tab}
+b::
+    WinActivate, ahk_class Shell_TrayWnd ahk_exe explorer.exe
+    ControlFocus, MSTaskListWClass1, ahk_class Shell_TrayWnd ahk_exe explorer.exe
 Return

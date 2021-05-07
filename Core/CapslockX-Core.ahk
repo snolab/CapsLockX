@@ -266,9 +266,9 @@ RunAsLimitiedUser(CMD, WorkingDir){
     ; Safe_CMD := RegExReplace(RegExReplace("notepad "".\temp.txt""", "\\", "\\"), "\""", "\""")
     Safe_WorkingDir := RegExReplace(WorkingDir, "\\", "\\")
     Safe_CMD := RegExReplace(RegExReplace(CMD, "\\", "\\"), "\""", "\""")
-    RunWait cmd /c schtasks /Create /tn CapsLockX_RunAsLimitedUser /sc ONCE /ST 00:00 /tr "cmd /c cd \"%Safe_WorkingDir% && %Safe_CMD%\" /F,, Hide
-    RunWait cmd /c schtasks /Run /tn CapsLockX_RunAsLimitedUser,, Hide
-    RunWait cmd /c schtasks /Delete /tn CapsLockX_RunAsLimitedUser /F,, Hide
+    RunWait cmd /k schtasks /Create /tn CapsLockX_RunAsLimitedUser /F /sc ONCE /ST 00:00 /tr "cmd /c cd \"%Safe_WorkingDir% && %Safe_CMD%\",, Hide
+    RunWait cmd /k schtasks /Run /tn CapsLockX_RunAsLimitedUser,, Hide
+    RunWait cmd /k schtasks /Delete /tn CapsLockX_RunAsLimitedUser /F,, Hide
 }
 ; 接下来是流程控制
 #if
