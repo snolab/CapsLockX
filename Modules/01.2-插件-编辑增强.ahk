@@ -200,9 +200,9 @@ ArrowDownPressed(){
 y & o:: Send {Home}+{End}
 o & y:: Send {End}+{Home}
 
-; 前删，后删
-*t:: Send {Blind}{BackSpace}
-*+t:: Send {Blind}{Shift Up}{Delete}{Shift Down}
+; 删除
+*t:: Send {Blind}{Delete}
+; *+t:: Send {Blind}{Shift Up}{BackSpace}{Shift Down}
 
 ; 回车
 *g:: Enter
