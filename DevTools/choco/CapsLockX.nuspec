@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.18.2</version>
+    <version>1.18.3</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -97,7 +97,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | CapsLockX + /         | 临时显示热键提示                |
 | 全局   | CapsLockX（长按）     | 临时显示热键提示                |]]></description>
     <summary>Operate the computer like a hacker! 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.18.1](https://github.com/snolab/CapsLockX/compare/v1.18.0...v1.18.1) (2021-05-04)
+    <releaseNotes><![CDATA[## [1.18.2](https://github.com/snolab/CapsLockX/compare/v1.18.1...v1.18.2) (2021-05-07)
+
+
+### Bug Fixes
+
+* 修复 ignores 文件并加入synergyd.exe ([a1c4676](https://github.com/snolab/CapsLockX/commit/a1c46763ac7f98e30d362d99a347785fef2176cc))
+
+
+
+## [1.18.1](https://github.com/snolab/CapsLockX/compare/v1.18.0...v1.18.1) (2021-05-04)
 
 
 
@@ -184,12 +193,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 * update 用ConfigGet防止触发自动重载 ([aaaa851](https://github.com/snolab/CapsLockX/commit/aaaa8517a938a0c007ebb1bea9df9ce5961e68b9))
 * 前删，后删逻辑优化 ([0c1a58b](https://github.com/snolab/CapsLockX/commit/0c1a58bad641fdec48f0786a0b7c7946448dd0de))
 * 启用 docsify ([7c81c0b](https://github.com/snolab/CapsLockX/commit/7c81c0b172afdff8d74496bbca9e7e9070f17cb8))
-* 时间戳指令标准化 ([3cdfedc](https://github.com/snolab/CapsLockX/commit/3cdfedc3973ac601e1d5c1110651c89a41eded1f))
-* 用ConfigGet防止触发自动重载 ([1b0585e](https://github.com/snolab/CapsLockX/commit/1b0585ef023fff8e9598ce470f03458298802255))
-* 重载权限优化 ([40107c1](https://github.com/snolab/CapsLockX/commit/40107c1b592bab4a0ce77277ca30620d8a4035ea))
-
-
-]]></releaseNotes>
+* 时间戳指令标准化 ([3cdfedc](https://github.com/snolab/CapsLockX/commit/3cdfedc3973ac601e1d5c1110651c89a41eded1f))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

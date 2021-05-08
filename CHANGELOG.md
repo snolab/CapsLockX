@@ -1,3 +1,13 @@
+## [1.18.3](https://github.com/snolab/CapsLockX/compare/v1.18.2...v1.18.3) (2021-05-08)
+
+
+### Bug Fixes
+
+* reload #IF ([4273755](https://github.com/snolab/CapsLockX/commit/42737551c937f33d8ff710c53e67f84aaa0f956a))
+* 修改热键 CLX+B 为定位到任务栏、虚拟桌面整体迁移功能修复、普通用户权限重载代码优化 ([b27b24a](https://github.com/snolab/CapsLockX/commit/b27b24ab385d9aad245f15229f7493faab531be7))
+
+
+
 ## [1.18.2](https://github.com/snolab/CapsLockX/compare/v1.18.1...v1.18.2) (2021-05-07)
 
 
