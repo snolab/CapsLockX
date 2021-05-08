@@ -31,6 +31,8 @@ CapsLockX_UserFolderChanged(Folder, Changes){
     }
 }
 
+#if
+
 ; 软重启键
 ^!\:: CapsLockX_Reload()
 
