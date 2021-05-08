@@ -1,3 +1,12 @@
+## [1.18.5](https://github.com/snolab/CapsLockX/compare/v1.18.4...v1.18.5) (2021-05-08)
+
+
+### Bug Fixes
+
+* remove core ahk exe ([9306c11](https://github.com/snolab/CapsLockX/commit/9306c110b7fcee9110032a5422f8d9bd704d2a8d))
+
+
+
 ## [1.18.4](https://github.com/snolab/CapsLockX/compare/v1.18.3...v1.18.4) (2021-05-08)
 
 
