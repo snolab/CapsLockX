@@ -31,7 +31,7 @@ if (!CapsLockX){
 ; 所以后一个模块可以读取前一个模块定义的变量（包括全局和本地的）（但通常不建议这么做）。
 ;
 global CapsLockX_HelpInfo := ""
-CapsLockX_IssuesPage := "https://github.com/snomiao/CapsLockX/issues"
+CapsLockX_IssuesPage := "https://github.com/snolab/CapsLockX/issues"
 
 ; 注释：在这里，你可以使用 CapsLockX_AppendHelp 添加帮助信息
 ; 在 AHK 中，所有的函数都在编译时就定义好了，声明顺序是无所谓的。

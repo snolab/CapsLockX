@@ -217,7 +217,8 @@ Return
 
     ; 检查 README 替换情况
     if (!Replaces){
-        MsgBox % "加载模块帮助遇到错误。`n请更新 CapsLockX"
+        Run https://capslockx.snomiao.com/
+        MsgBox % "加载模块帮助遇到错误。`n已为你打开 CapsLockX 主页，请手动更新 CapsLockX"
         MsgBox % targetREADME
         Return sourceREADME
     }
