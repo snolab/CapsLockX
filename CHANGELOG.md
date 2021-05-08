@@ -1,3 +1,13 @@
+## [1.18.6](https://github.com/snolab/CapsLockX/compare/v1.18.5...v1.18.6) (2021-05-08)
+
+
+### Bug Fixes
+
+* 交换删除键 ([e51ca0a](https://github.com/snolab/CapsLockX/commit/e51ca0a4606cb6f4e173b07ef866863b6561a6bf))
+* 加入更新提示 ([1a25dc2](https://github.com/snolab/CapsLockX/commit/1a25dc2d4bcb8df3dfb47bc147fa041f3a6a3029))
+
+
+
 ## [1.18.5](https://github.com/snolab/CapsLockX/compare/v1.18.4...v1.18.5) (2021-05-08)
 
 
