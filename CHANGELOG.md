@@ -1,3 +1,12 @@
+## [1.18.7](https://github.com/snolab/CapsLockX/compare/v1.18.6...v1.18.7) (2021-06-09)
+
+
+### Bug Fixes
+
+* regular fix ([a85a8f8](https://github.com/snolab/CapsLockX/commit/a85a8f88054a4a47a7cc473a4076b0a6dd744baa))
+
+
+
 ## [1.18.6](https://github.com/snolab/CapsLockX/compare/v1.18.5...v1.18.6) (2021-05-08)
 
 
