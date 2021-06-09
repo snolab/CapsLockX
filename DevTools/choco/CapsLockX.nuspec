@@ -8,13 +8,13 @@
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
 
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <licenseUrl>https://github.com/snomiao/CapsLockX/blob/master/LICENSE</licenseUrl>
+    <licenseUrl>https://github.com/snolab/CapsLockX/blob/master/LICENSE</licenseUrl>
     <packageSourceUrl>https://github.com/snolab/CapsLockX/</packageSourceUrl>
-    <bugTrackerUrl>https://github.com/snomiao/CapsLockX/issues</bugTrackerUrl>
-    <mailingListUrl>https://github.com/snomiao/CapsLockX/issues</mailingListUrl>
+    <bugTrackerUrl>https://github.com/snolab/CapsLockX/issues</bugTrackerUrl>
+    <mailingListUrl>https://github.com/snolab/CapsLockX/issues</mailingListUrl>
     <projectUrl>https://capslockx.snomiao.com/</projectUrl>
     <docsUrl>https://capslockx.snomiao.com/</docsUrl>
-    <iconUrl>https://github.com/snomiao/CapsLockX/raw/master/Data/XIconBlue.ico</iconUrl>
+    <iconUrl>https://github.com/snolab/CapsLockX/raw/master/Data/XIconBlue.ico</iconUrl>
 
     <tags>hotkeys autohotkey windows ahk capslock</tags>
     <title>CapsLockX (install)</title>

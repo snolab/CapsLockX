@@ -4,7 +4,7 @@
 ;
 GenPassword(Length){
 	; 此处 `` 为转义
-    Chars := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    Chars := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
     Min := 1
     Max := StrLen(chars)
 

@@ -12,15 +12,7 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PAT
 Return
 
 :*:#D#::
-    FormatTime, TimeString, , yyyy-MM-dd-
-    SendInput {Text}%TimeString%
-Return
-:*:#DD#::
-    FormatTime, DateString, , (yyyyMMdd)
-    SendInput {Text}%DateString%
-Return
-:*:#T#::
-    FormatTime, TimeString, , yyyyMMdd.HHmmss
+    FormatTime, TimeString, , (yyyyMMdd)
     SendInput {Text}%TimeString%
 Return
 :*:#T#::
