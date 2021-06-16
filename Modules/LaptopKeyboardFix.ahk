@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
 ; 描述：拯救笔记本
-; 名称：提供常见缺键补全，例如缺失 Esc键、右Ctrl键、左Win键、Pause键、PrtScn键等
+; 名称：提供常见缺键补全，例如缺失 Esc 键、右 Ctrl 键、左 Win 键、Pause键、PrtScn键等
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -37,10 +37,10 @@ $#!p::
     Send #{Pause}
 Return
 
-; 对于没有 Win 键的环境，用 ] [ 一起按来模拟 Win 键
+; 对于没有 Win 键的环境，用 Ctrl + ESC 一起按来模拟 Win 键
 ; ] & [:: LWin【
 ; *] Up:: Send {Blind}]
-*!\:: Send {Blind}{Tab}
+; *!\:: Send {Blind}{Tab}
 
 ; 对于没有Esc或没有 Stroke 键的键
 #if CapsLockXMode
@@ -51,4 +51,9 @@ Esc:: FLAG_SWAP_ESC_STROKE := !FLAG_SWAP_ESC_STROKE
 #if FLAG_SWAP_ESC_STROKE
 
 *`:: Esc
+<^`:: LWin
 *Esc:: `
+
+#if !FLAG_SWAP_ESC_STROKE
+
+<^Esc:: LWin

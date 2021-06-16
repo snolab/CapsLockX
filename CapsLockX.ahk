@@ -37,6 +37,8 @@ global loadingTips := ""
 清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
 
 ; 复制用户模块
+FileDelete, %CapsLockX_模块路径%/*.user.ahk
+FileDelete, %CapsLockX_模块路径%/*.user.md
 FileCopy ./User/*.user.ahk, %CapsLockX_模块路径%/, 1
 FileCopy ./User/*.user.md, %CapsLockX_模块路径%/, 1
 ; 备份旧版本的用户模块（注意顺序，不要把新版用户模块覆盖了）
