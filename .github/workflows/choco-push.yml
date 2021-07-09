@@ -19,7 +19,7 @@ jobs:
       #     key: ${{ runner.os }}-# TODO
       # 这个 step 需要干净的环境所以不要在本地运行。
       - run: |
-          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md "启动 CapsLockX.lnk"
+          zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md *.exe
           checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
           cp -force LICENSE           ./DevTools/choco/tools/LICENSE.txt
           mv -force CapsLockX.zip     ./DevTools/choco/tools/
