@@ -783,6 +783,12 @@ Return
 #if CapsLockXMode
 
 b::
-    WinActivate, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-    ControlFocus, MSTaskListWClass1, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-Return
+    TaskbarJump(){
+        ; if(WinActive("ahk_class Shell_TrayWnd ahk_exe explorer.exe")){
+        ;     ControlSend, MSTaskListWClass1, {End}, ahk_class Shell_TrayWnd ahk_exe explorer.exe
+        ; }else{
+        WinActivate, ahk_class Shell_TrayWnd ahk_exe explorer.exe
+        ControlFocus, MSTaskListWClass1, ahk_class Shell_TrayWnd ahk_exe explorer.exe
+        ControlSend, MSTaskListWClass1, {End}, ahk_class Shell_TrayWnd ahk_exe explorer.exe
+        ; }
+    }
