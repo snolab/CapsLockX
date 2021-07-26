@@ -185,7 +185,7 @@ CapsLockX_Reload(){
     ToolTip, CapsLockX 重载中
     static times := 0
     times += 1
-    if(times == 1){
+    if(times == 1 && false){ ;;感觉limited user 不太管用
         ; 使用 RunAsLimitiedUser 避免重载时出现 Could not close the previous instance of this script.  Keep waiting?
         RunAsLimitiedUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
         ; 这里启动新实例后不用急着退出当前实例
