@@ -1,3 +1,12 @@
+## [1.18.10](https://github.com/snolab/CapsLockX/compare/v1.18.9...v1.18.10) (2021-07-26)
+
+
+### Bug Fixes
+
+* first time notice in tomato life ([38903d8](https://github.com/snolab/CapsLockX/commit/38903d8c34377213fdaae2d0c842aa1110f5243c))
+
+
+
 ## [1.18.9](https://github.com/snolab/CapsLockX/compare/v1.18.8...v1.18.9) (2021-07-26)
 
 
