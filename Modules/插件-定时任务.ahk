@@ -15,6 +15,7 @@ global T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("Sc
 if (T_ScheduleTasks) {
     高精度时间配置()
     GoSub CapsLockX定时任务
+    
     ; [有一个难以复现的 bug・Issue #17・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/17 )
 }
 
@@ -64,15 +65,16 @@ Return
     番茄状态 := 番茄状态计算()
     ; 边沿触发过滤器
     
-    static 上次番茄状态 := T_ScheduleTasks_NoticeOnLaunch ? "" : 番茄状态计算()
+    static 上次番茄状态 := ""
     ; static 上次番茄状态 := 番茄状态计算()
-    
+
+    ; msgbox %上次番茄状态% %番茄状态%
     if (上次番茄状态 == 番茄状态 && !force) {
         Return
     }
     上次番茄状态 := 番茄状态
-    MsgBox, 番茄：%番茄状态%
-    TrayTip, 番茄：%番茄状态%, ： %番茄状态%
+    ; MsgBox, 番茄：%番茄状态%
+    ; TrayTip, 番茄：%番茄状态%, ： %番茄状态%
     ; 状态动作
     if ("工作时间" == 番茄状态) {
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
@@ -102,9 +104,9 @@ CapsLockX定时任务:
     SetTimer CapsLockX定时任务, %延时%
 Return
 
-; #If
-; ^!i::
-;     番茄状态 := 番茄状态计算()
-;     MsgBox, 番茄状态：%番茄状态%
-;     番茄报时(1)
-; return
+#If
+^!i::
+    ; 番茄状态 := 番茄状态计算()
+    ; MsgBox, 番茄状态：%番茄状态%
+    番茄报时()
+return
