@@ -1,3 +1,13 @@
+## [1.18.9](https://github.com/snolab/CapsLockX/compare/v1.18.8...v1.18.9) (2021-07-26)
+
+
+### Bug Fixes
+
+* tasks bar jumping improve ([8088ed4](https://github.com/snolab/CapsLockX/commit/8088ed42945bd004a8e811c08ea246e3eba29af1))
+* update tomato life and fix reload ([cccfcc2](https://github.com/snolab/CapsLockX/commit/cccfcc27defcd64415f227443e18bb87469cbfd2))
+
+
+
 ## [1.18.8](https://github.com/snolab/CapsLockX/compare/v1.18.7...v1.18.8) (2021-06-16)
 
 
