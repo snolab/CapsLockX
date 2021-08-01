@@ -267,10 +267,20 @@ $^+v::
     SendEvent ^v
 Return
 
-; 复制段落链接（并清洗成 onenote 链接
-$!p::
+; 复制段落链接（并清洗成 onenote 链接（段落链接的url不管用。。
+$!+p::
     Clipboard := ""
     SendEvent {AppsKey}pp{Enter}
+    ClipWait, 1
+    if(ErrorLevel)
+        Return
+    Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
+Return
+
+; 复制页面链接（并清洗成 onenote 链接
+!p::
+    Clipboard := ""
+    SendEvent ^+a{AppsKey}l
     ClipWait, 1
     if(ErrorLevel)
         Return

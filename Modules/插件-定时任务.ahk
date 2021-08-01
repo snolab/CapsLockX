@@ -77,14 +77,14 @@ Return
     ; TrayTip, 番茄：%番茄状态%, ： %番茄状态%
     ; 状态动作
     if ("工作时间" == 番茄状态) {
-        SoundPlay % "Data/NoteC_G.mp3" ; 升调
         if (T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
             Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
+        SoundPlay % "Data/NoteC_G.mp3" ; 升调
     }
     if ("休息时间" == 番茄状态) {
-        SoundPlay % "Data/NoteG_C.mp3" ; 降调
         if (T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
             Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
+        SoundPlay % "Data/NoteG_C.mp3" ; 降调
     }
 }
 

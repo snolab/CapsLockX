@@ -344,12 +344,6 @@ $*s Up:: 鼠刻下 := 0, 鼠动始()
 
 ; 鼠标滚轮处理...(这里有个相当无语的bug……)
 ; R
-$^r:: SendEvent ^{WheelUp}
-$^f:: SendEvent ^{WheelDown}
-$^!r:: SendEvent ^{WheelUp}
-$^!f:: SendEvent ^{WheelDown}
-$^!+r:: SendEvent ^{WheelUp}
-$^!+f:: SendEvent ^{WheelDown}
 $!r:: 轮自刻 := TM_QPC(), 轮自纵 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
 $!f:: 轮自刻 := TM_QPC(), 轮自纵 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
 $!+r:: 轮自刻 := TM_QPC(), 轮自横 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
@@ -362,6 +356,12 @@ $*r Up:: 轮刻上 := 0, 轮动始()
 $*f Up:: 轮刻下 := 0, 轮动始()
 $*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), 轮动始()
 $*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), 轮动始()
+$^r:: SendEvent ^{WheelUp}
+$^f:: SendEvent ^{WheelDown}
+$^!r:: SendEvent ^{WheelUp}
+$^!f:: SendEvent ^{WheelDown}
+$^!+r:: SendEvent ^{WheelUp}
+$^!+f:: SendEvent ^{WheelDown}
 ; F
 
 #if

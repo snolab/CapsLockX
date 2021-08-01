@@ -20,6 +20,10 @@ Return
     iFlyPath := (iFlyPath ? iFlyPath : "C:\Program Files (x86)\iFly Info Tek\iFlyIME\2.1.1708")
     iFlyWnd := WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe" )
     If (iFlyWnd){
+        ; WinGet, Transparent, Transparent
+        WinSet, TransColor, Off, ahk_id %iFlyWnd%
+        WinSet, TransColor, 0xffffff 150, ahk_id %iFlyWnd%
+        ; WinSet, Transparent, 200, ahk_id %iFlyWnd%
         ControlClick, x20 y20, ahk_id %iFlyWnd%
     }Else{
         If (FileExist(iFlyPath "\iFlyVoice.exe")){
