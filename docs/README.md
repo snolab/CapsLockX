@@ -49,7 +49,8 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 <!-- * 按 `CapsLock` 切换 CapsLockX 模式 -->
 
-- 按住 `CapsLock` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
+- 按住 `CapsLockX` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
+- 长按 `CapsLockX` 键将锁定 `CLX` 模式，此时弹起 `CapsLockX` 键将保持 `CLX` 到下一次按下 `CaspLockX` 键为止。[功能由来](https://github.com/snolab/CapsLockX/issues/21)
 
 CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下方列出。
 对于不需要的模块，你也可以直接删除 `./Modules` 目录下对应的 `.ahk` 文件，然后按 `Ctrl + Alt + \` 重新加载即可。
@@ -73,7 +74,6 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 作用于 | 按键                  | 功能                            |
 | ------ | --------------------- | ------------------------------- |
 | 全局   | CapsLockX + /         | 临时显示热键提示                |
-| 全局   | CapsLockX（长按）     | 临时显示热键提示                |
 | 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
 | 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等              |
 
@@ -234,7 +234,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
 | 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
 | 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >

@@ -37,10 +37,10 @@ global CapsLockX := 1 ; 模块运行标识符
 global CapsLockXMode := 0
 global ModuleState := 0
 global CapsLockX_FnActed := 0
-global CM_NORMAL := 0 ; 普通模式
-global CM_FN := 1 ; 临时 CapsLockX 模式（或称组合键模式
-global CM_CapsLockX := 2 ; CapsLockX 模式
-; global CM_FNX := 3 ; FnX 模式
+global CM_NORMAL := 0 ; 普通模式（键盘的正常状态）
+global CM_FN := 1 ; 组合键 CapsLockX 模式（或称组合键模式
+global CM_CapsLockX := 2 ; CapsLockX 模式，通过长按CLX键进入
+; global CM_FNX := 3 ; FnX 模式并不存在
 global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
 global CapsLockPressTimestamp := 0
 
@@ -215,13 +215,26 @@ CapsLockX_Dn(){
         CapsLockPressTimestamp := A_TickCount
     }
     ; 进入 Fn 模式
+    if(CapsLockXMode & CM_CapsLockX){
+        ; TrayTip CapsLockX, 退出CLX模式
+        ToolTip 退出CLX模式
+        CapsLockXMode &= ~CM_CapsLockX
+    }
     CapsLockXMode |= CM_FN
-
-    ; (20200809)长按显示帮助（空格除外）
+    ; ToolTip clxmode
     if (A_PriorKey == CapsLockX_上次触发键){
         if(A_PriorKey != "Space"){
             if ( A_TickCount - CapsLockPressTimestamp > 1000){
-                CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
+                ; (20210817)长按锁定CLX模式（空格除外）
+                ; CLX_Locked = 1
+                ; TrayTip CapsLockX,  进入CLX模式
+                ToolTip 进入CLX模式
+                CapsLockXMode |= CM_CapsLockX
+                KeyWait, %waitKey%, T60 ; wait for 60 seconds, prevent flashing the quit and enter message
+                
+                ; (20200809)长按显示帮助（空格除外）
+                ; CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1, CapsLockX_上次触发键)
+                ; KeyWait, %waitKey%, T60 ; wait for 60 seconds, then auto close
             }
         }else{
             if ( A_TickCount - CapsLockPressTimestamp > 200){
