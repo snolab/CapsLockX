@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.18.11</version>
+    <version>1.19.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,16 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.18.10](https://github.com/snolab/CapsLockX/compare/v1.18.9...v1.18.10) (2021-07-26)
+    <releaseNotes><![CDATA[## [1.18.11](https://github.com/snolab/CapsLockX/compare/v1.18.10...v1.18.11) (2021-08-01)
+
+
+### Bug Fixes
+
+* TransColor for iflywnd ([b26da9e](https://github.com/snolab/CapsLockX/commit/b26da9e0c3d5338adbd965657e165a48d7e8322e))
+
+
+
+## [1.18.10](https://github.com/snolab/CapsLockX/compare/v1.18.9...v1.18.10) (2021-07-26)
 
 
 ### Bug Fixes
@@ -174,13 +183,7 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 *  ([2b066ed](https://github.com/snolab/CapsLockX/commit/2b066edaffb827eaa4e4d56d08c1934a2e0f6427))
 
 
-
-# [1.17.0](https://github.com/snolab/CapsLockX/compare/v1.16.6...v1.17.0) (2021-04-26)
-
-
-### Bug Fixes
-
-*  ([5b69426](https://github.com/snolab/CapsLockX/commit/5b6942663cbf70379638b74f4db194945396e630))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

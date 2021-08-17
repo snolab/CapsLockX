@@ -1,3 +1,17 @@
+# [1.19.0](https://github.com/snolab/CapsLockX/compare/v1.18.11...v1.19.0) (2021-08-17)
+
+
+### Bug Fixes
+
+* alt+tab modify volume ([0136195](https://github.com/snolab/CapsLockX/commit/0136195989fe2619d0bfcdd3c2bbb5c9ab95cca0))
+
+
+### Features
+
+* long-press to lock in CLX mode ([e9884da](https://github.com/snolab/CapsLockX/commit/e9884dadb33a86c69f0e9756eb45c6c2b0af3c9e))
+
+
+
 ## [1.18.11](https://github.com/snolab/CapsLockX/compare/v1.18.10...v1.18.11) (2021-08-01)
 
 
