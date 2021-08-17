@@ -16,8 +16,9 @@
 SetWorkingDir, %A_ScriptDir%
 
 FileCreateDir ./User
+FileCreateDir %USERPROFILE%/.CapsLockX
 global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
-global CapsLockX_模块路径 := "./Modules"
+global CapsLockX_模块路径 := "./Modules" 
 global CapsLockX_核心路径 := "./Core"
 ; 版本
 global CapsLockX_Version
