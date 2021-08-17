@@ -5,7 +5,7 @@ on:
       - "v*"
 name: Chocolatey
 jobs:
-  chocolatey-publish:
+  chocolatey-pack:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
@@ -22,9 +22,52 @@ jobs:
           zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md *.exe
           checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
           cp -force LICENSE           ./DevTools/choco/tools/LICENSE.txt
-          mv -force CapsLockX.zip     ./DevTools/choco/tools/
-          mv -force CapsLockX.sha256  ./DevTools/choco/tools/
+          cp -force CapsLockX.zip     ./DevTools/choco/tools/
+          cp -force CapsLockX.sha256  ./DevTools/choco/tools/
           choco pack ./DevTools/choco/CapsLockX.nuspec
+      # 测试
+      - run: |
+          cinst CapsLockX -s .
+      # 准备上传到releases
+      - uses: actions/upload-artifact@v2
+        with:
+          name: CapsLockX.zip
+          path: ./CapsLockX.zip
+      - uses: actions/upload-artifact@v2
+        with:
+          name: CapsLockX.sha256
+          path: ./CapsLockX.sha256
+      # 发布
+      - run: |
+          choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
+      - run: |
+          choco push --source https://push.chocolatey.org/
+  github-pages-choco-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: CapsLockX.zip
+      - uses: actions/download-artifact@v2
+        with:
+          name: CapsLockX.sha256
+      # 压缩包和 sha256 一起扔附件
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: CapsLockX.zip
+          asset_name: CapsLockX.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "CapsLockX choco Package"
+  chocolatey-push:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: CapsLockX.nupkg
       # 测试
       - run: |
           cinst CapsLockX -s .

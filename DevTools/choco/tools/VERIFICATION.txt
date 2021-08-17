@@ -2,4 +2,5 @@ VERIFICATION
 Verification is intended to assist the Chocolatey moderators and community
 in verifying that this package's contents are trustworthy.
  
-Run checksum to check the hash.
+You can get CapsLockX.zip and CapsLockX.sha256 from https://github.com/snolab/CapsLockX/releases.
+Then run checksum to check the hash by your self.
