@@ -1,3 +1,7 @@
+## [1.19.1](https://github.com/snolab/CapsLockX/compare/v1.19.0...v1.19.1) (2021-08-17)
+
+
+
 # [1.19.0](https://github.com/snolab/CapsLockX/compare/v1.18.11...v1.19.0) (2021-08-17)
 
 
