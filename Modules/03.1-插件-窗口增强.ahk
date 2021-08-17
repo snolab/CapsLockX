@@ -723,6 +723,8 @@ return
 !d:: Right
 !w:: Up
 !s:: Down
+!r:: Volume_Up
+!f:: Volume_Down
 
 ; cx 关闭应用
 !c:: SendEvent {Blind}{Delete}{Right}
