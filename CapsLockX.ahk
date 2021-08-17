@@ -11,7 +11,7 @@
 ; ========== CapsLockX ==========
 
 ; #SingleInstance Force ; 跳过对话框并自动替换旧实例
-#SingleInstance, ignore
+#SingleInstance, force
 #NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
