@@ -1,3 +1,14 @@
+## [1.19.2](https://github.com/snolab/CapsLockX/compare/v1.19.1...v1.19.2) (2021-08-21)
+
+
+### Bug Fixes
+
+* reload ([065130b](https://github.com/snolab/CapsLockX/commit/065130b01a63cfc7ab75e4af809eb91a31b6b937))
+* remove longpress to help ([a994731](https://github.com/snolab/CapsLockX/commit/a994731d595f49fd6f9ec8c021b8283c05f85795))
+* 退出 CLX 模式/进入 CLX 模式 的悬浮小提示自动消失 ([2f40c35](https://github.com/snolab/CapsLockX/commit/2f40c3557cc20ca61b67b9f2ea13f17dc16b612a))
+
+
+
 ## [1.19.1](https://github.com/snolab/CapsLockX/compare/v1.19.0...v1.19.1) (2021-08-17)
 
 
