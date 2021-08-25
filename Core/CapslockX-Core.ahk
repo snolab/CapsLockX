@@ -218,7 +218,7 @@ CapsLockX_Dn(){
     if(CapsLockXMode & CM_CapsLockX){
         ; TrayTip CapsLockX, 退出CLX模式
         ToolTip 退出CLX模式
-        SetTimer CLX_HideToolTips, 1000
+        SetTimer CLX_HideToolTips, -1000
         CapsLockXMode &= ~CM_CapsLockX
     }
     CapsLockXMode |= CM_FN
@@ -230,7 +230,7 @@ CapsLockX_Dn(){
                 ; CLX_Locked = 1
                 ; TrayTip CapsLockX,  进入CLX模式
                 ToolTip 进入CLX模式
-                SetTimer CLX_HideToolTips, 1000
+                SetTimer CLX_HideToolTips, -1000
                 CapsLockXMode |= CM_CapsLockX
                 KeyWait, %waitKey%, T60 ; wait for 60 seconds, prevent flashing the quit and enter message
                 

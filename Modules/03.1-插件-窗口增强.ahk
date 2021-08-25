@@ -418,7 +418,6 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
         }
     }
 }
-
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
@@ -530,7 +529,6 @@ FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0){
         , "UInt", SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
     }
 }
-
 CurrentWindowSetAsBackground(){
     ; 后置当前窗口
     WinGet hWnd, id, A
@@ -550,35 +548,28 @@ CurrentWindowSetAsBackground(){
 #if CapsLockXMode
 
 ; 自动排列窗口
+    ; 自动排列窗口（包括最小化的窗口）
+    ; 自动堆叠窗口
+    ; 自动堆叠窗口（包括最小化的窗口）
 c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
-; 自动排列窗口（包括最小化的窗口）
-^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
-; 自动堆叠窗口
-+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
-; 自动堆叠窗口（包括最小化的窗口）
-^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
-
-; 使用 Windows 原生的方式自动排列窗口（和虚拟桌面不兼容）
-; !o::
-;     WinActivate ahk_class Shell_TrayWnd ahk_exe explorer.exe
-;     ; side by side 排列
-;     Send {AppsKey}i
-Return
+    ^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
+    +c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
+    ^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
 
 ; 切换当前窗口置顶并透明
 +v::
     WinSet, Transparent, 200, A
     WinSet, Alwaysontop, Toggle, A
-Return
+    Return
 ; 让当前窗口临时透明
 v::
     WinSet, Transparent, 100, A
     WinSet, Alwaysontop, On, A
-Return
+    Return
 v Up::
     WinSet, Transparent, 255, A
     WinSet, Alwaysontop, Off, A
-Return
+    Return
 
 ; 关闭标签
 x:: Send ^w
@@ -589,7 +580,7 @@ x:: Send ^w
     WM_CLOSE := 0x0010
     SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
     ; ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
-Return
+    Return
 ; 关闭窗口并切到下一窗口，并自动排列窗口
 +!x::
     hWnd := WinActive("A")
@@ -597,13 +588,13 @@ Return
     WM_CLOSE := 0x0010
     SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
     ; ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
-Return
+    Return
 ; 杀死窗口并切到下一窗口
 ^!x::
     hWnd := WinActive("A")
     Send !{Esc}
     WinKill ahk_id %hWnd%
-Return
+    Return
 
 ; Alt+Tab
 ; #if AltTabWindowGet()
@@ -615,22 +606,22 @@ Return
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 3)
-return
+    return
 #+j::
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 4)
-return
+    return
 #+k::
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 2)
-return
+    return
 #+l::
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 1)
-return
+    return
 
 ; Alt+Tab 或 Win+Tab
 #if MultitaskingViewFrameQ()
@@ -647,76 +638,23 @@ return
 ; !0:: SwitchToDesktop(10)
 
 ; Move the current window to the X-th desktop
-!1::
+CLX_MoveCurrentWindowTo(x){
     SendEvent {Space}
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(1)
+    MoveActiveWindowToDesktop(x)
     SendEvent !{Tab}
-return
-!2::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(2)
-    SendEvent !{Tab}
-return
-!3::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(3)
-    SendEvent !{Tab}
-return
-!4::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(4)
-    SendEvent !{Tab}
-return
-!5::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(5)
-    SendEvent !{Tab}
-return
-!6::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(6)
-    SendEvent !{Tab}
-return
-!7::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(7)
-    SendEvent !{Tab}
-return
-!8::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(8)
-    SendEvent !{Tab}
-return
-!9::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(9)
-    SendEvent !{Tab}
-return
-!0::
-    SendEvent {Space}
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    MoveActiveWindowToDesktop(10)
-    SendEvent !{Tab}
-return
+}
+!1:: CLX_MoveCurrentWindowTo(1)
+!2:: CLX_MoveCurrentWindowTo(2)
+!3:: CLX_MoveCurrentWindowTo(3)
+!4:: CLX_MoveCurrentWindowTo(4)
+!5:: CLX_MoveCurrentWindowTo(5)
+!6:: CLX_MoveCurrentWindowTo(6)
+!7:: CLX_MoveCurrentWindowTo(7)
+!8:: CLX_MoveCurrentWindowTo(8)
+!9:: CLX_MoveCurrentWindowTo(9)
+!0:: CLX_MoveCurrentWindowTo(10)
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
 !a:: Left
@@ -740,7 +678,7 @@ return
 ~$<^<+LAlt::
 ~$<!<^LShift::
     FLAG_CtrlShiftAlt按下 := 1
-return
+    return
 
 ~$<!<+LCtrl Up::
 ~$<^<+LAlt Up::
@@ -765,7 +703,7 @@ return
         上次CtrlShiftAlt时刻 := 现在
     }
     上次CtrlShiftAlt锁 := 0
-return
+    return
 
 CapsLockX_RemoveToolTip(){
     ToolTip
@@ -780,7 +718,7 @@ Delete::
     if(ErrorLevel)
         Return
     SendEvent {Up}
-Return
+    Return
 
 #if CapsLockXMode
 
