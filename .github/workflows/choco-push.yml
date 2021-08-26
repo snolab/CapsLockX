@@ -37,6 +37,11 @@ jobs:
         with:
           name: CapsLockX.sha256
           path: ./CapsLockX.sha256
+      # 上传 nupkg 用来给 chocolatey push
+      - uses: actions/upload-artifact@v2
+        with:
+          name: CapsLockX.nupkg
+          path: ./CapsLockX.nupkg
       # 发布
       - run: |
           choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
