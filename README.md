@@ -114,15 +114,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ![光标移动.gif]( ./docs/docs/media/光标移动.gif )
 
-| 作用域     | Edit 模块           | 说明                |
-| ---------- | ------------------- | ------------------- |
-| 全局(基本) | CapsLockX + h j k l | 上下左右 方向键     |
-| 全局(基本) | CapsLockX + y o     | Home End            |
-| 全局(基本) | CapsLockX + u i     | PageUp PageDown     |
-| 全局(基本) | CapsLockX + g       | 回车                |
-| 全局(进阶) | CapsLockX + t       | Delete              |
-| 全局(进阶) | CapsLockX + hl      | hl 一起按选择当前词 |
-| 全局(进阶) | CapsLockX + kj      | kj 一起按选择当前行 |
+| 作用域     | Edit 模块           | 说明                             |
+| ---------- | ------------------- | -------------------------------- |
+| 全局(基本) | CapsLockX + h j k l | 上下左右 方向键                  |
+| 全局(基本) | CapsLockX + y o     | Home End                         |
+| 全局(基本) | CapsLockX + u i     | PageUp PageDown                  |
+| 全局(基本) | CapsLockX + g       | 回车                             |
+| 全局(进阶) | CapsLockX + t       | Delete                           |
+| 全局(进阶) | CapsLockX + hl      | hl 一起按选择当前词              |
+| 全局(进阶) | CapsLockX + kj      | kj 一起按选择当前行              |
+| 全局(进阶) | CapsLockX + h + t   | 移位后删：大部分情况可代替退格键 |
 
 <!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 
