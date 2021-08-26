@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.19.2</version>
+    <version>1.19.3</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,18 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.19.1](https://github.com/snolab/CapsLockX/compare/v1.19.0...v1.19.1) (2021-08-17)
+    <releaseNotes><![CDATA[## [1.19.2](https://github.com/snolab/CapsLockX/compare/v1.19.1...v1.19.2) (2021-08-21)
+
+
+### Bug Fixes
+
+* reload ([065130b](https://github.com/snolab/CapsLockX/commit/065130b01a63cfc7ab75e4af809eb91a31b6b937))
+* remove longpress to help ([a994731](https://github.com/snolab/CapsLockX/commit/a994731d595f49fd6f9ec8c021b8283c05f85795))
+*  CLX / CLX   ([2f40c35](https://github.com/snolab/CapsLockX/commit/2f40c3557cc20ca61b67b9f2ea13f17dc16b612a))
+
+
+
+## [1.19.1](https://github.com/snolab/CapsLockX/compare/v1.19.0...v1.19.1) (2021-08-17)
 
 
 
@@ -175,19 +186,7 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 * CapsLockXMode ([a2d6d7e](https://github.com/snolab/CapsLockX/commit/a2d6d7e0c21a85392796572cba7174b1d51bc792))
 *  ([e4793e7](https://github.com/snolab/CapsLockX/commit/e4793e77ebf3f316e1736c1c3a36cd71d214347e))
 
-
-### Features
-
-* Win + Shift + hjkl                  |                    | ([4d7d6c0](https://github.com/snolab/CapsLockX/commit/4d7d6c067608322898a384fb7b7a87741f049bfb))
-
-
-
-## [1.17.2](https://github.com/snolab/CapsLockX/compare/v1.17.1...v1.17.2) (2021-04-28)
-
-
-### Bug Fixes
-
-* ignore update conflit ([504c6be](https://github.com/snolab/CapsLockX/commit/504c6be02d8b1cee9b804f4b3b4d8ea1735acfd8))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
