@@ -1,3 +1,13 @@
+## [1.19.3](https://github.com/snolab/CapsLockX/compare/v1.19.2...v1.19.3) (2021-08-26)
+
+
+### Bug Fixes
+
+* CapsLockX + Ctrl + Alt + r f        | 垂直滚轮自动滚动（上 下） ([8b32921](https://github.com/snolab/CapsLockX/commit/8b32921a157310e1c2909e4adf7b39b43a860264))
+* CapsLockX + h + t   | 移位后删，大部分情况可代替退格键 ([a3f0358](https://github.com/snolab/CapsLockX/commit/a3f0358c8b78950fe1e8b0497cd303fbf26516be))
+
+
+
 ## [1.19.2](https://github.com/snolab/CapsLockX/compare/v1.19.1...v1.19.2) (2021-08-21)
 
 

@@ -91,16 +91,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 使用方法如下
 
-| 作用于 | 按键                         | 说明                      |
-| ------ | ---------------------------- | ------------------------- |
-| 全局   | CapsLockX + w a s d          | 鼠标移动（上下左右）      |
-| 全局   | CapsLockX + r f              | 垂直滚轮（上下）          |
-| 全局   | CapsLockX + Shift + r f      | 水平滚轮（左右）          |
-| 全局   | CapsLockX + Alt + r f        | 垂直滚轮自动滚动（上 下） |
-| 全局   | CapsLockX + Alt + Shift+ r f | 水平滚轮自动滚动（左 右） |
-| 全局   | CapsLockX + rf               | rf 同时按相当于鼠标中键   |
-| 全局   | CapsLockX + e                | 鼠标左键                  |
-| 全局   | CapsLockX + q                | 鼠标右键                  |
+| 作用于 | 按键                                | 说明                      |
+| ------ | ----------------------------------- | ------------------------- |
+| 全局   | CapsLockX + w a s d                 | 鼠标移动（上下左右）      |
+| 全局   | CapsLockX + r f                     | 垂直滚轮（上下）          |
+| 全局   | CapsLockX + Shift + r f             | 水平滚轮（左右）          |
+| 全局   | CapsLockX + Ctrl + Alt + r f        | 垂直滚轮自动滚动（上 下） |
+| 全局   | CapsLockX + Ctrl + Alt + Shift+ r f | 水平滚轮自动滚动（左 右） |
+| 全局   | CapsLockX + rf                      | rf 同时按相当于鼠标中键   |
+| 全局   | CapsLockX + e                       | 鼠标左键                  |
+| 全局   | CapsLockX + q                       | 鼠标右键                  |
 
 <!-- 模块文件名：01.2-插件-编辑增强.ahk-->
 
@@ -112,15 +112,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ![光标移动.gif]( ./media/光标移动.gif )
 
-| 作用域     | Edit 模块           | 说明                |
-| ---------- | ------------------- | ------------------- |
-| 全局(基本) | CapsLockX + h j k l | 上下左右 方向键     |
-| 全局(基本) | CapsLockX + y o     | Home End            |
-| 全局(基本) | CapsLockX + u i     | PageUp PageDown     |
-| 全局(基本) | CapsLockX + g       | 回车                |
-| 全局(进阶) | CapsLockX + t       | Delete              |
-| 全局(进阶) | CapsLockX + hl      | hl 一起按选择当前词 |
-| 全局(进阶) | CapsLockX + kj      | kj 一起按选择当前行 |
+| 作用域     | Edit 模块           | 说明                             |
+| ---------- | ------------------- | -------------------------------- |
+| 全局(基本) | CapsLockX + h j k l | 上下左右 方向键                  |
+| 全局(基本) | CapsLockX + y o     | Home End                         |
+| 全局(基本) | CapsLockX + u i     | PageUp PageDown                  |
+| 全局(基本) | CapsLockX + g       | 回车                             |
+| 全局(进阶) | CapsLockX + t       | Delete                           |
+| 全局(进阶) | CapsLockX + hl      | hl 一起按选择当前词              |
+| 全局(进阶) | CapsLockX + kj      | kj 一起按选择当前行              |
+| 全局(进阶) | CapsLockX + h + t   | 移位后删：大部分情况可代替退格键 |
 
 <!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 
@@ -505,14 +506,18 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 [发展路线](#发展路线)
 
-### 捐赠记录 📄
+### 捐赠记录(截至20210821) 📄
 
-暂无
+| 捐赠时间 | 名称 | 金额       | 备注                     |
+| -------- | ---- | ---------- | ------------------------ |
+| 20210619 | **煜 | +50.00 CNY | 小小資助，支持獨立開發者 |
 
 ### 鸣谢 🙏🏻
 
+- 感谢来自以上捐赠者的经济支持。
 - 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK]( https://www.autoahk.com/archives/34996 )
+- 感谢在 issues 里和群里提问并帮助完善本项目的各位。
 
 ### 相关话题
 
