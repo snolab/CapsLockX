@@ -9,9 +9,11 @@
 ; 感谢：张工 QQ: 45289331 参与调试
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
-
-; #SingleInstance Force ; 跳过对话框并自动替换旧实例
-#SingleInstance, force
+if (A_IsAdmin){  
+    #SingleInstance Force ; 管理员权限下跳过对话框并自动替换旧实例
+}else{
+    #SingleInstance, Off  ; 普通用户无法替换管理员权限实例，故 Off
+}
 #NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
@@ -39,6 +41,7 @@ global loadingTips := ""
 清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
 
 ; 复制用户模块
+; 注：如果CLX已经开了的话，这一步会触发重启，这可能会导致一些文件冲突的BUG……
 FileDelete, %CapsLockX_模块路径%/*.user.ahk
 FileDelete, %CapsLockX_模块路径%/*.user.md
 FileCopy ./User/*.user.ahk, %CapsLockX_模块路径%/, 1
@@ -57,17 +60,18 @@ ToolTip
 
 ; 当 CI_TEST 启用时，仅测试编译效果，不启动核心
 EnvGet ENVIROMENT, ENVIROMENT
-if("CI_TEST" == ENVIROMENT){
-    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
-    ExitApp
-}
-if(RegExMatch(DllCall("GetCommandLine", "str"), "/CI_TEST")){
-    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
-    ExitApp
-}
+; msgbox % DllCall("GetCommandLine", "str")
+; msgbox % !!RegExMatch(DllCall("GetCommandLine", "str"), "/CI_TEST")
 
-#Persistent
-SetTimer, CapsLockX启动, -1
+if("CI_TEST" == ENVIROMENT || !!RegExMatch(DllCall("GetCommandLine", "str"), "/CI_TEST")){
+    tooltip % "[INFO] MODULE LOAD OK, SKIP CORE"
+    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
+    ExitApp
+}else{
+    CapsLockX启动()
+}
+; #Persistent
+; SetTimer, CapsLockX启动, -1
 Return
 
 模块帮助向README编译(){
@@ -236,18 +240,17 @@ Return
 CapsLockX启动(){
     CoreAHK := CapsLockX_核心路径 "\CapsLockX-Core.ahk"
     UpdatorAHK := CapsLockX_核心路径 "\CapsLockX-Update.ahk"
-    ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再运行 Temp 里的核心。
+    ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再使用 Temp 里的 AHK 来运行本核心。
     AHK_EXE_ROOT_PATH := "CapsLockX.exe"
     AHK_EXE_CORE_PATH := "./Core/CapsLockX.exe"
-    AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX.exe"
+    AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX-AHK.exe"
     FileCopy, %AHK_EXE_ROOT_PATH%, %AHK_EXE_TEMP_PATH%, 1
     if !FileExist(AHK_EXE_TEMP_PATH)
         FileCopy, %AHK_EXE_CORE_PATH%, %AHK_EXE_TEMP_PATH%, 1
     if !FileExist(AHK_EXE_TEMP_PATH)
         AHK_EXE_TEMP_PATH := AHK_EXE_ROOT_PATH
-    ; 运行更新组件
-    ; ToolTip % A_ScriptDir
 
+    ; 运行更新组件
     Run %AHK_EXE_TEMP_PATH% %UpdatorAHK%, %A_ScriptDir%
 
     ; 运行核心

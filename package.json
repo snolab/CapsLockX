@@ -5,7 +5,7 @@
     "scripts": {
         "start": "CapsLockX.exe",
         "npm-upgrade": "npm i -y",
-        "build": "npm run npm-upgrade && CapsLockX.exe",
+        "build": "npm run npm-upgrade && CapsLockX.exe CapsLockX.ahk /CI_TEST",
         "build+patch": "npm run build && npm version patch",
         "build+minor": "npm run build && npm version minor",
         "build+major": "npm run build && npm version major",
