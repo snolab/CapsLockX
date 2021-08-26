@@ -91,16 +91,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 使用方法如下
 
-| 作用于 | 按键                         | 说明                      |
-| ------ | ---------------------------- | ------------------------- |
-| 全局   | CapsLockX + w a s d          | 鼠标移动（上下左右）      |
-| 全局   | CapsLockX + r f              | 垂直滚轮（上下）          |
-| 全局   | CapsLockX + Shift + r f      | 水平滚轮（左右）          |
-| 全局   | CapsLockX + Alt + r f        | 垂直滚轮自动滚动（上 下） |
-| 全局   | CapsLockX + Alt + Shift+ r f | 水平滚轮自动滚动（左 右） |
-| 全局   | CapsLockX + rf               | rf 同时按相当于鼠标中键   |
-| 全局   | CapsLockX + e                | 鼠标左键                  |
-| 全局   | CapsLockX + q                | 鼠标右键                  |
+| 作用于 | 按键                                | 说明                      |
+| ------ | ----------------------------------- | ------------------------- |
+| 全局   | CapsLockX + w a s d                 | 鼠标移动（上下左右）      |
+| 全局   | CapsLockX + r f                     | 垂直滚轮（上下）          |
+| 全局   | CapsLockX + Shift + r f             | 水平滚轮（左右）          |
+| 全局   | CapsLockX + Ctrl + Alt + r f        | 垂直滚轮自动滚动（上 下） |
+| 全局   | CapsLockX + Ctrl + Alt + Shift+ r f | 水平滚轮自动滚动（左 右） |
+| 全局   | CapsLockX + rf                      | rf 同时按相当于鼠标中键   |
+| 全局   | CapsLockX + e                       | 鼠标左键                  |
+| 全局   | CapsLockX + q                       | 鼠标右键                  |
 
 <!-- 模块文件名：01.2-插件-编辑增强.ahk-->
 

@@ -61,6 +61,10 @@ if("CI_TEST" == ENVIROMENT){
     OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
     ExitApp
 }
+if(RegExMatch(DllCall("GetCommandLine", "str"), "/CI_TEST")){
+    OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
+    ExitApp
+}
 
 #Persistent
 SetTimer, CapsLockX启动, -1
@@ -232,7 +236,7 @@ Return
 CapsLockX启动(){
     CoreAHK := CapsLockX_核心路径 "\CapsLockX-Core.ahk"
     UpdatorAHK := CapsLockX_核心路径 "\CapsLockX-Update.ahk"
-    ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再运行核心。
+    ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再运行 Temp 里的核心。
     AHK_EXE_ROOT_PATH := "CapsLockX.exe"
     AHK_EXE_CORE_PATH := "./Core/CapsLockX.exe"
     AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX.exe"
@@ -247,13 +251,14 @@ CapsLockX启动(){
     Run %AHK_EXE_TEMP_PATH% %UpdatorAHK%, %A_ScriptDir%
 
     ; 运行核心
+    ; 启动
     global T_AskRunAsAdmin := CapsLockX_ConfigGet("Core", "T_AskRunAsAdmin", 0)
-    if(T_AskRunAsAdmin){
+    adminCommand := RegExMatch(DllCall("GetCommandLine", "str"), "/admin")
+    if (!A_IsAdmin && T_AskRunAsAdmin || adminCommand){
         RunWait *RunAs %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
     }else{
         RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
     }
-
     if (ErrorLevel){
         MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
         IfMsgBox No
