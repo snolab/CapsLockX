@@ -37,11 +37,11 @@ jobs:
         with:
           name: CapsLockX.sha256
           path: ./CapsLockX.sha256
-      # 上传 nupkg 用来给 chocolatey push
-      - uses: actions/upload-artifact@v2
-        with:
-          name: CapsLockX.nupkg
-          path: ./CapsLockX.nupkg
+      # # 上传 nupkg 用来给 chocolatey push
+      # - uses: actions/upload-artifact@v2
+      #   with:
+      #     name: CapsLockX.nupkg
+      #     path: ./CapsLockX.nupkg
       # 发布
       - run: |
           choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
@@ -49,6 +49,7 @@ jobs:
           choco push --source https://push.chocolatey.org/
   github-pages-choco-upload:
     runs-on: ubuntu-latest
+    needs: chocolatey-pack
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -66,18 +67,18 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           body: "CapsLockX choco Package"
-  chocolatey-push:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: CapsLockX.nupkg
-      # 测试
-      - run: |
-          cinst CapsLockX -s .
-      # 发布
-      - run: |
-          choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
-      - run: |
-          choco push --source https://push.chocolatey.org/
+  # chocolatey-push:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: CapsLockX.nupkg
+  #     # 测试
+  #     - run: |
+  #         cinst CapsLockX -s .
+  #     # 发布
+  #     - run: |
+  #         choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
+  #     - run: |
+  #         choco push --source https://push.chocolatey.org/
