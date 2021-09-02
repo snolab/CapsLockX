@@ -1,3 +1,12 @@
+## [1.19.5](https://github.com/snolab/CapsLockX/compare/v1.19.4...v1.19.5) (2021-09-02)
+
+
+### Bug Fixes
+
+* 取消讯飞半透明 ([c78ad40](https://github.com/snolab/CapsLockX/commit/c78ad40230b28361c8302feded30f6f12c157c33))
+
+
+
 ## [1.19.4](https://github.com/snolab/CapsLockX/compare/v1.19.3...v1.19.4) (2021-08-26)
 
 
