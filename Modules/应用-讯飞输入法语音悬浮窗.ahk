@@ -21,8 +21,8 @@ Return
     iFlyWnd := WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe" )
     If (iFlyWnd){
         ; WinGet, Transparent, Transparent
-        WinSet, TransColor, Off, ahk_id %iFlyWnd%
-        WinSet, TransColor, 0xffffff 150, ahk_id %iFlyWnd%
+        ; WinSet, TransColor, Off, ahk_id %iFlyWnd%
+        ; WinSet, TransColor, 0xffffff 150, ahk_id %iFlyWnd%
         ; WinSet, Transparent, 200, ahk_id %iFlyWnd%
         ControlClick, x20 y20, ahk_id %iFlyWnd%
     }Else{
