@@ -1,3 +1,12 @@
+## [1.19.7](https://github.com/snolab/CapsLockX/compare/v1.19.6...v1.19.7) (2021-09-11)
+
+
+### Bug Fixes
+
+* icon url ([d40fbd6](https://github.com/snolab/CapsLockX/commit/d40fbd61b143544fd99d55a69b95853fd5c7399d))
+
+
+
 ## [1.19.6](https://github.com/snolab/CapsLockX/compare/v1.19.5...v1.19.6) (2021-09-11)
 
 
