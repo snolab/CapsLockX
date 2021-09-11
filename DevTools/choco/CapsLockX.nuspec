@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.19.6</version>
+    <version>1.19.7</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,17 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.19.5](https://github.com/snolab/CapsLockX/compare/v1.19.4...v1.19.5) (2021-09-02)
+    <releaseNotes><![CDATA[## [1.19.6](https://github.com/snolab/CapsLockX/compare/v1.19.5...v1.19.6) (2021-09-11)
+
+
+### Bug Fixes
+
+* change icon url to CDN due to chocolatey requests ([5415a2a](https://github.com/snolab/CapsLockX/commit/5415a2afd9a21e04fe03170c4fe617ac9ab8a2c2))
+* show png format icons for chocolatey ([97e8711](https://github.com/snolab/CapsLockX/commit/97e871198005c5bb3a9ae5459a2f41096ef13a13))
+
+
+
+## [1.19.5](https://github.com/snolab/CapsLockX/compare/v1.19.4...v1.19.5) (2021-09-02)
 
 
 ### Bug Fixes
@@ -175,19 +185,6 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 ## [1.18.4](https://github.com/snolab/CapsLockX/compare/v1.18.3...v1.18.4) (2021-05-08)
 
-
-
-## [1.18.3](https://github.com/snolab/CapsLockX/compare/v1.18.2...v1.18.3) (2021-05-08)
-
-
-### Bug Fixes
-
-* reload #IF ([4273755](https://github.com/snolab/CapsLockX/commit/42737551c937f33d8ff710c53e67f84aaa0f956a))
-*  CLX+B 、、 ([b27b24a](https://github.com/snolab/CapsLockX/commit/b27b24ab385d9aad245f15229f7493faab531be7))
-
-
-
-## [1.18.2](https://github.com/snolab/CapsLockX/compare/v1.18.1...v1.18.2) (2021-05-07)
 
 ]]></releaseNotes>
     
