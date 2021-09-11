@@ -14,7 +14,7 @@
     <mailingListUrl>https://github.com/snolab/CapsLockX/issues</mailingListUrl>
     <projectUrl>https://capslockx.snomiao.com/</projectUrl>
     <docsUrl>https://capslockx.snomiao.com/</docsUrl>
-    <iconUrl>https://cdn.jsdelivr.net/gh/snolab/CapsLockX@raw/master/Data/XIconBlue.ico</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/snolab/CapsLockX@latest/Data/XIconBlue.png</iconUrl>
 
     <tags>hotkeys autohotkey windows ahk capslock</tags>
     <title>CapsLockX (install)</title>
