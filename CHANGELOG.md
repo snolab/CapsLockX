@@ -1,3 +1,13 @@
+## [1.19.6](https://github.com/snolab/CapsLockX/compare/v1.19.5...v1.19.6) (2021-09-11)
+
+
+### Bug Fixes
+
+* change icon url to CDN due to chocolatey requests ([5415a2a](https://github.com/snolab/CapsLockX/commit/5415a2afd9a21e04fe03170c4fe617ac9ab8a2c2))
+* show png format icons for chocolatey ([97e8711](https://github.com/snolab/CapsLockX/commit/97e871198005c5bb3a9ae5459a2f41096ef13a13))
+
+
+
 ## [1.19.5](https://github.com/snolab/CapsLockX/compare/v1.19.4...v1.19.5) (2021-09-02)
 
 
