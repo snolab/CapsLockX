@@ -18,6 +18,7 @@ global TMouse_SendInput := CapsLockX_Config("TMouse", "SendInput", 1, "使用 Se
 global TMouse_SendInputAPI := CapsLockX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")
 global TMouse_StickyCursor := CapsLockX_Config("TMouse", "StickyCursor", 1, "启用自动粘附各种按钮，编辑框")
 global TMouse_StopAtScreenEdge := CapsLockX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
+
 ; 根据屏幕 DPI 比率，自动计算，得出，如果数值不对，才需要纠正
 global TMouse_UseDPIRatio := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
 global TMouse_MouseSpeedRatio := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
@@ -25,16 +26,11 @@ global TMouse_WheelSpeedRatio := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1
 global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
-
-; 鼠标加速度微分对称模型，每秒误差 2.5ms 以内
-global 鼠动中 := 0, 鼠强动 := 0
-global 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0
-global 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
-
-; 滚轮加速度微分对称模型（不要在意这中二的名字hhhhj
-global 轮动中 := 0, 轮自刻 := 0, 轮自横 := 0, 轮自纵 := 0
-global 轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
-global 轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
+; global debug_fps := new FPS_Debugger()
+global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
+global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 360 * TMouse_WheelSpeedRatio)
+global 滚轮自控 := new AccModel2D(Func("滚轮自控"), 0.1, 10)
+global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
 if (TMouse_SendInput)
     SendMode Input
@@ -43,9 +39,6 @@ if (TMouse_SendInput)
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
 
 Return
-
-; 解决DPI比率问题
-;msgbox % DllCall("MonitorFromPoint", "UInt", 0, "UInt", 0, "UInt", 0)
 
 CursorHandleGet()
 {
@@ -87,11 +80,6 @@ Pos2Long(x, y)
 ; ;A_ScreenDPI
 ; DllCall("GetDeviceCaps", "UInt", DllCall("GetDC", "UInt", 0), "UInt", 0)
 
-; tooltip % A_ScreenDPI " " hMonitor " " dpiX " " dpiY
-; wasd 控制鼠标
-; e左键
-; q右键
-
 ; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646273(v=vs.85).aspx
 SendInput_MouseMsg32(dwFlag, mouseData := 0)
 {
@@ -104,6 +92,8 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
 
+; TODO: 这个的64位的函数不知道为啥用不了。。。
+; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
 SendInput_MouseMoveR32(x, y)
 {
     VarSetCapacity(sendData, 28, 0)
@@ -115,292 +105,114 @@ SendInput_MouseMoveR32(x, y)
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
 
-; TODO: 这个64位的函数不知道为啥用不了。。。
-; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
-SendInput_MouseMoveR64(x, y)
-{
-    /*
-    VarSetCapacity(sendData, 28, 0)
-    NumPut(0, sendData, 0, "UShort")
-    NumPut(鼠速横, sendData, 4, "Short")
-    NumPut(鼠速纵, sendData, 8, "Short")
-    NumPut(0, sendData, 12, "UShort")
-    NumPut(1, sendData, 16, "UShort")
-    DllCall("SendInput", "UShort", 1, "Point", sendData, "UShort", 28)
-    */
-    
-    cbSize := 24 + A_PtrSize
-    VarSetCapacity(sendData, cbSize, 0) ; INPUT OBJECT
-    NumPut(0, sendData, 0, "UInt")
-    NumPut(x, sendData, 4, "Int")
-    NumPut(y, sendData, 8, "Int")
-    NumPut(0, sendData, 12, "UInt")
-    NumPut(1, sendData, 16, "UInt")
-    NumPut(0, sendData, 20, "UInt")
-    NumPut(0, sendData, 24, "UInt")
-    ; SendInput
-    test := &sendData
-    a0 := NumGet(sendData, 0, "UInt")
-    a1 := NumGet(sendData, 4, "UInt")
-    a2 := NumGet(sendData, 8, "UInt")
-    a3 := NumGet(sendData, 12, "UInt")
-    a4 := NumGet(sendData, 16, "UInt")
-    a5 := NumGet(sendData, 20, "UInt")
-    a6 := NumGet(sendData, 24, "UInt")
-    
-    ret := DllCall("SendInput", "UInt", 1, "Int", 0, "Int", cbSize, "Int")
-    ; ToolTip, %test% %cbSize% %ErrorLevel% %A_LastError% %ret% %a0% %a1% %a2% %a3% %a4% %a5% %a6%
-}
-
 ; 鼠标模拟
-鼠动始(){
-    if (!鼠动中) {
-        SetTimer, 鼠动, 1
-        global 鼠动中 := 1
+鼠标模拟(dx, dy, 状态)
+{
+    if (状态 == "横中键") {
+        SendEvent {Click 2}
+        return
     }
-}
-鼠动终(){
-    global 鼠动中 := 0, 鼠强动 := 0, 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
-    SetTimer, 鼠动, Off
-}
-鼠动(){
-    ; 在非 CapsLockX 模式下直接停止
-    if (!(CapsLockXMode || 鼠强动)) {
-        global 鼠刻左 := 0, 鼠刻右 := 0, 鼠刻上 := 0, 鼠刻下 := 0, 鼠速横 := 0, 鼠速纵 := 0, 鼠差横 := 0, 鼠差纵 := 0
-        max := 0, may := 0
-    } else {
-        现刻 := TM_QPC()
-        ; 计算用户操作时间, 计  算 ADWS 键按下的时长
-        tda := dt(鼠刻左, 现刻), tdd := dt(鼠刻右, 现刻)
-        tdw := dt(鼠刻上, 现刻), tds := dt(鼠刻下, 现刻)
-        ; 计算这段时长的加速度
-        max := ma(tdd - tda) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
-        may := ma(tds - tdw) * TMouse_MouseSpeedRatio * TMouse_DPIRatio * 0.3
-    }
-    
-    ; ; 摩擦力不阻碍用户意志
-    global 鼠速横 := Friction(鼠速横 + max, max), 鼠速纵 := Friction(鼠速纵 + may, may)
-    
-    ; 实际移动需要约化
-    global 鼠差横 += 鼠速横, 鼠差纵 += 鼠速纵
-    
-    if ( 鼠速横 == 0 && 鼠速纵 == 0) {
-        ; 完成移动，退出定时
-        鼠动终()
-        Return
-    }
-    
-    ; 撞到屏幕边角就停下来
-    if (TMouse_StopAtScreenEdge) {
-        MouseGetPos, xa, ya
+    if (状态 == "纵中键") {
+        SendEvent {Click 3}
+        return
     }
     
     if (TMouse_SendInputAPI && A_PtrSize == 4) {
         ; 这只能32位用
-        SendInput_MouseMoveR32(鼠差横, 鼠差纵)
-        鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
+        SendInput_MouseMoveR32(dx, dy)
     } else {
-        MouseMove, %鼠差横%, %鼠差纵%, 0, R
-        鼠差横 -= 鼠差横 | 0, 鼠差纵 -= 鼠差纵 | 0
+        MouseMove, %dx%, %dy%, 0, R
     }
     
-    ; 撞到屏幕边角就停下来
-    if (TMouse_StopAtScreenEdge) {
-        if (xa == xb) {
-            鼠速横 := 0
-        }
-        if (ya == yb) {
-            鼠速纵 := 0
-        }
-        xb := xa, yb := ya
-    }
+    ; TODO: 撞到屏幕边角就停下来
+    ; if(TMouse_StopAtScreenEdge )
+    ; MouseGetPos, xb, yb
+    ; 鼠标模拟.横速 *= dx && xa == xb ? 0 : 1
+    ; 鼠标模拟.纵速 *= dy && ya == yb ? 0 : 1
     
-    ; 对区域切换粘附
-    ; 放在 MouseMove 后面是粘附的感觉
-    ; 放在它前面是撞到东西的感觉
-    if (TMouse_StickyCursor And CursorShapeChangedQ()) {
-        global 鼠速横 := 0, 鼠速纵 := 0
+    
+    ; 在各种按钮上减速
+    if (TMouse_StickyCursor && CursorShapeChangedQ()) {
+        鼠标模拟.横速 *= 0.5
+        鼠标模拟.纵速 *= 0.5
     }
 }
 
-ScrollMsg2(msg, zDelta)
+滚轮自动(dx, dy, 状态){
+    WM_MOUSEWHEEL := 0x020A
+    WM_MOUSEWHEELH := 0x020E
+    _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
+    _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
+}
+滚轮自控(dx, dy, 状态)
 {
-    MouseGetPos, mouseX, mouseY, wid, fcontrol
+    滚轮自动.横速 += dx, 滚轮自动.纵速 += dy, 滚轮自动.始动()
+    msg := "【雪星滚轮自动v2】`n"
+    msg .= "横：" (滚轮自动.横速|0) "px/s`n纵：" (滚轮自动.纵速|0)  "px/s`n"
+    msg .= "CapsLockX + Ctrl + Alt + RF 调整纵向自动滚轮`n"
+    msg .= "CapsLockX + Ctrl + Alt + Shift + RF 调整横向自动滚轮`n"
+    鼠标模拟_ToolTip(msg)
+}
+滚轮模拟(dx, dy, 状态)
+{
+    if (状态 != "移动") {
+        SendEvent {Blind}{MButton Down}
+        KeyWait r
+        KeyWait f
+        SendEvent {Blind}{MButton Up}
+        ; 关闭滚轮自动
+        滚轮自横:=0, 滚轮自纵:=0
+        return
+    }
+    WM_MOUSEWHEEL := 0x020A
+    WM_MOUSEWHEELH := 0x020E
+    _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
+    _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
+}
+
+滚轮消息发送(msg, zDelta)
+{
+    ; 目前还不支持UWP
+    CoordMode, Mouse, Screen
+    MouseGetPos, x, y, wid, fcontrol
+    
     wParam := zDelta << 16 ;zDelta
-    lParam := Pos2Long(mouseX, mouseY)
-    
-    if (GetKeyState("Shift", "p")) {
-        wParam := wParam | 0x4
-    }
-    if (GetKeyState("Ctrl", "p")) {
-        wParam := wParam | 0x8
-    }
-    PostMessage, msg, %wParam%, %lParam%, %fcontrol%, ahk_id %wid%
-}
-
-ScrollMsg(msg, zDelta)
-{
-    wParam := zDelta << 16
+    lParam := x | (y << 16) ; pos2long
     
     MouseGetPos, , , , ControlClass2, 2
-    MouseGetPos, , , , ControlClass3, 3
+    MouseGetPos, , , , , ControlClass3, 3
     if (A_Is64bitOS) {
-        ControlClass1 := DllCall( "WindowFromPoint", "int64", m_x | (m_y << 32), "Ptr")
+        ControlClass1 := DllCall("WindowFromPoint", "int64", x | (y << 32), "Ptr")|0x0
     } else {
-        ControlClass1 := DllCall("WindowFromPoint", "int", m_x, "int", m_y)
+        ControlClass1 := DllCall("WindowFromPoint", "int", x, "int", y) |0x0
     }
-    
     ;Detect modifer keys held down (only Shift and Control work)
-    if GetKeyState("Shift", "p") {
-        wParam := wParam | 0x4
-    }
-    if GetKeyState("Ctrl", "p") {
-        wParam := wParam | 0x8
-    }
+    wParam |= GetKeyState("Shift", "p") ? 0x4 : 0
+    wParam |= GetKeyState("Ctrl", "p")  ? 0x8 : 0
     if (ControlClass2 == "") {
-        PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass1%
+        ; PostMessage, %msg%, %wParam%, %lParam%, %fcontrol%, ahk_id %ControlClass1%
+        DllCall("PostMessage", "UInt", ControlClass1, "UInt", msg, "UInt", wParam, "UInt", lParam, "UInt")
     } else {
-        PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass2%
+        ; PostMessage, %msg%, %wParam%, %lParam%, %fcontrol%, ahk_id %ControlClass2%
+        DllCall("PostMessage", "UInt", ControlClass2, "UInt", msg, "UInt", wParam, "UInt", lParam, "UInt")
         if (ControlClass2 != ControlClass3) {
-            PostMessage, msg, wParam, lParam, %fcontrol%, ahk_id %ControlClass3%
+            ; PostMessage, %msg%, %wParam%, %lParam%, %fcontrol%, ahk_id %ControlClass3%
+            DllCall("PostMessage", "UInt", ControlClass3, "UInt", msg, "UInt", wParam, "UInt", lParam, "UInt")
         }
     }
-}
-; 滚轮运动处理
-轮动始(){
-    if (!轮动中) {
-        SetTimer, 轮动, 1
-        轮动中 := 1
+    if (wid) {
+        DllCall("PostMessage", "UInt", wid, "UInt", msg, "UInt", wParam, "UInt", lParam, "UInt")
     }
-}
-轮动终(){
-    轮动中 := 0, 轮自刻 := 0, 轮自横 := 0, 轮自纵 := 0
-    轮刻上 := 0, 轮刻下 := 0, 轮刻左 := 0, 轮刻右 := 0
-    轮速横 := 0, 轮速纵 := 0, 轮差横 := 0, 轮差纵 := 0
-    SetTimer, 轮动, Off
-}
-轮动(){
-    ; 在非CapsLockX模式下停止
-    if (!(CapsLockXMode || 轮自横 || 轮自纵)) {
-        Return 轮动终()
-    }
-    现刻 := TM_QPC()
-    ; 计算用户操作时间
-    轮时左 := dt(轮刻左, 现刻), 轮时右 := dt(轮刻右, 现刻)
-    轮时上 := dt(轮刻上, 现刻), 轮时下 := dt(轮刻下, 现刻)
-    
-    ; 计算加速度
-    轮加横 := ma(轮时右 - 轮时左) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
-    轮加纵 := ma(轮时下 - 轮时上) * TMouse_WheelSpeedRatio * TMouse_DPIRatio
-    
-    ; RF 同时按下相当于中键（同时也会取消轮自动）
-    if (轮刻上 && 轮刻下 && Abs(轮时上 - 轮时下) < 1) {
-        if (轮自刻) {
-            Return 轮动终()
-        }
-        轮动终()
-        SendInput {MButton Down}
-        KeyWait, r
-        KeyWait, f
-        SendInput {MButton Up}
-        Return
-    }
-    ; 计算速度
-    轮速纵 := Friction(轮速纵 + 轮加纵, 轮加纵)
-    轮速横 := Friction(轮速横 + 轮加横, 轮加横)
-    
-    ; 处理自动滚动
-    ; if (轮自刻 && (轮刻左 || 轮刻上 || 轮刻右 || 轮刻下))
-    ;     轮自刻 := 现刻 + 1000
-    ; 如果现在处于主动滚动状态，则 将自动滚动延后到 1 秒后
-    if (轮自刻 <= 现刻 && 1000 < A_TimeIdlePhysical && A_TimeIdlePhysical < 30 * 60 * 1000) {
-        轮差纵 += sign(轮自纵) * 0.01 * (1.5 ** abs(轮自纵))
-        轮差横 += sign(轮自横) * 0.01 * (1.5 ** abs(轮自横))
-    }
-    ; 速度归 0 时，结束定时器
-    if ( !轮速纵 && !轮速横 && !轮自刻) {
-        Return 轮动终()
-    }
-    ; 处理移动
-    轮差纵 += 轮速纵
-    轮差横 += 轮速横
-    
-    if ((轮差纵 | 0) != 0) {
-        if (TMouse_SendInputAPI && A_PtrSize == 4) {
-            ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x0800, -轮差纵) ; 0x0800/*MOUSEEVENTF_WHEEL*/
-        }
-        Else{
-            ScrollMsg2(0x20A, -轮差纵)
-        }
-        轮差纵 -= 轮差纵 | 0
-    }
-    if ((轮差横 | 0) != 0) {
-        if (TMouse_SendInputAPI && A_PtrSize == 4) {
-            ; 这API只能32位环境下用
-            SendInput_MouseMsg32(0x1000, 轮差横) ; 0x1000/*MOUSEEVENTF_HWHEEL*/
-        }
-        Else{
-            ScrollMsg2(0x20E, 轮差横) ; 在64位下用的是低性能的……
-        }
-        轮差横 -= 轮差横 | 0
-    }
+    ; tooltip % x " " y "`n" ControlClass1  "`n"  ControlClass2 "`n" ControlClass3 "`n" wid
 }
 
-#if CapsLockXMode
-    
-; 鼠标按键处理
-$*e::CapsLockX_左键按下()
-$*e Up:: SendEvent {Blind}{LButton Up}
-$*q:: CapsLockX_右键按下()
-$*q Up:: SendEvent {Blind}{RButton Up}
-; 鼠标运动处理
-$*a:: 鼠刻左 := (鼠刻左 ? 鼠刻左 : TM_QPC()), 鼠动始()
-$*a Up:: 鼠刻左 := 0, 鼠动始()
-$*d:: 鼠刻右 := (鼠刻右 ? 鼠刻右 : TM_QPC()), 鼠动始()
-$*d Up:: 鼠刻右 := 0, 鼠动始()
-$*w:: 鼠刻上 := (鼠刻上 ? 鼠刻上 : TM_QPC()), 鼠动始()
-$*w Up:: 鼠刻上 := 0, 鼠动始()
-$*s:: 鼠刻下 := (鼠刻下 ? 鼠刻下 : TM_QPC()), 鼠动始()
-$*s Up:: 鼠刻下 := 0, 鼠动始()
-
-; 鼠标滚轮处理...(这里有个相当无语的bug……)
-; R
-$+r:: 轮刻左 := (轮刻左 ? 轮刻左 : TM_QPC()), 轮动始()
-$+f:: 轮刻右 := (轮刻右 ? 轮刻右 : TM_QPC()), 轮动始()
-$+r Up:: 轮刻左 := 0, 轮动始()
-$+f Up:: 轮刻右 := 0, 轮动始()
-$*r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), 轮动始()
-$*f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), 轮动始()
-$*r Up:: 轮刻上 := 0, 轮动始()
-$*f Up:: 轮刻下 := 0, 轮动始()
-$~!r:: 轮刻上 := (轮刻上 ? 轮刻上 : TM_QPC()), 轮动始()
-$~!f:: 轮刻下 := (轮刻下 ? 轮刻下 : TM_QPC()), 轮动始()
-$~!r Up:: 轮刻上 := 0, 轮动始()
-$~!f Up:: 轮刻下 := 0, 轮动始()
-$^r:: SendEvent ^{WheelUp}
-$^f:: SendEvent ^{WheelDown}
-; $^!r:: SendEvent ^{WheelUp}
-; $^!f:: SendEvent ^{WheelDown}
-; $^!+r:: SendEvent ^{WheelUp}
-; $^!+f:: SendEvent ^{WheelDown}
-$^!r:: 轮自刻 := TM_QPC(), 轮自纵 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
-$^!f:: 轮自刻 := TM_QPC(), 轮自纵 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（纵向） - "轮自纵)
-$^!+r:: 轮自刻 := TM_QPC(), 轮自横 -= 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
-$^!+f:: 轮自刻 := TM_QPC(), 轮自横 += 1, 轮动始(), 鼠标模拟_ToolTip("滚轮自动（横向） - "轮自横)
-; F
-
-#if
-    
-CapsLockX_左键按下(){
+CapsLockX_鼠标左键按下(){
     SendEvent {Blind}{LButton Down}
-    ; KeyWait, e, T60 ; wait for 60 seconds
-    KeyWait, e, ; wait forever
+    KeyWait, e, ; wait forever 防止重复触发
 }
-CapsLockX_右键按下(){
+CapsLockX_鼠标右键按下(){
     SendEvent {Blind}{RButton Down}
-    ; KeyWait, q, T60 ; wait for 60 seconds
-    KeyWait, q, ; wait forever
+    KeyWait, q, ; wait forever 防止重复触发
 }
 
 鼠标模拟_ToolTip(tips){
@@ -410,3 +222,31 @@ CapsLockX_右键按下(){
 鼠标模拟_ToolTipRemove(){
     ToolTip
 }
+
+#if CapsLockXMode
+    
+; 鼠标按键处理
+$*e::CapsLockX_鼠标左键按下()
+$*q:: CapsLockX_鼠标右键按下()
+$*e Up:: SendEvent {Blind}{LButton Up}
+$*q Up:: SendEvent {Blind}{RButton Up}
+; 鼠标运动处理
+$*a:: 鼠标模拟.左按()
+$*d:: 鼠标模拟.右按()
+$*w:: 鼠标模拟.上按()
+$*s:: 鼠标模拟.下按()
+$*a Up:: 鼠标模拟.左放()
+$*d Up:: 鼠标模拟.右放()
+$*w Up:: 鼠标模拟.上放()
+$*s Up:: 鼠标模拟.下放()
+; 滚轮运动处理
+$*+^!r:: 滚轮自控.左按()
+$*+^!f:: 滚轮自控.右按()
+$*^!r:: 滚轮自控.上按()
+$*^!f:: 滚轮自控.下按()
+$*+r:: 滚轮模拟.左按()
+$*+f:: 滚轮模拟.右按()
+$*r:: 滚轮模拟.上按()
+$*f:: 滚轮模拟.下按()
+$*r Up:: 滚轮模拟.上放(), 滚轮模拟.左放(), 滚轮自控.上放(), 滚轮自控.左放()
+$*f Up:: 滚轮模拟.下放(), 滚轮模拟.右放(), 滚轮自控.下放(), 滚轮自控.右放()

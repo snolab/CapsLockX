@@ -52,22 +52,22 @@ Return
         Return
     ; 检测睡眠标记文件以跳过报时
     static SLEEPING_FLAG_CLEAN := 0
-    if(!SLEEPING_FLAG_CLEAN){
+    if(!SLEEPING_FLAG_CLEAN) {
         ; 启动时重置标记文件
         FileDelete %TEMP%/SLEEPING_FLAG
         SLEEPING_FLAG_CLEAN := 1
-    }else{
+    } else {
         FileRead SLEEPING_FLAG, %TEMP%/SLEEPING_FLAG
-        if (SLEEPING_FLAG){
+        if (SLEEPING_FLAG) {
             Return
         }
     }
     番茄状态 := 番茄状态计算()
     ; 边沿触发过滤器
     
-    static 上次番茄状态 := ""
-    ; static 上次番茄状态 := 番茄状态计算()
-
+    ; static 上次番茄状态 := ""
+    static 上次番茄状态 := 番茄状态计算()
+    
     ; msgbox %上次番茄状态% %番茄状态%
     if (上次番茄状态 == 番茄状态 && !force) {
         Return
@@ -88,7 +88,8 @@ Return
     }
 }
 
-UnixTimeGet(){
+UnixTimeGet()
+{
     ; ref: https://www.autohotkey.com/boards/viewtopic.php?t=17333
     t := A_NowUTC
     EnvSub, t, 19700101000000, Seconds
