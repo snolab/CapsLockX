@@ -1,4 +1,4 @@
-# CapsLockX - Get Hacker's Keyboard. 像**黑客**一样操作电脑💻
+# CapsLockX - 💻 Get Hacker's Keyboard. 像**黑客**一样操作电脑
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to easily operate the computer efficiently like a hacker in a movie without leaving the keyboard with both hands . There are a lot of functions that you can understand at a touch and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to personally define. 
 
