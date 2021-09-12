@@ -1,3 +1,17 @@
+# [1.20.0](https://github.com/snolab/CapsLockX/compare/v1.19.7...v1.20.0) (2021-09-12)
+
+
+### Bug Fixes
+
+* auto reload improved ([00da365](https://github.com/snolab/CapsLockX/commit/00da365abfff7638d28f46d162c54b043f3f706b))
+
+
+### Features
+
+* 重写时基加速模型，优化流畅度和运动帧数，实现变频稳定算法 ([3baecc9](https://github.com/snolab/CapsLockX/commit/3baecc91760e8700f0400b7f374663d77e306668))
+
+
+
 ## [1.19.7](https://github.com/snolab/CapsLockX/compare/v1.19.6...v1.19.7) (2021-09-11)
 
 
