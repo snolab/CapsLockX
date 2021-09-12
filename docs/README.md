@@ -1,4 +1,7 @@
-# CapsLockX - 像**黑客**一样操作电脑💻
+# CapsLockX - Get Hacker's Keyboard 像**黑客**一样操作电脑💻
+
+[See English Docs (Google Translated)](https://capslockx.snomiao.com/)
+CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to easily operate the computer efficiently like a hacker in a movie without leaving the keyboard with both hands . There are a lot of functions that you can understand at a touch and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to personally define. 
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX) 
 
@@ -43,7 +46,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
 3. `npm i -g capslockx && npx capslockx`
 4. `npx capslockx`
-5. `choco install capslockx --version=1.14.30 && capslockx` （注：2021-04-21 chocolatey的程序包还在审核中）
+5. `choco install capslockx && capslockx`
 
 ## 使用手册📖
 
