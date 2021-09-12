@@ -43,13 +43,13 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 #### 命令行方式安装（进阶用户推荐，可自动更新）🖥️
 
-以下几种任选其一，中国大陆用户推荐第一个（最快），其它地区用户推荐第2个
+以下几种任选其一，其它地区用户推荐第2个
 
-1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
-3. `npm i -g capslockx && npx capslockx`
-4. `npx capslockx`
-5. `choco install capslockx && capslockx`
+1. `npx capslockx`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
+2. `choco update capslockx && capslockx` -- [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) 安装可使用 cup 自动更新，推荐
+3. `npm i -g capslockx && npx capslockx` -- npm 全局安装
+4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- 大陆源码包（绿色软件包）解压使用，中国大陆地区用户推荐
+5. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe` -- github源码包（绿色软件包）解压使用
 
 ## 使用手册📖
 
