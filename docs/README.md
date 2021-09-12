@@ -1,7 +1,10 @@
-# CapsLockX - Get Hacker's Keyboard 像**黑客**一样操作电脑💻
+# CapsLockX - Get Hacker's Keyboard. 像**黑客**一样操作电脑💻
 
-[See English Docs (Google Translated)](https://capslockx.snomiao.com/)
 CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to easily operate the computer efficiently like a hacker in a movie without leaving the keyboard with both hands . There are a lot of functions that you can understand at a touch and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to personally define. 
+
+**[See English Docs (Google Translated)](https://capslockx.snomiao.com/)**
+
+---
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX) 
 
@@ -94,16 +97,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 使用方法如下
 
-| 作用于 | 按键                                | 说明                      |
-| ------ | ----------------------------------- | ------------------------- |
-| 全局   | CapsLockX + w a s d                 | 鼠标移动（上下左右）      |
-| 全局   | CapsLockX + r f                     | 垂直滚轮（上下）          |
-| 全局   | CapsLockX + Shift + r f             | 水平滚轮（左右）          |
-| 全局   | CapsLockX + Ctrl + Alt + r f        | 垂直滚轮自动滚动（上 下） |
-| 全局   | CapsLockX + Ctrl + Alt + Shift+ r f | 水平滚轮自动滚动（左 右） |
-| 全局   | CapsLockX + rf                      | rf 同时按相当于鼠标中键   |
-| 全局   | CapsLockX + e                       | 鼠标左键                  |
-| 全局   | CapsLockX + q                       | 鼠标右键                  |
+| 作用于 | 按键                                  | 说明                      |
+| ------ | ------------------------------------- | ------------------------- |
+| 全局   | `CapsLockX + w a s d                ` | 鼠标移动（上下左右）      |
+| 全局   | `CapsLockX + r f                    ` | 垂直滚轮（上下）          |
+| 全局   | `CapsLockX + Shift + r f            ` | 水平滚轮（左右）          |
+| 全局   | `CapsLockX + Ctrl + Alt + r f       ` | 垂直滚轮自动滚动（上 下） |
+| 全局   | `CapsLockX + Ctrl + Alt + Shift+ r f` | 水平滚轮自动滚动（左 右） |
+| 全局   | `CapsLockX + rf                     ` | rf 同时按相当于鼠标中键   |
+| 全局   | `CapsLockX + e                      ` | 鼠标左键                  |
+| 全局   | `CapsLockX + q                      ` | 鼠标右键                  |
 
 <!-- 模块文件名：01.2-插件-编辑增强.ahk-->
 
@@ -115,16 +118,16 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ![光标移动.gif]( ./media/光标移动.gif )
 
-| 作用域     | Edit 模块           | 说明                             |
-| ---------- | ------------------- | -------------------------------- |
-| 全局(基本) | CapsLockX + h j k l | 上下左右 方向键                  |
-| 全局(基本) | CapsLockX + y o     | Home End                         |
-| 全局(基本) | CapsLockX + u i     | PageUp PageDown                  |
-| 全局(基本) | CapsLockX + g       | 回车                             |
-| 全局(进阶) | CapsLockX + t       | Delete                           |
-| 全局(进阶) | CapsLockX + hl      | hl 一起按选择当前词              |
-| 全局(进阶) | CapsLockX + kj      | kj 一起按选择当前行              |
-| 全局(进阶) | CapsLockX + h + t   | 移位后删：大部分情况可代替退格键 |
+| 作用域     | Edit 模块             | 说明                             |
+| ---------- | --------------------- | -------------------------------- |
+| 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
+| 全局(基本) | `CapsLockX + y o    ` | Home End                         |
+| 全局(基本) | `CapsLockX + u i    ` | PageUp PageDown                  |
+| 全局(基本) | `CapsLockX + g      ` | 回车                             |
+| 全局(进阶) | `CapsLockX + t      ` | Delete                           |
+| 全局(进阶) | `CapsLockX + hl     ` | hl 一起按选择当前词              |
+| 全局(进阶) | `CapsLockX + kj     ` | kj 一起按选择当前行              |
+| 全局(进阶) | `CapsLockX + h + t  ` | 移位后删：大部分情况可代替退格键 |
 
 <!-- 模块文件名：03.1-插件-窗口增强.ahk-->
 
@@ -151,30 +154,30 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
-| 作用域       | 窗口增强模块                        | 说明                                       |
-| ------------ | ----------------------------------- | ------------------------------------------ |
-| Alt+Tab 界面 | Q E                                 | 左右切换多桌面                             |
-| Alt+Tab 界面 | W A S D                             | 上下左右切换窗口选择                       |
-| Alt+Tab 界面 | X C                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
-| Win+Tab 视图 | Alt + W A S D                       | 切换窗口选择                               |
-| 全局         | Win + [Shift] + b                   | 定位到托盘或任务栏任务                     |
-| 全局         | Win + Shift + hjkl                  | 在窗口之间按方向切换焦点                   |
-| 任务栏       | Ctrl + W 或 Delete                  | 在托盘图标或任务栏任务上，选择退出按钮     |
-| 全局         | CapsLockX + 1 2 ... 9 0             | 切换到第 1 .. 12 个桌面                    |
-| 全局         | CapsLockX + Shift + 1 2 ... 9 0 - = | 把当前窗口移到第 n 个桌面(如果有的话)      |
-| 全局         | CapsLockX + Alt + Backspace         | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局         | CapsLockX + C                       | 快速排列当前桌面的窗口                     |
-| 全局         | CapsLockX + Ctrl + C                | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局         | CapsLockX + Shift + C               | 快速堆叠当前桌面的窗口                     |
-| 全局         | CapsLockX + Shift + Ctrl + C        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
-| 全局         | CapsLockX + Shift + [ ]             | 把当前窗口移到上一个/下一个桌面            |
-| 全局         | CapsLockX + Z                       | 循环切到最近使用的窗口                     |
-| 全局         | CapsLockX + Shift + Z               | 循环切到最不近使用的窗口                   |
-| 全局         | CapsLockX + X                       | 关掉当前标签页 Ctrl+W                      |
-| 全局         | CapsLockX + Shift + X               | 关掉当前窗口 Alt+F4                        |
-| 全局         | CapsLockX + V                       | 让窗口透明                                 |
-| 全局         | CapsLockX + Shift + V               | 让窗口保持透明（并置顶）                   |
-| 任意窗口     | 双击左边 Shift+Ctrl+Alt             | 后置当前窗口， * 见下方注                  |
+| 作用域       | 窗口增强模块                           | 说明                                       |
+| ------------ | -------------------------------------- | ------------------------------------------ |
+| Alt+Tab 界面 | ` Q E                                ` | 左右切换多桌面                             |
+| Alt+Tab 界面 | ` W A S D                            ` | 上下左右切换窗口选择                       |
+| Alt+Tab 界面 | ` X C                                ` | 关闭选择的窗口（目前 X 和 C 没有区别）     |
+| Win+Tab 视图 | ` Alt + W A S D                      ` | 切换窗口选择                               |
+| 全局         | ` Win + [Shift] + b                  ` | 定位到托盘或任务栏任务                     |
+| 全局         | ` Win + Shift + hjkl                 ` | 在窗口之间按方向切换焦点                   |
+| 任务栏       | ` Ctrl + W 或 Delete                 ` | 在托盘图标或任务栏任务上，选择退出按钮     |
+| 全局         | ` CapsLockX + 1 2 ... 9 0            ` | 切换到第 1 .. 12 个桌面                    |
+| 全局         | ` CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
+| 全局         | ` CapsLockX + Alt + Backspace        ` | 删除当前桌面（会把所有窗口移到上一个桌面） |
+| 全局         | ` CapsLockX + C                      ` | 快速排列当前桌面的窗口                     |
+| 全局         | ` CapsLockX + Ctrl + C               ` | 快速排列当前桌面的窗口（包括最小化的窗口） |
+| 全局         | ` CapsLockX + Shift + C              ` | 快速堆叠当前桌面的窗口                     |
+| 全局         | ` CapsLockX + Shift + Ctrl + C       ` | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
+| 全局         | ` CapsLockX + Shift + [ ]            ` | 把当前窗口移到上一个/下一个桌面            |
+| 全局         | ` CapsLockX + Z                      ` | 循环切到最近使用的窗口                     |
+| 全局         | ` CapsLockX + Shift + Z              ` | 循环切到最不近使用的窗口                   |
+| 全局         | ` CapsLockX + X                      ` | 关掉当前标签页 Ctrl+W                      |
+| 全局         | ` CapsLockX + Shift + X              ` | 关掉当前窗口 Alt+F4                        |
+| 全局         | ` CapsLockX + V                      ` | 让窗口透明                                 |
+| 全局         | ` CapsLockX + Shift + V              ` | 让窗口保持透明（并置顶）                   |
+| 任意窗口     | ` 双击左边 Shift+Ctrl+Alt            ` | 后置当前窗口， * 见下方注                  |
 
 *注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
 例如 mstsc.exe、TeamViewer、VirtualBox、HyperV、VMWare 等远程桌面或虚拟机程序，配合 CapsLockX + Shift + V 透明置顶功能，让你在 Windows 的界面上同时使用 Linux 界面或 MacOS 界面再也不是难题。
@@ -223,41 +226,26 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### Anki 增强模块
 
-| 模式                 | Anki 增强模块 | 说明                                                        |
-| -------------------- | :-----------: | ----------------------------------------------------------- |
-| 在 Anki-学习界面     |  w 或 k 或 ↑  | 按下=撤销，松开显示答案                                     |
-| 在 Anki-学习界面     |  a 或 h 或 ←  | 按下=顺利，松开显示答案                                     |
-| 在 Anki-学习界面     |  s 或 j 或 ↓  | 按下=困难，松开显示答案                                     |
-| 在 Anki-学习界面     |  d 或 l 或 →  | 按下=生疏，松开显示答案                                     |
-| 在 Anki-学习界面     |       q       | 返回上个界面                                                |
-| 在 Anki-学习界面     |       c       | 添加新卡片                                                  |
-| 在 Anki-学习界面     | 1 或 NumPad1  | 困难（原键位不动）                                          |
-| 在 Anki-学习界面     | 2 或 NumPad2  | 生疏（原键位不动）                                          |
-| 在 Anki-学习界面     | 3 或 NumPad3  | 一般（原键位不动）                                          |
-| 在 Anki-学习界面     | 4 或 NumPad4  | 顺利（原键位不动）                                          |
-| 在 Anki-学习界面     | 5 或 NumPad5  | 撤销                                                        |
-| 在 Anki-学习界面     | 6 或 NumPad6  | 暂停卡片                                                    |
-| 在 Anki-学习界面     |    Alt + i    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |    Alt + s    | 按下 添加 按钮                                            |
+| 模式                 |  Anki 增强模块  | 说明                                                        |
+| -------------------- | :-------------: | ----------------------------------------------------------- |
+| 在 Anki-学习界面     | ` w 或 k 或 ↑ ` | 按下=撤销，松开显示答案                                     |
+| 在 Anki-学习界面     | ` a 或 h 或 ← ` | 按下=顺利，松开显示答案                                     |
+| 在 Anki-学习界面     | ` s 或 j 或 ↓ ` | 按下=困难，松开显示答案                                     |
+| 在 Anki-学习界面     | ` d 或 l 或 → ` | 按下=生疏，松开显示答案                                     |
+| 在 Anki-学习界面     | `      q      ` | 返回上个界面                                                |
+| 在 Anki-学习界面     | `      c      ` | 添加新卡片                                                  |
+| 在 Anki-学习界面     | `1 或 NumPad1 ` | 困难（原键位不动）                                          |
+| 在 Anki-学习界面     | `2 或 NumPad2 ` | 生疏（原键位不动）                                          |
+| 在 Anki-学习界面     | `3 或 NumPad3 ` | 一般（原键位不动）                                          |
+| 在 Anki-学习界面     | `4 或 NumPad4 ` | 顺利（原键位不动）                                          |
+| 在 Anki-学习界面     | `5 或 NumPad5 ` | 撤销                                                        |
+| 在 Anki-学习界面     | `6 或 NumPad6 ` | 暂停卡片                                                    |
+| 在 Anki-学习界面     | `   Alt + i   ` | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
+| 在 Anki-添加卡片界面 | `   Alt + s   ` | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
 > 效果请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
-
-<!-- 模块文件名：应用-Edge增强.ahk-->
-
-### Edge 增强模块（测试中）
-
-| 模式     |  按键   | 说明                                  |
-| -------- | :-----: | ------------------------------------- |
-| 在Edge内 | Alt + w | 拿出笔（全屏模式暂时不支持）          |
-| 在Edge内 | Alt + q | 换左边的笔/橡皮（全屏模式暂时不支持） |
-| 在Edge内 | Alt + e | 换右边的笔/橡皮（全屏模式暂时不支持） |
-| 在Edge内 | Alt + , | 上一章/节                             |
-| 在Edge内 | Alt + . | 下一章/节                             |
-| 在Edge内 | Alt + / | 显示目录                              |
-| 在Edge内 | Alt + ; | 切换自适应页面大小模式                |
-| 在Edge内 | Alt + ' | 切换双页布局模式                      |
 
 <!-- 模块文件名：应用-OneNote2016增强.ahk-->
 
@@ -267,19 +255,19 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 按键分布设计（开发中）
 
-| 按键描述              | 作用                    | 备注       |
-| --------------------- | ----------------------- | ---------- |
-| 所有 OneNote 自带热键 | 原功能                  |            |
-| 按一下 Alt 再按别的   | 触发 OneNote 原菜单功能 |            |
-| Alt + 1234567         | 大纲折叠展开到 1-7 层级 |            |
-| Alt + qwe asd r       | 工具、换笔、视图        |            |
-| Alt + f               | 查找标签                |            |
-| Alt + -=              | 公式相关                |            |
-| Alt + m               | 移动笔记、分区          |            |
-| Alt + hjkl            | 各种链接功能            |            |
-| Alt + zxcv            | 高级复制粘贴            | 细节开发中 |
-| Alt + /               | 热键帮助、提示          | 开发中     |
-| F2 F3                 | 重命名、查找笔记        |            |
+| 按键描述                | 作用                    | 备注       |
+| ----------------------- | ----------------------- | ---------- |
+| `所有 OneNote 自带热键` | 原功能                  |            |
+| `按一下 Alt 再按别的  ` | 触发 OneNote 原菜单功能 |            |
+| `Alt + 1234567        ` | 大纲折叠展开到 1-7 层级 |            |
+| `Alt + qwe asd r      ` | 工具、换笔、视图        |            |
+| `Alt + f              ` | 查找标签                |            |
+| `Alt + -=             ` | 公式相关                |            |
+| `Alt + m              ` | 移动笔记、分区          |            |
+| `Alt + hjkl           ` | 各种链接功能            |            |
+| `Alt + zxcv           ` | 高级复制粘贴            | 细节开发中 |
+| `Alt + /              ` | 热键帮助、提示          | 开发中     |
+| `F2 F3                ` | 重命名、查找笔记        |            |
 
 #### 详细按键表 / CheatSheet
 
