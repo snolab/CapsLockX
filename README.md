@@ -52,6 +52,8 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 3. `npm i -g capslockx && npx capslockx` -- npm 全局安装
 4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- 大陆源码包（绿色软件包）解压使用，中国大陆地区用户推荐
 5. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe` -- github源码包（绿色软件包）解压使用
+5. `winget capslockx` -- TODO
+6. `scoop capslockx` -- TODO
 
 ## 使用手册📖
 
@@ -88,6 +90,12 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 <!-- 模块文件名：01.1-插件-鼠标模拟.ahk-->
 
 ### 模拟鼠标插件（ WASD QERF ）
+
+> 一直以来，我总是以键盘控自居，应该是在从前做模型的时候伤到了手指关节开始，成为键盘重度用户的。各种键盘加速工具，主动去记住各种快捷键，力求少用鼠标，甚至去学习了vim和emacs。但是，很多时候，鼠标是无可替代的，尤其是在图形界面大行其道时候。
+
+—— 以上是来自 [SimClick 模拟点击](https://github.com/rywiki/simclick) 作者的一段话，这是一款以网格细分方式模拟鼠标的作品，可以与本项目互补
+
+—— 由 [秦金伟](http://rsytes.coding-pages.com/) 推荐
 
 #### 功能
 
