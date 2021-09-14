@@ -1,3 +1,12 @@
+## [1.20.1](https://github.com/snolab/CapsLockX/compare/v1.20.0...v1.20.1) (2021-09-14)
+
+
+### Bug Fixes
+
+* 修复止动bug ([3558950](https://github.com/snolab/CapsLockX/commit/35589503511fc197ec6b9a6586433072313bb137))
+
+
+
 # [1.20.0](https://github.com/snolab/CapsLockX/compare/v1.19.7...v1.20.0) (2021-09-12)
 
 
