@@ -16,12 +16,17 @@ if (!CapsLockX) {
 global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_PageSpeed := CapsLockX_Config("EditEnhance", "PageSpeed", 1, "翻页速率")
+
 global 方向键模拟 := new AccModel2D(Func("方向键模拟"), 0.1, 编辑增强_SpeedRatioX * 40, 编辑增强_SpeedRatioY * 20)
 global 翻页键模拟 := new AccModel2D(Func("翻页键模拟"), 0.1, 20 * 编辑增强_PageSpeed)
-global TurboTab := new AccModel2D(Func("TurboTab"), 0.1, 10)
 方向键模拟.最大速度 := 250
 翻页键模拟.最大速度 := 250
-TurboTab.最大速度 := 500
+
+global 编辑增强_TurboTab := CapsLockX_Config("EditEnhance", "TurboTab", 0, "Tab键加速，可能和一些游戏不兼容，默认禁用")
+if (编辑增强_TurboTab) {
+    global TurboTab := new AccModel2D(Func("TurboTab"), 0.1, 10)
+    TurboTab.最大速度 := 500
+}
 
 ; Tab加速器 := new AccModel2D(1, 0, 0.01)
 ; Tab加速器.实动 := Func("Tab加速器")
@@ -90,6 +95,9 @@ DisableLockWorkstation()
 }
 
 翻页键模拟(dx, dy, 状态){
+    if (!CapsLockXMode) {
+        return 翻页键模拟.止动()
+    }
     _ := dy < 0 && 上翻页键发送(-dy)
     _ := dy > 0 && 下翻页键发送(dy )
 }
@@ -104,6 +112,9 @@ TurboTab(dx, dy, 状态)
 
 方向键模拟(dx, dy, 状态)
 {
+    if (!CapsLockXMode) {
+        return 方向键模拟.止动()
+    }
     if (状态 == "横中键") {
         ; hl 选词
         ; 先按右再按左
@@ -130,6 +141,8 @@ TurboTab(dx, dy, 状态)
     _ := dx < 0 && 左方向键发送(-dx)
     _ := dx > 0 && 右方向键发送(dx )
 }
+
+#if 编辑增强_TurboTab
 
 $*Tab:: TurboTab.下按()
 $*Tab Up:: TurboTab.下放()

@@ -1,6 +1,6 @@
 <!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->
 
-# CapsLockX - Get Hacker's Keyboard. 像**黑客**一样操作电脑💻
+# CapsLockX - 💻 Get Hacker's Keyboard. 像**黑客**一样操作电脑
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to easily operate the computer efficiently like a hacker in a movie without leaving the keyboard with both hands . There are a lot of functions that you can understand at a touch and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to personally define. 
 
@@ -45,13 +45,13 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 #### 命令行方式安装（进阶用户推荐，可自动更新）🖥️
 
-以下几种任选其一，中国大陆用户推荐第一个（最快），其它地区用户推荐第2个
+以下几种任选其一，其它地区用户推荐第2个
 
-1. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe`
-2. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe`
-3. `npm i -g capslockx && npx capslockx`
-4. `npx capslockx`
-5. `choco install capslockx && capslockx`
+1. `npx capslockx`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
+2. `choco update capslockx && capslockx` -- [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) 安装可使用 cup 自动更新，推荐
+3. `npm i -g capslockx && npx capslockx` -- npm 全局安装
+4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- 大陆源码包（绿色软件包）解压使用，中国大陆地区用户推荐
+5. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe` -- github源码包（绿色软件包）解压使用
 
 ## 使用手册📖
 
@@ -455,8 +455,11 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 - 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 
+星图⭐️
+- [![Stargazers over time](https://starchart.cc/snolab/CapsLockX.svg)](https://starchart.cc/snolab/CapsLockX)
 #### 相似项目地址 🔗
 
+- [Star Historys](https://star-history.t9t.io/#snolab/CapsLockX&wo52616111/capslock-plus&coralsw/CapsEz&Vonng/CapsLock)
 - 源码：[Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
   设计：[Capslock/design.md at master · Vonng/Capslock](https://github.com/Vonng/Capslock/blob/master/design.md)
 - [coralsw/CapsEz: KeyMouse Tools](https://github.com/coralsw/CapsEz)
@@ -501,9 +504,9 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 ### 捐赠记录(截至20210821) 📄
 
-| 捐赠时间 | 名称 | 金额       | 备注                     |
-| -------- | ---- | ---------- | ------------------------ |
-| 20210619 | **煜 | +50.00 CNY | 小小資助，支持獨立開發者 |
+| 捐赠时间 | 名称 | 渠道   | 金额       | 备注                     |
+| -------- | ---- | ------ | ---------- | ------------------------ |
+| 20210619 | **煜 | 支付宝 | +50.00 CNY | 小小資助，支持獨立開發者 |
 
 ### 鸣谢 🙏🏻
 

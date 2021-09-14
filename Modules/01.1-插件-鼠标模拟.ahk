@@ -108,13 +108,16 @@ SendInput_MouseMoveR32(x, y)
 ; 鼠标模拟
 鼠标模拟(dx, dy, 状态)
 {
+    if (!CapsLockXMode) {
+        return 鼠标模拟.止动()
+    }
     if (状态 == "横中键") {
         SendEvent {Click 2}
-        return
+        return 鼠标模拟.止动()
     }
     if (状态 == "纵中键") {
         SendEvent {Click 3}
-        return
+        return 鼠标模拟.止动()
     }
     
     if (TMouse_SendInputAPI && A_PtrSize == 4) {
@@ -155,13 +158,19 @@ SendInput_MouseMoveR32(x, y)
 }
 滚轮模拟(dx, dy, 状态)
 {
+    if (!CapsLockXMode) {
+        return 滚轮模拟.止动()
+    }
     if (状态 != "移动") {
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
         SendEvent {Blind}{MButton Up}
         ; 关闭滚轮自动
-        滚轮自横:=0, 滚轮自纵:=0
+        if(滚轮自动.横速 || 滚轮自动.纵速) {
+            滚轮自动.止动()
+            滚轮自控(0, 0, "止动")
+        }
         return
     }
     WM_MOUSEWHEEL := 0x020A
