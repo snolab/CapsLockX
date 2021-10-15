@@ -19,8 +19,15 @@ if (!CapsLockX){
 #Include Modules/WinClip/WinClip.ahk
 global wc := new WinClip
 
+
 Return
 
+帮助生成(){
+    ; 定义函数列 := RegExMatch("\n(.*)(){\n")
+    ; 热键列
+    ; 条件列
+    
+}
 ; 定义应用顶栏用到的函数
 altSend(altKeys){
     SetKeyDelay, 1, 60 ; 配置纠错
@@ -51,15 +58,19 @@ getAscStr(str){
 }
 
 ; 打开快速笔记主页
-OneNote2016_OpenHomePage(){
+OneNote2016主页启动(){
     SendEvent #n
     ; if !WinExist(".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
     ; WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
     ; WinActivate ; Uses the last found window.
-    WinWaitActive .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 5 ; wait for 5 seconds
+    WinWaitActive .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 1 ; wait seconds
     if(ErrorLevel){
-        TrayTip, 错误, 未找到OneNote窗口
-        return
+        WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 1 ; wait seconds
+        if(ErrorLevel){
+            TrayTip, 错误, 未找到OneNote窗口
+            return
+        }
+        WinActivate LastFound
     }
     SendEvent !{Home}
     SendEvent ^{Home}
@@ -67,21 +78,25 @@ OneNote2016_OpenHomePage(){
     Return
 }
 
-CopySearchResultSectionAndPagesThenPaste(){
-    CopySearchResultSectionAndPages()
+笔记条目搜索结果复制整理向页面粘贴条数(){
+    条数 := 笔记条目搜索结果复制整理条数()
     ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
     WinWaitActive ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 5 ; wait for 5 seconds
     if(ErrorLevel){
         TrayTip, 错误, 未找到OneNote窗口
         return
     }
-    SendEvent ^v
+    if (条数 >= 1){
+        SendEvent ^v{Left}{Delete}
+    }
+    return 条数
 }
 
-OneNote2016_OpenSearch(){
+OneNote2016搜索启动(){
     winTitle := "ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     needActive := 1
-    hWnd := WinExist(winTitle)
+    ; hWnd := WinExist(winTitle)
+    hWnd := "" ; 永远使用新窗口
     if(!hWnd){
         SendEvent #n
         WinWaitActive %winTitle%, , 1 ; wait for 1 seconds
@@ -102,11 +117,11 @@ OneNote2016_OpenSearch(){
     Return
 }
 ; 复制链接笔记页面的搜索结果
-CopySearchResultSectionAndPages(){
+笔记条目搜索结果复制整理条数(){
     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
     if(ErrorLevel){
         TrayTip, 错误, 搜索结果窗口不正确
-        return
+        return 0
     }
     ; 标题 ClassNN:	RICHEDIT60W3
     ; 地址 ClassNN:	RICHEDIT60W2
@@ -170,6 +185,8 @@ CopySearchResultSectionAndPages(){
     ; Clipboard := links
     Sort links
     Sort links_html
+    ; remove the last break, 尽管没啥用
+    links_html := RegExReplace(links_html, "\<br \/\>\n*?$", "")
     Clipboard := links
     ; Sleep 128
     wc.SetText(links)
@@ -177,14 +194,15 @@ CopySearchResultSectionAndPages(){
     SendEvent {Escape}
 
     TrayTip, %k% 条笔记链接已复制, %links%, 1
+    return k
 }
 
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
-$#!n:: OneNote2016_OpenHomePage()
+$#!n:: OneNote2016主页启动()
 ; 打开 OneNote 并精确匹配查找搜索笔记
-$#+n:: OneNote2016_OpenSearch()
+$#+n:: OneNote2016搜索启动()
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
@@ -227,45 +245,58 @@ $#+n:: OneNote2016_OpenSearch()
 ; Return
 ; }
 
-; OneNote2016创建链接窗口
-#If WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
+#If OneNote2016创建链接窗口内()
+
+OneNote2016创建链接窗口内(){
+    return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
+}
 
 ; /:: CapsLockX_ShowHelp OneNote2016创建链接窗口
 
 ; 复制链接笔记页面的搜索结果
-!+s:: CopySearchResultSectionAndPagesThenPaste()
-!s:: CopySearchResultSectionAndPages()
+!+s:: 笔记条目搜索结果复制整理向页面粘贴条数()
+!s:: 笔记条目搜索结果复制整理条数()
 
-#If !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+
+#If OneNote2016笔记编辑窗口内()
+
+OneNote2016笔记编辑窗口内(){
+    return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+}
+
+$!-:: 自动2维化公式()
+$^+c:: 复制纯文本()
+$^+v:: 粘贴纯文本()
+$~Enter:: 链接安全警告自动确认()
 
 ; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
-$~Enter::
+链接安全警告自动确认(){
     waitWindow := "ahk_class NUIDialog ahk_exe ONENOTE.EXE"
     WinWaitActive %waitWindow%,, 1
     if (!ErrorLevel)
         SendEvent !y
-Return
+}
 
 ; 自动2维化公式
-$!-::
+自动2维化公式(){
     SendEvent !=
     Sleep, 200
     altSend("jp")
-Return
+}
 
 ; 复制纯文本
-$^+c::
+复制纯文本(){
     Clipboard =
     SendEvent ^c
     ClipWait, 1
     Clipboard := Clipboard
-Return
+}
 
 ; 粘贴纯文本
-$^+v::
+粘贴纯文本(){
     Clipboard := Clipboard
     SendEvent ^v
-Return
+}
 
 ; 复制段落链接（并清洗成 onenote 链接（段落链接的url不管用。。
 $!+p::
@@ -363,8 +394,11 @@ $!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
 
 ; 换笔（只在非全屏时管用）
 
-; 展开当前关键词的相关页面链接
-$!k:: 
+; 当前关键词相关页面链接展开
+$!k:: 当前关键词相关页面链接展开()
+
+当前关键词相关页面链接展开(){
+
     Clipboard := ""
     SendEvent ^a^c
     ClipWait, 1
@@ -394,8 +428,12 @@ $!k::
         return
     }
     ToolTip
-    CopySearchResultSectionAndPagesThenPaste()
-Return
+    条数 := 笔记条目搜索结果复制整理向页面粘贴条数()
+    if(条数 == 1){
+        SendEvent +{Tab}
+        SendEvent {Home}{Left}^a{Delete}
+    }
+}
 
 ; 快速将内容做成单独链接
 $!+k::
