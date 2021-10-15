@@ -22,12 +22,6 @@ global wc := new WinClip
 
 Return
 
-帮助生成(){
-    ; 定义函数列 := RegExMatch("\n(.*)(){\n")
-    ; 热键列
-    ; 条件列
-    
-}
 ; 定义应用顶栏用到的函数
 altSend(altKeys){
     SetKeyDelay, 1, 60 ; 配置纠错
@@ -211,9 +205,12 @@ $#+n:: OneNote2016搜索启动()
 
 ^+!F12:: ExitApp ; 退出脚本
 
-; OneNote2016搜索界面
-#If (WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+; 
+#If OneNote2016搜索界面内()
 
+OneNote2016搜索界面内(){
+    return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+}
 ; $^f::
 ; $^e::
 ; enhanced_search(){
@@ -261,13 +258,18 @@ OneNote2016创建链接窗口内(){
 #If OneNote2016笔记编辑窗口内()
 
 OneNote2016笔记编辑窗口内(){
-    return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+    return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
 
 $!-:: 自动2维化公式()
 $^+c:: 复制纯文本()
 $^+v:: 粘贴纯文本()
 $~Enter:: 链接安全警告自动确认()
+$!+p:: 复制段落链接()
+!p:: 复制页面链接()
+$F2:: SendEvent ^+t ; 重命名笔记
+$+F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
+$!F2:: SendEvent ^+a{AppsKey}l ; 复制页面链接
 
 ; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
 链接安全警告自动确认(){
@@ -299,33 +301,25 @@ $~Enter:: 链接安全警告自动确认()
 }
 
 ; 复制段落链接（并清洗成 onenote 链接（段落链接的url不管用。。
-$!+p::
+复制段落链接(){
     Clipboard := ""
     SendEvent {AppsKey}pp{Enter}
     ClipWait, 1
     if(ErrorLevel)
         Return
     Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
-Return
+}
 
 ; 复制页面链接（并清洗成 onenote 链接
-!p::
+复制页面链接(){
     Clipboard := ""
     SendEvent ^+a{AppsKey}l
     ClipWait, 1
     if(ErrorLevel)
         Return
     Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
-Return
+}
 
-; 重命名笔记
-$F2:: SendEvent ^+t
-
-; 重命名分区
-$+F2:: SendEvent ^+g{AppsKey}r
-
-; 复制页面链接
-$!F2:: SendEvent ^+a{AppsKey}l
 
 ; 精确查找笔记
 $F3::
@@ -398,7 +392,6 @@ $!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
 $!k:: 当前关键词相关页面链接展开()
 
 当前关键词相关页面链接展开(){
-
     Clipboard := ""
     SendEvent ^a^c
     ClipWait, 1
@@ -435,67 +428,46 @@ $!k:: 当前关键词相关页面链接展开()
     }
 }
 
-; 快速将内容做成单独链接
-$!+k::
-    SendEvent {Home}[[{End}]]
-Return
-
-; 大纲折叠展开
-$!1:: SendEvent !+1
-$!2:: SendEvent !+2
-$!3:: SendEvent !+3
-$!4:: SendEvent !+4
-$!5:: SendEvent !+5
-$!6:: SendEvent !+6
-$!7:: SendEvent !+7
-
-; 自定义颜色
-$!`:: altSendEx("dp", "{Down 2}{Left}")
-$!+`:: altSend("dc")
-$!v:: SendEvent !h!i
-
-; 调整缩放
-$![:: altSendEx("w", "{Down}{Tab 3}{Enter}")
-$!]:: altSendEx("w", "{Down}{Tab 4}{Enter}")
-$!\:: altSendEx("w", "{Down}{Tab 5}{Enter}")
+$!+k:: SendEvent {Home}[[{End}]] ; 快速将内容做成单独链接
+$!1:: SendEvent !+1 ; 大纲折叠展开到1
+$!2:: SendEvent !+2 ; 大纲折叠展开到2
+$!3:: SendEvent !+3 ; 大纲折叠展开到3
+$!4:: SendEvent !+4 ; 大纲折叠展开到4
+$!5:: SendEvent !+5 ; 大纲折叠展开到5
+$!6:: SendEvent !+6 ; 大纲折叠展开到6
+$!7:: SendEvent !+7 ; 大纲折叠展开到7
+$!`:: altSendEx("dp", "{Down 2}{Left}")      ; 自定义颜色
+$!+`:: altSend("dc")                         ; 自定义颜色
+$!v:: SendEvent !h!i                         ; 自定义颜色
+$![:: altSendEx("w", "{Down}{Tab 3}{Enter}") ; 调整缩放+
+$!]:: altSendEx("w", "{Down}{Tab 4}{Enter}") ; 调整缩放-
+$!\:: altSendEx("w", "{Down}{Tab 5}{Enter}") ; 调整缩放复原
 
 ; 调整字体
 $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
 $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
-#if WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
+#if OneNote2016换笔中()
+OneNote2016换笔中(){
+    return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
+}
+$1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
+$2:: SendEvent {Right 1}{Enter}           ; 向第1行第2支笔切换
+$3:: SendEvent {Right 2}{Enter}           ; 向第1行第3支笔切换
+$4:: SendEvent {Right 3}{Enter}           ; 向第1行第4支笔切换
+$5:: SendEvent {Right 4}{Enter}           ; 向第1行第5支笔切换
+$6:: SendEvent {Right 5}{Enter}           ; 向第1行第6支笔切换
+$7:: SendEvent {Right 6}{Enter}           ; 向第1行第7支笔切换
+$+1:: SendEvent {Down 1}{Right 0}{Enter}  ; 向第2行第1支笔切换
+$+2:: SendEvent {Down 1}{Right 1}{Enter}  ; 向第2行第2支笔切换
+$+3:: SendEvent {Down 1}{Right 2}{Enter}  ; 向第2行第3支笔切换
+$+4:: SendEvent {Down 1}{Right 3}{Enter}  ; 向第2行第4支笔切换
+$+5:: SendEvent {Down 1}{Right 4}{Enter}  ; 向第2行第5支笔切换
+$+6:: SendEvent {Down 1}{Right 5}{Enter}  ; 向第2行第6支笔切换
+$+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
 
-; 换到第 1 行的 1 支笔
-$1:: SendEvent {Right 0}{Enter}
-; 换到第 1 行的 2 支笔
-$2:: SendEvent {Right 1}{Enter}
-; 换到第 1 行的 3 支笔
-$3:: SendEvent {Right 2}{Enter}
-; 换到第 1 行的 4 支笔
-$4:: SendEvent {Right 3}{Enter}
-; 换到第 1 行的 5 支笔
-$5:: SendEvent {Right 4}{Enter}
-; 换到第 1 行的 6 支笔
-$6:: SendEvent {Right 5}{Enter}
-; 换到第 1 行的 7 支笔
-$7:: SendEvent {Right 6}{Enter}
-; 换到第 2 行的 1 支笔
-$+1:: SendEvent {Down 1}{Right 0}{Enter}
-; 换到第 2 行的 2 支笔
-$+2:: SendEvent {Down 1}{Right 1}{Enter}
-; 换到第 2 行的 3 支笔
-$+3:: SendEvent {Down 1}{Right 2}{Enter}
-; 换到第 2 行的 4 支笔e
-$+4:: SendEvent {Down 1}{Right 3}{Enter}
-; 换到第 2 行的 5 支笔
-$+5:: SendEvent {Down 1}{Right 4}{Enter}
-; 换到第 2 行的 6 支笔
-$+6:: SendEvent {Down 1}{Right 5}{Enter}
-; 换到第 2 行的 7 支笔
-$+7:: Send {Down 1}{Right 6}{Enter}
-
-#if WinActive("ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+#if WinActive("ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 
 !t:: 把笔记时间显式填充到标题()
 把笔记时间显式填充到标题(){
@@ -524,10 +496,14 @@ $+7:: Send {Down 1}{Right 6}{Enter}
     SendEvent, {Text}%result%
 }
 
-#If WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+#If 名为剪贴板的OneNote窗口存在()
+
+名为剪贴板的OneNote窗口存在(){
+    return WinExist("剪贴板.*|Clipboard ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
+}
 
 ~^c::
-    hwndOneNote := WinExist("剪贴板.*|Clipboard ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")
+    hwndOneNote := 名为剪贴板的OneNote窗口存在()
     if (!hwndOneNote)
         Return
     ; ; 通常在弹起时触发
