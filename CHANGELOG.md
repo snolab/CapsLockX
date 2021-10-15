@@ -1,3 +1,13 @@
+## [1.20.2](https://github.com/snolab/CapsLockX/compare/v1.20.1...v1.20.2) (2021-10-15)
+
+
+### Bug Fixes
+
+* onenote2016链接expand细节调整，帮助文件自动生成方法思考 ([fe11157](https://github.com/snolab/CapsLockX/commit/fe111578f39d0ddbca105311f50617c08937bd80))
+* 帮助生成格式化尝试 ([2cefccb](https://github.com/snolab/CapsLockX/commit/2cefccb8156a7e1a6a8bab05639705504399c87a))
+
+
+
 ## [1.20.1](https://github.com/snolab/CapsLockX/compare/v1.20.0...v1.20.1) (2021-09-14)
 
 
