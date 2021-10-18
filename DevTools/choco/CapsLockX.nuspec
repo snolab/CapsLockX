@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.20.2</version>
+    <version>1.21.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,17 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.20.1](https://github.com/snolab/CapsLockX/compare/v1.20.0...v1.20.1) (2021-09-14)
+    <releaseNotes><![CDATA[## [1.20.2](https://github.com/snolab/CapsLockX/compare/v1.20.1...v1.20.2) (2021-10-15)
+
+
+### Bug Fixes
+
+* onenote2016expand， ([fe11157](https://github.com/snolab/CapsLockX/commit/fe111578f39d0ddbca105311f50617c08937bd80))
+*  ([2cefccb](https://github.com/snolab/CapsLockX/commit/2cefccb8156a7e1a6a8bab05639705504399c87a))
+
+
+
+## [1.20.1](https://github.com/snolab/CapsLockX/compare/v1.20.0...v1.20.1) (2021-09-14)
 
 
 ### Bug Fixes
@@ -174,20 +184,6 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 
 ## [1.18.9](https://github.com/snolab/CapsLockX/compare/v1.18.8...v1.18.9) (2021-07-26)
-
-
-### Bug Fixes
-
-* tasks bar jumping improve ([8088ed4](https://github.com/snolab/CapsLockX/commit/8088ed42945bd004a8e811c08ea246e3eba29af1))
-* update tomato life and fix reload ([cccfcc2](https://github.com/snolab/CapsLockX/commit/cccfcc27defcd64415f227443e18bb87469cbfd2))
-
-
-
-## [1.18.8](https://github.com/snolab/CapsLockX/compare/v1.18.7...v1.18.8) (2021-06-16)
-
-
-
-## [1.18.7](https://github.com/snolab/CapsLockX/compare/v1.18.6...v1.18.7) (2021-06-09)
 
 
 ### Bug Fixes
