@@ -105,19 +105,25 @@ SendInput_MouseMoveR32(x, y)
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
 
-; 鼠标模拟
+; void 鼠标模拟
 鼠标模拟(dx, dy, 状态)
 {
     if (!CapsLockXMode) {
-        return 鼠标模拟.止动()
+        鼠标模拟.止动()
+        return
     }
     if (状态 == "横中键") {
         SendEvent {Click 2}
-        return 鼠标模拟.止动()
+        鼠标模拟.止动()
+        return
     }
     if (状态 == "纵中键") {
         SendEvent {Click 3}
-        return 鼠标模拟.止动()
+        鼠标模拟.止动()
+        return
+    }
+    if (状态 != "移动"){
+        return
     }
     
     if (TMouse_SendInputAPI && A_PtrSize == 4) {
@@ -142,6 +148,9 @@ SendInput_MouseMoveR32(x, y)
 }
 
 滚轮自动(dx, dy, 状态){
+    if (状态 != "移动"){
+        return
+    }
     WM_MOUSEWHEEL := 0x020A
     WM_MOUSEWHEELH := 0x020E
     _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
@@ -149,6 +158,9 @@ SendInput_MouseMoveR32(x, y)
 }
 滚轮自控(dx, dy, 状态)
 {
+    if (状态 != "移动"){
+        return
+    }
     滚轮自动.横速 += dx, 滚轮自动.纵速 += dy, 滚轮自动.始动()
     msg := "【雪星滚轮自动v2】`n"
     msg .= "横：" (滚轮自动.横速|0) "px/s`n纵：" (滚轮自动.纵速|0)  "px/s`n"
@@ -161,7 +173,7 @@ SendInput_MouseMoveR32(x, y)
     if (!CapsLockXMode) {
         return 滚轮模拟.止动()
     }
-    if (状态 != "移动") {
+    if ( 状态 == "横中键" || 状态 == "纵中键") {
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
@@ -171,6 +183,9 @@ SendInput_MouseMoveR32(x, y)
             滚轮自动.止动()
             滚轮自控(0, 0, "止动")
         }
+        return
+    }
+    if (状态 != "移动"){
         return
     }
     WM_MOUSEWHEEL := 0x020A

@@ -129,6 +129,10 @@ class AccModel2D
         
         ; 快速启动
         if (!dt) {
+            this.启动中 := 1
+            this.实动函数.Call(0, 0, "启动")
+            this.启动中 := 0
+
             this.横移 := this._sign(横加速)
             this.纵移 := this._sign(纵加速)
         }
@@ -148,7 +152,8 @@ class AccModel2D
         }
         ; 速度归 0，结束定时器
         if ( !this.横速 && !this.纵速 && !(横输出 || 纵输出)) {
-            Return this.止动()
+            this.止动()
+            Return
         }
     }
     始动() {
@@ -165,6 +170,14 @@ class AccModel2D
         this.纵速 := 0, this.纵移 := 0
         时钟 := this.时钟
         SetTimer % 时钟, Off
+        this.实动函数.Call(0, 0, "止动")
+    }
+    冲突止动(){
+        在动 := this.动刻 != 0
+        启动中 := this.启动中
+        if(在动 && !启动中){
+            this.止动()
+        }
     }
     左按(){
         this.左刻 := this.左刻 ? this.左刻 : this._QPC()

@@ -98,6 +98,9 @@ DisableLockWorkstation()
     if (!CapsLockXMode) {
         return 翻页键模拟.止动()
     }
+    if (状态 != "移动"){
+        return
+    }
     _ := dy < 0 && 上翻页键发送(-dy)
     _ := dy > 0 && 下翻页键发送(dy )
 }
@@ -105,6 +108,9 @@ DisableLockWorkstation()
 TurboTab(dx, dy, 状态)
 {
     ; _ := dy < 0 && 上翻页键发送(-dy)
+    if (状态 != "移动"){
+        return
+    }
     loop %dy%{
         SendEvent {Blind}{Tab}
     }
@@ -134,6 +140,9 @@ TurboTab(dx, dy, 状态)
             SendEvent {Home}+{End}
         }
         return 方向键模拟.止动()
+    }
+    if (状态 != "移动"){
+        return
     }
     ; tooltip % dy " " dx
     _ := dy < 0 && 上方向键发送(-dy)

@@ -15,6 +15,19 @@ return
 #if CapsLockXMode
     m:: 配置文件编辑()
 
+
+CapsLockX_首次使用教学2(){
+    
+    Gui, Add, CheckBox, T_XKeyAsCapsLock, 使用 CapsLock 作为引导键（默认启用，用户启用）
+    Gui, Add, CheckBox, T_AskRunAsAdmin, 请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）
+    Gui, Add, CheckBox, FIRST_LAUNCH, 启动时显示配置
+    
+    ; 打开进阶配置编辑器？
+    ; SetTimer, 配置文件编辑, -1
+    
+    CapsLockX_ConfigSet("_NOTICE_", "FIRST_LAUNCH", 0)
+}
+
 CapsLockX_首次使用教学(){
     MsgBox, 4, CapsLockX 教程, 首次启动 CapsLockX ，是否进行基本偏好设置？`n`n（你可以随时按 CapsLockX + M 修改配置文件）
     IfMsgBox No
