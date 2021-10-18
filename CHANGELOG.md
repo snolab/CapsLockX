@@ -1,3 +1,12 @@
+# [1.21.0](https://github.com/snolab/CapsLockX/compare/v1.20.2...v1.21.0) (2021-10-18)
+
+
+### Features
+
+* BlenderEnhanced ([345a9b6](https://github.com/snolab/CapsLockX/commit/345a9b694806a5ce8815651642a6e55cc9d84bb7))
+
+
+
 ## [1.20.2](https://github.com/snolab/CapsLockX/compare/v1.20.1...v1.20.2) (2021-10-15)
 
 
