@@ -135,9 +135,12 @@ TurboTab(dx, dy, 状态)
         ; jk 选句
         ; 先按下再按上
         if (dy > 0) {
-            SendEvent {End}+{Home}
+            上方向键发送(1)
+            SendEvent  {Home}+{End}
+            ; SendEvent {End}+{Home}
         } else {
-            SendEvent {Home}+{End}
+            下方向键发送(1)
+            SendEvent  {Home}+{End}
         }
         return 方向键模拟.止动()
     }
@@ -157,19 +160,19 @@ $*Tab:: TurboTab.下按()
 $*Tab Up:: TurboTab.下放()
 
 #if CapsLockXMode
-    
+
 *u:: 翻页键模拟.下按()
-*u Up:: 翻页键模拟.下放()
 *i:: 翻页键模拟.上按()
+*u Up:: 翻页键模拟.下放()
 *i Up:: 翻页键模拟.上放()
 
 $*h:: 方向键模拟.左按()
-$*h Up:: 方向键模拟.左放()
 $*l:: 方向键模拟.右按()
-$*l Up:: 方向键模拟.右放()
 $*k:: 方向键模拟.上按()
-$*k Up:: 方向键模拟.上放()
 $*j:: 方向键模拟.下按()
+$*h Up:: 方向键模拟.左放()
+$*l Up:: 方向键模拟.右放()
+$*k Up:: 方向键模拟.上放()
 $*j Up:: 方向键模拟.下放()
 
 *y:: Home
