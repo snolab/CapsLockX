@@ -175,8 +175,7 @@ CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录
 
     ; 迁移用户配置
     FileCreateDir, %程序目录%/User/
-    ; FileCopy, ./User/*.*, %程序目录%/User/, 1
-    FileCopyDir, ./User/, %程序目录%/User/, 1
+    FileCopyDir, %CapsLockX_用户目录%/, %程序目录%/User/, 1
     ; FileCopy, ./UserModules/*.user.ahk, %程序目录%/UserModules/, 1
     ; FileCopy, ./UserModules/*.user.md, %程序目录%/UserModules/, 1
     CapsLockX_更新提示("解压完成，将打开新版本文件夹，请把它手动复制到当前软件目录。")

@@ -10,6 +10,8 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PAT
 
 Return
 
+:*:谷歌浏览器启动::
+    
 #if !CapsLockXMode
 
 #h:: 讯飞语音输入法切换()

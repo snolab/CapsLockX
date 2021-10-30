@@ -1,6 +1,7 @@
 ﻿; 保存为 save with UTF8 with DOM
 
 CapsLockX_ConfigInit()
+; return 不要return
 
 CapsLockX_ConfigInit(){
     if (!CapsLockX_配置路径)

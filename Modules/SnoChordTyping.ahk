@@ -31,7 +31,7 @@ Return
     global SnoChordTypingLastKeyDownTick := 0
 
     ; 读入配置
-    ConfigPath := "./User/雪星并击配置.ini"
+    ConfigPath := CapsLockX_用户目录 "/雪星并击配置.ini"
     IniRead, SnoChordTypingChordIntervalThreshold, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold, %SnoChordTypingChordIntervalThreshold%
     IniWrite, %SnoChordTypingChordIntervalThreshold%, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold
     IniRead, SnoChordTypingAllowRewriteString, %ConfigPath%, Common, SnoChordTypingAllowRewriteString, %SnoChordTypingAllowRewriteString%

@@ -14,7 +14,7 @@ if (!CapsLockX){
 }
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
-global 快速窗口热键编辑用户模块目录 := "./User/"
+global 快速窗口热键编辑用户模块目录 := CapsLockX_用户目录 "/"
 global 快速窗口热键编辑初始内容 := "
 (
 ; ========== CapsLockX ==========
@@ -61,7 +61,7 @@ UserModuleEdit(路径, 使用进程名AHK := 0){
     Run notepad %路径%
 }
 
-; 快速宏
-!m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/CapsLockX_用户脚本.user.ahk")
-+!m:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
+; 快速创建宏
+; !m:: UserModuleEdit(快速窗口热键编辑用户模块目录 "/CapsLockX_用户脚本.user.ahk")
+!m:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
 

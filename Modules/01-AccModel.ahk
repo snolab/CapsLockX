@@ -9,6 +9,7 @@
 ; ========== CapsLockX ==========
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 
+; 可以只使用一个维度
 class AccModel2D
 {
     __New(实动函数, 衰减率 := 1, 加速比率 := 1, 纵加速比率 := 0)
@@ -72,6 +73,9 @@ class AccModel2D
         maxs := this.最大速度
         v := v < -maxs ? -maxs : v
         v := v > maxs ? maxs : v
+        if (abs(v) >= maxs ){
+            tooltip 警告：达到速度上限
+        }
         
         ; 摩擦力不阻碍用户意志，加速度存在时不使用摩擦力
         if ((a > 0 And v > 0) Or (a < 0 And v < 0)) {
@@ -97,7 +101,7 @@ class AccModel2D
     }
     _tickerLooper(现刻:=0)
     {
-        现刻 := 现刻==0 ?  this._QPC():现刻
+        现刻 := 现刻==0 ?  this._QPC() : 现刻
         ; 计算 dt
         dt := this.动刻 == 0 ? 0 : ((现刻 - this.动刻) / this._QPF())
         this.动刻 := 现刻
@@ -129,9 +133,10 @@ class AccModel2D
         
         ; 快速启动
         if (!dt) {
-            this.启动中 := 1
+            ; 这里可能导致不稳定，原因不明
+            ; this.启动中 := 1
             this.实动函数.Call(0, 0, "启动")
-            this.启动中 := 0
+            ; this.启动中 := 0
 
             this.横移 := this._sign(横加速)
             this.纵移 := this._sign(纵加速)
@@ -172,15 +177,15 @@ class AccModel2D
         SetTimer % 时钟, Off
         this.实动函数.Call(0, 0, "止动")
     }
-    冲突止动(){
-        在动 := this.动刻 != 0
-        启动中 := this.启动中
-        if(在动 && !启动中){
-            this.止动()
-        }
-    }
-    左按(){
-        this.左刻 := this.左刻 ? this.左刻 : this._QPC()
+    ; 冲突止动(){
+    ;     在动 := this.动刻 != 0
+    ;     启动中 := this.启动中
+    ;     if(在动 && !启动中){
+    ;         this.止动()
+    ;     }
+    ; }
+    增按(){
+        this.刻 := this.左刻 ? this.左刻 : this._QPC()
         this.始动()
     }
     左放(){
@@ -219,6 +224,8 @@ class AccModel2D
         Return Counter
     }
 }
+
+
 class FPS_Debugger
 {
     __New()

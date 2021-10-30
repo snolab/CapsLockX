@@ -17,11 +17,15 @@ if (A_IsAdmin){
 #NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
-FileCreateDir ./User
-FileCreateDir %USERPROFILE%/.CapsLockX
-global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
+global CapsLockX_用户目录 := "./User"
+if(FileExist(USERPROFILE . "/.CapsLockX")){
+    CapsLockX_用户目录 := USERPROFILE . "/.CapsLockX"
+}
+FileCreateDir %CapsLockX_用户目录%
+
 global CapsLockX_模块路径 := "./Modules" 
 global CapsLockX_核心路径 := "./Core"
+global CapsLockX_配置路径 := CapsLockX_用户目录 . "/CapsLockX-Config.ini"
 ; 版本
 global CapsLockX_Version
 FileRead, CapsLockX_Version, ./Core/version.txt
@@ -44,11 +48,11 @@ global loadingTips := ""
 ; 注：如果CLX已经开了的话，这一步会触发重启，这可能会导致一些文件冲突的BUG……
 FileDelete, %CapsLockX_模块路径%/*.user.ahk
 FileDelete, %CapsLockX_模块路径%/*.user.md
-FileCopy ./User/*.user.ahk, %CapsLockX_模块路径%/, 1
-FileCopy ./User/*.user.md, %CapsLockX_模块路径%/, 1
+FileCopy %CapsLockX_用户目录%/*.user.ahk, %CapsLockX_模块路径%/, 1
+FileCopy %CapsLockX_用户目录%/*.user.md, %CapsLockX_模块路径%/, 1
 ; 备份旧版本的用户模块（注意顺序，不要把新版用户模块覆盖了）
-; FileCopy %CapsLockX_模块路径%/*.user.ahk, ./User/
-; FileCopy %CapsLockX_模块路径%/*.user.md, ./User/
+; FileCopy %CapsLockX_模块路径%/*.user.ahk, %CapsLockX_用户目录%/
+; FileCopy %CapsLockX_模块路径%/*.user.md, %CapsLockX_用户目录%/
 
 ; 加载模块
 global CapsLockX_ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"

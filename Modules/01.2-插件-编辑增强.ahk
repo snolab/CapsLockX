@@ -35,10 +35,10 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PAT
 ; DisableLockWorkstation()
 Return
 
-DisableLockWorkstation()
+DisableLockWorkstation(value := 1)
 {
     ; 这里改注册表是为了禁用 Win + L 锁定机器，让 Win+hjkl 可以挪窗口位置，不过只有用管理员运行才管用。（好像也不管用
-    value := !!(ModuleState & MF_EditX) ? 0 : 1
+    ; value := !!(ModuleState & MF_EditX) ? 0 : 1
     RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, %value%
 }
 
@@ -159,24 +159,24 @@ TurboTab(dx, dy, 状态)
 $*Tab:: TurboTab.下按()
 $*Tab Up:: TurboTab.下放()
 
-#if CapsLockXMode
+#if CapsLockXMode ; CLX模式下
 
-*u:: 翻页键模拟.下按()
-*i:: 翻页键模拟.上按()
+*u:: 翻页键模拟.下按() ; 翻页键下
+*i:: 翻页键模拟.上按() ; 翻页键上
 *u Up:: 翻页键模拟.下放()
 *i Up:: 翻页键模拟.上放()
 
-$*h:: 方向键模拟.左按()
-$*l:: 方向键模拟.右按()
-$*k:: 方向键模拟.上按()
-$*j:: 方向键模拟.下按()
+$*h:: 方向键模拟.左按() ; 方向键左
+$*l:: 方向键模拟.右按() ; 方向键右
+$*k:: 方向键模拟.上按() ; 方向键上
+$*j:: 方向键模拟.下按() ; 方向键下
 $*h Up:: 方向键模拟.左放()
 $*l Up:: 方向键模拟.右放()
 $*k Up:: 方向键模拟.上放()
 $*j Up:: 方向键模拟.下放()
 
-*y:: Home
-*o:: End
+$*y:: Home
+$*o:: End
 ; 一起按相当于选择当前行，不同的顺序影响按完之后的光标位置（在前在后）
 y & o:: Send {Home}+{End}
 o & y:: Send {End}+{Home}

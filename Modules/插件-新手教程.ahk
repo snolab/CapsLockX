@@ -35,16 +35,18 @@ CapsLockX_首次使用教学(){
 
     MsgBox, 4, CapsLockX 教程, 是否使用空格作为 CapsLockX 引导键？（例如，启用后，使用空格组合键 空格 + WASD 可控制鼠标，而单独按下时将保持原空格的功能，不影响打字）
     IfMsgBox Yes
-    CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 1, "使用 CapsLock 作为引导键（默认启用，用户启用）")
+    global T_XKeyAsCapsLock := CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 1, "使用 CapsLock 作为引导键（默认启用，用户启用）")
     IfMsgBox No
-    CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 0, "使用 CapsLock 作为引导键（默认启用，用户禁用）")
+    global T_XKeyAsCapsLock := CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", 0, "使用 CapsLock 作为引导键（默认启用，用户禁用）")
 
     MsgBox, 4, CapsLockX 教程, 是否在启动时询问管理员权限？（权限受限时，权限受限，例如鼠标模拟等功能无法正常运行，默认请求提升权限，如果不需要管理权限下的功能，可以改为0）
     IfMsgBox Yes
-    CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", 1, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
+    global T_AskRunAsAdmin := CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", 1, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
     IfMsgBox No
-    CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", 0, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
+    global T_AskRunAsAdmin := CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", 0, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
 
+    AskRunAsAdminIfNeeded()
+    
     MsgBox, 4, CapsLockX 教程, 完成，是否打开进阶配置编辑器？
     IfMsgBox Yes
     SetTimer, 配置文件编辑, -1000
@@ -52,7 +54,7 @@ CapsLockX_首次使用教学(){
     CapsLockX_ConfigSet("_NOTICE_", "FIRST_LAUNCH", 0)
 }
 配置文件编辑(){
-    Run notepad %CapsLockX_配置路径%
+    Run notepad "%CapsLockX_配置路径%"
     ; TrayTip, 配置文件关, 自动重载
     ; CapsLockX_Reload()
 }

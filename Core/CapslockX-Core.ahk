@@ -25,16 +25,25 @@ SetTitleMatchMode RegEx
 #MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的。。）
 #InstallMouseHook ; 安装鼠标钩子
 
-global CapsLockX_上次触发键 := ""
+
 ; 载入设定
+global CapsLockX_用户目录 := "./User"
+if(FileExist(USERPROFILE . "/.CapsLockX")){
+    CapsLockX_用户目录 := USERPROFILE . "/.CapsLockX"
+}
+FileCreateDir %CapsLockX_用户目录%
+
+global CapsLockX_配置路径 := CapsLockX_用户目录 "/CapsLockX-Config.ini"
+; 
 global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
-global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
 FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
+; 
 #Include Core/CapsLockX-Config.ahk
 
 ; 模式处理
 global CapsLockX := 1 ; 模块运行标识符
 global CapsLockXMode := 0
+global CapsLockX_上次触发键 := ""
 global ModuleState := 0
 global CapsLockX_FnActed := 0
 global CM_NORMAL := 0 ; 普通模式（键盘的正常状态）

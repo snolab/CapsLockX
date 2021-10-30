@@ -7,9 +7,9 @@ Return
 
 #If !!(CapsLockXMode & CM_FN) || !!(CapsLockXMode & CM_CapsLockX)
 
-F1:: Launch_App1 ; 打开我的电脑
+F1:: Launch_App1 ; 我的电脑打开
 F2:: Launch_App2 ; 计算器
-F3:: Browser_Home ; 
+F3:: Browser_Home ; 浏览器主页启动
 F4:: Launch_Media ; 默认是 Windows Media Player
 
 F5:: Send {Media_Play_Pause}
