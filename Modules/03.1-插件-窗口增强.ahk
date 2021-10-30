@@ -55,7 +55,7 @@ AltTabWindowGet(){
 WinTabWindowGet(){
     return WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
 }
-MultitaskingViewFrameQ(){
+多任务窗口切换界面内(){
     Return AltTabWindowGet() || WinTabWindowGet()
 }
 ; this is improved method for stable
@@ -600,29 +600,33 @@ b:: 任务栏任务切换()
 ; 使普通的按方向窗口切换的热键与CapsLockXMode互不干扰
 #if !CapsLockXMode
 
-#+h::
+#+h:: 窗口向左方显示器移动()
+#+l:: 窗口向右方显示器移动()
+#+j:: 窗口向下方显示器移动()
+#+k:: 窗口向上方显示器移动()
+窗口向左方显示器移动(){
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 3)
-    return
-#+j::
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 4)
-    return
-#+k::
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 2)
-    return
-#+l::
+}
+窗口向右方显示器移动(){
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
     WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 1)
-    return
+}
+窗口向下方显示器移动(){
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 4)
+}
+窗口向上方显示器移动(){
+    WinWaitNotActive ahk_class MultitaskingViewFrame
+    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
+    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 2)
+}
 
 ; Alt+Tab 或 Win+Tab
-#if MultitaskingViewFrameQ()
+#if 多任务窗口切换界面内()
 
 ; !1:: SwitchToDesktop(1)
 ; !2:: SwitchToDesktop(2)
