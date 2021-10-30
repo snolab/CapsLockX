@@ -576,7 +576,7 @@ x:: Send ^w
 ; 关闭窗口并切到下一窗口
 +x::
     hWnd := WinActive("A")
-    Send !{Esc}
+    Send +!{Esc}
     WM_CLOSE := 0x0010
     SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
     ; ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)

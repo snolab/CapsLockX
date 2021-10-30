@@ -163,7 +163,7 @@ class AccModel2D
         SetTimer % 时钟, % this.间隔
     }
     止动(){
-        this.实动函数.Call(0, 0, "止动")
+        ; this.实动函数.Call(0, 0, "止动")
         this.动刻 := 0, this.动中 := 0
         this.左刻 := 0, this.右刻 := 0
         this.上刻 := 0, this.下刻 := 0
