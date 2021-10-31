@@ -14,7 +14,7 @@ jobs:
   gh-source:
     runs-on: windows-latest
     steps:
-      - run: git clone https://github.com/snomiao/CapsLockX.git
+      - run: git clone https://github.com/snolab/CapsLockX.git
       - run: .\CapsLockX\CapsLockX.exe
         env:
           ENVIROMENT: CI_TEST
