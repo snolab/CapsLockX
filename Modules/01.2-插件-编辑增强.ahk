@@ -135,9 +135,12 @@ TurboTab(dx, dy, 状态)
         ; jk 选句
         ; 先按下再按上
         if (dy > 0) {
-            SendEvent {End}+{Home}
+            上方向键发送(1)
+            SendEvent  {Home}+{End}
+            ; SendEvent {End}+{Home}
         } else {
-            SendEvent {Home}+{End}
+            下方向键发送(1)
+            SendEvent  {Home}+{End}
         }
         return 方向键模拟.止动()
     }

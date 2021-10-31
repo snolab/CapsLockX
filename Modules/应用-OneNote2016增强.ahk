@@ -52,23 +52,29 @@ getAscStr(str){
 }
 
 ; 打开快速笔记主页
-OneNote2016主页启动(){
+OneNote快速笔记窗口启动(){
     SendEvent #n
-    ; if !WinExist(".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
-    ; WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE
-    ; WinActivate ; Uses the last found window.
-    WinWaitActive .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 1 ; wait seconds
+    OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
     if(ErrorLevel){
-        WinWait .* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 1 ; wait seconds
+        WinWait %OneNote窗口匹配串% , , 1 ; wait seconds
         if(ErrorLevel){
             TrayTip, 错误, 未找到OneNote窗口
             return
         }
-        WinActivate LastFound
+        WinActivate %OneNote窗口匹配串%
     }
-    SendEvent !{Home}
-    SendEvent ^{Home}
-    ; SendEvent ^{End}{Enter}
+}
+OneNote2016主页启动(){
+    OneNote快速笔记窗口启动()
+    SendEvent !{Home}^{Home}!{Enter}{Left}
+    ; SendEvent ^{End}!{Enter}
+    Return
+}
+OneNote2016搜索启动() {
+    OneNote快速笔记窗口启动()
+    SendEvent ^e{Text}""
+    SendEvent {Left}
     Return
 }
 
@@ -86,30 +92,6 @@ OneNote2016主页启动(){
     return 条数
 }
 
-OneNote2016搜索启动(){
-    winTitle := "ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
-    needActive := 1
-    ; hWnd := WinExist(winTitle)
-    hWnd := "" ; 永远使用新窗口
-    if(!hWnd){
-        SendEvent #n
-        WinWaitActive %winTitle%, , 1 ; wait for 1 seconds
-        if(ErrorLevel){
-            needActive := 1
-            WinWait %winTitle%, , 1 ; wait for 1 seconds
-            if(ErrorLevel){
-                TrayTip, 错误, 未找到OneNote窗口
-                return
-            }
-        }
-        hWnd := LastFound
-    }
-    if(needActive)
-        WinActivate ahk_id %hWnd%
-    SendEvent ^e{Text}""
-    SendEvent {Left}
-    Return
-}
 ; 复制链接笔记页面的搜索结果
 笔记条目搜索结果复制整理条数(){
     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
@@ -194,9 +176,9 @@ OneNote2016搜索启动(){
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
-$#!n:: OneNote2016主页启动()
+#!n:: OneNote2016主页启动()
 ; 打开 OneNote 并精确匹配查找搜索笔记
-$#+n:: OneNote2016搜索启动()
+#+n:: OneNote2016搜索启动()
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
@@ -261,15 +243,15 @@ OneNote2016笔记编辑窗口内(){
     return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
 
-$!-:: 自动2维化公式()
-$^+c:: 复制纯文本()
-$^+v:: 粘贴纯文本()
-$~Enter:: 链接安全警告自动确认()
-$!+p:: 复制段落链接()
+!-:: 自动2维化公式()
+^+c:: 复制纯文本()
+^+v:: 粘贴纯文本()
+~Enter:: 链接安全警告自动确认()
+!+p:: 复制段落链接()
 !p:: 复制页面链接()
-$F2:: SendEvent ^+t ; 重命名笔记
-$+F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
-$!F2:: SendEvent ^+a{AppsKey}l ; 复制页面链接
+F2:: SendEvent ^+t ; 重命名笔记
++F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
+!F2:: SendEvent ^+a{AppsKey}l ; 复制页面链接
 
 ; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
 链接安全警告自动确认(){
@@ -327,69 +309,31 @@ $F3::
     SendEvent {Left}
 Return
 
-; 移动笔记
-$!m:: SendEvent ^!m
-
-; 移动分区
-$!+m:: SendEvent ^+g{AppsKey}m
-
-; 搜索标记
-$!f:: altSend("hg")
-
-; 选择页面
-$^+PgUp:: SendEvent ^+g{Up}{Enter}
-$^+PgDn:: SendEvent ^+g{Down}{Enter}
-
-; 同步此笔记本
-$^s:: SendEvent +{F9}
-
-; 切换为无色背景
-$!n:: altSend("wpcn")
-
-; 切换为无格子背景
-$+!n:: altSend("wre")
-
-; 快速删除当前行
-$+Delete:: SendEvent {Escape}^a{Del}
-
-; 快速删除当前页面
-$!Delete:: SendEvent ^+a{Delete}
-
-; 快速删除当前分区（并要求确认）
-$!+Delete:: SendEvent ^+g{AppsKey}d
-
-; 快速关闭窗口
-$^w:: altSend("{F4}")
-
-; 选中行
-$^+l:: SendEvent !+{Down}!+{Up}
-
-; 选中当前词（目前来说会带上词右边的空格）
-$^d:: SendEvent {Right}^{Left}^+{Right}
-
-; 拖动
-$!q:: altSend("dh") ;换成手形Tools
-; 套锁
-$!w:: altSend("dl")
-; 橡皮
-$!e:: altSend("dek")
-; 输入
-$!s:: altSend("dt")
-; 增加空白
-$!a:: altSend("dn")
-; 视图 - 缩放到1
-$!+r:: altSend("w1")
-; 视图 - 缩放到页面宽度
-$!r:: altSend("wi")
-
-; 换笔
-$!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
+!m:: SendEvent ^!m ; 移动笔记
+!+m:: SendEvent ^+g{AppsKey}m ; 移动分区
+!f:: altSend("hg") ; 搜索标记
+^+PgUp:: SendEvent ^+g{Up}{Enter} ; 上一个页面切换
+^+PgDn:: SendEvent ^+g{Down}{Enter} ; 下一个页面切换
+^s:: SendEvent +{F9} ; 同步此笔记本
+!n:: altSend("wpcn") ; 切换为无色背景
++!n:: altSend("wre") ; 切换为无格子背景
++Delete:: SendEvent {Escape}^a{Del} ; 快速删除当前行
+!Delete:: SendEvent ^+a{Delete} ; 快速删除当前页面
+!+Delete:: SendEvent ^+g{AppsKey}d ; 快速删除当前分区（并要求确认）
+^w:: altSend("{F4}") ; 快速关闭窗口
+^+l:: SendEvent !+{Down}!+{Up} ; 选中行
+^d:: SendEvent {Right}^{Left}^+{Right} ; 选中当前词（目前来说会带上词右边的空格）
+!q:: altSend("dh") ;换成手形Tools ; 拖动
+!w:: altSend("dl") ; 套锁
+!e:: altSend("dek") ; 橡皮
+!s:: altSend("dt") ; 输入
+!a:: altSend("dn") ; 增加空白
+!+r:: altSend("w1") ; 视图 - 缩放到1
+!r:: altSend("wi") ; 视图 - 缩放到页面宽度
+!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
 ; $!a:: altSendEx("dp", "{Right 1}{Enter}") ; 笔悬停时是下一支笔，没有笔时是选红色笔
-
-; 换笔（只在非全屏时管用）
-
 ; 当前关键词相关页面链接展开
-$!k:: 当前关键词相关页面链接展开()
+!k:: 当前关键词相关页面链接展开()
 
 当前关键词相关页面链接展开(){
     Clipboard := ""
@@ -449,6 +393,7 @@ $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
 #if OneNote2016换笔中()
+
 OneNote2016换笔中(){
     return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
 }
@@ -502,7 +447,9 @@ $+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
     return WinExist("剪贴板.*|Clipboard ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
 
-~^c::
+~^c:: OneNote剪贴板收集()
+
+OneNote剪贴板收集(){
     hwndOneNote := 名为剪贴板的OneNote窗口存在()
     if (!hwndOneNote)
         Return
@@ -521,5 +468,5 @@ $+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
     SendEvent, ^v
     Sleep 128
     WinActivate, ahk_id %current%
-Return
+}
 
