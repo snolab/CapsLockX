@@ -6,18 +6,14 @@
 ; 版本：v0.0.1
 ; ========== CapsLockX ==========
 
+BlenderEnhancedInit()
 
-; CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
-; global debug_fps := new FPS_Debugger()
-global X平移 := new AccModel2D(Func("X平移"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global Y平移 := new AccModel2D(Func("Y平移"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global Z平移 := new AccModel2D(Func("Z平移"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global X缩放 := new AccModel2D(Func("X缩放"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global Y缩放 := new AccModel2D(Func("Y缩放"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global Z缩放 := new AccModel2D(Func("Z缩放"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global X旋转 := new AccModel2D(Func("X旋转"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global Y旋转 := new AccModel2D(Func("Y旋转"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global Z旋转 := new AccModel2D(Func("Z旋转"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
+global Blender物件调整 := Blender物件调整初始值获取()
+Blender物件调整初始值获取(){
+    return [[[0,0,0],[0,0,0],[0,0,0]],[[0,0,0],[0,0,0],[0,0,0]]]
+}
+global 平移精度 := 0.1
+global 平移精度控制 := new AccModel2D(Func("平移精度控制"), 0.1, 10)
 global S缩放 := new AccModel2D(Func("S缩放"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
 global S旋转 := new AccModel2D(Func("S旋转"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
 
@@ -32,147 +28,297 @@ BlenderEnhanced_SendInput_MouseMoveR32(x, y)
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
 
-
 return
 
+
 ; 鼠标模拟
-Blender运动(启动键, dx, dy, 状态)
+Blender视图运动(启动键, dx, dy, 状态)
 {
     if (状态 == "启动" ){
-        ; X平移.冲突止动()
-        ; Y平移.冲突止动()
-        ; Z平移.冲突止动()
-        ; X缩放.冲突止动()
-        ; Y缩放.冲突止动()
-        ; Z缩放.冲突止动()
-        ; X旋转.冲突止动()
-        ; Y旋转.冲突止动()
-        ; Z旋转.冲突止动()
-        ; MouseMove, , Y [\, Speed, R]
         WinGetPos, X, Y, W, H, A
-        X+=W/3*2
-        Y+=H/4
+        X+=W/3*2, Y+=H/4
         MouseMove, %X%, %Y%, 0
-        SendEvent {Enter}
-        SendEvent %启动键%
+        SendEvent {Enter}%启动键%
         return
     }
-    if (状态 =="止动" ){
+    if (状态 == "止动" ){
         SendEvent {Enter}``s
         return
     }
-    if  (状态!="移动"){
+    if  (状态 != "移动"){
         return
     }
-    ; tooltip %dx%
+    MouseMove, %X%, %Y%, 0
+
     BlenderEnhanced_SendInput_MouseMoveR32(dx, dy)
 }
-X平移( dx, _, 状态){
-    ; Blender运动("``tgx", dx, -dx, 状态)
-    Blender运动("gx", dx, -dx, 状态)
+
+Blender物件数值调整(lg, operation, dimention, delta){
+    global Blender物件调整中
+    Blender物件调整[lg][operation][dimention] += delta
+    if (!Blender物件调整中){
+        Blender物件调整中 := 1
+        SetTimer Blender物件调整, -1
+    }
 }
-Y平移( dx, _, 状态){
-    ; Blender运动("``tgy", dx, -dx, 状态)
-    Blender运动("gy", dx, -dx, 状态)
+Blender物件调整(){
+    static t0 := S缩放._QPS()
+    static rdt := 0.0
+    t := S缩放._QPS()
+    dt := t - t0
+    rdt := (rdt * 5 + dt * 1 ) /6
+    t0 := t
+    global msg := ""
+    msg .= 平移精度 "`n"
+    msg .= rdt "`t" dt "`n"
+    msg .= Blender物件调整[1][1][1] "`t" Blender物件调整[1][1][2] "`t" Blender物件调整[1][1][3] "`n"
+    msg .= Blender物件调整[1][2][1] "`t" Blender物件调整[1][2][2] "`t" Blender物件调整[1][2][3] "`n"
+    msg .= Blender物件调整[1][3][1] "`t" Blender物件调整[1][3][2] "`t" Blender物件调整[1][3][3] "`n"
+    msg .= Blender物件调整[2][1][1] "`t" Blender物件调整[2][1][2] "`t" Blender物件调整[2][1][3] "`n"
+    msg .= Blender物件调整[2][2][1] "`t" Blender物件调整[2][2][2] "`t" Blender物件调整[2][2][3] "`n"
+    msg .= Blender物件调整[2][3][1] "`t" Blender物件调整[2][3][2] "`t" Blender物件调整[2][3][3] "`n"
+    /* 
+amap=(a,f)=>a.map(f).join('\n');
+smap=(s,f)=>s.split('').map(f).join('\n');
+xyz='XYZ';
+gsr=['平移','缩放','旋转'];
+lg=['本地','全局'];
+`    _ := (Blender物件调整[1][1][1]!=0) && Blender数值输入("${gsr[gi]+xyz[xi]+(li?xyz[xi]:'')}", (Blender物件调整[${li+1}][1][1]*平移精度), "移动")`
+=
+*/
+    _ := (Blender物件调整[1][1][1]!=0) && Blender数值输入("gxx", (Blender物件调整[1][1][1]*平移精度), "移动")
+    _ := (Blender物件调整[1][1][2]!=0) && Blender数值输入("gyy", (Blender物件调整[1][1][2]*平移精度), "移动")
+    _ := (Blender物件调整[1][1][3]!=0) && Blender数值输入("gzz", (Blender物件调整[1][1][3]*平移精度), "移动")
+    _ := (Blender物件调整[1][2][1]!=0) && Blender数值输入("sxx", (exp(Blender物件调整[1][2][1]*0.01)), "移动")
+    _ := (Blender物件调整[1][2][2]!=0) && Blender数值输入("syy", (exp(Blender物件调整[1][2][2]*0.01)), "移动")
+    _ := (Blender物件调整[1][2][3]!=0) && Blender数值输入("szz", (exp(Blender物件调整[1][2][3]*0.01)), "移动")
+    _ := (Blender物件调整[1][3][1]!=0) && Blender数值输入("rxx", (Blender物件调整[1][3][1]*180/180), "移动")
+    _ := (Blender物件调整[1][3][2]!=0) && Blender数值输入("ryy", (Blender物件调整[1][3][2]*180/180), "移动")
+    _ := (Blender物件调整[1][3][3]!=0) && Blender数值输入("rzz", (Blender物件调整[1][3][3]*180/180), "移动")
+    _ := (Blender物件调整[2][1][1]!=0) && Blender数值输入("gx" , (Blender物件调整[2][1][1]*平移精度), "移动")
+    _ := (Blender物件调整[2][1][2]!=0) && Blender数值输入("gy" , (Blender物件调整[2][1][2]*平移精度), "移动")
+    _ := (Blender物件调整[2][1][3]!=0) && Blender数值输入("gz" , (Blender物件调整[2][1][3]*平移精度), "移动")
+    _ := (Blender物件调整[2][2][1]!=0) && Blender数值输入("sx" , (exp(Blender物件调整[2][2][1]*0.01)), "移动")
+    _ := (Blender物件调整[2][2][2]!=0) && Blender数值输入("sy" , (exp(Blender物件调整[2][2][2]*0.01)), "移动")
+    _ := (Blender物件调整[2][2][3]!=0) && Blender数值输入("sz" , (exp(Blender物件调整[2][2][3]*0.01)), "移动")
+    _ := (Blender物件调整[2][3][1]!=0) && Blender数值输入("rx" , (Blender物件调整[2][3][1]*180/180), "移动")
+    _ := (Blender物件调整[2][3][2]!=0) && Blender数值输入("ry" , (Blender物件调整[2][3][2]*180/180), "移动")
+    _ := (Blender物件调整[2][3][3]!=0) && Blender数值输入("rz" , (Blender物件调整[2][3][3]*180/180), "移动")
+    Blender物件调整 := Blender物件调整初始值获取()
+    SetTimer Blender物件调整, Off
+    global Blender物件调整中 := 0
+    tooltip %msg%
+
+    ; Sleep 16 ; a frame
 }
-Z平移( dx, _, 状态){
-    ; Blender运动("``fgz", dx, -dx, 状态)
-    Blender运动("gz", dx, -dx, 状态)
-}
-X缩放( dx, _, 状态){
-    ; Blender运动("``tsx", dx, -dx, 状态)
-    Blender运动("sx", dx, -dx, 状态)
-}
-Y缩放( dx, _, 状态){
-    ; Blender运动("``tsy", dx, -dx, 状态)
-    Blender运动("sy", dx, -dx, 状态)
-}
-Z缩放( dx, _, 状态){
-    ; Blender运动("``fsz", dx, -dx, 状态)
-    Blender运动("sz", dx, -dx, 状态)
-}
-X旋转( dx, _, 状态){
-    ; Blender运动("``rrx", dx, dx, 状态)
-    Blender运动("rx", dx, dx, 状态)
-}
-Y旋转( dx, _, 状态){
-    ; Blender运动("``fry", dx, dx, 状态)
-    Blender运动("ry", dx, dx, 状态)
-}
-Z旋转( dx, _, 状态){
-    ; Blender运动("``trz", dx, dx, 状态)
-    Blender运动("rz", dx, dx, 状态)
-}
-S缩放( dx, _, 状态){
-    ; Blender运动("``ss", dx, -dx, 状态)
-    Blender运动("s", dx, -dx, 状态)
-}
-S旋转( dx, _, 状态){
-    ; Blender运动("``sr", dx, dx, 状态)
-    Blender运动("r", dx, dx, 状态)
+Blender数值输入(启动键, 数值, 状态){
+    if (状态 == "启动"){
+        SendEvent {Enter}
+        return
+    }
+    if (状态 == "止动"){
+        SendEvent {Enter}``s
+        return
+    }
+    if (状态 != "移动"){
+        return
+    }
+    
+    ; 数值 := Round(数值, Log(平移精度)/Log(10))
+    if(数值 != 0){
+        SendEvent %启动键%%数值%{Enter}
+    }
+    global msg
+    msgp = %启动键%%数值%{Enter}
+    msg .= msgp "`n"
 }
 
+S缩放( dx, _, 状态){
+    Blender视图运动("s", dx, -dx, 状态)
+}
+S旋转( dx, _, 状态){
+    Blender视图运动("r", dx, dx, 状态)
+}
 Blender视图复位(){
     SendEvent ``v``s
 }
 
+#if Blender窗口内()
+
 Blender窗口内(){
     return WinActive("Blender ahk_class GHOST_WindowClass ahk_exe blender.exe")
 }
+\::
+    global Blender增强模式 := !Blender增强模式
+    tooltip Blender增强模式 %Blender增强模式%
+    return
 
-#if Blender窗口内()
+#if Blender窗口内() && Blender增强模式
 
-\ & z:: SendEvent ``v``f
-\ & x:: SendEvent ``v``r
-\ & c:: SendEvent ``v``t
-\ & v:: Blender视图复位()
+j & r:: 平移精度控制.上按("r")
+u & r:: 平移精度控制.上按("r")
+j & f:: 平移精度控制.下按("f")
+u & f:: 平移精度控制.下按("f")
 
-\ & a::     X平移.左按() ; X平移
-\ & d::     X平移.右按() ; X平移
-\ & a Up::  X平移.左放()
-\ & d Up::  X平移.右放()
-\ & s::     Y平移.左按() ; Y平移
-\ & w::     Y平移.右按() ; Y平移
-\ & s Up::  Y平移.左放()
-\ & w Up::  Y平移.右放()
-\ & q::     Z平移.左按() ; Z平移
-\ & e::     Z平移.右按() ; Z平移
-\ & q Up::  Z平移.左放()
-\ & e Up::  Z平移.右放()
+平移精度控制(_, dy, 状态){
+    if (状态!="移动"){
+        return
+    }
+    平移精度 *= 10 ** -dy
+    tooltip 平移精度 %平移精度%
+}
 
-\ & f::     X缩放.左按() ; X缩放
-\ & h::     X缩放.右按() ; X缩放
-\ & f Up::  X缩放.左放()
-\ & h Up::  X缩放.右放()
-\ & g::     Y缩放.左按() ; Y缩放
-\ & t::     Y缩放.右按() ; Y缩放
-\ & g Up::  Y缩放.左放()
-\ & t Up::  Y缩放.右放()
-\ & r::     Z缩放.左按() ; Z缩放
-\ & y::     Z缩放.右按() ; Z缩放
-\ & r Up::  Z缩放.左放()
-\ & y Up::  Z缩放.右放()
+; 操作设计：
+; 2x3x3
+; 全局平移缩放旋转 uio
+; 本地平移缩放旋转 jkl
+; 3轴数值运动：adswqe
 
-\ & j::     X旋转.左按() ; X旋转
-\ & l::     X旋转.右按() ; X旋转
-\ & j Up::  X旋转.左放()
-\ & l Up::  X旋转.右放()
-\ & k::     Y旋转.左按() ; Y旋转
-\ & i::     Y旋转.右按() ; Y旋转
-\ & k Up::  Y旋转.左放()
-\ & i Up::  Y旋转.右放()
-\ & u::     Z旋转.左按() ; Z旋转
-\ & o::     Z旋转.右按() ; Z旋转
-\ & u Up::  Z旋转.左放()
-\ & o Up::  Z旋转.右放()
+/* 注：下方代码通过注释内 js 生成
+amap=(a,f)=>a.map(f).join('\n');
+smap=(s,f)=>s.split('').map(f).join('\n');
+xyz='XYZ';
+gsr=['平移','缩放','旋转'];
+lg=['本地','全局'];
 
-\ & [::     S缩放.左按() ; S缩放
-\ & ]::     S缩放.右按() ; S缩放
-\ & [ Up::  S缩放.左放()
-\ & ] Up::  S缩放.右放()
+re = '\n'
 
-\ & <::     S旋转.左按() ; S旋转
-\ & >::     S旋转.右按() ; S旋转
-\ & < Up::  S旋转.左放()
-\ & > Up::  S旋转.右放()
+re +=
+smap("jkluio",(os,oi)=>
+smap("adswqe",(ds,di)=>
+`
+${os} & ${ds}:: ${xyz[di/2|0]+lg[oi/3|0]+gsr[oi%3]}.${'左右'[di%2]}按("${ds}") ; ${xyz[di/2|0]+lg[oi/3|0]+gsr[oi%3]+'+-'[di%2]}
+`.trim()
+))+'\n'
 
+re +=
+`BlenderEnhancedInit(){\n`+
+smap('lg', (ls,li)=>
+amap(gsr, (os,oi)=>
+smap(xyz, (ds,di)=>
+`    global ${xyz[di]+lg[li]+gsr[oi]} := new AccModel2D(Func("${xyz[di]+lg[li]+gsr[oi]}"), 0.1, 50)`
+)))+
+'\n}\n'
+
+re +=
+smap('lg', (ls,li)=>
+amap(gsr, (os,oi)=>
+smap(xyz, (ds,di)=>
+`${xyz[di]+lg[li]+gsr[oi]}(dx, _, 状态){
+    Blender物件数值调整(${li+1}, ${oi+1}, ${di+1}, dx)
+}`
+)))+'\n'
+
+re
+=
+*/
+j & a:: X本地平移.左按("a") ; X本地平移+
+j & d:: X本地平移.右按("d") ; X本地平移-
+j & s:: Y本地平移.左按("s") ; Y本地平移+
+j & w:: Y本地平移.右按("w") ; Y本地平移-
+j & q:: Z本地平移.左按("q") ; Z本地平移+
+j & e:: Z本地平移.右按("e") ; Z本地平移-
+k & a:: X本地缩放.左按("a") ; X本地缩放+
+k & d:: X本地缩放.右按("d") ; X本地缩放-
+k & s:: Y本地缩放.左按("s") ; Y本地缩放+
+k & w:: Y本地缩放.右按("w") ; Y本地缩放-
+k & q:: Z本地缩放.左按("q") ; Z本地缩放+
+k & e:: Z本地缩放.右按("e") ; Z本地缩放-
+l & a:: X本地旋转.左按("a") ; X本地旋转+
+l & d:: X本地旋转.右按("d") ; X本地旋转-
+l & s:: Y本地旋转.左按("s") ; Y本地旋转+
+l & w:: Y本地旋转.右按("w") ; Y本地旋转-
+l & q:: Z本地旋转.左按("q") ; Z本地旋转+
+l & e:: Z本地旋转.右按("e") ; Z本地旋转-
+u & a:: X全局平移.左按("a") ; X全局平移+
+u & d:: X全局平移.右按("d") ; X全局平移-
+u & s:: Y全局平移.左按("s") ; Y全局平移+
+u & w:: Y全局平移.右按("w") ; Y全局平移-
+u & q:: Z全局平移.左按("q") ; Z全局平移+
+u & e:: Z全局平移.右按("e") ; Z全局平移-
+i & a:: X全局缩放.左按("a") ; X全局缩放+
+i & d:: X全局缩放.右按("d") ; X全局缩放-
+i & s:: Y全局缩放.左按("s") ; Y全局缩放+
+i & w:: Y全局缩放.右按("w") ; Y全局缩放-
+i & q:: Z全局缩放.左按("q") ; Z全局缩放+
+i & e:: Z全局缩放.右按("e") ; Z全局缩放-
+o & a:: X全局旋转.左按("a") ; X全局旋转+
+o & d:: X全局旋转.右按("d") ; X全局旋转-
+o & s:: Y全局旋转.左按("s") ; Y全局旋转+
+o & w:: Y全局旋转.右按("w") ; Y全局旋转-
+o & q:: Z全局旋转.左按("q") ; Z全局旋转+
+o & e:: Z全局旋转.右按("e") ; Z全局旋转-
+BlenderEnhancedInit(){
+    global X本地平移 := new AccModel2D(Func("X本地平移"), 0.1, 50)
+    global Y本地平移 := new AccModel2D(Func("Y本地平移"), 0.1, 50)
+    global Z本地平移 := new AccModel2D(Func("Z本地平移"), 0.1, 50)
+    global X本地缩放 := new AccModel2D(Func("X本地缩放"), 0.1, 50)
+    global Y本地缩放 := new AccModel2D(Func("Y本地缩放"), 0.1, 50)
+    global Z本地缩放 := new AccModel2D(Func("Z本地缩放"), 0.1, 50)
+    global X本地旋转 := new AccModel2D(Func("X本地旋转"), 0.1, 50)
+    global Y本地旋转 := new AccModel2D(Func("Y本地旋转"), 0.1, 50)
+    global Z本地旋转 := new AccModel2D(Func("Z本地旋转"), 0.1, 50)
+    global X全局平移 := new AccModel2D(Func("X全局平移"), 0.1, 50)
+    global Y全局平移 := new AccModel2D(Func("Y全局平移"), 0.1, 50)
+    global Z全局平移 := new AccModel2D(Func("Z全局平移"), 0.1, 50)
+    global X全局缩放 := new AccModel2D(Func("X全局缩放"), 0.1, 50)
+    global Y全局缩放 := new AccModel2D(Func("Y全局缩放"), 0.1, 50)
+    global Z全局缩放 := new AccModel2D(Func("Z全局缩放"), 0.1, 50)
+    global X全局旋转 := new AccModel2D(Func("X全局旋转"), 0.1, 50)
+    global Y全局旋转 := new AccModel2D(Func("Y全局旋转"), 0.1, 50)
+    global Z全局旋转 := new AccModel2D(Func("Z全局旋转"), 0.1, 50)
+}
+X本地平移(dx, _, 状态){
+    Blender物件数值调整(1, 1, 1, dx)
+}
+Y本地平移(dx, _, 状态){
+    Blender物件数值调整(1, 1, 2, dx)
+}
+Z本地平移(dx, _, 状态){
+    Blender物件数值调整(1, 1, 3, dx)
+}
+X本地缩放(dx, _, 状态){
+    Blender物件数值调整(1, 2, 1, dx)
+}
+Y本地缩放(dx, _, 状态){
+    Blender物件数值调整(1, 2, 2, dx)
+}
+Z本地缩放(dx, _, 状态){
+    Blender物件数值调整(1, 2, 3, dx)
+}
+X本地旋转(dx, _, 状态){
+    Blender物件数值调整(1, 3, 1, dx)
+}
+Y本地旋转(dx, _, 状态){
+    Blender物件数值调整(1, 3, 2, dx)
+}
+Z本地旋转(dx, _, 状态){
+    Blender物件数值调整(1, 3, 3, dx)
+}
+X全局平移(dx, _, 状态){
+    Blender物件数值调整(2, 1, 1, dx)
+}
+Y全局平移(dx, _, 状态){
+    Blender物件数值调整(2, 1, 2, dx)
+}
+Z全局平移(dx, _, 状态){
+    Blender物件数值调整(2, 1, 3, dx)
+}
+X全局缩放(dx, _, 状态){
+    Blender物件数值调整(2, 2, 1, dx)
+}
+Y全局缩放(dx, _, 状态){
+    Blender物件数值调整(2, 2, 2, dx)
+}
+Z全局缩放(dx, _, 状态){
+    Blender物件数值调整(2, 2, 3, dx)
+}
+X全局旋转(dx, _, 状态){
+    Blender物件数值调整(2, 3, 1, dx)
+}
+Y全局旋转(dx, _, 状态){
+    Blender物件数值调整(2, 3, 2, dx)
+}
+Z全局旋转(dx, _, 状态){
+    Blender物件数值调整(2, 3, 3, dx)
+}
