@@ -1,3 +1,14 @@
+## [1.21.1](https://github.com/snolab/CapsLockX/compare/v1.21.0...v1.21.1) (2021-10-31)
+
+
+### Bug Fixes
+
+* 优化编辑增强选中行 ([53985d5](https://github.com/snolab/CapsLockX/commit/53985d56fb1a9fd89b0b2008814c99d2b3b247b5))
+* 加速模型优化 ([2a39820](https://github.com/snolab/CapsLockX/commit/2a398202de43bd209376aa87fdb8a7e9148acecb))
+* 止动函数提前 ([b54a54e](https://github.com/snolab/CapsLockX/commit/b54a54ebc07e2bf4b3d7fe9867a890e7ac74eb41))
+
+
+
 # [1.21.0](https://github.com/snolab/CapsLockX/compare/v1.20.2...v1.21.0) (2021-10-18)
 
 
