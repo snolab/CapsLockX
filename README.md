@@ -481,11 +481,6 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [Capslox](https://capslox.com/cn/)
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.](https://github.com/matrix1001/CapsLock-plus-plus)
 
-#### 其它效率软件推荐 🔗
-
-- [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。（如果需要的话，你可以用雪星的推荐码： 55396-2857）
-- [Everything](https://www.voidtools.com/zh-cn/)
-
 ## 答疑相关 ❓
 
 本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
