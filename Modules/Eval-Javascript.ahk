@@ -78,10 +78,14 @@ EvalJavaScriptByBrowser_TODO(code){
     }
     return window.execScript(code)
 }
+
 EvalJavaScriptByNodeServer(code){
     static PassTutorial := ""
     if(!PassTutorial)
         PassTutorial := CapsLockX_Config("EvalJS", "PassTutorial", 0, "忽略使用提示")
+    /* 
+    sno.md5("asdf")=
+    */
     ; if(!PassTutorial){
     ;     Run, notepad
     ;     MsgBox,
@@ -141,11 +145,11 @@ EvalJavaScriptByNodeServer(code){
         serverScriptPath := A_Temp . "\eval-javascript-server.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
         FileDelete %serverScriptPath%
         FileAppend, %serverCode%, %serverScriptPath%, UTF-8-Raw
-        ; 最小化启动 nodejs 并启用调试，注意工作目录在用户文件夹
-        Run, node --inspect "%serverScriptPath%", %USERPROFILE%, Minimize, nodePID
+        ; 启动 nodejs 并启用调试，注意工作目录在用户文件夹，需要调试请打开 chrome -> f12 -> node
+        Run, node --inspect "%serverScriptPath%", %USERPROFILE%, Hide, nodePID
         FileDelete, %EvalNodeJS_PIDFile%
         FileAppend, %nodePID%, %EvalNodeJS_PIDFile%, UTF-8-Raw
-        TrayTip, EvalJS 模块, NodeJS 服务已最小化启动。
+        TrayTip, EvalJS 模块, NodeJS 服务已启动。
     }
     ; 若没有代码需要执行则将进程退出
     if(!code){
@@ -231,7 +235,7 @@ return
     SendEvent ^c
     ClipWait, 1, 1
     code := Clipboard
-    codeWithoutEqualEnding := RegExReplace(code, "=?\s*$", "")
+    codeWithoutEqualEnding := RegExReplace(code, "=?\r?\n?(?:\*+\/)?\s*$", "")
     Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
     ; 如果输入代码最后是空的就把结果添加到后面
     if (code != codeWithoutEqualEnding){

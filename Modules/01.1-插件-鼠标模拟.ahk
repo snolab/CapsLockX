@@ -125,7 +125,10 @@ SendInput_MouseMoveR32(x, y)
     if (状态 != "移动"){
         return
     }
-    
+    ; Shift 减速
+    if (GetKeyState("Shift", "P")){
+        dx *= 0.1, dy *= 0.1
+    }
     if (TMouse_SendInputAPI && A_PtrSize == 4) {
         ; 这只能32位用
         SendInput_MouseMoveR32(dx, dy)
@@ -140,7 +143,7 @@ SendInput_MouseMoveR32(x, y)
     ; 鼠标模拟.纵速 *= dy && ya == yb ? 0 : 1
     
     
-    ; 在各种按钮上减速
+    ; 在各种按钮上减速，进出按钮时减速50%
     if (TMouse_StickyCursor && CursorShapeChangedQ()) {
         鼠标模拟.横速 *= 0.5
         鼠标模拟.纵速 *= 0.5
@@ -230,13 +233,15 @@ SendInput_MouseMoveR32(x, y)
     ; tooltip % x " " y "`n" ControlClass1  "`n"  ControlClass2 "`n" ControlClass3 "`n" wid
 }
 
-CapsLockX_鼠标左键按下(){
+CapsLockX_鼠标左键按下(wait){
     SendEvent {Blind}{LButton Down}
-    KeyWait, e, ; wait forever 防止重复触发
+    KeyWait, %wait%, ; wait forever
+    SendEvent {Blind}{LButton Up}
 }
-CapsLockX_鼠标右键按下(){
+CapsLockX_鼠标右键按下(wait){
     SendEvent {Blind}{RButton Down}
-    KeyWait, q, ; wait forever 防止重复触发
+    KeyWait, %wait%, ; wait forever
+    SendEvent {Blind}{RButton Up}
 }
 
 鼠标模拟_ToolTip(tips){
@@ -250,27 +255,19 @@ CapsLockX_鼠标右键按下(){
 #if CapsLockXMode
     
 ; 鼠标按键处理
-$*e::CapsLockX_鼠标左键按下()
-$*q:: CapsLockX_鼠标右键按下()
-$*e Up:: SendEvent {Blind}{LButton Up}
-$*q Up:: SendEvent {Blind}{RButton Up}
+$*e::CapsLockX_鼠标左键按下("e")
+$*q:: CapsLockX_鼠标右键按下("q")
 ; 鼠标运动处理
-$*a:: 鼠标模拟.左按()
-$*d:: 鼠标模拟.右按()
-$*w:: 鼠标模拟.上按()
-$*s:: 鼠标模拟.下按()
-$*a Up:: 鼠标模拟.左放()
-$*d Up:: 鼠标模拟.右放()
-$*w Up:: 鼠标模拟.上放()
-$*s Up:: 鼠标模拟.下放()
+$*a:: 鼠标模拟.左按("a")
+$*d:: 鼠标模拟.右按("d")
+$*w:: 鼠标模拟.上按("w")
+$*s:: 鼠标模拟.下按("s")
 ; 滚轮运动处理
-$*+^!r:: 滚轮自控.左按()
-$*+^!f:: 滚轮自控.右按()
-$*^!r:: 滚轮自控.上按()
-$*^!f:: 滚轮自控.下按()
-$*+r:: 滚轮模拟.左按()
-$*+f:: 滚轮模拟.右按()
-$*r:: 滚轮模拟.上按()
-$*f:: 滚轮模拟.下按()
-$*r Up:: 滚轮模拟.上放(), 滚轮模拟.左放(), 滚轮自控.上放(), 滚轮自控.左放()
-$*f Up:: 滚轮模拟.下放(), 滚轮模拟.右放(), 滚轮自控.下放(), 滚轮自控.右放()
+$*+^!r:: 滚轮自控.左按("r")
+$*+^!f:: 滚轮自控.右按("f")
+$*^!r:: 滚轮自控.上按("r")
+$*^!f:: 滚轮自控.下按("f")
+$*+r:: 滚轮模拟.左按("r")
+$*+f:: 滚轮模拟.右按("f")
+$*r:: 滚轮模拟.上按("r")
+$*f:: 滚轮模拟.下按("f")
