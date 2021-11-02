@@ -57,8 +57,15 @@ UserModuleEdit(路径, 使用进程名AHK := 0){
     if (!FileExist(路径))
         FileAppend, %快速窗口热键编辑初始内容%, %路径%
     填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!```:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+````" "`n" 
-    FileAppend, %填充内容%, %路径%
-    Run notepad %路径%
+    ; FileAppend, %填充内容%, %路径%
+    clipboard := 填充内容
+    Run notepad "%路径%"
+    WinWaitActive Notepad,,3
+    if(ErrorLevel){
+        return
+    }
+    Sleep 2000
+    SendEvent ^{End}^v
 }
 
 ; 快速宏
