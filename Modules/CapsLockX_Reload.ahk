@@ -12,7 +12,7 @@
 WatchFolder(A_WorkingDir "\Modules\", "CapsLockX_FolderModified", true, 0x08) ; chagned
 WatchFolder(A_WorkingDir "\User\", "CapsLockX_FolderChanged", true, 0x02 | 0x03 | 0x08) ; delete or add, iguess
 ; WatchFolder(A_WorkingDir "\Modules\", "CapsLockX_FolderChanged", true, 0x02 | 0x03) ; delete or add
-
+TrayTip CapsLockX 载入成功
 #include Modules/WatchFolder/WatchFolder.ahk
 
 return
@@ -33,6 +33,8 @@ CapsLockX_FolderChanged(Folder, Changes)
     }
     
     global T_AutoReloadOnConfigsChange := CapsLockX_Config("Advanced", "T_AutoReloadOnConfigsChange", 0, "用户配置修改保存时自动重载")
+    if (CapsLockX_DontReload)
+        return
     if(T_AutoReloadOnConfigsChange) {
         TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
         CapsLockX_Reload()

@@ -91,20 +91,19 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
-
-; TODO: 这个的64位的函数不知道为啥用不了。。。
-; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
-SendInput_MouseMoveR32(x, y)
+SendInput_MouseMove(x, y)
 {
-    VarSetCapacity(sendData, 28, 0)
-    NumPut(0, sendData, 0, "UInt")
-    NumPut(x, sendData, 4, "Int")
-    NumPut(y, sendData, 8, "Int")
-    NumPut(0, sendData, 12, "UInt")
-    NumPut(1, sendData, 16, "UInt")
-    DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
+    ; (20211105)终于支持64位了
+    ; [SendInput function (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput )
+    ; [INPUT (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-input )
+    ; [MOUSEINPUT (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-mouseinput )
+    size := A_PtrSize+4*4+A_PtrSize*2
+    VarSetCapacity(mi, size, 0)
+    NumPut(x, mi, A_PtrSize, "Int")   ; int dx
+    NumPut(y, mi, A_PtrSize+4, "Int")  ; int dy
+    NumPut(0x0001, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags MOUSEEVENTF_MOVE
+    DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
 }
-
 ; void 鼠标模拟
 鼠标模拟(dx, dy, 状态)
 {
@@ -129,9 +128,9 @@ SendInput_MouseMoveR32(x, y)
     if (GetKeyState("Shift", "P")){
         dx *= 0.1, dy *= 0.1
     }
-    if (TMouse_SendInputAPI && A_PtrSize == 4) {
-        ; 这只能32位用
-        SendInput_MouseMoveR32(dx, dy)
+    if (TMouse_SendInputAPI) {
+        ; 支持64位AHK！
+        SendInput_MouseMove(dx, dy)
     } else {
         MouseMove, %dx%, %dy%, 0, R
     }
@@ -235,12 +234,18 @@ SendInput_MouseMoveR32(x, y)
 
 CapsLockX_鼠标左键按下(wait){
     SendEvent {Blind}{LButton Down}
-    KeyWait, %wait%, ; wait forever
+    KeyWait %wait%
+    ; Hotkey, %wait% Up, CapsLockX_鼠标左键弹起
+}
+CapsLockX_鼠标左键弹起(){
     SendEvent {Blind}{LButton Up}
 }
 CapsLockX_鼠标右键按下(wait){
     SendEvent {Blind}{RButton Down}
-    KeyWait, %wait%, ; wait forever
+    KeyWait %wait%
+    ; Hotkey, %wait% Up, CapsLockX_鼠标右键弹起
+}
+CapsLockX_鼠标右键弹起(){
     SendEvent {Blind}{RButton Up}
 }
 
@@ -257,6 +262,8 @@ CapsLockX_鼠标右键按下(wait){
 ; 鼠标按键处理
 $*e::CapsLockX_鼠标左键按下("e")
 $*q:: CapsLockX_鼠标右键按下("q")
+$*e Up::CapsLockX_鼠标左键弹起()
+$*q Up:: CapsLockX_鼠标右键弹起()
 ; 鼠标运动处理
 $*a:: 鼠标模拟.左按("a")
 $*d:: 鼠标模拟.右按("d")
