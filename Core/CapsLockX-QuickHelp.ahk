@@ -1,0 +1,8 @@
+﻿
+QuickHelp(){
+
+}
+
+#if CapsLockXMode
+
+/:: QuickHelp()

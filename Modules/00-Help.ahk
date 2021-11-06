@@ -79,7 +79,7 @@ CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/"){
 #if CapsLockXMode
     ; #if CapsLockXMode
 ; 显示使用方法，直接调用前面定义的函数
-/:: CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1)
+; /:: CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1)
 
 ; 你可以按住 CapsLockX 键观察托盘的 CapsLockX 图标，当它变蓝时，按下 Alt + / 就可以快速打开 CapsLockX 的首页
 ; 也就是 CapsLockX + Alt + /

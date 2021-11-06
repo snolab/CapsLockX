@@ -31,6 +31,10 @@
     "devDependencies": {
         "@commitlint/cli": "^12.0.1",
         "@commitlint/config-conventional": "^12.0.1",
-        "conventional-changelog-cli": "^2.1.1"
+        "@types/pinyin": "^2.10.0",
+        "conventional-changelog-cli": "^2.1.1",
+        "lodash": "^4.17.21",
+        "pinyin": "^2.10.2",
+        "sno-utils": "^0.1.12"
     }
 }

@@ -244,14 +244,14 @@ OneNote2016笔记编辑窗口内(){
 }
 
 !-:: 自动2维化公式()
-^+c:: 复制纯文本()
-^+v:: 粘贴纯文本()
+^+c:: 纯文本复制()
+^+v:: 纯文本粘贴()
 ~Enter:: 链接安全警告自动确认()
-!+p:: 复制段落链接()
-!p:: 复制页面链接()
+!+p:: 段落链接复制()
+!p:: 页面链接复制()
 F2:: SendEvent ^+t ; 重命名笔记
 +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
-!F2:: SendEvent ^+a{AppsKey}l ; 复制页面链接
+!F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
 
 ; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
 链接安全警告自动确认(){
@@ -268,22 +268,22 @@ F2:: SendEvent ^+t ; 重命名笔记
     altSend("jp")
 }
 
-; 复制纯文本
-复制纯文本(){
+; 纯文本复制
+纯文本复制(){
     Clipboard =
     SendEvent ^c
     ClipWait, 1
     Clipboard := Clipboard
 }
 
-; 粘贴纯文本
-粘贴纯文本(){
+; 纯文本粘贴
+纯文本粘贴(){
     Clipboard := Clipboard
     SendEvent ^v
 }
 
 ; 复制段落链接（并清洗成 onenote 链接（段落链接的url不管用。。
-复制段落链接(){
+段落链接复制(){
     Clipboard := ""
     SendEvent {AppsKey}pp{Enter}
     ClipWait, 1
@@ -293,7 +293,7 @@ F2:: SendEvent ^+t ; 重命名笔记
 }
 
 ; 复制页面链接（并清洗成 onenote 链接
-复制页面链接(){
+页面链接复制(){
     Clipboard := ""
     SendEvent ^+a{AppsKey}l
     ClipWait, 1
