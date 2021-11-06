@@ -41,8 +41,8 @@ const 热键列提取 = (文件内容) => {
   const 热键列 = 条件列.map(([条件, code]) => {
     条件 = 条件.trim();
     // console.log("条件", 条件, "\n", code.slice(0, 10));
-    const hkfn = 全部提取(code, /^(.*?)::\s*?(\S+)\(\)/gm);
-    const hkde = 全部提取(code, /^(.*?)::.*?;+\s*?(\S+)?$/gm);
+    const hkfn = 全部提取(code, /^(?!;)(.*?)::\s*?(\S+)\(\)/gm);
+    const hkde = 全部提取(code, /^(?!;)(.*?)::.*?;+\s*?(\S+)?$/gm);
     const 指令热键表 = 表按键排序(
       Object.fromEntries([
         ...hkfn.map(([hk, fn]) => [fn, hkp(hk)]),
@@ -78,8 +78,8 @@ const 条件热键表 = 热键合并表(条件热键对表列);
 const 函数条件热键表 = 表键筛((键) => 键.match(/^\S+\(\)$/))(条件热键表);
 console.log(JSON.stringify(函数条件热键表, null, 4));
 
-const QuickHelpUpdate = async (函数条件热键表) => {
-  const prefix = `msg := ""`;
+const QuickTipsUpdate = async (函数条件热键表) => {
+  const prefix = `    msg := ""`;
   const content = Object.entries(函数条件热键表)
     .map(
       ([条件, 热键表]) => `
@@ -89,22 +89,22 @@ ${Object.entries(热键表)
   .join("\n")}
     }`
     )
-    .join("");
+    .join("\n");
   const suffix = "    ToolTip %msg%";
-  const QuickHelp = [prefix, content, suffix].join("\n");
-  // console.log(QuickHelp);
-  const QuickHelpAHK = "Core/CapsLockX-QuickHelp.ahk";
-  const src = await fs.promises.readFile(QuickHelpAHK, "utf8");
+  const QuickTips = [prefix, content, suffix].join("\n");
+  // console.log(QuickTips);
+  const QuickTipsAHK = "Core/CapsLockX-QuickTips.ahk";
+  const src = await fs.promises.readFile(QuickTipsAHK, "utf8");
   const dst =
     "\uFEFF" +
     src
       .replace(/^\uFEFF/, "")
       .replace(
-        /^QuickHelp\(\)\s*?{\n[\s\S]*?\n}/gim,
-        `QuickHelp(){\n${QuickHelp}\n}`
+        /^QuickTips\(\)\s*?{[\s\S]*?^}/gim,
+        `QuickTips(){\n${QuickTips}\n}`
       );
   console.log(dst);
-  await fs.promises.writeFile(QuickHelpAHK, dst);
+  await fs.promises.writeFile(QuickTipsAHK, dst);
 };
 
-await QuickHelpUpdate(函数条件热键表);
+await QuickTipsUpdate(函数条件热键表);

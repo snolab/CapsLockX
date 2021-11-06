@@ -647,32 +647,33 @@ CLX_MoveCurrentWindowTo(x){
     MoveActiveWindowToDesktop(x)
     SendEvent !{Tab}
 }
-!1:: CLX_MoveCurrentWindowTo(1)
-!2:: CLX_MoveCurrentWindowTo(2)
-!3:: CLX_MoveCurrentWindowTo(3)
-!4:: CLX_MoveCurrentWindowTo(4)
-!5:: CLX_MoveCurrentWindowTo(5)
-!6:: CLX_MoveCurrentWindowTo(6)
-!7:: CLX_MoveCurrentWindowTo(7)
-!8:: CLX_MoveCurrentWindowTo(8)
-!9:: CLX_MoveCurrentWindowTo(9)
-!0:: CLX_MoveCurrentWindowTo(10)
+
+!1:: CLX_MoveCurrentWindowTo(1) ; 选中窗口移动到1号桌面
+!2:: CLX_MoveCurrentWindowTo(2) ; 选中窗口移动到2号桌面
+!3:: CLX_MoveCurrentWindowTo(3) ; 选中窗口移动到3号桌面
+!4:: CLX_MoveCurrentWindowTo(4) ; 选中窗口移动到4号桌面
+!5:: CLX_MoveCurrentWindowTo(5) ; 选中窗口移动到5号桌面
+!6:: CLX_MoveCurrentWindowTo(6) ; 选中窗口移动到6号桌面
+!7:: CLX_MoveCurrentWindowTo(7) ; 选中窗口移动到7号桌面
+!8:: CLX_MoveCurrentWindowTo(8) ; 选中窗口移动到8号桌面
+!9:: CLX_MoveCurrentWindowTo(9) ; 选中窗口移动到9号桌面
+!0:: CLX_MoveCurrentWindowTo(10) ; 选中窗口移动到10号桌面
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
-!a:: Left
-!d:: Right
-!w:: Up
-!s:: Down
-!r:: Volume_Up
-!f:: Volume_Down
+!a:: Left        ; 左
+!d:: Right       ; 右
+!w:: Up          ; 上
+!s:: Down        ; 下
+!r:: Volume_Up   ; 音量+
+!f:: Volume_Down ; 音量-
 
 ; cx 关闭应用
-!c:: SendEvent {Blind}{Delete}{Right}
-!x:: SendEvent {Blind}{Delete}{Right}
+!c:: SendEvent {Blind}{Delete}{Right} ; 关闭应用
+!x:: SendEvent {Blind}{Delete}{Right} ; 关闭应用
 
-; 切换桌面概览
-!q:: Send ^#{Left}
-!e:: Send ^#{Right}
+; 切换多桌面
+!q:: Send ^#{Left} ; 向左切换多桌面
+!e:: Send ^#{Right} ; 向右切换多桌面
 
 #if
 

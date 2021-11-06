@@ -120,6 +120,7 @@ if(T_XKeyAsRAlt)
 CapsLockX_Loaded()
 #Include Core\CapsLockX-ModulesLoader.ahk
 #Include Core\CapsLockX-RunSilent.ahk
+#Include Core\CapsLockX-QuickTips.ahk
 
 #If
 
