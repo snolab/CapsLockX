@@ -76,7 +76,7 @@ CapsLockX_仓库版本号比对(remote, local){
         return 0
     }
 }
-CapsLockX_通过npm更新(){
+CapsLockX_通过npm更新尝试(){
     EnvGet, APPDATA, APPDATA
     是NPM全局安装 := InStr(A_ScriptFullPath, APPDATA) == 1 && InStr("node_modules", A_ScriptFullPath)
     if(!是NPM全局安装)
@@ -189,7 +189,7 @@ CapsLockX_更新(){
     stopFlag := CapsLockX_Update_AlreadyLatest | CapsLockX_Update_Updated | CapsLockX_Update_Stop
     return false ; 依次尝试，直到更新成功或已是最新
         || stopFlag & CapsLockX_通过gitpull更新()
-        || stopFlag & CapsLockX_通过npm更新()
+        || stopFlag & CapsLockX_通过npm更新尝试()
         || stopFlag & CapsLockX_通过jsdelivr发布包更新()
         || stopFlag & CapsLockX_通过snomiao发布包更新()
         || stopFlag & CapsLockX_通过github发布包更新()
@@ -202,7 +202,7 @@ CapsLockX_更新测试(){
     通过gitpull更新结果 := CapsLockX_通过gitpull更新()
     msgbox 通过gitpull更新结果
     msgbox 将 通过npm更新
-    通过npm更新结果 := CapsLockX_通过npm更新()
+    通过npm更新结果 := CapsLockX_通过npm更新尝试()
     msgbox 通过npm更新结果
     msgbox 将 通过jsdelivr发布包更新
     通过jsdelivr发布包更新结果 := CapsLockX_通过jsdelivr发布包更新()
