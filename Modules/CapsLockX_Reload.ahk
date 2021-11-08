@@ -46,9 +46,6 @@ CapsLockX_FolderChanged(Folder, Changes)
 }
 
 #if
-    
-; 重启键
-^!\:: CapsLockX_Reload()
 
-; 退出键、结束键
-~^!+\:: ExitApp
+^!\:: CapsLockX_Reload() ; CapsLockX_重新启动
+~^!+\:: ExitApp ; CapsLockX_退出

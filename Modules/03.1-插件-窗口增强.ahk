@@ -600,29 +600,15 @@ b:: 任务栏任务切换()
 ; 使普通的按方向窗口切换的热键与CapsLockXMode互不干扰
 #if !CapsLockXMode
 
-#+h:: 窗口向左方显示器移动()
-#+l:: 窗口向右方显示器移动()
-#+j:: 窗口向下方显示器移动()
-#+k:: 窗口向上方显示器移动()
-窗口向左方显示器移动(){
+#+h:: 窗口向右上左下方显示器移动(3)
+#+l:: 窗口向右上左下方显示器移动(1)
+#+j:: 窗口向右上左下方显示器移动(4)
+#+k:: 窗口向右上左下方显示器移动(2)
+
+窗口向右上左下方显示器移动(方向){
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 3)
-}
-窗口向右方显示器移动(){
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 1)
-}
-窗口向下方显示器移动(){
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 4)
-}
-窗口向上方显示器移动(){
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 2)
+    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 方向)
 }
 
 ; Alt+Tab 或 Win+Tab
@@ -725,7 +711,7 @@ Delete:: 任务栏中关闭窗口()
 
 x:: 任务栏中关闭窗口()
 
-#if 函数定义
+#if
 
 任务栏中关闭窗口(){
     SendEvent {AppsKey}

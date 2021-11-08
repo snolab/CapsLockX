@@ -55,9 +55,9 @@ getAscStr(str){
 OneNote快速笔记窗口启动(){
     SendEvent #n
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
-    WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
+    WinWaitActive %OneNote窗口匹配串%, , 5 ; wait seconds
     if(ErrorLevel){
-        WinWait %OneNote窗口匹配串% , , 1 ; wait seconds
+        WinWait %OneNote窗口匹配串% , , 5 ; wait seconds
         if(ErrorLevel){
             TrayTip, 错误, 未找到OneNote窗口
             return
@@ -79,9 +79,10 @@ OneNote2016搜索启动() {
 }
 
 笔记条目搜索结果复制整理向页面粘贴条数(){
+    OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     条数 := 笔记条目搜索结果复制整理条数()
     ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE,, 2
-    WinWaitActive ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE , , 5 ; wait for 5 seconds
+    WinWaitActive %OneNote窗口匹配串%, , 5 ; wait for 5 seconds
     if(ErrorLevel){
         TrayTip, 错误, 未找到OneNote窗口
         return
@@ -243,6 +244,32 @@ OneNote2016笔记编辑窗口内(){
     return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
 
+F3:: 精确查找笔记()
+
+!m:: SendEvent ^!m ; 移动笔记
+!+m:: SendEvent ^+g{AppsKey}m ; 移动分区
+!f:: altSend("hg") ; 搜索标记
+^+PgUp:: SendEvent ^+g{Up}{Enter} ; 上一个页面切换
+^+PgDn:: SendEvent ^+g{Down}{Enter} ; 下一个页面切换
+^s:: SendEvent +{F9} ; 同步此笔记本
+!n:: altSend("wpcn") ; 切换为无色背景
++!n:: altSend("wre") ; 切换为无格子背景
++Delete:: SendEvent {Escape}^a{Del} ; 快速删除当前行
+!Delete:: SendEvent ^+a{Delete} ; 快速删除当前页面
+!+Delete:: SendEvent ^+g{AppsKey}d ; 快速删除当前分区（并要求确认）
+^w:: altSend("{F4}") ; 快速关闭窗口
+^+l:: SendEvent !+{Down}!+{Up} ; 选中行
+^d:: SendEvent {Right}^{Left}^+{Right} ; 选中当前词（目前来说会带上词右边的空格）
+!q:: altSend("dh") ;换成手形Tools ; 拖动
+!w:: altSend("dl") ; 套锁
+!e:: altSend("dek") ; 橡皮
+!s:: altSend("dt") ; 输入
+!a:: altSend("dn") ; 增加空白
+!+r:: altSend("w1") ; 视图 - 缩放到1
+!r:: altSend("wi") ; 视图 - 缩放到页面宽度
+!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
+!k:: 将当前关键词搜索到的相关页面链接在下方展开()
+!t:: 把笔记时间显式填充到标题()
 !-:: 自动2维化公式()
 ^+c:: 纯文本复制()
 ^+v:: 纯文本粘贴()
@@ -252,6 +279,31 @@ OneNote2016笔记编辑窗口内(){
 F2:: SendEvent ^+t ; 重命名笔记
 +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
 !F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
+把笔记时间显式填充到标题(){
+    backup := ClipboardAll
+    Clipboard:=""
+    ; copy date then focus to title
+    SetKeyDelay, 0, 0
+    SendEvent ^+t^{Down}^c{Left}^{Up}
+    ClipWait ,2
+    if(ErrorLevel){
+        Clipboard := backup
+        return
+    }
+    dateString := Trim(Clipboard, "`r`n")
+    Clipboard := backup
+    calcCode =
+    (
+    '('
+    + new Date(+new Date("%dateString%".replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3)
+    .toISOString()
+    .slice(0,10)
+    .replace(/-/g,'')
+    + ')'
+    )
+    result := Func("SafetyEvalJavascript").Call(calcCode)
+    SendEvent, {Text}%result%
+}
 
 ; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
 链接安全警告自动确认(){
@@ -301,41 +353,13 @@ F2:: SendEvent ^+t ; 重命名笔记
         Return
     Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
 }
-
-
-; 精确查找笔记
-$F3::
+精确查找笔记(){
     SendEvent ^e{Text}""
     SendEvent {Left}
-Return
+}
 
-!m:: SendEvent ^!m ; 移动笔记
-!+m:: SendEvent ^+g{AppsKey}m ; 移动分区
-!f:: altSend("hg") ; 搜索标记
-^+PgUp:: SendEvent ^+g{Up}{Enter} ; 上一个页面切换
-^+PgDn:: SendEvent ^+g{Down}{Enter} ; 下一个页面切换
-^s:: SendEvent +{F9} ; 同步此笔记本
-!n:: altSend("wpcn") ; 切换为无色背景
-+!n:: altSend("wre") ; 切换为无格子背景
-+Delete:: SendEvent {Escape}^a{Del} ; 快速删除当前行
-!Delete:: SendEvent ^+a{Delete} ; 快速删除当前页面
-!+Delete:: SendEvent ^+g{AppsKey}d ; 快速删除当前分区（并要求确认）
-^w:: altSend("{F4}") ; 快速关闭窗口
-^+l:: SendEvent !+{Down}!+{Up} ; 选中行
-^d:: SendEvent {Right}^{Left}^+{Right} ; 选中当前词（目前来说会带上词右边的空格）
-!q:: altSend("dh") ;换成手形Tools ; 拖动
-!w:: altSend("dl") ; 套锁
-!e:: altSend("dek") ; 橡皮
-!s:: altSend("dt") ; 输入
-!a:: altSend("dn") ; 增加空白
-!+r:: altSend("w1") ; 视图 - 缩放到1
-!r:: altSend("wi") ; 视图 - 缩放到页面宽度
-!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
-; $!a:: altSendEx("dp", "{Right 1}{Enter}") ; 笔悬停时是下一支笔，没有笔时是选红色笔
-; 当前关键词相关页面链接展开
-!k:: 当前关键词相关页面链接展开()
 
-当前关键词相关页面链接展开(){
+将当前关键词搜索到的相关页面链接在下方展开(){
     Clipboard := ""
     SendEvent ^a^c
     ClipWait, 1
@@ -392,9 +416,9 @@ $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
 $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
-#if OneNote2016换笔中()
+#if OneNote2016换笔界面()
 
-OneNote2016换笔中(){
+OneNote2016换笔界面(){
     return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
 }
 $1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
@@ -412,61 +436,36 @@ $+5:: SendEvent {Down 1}{Right 4}{Enter}  ; 向第2行第5支笔切换
 $+6:: SendEvent {Down 1}{Right 5}{Enter}  ; 向第2行第6支笔切换
 $+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
 
-#if WinActive("ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
-
-!t:: 把笔记时间显式填充到标题()
-把笔记时间显式填充到标题(){
-    backup := ClipboardAll
-    Clipboard:=""
-    ; copy date then focus to title
-    SetKeyDelay, 0, 0
-    SendEvent ^+t^{Down}^c{Left}^{Up}
-    ClipWait ,2
-    if(ErrorLevel){
-        Clipboard := backup
-        return
-    }
-    dateString := Trim(Clipboard, "`r`n")
-    Clipboard := backup
-    calcCode =
-    (
-    '('
-    + new Date(+new Date("%dateString%".replace(/年|月/g, '-').replace(/日|星期./g, '').trim())+8*3600e3)
-    .toISOString()
-    .slice(0,10)
-    .replace(/-/g,'')
-    + ')'
-    )
-    result := Func("SafetyEvalJavascript").Call(calcCode)
-    SendEvent, {Text}%result%
-}
-
 #If 名为剪贴板的OneNote窗口存在()
 
 名为剪贴板的OneNote窗口存在(){
     return WinExist("剪贴板.*|Clipboard ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
 
-~^c:: OneNote剪贴板收集()
+^c:: OneNote剪贴板收集()
 
 OneNote剪贴板收集(){
+    Clipboard := ""
+    SendEvent, ^c
     hwndOneNote := 名为剪贴板的OneNote窗口存在()
     if (!hwndOneNote)
         Return
     ; ; 通常在弹起时触发
-    ; Clipboard := ""
     ClipWait, 2, 1 ; 2 secons
     if(ErrorLevel){
-        TrayTip, error, The attempt 2 copy text onto the clipboard failed.
+        TrayTip, error, 复制失败
         Return
     }
     WinGet, current, ID, A
+    BlockInput, on
     WinActivate, ahk_id %hwndOneNote%
+    WinSet, AlwaysOnTop, On, ahk_id %hwndOneNote%
     FormatTime, timeString, , (yyyyMMdd.HHmmss)
-    SendEvent, ^{End}{Enter}
+    SendEvent, ^{End}^{Enter}
     SendEvent, {text}%timeString%
-    SendEvent, ^v
+    SendEvent, {Tab}^v
     Sleep 128
     WinActivate, ahk_id %current%
+    BlockInput, off
 }
 
