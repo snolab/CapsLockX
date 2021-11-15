@@ -481,8 +481,6 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 ## 答疑相关 ❓
 
-本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
-
 相关社群：
 
 - [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues) ✉️
