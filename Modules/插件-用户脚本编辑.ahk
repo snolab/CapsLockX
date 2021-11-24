@@ -14,7 +14,7 @@ if (!CapsLockX){
 }
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
-global 快速窗口热键编辑用户模块目录 := "./User/"
+global 快速窗口热键编辑用户模块目录 := CapsLockX_配置目录 "/"
 global 快速窗口热键编辑初始内容 := "
 (
 ; ========== CapsLockX ==========
@@ -39,8 +39,6 @@ Return
 
 ; 这里可以写上你的自定义全局热键
 )"
-Menu, Tray, Add ; Creates a separator line.
-Menu, Tray, Add, 配置文件编辑, 配置文件编辑 ; Creates a new menu item.
 
 Return
 

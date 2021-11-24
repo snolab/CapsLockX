@@ -11,19 +11,7 @@
 ; 防多开
 #SingleInstance, ignore
 
-; 载入设定、检查配置文件
-global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
-global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
-FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
-
-if(!FileExist(CapsLockX_配置路径)){
-    SetWorkingDir, ../
-}
-if(!FileExist(CapsLockX_配置路径)){
-    MsgBox 更新失败：配置文件不存在
-    ExitApp
-}
-; 加载模块（这里更新模块可能由 CapsLockX 加载也可能自己启动）
+; 加载模块（这里更新模块可能由 CapsLockX 加载也可能自己启动所以需要动态加载配置ahk）
 #Include *i Core/CapsLockX-Config.ahk
 #Include *i Core/CapsLockX-RunSilent.ahk
 ; #Include *i ./CapsLockX-Config.ahk
@@ -173,12 +161,6 @@ CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录
     }
     CapsLockX_更新记录("解压完成...")
 
-    ; 迁移用户配置
-    FileCreateDir, %程序目录%/User/
-    ; FileCopy, ./User/*.*, %程序目录%/User/, 1
-    FileCopyDir, ./User/, %程序目录%/User/, 1
-    ; FileCopy, ./UserModules/*.user.ahk, %程序目录%/UserModules/, 1
-    ; FileCopy, ./UserModules/*.user.md, %程序目录%/UserModules/, 1
     CapsLockX_更新提示("解压完成，将打开新版本文件夹，请把它手动复制到当前软件目录。")
     Run explorer /select`, %程序目录%
     Run explorer /select`, %A_ScriptDir%

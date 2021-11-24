@@ -25,11 +25,8 @@ SetTitleMatchMode RegEx
 #MaxHotkeysPerInterval 1000 ; 时间内按键最大次数（通常是一直按着键触发的。。）
 #InstallMouseHook ; 安装鼠标钩子
 
-global CapsLockX_上次触发键 := ""
+
 ; 载入设定
-global CapsLockX_配置路径_旧 := "./CapsLockX-Config.ini"
-global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
-FileMove CapsLockX_配置路径_旧, CapsLockX_配置路径
 #Include Core/CapsLockX-Config.ahk
 
 ; 模式处理
@@ -43,6 +40,7 @@ global CM_CapsLockX := 2 ; CapsLockX 模式，通过长按CLX键进入
 ; global CM_FNX := 3 ; FnX 模式并不存在
 global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
 global CapsLockPressTimestamp := 0
+global CapsLockX_上次触发键 := ""
 
 ; 根据灯的状态来切换到上次程序退出时使用的模式（不）
 UpdateCapsLockXMode(){
@@ -62,7 +60,7 @@ UpdateLight()
 
 global T_IgnoresByLines
 defaultIgnoreFilePath := "./Data/CapsLockX.defaults.ignore.txt"
-userIgnoreFilePath := "./User/CapsLockX.user.ignore.txt"
+userIgnoreFilePath := CapsLockX_配置目录 "/CapsLockX.user.ignore.txt"
 FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 if (!T_IgnoresByLinesUser){
     FileCopy, %defaultIgnoreFilePath%, %userIgnoreFilePath%

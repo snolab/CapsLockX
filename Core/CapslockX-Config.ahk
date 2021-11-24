@@ -1,10 +1,36 @@
 ﻿; 保存为 save with UTF8 with DOM
 
+; 用户创建
+便携版配置目录 = ./User
+用户目录配置目录 = %USERPROFILE%/.CapsLockX
+APPDATA配置目录 = %APPDATA%/CapsLockX
+
+启动配置目录 := APPDATA配置目录
+
+if ( InStr(FileExist(APPDATA配置目录), "D")) {
+    启动配置目录 := APPDATA配置目录
+}
+if ( InStr(FileExist(用户目录配置目录), "D")) {
+    启动配置目录 := 用户目录配置目录
+}
+if ( InStr(FileExist(便携版配置目录), "D")) {
+    启动配置目录 := 便携版配置目录
+}
+FileCreateDir %启动配置目录%
+
+global CapsLockX_配置目录 := 启动配置目录
+global CapsLockX_配置路径 := CapsLockX_配置目录 "/CapsLockX-Config.ini"
+
 CapsLockX_ConfigInit()
 
+; return 这里还不能 return
+
 CapsLockX_ConfigInit(){
+        
     if (!CapsLockX_配置路径)
         Return
+    ; 配置文件编码清洗
+    清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
     CapsLockX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
     ; 基本设定
     ; [Core]
@@ -69,4 +95,9 @@ CapsLockX_Config(field, varName, defaultValue, comment := ""){
     IniDelete, %CapsLockX_配置路径%, %field%, %varName%
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
     return content
+}
+清洗为_UTF16_WITH_BOM_型编码(path){
+    FileRead ModuleCode, %path%
+    FileDelete %path%
+    FileAppend %ModuleCode%, %path%, UTF-16
 }

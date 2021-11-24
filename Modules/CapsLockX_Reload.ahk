@@ -10,7 +10,7 @@
 ; tooltip loaded
 ; WatchFolder(A_WorkingDir "\User\", "CapsLockX_FolderModified", true, 0x08)
 WatchFolder(A_WorkingDir "\Modules\", "CapsLockX_FolderModified", true, 0x08) ; chagned
-WatchFolder(A_WorkingDir "\User\", "CapsLockX_FolderChanged", true, 0x02 | 0x03 | 0x08) ; delete or add, iguess
+WatchFolder(CapsLockX_配置目录, "CapsLockX_FolderChanged", true, 0x02 | 0x03 | 0x08) ; delete or add, iguess
 ; WatchFolder(A_WorkingDir "\Modules\", "CapsLockX_FolderChanged", true, 0x02 | 0x03) ; delete or add
 
 #include Modules/WatchFolder/WatchFolder.ahk
