@@ -1,3 +1,15 @@
+## [1.21.2](https://github.com/snolab/CapsLockX/compare/v1.21.1...v1.21.2) (2021-11-24)
+
+
+### Bug Fixes
+
+* fix LICENCE.txt duplicate ([c58ac38](https://github.com/snolab/CapsLockX/commit/c58ac387316b649d61b73b71b154298bdb9ae35f))
+* 暂时隐藏更新提示 ([c27649b](https://github.com/snolab/CapsLockX/commit/c27649b0673ab955664bf6e22c99c80f02c7e068))
+* 配置刷新 ([83f578e](https://github.com/snolab/CapsLockX/commit/83f578e4d8322ab81213e55979ea19919bea3fce))
+* 配置项优化 ([91ee1df](https://github.com/snolab/CapsLockX/commit/91ee1dfc83f882de3699c0f5a1eba53348e96cc6))
+
+
+
 ## [1.21.1](https://github.com/snolab/CapsLockX/compare/v1.21.0...v1.21.1) (2021-10-31)
 
 
