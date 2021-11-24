@@ -13,7 +13,6 @@ if !CapsLockX
 
 global FLAG_SWAP_ESC_STROKE := CapsLockX_Config("CLX_LKF", "FLAG_SWAP_ESC_STROKE", 0, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
 
-fix: 配置项优化
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
