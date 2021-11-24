@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
-; 名称：定时任务
-; 描述：打开 CapsLockX 的 Github 页面
+; 名称：定时任务（番茄时钟）
+; 描述：番茄时钟
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -43,7 +43,7 @@ Return
     ToolTip
 }
 番茄状态计算(){
-    Return ((Mod((UnixTimeGet() / 60000), 30) < 25) ? "工作时间" : "休息时间")
+    Return ((Mod((UnixTimeGet() / 60000)+30000, 30) < 25) ? "工作时间" : "休息时间")
 }
 
 番茄报时(force:=0){
@@ -76,15 +76,19 @@ Return
     ; MsgBox, 番茄：%番茄状态%
     ; TrayTip, 番茄：%番茄状态%, ： %番茄状态%
     ; 状态动作
-    if ("工作时间" == 番茄状态) {
-        if (T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
-            Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
+    if("工作时间" == 番茄状态){
+        SoundPlay % "C:\Windows\media\Windows Unlock.wav" ; 时间提醒
+        sleep 30000
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
+        if(T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
+            Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
     }
-    if ("休息时间" == 番茄状态) {
-        if (T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
-            Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
+    if("休息时间" == 番茄状态){
+        SoundPlay % "C:\Windows\media\Windows Balloon.wav" ; 时间提醒
+        sleep 30000
         SoundPlay % "Data/NoteG_C.mp3" ; 降调
+        if(T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
+            Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
     }
 }
 
