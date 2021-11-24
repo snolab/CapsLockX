@@ -370,21 +370,20 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 <!-- 模块文件名：插件-定时任务.ahk-->
 
-### 定时任务
+### 定时任务（25分钟固定循环番茄时钟）
 
 使用  CapsLockX + M 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
 
 - 使用番茄报时（00分和30分播放工作铃声，每小时的25分和55分播放休息铃声）（需要先开启定时任务）
 
-    ```ini
-    UseTomatoLife=1
-    ```
-
+  ```ini
+  UseTomatoLife=1
+  ```
 - 使用番茄报时时，自动切换桌面（使用番茄报时时，自动切换桌面（休息桌面为1，工作桌面为2）
 
-    ```ini
-    UseTomatoLifeSwitchVirtualDesktop=1
-    ```
+  ```ini
+  UseTomatoLifeSwitchVirtualDesktop=1
+  ```
 
 注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
 <!-- 结束：抽取模块帮助 -->
@@ -479,14 +478,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [Capslox](https://capslox.com/cn/)
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.](https://github.com/matrix1001/CapsLock-plus-plus)
 
-#### 其它效率软件推荐 🔗
-
-- [Quicker](https://getquicker.net/) 也是一个提高电脑操作效率的软件，与本项目可以互补。（如果需要的话，你可以用雪星的推荐码： 55396-2857）
-- [Everything](https://www.voidtools.com/zh-cn/)
-
 ## 答疑相关 ❓
-
-本项目使用协议： [GNU 通用公共许可证 v3.0 - GNU 工程 - 自由软件基金会](https://www.gnu.org/licenses/gpl-3.0.html)。
 
 相关社群：
 
