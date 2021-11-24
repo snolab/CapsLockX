@@ -34,13 +34,14 @@ global CapsLockX_Update_Stop := 0x10
 if(T_CheckUpdate)
     CapsLockX_更新()
 ; CapsLockX_更新记录("发现新版本！准备更新：" "`n仓库版本：" remote "`n我的版本：" local)
-TrayTip, CapsLockX 更新模块, 更新完成
-Sleep, 5000
+; TODO
+; TrayTip, CapsLockX 更新模块, 更新完成
+; Sleep, 5000
 return
 
 CapsLockX_更新记录(msg){
     ; TrayTip CapsLockX 更新, %msg%
-    ToolTip, CapsLockX 更新：%msg%
+    ; ToolTip, CapsLockX 更新：%msg%
     ; MsgBox, CapsLockX 更新：%msg%
 }
 CapsLockX_更新提示(msg){
