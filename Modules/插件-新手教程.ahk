@@ -60,13 +60,10 @@ CapsLockX_首次使用配置(){
 
 CapsLockX_配置刷新:
     gui,submit, nohide
-    ToolTip conf %T_XKeyAsCapsLock% %T_XKeyAsSpace% %T_AskRunAsAdmin%
-
-    ; CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", T_XKeyAsCapsLock, "使用 Space 作为引导键（默认启用，用户启用）")
-    ; CapsLockX_ConfigSet("Core", "T_XKeyAsSpace", T_XKeyAsSpace, "使用 CapsLock 作为引导键（默认启用，用户启用）")
-    ; CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
-    
-    ToolTip conf %T_XKeyAsCapsLock% %T_XKeyAsSpace% %T_AskRunAsAdmin%
+    CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", T_XKeyAsCapsLock, "使用 Space 作为引导键（默认启用，用户启用）")
+    CapsLockX_ConfigSet("Core", "T_XKeyAsSpace", T_XKeyAsSpace, "使用 CapsLock 作为引导键（默认启用，用户启用）")
+    CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
+    ; ToolTip conf %T_XKeyAsCapsLock% %T_XKeyAsSpace% %T_AskRunAsAdmin%
     return
 Button确认:
     gui, destroy
