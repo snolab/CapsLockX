@@ -72,7 +72,7 @@ UserModuleEdit(路径, 使用进程名AHK := 0){
     Run code.cmd "%路径%" || notepad "%路径%"
     ; WinWaitActive Notepad,,3
     ; if(ErrorLevel){
-    ;     return
+    ;     return aw
     ; }
     ; Sleep 2000
     ; SendEvent ^{End}^v

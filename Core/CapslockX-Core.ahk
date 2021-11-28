@@ -120,6 +120,7 @@ if(T_XKeyAsRAlt)
 CapsLockX_Loaded()
 #Include Core\CapsLockX-ModulesLoader.ahk
 #Include Core\CapsLockX-RunSilent.ahk
+
 #Include Core\CapsLockX-QuickTips.ahk
 
 #If
@@ -133,7 +134,11 @@ UpdateLight(){
         Send {ScrollLock}
     }
     if (T_UseCursor){
-        UpdateCapsCursor(NowLightState)
+        ; Module
+        Try{
+           Func("UpdateCapsCursor").Call(NowLightState)
+
+        }
     }
     if ( NowLightState && !LastLightState){
         Menu, tray, icon, %T_SwitchTrayIconOn%

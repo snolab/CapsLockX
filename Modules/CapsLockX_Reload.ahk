@@ -19,8 +19,12 @@ return
 
 ; 只 reload 不重新编译模块
 CapsLockX_FolderModified(Folder, Changes) {
-    MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
-    IfMsgBox Yes
+    if (CapsLockX_DontReload)
+        return
+    ; MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
+    ; IfMsgBox Yes
+    TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动软重载。
+    sleep 200
     reload
 }
 CapsLockX_FolderChanged(Folder, Changes)
@@ -28,24 +32,29 @@ CapsLockX_FolderChanged(Folder, Changes)
     global CapsLockX_ConfigChangedTickCount
     ; 跳过 CapsLockX 自己改的配置，容差 2-5 秒
     Sleep, 2000
-    if ( CapsLockX_ConfigChangedTickCount && A_TickCount - CapsLockX_ConfigChangedTickCount < 5000) {
         return
+    if ( CapsLockX_ConfigChangedTickCount && A_TickCount - CapsLockX_ConfigChangedTickCount < 5000) {
     }
     
     global T_AutoReloadOnConfigsChange := CapsLockX_Config("Advanced", "T_AutoReloadOnConfigsChange", 0, "用户配置修改保存时自动重载")
     if (CapsLockX_DontReload)
         return
-    if(T_AutoReloadOnConfigsChange) {
+    if (T_AutoReloadOnConfigsChange) {
         TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
-        CapsLockX_Reload()
+        sleep 200
+        ; CapsLockX_Reload()
+        reload
     } else {
         MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否重载？
         IfMsgBox Yes
-        CapsLockX_Reload()
+        reload
+        ; CapsLockX_Reload()
+
     }
 }
 
-#if
+#if CapsLockXMode
 
-^!\:: CapsLockX_Reload() ; CapsLockX_重新启动
-~^!+\:: ExitApp ; CapsLockX_退出
+\:: Reload ; CapsLockX_模块重载
++\:: CapsLockX_Reload() ; CapsLockX_重新启动
+^+\:: ExitApp ; CapsLockX_退出

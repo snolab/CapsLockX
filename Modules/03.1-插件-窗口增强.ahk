@@ -33,8 +33,9 @@ global ARRANGE_MOVING := 0x10
 global ARRANGE_Z_ORDERING := 0x20
 
 global lastFlashWinIDs := []
-global 窗口鼠标位置表 := {}
-global T窗口增强_鼠标位置记忆 := CapsLockX_Config("窗口增强", "鼠标位置记忆", 1)
+global 最迟闪动窗口 := {}
+global 窗口鼠标位置表表 := {}
+global T窗口增强_鼠标位置记忆 := CapsLockX_Config("窗口增强", "鼠标位置记忆尝试", 1, "在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置")
 
 闪动窗口记录器初始化()
 
@@ -558,11 +559,12 @@ CurrentWindowSetAsBackground(){
 
 #if CapsLockXMode
 
-z:: 上一个窗口激活()
+z:: 最近1分钟内闪动窗口激活()
+; z:: 上一个窗口激活()
 +z:: 下一个窗口激活()
-!z:: 最迟闪动窗口激活()
+; !z:: 最近1分钟内闪动窗口激活()
 x:: Send ^w ; 关闭标签
-+x:: 关闭窗口并切到下一窗口()
++x:: 关闭窗口并切到下一窗口() 
 ^!x:: 杀死窗口并切到下一窗口()
 c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
 ^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
@@ -726,7 +728,7 @@ x:: 任务栏中关闭窗口()
     任务栏匹配串 := "ahk_class Shell_TrayWnd ahk_exe explorer.exe"
     if(WinActive(任务栏匹配串)){
         WinGetPos, X, Y, W, H, %任务栏匹配串%
-        if(W>H){
+        if (W > H){
             ControlSend, MSTaskListWClass1, {Left}, %任务栏匹配串%
         }else{
             ControlSend, MSTaskListWClass1, {Up}, %任务栏匹配串%
@@ -753,7 +755,11 @@ arrayDistinctKeepTheLastOne(arr){ ; Hash O(n)
         hash[(v)] := 1, newArr.push(v)
     return ReverseArray(newArr)
 }
-
+窗口增强_UnixTimeStamp() {
+   Static UnixStart := 116444736000000000
+   DllCall("GetSystemTimeAsFileTime", "Int64P", FileTime)
+   Return ((FileTime - UnixStart) // 10000000) - 27 ; currently (2019-01-21) 27 leap seconds have been added
+}
 ShellMessage( wParam,lParam ){
     HSHELL_FLASH := 0x8006 ;  0x8006 is 32774 as shown in Spy!
     if (wParam = HSHELL_FLASH){
@@ -764,64 +770,86 @@ ShellMessage( wParam,lParam ){
         ; lastFlashWinIDs.__Set(hWnd)
         ; WinGetTitle, this_title, ahk_id %hWnd%
         ; TrayTip, blinking, %this_title% is blinking
+        TimeStamp := 窗口增强_UnixTimeStamp()
+        最迟闪动窗口 := {hWnd: hWnd, TimeStamp: TimeStamp}
     }
 }
 ; activate
-鼠标位置记忆(){
-    if(!T窗口增强_鼠标位置记忆)
+鼠标位置记忆尝试(){
+    if (!T窗口增强_鼠标位置记忆)
         return
-    CoordMode, Mouse, Screen
+    ; 相对窗口坐标记忆位置
+    CoordMode, Mouse, Window
     MouseGetPos, X, Y, hWnd, hWndCtrl
-    窗口鼠标位置表[hWnd] := [X, Y, hWndCtrl]
+    CoordMode, Mouse, Screen
+    窗口鼠标位置表表[hWnd] := {X: X, Y: Y, hWnd: hWnd, hWndCtrl: hWndCtrl}
 }
-鼠标位置还原(hWnd:=0){
-    if(!T窗口增强_鼠标位置记忆)
+鼠标位置还原尝试(hWnd:=0){
+    if (!T窗口增强_鼠标位置记忆)
         return
-    if(!hWnd)
+    if (!hWnd)
         WinGet, hWnd, id, A
-    if(窗口鼠标位置表[hWnd]){
-        X := 窗口鼠标位置表[hWnd][1]
-        Y := 窗口鼠标位置表[hWnd][2]
-        CoordMode, Mouse, Screen
+    hWndRecorded := 窗口鼠标位置表表[hWnd].hWnd
+    if (hWndRecorded){
+        X := 窗口鼠标位置表表[hWnd].X, Y := 窗口鼠标位置表表[hWnd].Y
+        ; 相对窗口坐标还原鼠标
+        CoordMode, Mouse, Window
         MouseMove, %X%, %Y%, 0
+        CoordMode, Mouse, Screen
     }
 }
+最近1分钟内闪动窗口激活(){
+    TimeStampNow := 窗口增强_UnixTimeStamp()
+    hWnd         := 最迟闪动窗口.hWnd
+    TimeStamp    := 最迟闪动窗口.TimeStamp
+    if (hWnd && TimeStampNow - TimeStamp <= 60){
+        鼠标位置记忆尝试()
+        WinActivate, ahk_id %hWnd%
+        WinGetTitle, this_title, ahk_id %hWnd%
+        TrayTip, 最近1分钟内闪动窗口激活, %this_title%
+        最迟闪动窗口 := {}
+        鼠标位置还原尝试()
+    }else{
+        上一个窗口激活()
+    }
+}
+下一个窗口激活(){
+    鼠标位置记忆尝试()
+    WinGet, hWnd, id, A
+    SendEvent !{Esc}
+    WinWaitNotActive ahk_id %hWnd%,, 1
+    if (ErrorLevel){
+        return
+    }
+    鼠标位置还原尝试()
+}
+上一个窗口激活(){
+    鼠标位置记忆尝试()
+    WinGet, hWnd, id, A
+    SendEvent +!{Esc}
+    WinWaitNotActive ahk_id %hWnd%,, 1
+    if (ErrorLevel){
+        return
+    }
+    鼠标位置还原尝试()
+}
 最迟闪动窗口激活(){
-    鼠标位置记忆()
+    ; @deprecated
+    鼠标位置记忆尝试()
     While % lastFlashWinIDs.Count(){
         hWnd := WinExist("ahk_id " lastFlashWinIDs.Pop())
         if (hWnd){
             WinActivate, ahk_id %hWnd%
             WinGetTitle, this_title, ahk_id %hWnd%
             TrayTip, switched, switched to blinking %this_title%
-            鼠标位置还原(hWnd)
+            鼠标位置还原尝试(hWnd)
             Return
         }
     }
     SendEvent +!{Esc}
     WinWaitNotActive ahk_id %hWnd%,, 1
-    if (!ErrorLevel){
+    if (ErrorLevel){
         return
     }
-    鼠标位置还原()
-}
-下一个窗口激活(){
-    鼠标位置记忆()
-    WinGet, hWnd, id, A
-    SendEvent !{Esc}
-    WinWaitNotActive ahk_id %hWnd%,, 1
-    if (!ErrorLevel){
-        return
-    }
-    鼠标位置还原()
-}
-上一个窗口激活(){
-    鼠标位置记忆()
-    WinGet, hWnd, id, A
-    SendEvent +!{Esc}
-    WinWaitNotActive ahk_id %hWnd%,, 1
-    if (!ErrorLevel){
-        return
-    }
-    鼠标位置还原()
+    鼠标位置还原尝试()
 }

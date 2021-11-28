@@ -13,19 +13,26 @@ const 按表替换 = (s, 表) =>
   Object.entries(表).reduce((s, [k, v]) => s.replace(RegExp(v, v.flags), k), s);
 const 表按键排序 = (表) =>
   Object.fromEntries(
-    Object.entries(表).sort(([k0, v0], [k1, v1]) => v0.localeCompare(v1))
+    Object.entries(表).sort(
+      ([fn0, hk0], [fn1, hk1]) =>
+        hk0.length - hk1.length || hk0.localeCompare(hk1)
+    )
   );
 
 // const 默认辅助键序列 = "#^+!".split('')
 
 const hkp = (s) =>
   按表替换(s, {
-    "_->_": /&/g,
-
+    // &
+    "_ _": /&/g,
+    // sort
+    "^#": /#\^/g,
+    "#+": /\+#/g,
+    "^!": /!\^/g,
     "#!": /!#/g,
     "+!": /\+!/g,
     "+^": /\^\+/g,
-
+    // convert
     _Win_: /#/g,
     _Alt_: /!/g,
     _Shift_: /\+/g,
@@ -64,7 +71,9 @@ const 热键列提取 = (文件内容) => {
           .map(([hk, de]) => [de, hkp(hk)]),
       ])
     );
-    if (!Object.entries(指令热键表).length) return [];
+    if (!Object.entries(指令热键表).length) {
+      return [];
+    }
     return [[条件, 指令热键表]];
   });
   return 热键列;
@@ -101,29 +110,28 @@ const QuickTipsUpdate = async (条件热键表) => {
     (动作生成函数) =>
     ([条件, 热键表]) =>
       `
-    if (Func("${条件.replace(/\(\)$/, "")}").Call()) {\n
-        ${Object.entries(热键表).map(动作生成函数).join("\n            ")}
+    try{
+        if (Func("${条件.replace(/\(\)$/, "")}").Call()) {\n
+            ${Object.entries(热键表).map(动作生成函数).join("\n            ")}
+        }
     }`;
   const 判断生成 =
     (动作生成函数) =>
     ([条件, 热键表]) =>
-      条件
-        ? `
+      `
     try{
-        if (${条件}) {
-            ${Object.entries(热键表).map(动作生成函数).join("\n            ")}
-        }
-    }`
-        : `
-    try{
-        if (True) {
+        if (${条件 || "True"}) {
             ${Object.entries(热键表).map(动作生成函数).join("\n            ")}
         }
     }`;
   const msg生成 = ([描述, 热键]) =>
     `msg .= "|\t${热键 + "\t|\t" + 描述}\t|\`n"`;
   const msg判断生成 = 判断生成(msg生成);
-  const content = Object.entries(条件热键表).map(msg判断生成).join("\n");
+  const content = [
+    ...Object.entries(非函数条件热键表).map(判断生成(msg生成)),
+    ...Object.entries(函数条件热键表).map(函数判断生成(msg生成)),
+  ].join('\n');
+  // const content = Object.entries(函数条件热键表).map(msg判断生成).join("\n");
   const suffix = "    return msg";
   const QuickTips = [prefix, content, suffix].join("\n");
   // console.log(QuickTips);
