@@ -27,8 +27,8 @@ global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
-global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 360 * TMouse_WheelSpeedRatio)
+global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 5 * TMouse_MouseSpeedRatio)
+global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 5 * TMouse_WheelSpeedRatio)
 global 滚轮自控 := new AccModel2D(Func("滚轮自控"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
@@ -105,27 +105,28 @@ SendInput_MouseMove(x, y)
     DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
 }
 ; void 鼠标模拟
-鼠标模拟(dx, dy, 状态)
-{
+鼠标模拟(dx, dy, 状态){
     if (!CapsLockXMode) {
         鼠标模拟.止动()
         return
     }
     if (状态 == "横中键") {
-        SendEvent {Click 2}
+        Func("SNOCLICK").Call()
+        ; SendEvent {Click 2}
         鼠标模拟.止动()
         return
     }
     if (状态 == "纵中键") {
-        SendEvent {Click 3}
+        Func("SNOCLICK").Call()
+        ; SendEvent {Click 3}
         鼠标模拟.止动()
         return
     }
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     ; Shift 减速
-    if (GetKeyState("Shift", "P")){
+    if (GetKeyState("Shift", "P")) {
         dx *= 0.1, dy *= 0.1
     }
     if (TMouse_SendInputAPI) {
@@ -150,7 +151,7 @@ SendInput_MouseMove(x, y)
 }
 
 滚轮自动(dx, dy, 状态){
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     WM_MOUSEWHEEL := 0x020A
@@ -158,9 +159,8 @@ SendInput_MouseMove(x, y)
     _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
     _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
 }
-滚轮自控(dx, dy, 状态)
-{
-    if (状态 != "移动"){
+滚轮自控(dx, dy, 状态){
+    if (状态 != "移动") {
         return
     }
     滚轮自动.横速 += dx, 滚轮自动.纵速 += dy, 滚轮自动.始动()
@@ -170,8 +170,7 @@ SendInput_MouseMove(x, y)
     msg .= "CapsLockX + Ctrl + Alt + Shift + RF 调整横向自动滚轮`n"
     鼠标模拟_ToolTip(msg)
 }
-滚轮模拟(dx, dy, 状态)
-{
+滚轮模拟(dx, dy, 状态){
     if (!CapsLockXMode) {
         return 滚轮模拟.止动()
     }
@@ -187,7 +186,7 @@ SendInput_MouseMove(x, y)
         }
         return
     }
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     WM_MOUSEWHEEL := 0x020A
@@ -196,8 +195,7 @@ SendInput_MouseMove(x, y)
     _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
 }
 
-滚轮消息发送(msg, zDelta)
-{
+滚轮消息发送(msg, zDelta){
     ; 目前还不支持UWP
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
