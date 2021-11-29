@@ -147,8 +147,8 @@ Return
         ; 匹配模块名
         模块文件 := A_LoopField
         匹配结果 := false
-        匹配结果 ||= RegExMatch(A_LoopField, "O)((?:.*[-])*)(.*?)(?:\.user)?\.ahk", Match)
-        匹配结果 ||= RegExMatch(A_LoopField, "O)((?:.*[-])*)(.*?)(?:\.用户)?\.ahk", Match)
+        匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)((?:.*[-])*)(.*?)(?:\.user)?\.ahk", Match)
+        匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)((?:.*[-])*)(.*?)(?:\.用户)?\.ahk", Match)
         if (!匹配结果) {
             Continue
         }
