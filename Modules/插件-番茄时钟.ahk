@@ -1,5 +1,5 @@
 ﻿; ========== CapsLockX ==========
-; 名称：定时任务（番茄时钟）
+; 名称：番茄时钟
 ; 描述：番茄时钟
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
@@ -77,16 +77,16 @@ Return
     ; TrayTip, 番茄：%番茄状态%, ： %番茄状态%
     ; 状态动作
     if("工作时间" == 番茄状态){
-        SoundPlay % "C:\Windows\media\Windows Unlock.wav" ; 时间提醒
-        sleep 30000
+        ; SoundPlay % "C:\Windows\media\Windows Unlock.wav" ; 时间提醒
+        sleep 30000 ; 暂缓30秒切工作桌面
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
         if(T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
             Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
     }
     if("休息时间" == 番茄状态){
-        SoundPlay % "C:\Windows\media\Windows Balloon.wav" ; 时间提醒
-        sleep 30000
+        ; SoundPlay % "C:\Windows\media\Windows Balloon.wav" ; 时间提醒
         SoundPlay % "Data/NoteG_C.mp3" ; 降调
+        sleep 30000 ; 暂缓30秒切休息桌面
         if(T_ScheduleTasks_UseTomatoLifeSwitchVirtualDesktop)
             Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
     }
