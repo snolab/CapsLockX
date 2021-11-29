@@ -1,6 +1,6 @@
-
+﻿
 IUIAutomation := ComObjCreate(CLSID_CUIAutomation := "{ff48dba4-60ef-4201-aa87-54103eef594e}", IID_IUIAutomation := "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
-if (!IUIAutomation){
+if (!IUIAutomation) {
     ; SNOCLICK 不可用
     return
 }
