@@ -27,9 +27,9 @@ global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
-global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 5 * TMouse_MouseSpeedRatio)
-global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 5 * TMouse_WheelSpeedRatio)
-global 滚轮自控 := new AccModel2D(Func("滚轮自控"), 0.1, 10)
+global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
+global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
+global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
 if (TMouse_SendInput)
@@ -159,7 +159,7 @@ SendInput_MouseMove(x, y)
     _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
     _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
 }
-滚轮自控(dx, dy, 状态){
+滚轮自动控制(dx, dy, 状态){
     if (状态 != "移动") {
         return
     }
@@ -182,7 +182,7 @@ SendInput_MouseMove(x, y)
         ; 关闭滚轮自动
         if(滚轮自动.横速 || 滚轮自动.纵速) {
             滚轮自动.止动()
-            滚轮自控(0, 0, "止动")
+            滚轮自动控制(0, 0, "止动")
         }
         return
     }
@@ -268,10 +268,10 @@ $*d:: 鼠标模拟.右按("d")
 $*w:: 鼠标模拟.上按("w")
 $*s:: 鼠标模拟.下按("s")
 ; 滚轮运动处理
-$*+^!r:: 滚轮自控.左按("r")
-$*+^!f:: 滚轮自控.右按("f")
-$*^!r:: 滚轮自控.上按("r")
-$*^!f:: 滚轮自控.下按("f")
+$*+^!r:: 滚轮自动控制.左按("r")
+$*+^!f:: 滚轮自动控制.右按("f")
+$*^!r:: 滚轮自动控制.上按("r")
+$*^!f:: 滚轮自动控制.下按("f")
 $*+r:: 滚轮模拟.左按("r")
 $*+f:: 滚轮模拟.右按("f")
 $*r:: 滚轮模拟.上按("r")

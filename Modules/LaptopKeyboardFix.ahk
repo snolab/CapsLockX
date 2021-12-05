@@ -63,4 +63,4 @@ Esc:: FLAG_SWAP_ESC_STROKE := !FLAG_SWAP_ESC_STROKE
 
 #if !FLAG_SWAP_ESC_STROKE
 
-; <^Esc:: LWin 
+; <^Esc:: LWin
