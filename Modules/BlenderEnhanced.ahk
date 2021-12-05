@@ -16,7 +16,8 @@ global 平移精度 := 0.1
 global 平移精度控制 := new AccModel2D(Func("平移精度控制"), 0.1, 10)
 global S缩放 := new AccModel2D(Func("S缩放"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
 global S旋转 := new AccModel2D(Func("S旋转"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-
+global 平移导航 := new AccModel2D(Func("平移导航"), 0.1, TMouse_DPIRatio * 120 * TMouse_MouseSpeedRatio)
+global 旋转导航 := new AccModel2D(Func("旋转导航"), 0.1, TMouse_DPIRatio * 120 * TMouse_MouseSpeedRatio)
 BlenderEnhanced_SendInput_MouseMoveR32(x, y)
 {
     VarSetCapacity(sendData, 28, 0)
@@ -51,6 +52,33 @@ Blender视图运动(启动键, dx, dy, 状态)
     MouseMove, %X%, %Y%, 0
 
     BlenderEnhanced_SendInput_MouseMoveR32(dx, dy)
+}
+
+平移导航(dx, dy, 状态){
+    if (状态=="启动"){
+        Send {ShiftDown}{MButton Down}
+        return
+    }
+    if (状态=="止动"){
+        Send {MButton Up}{ShiftUp}
+    }
+    if (状态!=="移动"){
+        return
+    }
+    BlenderEnhanced_SendInput_MouseMoveR32(-dx, -dy)
+}
+旋转导航(dx, dy, 状态){
+    if (状态=="启动"){
+        Send {MButton Down}
+        return
+    }
+    if (状态=="止动"){
+        Send {MButton Up}
+    }
+    if (状态!=="移动"){
+        return
+    }
+    BlenderEnhanced_SendInput_MouseMoveR32(-dx, -dy)
 }
 
 Blender物件数值调整(lg, operation, dimention, delta){
@@ -152,6 +180,14 @@ Blender窗口内(){
     global Blender增强模式 := !Blender增强模式
     tooltip Blender增强模式 %Blender增强模式%
     return
+\ & a:: 平移导航.左按("a")
+\ & d:: 平移导航.右按("d")
+\ & w:: 平移导航.上按("w")
+\ & s:: 平移导航.下按("s")
+\ & q:: 旋转导航.左按("q")
+\ & e:: 旋转导航.右按("e")
+\ & r:: 旋转导航.上按("r")
+\ & f:: 旋转导航.下按("f")
 
 #if Blender窗口内() && Blender增强模式
 
