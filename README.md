@@ -24,9 +24,11 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
-## 入门教程 📖
+## 新手快速入门教程 📖
 
-### 太长不看 / TL;DR 📄
+### 简易入门教程
+
+CapsLockX 有三大核心功能： 窗口管理，鼠标模拟、方向模拟、应用热键，
 
 下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
@@ -536,3 +538,5 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [(5 封私信 / 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/question/23443944/answer/1670521971)
 - [我是职场达人，AutoHotKey 让我成为职场超人 - 知乎](https://zhuanlan.zhihu.com/p/60372361)
 - [AutoHotKey 中文网专栏 - 知乎](https://www.zhihu.com/column/autoahk)
+- [电脑一族如何防治“鼠标手” - 陕西日报](http://www.sxjkjy.com/uploadfiles/files/2017062110481454.pdf)
+- 

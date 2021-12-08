@@ -22,13 +22,28 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
-## 入门教程 📖
+## 新手快速入门教程 📖
 
-### 太长不看 / TL;DR 📄
+### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
+
+CapsLockX 有四大核心功能： 窗口管理，鼠标模拟、方向模拟、应用热键，
 
 下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后，按住 CapsLockX，然后按 `WASD` 鼠标移动，`QE` 点击 `RF` 滚轮，`HJKL` 光标移动，`YOUI` 页面移动，`ZXCV` 窗口管理，`1234567890` 切换虚拟桌面，`M` 打开配置。
+解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后按照以下左右手功能区的依次试用来了解 CapsLockX 的功能。
+
+左手功能区：
+
+- 窗口管理：`CapsLockX + 1234567890` 切换到第 `n` 个虚拟桌面，`CapsLockX + ZXCV` 窗口操作（窗口切换、窗口关闭，窗口排列，透明置顶）。
+- 鼠标模拟功能：按 `CapsLockX + WASD` 鼠标移动（像玩游戏的时候操作人物移动一样简单），按 `CapsLockX + QE` 鼠标左右键点击，`CapsLockX + RF` 滚轮上下滑动。
+
+右手功能区：
+
+- 方向键模拟：打开任意一个编辑 `HJKL` 光标移动，`YOUI` 页面移动
+
+上手之后，如果想了解更多功能，则可参考下方速查手册。
+
+## 进阶参考手册
 
 ### 安装与使用 🛠
 
@@ -127,6 +142,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 这个世界上还有比 Vim 模式的 HJKL 移动光标更棒的东西吗？
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
+
+此插件也常用于在浏览器上网冲浪时 **打开F7光标浏览之后** 用于选中你想要复制或搜索的文本。（你猜到了，雪星平时都开F7光标浏览。）
+用 CapsLockX + UI 键翻页比翻书还快 XD
 
 ![光标移动.gif]( ./media/光标移动.gif )
 
@@ -534,3 +552,5 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [(5 封私信 / 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/question/23443944/answer/1670521971)
 - [我是职场达人，AutoHotKey 让我成为职场超人 - 知乎](https://zhuanlan.zhihu.com/p/60372361)
 - [AutoHotKey 中文网专栏 - 知乎](https://www.zhihu.com/column/autoahk)
+- [电脑一族如何防治“鼠标手” - 陕西日报](http://www.sxjkjy.com/uploadfiles/files/2017062110481454.pdf)
+- 

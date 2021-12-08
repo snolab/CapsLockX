@@ -14,11 +14,15 @@ WatchFolder(CapsLockX_配置目录, "CapsLockX_FolderChanged", true, 0x02 | 0x03
 ; WatchFolder(A_WorkingDir "\Modules\", "CapsLockX_FolderChanged", true, 0x02 | 0x03) ; delete or add
 
 #include Modules/WatchFolder/WatchFolder.ahk
-
+global Reload_DeveloperAsYouInstallMeByGitClone := FileExist(A_WorkingDir "/.git")
 return
 
 ; 只 reload 不重新编译模块
 CapsLockX_FolderModified(Folder, Changes) {
+    ; 只在 git clone 安装方式下询问重载
+    if (!Reload_DeveloperAsYouInstallMeByGitClone) {
+        return
+    }
     MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
     IfMsgBox Yes
     reload
@@ -37,6 +41,10 @@ CapsLockX_FolderChanged(Folder, Changes)
         TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
         CapsLockX_Reload()
     } else {
+        ; 只在 git clone 安装方式下询问重载
+        if (!Reload_DeveloperAsYouInstallMeByGitClone) {
+            return
+        }
         MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否重载？
         IfMsgBox Yes
         CapsLockX_Reload()

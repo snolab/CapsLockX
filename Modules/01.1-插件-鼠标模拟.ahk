@@ -127,7 +127,15 @@ SendInput_MouseMoveR32(x, y)
     }
     ; Shift 减速
     if (GetKeyState("Shift", "P")){
-        dx *= 0.1, dy *= 0.1
+        ; TODO fix on 1
+        ; tooltip %dx% %dy% x
+        dx := dx * 0.2, dy := dy * 0.2
+        if (dx != 0 && abs(dx) < 1){
+             dx:=dx>0 ? 1 : -1
+        }
+        if (dy != 0 && abs(dy) < 1){
+             dy:=dy>0 ? 1 : -1
+        }
     }
     if (TMouse_SendInputAPI && A_PtrSize == 4) {
         ; 这只能32位用
@@ -234,14 +242,37 @@ SendInput_MouseMoveR32(x, y)
 }
 
 CapsLockX_鼠标左键按下(wait){
+    global CapsLockX_鼠标左键等待
+    if (CapsLockX_鼠标左键等待){
+        return
+    }
+    CapsLockX_鼠标左键等待 := wait
     SendEvent {Blind}{LButton Down}
+    SetTimer CapsLockX_鼠标左键弹起, -1
+}
+CapsLockX_鼠标左键弹起(){
+    global CapsLockX_鼠标左键等待
+    wait := CapsLockX_鼠标左键等待
     KeyWait, %wait%, ; wait forever
     SendEvent {Blind}{LButton Up}
+    CapsLockX_鼠标左键等待 := ""
+    
 }
 CapsLockX_鼠标右键按下(wait){
+    global CapsLockX_鼠标右键等待
+    if (CapsLockX_鼠标右键等待){
+        return
+    }
+    CapsLockX_鼠标右键等待 := wait
     SendEvent {Blind}{RButton Down}
+    SetTimer CapsLockX_鼠标右键弹起, -1
+}
+CapsLockX_鼠标右键弹起(){
+    global CapsLockX_鼠标右键等待
+    wait := CapsLockX_鼠标右键等待
     KeyWait, %wait%, ; wait forever
     SendEvent {Blind}{RButton Up}
+    CapsLockX_鼠标右键等待 := ""
 }
 
 鼠标模拟_ToolTip(tips){
@@ -252,11 +283,20 @@ CapsLockX_鼠标右键按下(wait){
     ToolTip
 }
 
-#if CapsLockXMode
-    
+#if CapsLockXMode && !CapsLockX_MouseButtonSwitched
+
 ; 鼠标按键处理
-$*e::CapsLockX_鼠标左键按下("e")
+$*e:: CapsLockX_鼠标左键按下("e")
 $*q:: CapsLockX_鼠标右键按下("q")
+
+#if CapsLockXMode && CapsLockX_MouseButtonSwitched
+
+; 鼠标按键处理
+$*e:: CapsLockX_鼠标右键按下("e")
+$*q:: CapsLockX_鼠标左键按下("q")
+
+#if CapsLockXMode
+
 ; 鼠标运动处理
 $*a:: 鼠标模拟.左按("a")
 $*d:: 鼠标模拟.右按("d")

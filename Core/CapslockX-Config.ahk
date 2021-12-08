@@ -85,6 +85,7 @@ CapsLockX_Config(field, varName, defaultValue, comment := ""){
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
     return content
 }
+
 清洗为_UTF16_WITH_BOM_型编码(path){
     FileRead ModuleCode, %path%
     FileDelete %path%
