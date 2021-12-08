@@ -26,13 +26,26 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 ## 新手快速入门教程 📖
 
-### 简易入门教程
+### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
 
-CapsLockX 有三大核心功能： 窗口管理，鼠标模拟、方向模拟、应用热键，
+CapsLockX 有四大核心功能： 窗口管理，鼠标模拟、方向模拟、应用热键，
 
 下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后，按住 CapsLockX，然后按 `WASD` 鼠标移动，`QE` 点击 `RF` 滚轮，`HJKL` 光标移动，`YOUI` 页面移动，`ZXCV` 窗口管理，`1234567890` 切换虚拟桌面，`M` 打开配置。
+解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后按照以下左右手功能区的依次试用来了解 CapsLockX 的功能。
+
+左手功能区：
+
+- 窗口管理：`CapsLockX + 1234567890` 切换到第 `n` 个虚拟桌面，`CapsLockX + ZXCV` 窗口操作（窗口切换、窗口关闭，窗口排列，透明置顶）。
+- 鼠标模拟功能：按 `CapsLockX + WASD` 鼠标移动（像玩游戏的时候操作人物移动一样简单），按 `CapsLockX + QE` 鼠标左右键点击，`CapsLockX + RF` 滚轮上下滑动。
+
+右手功能区：
+
+- 方向键模拟：打开任意一个编辑 `HJKL` 光标移动，`YOUI` 页面移动
+
+上手之后，如果想了解更多功能，则可参考下方速查手册。
+
+## 进阶参考手册
 
 ### 安装与使用 🛠
 
