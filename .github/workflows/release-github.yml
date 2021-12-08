@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - "v*"
-name: gh-pages
+name: github-release-into-gh-pages
 jobs:
   # github-package:
   #   runs-on: ubuntu-latest
@@ -43,10 +43,11 @@ jobs:
           overwrite: true
           body: "CapsLockX Package"
       # 压缩包和 docs 一起同步到 gh-pages
-      - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
-      - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
-      - run: cp CHANGELOG.md docs/CHANGELOG.md
-      - run: cp Core/version.txt docs/version.txt
+      - run: |
+        cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
+        cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
+        cp CHANGELOG.md docs/CHANGELOG.md
+        cp Core/version.txt docs/version.txt
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

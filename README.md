@@ -28,11 +28,13 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 ### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
 
-CapsLockX 有四大核心功能： 窗口管理，鼠标模拟、方向模拟、应用热键，
+CapsLockX 有四大核心功能： **窗口管理**，**鼠标模拟**、**方向键模拟**、应用内热键，本入门教程将带你学会前 3 大核心功能。
 
-下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+首先获取 CapsLockX ：下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后按照以下左右手功能区的依次试用来了解 CapsLockX 的功能。
+解压之后，打开 CapsLockX 文件夹内的 `CapsLockX.exe`，过掉简单的新手教程，然后按照以下左右手功能区的依次试用来了解 CapsLockX 的功能。
+
+CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以下的功能只有在你按出 `CapsLockX + 组合键` 时才会触发。
 
 左手功能区：
 

@@ -227,7 +227,8 @@ CapsLockX_Dn(){
                 ; (20210817)长按锁定CLX模式（空格除外）
                 ; CLX_Locked = 1
                 ; TrayTip CapsLockX,  进入CLX模式
-                ToolTip 进入CLX模式
+                waitKey := A_PriorKey
+                ToolTip 进入CLX模式，当前使用 CLX 键：%waitKey%
                 SetTimer CLX_HideToolTips, -1000
                 CapsLockXMode |= CM_CapsLockX
                 KeyWait, %waitKey%, T60 ; wait for 60 seconds, prevent flashing the quit and enter message
