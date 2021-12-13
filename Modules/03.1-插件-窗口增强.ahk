@@ -160,7 +160,9 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0){
                 continue
             }
         }
-        windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        WinGet, this_exe, ProcessName, ahk_id %hWnd%
+        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
     return windowsMatches
 }
@@ -233,7 +235,10 @@ WindowsListOfMonitor(arrangeFlags, MonitorIndex := 0){
         if ( this_class == "ApplicationFrameWindow") {
             Continue
         }
-        windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        
+        WinGet, this_exe, ProcessName, ahk_id %hWnd%
+        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
     return windowsMatches
 }
@@ -312,7 +317,7 @@ ArrangeWindows(arrangeFlags = "0"){
     loop %MonitorCount% {
         MonitorIndex := A_Index
         listOfWindow_%MonitorIndex% := WindowsListOfMonitor(arrangeFlags, MonitorIndex)
-        Sort listOfWindow_%MonitorIndex%
+        Sort listOfWindow_%MonitorIndex%, R
     }
     ; 位置调整
     loop %MonitorCount% {
