@@ -17,10 +17,10 @@ if (A_IsAdmin) {
 #NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
-FileCreateDir ./User
-FileCreateDir %USERPROFILE%/.CapsLockX
-global CapsLockX_配置路径 := "./User/CapsLockX-Config.ini"
-global CapsLockX_模块路径 := "./Modules"
+#Include Core/CapsLockX-Config.ahk
+
+
+global CapsLockX_模块路径 := "./Modules" 
 global CapsLockX_核心路径 := "./Core"
 ; 版本
 global CapsLockX_Version
@@ -38,18 +38,12 @@ global loadingTips := ""
 清洗为_UTF8_WITH_BOM_型编码(CapsLockX_核心路径 "/CapsLockX-RunSilent.ahk")
 清洗为_UTF8_WITH_BOM_型编码(CapsLockX_核心路径 "/CapsLockX-Update.ahk")
 
-; 配置文件编码清洗
-清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
-
 ; 复制用户模块
-; 注：如果CLX已经开了的话，这一步会触发重启，这可能会导致一些文件冲突的BUG……
+; TODO FIX：如果CLX已经开了的话，这一步会触发重启，这可能会导致一些文件冲突的BUG……
 FileDelete, %CapsLockX_模块路径%/*.user.ahk
 FileDelete, %CapsLockX_模块路径%/*.user.md
-FileCopy ./User/*.user.ahk, %CapsLockX_模块路径%/, 1
-FileCopy ./User/*.user.md, %CapsLockX_模块路径%/, 1
-; 备份旧版本的用户模块（注意顺序，不要把新版用户模块覆盖了）
-; FileCopy %CapsLockX_模块路径%/*.user.ahk, ./User/
-; FileCopy %CapsLockX_模块路径%/*.user.md, ./User/
+FileCopy %CapsLockX_配置目录%/*.user.ahk, %CapsLockX_模块路径%/, 1
+FileCopy %CapsLockX_配置目录%/*.user.md, %CapsLockX_模块路径%/, 1
 
 ; 加载模块
 global CapsLockX_ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
@@ -121,11 +115,6 @@ Return
     FileRead ModuleCode, %path%
     FileDelete %path%
     FileAppend %ModuleCode%, %path%, UTF-8
-}
-清洗为_UTF16_WITH_BOM_型编码(path){
-    FileRead ModuleCode, %path%
-    FileDelete %path%
-    FileAppend %ModuleCode%, %path%, UTF-16
 }
 模块编译和帮助README更新(sourceREADME, docs=""){
     FileEncoding UTF-8-Raw
@@ -283,9 +272,3 @@ CapsLockX启动(){
     ExitApp
 }
 
-CapsLockX_ConfigGet(field, varName, defaultValue)
-{
-    IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
-    content := %varName% ; 千层套路XD
-    return content
-}

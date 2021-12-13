@@ -21,7 +21,7 @@ jobs:
       - run: |
           zip -r CapsLockX.zip Core Data docs Modules Tools CapsLockX*.ahk LICENSE *.md *.exe
           checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
-          cp -force LICENSE           ./DevTools/choco/tools/LICENSE.txt
+          cp -force LICENSE.txt       ./LICENSE.txt
           cp -force CapsLockX.zip     ./DevTools/choco/tools/
           cp -force CapsLockX.sha256  ./DevTools/choco/tools/
           choco pack ./DevTools/choco/CapsLockX.nuspec

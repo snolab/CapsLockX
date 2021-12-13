@@ -1,12 +1,37 @@
 ﻿; 保存为 save with UTF8 with DOM
 
-CapsLockX_ConfigInit()
+; 用户创建目录
+便携版配置目录   = ./User
+用户目录配置目录 = %USERPROFILE%/.CapsLockX
+APPDATA配置目录 = %APPDATA%/CapsLockX
+
+; 默认值
+启动配置目录 := APPDATA配置目录
+
+if ( InStr(FileExist(APPDATA配置目录), "D")) {
+    启动配置目录 := APPDATA配置目录
+}
+if ( InStr(FileExist(用户目录配置目录), "D")) {
+    启动配置目录 := 用户目录配置目录
+}
+if ( InStr(FileExist(便携版配置目录), "D")) {
+    启动配置目录 := 便携版配置目录
+}
+FileCreateDir %启动配置目录%
+
+global CapsLockX_配置目录 := 启动配置目录
+global CapsLockX_配置路径 := CapsLockX_配置目录 "/CapsLockX-Config.ini"
 
 CapsLockX_ConfigInit()
-{
-    if (!CapsLockX_配置路径) {
+
+; return 这里还不能 return
+
+CapsLockX_ConfigInit(){
+    if (!CapsLockX_配置路径){
         Return
     }
+    ; 配置文件编码清洗
+    清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
     CapsLockX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
     ; 基本设定
     ; [Core]
@@ -30,10 +55,6 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
 {
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
-    if(!CapsLockX_配置路径) {
-        MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置，并尝试将其延迟赋值。
-        return
-    }
     content := setValue
     
     CapsLockX_DontReload := 1
@@ -51,10 +72,6 @@ CapsLockX_ConfigGet(field, varName, defaultValue)
 {
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
-    if(!CapsLockX_配置路径) {
-        MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置，并尝试将其延迟赋值。
-        return
-    }
     IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
     return content
@@ -63,16 +80,12 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
 {
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
-    if(!CapsLockX_配置路径) {
-        MsgBox, 配置文件目录设定异常，请检查模块静态变量是否使用配置，并尝试将其延迟赋值。
-        return
-    }
     IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
     
     CapsLockX_DontReload := 1
     ; 对配置自动重新排序
-    if(comment) {
+    if (comment){
         IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
     }
@@ -80,4 +93,9 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
     CapsLockX_DontReload := 0
     return content
+}
+清洗为_UTF16_WITH_BOM_型编码(path){
+    FileRead ModuleCode, %path%
+    FileDelete %path%
+    FileAppend %ModuleCode%, %path%, UTF-16
 }
