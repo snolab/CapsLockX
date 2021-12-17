@@ -112,29 +112,31 @@ SendInput_MouseMoveR32(x, y)
         鼠标模拟.止动()
         return
     }
-    if (状态 == "横中键") {
-        SendEvent {Click 2}
-        鼠标模拟.止动()
-        return
-    }
-    if (状态 == "纵中键") {
-        SendEvent {Click 3}
-        鼠标模拟.止动()
-        return
-    }
-    if (状态 != "移动"){
+    ; if (状态 == "横中键") {
+    ;     SendEvent {Click 2}
+    ;     鼠标模拟.止动()
+    ;     return
+    ; }
+    ; if (状态 == "纵中键") {
+    ;     SendEvent {Click 3}
+    ;     鼠标模拟.止动()
+    ;     return
+    ; }
+    if (状态 != "移动") {
         return
     }
     ; Shift 减速
-    if (GetKeyState("Shift", "P")){
+    if (GetKeyState("Shift", "P")) {
         ; TODO fix on 1
         ; tooltip %dx% %dy% x
-        dx := dx * 0.2, dy := dy * 0.2
-        if (dx != 0 && abs(dx) < 1){
-             dx:=dx>0 ? 1 : -1
+        dx := dx * 0.1, dy := dy * 0.1
+        if (dx != 0 && abs(dx) < 1) {
+            Random ran, 0, 100
+            dx := rnd < abs(dx) * 100 ? (dx > 0 ? 1 : -1) : 0
         }
-        if (dy != 0 && abs(dy) < 1){
-             dy:=dy>0 ? 1 : -1
+        if (dy != 0 && abs(dy) < 1) {
+            Random ran, 0, 100
+            dy := rnd < abs(dx) * 100 ? (dy > 0 ? 1 : -1) : 0
         }
     }
     if (TMouse_SendInputAPI && A_PtrSize == 4) {
@@ -159,7 +161,7 @@ SendInput_MouseMoveR32(x, y)
 }
 
 滚轮自动(dx, dy, 状态){
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     WM_MOUSEWHEEL := 0x020A
@@ -169,7 +171,7 @@ SendInput_MouseMoveR32(x, y)
 }
 滚轮自控(dx, dy, 状态)
 {
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     滚轮自动.横速 += dx, 滚轮自动.纵速 += dy, 滚轮自动.始动()
@@ -196,7 +198,7 @@ SendInput_MouseMoveR32(x, y)
         }
         return
     }
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     WM_MOUSEWHEEL := 0x020A
@@ -243,7 +245,7 @@ SendInput_MouseMoveR32(x, y)
 
 CapsLockX_鼠标左键按下(wait){
     global CapsLockX_鼠标左键等待
-    if (CapsLockX_鼠标左键等待){
+    if (CapsLockX_鼠标左键等待) {
         return
     }
     CapsLockX_鼠标左键等待 := wait
@@ -260,7 +262,7 @@ CapsLockX_鼠标左键弹起(){
 }
 CapsLockX_鼠标右键按下(wait){
     global CapsLockX_鼠标右键等待
-    if (CapsLockX_鼠标右键等待){
+    if (CapsLockX_鼠标右键等待) {
         return
     }
     CapsLockX_鼠标右键等待 := wait
@@ -296,7 +298,7 @@ $*e:: CapsLockX_鼠标右键按下("e")
 $*q:: CapsLockX_鼠标左键按下("q")
 
 #if CapsLockXMode
-
+    
 ; 鼠标运动处理
 $*a:: 鼠标模拟.左按("a")
 $*d:: 鼠标模拟.右按("d")
