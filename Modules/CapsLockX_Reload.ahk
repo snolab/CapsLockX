@@ -31,7 +31,7 @@ CapsLockX_FolderChanged(Folder, Changes)
 {
     global CapsLockX_ConfigChangedTickCount
     ; 跳过 CapsLockX 自己改的配置，容差 2-5 秒
-    Sleep, 2000
+    ; Sleep, 2000
     if ( CapsLockX_ConfigChangedTickCount && A_TickCount - CapsLockX_ConfigChangedTickCount < 5000) {
         return
     }
