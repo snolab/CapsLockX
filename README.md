@@ -373,25 +373,25 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 媒体键模块
 
-| 作用于 | 媒体键模块      | 说明                                        |
-| ------ | --------------- | ------------------------------------------- |
-| 全局   | CapsLockX + F1  | 打开：我的电脑                              |
-| 全局   | CapsLockX + F2  | 打开：计算器                                |
-| 全局   | CapsLockX + F3  | 打开：浏览器主页                            |
-| 全局   | CapsLockX + F4  | 打开：媒体库（默认是 Windows Media Player） |
-| 全局   | CapsLockX + F5  | 播放：暂停/播放                             |
-| 全局   | CapsLockX + F6  | 播放：上一首                                |
-| 全局   | CapsLockX + F7  | 播放：下一首                                |
-| 全局   | CapsLockX + F8  | 播放：停止                                  |
-| 全局   | CapsLockX + F9  | 音量加                                      |
-| 全局   | CapsLockX + F10 | 音量减                                      |
-| 全局   | CapsLockX + F11 | 静音                                        |
+| 作用于 | 媒体键模块        | 说明                                        |
+| ------ | ----------------- | ------------------------------------------- |
+| 全局   | `CapsLockX + F1`  | 打开：我的电脑                              |
+| 全局   | `CapsLockX + F2`  | 打开：计算器                                |
+| 全局   | `CapsLockX + F3`  | 打开：浏览器主页                            |
+| 全局   | `CapsLockX + F4`  | 打开：媒体库（默认是 Windows Media Player） |
+| 全局   | `CapsLockX + F5`  | 播放：暂停/播放                             |
+| 全局   | `CapsLockX + F6`  | 播放：上一首                                |
+| 全局   | `CapsLockX + F7`  | 播放：下一首                                |
+| 全局   | `CapsLockX + F8`  | 播放：停止                                  |
+| 全局   | `CapsLockX + F9`  | 音量加                                      |
+| 全局   | `CapsLockX + F10` | 音量减                                      |
+| 全局   | `CapsLockX + F11` | 静音                                        |
 
 <!-- 模块文件名：插件-番茄时钟.ahk-->
 
 ### 番茄时钟
 
-25 分钟固定循环休息提醒
+25 分钟固定循环休息提醒。
 
 使用 CapsLockX + M 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
 
@@ -408,6 +408,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
   ```
 
 注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
+
+注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life]( https://github.com/snomiao/tomato-life )
 <!-- 结束：抽取模块帮助 -->
 
 ## 过去与未来 🛰
@@ -421,7 +423,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 发展路线 🛰️
 
-本项目的核心理念是：简化系统操作逻辑，提升操作效率，且尽量不与原有习惯键位冲突。
+本项目的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。
 
 1. [x] 按 CapsLockX + / 键显示对应帮助（目前的显示样式相当草率）
 2. [ ] 自动更新（虽然 git pull 一下也不是不行）
@@ -512,13 +514,17 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
+### 安全性
+
+考虑到任何能够获取到管理员权限的软件对于用户的操作系统都是相当危险的，故本项目必须采用开源的方式以使社区可以自由且随意地检查本项目中可能涉及到的任何部分的代码，以保证所有用户的操作系统安全性不因本软件而受损害。
+
 ## 支持 ⭐️
 
 如何帮助本项目生存下去？如果本项目有帮助到你：
 
-1. 欢迎在 Github 上点星 ⭐️
-2. 欢迎把我转发分享给你身边的朋友们。
-3. 欢迎帮我翻译 readme.md 到各国语言。 🌐
+1. ⭐️ 请在本项目 Github 上点星 <a class="github-button" href="https://github.com/snolab/CapsLockX" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star snolab/CapsLockX on GitHub">Star</a>
+2. 🔗 请把我转发分享给你身边的朋友们。
+3. 欢迎帮我翻译本文档到各国语言。 🌐
 4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues) 🐞
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
 6. 欢迎创作关于本软件的作品，比如录制使用教学视频投稿到 Youtube 或 Bilibili ，雪星会去给你点赞的哦。
@@ -554,4 +560,8 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [我是职场达人，AutoHotKey 让我成为职场超人 - 知乎](https://zhuanlan.zhihu.com/p/60372361)
 - [AutoHotKey 中文网专栏 - 知乎](https://www.zhihu.com/column/autoahk)
 - [电脑一族如何防治“鼠标手” - 陕西日报](http://www.sxjkjy.com/uploadfiles/files/2017062110481454.pdf)
-- 
+
+---
+
+<!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
