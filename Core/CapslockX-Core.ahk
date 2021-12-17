@@ -118,13 +118,15 @@ CapsLockX_Loaded()
 #Include Core\CapsLockX-ModulesLoader.ahk
 #Include Core\CapsLockX-RunSilent.ahk
 
+#Include Core\CapsLockX-QuickTips.ahk
+
 #If
 
 UpdateCapsLockXLight()
 {
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
     static LastLightState := NowLightState
-
+    
     ; notice
     static LastCapsLockXMode := CapsLockXMode
     if (!(LastCapsLockXMode & CM_CapsLockX) && (CapsLockXMode & CM_CapsLockX)) {
@@ -147,7 +149,10 @@ UpdateCapsLockXLight()
         SendEvent {ScrollLock}
     }
     if (T_UseCursor) {
-        UpdateCapsCursor(NowLightState)
+        ; Module
+        try {
+            Func("UpdateCapsCursor").Call(NowLightState)
+        }
     }
     if (UpEdge ) {
         global T_SwitchTrayIconOn

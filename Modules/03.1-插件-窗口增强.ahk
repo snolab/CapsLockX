@@ -32,7 +32,21 @@ global ARRANGE_DEBUG := 0x08
 global ARRANGE_MOVING := 0x10
 global ARRANGE_Z_ORDERING := 0x20
 
+global lastFlashWinIDs := []
+global 最迟闪动窗口 := {}
+global 窗口鼠标位置表表 := {}
+global T窗口增强_鼠标位置记忆 := CapsLockX_Config("窗口增强", "鼠标位置记忆尝试", 1, "在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置")
+
+闪动窗口记录器初始化()
+
 Return
+
+闪动窗口记录器初始化(){
+    Gui +LastFound
+    hWnd := WinExist() , DllCall( "RegisterShellHookWindow", UInt, hWnd )
+    MsgNum := DllCall( "RegisterWindowMessage", Str,"SHELLHOOK" )
+    OnMessage( MsgNum, "ShellMessage" )
+}
 
 #if False && "FUNCTIION DEFINES"
 
@@ -42,7 +56,7 @@ AltTabWindowGet(){
 WinTabWindowGet(){
     return WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
 }
-MultitaskingViewFrameQ(){
+多任务窗口切换界面内(){
     Return AltTabWindowGet() || WinTabWindowGet()
 }
 ; this is improved method for stable
@@ -146,7 +160,9 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0){
                 continue
             }
         }
-        windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        WinGet, this_exe, ProcessName, ahk_id %hWnd%
+        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
     return windowsMatches
 }
@@ -219,7 +235,10 @@ WindowsListOfMonitor(arrangeFlags, MonitorIndex := 0){
         if ( this_class == "ApplicationFrameWindow") {
             Continue
         }
-        windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        
+        WinGet, this_exe, ProcessName, ahk_id %hWnd%
+        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
     return windowsMatches
 }
@@ -298,7 +317,7 @@ ArrangeWindows(arrangeFlags = "0"){
     loop %MonitorCount% {
         MonitorIndex := A_Index
         listOfWindow_%MonitorIndex% := WindowsListOfMonitor(arrangeFlags, MonitorIndex)
-        Sort listOfWindow_%MonitorIndex%
+        Sort listOfWindow_%MonitorIndex%, R
     }
     ; 位置调整
     loop %MonitorCount% {
@@ -540,91 +559,67 @@ CurrentWindowSetAsBackground(){
 
 ; 把当前窗口置顶
 
-; #If !!(CapsLockXMode & CM_FN)
-
 ; 确保WinTab模块优先级比Mouse高，否则此处 WASD 无效
 ; Make sure WinTab module has higher priority than Mouse, otherwise WASD is invalid here
 
 #if CapsLockXMode
 
-; 自动排列窗口
-    ; 自动排列窗口（包括最小化的窗口）
-    ; 自动堆叠窗口
-    ; 自动堆叠窗口（包括最小化的窗口）
-c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
-    ^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW)
-    +c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
-    ^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW)
+z:: 最近1分钟内闪动窗口激活()
+; z:: 上一个窗口激活()
++z:: 下一个窗口激活()
+; !z:: 最近1分钟内闪动窗口激活()
+x:: Send ^w ; 关闭标签
++x:: 关闭窗口并切到下一窗口() 
+^!x:: 杀死窗口并切到下一窗口()
+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
+^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
++c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
+^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
++v:: 当前窗口置顶透明切换()
+v:: 当前窗口临时透明()
+v Up:: 当前窗口临时透明取消()
+b:: 任务栏任务切换()
 
-; 切换当前窗口置顶并透明
-+v::
+当前窗口置顶透明切换(){
     WinSet, Transparent, 200, A
     WinSet, Alwaysontop, Toggle, A
-    Return
-; 让当前窗口临时透明
-v::
+}
+当前窗口临时透明(){
     WinSet, Transparent, 100, A
     WinSet, Alwaysontop, On, A
-    Return
-v Up::
+}
+当前窗口临时透明取消(){
     WinSet, Transparent, 255, A
     WinSet, Alwaysontop, Off, A
-    Return
-
-; 关闭标签
-x:: Send ^w
-; 关闭窗口并切到下一窗口
-+x::
-    hWnd := WinActive("A")
-    Send +!{Esc}
-    WM_CLOSE := 0x0010
-    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
-    ; ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW)
-    Return
-; 关闭窗口并切到下一窗口，并自动排列窗口
-+!x::
+}
+关闭窗口并切到下一窗口(){
     hWnd := WinActive("A")
     Send !{Esc}
     WM_CLOSE := 0x0010
-    SendMessage, %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
-    ; ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED)
-    Return
-; 杀死窗口并切到下一窗口
-^!x::
+    SendMessage %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
+} 
+杀死窗口并切到下一窗口(){
     hWnd := WinActive("A")
     Send !{Esc}
     WinKill ahk_id %hWnd%
-    Return
-
-; Alt+Tab
-; #if AltTabWindowGet()
+}
 
 ; 使普通的按方向窗口切换的热键与CapsLockXMode互不干扰
 #if !CapsLockXMode
 
-#+h::
+#+h:: 窗口向右上左下方显示器移动(3)
+#+l:: 窗口向右上左下方显示器移动(1)
+#+j:: 窗口向右上左下方显示器移动(4)
+#+k:: 窗口向右上左下方显示器移动(2)
+
+窗口向右上左下方显示器移动(方向){
     WinWaitNotActive ahk_class MultitaskingViewFrame
     WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 3)
-    return
-#+j::
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 4)
-    return
-#+k::
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 2)
-    return
-#+l::
-    WinWaitNotActive ahk_class MultitaskingViewFrame
-    WinWaitNotActive ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe
-    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 1)
-    return
+    WindowsWalkToDirection右上左下(ARRANGE_MAXWINDOW, 方向)
+}
 
 ; Alt+Tab 或 Win+Tab
-#if MultitaskingViewFrameQ()
+#if 多任务窗口切换界面内()
 
 ; !1:: SwitchToDesktop(1)
 ; !2:: SwitchToDesktop(2)
@@ -645,32 +640,33 @@ CLX_MoveCurrentWindowTo(x){
     MoveActiveWindowToDesktop(x)
     SendEvent !{Tab}
 }
-!1:: CLX_MoveCurrentWindowTo(1)
-!2:: CLX_MoveCurrentWindowTo(2)
-!3:: CLX_MoveCurrentWindowTo(3)
-!4:: CLX_MoveCurrentWindowTo(4)
-!5:: CLX_MoveCurrentWindowTo(5)
-!6:: CLX_MoveCurrentWindowTo(6)
-!7:: CLX_MoveCurrentWindowTo(7)
-!8:: CLX_MoveCurrentWindowTo(8)
-!9:: CLX_MoveCurrentWindowTo(9)
-!0:: CLX_MoveCurrentWindowTo(10)
+
+!1:: CLX_MoveCurrentWindowTo(1) ; 选中窗口移动到1号桌面
+!2:: CLX_MoveCurrentWindowTo(2) ; 选中窗口移动到2号桌面
+!3:: CLX_MoveCurrentWindowTo(3) ; 选中窗口移动到3号桌面
+!4:: CLX_MoveCurrentWindowTo(4) ; 选中窗口移动到4号桌面
+!5:: CLX_MoveCurrentWindowTo(5) ; 选中窗口移动到5号桌面
+!6:: CLX_MoveCurrentWindowTo(6) ; 选中窗口移动到6号桌面
+!7:: CLX_MoveCurrentWindowTo(7) ; 选中窗口移动到7号桌面
+!8:: CLX_MoveCurrentWindowTo(8) ; 选中窗口移动到8号桌面
+!9:: CLX_MoveCurrentWindowTo(9) ; 选中窗口移动到9号桌面
+!0:: CLX_MoveCurrentWindowTo(10) ; 选中窗口移动到10号桌面
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
-!a:: Left
-!d:: Right
-!w:: Up
-!s:: Down
-!r:: Volume_Up
-!f:: Volume_Down
+!a:: Left        ; 左
+!d:: Right       ; 右
+!w:: Up          ; 上
+!s:: Down        ; 下
+!r:: Volume_Up   ; 音量+
+!f:: Volume_Down ; 音量-
 
 ; cx 关闭应用
-!c:: SendEvent {Blind}{Delete}{Right}
-!x:: SendEvent {Blind}{Delete}{Right}
+!c:: SendEvent {Blind}{Delete}{Right} ; 关闭应用
+!x:: SendEvent {Blind}{Delete}{Right} ; 关闭应用
 
-; 切换桌面概览
-!q:: Send ^#{Left}
-!e:: Send ^#{Right}
+; 切换多桌面
+!q:: Send ^#{Left} ; 向左切换多桌面
+!e:: Send ^#{Right} ; 向右切换多桌面
 
 #if
 
@@ -694,7 +690,7 @@ CLX_MoveCurrentWindowTo(x){
 
     上次CtrlShiftAlt锁 := 1
     ToolTip, % "双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）"
-    SetTimer, CapsLockX_RemoveToolTip, -1024
+    SetTimer, 窗口增强_RemoveToolTip, -1024
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
     if(间隔 < 200){
@@ -705,30 +701,160 @@ CLX_MoveCurrentWindowTo(x){
     上次CtrlShiftAlt锁 := 0
     return
 
-CapsLockX_RemoveToolTip(){
+窗口增强_RemoveToolTip(){
     ToolTip
 }
 
-#if WinActive("ahk_class Shell_TrayWnd ahk_exe explorer.exe")
+#if 任务栏中()
 
-^w::
-Delete::
+任务栏中(){
+    return WinActive("ahk_class Shell_TrayWnd ahk_exe explorer.exe")
+}
+
+^w:: 任务栏中关闭窗口()
+Delete:: 任务栏中关闭窗口()
+
+#if CapsLockXMode && 任务栏中()
+
+x:: 任务栏中关闭窗口()
+
+#if
+
+任务栏中关闭窗口(){
     SendEvent {AppsKey}
-    WinWaitNotActive ahk_class Shell_TrayWnd ahk_exe explorer.exe, ,3
+    任务栏匹配串 := "ahk_class Shell_TrayWnd ahk_exe explorer.exe"
+    WinWaitNotActive %任务栏匹配串%, , 3
     if(ErrorLevel)
         Return
     SendEvent {Up}
-    Return
+}
 
-#if CapsLockXMode
-
-b::
-    TaskbarJump(){
-        ; if(WinActive("ahk_class Shell_TrayWnd ahk_exe explorer.exe")){
-        ;     ControlSend, MSTaskListWClass1, {End}, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-        ; }else{
-        WinActivate, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-        ControlFocus, MSTaskListWClass1, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-        ControlSend, MSTaskListWClass1, {End}, ahk_class Shell_TrayWnd ahk_exe explorer.exe
-        ; }
+任务栏任务切换(){
+    任务栏匹配串 := "ahk_class Shell_TrayWnd ahk_exe explorer.exe"
+    if(WinActive(任务栏匹配串)){
+        WinGetPos, X, Y, W, H, %任务栏匹配串%
+        if (W > H){
+            ControlSend, MSTaskListWClass1, {Left}, %任务栏匹配串%
+        }else{
+            ControlSend, MSTaskListWClass1, {Up}, %任务栏匹配串%
+        }
+    }else{
+        WinActivate, %任务栏匹配串%
+        ControlFocus, MSTaskListWClass1, %任务栏匹配串%
+        ControlSend, MSTaskListWClass1, {End}, %任务栏匹配串%
     }
+}
+
+ReverseArray(oArray){
+    Array := Object()
+    For i,v in oArray
+        Array[oArray.Length()-i+1] := v
+    Return Array
+}
+
+arrayDistinctKeepTheLastOne(arr){ ; Hash O(n)
+    hash := {}, newArr := []
+    rarr := ReverseArray(arr)
+    for e, v in rarr
+        if (!hash.Haskey(v))
+        hash[(v)] := 1, newArr.push(v)
+    return ReverseArray(newArr)
+}
+窗口增强_UnixTimeStamp() {
+   Static UnixStart := 116444736000000000
+   DllCall("GetSystemTimeAsFileTime", "Int64P", FileTime)
+   Return ((FileTime - UnixStart) // 10000000) - 27 ; currently (2019-01-21) 27 leap seconds have been added
+}
+ShellMessage( wParam,lParam ){
+    HSHELL_FLASH := 0x8006 ;  0x8006 is 32774 as shown in Spy!
+    if (wParam = HSHELL_FLASH){
+        global lastFlashWinIDs
+        hWnd := lParam
+        lastFlashWinIDs.Push(hWnd)
+        lastFlashWinIDs := arrayDistinctKeepTheLastOne(lastFlashWinIDs)
+        ; lastFlashWinIDs.__Set(hWnd)
+        ; WinGetTitle, this_title, ahk_id %hWnd%
+        ; TrayTip, blinking, %this_title% is blinking
+        TimeStamp := 窗口增强_UnixTimeStamp()
+        最迟闪动窗口 := {hWnd: hWnd, TimeStamp: TimeStamp}
+    }
+}
+; activate
+鼠标位置记忆尝试(){
+    if (!T窗口增强_鼠标位置记忆)
+        return
+    ; 相对窗口坐标记忆位置
+    CoordMode, Mouse, Window
+    MouseGetPos, X, Y, hWnd, hWndCtrl
+    CoordMode, Mouse, Screen
+    窗口鼠标位置表表[hWnd] := {X: X, Y: Y, hWnd: hWnd, hWndCtrl: hWndCtrl}
+}
+鼠标位置还原尝试(hWnd:=0){
+    if (!T窗口增强_鼠标位置记忆)
+        return
+    if (!hWnd)
+        WinGet, hWnd, id, A
+    hWndRecorded := 窗口鼠标位置表表[hWnd].hWnd
+    if (hWndRecorded){
+        X := 窗口鼠标位置表表[hWnd].X, Y := 窗口鼠标位置表表[hWnd].Y
+        ; 相对窗口坐标还原鼠标
+        CoordMode, Mouse, Window
+        MouseMove, %X%, %Y%, 0
+        CoordMode, Mouse, Screen
+    }
+}
+最近1分钟内闪动窗口激活(){
+    TimeStampNow := 窗口增强_UnixTimeStamp()
+    hWnd         := 最迟闪动窗口.hWnd
+    TimeStamp    := 最迟闪动窗口.TimeStamp
+    if (hWnd && TimeStampNow - TimeStamp <= 60){
+        鼠标位置记忆尝试()
+        WinActivate, ahk_id %hWnd%
+        WinGetTitle, this_title, ahk_id %hWnd%
+        TrayTip, 最近1分钟内闪动窗口激活, %this_title%
+        最迟闪动窗口 := {}
+        鼠标位置还原尝试()
+    }else{
+        上一个窗口激活()
+    }
+}
+下一个窗口激活(){
+    鼠标位置记忆尝试()
+    WinGet, hWnd, id, A
+    SendEvent !{Esc}
+    WinWaitNotActive ahk_id %hWnd%,, 1
+    if (ErrorLevel){
+        return
+    }
+    鼠标位置还原尝试()
+}
+上一个窗口激活(){
+    鼠标位置记忆尝试()
+    WinGet, hWnd, id, A
+    SendEvent +!{Esc}
+    WinWaitNotActive ahk_id %hWnd%,, 1
+    if (ErrorLevel){
+        return
+    }
+    鼠标位置还原尝试()
+}
+最迟闪动窗口激活(){
+    ; @deprecated
+    鼠标位置记忆尝试()
+    While % lastFlashWinIDs.Count(){
+        hWnd := WinExist("ahk_id " lastFlashWinIDs.Pop())
+        if (hWnd){
+            WinActivate, ahk_id %hWnd%
+            WinGetTitle, this_title, ahk_id %hWnd%
+            TrayTip, switched, switched to blinking %this_title%
+            鼠标位置还原尝试(hWnd)
+            Return
+        }
+    }
+    SendEvent +!{Esc}
+    WinWaitNotActive ahk_id %hWnd%,, 1
+    if (ErrorLevel){
+        return
+    }
+    鼠标位置还原尝试()
+}

@@ -10,9 +10,8 @@
 
 if !CapsLockX
     ExitApp
-
-global FLAG_SWAP_ESC_STROKE := CapsLockX_Config("CLX_LKF", "FLAG_SWAP_ESC_STROKE", 0, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
-
+global WinKeySimulate := CapsLockX_Config("LKF", "WinKeySimulate", 1, "右手 \][ 模拟Windows键和 Alt + Tab， 具体用法参见LaptopKeyboardFix 模块说明，默认启用")
+global FLAG_SWAP_ESC_STROKE := false
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
@@ -37,10 +36,18 @@ $#!p::
     Send #{Pause}
 Return
 
-; 对于没有 Win 键的环境，用 Ctrl + ESC 一起按来模拟 Win 键
-; ] & [:: LWin【
-; *] Up:: Send {Blind}]
-; *!\:: Send {Blind}{Tab}
+; 针对安卓对Windows的远程桌面 RD Client
+
+; 对于没有 Win 键的环境，用 Ctrl + ESC 一起按来模拟 Win 键（不行，Win键和其它修饰键一起按打不开开始菜单。）
+
+#if WinKeySimulate
+
+; Windows 键模拟于 ] + [
+] & [:: LWin
+*] Up:: Send {Blind}]
+
+; Alt+Tab 模拟
+RAlt & \:: Send {Blind}{Tab}
 
 ; 对于没有Esc或没有 Stroke 键的键
 #if CapsLockXMode
@@ -56,4 +63,4 @@ Esc:: FLAG_SWAP_ESC_STROKE := CapsLockX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STRO
 
 #if !FLAG_SWAP_ESC_STROKE
 
-<^Esc:: LWin
+; <^Esc:: LWin

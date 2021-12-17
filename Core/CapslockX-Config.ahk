@@ -23,7 +23,7 @@ global CapsLockX_配置目录 := 启动配置目录
 global CapsLockX_配置路径 := CapsLockX_配置目录 "/CapsLockX-Config.ini"
 
 ; 初始化配置
-if (!CapsLockX_配置路径){
+if (!CapsLockX_配置路径) {
     Return
 }
 ; 配置文件编码清洗
@@ -49,43 +49,51 @@ global T_SwitchSoundOff := CapsLockX_Config("Advanced", "T_SwitchSoundOff", "./D
 global T_SwitchTrayIconOff := CapsLockX_Config("Advanced", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认为 " "./Data/XIconWhite.ico")
 global T_SwitchTrayIconOn := CapsLockX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认为 " "./Data/XIconBlue.ico")
 
-
-CapsLockX_ConfigSet(field, varName, setValue, comment := ""){
+CapsLockX_ConfigSet(field, varName, setValue, comment := "")
+{
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
     content := setValue
+    
+    CapsLockX_DontReload := 1
     ; 不对配置自动重新排序
-    if(comment){
+    if(comment) {
         ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
     }
     ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
+    CapsLockX_DontReload := 0
     return content
 }
-CapsLockX_ConfigGet(field, varName, defaultValue){
+CapsLockX_ConfigGet(field, varName, defaultValue)
+{
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
     IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
-    return content 
+    return content
 }
-CapsLockX_Config(field, varName, defaultValue, comment := ""){
+CapsLockX_Config(field, varName, defaultValue, comment := "")
+{
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
     IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
     content := %varName% ; 千层套路XD
+    
+    CapsLockX_DontReload := 1
     ; 对配置自动重新排序
-    if (comment){
+    if (comment) {
         IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
     }
     IniDelete, %CapsLockX_配置路径%, %field%, %varName%
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
+    CapsLockX_DontReload := 0
     return content
 }
 
-清洗为_UTF16_WITH_BOM_型编码(path){   
+清洗为_UTF16_WITH_BOM_型编码(path){
     FileRead ModuleCode, %path%
     FileDelete %path%
     FileAppend %ModuleCode%, %path%, UTF-16

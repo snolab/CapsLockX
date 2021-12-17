@@ -27,9 +27,9 @@ global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
-global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 360 * TMouse_MouseSpeedRatio)
-global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 10 * TMouse_WheelSpeedRatio)
-global 滚轮自控 := new AccModel2D(Func("滚轮自控"), 0.1, 10)
+global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
+global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
+global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
 if (TMouse_SendInput)
@@ -91,37 +91,37 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
-
-; TODO: 这个的64位的函数不知道为啥用不了。。。
-; ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
-SendInput_MouseMoveR32(x, y)
+SendInput_MouseMove(x, y)
 {
-    VarSetCapacity(sendData, 28, 0)
-    NumPut(0, sendData, 0, "UInt")
-    NumPut(x, sendData, 4, "Int")
-    NumPut(y, sendData, 8, "Int")
-    NumPut(0, sendData, 12, "UInt")
-    NumPut(1, sendData, 16, "UInt")
-    DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
+    ; (20211105)终于支持64位了
+    ; [SendInput function (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput )
+    ; [INPUT (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-input )
+    ; [MOUSEINPUT (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-mouseinput )
+    size := A_PtrSize+4*4+A_PtrSize*2
+    VarSetCapacity(mi, size, 0)
+    NumPut(x, mi, A_PtrSize, "Int")   ; int dx
+    NumPut(y, mi, A_PtrSize+4, "Int")  ; int dy
+    NumPut(0x0001, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags MOUSEEVENTF_MOVE
+    DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
 }
-
 ; void 鼠标模拟
-鼠标模拟(dx, dy, 状态)
-{
+鼠标模拟(dx, dy, 状态){
     if (!CapsLockXMode) {
         鼠标模拟.止动()
         return
     }
-    ; if (状态 == "横中键") {
-    ;     SendEvent {Click 2}
-    ;     鼠标模拟.止动()
-    ;     return
-    ; }
-    ; if (状态 == "纵中键") {
-    ;     SendEvent {Click 3}
-    ;     鼠标模拟.止动()
-    ;     return
-    ; }
+    if (状态 == "横中键") {
+        Func("SNOCLICK").Call()
+        ; SendEvent {Click 2}
+        鼠标模拟.止动()
+        return
+    }
+    if (状态 == "纵中键") {
+        Func("SNOCLICK").Call()
+        ; SendEvent {Click 3}
+        鼠标模拟.止动()
+        return
+    }
     if (状态 != "移动") {
         return
     }
@@ -139,9 +139,9 @@ SendInput_MouseMoveR32(x, y)
             dy := rnd < abs(dx) * 100 ? (dy > 0 ? 1 : -1) : 0
         }
     }
-    if (TMouse_SendInputAPI && A_PtrSize == 4) {
-        ; 这只能32位用
-        SendInput_MouseMoveR32(dx, dy)
+    if (TMouse_SendInputAPI) {
+        ; 支持64位AHK！
+        SendInput_MouseMove(dx, dy)
     } else {
         MouseMove, %dx%, %dy%, 0, R
     }
@@ -169,8 +169,7 @@ SendInput_MouseMoveR32(x, y)
     _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
     _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
 }
-滚轮自控(dx, dy, 状态)
-{
+滚轮自动控制(dx, dy, 状态){
     if (状态 != "移动") {
         return
     }
@@ -181,8 +180,7 @@ SendInput_MouseMoveR32(x, y)
     msg .= "CapsLockX + Ctrl + Alt + Shift + RF 调整横向自动滚轮`n"
     鼠标模拟_ToolTip(msg)
 }
-滚轮模拟(dx, dy, 状态)
-{
+滚轮模拟(dx, dy, 状态){
     if (!CapsLockXMode) {
         return 滚轮模拟.止动()
     }
@@ -194,7 +192,7 @@ SendInput_MouseMoveR32(x, y)
         ; 关闭滚轮自动
         if(滚轮自动.横速 || 滚轮自动.纵速) {
             滚轮自动.止动()
-            滚轮自控(0, 0, "止动")
+            滚轮自动控制(0, 0, "止动")
         }
         return
     }
@@ -207,8 +205,7 @@ SendInput_MouseMoveR32(x, y)
     _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
 }
 
-滚轮消息发送(msg, zDelta)
-{
+滚轮消息发送(msg, zDelta){
     ; 目前还不支持UWP
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
@@ -250,12 +247,11 @@ CapsLockX_鼠标左键按下(wait){
     }
     CapsLockX_鼠标左键等待 := wait
     SendEvent {Blind}{LButton Down}
-    SetTimer CapsLockX_鼠标左键弹起, -1
+    KeyWait %wait%
+    ; Hotkey, %wait% Up, CapsLockX_鼠标左键弹起
 }
 CapsLockX_鼠标左键弹起(){
     global CapsLockX_鼠标左键等待
-    wait := CapsLockX_鼠标左键等待
-    KeyWait, %wait%, ; wait forever
     SendEvent {Blind}{LButton Up}
     CapsLockX_鼠标左键等待 := ""
     
@@ -267,12 +263,11 @@ CapsLockX_鼠标右键按下(wait){
     }
     CapsLockX_鼠标右键等待 := wait
     SendEvent {Blind}{RButton Down}
-    SetTimer CapsLockX_鼠标右键弹起, -1
+    KeyWait %wait%
+    ; Hotkey, %wait% Up, CapsLockX_鼠标右键弹起
 }
 CapsLockX_鼠标右键弹起(){
     global CapsLockX_鼠标右键等待
-    wait := CapsLockX_鼠标右键等待
-    KeyWait, %wait%, ; wait forever
     SendEvent {Blind}{RButton Up}
     CapsLockX_鼠标右键等待 := ""
 }
@@ -299,16 +294,21 @@ $*q:: CapsLockX_鼠标左键按下("q")
 
 #if CapsLockXMode
     
+; 鼠标按键处理
+$*e::CapsLockX_鼠标左键按下("e")
+$*q:: CapsLockX_鼠标右键按下("q")
+$*e Up::CapsLockX_鼠标左键弹起()
+$*q Up:: CapsLockX_鼠标右键弹起()
 ; 鼠标运动处理
 $*a:: 鼠标模拟.左按("a")
 $*d:: 鼠标模拟.右按("d")
 $*w:: 鼠标模拟.上按("w")
 $*s:: 鼠标模拟.下按("s")
 ; 滚轮运动处理
-$*+^!r:: 滚轮自控.左按("r")
-$*+^!f:: 滚轮自控.右按("f")
-$*^!r:: 滚轮自控.上按("r")
-$*^!f:: 滚轮自控.下按("f")
+$*+^!r:: 滚轮自动控制.左按("r")
+$*+^!f:: 滚轮自动控制.右按("f")
+$*^!r:: 滚轮自动控制.上按("r")
+$*^!f:: 滚轮自动控制.下按("f")
 $*+r:: 滚轮模拟.左按("r")
 $*+f:: 滚轮模拟.右按("f")
 $*r:: 滚轮模拟.上按("r")

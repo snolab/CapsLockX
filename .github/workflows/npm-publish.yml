@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - "v*"
-name: NPM
+name: npm-publish
 jobs:
   npm-publish:
     runs-on: ubuntu-latest
