@@ -37,7 +37,6 @@ global CM_NORMAL := 0 ; 普通模式（键盘的正常状态）
 global CM_FN := 1 ; 组合键 CapsLockX 模式（或称组合键模式
 global CM_CapsLockX := 2 ; CapsLockX 模式，通过长按CLX键进入
 ; global CM_FNX := 3 ; FnX 模式并不存在
-global LastLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
 global CapsLockPressTimestamp := 0
 global CapsLockX_上次触发键 := ""
 
@@ -124,22 +123,40 @@ CapsLockX_Loaded()
 UpdateCapsLockXLight()
 {
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
-    if (NowLightState == LastLightState) {
+    static LastLightState := NowLightState
+
+    ; notice
+    static LastCapsLockXMode := CapsLockXMode
+    if (!(LastCapsLockXMode & CM_CapsLockX) && (CapsLockXMode & CM_CapsLockX)) {
+        ToolTip 进入CLX模式，可单击任意CLX键退出
+        SetTimer CLX_HideToolTips, -1000
+    }
+    if ((LastCapsLockXMode & CM_CapsLockX) && !(CapsLockXMode & CM_CapsLockX)) {
+        ToolTip 退出CLX模式，可长按CLX键或按CapsLock+Space键，再次进入
+        SetTimer CLX_HideToolTips, -1000
+    }
+    LastCapsLockXMode := CapsLockXMode
+    
+    IsEdge := !(NowLightState == LastLightState)
+    if (!IsEdge) {
         Return
     }
+    UpEdge := NowLightState && !LastLightState
+    
     if (T_UseScrollLockLight && GetKeyState("ScrollLock", "T") != NowLightState) {
         SendEvent {ScrollLock}
     }
     if (T_UseCursor) {
         UpdateCapsCursor(NowLightState)
     }
-    if ( NowLightState && !LastLightState) {
+    if (UpEdge ) {
+        global T_SwitchTrayIconOn
         Menu, tray, icon, %T_SwitchTrayIconOn%
         if (T_SwitchSound && T_SwitchSoundOn) {
             SoundPlay %T_SwitchSoundOn%
         }
-    }
-    if ( !NowLightState && LastLightState ) {
+    } else {
+        global T_SwitchTrayIconOff
         Menu, tray, icon, %T_SwitchTrayIconOff%
         if (T_SwitchSound && T_SwitchSoundOff) {
             SoundPlay %T_SwitchSoundOff%
@@ -150,7 +167,7 @@ UpdateCapsLockXLight()
 CapsLockXTurnOff()
 {
     CapsLockXMode &= ~CM_CapsLockX
-    re := UpdateCapsLockXLight()3
+    re := UpdateCapsLockXLight()
     Return re
 }
 CapsLockXTurnOn()
@@ -189,28 +206,50 @@ CapsLockX_Reload()
     ToolTip, CapsLockX 重载中
     static times := 0
     times += 1
-    if(times == 1 && false) { ;;感觉limited user 不太管用
-    ; 使用 RunAsLimitiedUser 避免重载时出现 Could not close the previous instance of this script.  Keep waiting?
-    RunAsLimitiedUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
-    ; 这里启动新实例后不用急着退出当前实例
-    ; 如果重载的新实例启动成功，则会自动使用热键结束掉本实例
-    ; 而如果没有启动成功则保留本实例，以方便修改语法错误的模块
-} else {
-    ; 但如果用户多次要求重载，那就直接退出掉好了（即，双击重载会强制退出当前实例）
-    RunAsSameUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
-    ExitApp
+    if (times == 1 && false) {
+        ;;感觉limited user 不太管用
+        ; 使用 RunAsLimitiedUser 避免重载时出现 Could not close the previous instance of this script.  Keep waiting?
+        RunAsLimitiedUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
+        ; 这里启动新实例后不用急着退出当前实例
+        ; 如果重载的新实例启动成功，则会自动使用热键结束掉本实例
+        ; 而如果没有启动成功则保留本实例，以方便修改语法错误的模块
+    } else {
+        ; 但如果用户多次要求重载，那就直接退出掉好了（即，双击重载会强制退出当前实例）
+        RunAsSameUser(A_WorkingDir "\CapsLockX.exe", A_WorkingDir)
+        ExitApp
+    }
 }
+
+CapsLockX_ModeExit()
+{
+    ; TrayTip CapsLockX, 退出CLX模式
+    ; ToolTip 退出CLX模式
+    ; SetTimer CLX_HideToolTips, -1000
+    CapsLockXMode &= ~CM_CapsLockX
+}
+CapsLockX_ModeEnter()
+{
+    ; ToolTip 进入CLX模式
+    ; SetTimer CLX_HideToolTips, -1000
+    CapsLockXMode |= CM_CapsLockX
 }
 
 CapsLockX_Dn()
 {
-    ; 
+    ;
     /*
-        组合键细节：
-        CapsLock + Space 同时按下：进入CLX模式
-        修饰键 + CLX + 其它：功能同 CLX + 修饰键 + 其它
-        CLX长按：进入CLX模式
-        CLX单击：退出CLX模式
+    组合键细节：
+    模式：
+    普通模式 + 按住CLX -> CLX模式
+    普通模式 + 长按CLX -> CLX锁定模式
+    普通模式 + 同时按下 -> CLX锁定模式
+    CLX模式 + 弹起CLX -> 普通模式
+    CLX锁定模式 + 按住CLX -> CLX模式
+    
+    CapsLock + Space 同时按下：进入CLX模式
+    CLX长按：进入CLX模式
+    CLX单击：退出CLX模式
+    
     */
     ; 按住其它键的时候 不触发 CapsLockX 避免影响打字
     CapsLockX_上次触发键 := 触发键 := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
@@ -220,16 +259,19 @@ CapsLockX_Dn()
     CapsLockQ := 触发键 == "CapsLock"
     ModifierQ := InStr("LControl|RControl|LShift|RShift|LAlt|RAlt|LWin|RWin", A_PriorKey)
     ModifierEnableQ := !SpaceQ && ModifierQ
-    if ((A_PriorKey == "CapsLock" && 触发键 == "Space") || (触发键 == "CapsLock" && A_PriorKey == "Space" )){
-        CapsLockX_ModeEnter()
+        if ((A_PriorKey == "CapsLock" && 触发键 == "Space") || (触发键 == "CapsLock" && A_PriorKey == "Space" )) {
+        ; CapsLockX_ModeEnter()
+        CapsLockXMode |= CM_CapsLockX
+        UpdateCapsLockXLight()
         KeyWait %触发键%
         return
     }
+    
     ; tooltip % ModifierQ "a" ModifierEnableQ "a" WheelQ "a"  其它键按住
     BypassCapsLockX := !ModifierEnableQ && !WheelQ && 其它键按住
     if (BypassCapsLockX) {
         CapsLockX_上次触发键 := ""
-        ; ToolTip, % first5char "_" 触发键       
+        ; ToolTip, % first5char "_" 触发键
         SendEvent {Blind}{%触发键% Down}
         KeyWait %触发键%
         SendEvent {Blind}{%触发键% Up}
@@ -244,7 +286,11 @@ CapsLockX_Dn()
     ;     CapsLockX_ModeExit()
     ;     KeyWait, %waitKey% ; wait to prevent flashing the quit and enter message
     ; }
+    ; CapsLockX_ModeExit()
+    
     CapsLockXMode |= CM_FN
+    CapsLockXMode &= ~CM_CapsLockX
+    
     ; ToolTip clxmode
     if (A_PriorKey == CapsLockX_上次触发键) {
         if (A_PriorKey == "Space") {
@@ -264,30 +310,18 @@ CapsLockX_Dn()
     }
     UpdateCapsLockXLight()
 }
-CapsLockX_ModeExit()
-{
-    ; TrayTip CapsLockX, 退出CLX模式
-    ToolTip 退出CLX模式
-    SetTimer CLX_HideToolTips, -1000
-    CapsLockXMode &= ~CM_CapsLockX
-}
-CapsLockX_ModeEnter()
-{
-    ToolTip 进入CLX模式
-    SetTimer CLX_HideToolTips, -1000
-    CapsLockXMode |= CM_CapsLockX
-}
 CapsLockX_Up()
 {
     CapsLockPressTimestamp := 0
     
     ; CLX弹起时退出 Fn 模式
     CapsLockXMode &= ~CM_FN
+    
     ; CLX单击弹起时
     if (A_PriorKey == CapsLockX_上次触发键) {
         if (CapsLockXMode & CM_CapsLockX) {
-            CapsLockX_ModeExit()
-        }else{
+            ; CapsLockX_ModeExit()
+        } else {
             if (CapsLockX_上次触发键 == "CapsLock") {
                 if (GetKeyState("CapsLock", "T")) {
                     SetCapsLockState, Off
