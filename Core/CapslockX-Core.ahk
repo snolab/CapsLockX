@@ -26,7 +26,8 @@ SetTitleMatchMode RegEx
 #InstallMouseHook ; 安装鼠标钩子
 
 ; 载入设定
-#Include Core/CapsLockX-Config.ahk
+; #Include %A_ScriptDir%/Core/CapsLockX-Config.ahk
+#Include %A_ScriptDir%/../Core/CapsLockX-Config.ahk
 
 ; 模式处理
 global CapsLockX := 1 ; 模块运行标识符
