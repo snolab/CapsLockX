@@ -293,7 +293,7 @@ $*e:: CapsLockX_鼠标右键按下("e")
 $*q:: CapsLockX_鼠标左键按下("q")
 
 #if CapsLockXMode
-    
+
 ; 鼠标按键处理
 $*e::CapsLockX_鼠标左键按下("e")
 $*q:: CapsLockX_鼠标右键按下("q")
