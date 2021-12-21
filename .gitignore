@@ -20,3 +20,4 @@ version-*.txt
 /*.ini
 *.user.*
 /User
+debug.log

@@ -26,6 +26,8 @@ m:: 配置文件编辑()
 
 
 CapsLockX_配置窗口(){
+    Gui, Add, Button, Default w80, 确认
+    
     Gui, Add, Text, , CapsLockX_配置目录：%CapsLockX_配置目录%
     
     global T_XKeyAsCapsLock
@@ -55,7 +57,6 @@ CapsLockX_配置窗口(){
         Gui, Add, CheckBox, gCapsLockX_配置刷新 vCLX_CONFIG_ONSTARTUP, 启动时显示配置窗口
     }
     Gui, Add, Button, w80, 配置文件编辑
-    Gui, Add, Button, Default w80, 确认
     Gui, Show
 }
 
