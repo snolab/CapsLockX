@@ -20,6 +20,7 @@ if ( InStr(FileExist(便携版配置目录), "D")) {
 FileCreateDir %启动配置目录%
 
 global CapsLockX_配置目录 := 启动配置目录
+; msgbox %CapsLockX_配置目录%
 global CapsLockX_配置路径 := CapsLockX_配置目录 "/CapsLockX-Config.ini"
 
 CapsLockX_ConfigInit()
@@ -40,7 +41,6 @@ CapsLockX_ConfigInit(){
     global T_XKeyAsInsert := CapsLockX_Config("Core", "T_XKeyAsInsert", 0, "使用 Insert 作为引导键")
     global T_XKeyAsScrollLock := CapsLockX_Config("Core", "T_XKeyAsScrollLock", 0, "使用 ScrollLock 作为引导键")
     global T_XKeyAsRAlt := CapsLockX_Config("Core", "T_XKeyAsRAlt", 0, "使用 右 Alt 作为引导键")
-    
     global T_UseScrollLockLight := CapsLockX_Config("Advanced", "T_UseScrollLockLight", 0, "进阶： 是否使用 ScrollLock 灯来显示 CapsLockX 状态（不建议）")
     global T_UseCapsLockLight := CapsLockX_Config("Advanced", "T_UseCapsLockLight", 0, "进阶： 是否使用 CapsLockX 灯来显示 CapsLockX 状态（强烈不建议）")
     global T_SwitchSound := CapsLockX_Config("Advanced", "T_SwitchSound", 0, "进阶： 是否开启CapsLockX模式切换声音提示（默认不开）")
@@ -59,7 +59,7 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
     
     CapsLockX_DontReload := 1
     ; 不对配置自动重新排序
-    if(comment) {
+    if (comment) {
         ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
     }
@@ -95,7 +95,8 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
     return content
 }
 清洗为_UTF16_WITH_BOM_型编码(path){
-    FileRead ModuleCode, %path%
+    FileRead content, %path%
     FileDelete %path%
-    FileAppend %ModuleCode%, %path%, UTF-16
+    FileAppend %content%, %path%, UTF-16
+    FileRead content, %path%
 }

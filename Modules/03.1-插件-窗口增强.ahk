@@ -798,9 +798,17 @@ ShellMessage( wParam,lParam ){
     if (hWndRecorded){
         X := 窗口鼠标位置表表[hWnd].X, Y := 窗口鼠标位置表表[hWnd].Y
         ; 相对窗口坐标还原鼠标
-        CoordMode, Mouse, Window
-        MouseMove, %X%, %Y%, 0
+        WinActivate, ahk_id %hWnd%
+        WinGetPos, wX, wY, wW, wH, ahk_id %hWnd%
+        X := wX + X, Y := wY + Y
         CoordMode, Mouse, Screen
+        MouseMove, %X%, %Y%, 0
+    }else{
+        WinActivate, ahk_id %hWnd%
+        WinGetPos, wX, wY, wW, wH, ahk_id %hWnd%
+        X := wX+wW/2, Y := wY+wH/2
+        CoordMode, Mouse, Screen
+        MouseMove, %X%, %Y%, 0
     }
 }
 最近1分钟内闪动窗口激活(){

@@ -91,6 +91,38 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
+
+SendInput_ScrollMouse(dx, dy)
+{
+    ; get cursor pos
+    VarSetCapacity(POINT, 8, 0)
+    DllCall("GetCursorPos", "Ptr", &POINT)
+    x := NumGet(POINT, 0, "Int")
+    y := NumGet(POINT, 4, "Int")
+    ; scroll by system input message
+    MOUSEEVENTF_WHEEL := 0x0800
+    MOUSEEVENTF_HWHEEL := 0x1000
+    if (dx) {
+        size := A_PtrSize+4*4+A_PtrSize
+        VarSetCapacity(mi, size, 0)
+        NumPut(x, mi, A_PtrSize, "Int")         ; LONG dx
+        NumPut(y, mi, A_PtrSize+4, "Int")       ; LONG dy
+        NumPut(dx, mi, A_PtrSize+4+4, "Int")    ; DWORD mouseData
+        NumPut(MOUSEEVENTF_HWHEEL, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags
+        DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
+    }
+    if (dy) {
+        size := A_PtrSize+4*4+A_PtrSize*2
+        VarSetCapacity(mi, size, 0)
+        NumPut(x, mi, A_PtrSize, "Int")   ; LONG dx
+        NumPut(y, mi, A_PtrSize+4, "Int")  ; LONG dy
+        NumPut(dy, mi, A_PtrSize+4+4, "Int")  ; DWORD mouseData
+        NumPut(MOUSEEVENTF_WHEEL, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags
+        DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
+        ; perf_timing()
+    }
+}
+
 SendInput_MouseMove(x, y)
 {
     ; (20211105)终于支持64位了
@@ -104,6 +136,11 @@ SendInput_MouseMove(x, y)
     NumPut(0x0001, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags MOUSEEVENTF_MOVE
     DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
 }
+鼠标模拟2(dx, dy){
+    SendInput_MouseMove(dx, dy)
+    
+}
+
 ; void 鼠标模拟
 鼠标模拟(dx, dy, 状态){
     if (!CapsLockXMode) {
@@ -143,10 +180,10 @@ SendInput_MouseMove(x, y)
     ; 鼠标模拟.纵速 *= dy && ya == yb ? 0 : 1
     
     
-    ; 在各种按钮上减速，进出按钮时减速50%
+    ; 在各种按钮上减速，进出按钮时减速80%
     if (TMouse_StickyCursor && CursorShapeChangedQ()) {
-        鼠标模拟.横速 *= 0.5
-        鼠标模拟.纵速 *= 0.5
+        鼠标模拟.横速 *= 0.2
+        鼠标模拟.纵速 *= 0.2
     }
 }
 
@@ -191,18 +228,19 @@ SendInput_MouseMove(x, y)
     }
     WM_MOUSEWHEEL := 0x020A
     WM_MOUSEWHEELH := 0x020E
-    _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
-    _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
+    if (!TMouse_SendIputAPI) {
+        SendInput_ScrollMouse(dx, -dy)
+    } else {
+        _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
+        _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
+    }
 }
-
 滚轮消息发送(msg, zDelta){
     ; 目前还不支持UWP
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
-    
     wParam := zDelta << 16 ;zDelta
     lParam := x | (y << 16) ; pos2long
-    
     MouseGetPos, , , , ControlClass2, 2
     MouseGetPos, , , , , ControlClass3, 3
     if (A_Is64bitOS) {
@@ -246,7 +284,6 @@ CapsLockX_鼠标右键按下(wait){
 CapsLockX_鼠标右键弹起(){
     SendEvent {Blind}{RButton Up}
 }
-
 鼠标模拟_ToolTip(tips){
     ToolTip %tips%
     SetTimer 鼠标模拟_ToolTipRemove, -3000
@@ -258,21 +295,25 @@ CapsLockX_鼠标右键弹起(){
 #if CapsLockXMode
     
 ; 鼠标按键处理
-$*e::CapsLockX_鼠标左键按下("e")
-$*q:: CapsLockX_鼠标右键按下("q")
-$*e Up::CapsLockX_鼠标左键弹起()
-$*q Up:: CapsLockX_鼠标右键弹起()
+*e::CapsLockX_鼠标左键按下("e")
+*q:: CapsLockX_鼠标右键按下("q")
+*e Up::CapsLockX_鼠标左键弹起()
+*q Up:: CapsLockX_鼠标右键弹起()
 ; 鼠标运动处理
-$*a:: 鼠标模拟.左按("a")
-$*d:: 鼠标模拟.右按("d")
-$*w:: 鼠标模拟.上按("w")
-$*s:: 鼠标模拟.下按("s")
+*a:: 鼠标模拟.左按("a")
+*d:: 鼠标模拟.右按("d")
+*w:: 鼠标模拟.上按("w")
+*s:: 鼠标模拟.下按("s")
 ; 滚轮运动处理
-$*+^!r:: 滚轮自动控制.左按("r")
-$*+^!f:: 滚轮自动控制.右按("f")
-$*^!r:: 滚轮自动控制.上按("r")
-$*^!f:: 滚轮自动控制.下按("f")
-$*+r:: 滚轮模拟.左按("r")
-$*+f:: 滚轮模拟.右按("f")
-$*r:: 滚轮模拟.上按("r")
-$*f:: 滚轮模拟.下按("f")
+; *+^!r:: 滚轮自动控制.左按("r")
+; *+^!f:: 滚轮自动控制.右按("f")
+*^![:: 滚轮自动控制.左按("[")
+*^!]:: 滚轮自动控制.右按("]")
+; *^!r:: 滚轮自动控制.上按("r")
+; *^!f:: 滚轮自动控制.下按("f")
+; *+r:: 滚轮模拟.左按("r")
+; *+f:: 滚轮模拟.右按("f")
+*r:: 滚轮模拟.上按("r")
+*f:: 滚轮模拟.下按("f")
+*[:: 滚轮模拟.左按("[")
+*]:: 滚轮模拟.右按("]")
