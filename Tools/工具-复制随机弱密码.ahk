@@ -2,7 +2,7 @@
 	Return ( RegExMatch(password, "[0-9]") && RegExMatch(password, "[a-z]") && RegExMatch(password, "[A-Z]") )
 }
 ;
-GenPassword(Length){
+GenPassword(Length := 16){
 	; 此处 `` 为转义
     Chars := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
     Min := 1
