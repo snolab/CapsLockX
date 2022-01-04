@@ -23,13 +23,13 @@ return
 #if CapsLockXMode
 
 ; m:: 配置文件编辑()
-m:: CapsLockX_首次使用配置()
+m:: CapsLockX_配置窗口()
 
 
 CapsLockX_配置窗口(){
     Gui, Add, Button, Default w80, 确认
-    
-    Gui, Add, Text, , CapsLockX_配置目录：%CapsLockX_配置目录%
+    Gui, Add, Text, , 你可以按 CapsLockX + M 打开此窗口
+    Gui, Add, Text, , 当前 CapsLockX_配置目录：%CapsLockX_配置目录%
     
     global T_XKeyAsCapsLock
     if (T_XKeyAsCapsLock){
@@ -86,4 +86,3 @@ CapsLockX_首次使用教学(){
     ; TrayTip, 配置文件关, 自动重载
     ; CapsLockX_Reload()
 }
-
