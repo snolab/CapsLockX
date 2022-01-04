@@ -17,8 +17,7 @@ if (A_IsAdmin) {
 #NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
-#Include Core/CapsLockX-Config.ahk
-
+#Include %A_ScriptDir%/Core/CapsLockX-Config.ahk
 
 global CapsLockX_模块路径 := "./Modules" 
 global CapsLockX_核心路径 := "./Core"

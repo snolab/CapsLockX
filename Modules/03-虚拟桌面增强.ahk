@@ -40,10 +40,10 @@ Return
 +]:: MoveActiveWindowWithAction("^#{Right}")
 
 #if CapsLockXMode
-
+    
 ; Add or delete desktop
-!Backspace:: Send ^#{F4}
-!+Backspace:: Send ^#d
+!Backspace:: SendEvent ^#{F4}
+!+Backspace:: SendEvent ^#d
 
 ; Switch to desktop
 1:: SwitchToDesktop(1)
@@ -180,30 +180,34 @@ object QueryService(ref Guid service, ref Guid riid);
 #if ; Define Functions
 
 ; Move the current window to another desktop
-MoveActiveWindowWithAction(action){
+MoveActiveWindowWithAction(action)
+{
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput %action%
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveActiveWindowToNewDesktop(){
+MoveActiveWindowToNewDesktop()
+{
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput ^#d
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveActiveWindowToDesktop(idx){
+MoveActiveWindowToDesktop(idx)
+{
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SwitchToDesktop(idx)
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
-MoveAllVisibleWindowToDesktop(idx){
+MoveAllVisibleWindowToDesktop(idx)
+{
     listOfWindow := WindowsListOfMonitorFast(arrangeFlags | ARRANGE_MAXWINDOW | ARRANGE_MINWINDOW)
-
+    
     loop Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
@@ -219,63 +223,69 @@ MoveAllVisibleWindowToDesktop(idx){
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
         if(!hWnd)
             continue
-
+        
         DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
     }
 }
-SwitchToDesktop(idx){
-    if (!SwitchToDesktopByInternalAPI(idx)){
-        TrayTip , WARN, SwitchToDesktopByHotkey
+SwitchToDesktop(idx)
+{
+    if (!SwitchToDesktopByInternalAPI(idx)) {
+        TrayTip, WARN, SwitchToDesktopByHotkey %idx%
         SwitchToDesktopByHotkey(idx)
     }
 }
-SwitchToDesktopByHotkey(idx){
+SwitchToDesktopByHotkey(idx)
+{
     SendInput ^#{Left 10}
-    idx -= 1
-    Loop %idx% {
+    offset := idx - 1
+    Loop %offset% {
         SendInput ^#{Right}
     }
 }
 
-IsWindowOnCurrentVirtualDesktop(hWnd){
+IsWindowOnCurrentVirtualDesktop(hWnd)
+{
     IVirtualDesktopManager := ComObjCreate("{AA509086-5CA9-4C25-8F95-589D3C07B48A}", "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}")
-    ; 如果这个对象不存在那就没有虚拟桌面的说法了，那就默认返回true好了
+    ; 如果这个对象不存在那就没有虚拟桌面的说法了，那它一定在当前桌面下就默认返回true好了
     if (!IVirtualDesktopManager)
-        Return 1
+        Return true
     IsWindowOnCurrentVirtualDesktop := vtable(IVirtualDesktopManager, 3)
     bool := 0
     DllCall(IsWindowOnCurrentVirtualDesktop, "UPtr", IVirtualDesktopManager, "UInt", hWnd, "UIntP", bool)
     ObjRelease(IVirtualDesktopManager)
     Return %bool%
 }
-SwitchToDesktopByInternalAPI(idx){
+SwitchToDesktopByInternalAPI(idx)
+{
     succ := 0
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
     ObjRelease(IServiceProvider)
-    if (IVirtualDesktopManagerInternal){
+    if (IVirtualDesktopManagerInternal) {
+        ; tooltip %idx%
         GetCount := vtable(IVirtualDesktopManagerInternal, 3)
         GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
         SwitchDesktop := vtable(IVirtualDesktopManagerInternal, 9)
         ; TrayTip, , % IVirtualDesktopManagerInternal
         pDesktopIObjectArray := 0
         DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
-        if (pDesktopIObjectArray){
+        if (pDesktopIObjectArray) {
             GetDesktopCount := vtable(pDesktopIObjectArray, 3)
             GetDesktopAt := vtable(pDesktopIObjectArray, 4)
             DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
+            ; tooltip %DesktopCount%
             ; if idx-th desktop doesn't exists then create a new desktop
-            if (idx > DesktopCount){
+            if (idx > DesktopCount) {
                 diff := idx - DesktopCount
                 loop %diff% {
-                    Send ^#d
+                    SendEvent ^#d
                 }
                 succ := 1
             }
             GetGUIDFromString(IID_IVirtualDesktop, "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}")
             DllCall(GetDesktopAt, "Ptr", pDesktopIObjectArray, "UInt", idx - 1, "Ptr", &IID_IVirtualDesktop, "Ptr*", VirtualDesktop)
             ObjRelease(pDesktopIObjectArray)
-            if (VirtualDesktop){
+            if (VirtualDesktop) {
                 DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", VirtualDesktop)
                 ObjRelease(VirtualDesktop)
                 succ := 1
@@ -292,7 +302,8 @@ GetGUIDFromString(ByRef GUID, sGUID) ; Converts a string to a binary GUID
     DllCall("ole32\CLSIDFromString", "Str", sGUID, "Ptr", &GUID)
 }
 
-vtable(ptr, n){
+vtable(ptr, n)
+{
     ; NumGet(ptr+0) Returns the address of the object's virtual function
     ; table (vtable for short). The remainder of the expression retrieves
     ; the address of the nth function's address from the vtable.

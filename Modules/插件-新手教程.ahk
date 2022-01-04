@@ -11,9 +11,10 @@ global CLX_CONFIG_ONSTARTUP := CapsLockX_Config("Core", "CLX_CONFIG_ONSTARTUP", 
 
 Menu, Tray, Add ; Creates a separator line.
 Menu, Tray, Add, 配置文件编辑, 配置文件编辑 ; Creates a new menu item.
+; Menu, Tray, Add, Exit, Exit ; Creates a new menu item.
 
 if (CLX_CONFIG_ONSTARTUP) {
-    SetTimer CapsLockX_首次使用配置, -1
+    SetTimer CapsLockX_配置窗口, -1
 }
 
 return
@@ -25,8 +26,9 @@ return
 m:: CapsLockX_首次使用配置()
 
 
-CapsLockX_首次使用配置(){
-    CLX_CONFIG_ONSTARTUP := 0
+CapsLockX_配置窗口(){
+    Gui, Add, Button, Default w80, 确认
+    
     Gui, Add, Text, , CapsLockX_配置目录：%CapsLockX_配置目录%
     
     global T_XKeyAsCapsLock
@@ -56,7 +58,6 @@ CapsLockX_首次使用配置(){
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vCLX_CONFIG_ONSTARTUP, 启动时显示配置窗口
     }
     Gui, Add, Button, w80, 配置文件编辑
-    Gui, Add, Button, Default w80, 确认
     Gui, Show
 }
 
@@ -75,8 +76,6 @@ Button确认:
 Button配置文件编辑:
     配置文件编辑()
     Return
-
-
 
 CapsLockX_首次使用教学(){
     ; TODO

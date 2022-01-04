@@ -24,13 +24,30 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
-## 入门教程 📖
+## 新手快速入门教程 📖
 
-### 太长不看 / TL;DR 📄
+### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
 
-下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+CapsLockX 有四大核心功能： **窗口管理**，**鼠标模拟**、**方向键模拟**、应用内热键，本入门教程将带你学会前 3 大核心功能。
 
-解压之后，打开 `CapsLockX.exe`，过掉简单的新手教程，然后，按住 CapsLockX，然后按 `WASD` 鼠标移动，`QE` 点击 `RF` 滚轮，`HJKL` 光标移动，`YOUI` 页面移动，`ZXCV` 窗口管理，`1234567890` 切换虚拟桌面，`M` 打开配置。
+首先获取 CapsLockX ：下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+
+解压之后，打开 CapsLockX 文件夹内的 `CapsLockX.exe`，过掉简单的新手教程，然后按照以下左右手功能区的依次试用来了解 CapsLockX 的功能。
+
+CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以下的功能只有在你按出 `CapsLockX + 组合键` 时才会触发。
+
+左手功能区：
+
+- 窗口管理：`CapsLockX + 1234567890` 切换到第 `n` 个虚拟桌面，`CapsLockX + ZXCV` 窗口操作（窗口切换、窗口关闭，窗口排列，透明置顶）。
+- 鼠标模拟功能：按 `CapsLockX + WASD` 鼠标移动（像玩游戏的时候操作人物移动一样简单），按 `CapsLockX + QE` 鼠标左右键点击，`CapsLockX + RF` 滚轮上下滑动。
+
+右手功能区：
+
+- 方向键模拟：打开任意一个编辑 `HJKL` 光标移动，`YOUI` 页面移动
+
+上手之后，如果想了解更多功能，则可参考下方速查手册。
+
+## 进阶参考手册
 
 ### 安装与使用 🛠
 
@@ -229,7 +246,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | Win 键模拟启用后 | ] 按住同时，[ 按下                    | 相当于按 Win 键                    |
 | Win 键模拟启用后 | RAlt+\| 相当于按 Alt+Tab 只不过在右手 |
 
-<!-- 模块文件名：功能-秒打时间戳.ahk-->
+<!-- 模块文件名：功能-快捷输入.ahk-->
 
 ### 秒打时间戳
 
@@ -360,25 +377,25 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 媒体键模块
 
-| 作用于 | 媒体键模块      | 说明                                        |
-| ------ | --------------- | ------------------------------------------- |
-| 全局   | CapsLockX + F1  | 打开：我的电脑                              |
-| 全局   | CapsLockX + F2  | 打开：计算器                                |
-| 全局   | CapsLockX + F3  | 打开：浏览器主页                            |
-| 全局   | CapsLockX + F4  | 打开：媒体库（默认是 Windows Media Player） |
-| 全局   | CapsLockX + F5  | 播放：暂停/播放                             |
-| 全局   | CapsLockX + F6  | 播放：上一首                                |
-| 全局   | CapsLockX + F7  | 播放：下一首                                |
-| 全局   | CapsLockX + F8  | 播放：停止                                  |
-| 全局   | CapsLockX + F9  | 音量加                                      |
-| 全局   | CapsLockX + F10 | 音量减                                      |
-| 全局   | CapsLockX + F11 | 静音                                        |
+| 作用于 | 媒体键模块        | 说明                                        |
+| ------ | ----------------- | ------------------------------------------- |
+| 全局   | `CapsLockX + F1`  | 打开：我的电脑                              |
+| 全局   | `CapsLockX + F2`  | 打开：计算器                                |
+| 全局   | `CapsLockX + F3`  | 打开：浏览器主页                            |
+| 全局   | `CapsLockX + F4`  | 打开：媒体库（默认是 Windows Media Player） |
+| 全局   | `CapsLockX + F5`  | 播放：暂停/播放                             |
+| 全局   | `CapsLockX + F6`  | 播放：上一首                                |
+| 全局   | `CapsLockX + F7`  | 播放：下一首                                |
+| 全局   | `CapsLockX + F8`  | 播放：停止                                  |
+| 全局   | `CapsLockX + F9`  | 音量加                                      |
+| 全局   | `CapsLockX + F10` | 音量减                                      |
+| 全局   | `CapsLockX + F11` | 静音                                        |
 
 <!-- 模块文件名：插件-番茄时钟.ahk-->
 
 ### 番茄时钟
 
-25 分钟固定循环休息提醒
+25 分钟固定循环休息提醒。
 
 使用 CapsLockX + M 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
 
@@ -395,6 +412,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
   ```
 
 注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
+
+注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life]( https://github.com/snomiao/tomato-life )
 <!-- 结束：抽取模块帮助 -->
 
 ## 过去与未来 🛰
@@ -408,7 +427,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 发展路线 🛰️
 
-本项目的核心理念是：简化系统操作逻辑，提升操作效率，且尽量不与原有习惯键位冲突。
+本项目的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。
 
 1. [x] 按 CapsLockX + / 键显示对应帮助（目前的显示样式相当草率）
 2. [ ] 自动更新（虽然 git pull 一下也不是不行）
@@ -499,13 +518,17 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
+### 安全性
+
+考虑到任何能够获取到管理员权限的软件对于用户的操作系统都是相当危险的，故本项目必须采用开源的方式以使社区可以自由且随意地检查本项目中可能涉及到的任何部分的代码，以保证所有用户的操作系统安全性不因本软件而受损害。
+
 ## 支持 ⭐️
 
 如何帮助本项目生存下去？如果本项目有帮助到你：
 
-1. 欢迎在 Github 上点星 ⭐️
-2. 欢迎把我转发分享给你身边的朋友们。
-3. 欢迎帮我翻译 readme.md 到各国语言。 🌐
+1. ⭐️ 请在本项目 Github 上点星 <a class="github-button" href="https://github.com/snolab/CapsLockX" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star snolab/CapsLockX on GitHub">Star</a>
+2. 🔗 请把我转发分享给你身边的朋友们。
+3. 欢迎帮我翻译本文档到各国语言。 🌐
 4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues) 🐞
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
 6. 欢迎创作关于本软件的作品，比如录制使用教学视频投稿到 Youtube 或 Bilibili ，雪星会去给你点赞的哦。
@@ -540,3 +563,9 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [(5 封私信 / 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/question/23443944/answer/1670521971)
 - [我是职场达人，AutoHotKey 让我成为职场超人 - 知乎](https://zhuanlan.zhihu.com/p/60372361)
 - [AutoHotKey 中文网专栏 - 知乎](https://www.zhihu.com/column/autoahk)
+- [电脑一族如何防治“鼠标手” - 陕西日报](http://www.sxjkjy.com/uploadfiles/files/2017062110481454.pdf)
+
+---
+
+<!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>

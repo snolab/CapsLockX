@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - "v*"
-name: gh-pages
+name: github-release-into-gh-pages
 jobs:
   # github-package:
   #   runs-on: ubuntu-latest
