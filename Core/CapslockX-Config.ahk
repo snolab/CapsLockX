@@ -20,6 +20,7 @@ if ( InStr(FileExist(便携版配置目录), "D")) {
 FileCreateDir %启动配置目录%
 
 global CapsLockX_配置目录 := 启动配置目录
+; msgbox %CapsLockX_配置目录%
 global CapsLockX_配置路径 := CapsLockX_配置目录 "/CapsLockX-Config.ini"
 
 ; 初始化配置
@@ -57,7 +58,7 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
     
     CapsLockX_DontReload := 1
     ; 不对配置自动重新排序
-    if(comment) {
+    if (comment) {
         ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
         IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
     }
@@ -94,7 +95,8 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
 }
 
 清洗为_UTF16_WITH_BOM_型编码(path){
-    FileRead ModuleCode, %path%
+    FileRead content, %path%
     FileDelete %path%
-    FileAppend %ModuleCode%, %path%, UTF-16
+    FileAppend %content%, %path%, UTF-16
+    FileRead content, %path%
 }

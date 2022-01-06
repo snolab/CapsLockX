@@ -40,7 +40,7 @@ Return
 
 ; 对于没有 Win 键的环境，用 Ctrl + ESC 一起按来模拟 Win 键（不行，Win键和其它修饰键一起按打不开开始菜单。）
 
-#if WinKeySimulate
+#if WinKeySimulate && !CapsLockXMode
 
 ; Windows 键模拟于 ] + [
 ] & [:: LWin

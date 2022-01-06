@@ -11,8 +11,9 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PAT
 Return
 
 #if !CapsLockXMode
-    
-#h:: 讯飞语音输入法切换()
+
+#!h:: 讯飞语音输入法切换()
+
 讯飞语音输入法切换(){
     ; 注册表里取路径
     RegRead, iFlyPath, HKLM\SOFTWARE\iFly Info Tek\iFlyIME, Install_Dir_Ver2
@@ -38,7 +39,7 @@ Return
 }
 
 ; 加 Alt 访问原热键
-#!h:: Send #h
+; #h:: Send #h
 ; From Acc.ahk by Sean, jethrow, malcev, FeiYue
 GetCaret()
 {

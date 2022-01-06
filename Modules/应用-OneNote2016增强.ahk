@@ -61,10 +61,10 @@ getAscStr(str)
 OneNote快速笔记窗口启动(){
     SendEvent #n
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
-    WinWaitActive %OneNote窗口匹配串%, , 5 ; wait seconds
-    if(ErrorLevel) {
+    WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
+    if (ErrorLevel) {
         WinWait %OneNote窗口匹配串%, , 5 ; wait seconds
-        if(ErrorLevel) {
+        if (ErrorLevel) {
             TrayTip, 错误, 未找到OneNote窗口
             return
         }
