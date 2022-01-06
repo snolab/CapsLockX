@@ -17,7 +17,7 @@ global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX"
 global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_PageSpeed := CapsLockX_Config("EditEnhance", "PageSpeed", 1, "翻页速率")
 
-global 方向键模拟 := new AccModel2D(Func("方向键模拟"), 0.1, 编辑增强_SpeedRatioX * 40, 编辑增强_SpeedRatioY * 20)
+global 方向键模拟 := new AccModel2D(Func("方向键模拟"), 0.1, 编辑增强_SpeedRatioX * 50, 编辑增强_SpeedRatioY * 30)
 global 翻页键模拟 := new AccModel2D(Func("翻页键模拟"), 0.1, 20 * 编辑增强_PageSpeed)
 方向键模拟.最大速度 := 250
 翻页键模拟.最大速度 := 250
