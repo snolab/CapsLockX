@@ -1,3 +1,41 @@
+## [1.21.3](https://github.com/snolab/CapsLockX/compare/v1.21.2...v1.21.3) (2022-01-06)
+
+
+### Bug Fixes
+
+* add version name ([01feb10](https://github.com/snolab/CapsLockX/commit/01feb10beb9004fc18e20e21f89b736b067a48bc))
+* CapsLockX_更新记录 ([09f9e1d](https://github.com/snolab/CapsLockX/commit/09f9e1da27af95985848c35814debddf582cca39))
+* config reload pass ([f6ea88c](https://github.com/snolab/CapsLockX/commit/f6ea88c10aea568632dafd9b171846ac33ef7310))
+* config ui fix ([5a24293](https://github.com/snolab/CapsLockX/commit/5a24293c194b405c63f1296520e4091cccc3176f))
+* delay shorten ([08b2add](https://github.com/snolab/CapsLockX/commit/08b2addae7a360a2b8b48a1dbde9f9bb9da5266d))
+* dont save user script ([f61702c](https://github.com/snolab/CapsLockX/commit/f61702c9419549b4df2b86e9bbe7604c630d9197))
+* fix config ahk path ([011fb71](https://github.com/snolab/CapsLockX/commit/011fb7194005770bbd836058d5a822610a1f9c98))
+* fix modules loader ([4355668](https://github.com/snolab/CapsLockX/commit/435566877ab5fc8d543c19df4e9ba3db66bec913))
+* fix npx capslockx could not find capslockx-config.ahk ([b27c0d6](https://github.com/snolab/CapsLockX/commit/b27c0d617276b228d9bc2641a079abd29aaaa0ed))
+* github aactions ([321e2a6](https://github.com/snolab/CapsLockX/commit/321e2a62bd508923cdab39ed0297c7cb8e9aad88))
+* hide updating msg ([cc22943](https://github.com/snolab/CapsLockX/commit/cc22943ea0a6c6e6dc6d9525a8d0debbddcae3f3))
+* improve slower mouse with shift keys ([2bfb46a](https://github.com/snolab/CapsLockX/commit/2bfb46a529e9131e760e45e30499f7389dc6ac88))
+* lights updateing ([6eb16c2](https://github.com/snolab/CapsLockX/commit/6eb16c2c926f8bbc6209bb7805c45a0fd441d4b7))
+* lights updating ([52a12a0](https://github.com/snolab/CapsLockX/commit/52a12a03575a9194bf6143ef6240c281ae620aff))
+* LKF模块任务管理器热键兼容性修复 ([77607b9](https://github.com/snolab/CapsLockX/commit/77607b9b14ec9dbbb79876b538a7f95eff66b7a6))
+* make sure startup ([e4d0125](https://github.com/snolab/CapsLockX/commit/e4d012561074e166ccb1faa2388521c22c7c8494))
+* quick input ([4fc85fb](https://github.com/snolab/CapsLockX/commit/4fc85fb1df096d0a626054b69cf4bbbd06d2e9ad))
+* win11兼容增强与配置修复 ([df3df37](https://github.com/snolab/CapsLockX/commit/df3df3783b9bc38fdce2793c67bc77791e6d5cf2))
+* 增加右手Win键模拟 ([ca1adb6](https://github.com/snolab/CapsLockX/commit/ca1adb6f8ca0fae9cdf65813101065ec05721781))
+* 平移导航 旋转导航 ([52c90db](https://github.com/snolab/CapsLockX/commit/52c90db28c8da9eca2ffd20083432a3a984b191e))
+* 番茄时钟正名 ([3fbee99](https://github.com/snolab/CapsLockX/commit/3fbee99abff4a2cddcaf11b68d9599c64ffb0535))
+* 窗口切换优化 ([f2d90c9](https://github.com/snolab/CapsLockX/commit/f2d90c9f778243222f7f5c70c63a7a3ef9330770))
+* 窗口排序优化，同名进程放一起 ([7c6afcf](https://github.com/snolab/CapsLockX/commit/7c6afcf500cdb5d77f97d0c6e350981ff2af0bc6))
+* 鼠标模拟速度调整 ([76e06fd](https://github.com/snolab/CapsLockX/commit/76e06fd7dc003b790c364a4586143ace35c6ea18))
+* 鼠标速度调整 ([a1e1201](https://github.com/snolab/CapsLockX/commit/a1e1201e51001f32b583b897c5235747e4597e3c))
+
+
+### Features
+
+* QuickTips ([f5985c7](https://github.com/snolab/CapsLockX/commit/f5985c7d62724ea100c2f1f55d83253cb62f2199))
+
+
+
 ## [1.21.2](https://github.com/snolab/CapsLockX/compare/v1.21.1...v1.21.2) (2021-11-24)
 
 
