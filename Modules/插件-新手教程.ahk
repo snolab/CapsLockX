@@ -31,6 +31,7 @@ CapsLockX_配置窗口(){
     Gui, Add, Text, , 你可以按 CapsLockX + M 打开此窗口
     Gui, Add, Text, , CapsLockX_配置目录：%CapsLockX_配置目录%
     Gui, Add, Text, , 当前 CapsLockX_配置目录：%CapsLockX_配置目录%
+    Gui, Add, Text, , Version: CapsLockX %CapsLockX_VersionName%
     Gui, Add, Button, w80, 开机自动启动添加
     
     global T_XKeyAsCapsLock
