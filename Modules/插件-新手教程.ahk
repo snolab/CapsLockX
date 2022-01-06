@@ -27,6 +27,7 @@ m:: 配置文件编辑()
 
 CapsLockX_配置窗口(){
     Gui, Add, Button, Default w80, 确认
+    Gui, Add, Button, w80, 开机自动启动添加
     
     Gui, Add, Text, , CapsLockX_配置目录：%CapsLockX_配置目录%
     
@@ -60,6 +61,16 @@ CapsLockX_配置窗口(){
     Gui, Show
 }
 
+MakeSureStartup(){
+    content = start "" %A_AhkPath%
+    startCMDPath = %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\capslockx-startup.cmd
+    FileDelete, %startCMDPath%
+    FileAppend, %content%, %startCMDPath%
+}
+
+Button开机自动启动添加:
+    MakeSureStartup()
+    return
 CapsLockX_配置刷新:
     gui, submit, nohide
     CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", T_XKeyAsCapsLock, "使用 Space 作为引导键（默认启用，用户启用）")

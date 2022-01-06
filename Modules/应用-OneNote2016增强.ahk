@@ -180,6 +180,7 @@ OneNote2016搜索启动() {
     return k
 }
 
+; 注意win11下OneNote启动热键变成了Win+Alt+N，而Win+N的新功能为打开消息中心
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
