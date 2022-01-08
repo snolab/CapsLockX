@@ -51,10 +51,10 @@ Return
 #if False && "FUNCTIION DEFINES"
 
 AltTabWindowGet(){
-    return WinActive("ahk_class MultitaskingViewFrame") 
+    return WinActive("ahk_class MultitaskingViewFrame") || WinActive("ahk_class XamlExplorerHostIslandWindow")
 }
 WinTabWindowGet(){
-    return WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe")
+    return WinActive("ahk_class Windows.UI.Core.CoreWindow ahk_exe explorer.exe") || WinActive("ahk_class XamlExplorerHostIslandWindow")
 }
 多任务窗口切换界面内(){
     Return AltTabWindowGet() || WinTabWindowGet()
