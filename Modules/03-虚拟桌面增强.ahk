@@ -236,11 +236,21 @@ SwitchToDesktop(idx)
 }
 SwitchToDesktopByHotkey(idx)
 {
-    SendInput ^#{Left 10}
-    offset := idx - 1
-    Loop %offset% {
+    static lastIdx := ""
+    if (!lastIdx || idx === 1){
+        SendInput ^#{Left 10}
+        lastIdx := 1
+    }
+    offset := idx - lastIdx
+    offsetRight := max(offset, 0)
+    offsetLeft := max(-offset, 0)
+    Loop %offsetRight% {
         SendInput ^#{Right}
     }
+    Loop %offsetLeft% {
+        SendInput ^#{Left}
+    }
+    lastIdx := idx
 }
 
 IsWindowOnCurrentVirtualDesktop(hWnd)
