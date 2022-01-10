@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.3</version>
+    <version>1.21.4</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,45 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.21.2](https://github.com/snolab/CapsLockX/compare/v1.21.1...v1.21.2) (2021-11-24)
+    <releaseNotes><![CDATA[## [1.21.3](https://github.com/snolab/CapsLockX/compare/v1.21.2...v1.21.3) (2022-01-06)
+
+
+### Bug Fixes
+
+* add version name ([01feb10](https://github.com/snolab/CapsLockX/commit/01feb10beb9004fc18e20e21f89b736b067a48bc))
+* CapsLockX_ ([09f9e1d](https://github.com/snolab/CapsLockX/commit/09f9e1da27af95985848c35814debddf582cca39))
+* config reload pass ([f6ea88c](https://github.com/snolab/CapsLockX/commit/f6ea88c10aea568632dafd9b171846ac33ef7310))
+* config ui fix ([5a24293](https://github.com/snolab/CapsLockX/commit/5a24293c194b405c63f1296520e4091cccc3176f))
+* delay shorten ([08b2add](https://github.com/snolab/CapsLockX/commit/08b2addae7a360a2b8b48a1dbde9f9bb9da5266d))
+* dont save user script ([f61702c](https://github.com/snolab/CapsLockX/commit/f61702c9419549b4df2b86e9bbe7604c630d9197))
+* fix config ahk path ([011fb71](https://github.com/snolab/CapsLockX/commit/011fb7194005770bbd836058d5a822610a1f9c98))
+* fix modules loader ([4355668](https://github.com/snolab/CapsLockX/commit/435566877ab5fc8d543c19df4e9ba3db66bec913))
+* fix npx capslockx could not find capslockx-config.ahk ([b27c0d6](https://github.com/snolab/CapsLockX/commit/b27c0d617276b228d9bc2641a079abd29aaaa0ed))
+* github aactions ([321e2a6](https://github.com/snolab/CapsLockX/commit/321e2a62bd508923cdab39ed0297c7cb8e9aad88))
+* hide updating msg ([cc22943](https://github.com/snolab/CapsLockX/commit/cc22943ea0a6c6e6dc6d9525a8d0debbddcae3f3))
+* improve slower mouse with shift keys ([2bfb46a](https://github.com/snolab/CapsLockX/commit/2bfb46a529e9131e760e45e30499f7389dc6ac88))
+* lights updateing ([6eb16c2](https://github.com/snolab/CapsLockX/commit/6eb16c2c926f8bbc6209bb7805c45a0fd441d4b7))
+* lights updating ([52a12a0](https://github.com/snolab/CapsLockX/commit/52a12a03575a9194bf6143ef6240c281ae620aff))
+* LKF ([77607b9](https://github.com/snolab/CapsLockX/commit/77607b9b14ec9dbbb79876b538a7f95eff66b7a6))
+* make sure startup ([e4d0125](https://github.com/snolab/CapsLockX/commit/e4d012561074e166ccb1faa2388521c22c7c8494))
+* quick input ([4fc85fb](https://github.com/snolab/CapsLockX/commit/4fc85fb1df096d0a626054b69cf4bbbd06d2e9ad))
+* win11 ([df3df37](https://github.com/snolab/CapsLockX/commit/df3df3783b9bc38fdce2793c67bc77791e6d5cf2))
+* Win ([ca1adb6](https://github.com/snolab/CapsLockX/commit/ca1adb6f8ca0fae9cdf65813101065ec05721781))
+*   ([52c90db](https://github.com/snolab/CapsLockX/commit/52c90db28c8da9eca2ffd20083432a3a984b191e))
+*  ([3fbee99](https://github.com/snolab/CapsLockX/commit/3fbee99abff4a2cddcaf11b68d9599c64ffb0535))
+*  ([f2d90c9](https://github.com/snolab/CapsLockX/commit/f2d90c9f778243222f7f5c70c63a7a3ef9330770))
+* ， ([7c6afcf](https://github.com/snolab/CapsLockX/commit/7c6afcf500cdb5d77f97d0c6e350981ff2af0bc6))
+*  ([76e06fd](https://github.com/snolab/CapsLockX/commit/76e06fd7dc003b790c364a4586143ace35c6ea18))
+*  ([a1e1201](https://github.com/snolab/CapsLockX/commit/a1e1201e51001f32b583b897c5235747e4597e3c))
+
+
+### Features
+
+* QuickTips ([f5985c7](https://github.com/snolab/CapsLockX/commit/f5985c7d62724ea100c2f1f55d83253cb62f2199))
+
+
+
+## [1.21.2](https://github.com/snolab/CapsLockX/compare/v1.21.1...v1.21.2) (2021-11-24)
 
 
 ### Bug Fixes
@@ -77,104 +115,7 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 
 ### Bug Fixes
-
-*  ([53985d5](https://github.com/snolab/CapsLockX/commit/53985d56fb1a9fd89b0b2008814c99d2b3b247b5))
-*  ([2a39820](https://github.com/snolab/CapsLockX/commit/2a398202de43bd209376aa87fdb8a7e9148acecb))
-*  ([b54a54e](https://github.com/snolab/CapsLockX/commit/b54a54ebc07e2bf4b3d7fe9867a890e7ac74eb41))
-
-
-
-# [1.21.0](https://github.com/snolab/CapsLockX/compare/v1.20.2...v1.21.0) (2021-10-18)
-
-
-### Features
-
-* BlenderEnhanced ([345a9b6](https://github.com/snolab/CapsLockX/commit/345a9b694806a5ce8815651642a6e55cc9d84bb7))
-
-
-
-## [1.20.2](https://github.com/snolab/CapsLockX/compare/v1.20.1...v1.20.2) (2021-10-15)
-
-
-### Bug Fixes
-
-* onenote2016expand， ([fe11157](https://github.com/snolab/CapsLockX/commit/fe111578f39d0ddbca105311f50617c08937bd80))
-*  ([2cefccb](https://github.com/snolab/CapsLockX/commit/2cefccb8156a7e1a6a8bab05639705504399c87a))
-
-
-
-## [1.20.1](https://github.com/snolab/CapsLockX/compare/v1.20.0...v1.20.1) (2021-09-14)
-
-
-### Bug Fixes
-
-* bug ([3558950](https://github.com/snolab/CapsLockX/commit/35589503511fc197ec6b9a6586433072313bb137))
-
-
-
-# [1.20.0](https://github.com/snolab/CapsLockX/compare/v1.19.7...v1.20.0) (2021-09-12)
-
-
-### Bug Fixes
-
-* auto reload improved ([00da365](https://github.com/snolab/CapsLockX/commit/00da365abfff7638d28f46d162c54b043f3f706b))
-
-
-### Features
-
-* ，， ([3baecc9](https://github.com/snolab/CapsLockX/commit/3baecc91760e8700f0400b7f374663d77e306668))
-
-
-
-## [1.19.7](https://github.com/snolab/CapsLockX/compare/v1.19.6...v1.19.7) (2021-09-11)
-
-
-### Bug Fixes
-
-* icon url ([d40fbd6](https://github.com/snolab/CapsLockX/commit/d40fbd61b143544fd99d55a69b95853fd5c7399d))
-
-
-
-## [1.19.6](https://github.com/snolab/CapsLockX/compare/v1.19.5...v1.19.6) (2021-09-11)
-
-
-### Bug Fixes
-
-* change icon url to CDN due to chocolatey requests ([5415a2a](https://github.com/snolab/CapsLockX/commit/5415a2afd9a21e04fe03170c4fe617ac9ab8a2c2))
-* show png format icons for chocolatey ([97e8711](https://github.com/snolab/CapsLockX/commit/97e871198005c5bb3a9ae5459a2f41096ef13a13))
-
-
-
-## [1.19.5](https://github.com/snolab/CapsLockX/compare/v1.19.4...v1.19.5) (2021-09-02)
-
-
-### Bug Fixes
-
-*  ([c78ad40](https://github.com/snolab/CapsLockX/commit/c78ad40230b28361c8302feded30f6f12c157c33))
-
-
-
-## [1.19.4](https://github.com/snolab/CapsLockX/compare/v1.19.3...v1.19.4) (2021-08-26)
-
-
-
-## [1.19.3](https://github.com/snolab/CapsLockX/compare/v1.19.2...v1.19.3) (2021-08-26)
-
-
-### Bug Fixes
-
-* CapsLockX + Ctrl + Alt + r f        | （ ） ([8b32921](https://github.com/snolab/CapsLockX/commit/8b32921a157310e1c2909e4adf7b39b43a860264))
-* CapsLockX + h + t   | ， ([a3f0358](https://github.com/snolab/CapsLockX/commit/a3f0358c8b78950fe1e8b0497cd303fbf26516be))
-
-
-
-## [1.19.2](https://github.com/snolab/CapsLockX/compare/v1.19.1...v1.19.2) (2021-08-21)
-
-
-### Bug Fixes
-
-* reload ([065130b](https://github.com/snolab/CapsLockX/commit/065130b01a63cfc7ab75e4af809eb91a31b6b937))
-* remove longpress to help ([a994731](https://github.com/snolab/CapsLockX/commit/a994731d595f49fd6f9ec8c021b8283c05f85795))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
