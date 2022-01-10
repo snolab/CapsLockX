@@ -1,3 +1,16 @@
+## [1.21.4](https://github.com/snolab/CapsLockX/compare/v1.21.3...v1.21.4) (2022-01-10)
+
+
+### Bug Fixes
+
+* arrow speed up ([09ece0b](https://github.com/snolab/CapsLockX/commit/09ece0bdcddd52c20c0abb0fce3fbd06ffede89f))
+* enhance switch to desktop by hotkey for win11 ([c7f47ae](https://github.com/snolab/CapsLockX/commit/c7f47aeff3ffbdd03267c3ed09ce53ecc035ea3d))
+* format ([a907ad0](https://github.com/snolab/CapsLockX/commit/a907ad0f6ad67c7b6f251d4243e832c3997e7f68))
+* OneNote2016_Win11_Detect ([79413be](https://github.com/snolab/CapsLockX/commit/79413be776be87ff0420895628ef599bb693698c))
+* SwitchToDesktopByHotkey enhanced for win11 ([0e33d25](https://github.com/snolab/CapsLockX/commit/0e33d25db5258828f79e6cfcaf263af9999a263f))
+
+
+
 ## [1.21.3](https://github.com/snolab/CapsLockX/compare/v1.21.2...v1.21.3) (2022-01-06)
 
 
