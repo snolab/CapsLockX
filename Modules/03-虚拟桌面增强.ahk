@@ -237,18 +237,20 @@ SwitchToDesktop(idx)
 SwitchToDesktopByHotkey(idx)
 {
     static lastIdx := ""
-    if (!lastIdx || idx === 1){
-        SendInput ^#{Left 10}
+    if (!lastIdx || idx == 1){    
+        Loop 10 {
+            SendEvent ^#{Left}
+        }
         lastIdx := 1
     }
     offset := idx - lastIdx
     offsetRight := max(offset, 0)
     offsetLeft := max(-offset, 0)
     Loop %offsetRight% {
-        SendInput ^#{Right}
+        SendEvent ^#{Right}
     }
     Loop %offsetLeft% {
-        SendInput ^#{Left}
+        SendEvent ^#{Left}
     }
     lastIdx := idx
 }
