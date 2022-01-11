@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.4</version>
+    <version>1.21.5</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,20 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.21.3](https://github.com/snolab/CapsLockX/compare/v1.21.2...v1.21.3) (2022-01-06)
+    <releaseNotes><![CDATA[## [1.21.4](https://github.com/snolab/CapsLockX/compare/v1.21.3...v1.21.4) (2022-01-10)
+
+
+### Bug Fixes
+
+* arrow speed up ([09ece0b](https://github.com/snolab/CapsLockX/commit/09ece0bdcddd52c20c0abb0fce3fbd06ffede89f))
+* enhance switch to desktop by hotkey for win11 ([c7f47ae](https://github.com/snolab/CapsLockX/commit/c7f47aeff3ffbdd03267c3ed09ce53ecc035ea3d))
+* format ([a907ad0](https://github.com/snolab/CapsLockX/commit/a907ad0f6ad67c7b6f251d4243e832c3997e7f68))
+* OneNote2016_Win11_Detect ([79413be](https://github.com/snolab/CapsLockX/commit/79413be776be87ff0420895628ef599bb693698c))
+* SwitchToDesktopByHotkey enhanced for win11 ([0e33d25](https://github.com/snolab/CapsLockX/commit/0e33d25db5258828f79e6cfcaf263af9999a263f))
+
+
+
+## [1.21.3](https://github.com/snolab/CapsLockX/compare/v1.21.2...v1.21.3) (2022-01-06)
 
 
 ### Bug Fixes
@@ -98,23 +111,6 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 * QuickTips ([f5985c7](https://github.com/snolab/CapsLockX/commit/f5985c7d62724ea100c2f1f55d83253cb62f2199))
 
 
-
-## [1.21.2](https://github.com/snolab/CapsLockX/compare/v1.21.1...v1.21.2) (2021-11-24)
-
-
-### Bug Fixes
-
-* fix LICENCE.txt duplicate ([c58ac38](https://github.com/snolab/CapsLockX/commit/c58ac387316b649d61b73b71b154298bdb9ae35f))
-*  ([c27649b](https://github.com/snolab/CapsLockX/commit/c27649b0673ab955664bf6e22c99c80f02c7e068))
-*  ([83f578e](https://github.com/snolab/CapsLockX/commit/83f578e4d8322ab81213e55979ea19919bea3fce))
-*  ([91ee1df](https://github.com/snolab/CapsLockX/commit/91ee1dfc83f882de3699c0f5a1eba53348e96cc6))
-
-
-
-## [1.21.1](https://github.com/snolab/CapsLockX/compare/v1.21.0...v1.21.1) (2021-10-31)
-
-
-### Bug Fixes
 ]]></releaseNotes>
     
     <dependencies></dependencies>
