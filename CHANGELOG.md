@@ -1,3 +1,12 @@
+## [1.21.5](https://github.com/snolab/CapsLockX/compare/v1.21.4...v1.21.5) (2022-01-11)
+
+
+### Bug Fixes
+
+* choco-pack ([46f079a](https://github.com/snolab/CapsLockX/commit/46f079a1bef0665a8aa014201a95b7ac2122b4fd))
+
+
+
 ## [1.21.4](https://github.com/snolab/CapsLockX/compare/v1.21.3...v1.21.4) (2022-01-10)
 
 
