@@ -91,7 +91,19 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
-
+ScrollMouse(dx, dy){
+    if (TMouse_SendInputAPI) {
+        SendInput_ScrollMouse(dx, dy)
+    } else {
+        PostMessage_ScrollMouse(dx, dy)
+    }
+}
+PostMessage_ScrollMouse(dx, dy){
+    WM_MOUSEWHEEL := 0x020A
+    WM_MOUSEWHEELH := 0x020E
+    _:= dy && PostMessageForScroll(WM_MOUSEWHEEL, -dy)
+    _:= dx && PostMessageForScroll(WM_MOUSEWHEELH, dx)
+}
 SendInput_ScrollMouse(dx, dy)
 {
     ; get cursor pos
@@ -102,24 +114,26 @@ SendInput_ScrollMouse(dx, dy)
     ; scroll by system input message
     MOUSEEVENTF_WHEEL := 0x0800
     MOUSEEVENTF_HWHEEL := 0x1000
-    if (dx) {
-        size := A_PtrSize+4*4+A_PtrSize
-        VarSetCapacity(mi, size, 0)
-        NumPut(x, mi, A_PtrSize, "Int")         ; LONG dx
-        NumPut(y, mi, A_PtrSize+4, "Int")       ; LONG dy
-        NumPut(dx, mi, A_PtrSize+4+4, "Int")    ; DWORD mouseData
-        NumPut(MOUSEEVENTF_HWHEEL, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags
-        DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
-    }
     if (dy) {
         size := A_PtrSize+4*4+A_PtrSize*2
         VarSetCapacity(mi, size, 0)
         NumPut(x, mi, A_PtrSize, "Int")   ; LONG dx
         NumPut(y, mi, A_PtrSize+4, "Int")  ; LONG dy
-        NumPut(dy, mi, A_PtrSize+4+4, "Int")  ; DWORD mouseData
+        NumPut(-dy, mi, A_PtrSize+4+4, "Int")  ; DWORD mouseData
         NumPut(MOUSEEVENTF_WHEEL, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags
         DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
         ; perf_timing()
+    }
+    if (dx) {
+        ; todo fix sendinput
+        PostMessage_ScrollMouse(dx, 0)
+        ; size := A_PtrSize+4*4+A_PtrSize
+        ; VarSetCapacity(mi, size, 0)
+        ; NumPut(x, mi, A_PtrSize, "Int")         ; LONG dx
+        ; NumPut(y, mi, A_PtrSize+4, "Int")       ; LONG dy
+        ; NumPut(dx * 120, mi, A_PtrSize+4+4, "Int")    ; DWORD mouseData
+        ; NumPut(MOUSEEVENTF_HWHEEL, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags
+        ; DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
     }
 }
 
@@ -201,10 +215,7 @@ SendInput_MouseMove(x, y)
     if (状态 != "移动") {
         return
     }
-    WM_MOUSEWHEEL := 0x020A
-    WM_MOUSEWHEELH := 0x020E
-    _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
-    _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
+    ScrollMouse(dx, dy)
 }
 滚轮自动控制(dx, dy, 状态){
     if (状态 != "移动") {
@@ -227,7 +238,7 @@ SendInput_MouseMove(x, y)
         KeyWait f
         SendEvent {Blind}{MButton Up}
         ; 关闭滚轮自动
-        if(滚轮自动.横速 || 滚轮自动.纵速) {
+        if (滚轮自动.横速 || 滚轮自动.纵速) {
             滚轮自动.止动()
             滚轮自动控制(0, 0, "止动")
         }
@@ -236,16 +247,9 @@ SendInput_MouseMove(x, y)
     if (状态 != "移动") {
         return
     }
-    WM_MOUSEWHEEL := 0x020A
-    WM_MOUSEWHEELH := 0x020E
-    if (!TMouse_SendIputAPI) {
-        SendInput_ScrollMouse(dx, -dy)
-    } else {
-        _:= dy &&  滚轮消息发送(WM_MOUSEWHEEL, -dy)
-        _:= dx &&  滚轮消息发送(WM_MOUSEWHEELH, dx)
-    }
+    ScrollMouse(dx, dy)
 }
-滚轮消息发送(msg, zDelta){
+PostMessageForScroll(msg, zDelta){
     ; 目前还不支持UWP
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
