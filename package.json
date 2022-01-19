@@ -12,7 +12,7 @@
         "version": "npm run version:sync && npm run version:changelog",
         "version:sync": "node DevTools/versioning.node.mjs && git add .",
         "version:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
-        "postversion": "git push --follow-tag || git push --follow-tag",
+        "postversion": "git push --follow-tag --all",
         "prepare": "husky install",
         "release": "standard-version"
     },
