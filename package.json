@@ -13,7 +13,8 @@
         "version:sync": "node DevTools/versioning.node.mjs && git add .",
         "version:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
         "postversion": "git push --follow-tag || git push --follow-tag",
-        "prepare": "husky install"
+        "prepare": "husky install",
+        "release": "standard-version"
     },
     "repository": {
         "type": "git",
@@ -37,6 +38,7 @@
         "husky": "^7.0.0",
         "lodash": "^4.17.21",
         "pinyin": "^2.10.2",
-        "sno-utils": "^0.1.13"
+        "sno-utils": "^0.1.13",
+        "standard-version": "^9.3.2"
     }
 }
