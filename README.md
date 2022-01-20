@@ -110,7 +110,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 模拟鼠标插件（ WASD QERF ）
 
-> 一直以来，我总是以键盘控自居，应该是在从前做模型的时候伤到了手指关节开始，成为键盘重度用户的。各种键盘加速工具，主动去记住各种快捷键，力求少用鼠标，甚至去学习了vim和emacs。但是，很多时候，鼠标是无可替代的，尤其是在图形界面大行其道时候。
+> 一直以来，我总是以键盘控自居，应该是在从前做模型的时候伤到了手指关节开始，成为键盘重度用户的。各种键盘加速工具，主动去记住各种快捷键，力求少用鼠标，甚至去学习了 vim 和 emacs。但是，很多时候，鼠标是无可替代的，尤其是在图形界面大行其道时候。
 
 —— 以上是来自 [SimClick 模拟点击](https://github.com/rywiki/simclick) 作者的一段话，这是一款以网格细分方式模拟鼠标的作品，可以与本项目互补
 
@@ -128,17 +128,18 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 | 作用于 | 按键                                  | 说明                      |
 | ------ | ------------------------------------- | ------------------------- |
-| 全局   | `CapsLockX + w a s d                ` | 鼠标移动（上下左右）      |
-| 全局   | `CapsLockX + r f                    ` | 垂直滚轮（上下）          |
-| 全局   | `CapsLockX + Shift + r f            ` | 水平滚轮（左右）          |
-| 全局   | `CapsLockX + Ctrl + Alt + r f       ` | 垂直滚轮自动滚动（上 下） |
+| 全局   | `CapsLockX + w a s d`                 | 鼠标移动（上下左右）      |
+| 全局   | `CapsLockX + r f`                     | 垂直滚轮（上下）          |
+| 全局   | `CapsLockX + Shift + r f`             | 水平滚轮（左右）          |
+| 全局   | `CapsLockX + Ctrl + Alt + r f`        | 垂直滚轮自动滚动（上 下） |
 | 全局   | `CapsLockX + Ctrl + Alt + Shift+ r f` | 水平滚轮自动滚动（左 右） |
-| 全局   | `CapsLockX + rf                     ` | rf 同时按相当于鼠标中键   |
-| 全局   | `CapsLockX + e                      ` | 鼠标左键                  |
-| 全局   | `CapsLockX + q                      ` | 鼠标右键                  |
+| 全局   | `CapsLockX + rf`                      | rf 同时按相当于鼠标中键   |
+| 全局   | `CapsLockX + e`                       | 鼠标左键                  |
+| 全局   | `CapsLockX + q`                       | 鼠标右键                  |
 
 #### 操作细节
-快速连按AD步进
+
+快速连按 AD 步进
 
 <!-- 模块文件名：01.2-插件-编辑增强.ahk-->
 
@@ -153,21 +154,21 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 作用域     | Edit 模块             | 说明                             |
 | ---------- | --------------------- | -------------------------------- |
 | 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
-| 全局(基本) | `CapsLockX + y o    ` | Home End                         |
-| 全局(基本) | `CapsLockX + u i    ` | PageUp PageDown                  |
-| 全局(基本) | `CapsLockX + g      ` | 回车                             |
-| 全局(进阶) | `CapsLockX + t      ` | Delete                           |
-| 全局(进阶) | `CapsLockX + hl     ` | hl 一起按选择当前词              |
-| 全局(进阶) | `CapsLockX + kj     ` | kj 一起按选择当前行              |
-| 全局(进阶) | `CapsLockX + h + t  ` | 移位后删：大部分情况可代替退格键 |
+| 全局(基本) | `CapsLockX + y o`     | Home End                         |
+| 全局(基本) | `CapsLockX + u i`     | PageUp PageDown                  |
+| 全局(基本) | `CapsLockX + g`       | 回车                             |
+| 全局(进阶) | `CapsLockX + t`       | Delete                           |
+| 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
+| 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
+| 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
 
-<!-- 模块文件名：03.1-插件-窗口增强.ahk-->
+<!-- 模块文件名：03.1-WindowManager.ahk-->
 
 ### 窗口增强插件 (CLX + 1234567890 ZXCV)
 
 #### 功能简述
 
-用好 Win 10 自带的 10 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、（注：任务栏和AltTab相关功能暂不兼容 Win11，窗口排列功能正常。）
+用好 Win 10 自带的 10 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、（注：任务栏和 AltTab 相关功能暂不兼容 Win11，窗口排列功能正常。）
 
 1. 窗口切换：`CapsLockX + [Shift] + Z`
 2. 窗口关闭：`CapsLockX + [Shift] + X`
@@ -186,45 +187,46 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
-| 作用域       | 窗口增强模块                           | 说明                                       |
-| ------------ | -------------------------------------- | ------------------------------------------ |
-| Alt+Tab 界面 | ` Q E                                ` | 左右切换多桌面                             |
-| Alt+Tab 界面 | ` W A S D                            ` | 上下左右切换窗口选择                       |
-| Alt+Tab 界面 | ` X C                                ` | 关闭选择的窗口（目前 X 和 C 没有区别）     |
-| Win+Tab 视图 | ` Alt + W A S D                      ` | 切换窗口选择                               |
-| 全局         | ` Win + [Shift] + b                  ` | 定位到托盘或任务栏任务                     |
-| 全局         | ` Win + Shift + hjkl                 ` | 在窗口之间按方向切换焦点                   |
-| 任务栏       | ` Ctrl + W 或 Delete                 ` | 在托盘图标或任务栏任务上，选择退出按钮     |
-| 全局         | ` CapsLockX + 1 2 ... 9 0            ` | 切换到第 1 .. 12 个桌面                    |
-| 全局         | ` CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
-| 全局         | ` CapsLockX + Alt + Backspace        ` | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局         | ` CapsLockX + C                      ` | 快速排列当前桌面的窗口                     |
-| 全局         | ` CapsLockX + Ctrl + C               ` | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局         | ` CapsLockX + Shift + C              ` | 快速堆叠当前桌面的窗口                     |
-| 全局         | ` CapsLockX + Shift + Ctrl + C       ` | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
-| 全局         | ` CapsLockX + Shift + [ ]            ` | 把当前窗口移到上一个/下一个桌面            |
-| 全局         | ` CapsLockX + Z                      ` | 循环切到最近使用的窗口                     |
-| 全局         | ` CapsLockX + Shift + Z              ` | 循环切到最不近使用的窗口                   |
-| 全局         | ` CapsLockX + X                      ` | 关掉当前标签页 Ctrl+W                      |
-| 全局         | ` CapsLockX + Shift + X              ` | 关掉当前窗口 Alt+F4                        |
-| 全局         | ` CapsLockX + V                      ` | 让窗口透明                                 |
-| 全局         | ` CapsLockX + Shift + V              ` | 让窗口保持透明（并置顶）                   |
-| 任意窗口     | ` 双击左边 Shift+Ctrl+Alt            ` | 后置当前窗口， * 见下方注                  |
+| 作用域       | 窗口增强模块                          | 说明                                       |
+| ------------ | ------------------------------------- | ------------------------------------------ |
+| Alt+Tab 界面 | `Q E`                                 | 左右切换多桌面                             |
+| Alt+Tab 界面 | `W A S D`                             | 上下左右切换窗口选择                       |
+| Alt+Tab 界面 | `X C`                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
+| Win+Tab 视图 | `Alt + W A S D`                       | 切换窗口选择                               |
+| 全局         | `Win + [Shift] + b`                   | 定位到托盘或任务栏任务                     |
+| 全局         | `Win + Shift + hjkl`                  | 在窗口之间按方向切换焦点                   |
+| 任务栏       | `Ctrl + W 或 Delete`                  | 在托盘图标或任务栏任务上，选择退出按钮     |
+| 全局         | `CapsLockX + 1 2 ... 9 0`             | 切换到第 1 .. 12 个桌面                    |
+| 全局         | `CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
+| 全局         | `CapsLockX + Alt + Backspace`         | 删除当前桌面（会把所有窗口移到上一个桌面） |
+| 全局         | `CapsLockX + C`                       | 快速排列当前桌面的窗口                     |
+| 全局         | `CapsLockX + Ctrl + C`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
+| 全局         | `CapsLockX + Shift + C`               | 快速堆叠当前桌面的窗口                     |
+| 全局         | `CapsLockX + Shift + Ctrl + C`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
+| 全局         | `CapsLockX + Shift + [ ]`             | 把当前窗口移到上一个/下一个桌面            |
+| 全局         | `CapsLockX + Z`                       | 循环切到最近使用的窗口                     |
+| 全局         | `CapsLockX + Shift + Z`               | 循环切到最不近使用的窗口                   |
+| 全局         | `CapsLockX + X`                       | 关掉当前标签页 Ctrl+W                      |
+| 全局         | `CapsLockX + Shift + X`               | 关掉当前窗口 Alt+F4                        |
+| 全局         | `CapsLockX + V`                       | 让窗口透明                                 |
+| 全局         | `CapsLockX + Shift + V`               | 让窗口保持透明（并置顶）                   |
+| 任意窗口     | `双击左边 Shift+Ctrl+Alt`             | 后置当前窗口， \* 见下方注                 |
 
-*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
+\*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
 例如 mstsc.exe、TeamViewer、VirtualBox、HyperV、VMWare 等远程桌面或虚拟机程序，配合 CapsLockX + Shift + V 透明置顶功能，让你在 Windows 的界面上同时使用 Linux 界面或 MacOS 界面再也不是难题。
-  
-此处借用 [@yangbin9317 的评论]( https://v2ex.com/t/772052#r_10458792 )
+
+此处借用 [@yangbin9317 的评论](https://v2ex.com/t/772052#r_10458792)
+
 > 以 CapsLock 为抓手,打通底层逻辑,拉齐 Windows 和 Linux WM,解决了 Windows 难用的痛点
 
 <!-- 模块文件名：Eval-Javascript.ahk-->
 
 ### JavaScript 计算 (建议安装 NodeJS )
 
-| 作用于 | 按键          | 效果                                   |
-| ------ | ------------- | -------------------------------------- |
-| 全局   | CapsLockX + - | 计算当前选区 JavaScript 表达式，并替换 |
-| 全局   | CapsLockX + = | 计算当前选区 JavaScript 表达式，并替换 |
+| 作用于 | 按键            | 效果                                   |
+| ------ | --------------- | -------------------------------------- |
+| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
+| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
 
 <!-- 模块文件名：LaptopKeyboardFix.ahk-->
 

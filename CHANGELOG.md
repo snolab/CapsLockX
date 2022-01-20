@@ -1,3 +1,17 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.21.6](https://github.com/snolab/CapsLockX/compare/v1.21.5...v1.21.6) (2022-01-20)
+
+
+### Bug Fixes
+
+* ignore pacakge-lock ([b97028d](https://github.com/snolab/CapsLockX/commit/b97028d5ca1284f45e3eab1c54d47c0cf44bd6a5))
+* todo fix sendinput ([e96b4e8](https://github.com/snolab/CapsLockX/commit/e96b4e858982344a7394d22b617887ba0c73a52b))
+* virtual desktop with win11 ([bffab64](https://github.com/snolab/CapsLockX/commit/bffab64aa8fa74811276dbbf49c43869b591d44c))
+* virtual desktop with win11 ([fb7e0f7](https://github.com/snolab/CapsLockX/commit/fb7e0f76d8b0d22c9666d32b7db68202488760f6))
+
 ## [1.21.5](https://github.com/snolab/CapsLockX/compare/v1.21.4...v1.21.5) (2022-01-11)
 
 
