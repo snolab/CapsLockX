@@ -6,12 +6,8 @@
         "start": "CapsLockX.exe",
         "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
         "build": "npm upgrade && npm run test",
-        "build+patch": "npm run build && npm version patch",
-        "build+minor": "npm run build && npm version minor",
-        "build+major": "npm run build && npm version major",
         "version": "npm run version:sync && npm run version:changelog",
         "version:sync": "node DevTools/versioning.node.mjs && git add .",
-        "version:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
         "postversion": "git push --follow-tag --all",
         "prepare": "husky install",
         "release": "standard-version"
