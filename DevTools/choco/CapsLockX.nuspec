@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.8</version>
+    <version>1.21.10</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -65,6 +65,8 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.21.9](https://github.com/snolab/CapsLockX/compare/v1.21.8...v1.21.9) (2022-01-20)
+
 ### [1.21.8](https://github.com/snolab/CapsLockX/compare/v1.21.7...v1.21.8) (2022-01-20)
 
 ### [1.21.7](https://github.com/snolab/CapsLockX/compare/v1.21.6...v1.21.7) (2022-01-20)
@@ -119,8 +121,7 @@ All notable changes to this project will be documented in this file. See [standa
 * hide updating msg ([cc22943](https://github.com/snolab/CapsLockX/commit/cc22943ea0a6c6e6dc6d9525a8d0debbddcae3f3))
 * improve slower mouse with shift keys ([2bfb46a](https://github.com/snolab/CapsLockX/commit/2bfb46a529e9131e760e45e30499f7389dc6ac88))
 * lights updateing ([6eb16c2](https://github.com/snolab/CapsLockX/commit/6eb16c2c926f8bbc6209bb7805c45a0fd441d4b7))
-* lights updating ([52a12a0](https://github.com/snolab/CapsLockX/commit/52a12a03575a9194bf6143ef6240c281ae620aff))
-* LKF ([77607b9](https://github.com/snolab/CapsLockX/commit/77607b9b14ec9dbbb79876b538a7f95eff66b7a6))]]></releaseNotes>
+* lights updating ([52a12a0](https://github.com/snolab/CapsLockX/commit/52a12a03575a9194bf6143ef6240c281ae620aff))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
