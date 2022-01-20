@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'fs/promises'
 const 文本读 = (path) => readFile(path, 'utf-8') || ''
 const { version } = JSON.parse(await 文本读('package.json'))
-
+console.log('get version', version)
 // 更新版本号txt
 const txt版本号路径 = './Core/version.txt'
 const txt版本号 = await 文本读(txt版本号路径)
@@ -21,4 +21,4 @@ const 新版本包文 = choco包文
 console.assert(choco包文 !== 新版本包文, `警告：Choco包文版本没有变化，当前版本为${version}`)
 await writeFile(choco包文件路径, 新版本包文)
 
-console.log('版本号更新完成')
+console.log('chore(version): bump')

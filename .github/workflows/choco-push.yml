@@ -36,10 +36,10 @@ jobs:
                   name: CapsLockX.sha256
                   path: ./CapsLockX.sha256
             # 上传 nupkg 用来给 chocolatey push
-            - uses: actions/upload-artifact@v2
-              with:
-                name: CapsLockX.nupkg
-                path: ./CapsLockX.nupkg
+            # - uses: actions/upload-artifact@v2
+            #   with:
+            #     name: CapsLockX.nupkg
+            #     path: ./CapsLockX.nupkg
             # 发布
             - run: choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
             - run: choco push --source https://push.chocolatey.org/
@@ -54,9 +54,9 @@ jobs:
             - uses: actions/download-artifact@v2
               with:
                   name: CapsLockX.sha256
-            - uses: actions/download-artifact@v2
-              with:
-                  name: CapsLockX.nupkg
+            # - uses: actions/download-artifact@v2
+            #   with:
+            #       name: CapsLockX.nupkg
             # 压缩包和 sha256 一起扔附件
             - uses: svenstaro/upload-release-action@v2
               with:
@@ -68,8 +68,8 @@ jobs:
                   repo_token: ${{ secrets.GITHUB_TOKEN }}
                   file: CapsLockX.sha256
                   tag: ${{ github.ref }}
-            - uses: svenstaro/upload-release-action@v2
-              with:
-                  repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  file: CapsLockX.nupkg
-                  tag: ${{ github.ref }}
+            # - uses: svenstaro/upload-release-action@v2
+            #   with:
+            #       repo_token: ${{ secrets.GITHUB_TOKEN }}
+            #       file: CapsLockX.nupkg
+            #       tag: ${{ github.ref }}
