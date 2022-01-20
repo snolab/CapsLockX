@@ -2,42 +2,42 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.21.16](https://github.com/snolab/CapsLockX/compare/v1.21.15...v1.21.16) (2022-01-20)
+## [1.21.16](https://github.com/snolab/CapsLockX/compare/v1.21.15...v1.21.16) (2022-01-20)
 
-### [1.21.15](https://github.com/snolab/CapsLockX/compare/v1.21.14...v1.21.15) (2022-01-20)
+## [1.21.15](https://github.com/snolab/CapsLockX/compare/v1.21.14...v1.21.15) (2022-01-20)
 
 
 ### Bug Fixes
 
 * 附件增加  .nupkg ([628f808](https://github.com/snolab/CapsLockX/commit/628f8080551c2f06a16097c6279f6ea38bb88df0))
 
-### [1.21.14](https://github.com/snolab/CapsLockX/compare/v1.21.13...v1.21.14) (2022-01-20)
+## [1.21.14](https://github.com/snolab/CapsLockX/compare/v1.21.13...v1.21.14) (2022-01-20)
 
 
 ### Bug Fixes
 
 * git add versioning files ([63f2ed7](https://github.com/snolab/CapsLockX/commit/63f2ed755a6b021f03a55963aec3e710884d1f8a))
 
-### [1.21.13](https://github.com/snolab/CapsLockX/compare/v1.21.12...v1.21.13) (2022-01-20)
+## [1.21.13](https://github.com/snolab/CapsLockX/compare/v1.21.12...v1.21.13) (2022-01-20)
 
 
 ### Bug Fixes
 
 * versioning ([94a4fe5](https://github.com/snolab/CapsLockX/commit/94a4fe5dbc00d4c64ce16faad603170d54dc5878))
 
-### [1.21.12](https://github.com/snolab/CapsLockX/compare/v1.21.11...v1.21.12) (2022-01-20)
+## [1.21.12](https://github.com/snolab/CapsLockX/compare/v1.21.11...v1.21.12) (2022-01-20)
 
-### [1.21.11](https://github.com/snolab/CapsLockX/compare/v1.21.10...v1.21.11) (2022-01-20)
+## [1.21.11](https://github.com/snolab/CapsLockX/compare/v1.21.10...v1.21.11) (2022-01-20)
 
-### [1.21.10](https://github.com/snolab/CapsLockX/compare/v1.21.9...v1.21.10) (2022-01-20)
+## [1.21.10](https://github.com/snolab/CapsLockX/compare/v1.21.9...v1.21.10) (2022-01-20)
 
-### [1.21.9](https://github.com/snolab/CapsLockX/compare/v1.21.8...v1.21.9) (2022-01-20)
+## [1.21.9](https://github.com/snolab/CapsLockX/compare/v1.21.8...v1.21.9) (2022-01-20)
 
-### [1.21.8](https://github.com/snolab/CapsLockX/compare/v1.21.7...v1.21.8) (2022-01-20)
+## [1.21.8](https://github.com/snolab/CapsLockX/compare/v1.21.7...v1.21.8) (2022-01-20)
 
-### [1.21.7](https://github.com/snolab/CapsLockX/compare/v1.21.6...v1.21.7) (2022-01-20)
+## [1.21.7](https://github.com/snolab/CapsLockX/compare/v1.21.6...v1.21.7) (2022-01-20)
 
-### [1.21.6](https://github.com/snolab/CapsLockX/compare/v1.21.5...v1.21.6) (2022-01-20)
+## [1.21.6](https://github.com/snolab/CapsLockX/compare/v1.21.5...v1.21.6) (2022-01-20)
 
 
 ### Bug Fixes
