@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.14</version>
+    <version>1.21.16</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -65,6 +65,22 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.21.16](https://github.com/snolab/CapsLockX/compare/v1.21.15...v1.21.16) (2022-01-20)
+
+### [1.21.15](https://github.com/snolab/CapsLockX/compare/v1.21.14...v1.21.15) (2022-01-20)
+
+
+### Bug Fixes
+
+*   .nupkg ([628f808](https://github.com/snolab/CapsLockX/commit/628f8080551c2f06a16097c6279f6ea38bb88df0))
+
+### [1.21.14](https://github.com/snolab/CapsLockX/compare/v1.21.13...v1.21.14) (2022-01-20)
+
+
+### Bug Fixes
+
+* git add versioning files ([63f2ed7](https://github.com/snolab/CapsLockX/commit/63f2ed755a6b021f03a55963aec3e710884d1f8a))
+
 ### [1.21.13](https://github.com/snolab/CapsLockX/compare/v1.21.12...v1.21.13) (2022-01-20)
 
 
@@ -126,11 +142,7 @@ All notable changes to this project will be documented in this file. See [standa
 * config reload pass ([f6ea88c](https://github.com/snolab/CapsLockX/commit/f6ea88c10aea568632dafd9b171846ac33ef7310))
 * config ui fix ([5a24293](https://github.com/snolab/CapsLockX/commit/5a24293c194b405c63f1296520e4091cccc3176f))
 * delay shorten ([08b2add](https://github.com/snolab/CapsLockX/commit/08b2addae7a360a2b8b48a1dbde9f9bb9da5266d))
-* dont save user script ([f61702c](https://github.com/snolab/CapsLockX/commit/f61702c9419549b4df2b86e9bbe7604c630d9197))
-* fix config ahk path ([011fb71](https://github.com/snolab/CapsLockX/commit/011fb7194005770bbd836058d5a822610a1f9c98))
-* fix modules loader ([4355668](https://github.com/snolab/CapsLockX/commit/435566877ab5fc8d543c19df4e9ba3db66bec913))
-* fix npx capslockx could not find capslockx-config.ahk ([b27c0d6](https://github.com/snolab/CapsLockX/commit/b27c0d617276b228d9bc2641a079abd29aaaa0ed))
-* github aactions ([321e2a6](https://github.com/snolab/CapsLockX/commit/321e2a62bd508923cdab39ed0297c7cb8e9aad88))]]></releaseNotes>
+* dont save user script ([f61702c](https://github.com/snolab/CapsLockX/commit/f61702c9419549b4df2b86e9bbe7604c630d9197))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
