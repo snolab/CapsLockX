@@ -21,4 +21,4 @@ const 新版本包文 = choco包文
 console.assert(choco包文 !== 新版本包文, `警告：Choco包文版本没有变化，当前版本为${version}`)
 await writeFile(choco包文件路径, 新版本包文)
 
-// done
+console.log('版本号更新完成')
