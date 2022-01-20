@@ -20,3 +20,5 @@ const 新版本包文 = choco包文
     .replace(/(<releaseNotes>)([\s\S]*?)(<\/releaseNotes>)/, (_, $1, $2, $3) => $1 + CHANGELOG + $3)
 console.assert(choco包文 !== 新版本包文, `警告：Choco包文版本没有变化，当前版本为${version}`)
 await writeFile(choco包文件路径, 新版本包文)
+
+// done

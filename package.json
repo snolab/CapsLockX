@@ -12,7 +12,7 @@
     },
     "standard-version": {
         "scripts": {
-            "postbump": "node DevTools/versioning.node.mjs"
+            "prechangelog": "node DevTools/versioning.node.mjs"
         }
     },
     "repository": {
