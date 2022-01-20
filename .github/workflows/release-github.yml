@@ -21,7 +21,7 @@ jobs:
             # pack
             - run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
             - run: mkdir -p ./CapsLockX-${{ env.RELEASE_VERSION }}
-            - run: cp -r docs Core Data Modules Tools CapsLockX* LICENSE.txt *.md ./CapsLockX-${{ env.RELEASE_VERSION }}
+            - run: cp -r docs Core Data Modules Tools *.exe *.ahk *.txt *.md ./CapsLockX-${{ env.RELEASE_VERSION }}
             - run: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip ./CapsLockX-${{ env.RELEASE_VERSION }} -UN=UTF8
             # upload
             - uses: svenstaro/upload-release-action@v2

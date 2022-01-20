@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.13</version>
+    <version>1.21.14</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -65,6 +65,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.21.13](https://github.com/snolab/CapsLockX/compare/v1.21.12...v1.21.13) (2022-01-20)
+
+
+### Bug Fixes
+
+* versioning ([94a4fe5](https://github.com/snolab/CapsLockX/commit/94a4fe5dbc00d4c64ce16faad603170d54dc5878))
+
 ### [1.21.12](https://github.com/snolab/CapsLockX/compare/v1.21.11...v1.21.12) (2022-01-20)
 
 ### [1.21.11](https://github.com/snolab/CapsLockX/compare/v1.21.10...v1.21.11) (2022-01-20)
@@ -123,9 +130,7 @@ All notable changes to this project will be documented in this file. See [standa
 * fix config ahk path ([011fb71](https://github.com/snolab/CapsLockX/commit/011fb7194005770bbd836058d5a822610a1f9c98))
 * fix modules loader ([4355668](https://github.com/snolab/CapsLockX/commit/435566877ab5fc8d543c19df4e9ba3db66bec913))
 * fix npx capslockx could not find capslockx-config.ahk ([b27c0d6](https://github.com/snolab/CapsLockX/commit/b27c0d617276b228d9bc2641a079abd29aaaa0ed))
-* github aactions ([321e2a6](https://github.com/snolab/CapsLockX/commit/321e2a62bd508923cdab39ed0297c7cb8e9aad88))
-* hide updating msg ([cc22943](https://github.com/snolab/CapsLockX/commit/cc22943ea0a6c6e6dc6d9525a8d0debbddcae3f3))
-* improve slower mouse with shift keys ([2bfb46a](https://github.com/snolab/CapsLockX/commit/2bfb46a529e9131e760e45e30499f7389dc6ac88))]]></releaseNotes>
+* github aactions ([321e2a6](https://github.com/snolab/CapsLockX/commit/321e2a62bd508923cdab39ed0297c7cb8e9aad88))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
