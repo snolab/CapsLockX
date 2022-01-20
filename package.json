@@ -7,12 +7,12 @@
         "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
         "build": "npm upgrade && npm run test",
         "prepare": "husky install",
-        "release": "standard-version --no-verify",
+        "release": "standard-version --no-verify --commit-all",
         "postrelease": "git push --follow-tag --all"
     },
     "standard-version": {
         "scripts": {
-            "precommit": "node DevTools/versioning.node.mjs && git add ."
+            "precommit": "node DevTools/versioning.node.mjs"
         }
     },
     "repository": {
