@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.19</version>
+    <version>1.21.20</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -64,6 +64,8 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
     <releaseNotes><![CDATA[# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.21.20](https://github.com/snolab/CapsLockX/compare/v1.21.19...v1.21.20) (2022-01-20)
 
 ### [1.21.19](https://github.com/snolab/CapsLockX/compare/v1.21.17...v1.21.19) (2022-01-20)
 
@@ -144,8 +146,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * add version name ([01feb10](https://github.com/snolab/CapsLockX/commit/01feb10beb9004fc18e20e21f89b736b067a48bc))
-* CapsLockX_ ([09f9e1d](https://github.com/snolab/CapsLockX/commit/09f9e1da27af95985848c35814debddf582cca39))
-* config reload pass ([f6ea88c](https://github.com/snolab/CapsLockX/commit/f6ea88c10aea568632dafd9b171846ac33ef7310))]]></releaseNotes>
+* CapsLockX_ ([09f9e1d](https://github.com/snolab/CapsLockX/commit/09f9e1da27af95985848c35814debddf582cca39))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
