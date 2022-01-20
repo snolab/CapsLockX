@@ -1,42 +1,41 @@
 # ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
 on:
-  push:
-    tags:
-      - "v*"
+    push:
+        tags:
+            - "v*"
 name: github-release-into-gh-pages
 jobs:
-  github-release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: 14
-          registry-url: https://npm.pkg.github.com
-      # Github 源码发布
-      - run: npm i -g github-release-from-changelog
-      - run: github-release-from-changelog
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      # 获取版本号 [continuous integration - Get the current pushed tag in Github Actions - Stack Overflow]( https://stackoverflow.com/questions/58177786/get-the-current-pushed-tag-in-github-actions )
-      - run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      # 打包
-      - run: mkdir -p ./portable
-      - run: cp -r docs Core Data Modules Tools CapsLockX* LICENSE.txt *.md ./portable
-      - run: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip ./portable -UN=UTF8
-      # 扔附件
-      - uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: CapsLockX-${{ env.RELEASE_VERSION }}.zip
-          tag: ${{ github.ref }}
-      # 压缩包和 docs 一起同步到 gh-pages
-      - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
-      - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
-      - run: cp CHANGELOG.md docs/CHANGELOG.md
-      - run: cp Core/version.txt docs/version.txt
-      - uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          enable_jekyll: true
+    github-release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v2
+              with:
+                  node-version: 14
+                  registry-url: https://npm.pkg.github.com
+            # Github release with changelog
+            - run: npm i -g github-release-from-changelog
+            - run: github-release-from-changelog
+              env:
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+            # pack
+            - run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+            - run: mkdir -p ./portable
+            - run: cp -r docs Core Data Modules Tools CapsLockX* LICENSE.txt *.md ./portable
+            - run: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip ./portable -UN=UTF8
+            # upload
+            - uses: svenstaro/upload-release-action@v2
+              with:
+                  repo_token: ${{ secrets.GITHUB_TOKEN }}
+                  file: CapsLockX-${{ env.RELEASE_VERSION }}.zip
+                  tag: ${{ github.ref }}
+            # push to gh pages
+            - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-${{ env.RELEASE_VERSION }}.zip
+            - run: cp CapsLockX-${{ env.RELEASE_VERSION }}.zip docs/CapsLockX-latest.zip
+            - run: cp CHANGELOG.md docs/CHANGELOG.md
+            - run: cp Core/version.txt docs/version.txt
+            - uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./docs
+                  enable_jekyll: true
