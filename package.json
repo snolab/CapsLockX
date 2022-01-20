@@ -12,7 +12,7 @@
     },
     "standard-version": {
         "scripts": {
-            "precommit": "node DevTools/versioning.node.mjs"
+            "precommit": "node DevTools/versioning.node.mjs && git add . && git commit -m \"chore(version): bump\""
         }
     },
     "repository": {
