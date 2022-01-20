@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.5</version>
+    <version>1.21.7</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -61,7 +61,32 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
     ]]></description>
     <summary>Operate the computer like a hacker! Operate the computer like a **hacker**! CapsLockX allows you to easily operate the computer **efficient** without leaving the keyboard, just like the **hacker** in the movie. There are a lot of functions that you can understand at a glance and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to define. 像**黑客**一样操作电脑！CapsLockX 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来定义。</summary>
-    <releaseNotes><![CDATA[## [1.21.4](https://github.com/snolab/CapsLockX/compare/v1.21.3...v1.21.4) (2022-01-10)
+    <releaseNotes><![CDATA[# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.21.7](https://github.com/snolab/CapsLockX/compare/v1.21.6...v1.21.7) (2022-01-20)
+
+### [1.21.6](https://github.com/snolab/CapsLockX/compare/v1.21.5...v1.21.6) (2022-01-20)
+
+
+### Bug Fixes
+
+* ignore pacakge-lock ([b97028d](https://github.com/snolab/CapsLockX/commit/b97028d5ca1284f45e3eab1c54d47c0cf44bd6a5))
+* todo fix sendinput ([e96b4e8](https://github.com/snolab/CapsLockX/commit/e96b4e858982344a7394d22b617887ba0c73a52b))
+* virtual desktop with win11 ([bffab64](https://github.com/snolab/CapsLockX/commit/bffab64aa8fa74811276dbbf49c43869b591d44c))
+* virtual desktop with win11 ([fb7e0f7](https://github.com/snolab/CapsLockX/commit/fb7e0f76d8b0d22c9666d32b7db68202488760f6))
+
+## [1.21.5](https://github.com/snolab/CapsLockX/compare/v1.21.4...v1.21.5) (2022-01-11)
+
+
+### Bug Fixes
+
+* choco-pack ([46f079a](https://github.com/snolab/CapsLockX/commit/46f079a1bef0665a8aa014201a95b7ac2122b4fd))
+
+
+
+## [1.21.4](https://github.com/snolab/CapsLockX/compare/v1.21.3...v1.21.4) (2022-01-10)
 
 
 ### Bug Fixes
@@ -94,24 +119,7 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 * lights updateing ([6eb16c2](https://github.com/snolab/CapsLockX/commit/6eb16c2c926f8bbc6209bb7805c45a0fd441d4b7))
 * lights updating ([52a12a0](https://github.com/snolab/CapsLockX/commit/52a12a03575a9194bf6143ef6240c281ae620aff))
 * LKF ([77607b9](https://github.com/snolab/CapsLockX/commit/77607b9b14ec9dbbb79876b538a7f95eff66b7a6))
-* make sure startup ([e4d0125](https://github.com/snolab/CapsLockX/commit/e4d012561074e166ccb1faa2388521c22c7c8494))
-* quick input ([4fc85fb](https://github.com/snolab/CapsLockX/commit/4fc85fb1df096d0a626054b69cf4bbbd06d2e9ad))
-* win11 ([df3df37](https://github.com/snolab/CapsLockX/commit/df3df3783b9bc38fdce2793c67bc77791e6d5cf2))
-* Win ([ca1adb6](https://github.com/snolab/CapsLockX/commit/ca1adb6f8ca0fae9cdf65813101065ec05721781))
-*   ([52c90db](https://github.com/snolab/CapsLockX/commit/52c90db28c8da9eca2ffd20083432a3a984b191e))
-*  ([3fbee99](https://github.com/snolab/CapsLockX/commit/3fbee99abff4a2cddcaf11b68d9599c64ffb0535))
-*  ([f2d90c9](https://github.com/snolab/CapsLockX/commit/f2d90c9f778243222f7f5c70c63a7a3ef9330770))
-* ， ([7c6afcf](https://github.com/snolab/CapsLockX/commit/7c6afcf500cdb5d77f97d0c6e350981ff2af0bc6))
-*  ([76e06fd](https://github.com/snolab/CapsLockX/commit/76e06fd7dc003b790c364a4586143ace35c6ea18))
-*  ([a1e1201](https://github.com/snolab/CapsLockX/commit/a1e1201e51001f32b583b897c5235747e4597e3c))
-
-
-### Features
-
-* QuickTips ([f5985c7](https://github.com/snolab/CapsLockX/commit/f5985c7d62724ea100c2f1f55d83253cb62f2199))
-
-
-]]></releaseNotes>
+* make sure startup ([e4d0125](https://github.com/snolab/CapsLockX/commit/e4d012561074e166ccb1faa2388521c22c7c8494))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
