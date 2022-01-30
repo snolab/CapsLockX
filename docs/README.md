@@ -22,6 +22,8 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
+---
+
 ## 新手快速入门教程 📖
 
 ### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
@@ -44,6 +46,8 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 - 方向键模拟：打开任意一个编辑 `HJKL` 光标移动，`YOUI` 页面移动
 
 上手之后，如果想了解更多功能，则可参考下方速查手册。
+
+---
 
 ## 进阶参考手册
 
@@ -100,11 +104,11 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 本模块功能见下
 
-| 作用于 | 按键                  | 功能                            |
-| ------ | --------------------- | ------------------------------- |
-| 全局   | CapsLockX + /         | 临时显示热键提示                |
+| 作用于 | 按键                  | 功能                             |
+| ------ | --------------------- | -------------------------------- |
+| 全局   | CapsLockX + /         | 临时显示热键提示                 |
 | 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等              |
+| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
 
 <!-- 模块文件名：01.1-插件-鼠标模拟.ahk-->
 
@@ -122,7 +126,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 - 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 - 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 - 效果如图：
-  ![鼠标模拟.gif]( ./media/鼠标模拟.gif )
+  ![鼠标模拟.gif](./media/鼠标模拟.gif)
 
 #### 使用方法如下
 
@@ -149,7 +153,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![光标移动.gif]( ./media/光标移动.gif )
+![光标移动.gif](./media/光标移动.gif)
 
 | 作用域     | Edit 模块             | 说明                             |
 | ---------- | --------------------- | -------------------------------- |
@@ -181,9 +185,9 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 #### 效果图
 
 - Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif]( ./media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif )
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 - CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
-  ![02-插件-窗口增强_一键排列窗口.gif]( ./media/02-插件-窗口增强_一键排列窗口.gif )
+  ![02-插件-窗口增强_一键排列窗口.gif](./media/02-插件-窗口增强_一键排列窗口.gif)
 
 #### 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
@@ -264,20 +268,20 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 | 模式                 |  Anki 增强模块  | 说明                                                        |
 | -------------------- | :-------------: | ----------------------------------------------------------- |
-| 在 Anki-学习界面     | ` w 或 k 或 ↑ ` | 按下=撤销，松开显示答案                                     |
-| 在 Anki-学习界面     | ` a 或 h 或 ← ` | 按下=顺利，松开显示答案                                     |
-| 在 Anki-学习界面     | ` s 或 j 或 ↓ ` | 按下=困难，松开显示答案                                     |
-| 在 Anki-学习界面     | ` d 或 l 或 → ` | 按下=生疏，松开显示答案                                     |
-| 在 Anki-学习界面     | `      q      ` | 返回上个界面                                                |
-| 在 Anki-学习界面     | `      c      ` | 添加新卡片                                                  |
+| 在 Anki-学习界面     |  `w 或 k 或 ↑`  | 按下=撤销，松开显示答案                                     |
+| 在 Anki-学习界面     |  `a 或 h 或 ←`  | 按下=顺利，松开显示答案                                     |
+| 在 Anki-学习界面     |  `s 或 j 或 ↓`  | 按下=困难，松开显示答案                                     |
+| 在 Anki-学习界面     |  `d 或 l 或 →`  | 按下=生疏，松开显示答案                                     |
+| 在 Anki-学习界面     |       `q`       | 返回上个界面                                                |
+| 在 Anki-学习界面     |       `c`       | 添加新卡片                                                  |
 | 在 Anki-学习界面     | `1 或 NumPad1 ` | 困难（原键位不动）                                          |
 | 在 Anki-学习界面     | `2 或 NumPad2 ` | 生疏（原键位不动）                                          |
 | 在 Anki-学习界面     | `3 或 NumPad3 ` | 一般（原键位不动）                                          |
 | 在 Anki-学习界面     | `4 或 NumPad4 ` | 顺利（原键位不动）                                          |
 | 在 Anki-学习界面     | `5 或 NumPad5 ` | 撤销                                                        |
 | 在 Anki-学习界面     | `6 或 NumPad6 ` | 暂停卡片                                                    |
-| 在 Anki-学习界面     | `   Alt + i   ` | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 | `   Alt + s   ` | 按下 添加 按钮                                              |
+| 在 Anki-学习界面     |    `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
+| 在 Anki-添加卡片界面 |    `Alt + s`    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
 >
@@ -362,7 +366,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 #### 效果如下图
 
-![应用-讯飞语音输入法悬浮窗演示.gif]( ./media/应用-讯飞语音输入法悬浮窗演示.gif )
+![应用-讯飞语音输入法悬浮窗演示.gif](./media/应用-讯飞语音输入法悬浮窗演示.gif)
 
 <!-- 模块文件名：插件-媒体键.ahk-->
 
@@ -404,7 +408,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
 
-注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life]( https://github.com/snomiao/tomato-life )
+注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life](https://github.com/snomiao/tomato-life)
+
 <!-- 结束：抽取模块帮助 -->
 
 ## 过去与未来 🛰
@@ -527,6 +532,7 @@ Ctrl + Alt + 同上，但一般为全局热键
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
+   - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 [发展路线](#发展路线)
 
