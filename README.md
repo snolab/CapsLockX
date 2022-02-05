@@ -24,6 +24,8 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
+---
+
 ## 新手快速入门教程 📖
 
 ### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
@@ -46,6 +48,8 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 - 方向键模拟：打开任意一个编辑 `HJKL` 光标移动，`YOUI` 页面移动
 
 上手之后，如果想了解更多功能，则可参考下方速查手册。
+
+---
 
 ## 进阶参考手册
 
@@ -530,6 +534,7 @@ Ctrl + Alt + 同上，但一般为全局热键
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./docs/支付宝捐助.png)
+   - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 [发展路线](#发展路线)
 
