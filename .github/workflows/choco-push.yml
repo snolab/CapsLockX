@@ -1,76 +1,76 @@
 # ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
 on:
-    push:
-        tags:
-            - "v*"
+  push:
+    tags:
+      - "v*"
 name: Chocolatey
 jobs:
-    chocolatey-push:
-        runs-on: windows-latest
-        steps:
-            - uses: actions/checkout@v2
-            # 打包 校验
-            - run: choco install zip checksum
-            # TODO 搞个缓存
-            # - uses: actions/cache@v1
-            #   id: env_cache
-            #   with:
-            #     path: # TODO
-            #     key: ${{ runner.os }}-# TODO
-            # 这个 step 需要干净的环境所以不要在本地运行。
-            - run: |
-                  zip -r CapsLockX.zip Core Data docs Modules Tools *.ahk *.txt *.md *.exe
-                  checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
-                  cp -force CapsLockX.zip     ./DevTools/choco/tools/
-                  cp -force CapsLockX.sha256  ./DevTools/choco/tools/
-                  choco pack ./DevTools/choco/CapsLockX.nuspec
-            # 测试
-            - run: cinst CapsLockX -s .
-            # 准备上传到releases
-            - uses: actions/upload-artifact@v2
-              with:
-                  name: CapsLockX.zip
-                  path: ./CapsLockX.zip
-            - uses: actions/upload-artifact@v2
-              with:
-                  name: CapsLockX.sha256
-                  path: ./CapsLockX.sha256
-            # 上传 nupkg 用来给 chocolatey push
-            - run: cp CapsLockX.*.nupkg CapsLockX.nupkg
-            - uses: actions/upload-artifact@v2
-              with:
-                name: CapsLockX.nupkg
-                path: ./CapsLockX.nupkg
-            # 发布
-            - run: choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
-            - run: choco push --source https://push.chocolatey.org/
-    github-pages-choco-version-upload:
-        runs-on: ubuntu-latest
-        needs: chocolatey-push
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/download-artifact@v2
-              with:
-                  name: CapsLockX.zip
-            - uses: actions/download-artifact@v2
-              with:
-                  name: CapsLockX.sha256
-            - uses: actions/download-artifact@v2
-              with:
-                  name: CapsLockX.nupkg
-            # 压缩包和 sha256 一起扔附件
-            - uses: svenstaro/upload-release-action@v2
-              with:
-                  repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  file: CapsLockX.zip
-                  tag: ${{ github.ref }}
-            - uses: svenstaro/upload-release-action@v2
-              with:
-                  repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  file: CapsLockX.sha256
-                  tag: ${{ github.ref }}
-            - uses: svenstaro/upload-release-action@v2
-              with:
-                  repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  file: CapsLockX.nupkg
-                  tag: ${{ github.ref }}
+  chocolatey-push:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      # 打包 校验
+      - run: choco install zip checksum
+      # TODO 搞个缓存
+      # - uses: actions/cache@v1
+      #   id: env_cache
+      #   with:
+      #     path: # TODO
+      #     key: ${{ runner.os }}-# TODO
+      # 这个 step 需要干净的环境所以不要在本地运行。
+      - run: |
+          zip -r CapsLockX.zip Core Data docs Modules Tools *.ahk *.txt *.md *.exe
+          checksum -t sha256 -f CapsLockX.zip > CapsLockX.sha256
+          cp -force CapsLockX.zip     ./DevTools/choco/tools/
+          cp -force CapsLockX.sha256  ./DevTools/choco/tools/
+          choco pack ./DevTools/choco/CapsLockX.nuspec
+      # 测试
+      - run: cinst CapsLockX -s .
+      # 准备上传到releases
+      - uses: actions/upload-artifact@v2
+        with:
+          name: CapsLockX.zip
+          path: ./CapsLockX.zip
+      - uses: actions/upload-artifact@v2
+        with:
+          name: CapsLockX.sha256
+          path: ./CapsLockX.sha256
+      # 上传 nupkg 用来给 chocolatey push
+      - run: cp CapsLockX.*.nupkg CapsLockX.nupkg
+      - uses: actions/upload-artifact@v2
+        with:
+          name: CapsLockX.nupkg
+          path: ./CapsLockX.nupkg
+      # 发布
+      - run: choco apikey --key ${{ secrets.CHOCOLATEY_APIKEY }} --source https://push.chocolatey.org/
+      - run: choco push --source https://push.chocolatey.org/
+  github-pages-choco-version-upload:
+    runs-on: ubuntu-latest
+    needs: chocolatey-push
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: CapsLockX.zip
+      - uses: actions/download-artifact@v2
+        with:
+          name: CapsLockX.sha256
+      - uses: actions/download-artifact@v2
+        with:
+          name: CapsLockX.nupkg
+      # 压缩包和 sha256 一起扔附件
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: CapsLockX.zip
+          tag: ${{ github.ref }}
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: CapsLockX.sha256
+          tag: ${{ github.ref }}
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: CapsLockX.nupkg
+          tag: ${{ github.ref }}

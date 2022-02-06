@@ -9,7 +9,7 @@ Versions of your project are currently being supported with security updates:
 | latest  | :white_check_mark: |
 | other   | :x:                |
 
-<!-- 
+<!--
 | 5.1.x   | :white_check_mark: |
 | 5.0.x   | :x:                |
 | 4.0.x   | :white_check_mark: |

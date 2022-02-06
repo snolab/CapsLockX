@@ -130,7 +130,7 @@ const QuickTipsUpdate = async (条件热键表) => {
   const content = [
     ...Object.entries(非函数条件热键表).map(判断生成(msg生成)),
     ...Object.entries(函数条件热键表).map(函数判断生成(msg生成)),
-  ].join('\n');
+  ].join("\n");
   // const content = Object.entries(函数条件热键表).map(msg判断生成).join("\n");
   const suffix = "    return msg";
   const QuickTips = [prefix, content, suffix].join("\n");

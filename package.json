@@ -1,42 +1,44 @@
 {
-    "name": "capslockx",
-    "version": "1.21.21",
-    "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
+  "name": "capslockx",
+  "version": "1.21.21",
+  "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
+  "scripts": {
+    "start": "CapsLockX.exe",
+    "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
+    "build": "npm upgrade && npm run test",
+    "prepare": "husky install",
+    "format": "npx -y -- prettier --write .",
+    "prerelease": "npm run format",
+    "release": "standard-version --no-verify --commit-all",
+    "postrelease": "git push --follow-tag --all"
+  },
+  "standard-version": {
     "scripts": {
-        "start": "CapsLockX.exe",
-        "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-        "build": "npm upgrade && npm run test",
-        "prepare": "husky install",
-        "release": "standard-version --no-verify --commit-all",
-        "postrelease": "git push --follow-tag --all"
-    },
-    "standard-version": {
-        "scripts": {
-            "precommit": "node DevTools/versioning.node.mjs && git add ."
-        }
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/snolab/CapsLockX.git"
-    },
-    "author": "snomiao@gmail.com",
-    "license": "GPL-3.0-or-later",
-    "bugs": {
-        "url": "https://github.com/snolab/CapsLockX/issues"
-    },
-    "homepage": "https://github.com/snolab/CapsLockX#readme",
-    "bin": {
-        "capslockx": "CapsLockX.exe"
-    },
-    "main": "DevTools/CapsLockX.mjs",
-    "devDependencies": {
-        "@commitlint/cli": "^16.1.0",
-        "@commitlint/config-conventional": "^16.0.0",
-        "@types/pinyin": "^2.10.0",
-        "husky": "^7.0.4",
-        "lodash": "^4.17.21",
-        "pinyin": "^2.10.2",
-        "sno-utils": "^0.3.6",
-        "standard-version": "^9.3.2"
+      "precommit": "node DevTools/versioning.node.mjs && git add ."
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snolab/CapsLockX.git"
+  },
+  "author": "snomiao@gmail.com",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/snolab/CapsLockX/issues"
+  },
+  "homepage": "https://github.com/snolab/CapsLockX#readme",
+  "bin": {
+    "capslockx": "CapsLockX.exe"
+  },
+  "main": "DevTools/CapsLockX.mjs",
+  "devDependencies": {
+    "@commitlint/cli": "^16.1.0",
+    "@commitlint/config-conventional": "^16.0.0",
+    "@types/pinyin": "^2.10.0",
+    "husky": "^7.0.4",
+    "lodash": "^4.17.21",
+    "pinyin": "^2.10.2",
+    "sno-utils": "^0.3.6",
+    "standard-version": "^9.3.2"
+  }
 }
