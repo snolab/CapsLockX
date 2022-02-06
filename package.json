@@ -40,5 +40,6 @@
     "pinyin": "^2.10.2",
     "sno-utils": "^0.3.6",
     "standard-version": "^9.3.2"
-  }
+  },
+  "workspaces": ["Panel"]
 }
