@@ -21,10 +21,10 @@
 ; API definitions
 ; [PowerShell Gallery | VirtualDesktop.ps1 1.1.0]( https://www.powershellgallery.com/packages/VirtualDesktop/1.1.0/Content/VirtualDesktop.ps1 )
 ; [Windows 10 の仮想デスクトップを制御しようとして失敗した話 | grabacr.nét]( http://grabacr.net/archives/5601 )
-; 
+;
 ; ref project when updated to win11:
 ; [MScholtes/VirtualDesktop: C# command line tool to manage virtual desktops in Windows 10]( https://github.com/MScholtes/VirtualDesktop )
-; 
+;
 
 if !CapsLockX
     ExitApp
@@ -235,7 +235,7 @@ SwitchToDesktop(idx)
 {
     if (SwitchToDesktopByInternalAPI(idx)) {
         ; ok
-    } else if (SwitchToDesktopByHotkey(idx)){
+    } else if (SwitchToDesktopByHotkey(idx)) {
         Tooltip, WARN SwitchToDesktopByHotkey %idx%
     } else {
         Tooltip, WARN SwitchToDesktop FAILED
@@ -302,8 +302,8 @@ SwitchToDesktopByInternalAPI(idx)
             GetDesktopCount := vtable(pDesktopIObjectArray, 3)
             GetDesktopAt := vtable(pDesktopIObjectArray, 4)
             _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
-            _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", DesktopCount)  
-            ; tooltip 切换到桌面 %idx% / %DesktopCount% 
+            _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", DesktopCount)
+            ; tooltip 切换到桌面 %idx% / %DesktopCount%
             ; if idx-th desktop doesn't exists then create a new desktop
             if (idx > DesktopCount) {
                 diff := idx - DesktopCount
@@ -312,7 +312,7 @@ SwitchToDesktopByInternalAPI(idx)
                 }
             }
             ; if desktop count is more than 10 then delete them
-            if (DesktopCount > 10){
+            if (DesktopCount > 10) {
                 delCount := DesktopCount - 10 + 1
                 SendEvent ^#d
                 loop %delCount% {

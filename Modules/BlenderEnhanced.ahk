@@ -10,7 +10,7 @@ BlenderEnhancedInit()
 
 global Blender物件调整 := Blender物件调整初始值获取()
 Blender物件调整初始值获取(){
-    return [[[0,0,0],[0,0,0],[0,0,0]],[[0,0,0],[0,0,0],[0,0,0]]]
+    return [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]]
 }
 global 平移精度 := 0.1
 global 平移精度控制 := new AccModel2D(Func("平移精度控制"), 0.1, 10)
@@ -31,51 +31,50 @@ BlenderEnhanced_SendInput_MouseMoveR32(x, y)
 
 return
 
-
 ; 鼠标模拟
 Blender视图运动(启动键, dx, dy, 状态)
 {
-    if (状态 == "启动" ){
+    if (状态 == "启动" ) {
         WinGetPos, X, Y, W, H, A
         X+=W/3*2, Y+=H/4
         MouseMove, %X%, %Y%, 0
         SendEvent {Enter}%启动键%
         return
     }
-    if (状态 == "止动" ){
+    if (状态 == "止动" ) {
         SendEvent {Enter}``s
         return
     }
-    if  (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     MouseMove, %X%, %Y%, 0
-
+    
     BlenderEnhanced_SendInput_MouseMoveR32(dx, dy)
 }
 
 平移导航(dx, dy, 状态){
-    if (状态=="启动"){
+    if (状态=="启动") {
         Send {ShiftDown}{MButton Down}
         return
     }
-    if (状态=="止动"){
+    if (状态=="止动") {
         Send {MButton Up}{ShiftUp}
     }
-    if (状态!=="移动"){
+    if (状态!=="移动") {
         return
     }
     BlenderEnhanced_SendInput_MouseMoveR32(-dx, -dy)
 }
 旋转导航(dx, dy, 状态){
-    if (状态=="启动"){
+    if (状态=="启动") {
         Send {MButton Down}
         return
     }
-    if (状态=="止动"){
+    if (状态=="止动") {
         Send {MButton Up}
     }
-    if (状态!=="移动"){
+    if (状态!=="移动") {
         return
     }
     BlenderEnhanced_SendInput_MouseMoveR32(-dx, -dy)
@@ -84,7 +83,7 @@ Blender视图运动(启动键, dx, dy, 状态)
 Blender物件数值调整(lg, operation, dimention, delta){
     global Blender物件调整中
     Blender物件调整[lg][operation][dimention] += delta
-    if (!Blender物件调整中){
+    if (!Blender物件调整中) {
         Blender物件调整中 := 1
         SetTimer Blender物件调整, -1
     }
@@ -105,15 +104,15 @@ Blender物件调整(){
     msg .= Blender物件调整[2][1][1] "`t" Blender物件调整[2][1][2] "`t" Blender物件调整[2][1][3] "`n"
     msg .= Blender物件调整[2][2][1] "`t" Blender物件调整[2][2][2] "`t" Blender物件调整[2][2][3] "`n"
     msg .= Blender物件调整[2][3][1] "`t" Blender物件调整[2][3][2] "`t" Blender物件调整[2][3][3] "`n"
-    /* 
-amap=(a,f)=>a.map(f).join('\n');
-smap=(s,f)=>s.split('').map(f).join('\n');
-xyz='XYZ';
-gsr=['平移','缩放','旋转'];
-lg=['本地','全局'];
-`    _ := (Blender物件调整[1][1][1]!=0) && Blender数值输入("${gsr[gi]+xyz[xi]+(li?xyz[xi]:'')}", (Blender物件调整[${li+1}][1][1]*平移精度), "移动")`
-=
-*/
+    /*
+    amap=(a, f)=>a.map(f).join('\n');
+    smap=(s, f)=>s.split('').map(f).join('\n');
+    xyz='XYZ';
+    gsr=['平移', '缩放', '旋转'];
+    lg=['本地', '全局'];
+    `    _ := (Blender物件调整[1][1][1]!=0) && Blender数值输入("${gsr[gi]+xyz[xi]+(li?xyz[xi]:'')}", (Blender物件调整[${li+1}][1][1]*平移精度), "移动")`
+    =
+    */
     _ := (Blender物件调整[1][1][1]!=0) && Blender数值输入("gxx", (Blender物件调整[1][1][1]*平移精度), "移动")
     _ := (Blender物件调整[1][1][2]!=0) && Blender数值输入("gyy", (Blender物件调整[1][1][2]*平移精度), "移动")
     _ := (Blender物件调整[1][1][3]!=0) && Blender数值输入("gzz", (Blender物件调整[1][1][3]*平移精度), "移动")
@@ -123,37 +122,37 @@ lg=['本地','全局'];
     _ := (Blender物件调整[1][3][1]!=0) && Blender数值输入("rxx", (Blender物件调整[1][3][1]*180/180), "移动")
     _ := (Blender物件调整[1][3][2]!=0) && Blender数值输入("ryy", (Blender物件调整[1][3][2]*180/180), "移动")
     _ := (Blender物件调整[1][3][3]!=0) && Blender数值输入("rzz", (Blender物件调整[1][3][3]*180/180), "移动")
-    _ := (Blender物件调整[2][1][1]!=0) && Blender数值输入("gx" , (Blender物件调整[2][1][1]*平移精度), "移动")
-    _ := (Blender物件调整[2][1][2]!=0) && Blender数值输入("gy" , (Blender物件调整[2][1][2]*平移精度), "移动")
-    _ := (Blender物件调整[2][1][3]!=0) && Blender数值输入("gz" , (Blender物件调整[2][1][3]*平移精度), "移动")
-    _ := (Blender物件调整[2][2][1]!=0) && Blender数值输入("sx" , (exp(Blender物件调整[2][2][1]*0.01)), "移动")
-    _ := (Blender物件调整[2][2][2]!=0) && Blender数值输入("sy" , (exp(Blender物件调整[2][2][2]*0.01)), "移动")
-    _ := (Blender物件调整[2][2][3]!=0) && Blender数值输入("sz" , (exp(Blender物件调整[2][2][3]*0.01)), "移动")
-    _ := (Blender物件调整[2][3][1]!=0) && Blender数值输入("rx" , (Blender物件调整[2][3][1]*180/180), "移动")
-    _ := (Blender物件调整[2][3][2]!=0) && Blender数值输入("ry" , (Blender物件调整[2][3][2]*180/180), "移动")
-    _ := (Blender物件调整[2][3][3]!=0) && Blender数值输入("rz" , (Blender物件调整[2][3][3]*180/180), "移动")
+    _ := (Blender物件调整[2][1][1]!=0) && Blender数值输入("gx", (Blender物件调整[2][1][1]*平移精度), "移动")
+    _ := (Blender物件调整[2][1][2]!=0) && Blender数值输入("gy", (Blender物件调整[2][1][2]*平移精度), "移动")
+    _ := (Blender物件调整[2][1][3]!=0) && Blender数值输入("gz", (Blender物件调整[2][1][3]*平移精度), "移动")
+    _ := (Blender物件调整[2][2][1]!=0) && Blender数值输入("sx", (exp(Blender物件调整[2][2][1]*0.01)), "移动")
+    _ := (Blender物件调整[2][2][2]!=0) && Blender数值输入("sy", (exp(Blender物件调整[2][2][2]*0.01)), "移动")
+    _ := (Blender物件调整[2][2][3]!=0) && Blender数值输入("sz", (exp(Blender物件调整[2][2][3]*0.01)), "移动")
+    _ := (Blender物件调整[2][3][1]!=0) && Blender数值输入("rx", (Blender物件调整[2][3][1]*180/180), "移动")
+    _ := (Blender物件调整[2][3][2]!=0) && Blender数值输入("ry", (Blender物件调整[2][3][2]*180/180), "移动")
+    _ := (Blender物件调整[2][3][3]!=0) && Blender数值输入("rz", (Blender物件调整[2][3][3]*180/180), "移动")
     Blender物件调整 := Blender物件调整初始值获取()
     SetTimer Blender物件调整, Off
     global Blender物件调整中 := 0
     tooltip %msg%
-
+    
     ; Sleep 16 ; a frame
 }
 Blender数值输入(启动键, 数值, 状态){
-    if (状态 == "启动"){
+    if (状态 == "启动") {
         SendEvent {Enter}
         return
     }
-    if (状态 == "止动"){
+    if (状态 == "止动") {
         SendEvent {Enter}``s
         return
     }
-    if (状态 != "移动"){
+    if (状态 != "移动") {
         return
     }
     
     ; 数值 := Round(数值, Log(平移精度)/Log(10))
-    if(数值 != 0){
+    if(数值 != 0) {
         SendEvent %启动键%%数值%{Enter}
     }
     global msg
@@ -179,7 +178,7 @@ Blender窗口内(){
 \::
     global Blender增强模式 := !Blender增强模式
     tooltip Blender增强模式 %Blender增强模式%
-    return
+return
 \ & a:: 平移导航.左按("a")
 \ & d:: 平移导航.右按("d")
 \ & w:: 平移导航.上按("w")
@@ -197,7 +196,7 @@ j & f:: 平移精度控制.下按("f")
 u & f:: 平移精度控制.下按("f")
 
 平移精度控制(_, dy, 状态){
-    if (状态!="移动"){
+    if (状态 != "移动") {
         return
     }
     平移精度 *= 10 ** -dy
@@ -211,17 +210,17 @@ u & f:: 平移精度控制.下按("f")
 ; 3轴数值运动：adswqe
 
 /* 注：下方代码通过注释内 js 生成
-amap=(a,f)=>a.map(f).join('\n');
-smap=(s,f)=>s.split('').map(f).join('\n');
+amap=(a, f)=>a.map(f).join('\n');
+smap=(s, f)=>s.split('').map(f).join('\n');
 xyz='XYZ';
-gsr=['平移','缩放','旋转'];
-lg=['本地','全局'];
+gsr=['平移', '缩放', '旋转'];
+lg=['本地', '全局'];
 
 re = '\n'
 
 re +=
-smap("jkluio",(os,oi)=>
-smap("adswqe",(ds,di)=>
+smap("jkluio", (os, oi)=>
+smap("adswqe", (ds, di)=>
 `
 ${os} & ${ds}:: ${xyz[di/2|0]+lg[oi/3|0]+gsr[oi%3]}.${'左右'[di%2]}按("${ds}") ; ${xyz[di/2|0]+lg[oi/3|0]+gsr[oi%3]+'+-'[di%2]}
 `.trim()
@@ -229,19 +228,19 @@ ${os} & ${ds}:: ${xyz[di/2|0]+lg[oi/3|0]+gsr[oi%3]}.${'左右'[di%2]}按("${ds}"
 
 re +=
 `BlenderEnhancedInit(){\n`+
-smap('lg', (ls,li)=>
-amap(gsr, (os,oi)=>
-smap(xyz, (ds,di)=>
+smap('lg', (ls, li)=>
+amap(gsr, (os, oi)=>
+smap(xyz, (ds, di)=>
 `    global ${xyz[di]+lg[li]+gsr[oi]} := new AccModel2D(Func("${xyz[di]+lg[li]+gsr[oi]}"), 0.1, 50)`
 )))+
 '\n}\n'
 
 re +=
-smap('lg', (ls,li)=>
-amap(gsr, (os,oi)=>
-smap(xyz, (ds,di)=>
+smap('lg', (ls, li)=>
+amap(gsr, (os, oi)=>
+smap(xyz, (ds, di)=>
 `${xyz[di]+lg[li]+gsr[oi]}(dx, _, 状态){
-    Blender物件数值调整(${li+1}, ${oi+1}, ${di+1}, dx)
+Blender物件数值调整(${li+1}, ${oi+1}, ${di+1}, dx)
 }`
 )))+'\n'
 
@@ -284,7 +283,8 @@ o & s:: Y全局旋转.左按("s") ; Y全局旋转+
 o & w:: Y全局旋转.右按("w") ; Y全局旋转-
 o & q:: Z全局旋转.左按("q") ; Z全局旋转+
 o & e:: Z全局旋转.右按("e") ; Z全局旋转-
-BlenderEnhancedInit(){
+BlenderEnhancedInit()
+{
     global X本地平移 := new AccModel2D(Func("X本地平移"), 0.1, 50)
     global Y本地平移 := new AccModel2D(Func("Y本地平移"), 0.1, 50)
     global Z本地平移 := new AccModel2D(Func("Z本地平移"), 0.1, 50)

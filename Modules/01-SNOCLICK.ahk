@@ -14,9 +14,9 @@ SNOCLICK(dx, dy)
 {
     ; static stepDeep := 1
     ; if (!(dx || dy)) {
-        ; stepDeep := 1
-        ; FLAG_SNOCLICK := !FLAG_SNOCLICK
-        ; return
+    ; stepDeep := 1
+    ; FLAG_SNOCLICK := !FLAG_SNOCLICK
+    ; return
     ; }
     ; Screen / stepDeep ** 2
     ; stepDeep++
@@ -31,7 +31,7 @@ SNOCLICK(dx, dy)
     ; tooltip test
 }
 ; #if FLAG_SNOCLICK
-    
+
 ; a:: SNOCLICK(-1, 0)
 ; d:: SNOCLICK( 1, 0)
 ; w:: SNOCLICK(0, -1)

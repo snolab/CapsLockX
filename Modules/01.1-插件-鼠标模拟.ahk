@@ -91,14 +91,16 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
-ScrollMouse(dx, dy){
+ScrollMouse(dx, dy)
+{
     if (TMouse_SendInputAPI) {
         SendInput_ScrollMouse(dx, dy)
     } else {
         PostMessage_ScrollMouse(dx, dy)
     }
 }
-PostMessage_ScrollMouse(dx, dy){
+PostMessage_ScrollMouse(dx, dy)
+{
     WM_MOUSEWHEEL := 0x020A
     WM_MOUSEWHEELH := 0x020E
     _:= dy && PostMessageForScroll(WM_MOUSEWHEEL, -dy)
@@ -249,7 +251,8 @@ SendInput_MouseMove(x, y)
     }
     ScrollMouse(dx, dy)
 }
-PostMessageForScroll(msg, zDelta){
+PostMessageForScroll(msg, zDelta)
+{
     ; 目前还不支持UWP
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
@@ -334,7 +337,7 @@ $*e:: CapsLockX_鼠标右键按下("e")
 $*q:: CapsLockX_鼠标左键按下("q")
 
 #if CapsLockXMode
-
+    
 ; 鼠标按键处理
 *e::CapsLockX_鼠标左键按下("e")
 *q:: CapsLockX_鼠标右键按下("q")

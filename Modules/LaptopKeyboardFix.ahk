@@ -19,14 +19,14 @@ Return
 ; 单击 Menu 键为 Menu 键功能，按住 Menu 键再按别的键则表现为 Ctrl 组合键
 $*AppsKey:: Send {Blind}{RControl Down}
 $*AppsKey Up::
-    if ("AppsKey" == A_PriorKey){
+    if ("AppsKey" == A_PriorKey) {
         Send {Blind}{RControl Up}{AppsKey}
     } else {
         Send {Blind}{RControl Up}
     }
 Return
 ~*RControl Up::
-    if ("RControl" == A_PriorKey){
+    if ("RControl" == A_PriorKey) {
         Send {AppsKey}
     }
 Return
@@ -51,16 +51,16 @@ RAlt & \:: Send {Blind}{Tab}
 
 ; 对于没有Esc或没有 Stroke 键的键
 #if CapsLockXMode
-
+    
 `::   FLAG_SWAP_ESC_STROKE := CapsLockX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
 Esc:: FLAG_SWAP_ESC_STROKE := CapsLockX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
 
 #if FLAG_SWAP_ESC_STROKE
-
+    
 *`:: Esc
 <^`:: LWin
 *Esc:: `
 
 #if !FLAG_SWAP_ESC_STROKE
-
+    
 ; <^Esc:: LWin

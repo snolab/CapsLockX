@@ -57,7 +57,8 @@ getAscStr(str)
     Return out
 }
 
-OneNote2016_Win11_Detect(){
+OneNote2016_Win11_Detect()
+{
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
     ObjRelease(IServiceProvider)
@@ -69,15 +70,14 @@ OneNote2016_Win11_Detect(){
     return true
 }
 
-
 ; 打开快速笔记主页
 OneNote快速笔记窗口启动(){
-    if (OneNote2016_Win11_Detect()){
+    if (OneNote2016_Win11_Detect()) {
         SendEvent #!n
-    }else{
+    } else {
         SendEvent #n
     }
-
+    
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
     if (ErrorLevel) {
