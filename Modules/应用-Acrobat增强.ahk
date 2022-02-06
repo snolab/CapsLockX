@@ -5,14 +5,8 @@ Return
 
 #IfWinActive .*- Adobe Acrobat (Pro|Reader) DC ahk_class ahk_class AcrobatSDIWindow
 
-^!F12:: ExitApp ; 退出脚本
-
-; 自动滚动
-!a:: Send !vpy
-
-; 双页滚动视图（Double）
-!d:: Send !vpt^h^3
-
-; 单页滚动视图（Single）
-!s:: Send !vpc^h^3
-f11:: ^l
+^!F12:: ExitApp        ; 退出脚本
+!a:: Send !vpy         ; 自动滚动
+!d:: Send !vpt^h^3     ; 双页滚动视图（Double）
+!s:: Send !vpc^h^3     ; 单页滚动视图（Single）
+f11:: ^l               ; 全屏
