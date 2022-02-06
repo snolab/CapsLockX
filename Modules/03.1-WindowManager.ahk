@@ -438,6 +438,10 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
     }
 }
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
+    
+    dx := 96
+    dy := 96
+        
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; try parse work rect from monitor
@@ -456,8 +460,6 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
 
     if(arrangeFlags & ARRANGE_MOVING){
         k := 0
-        dx := 64
-        dy := 64
         w := AreaW - 2 * dx - n * dx + dx
         h := AreaH - 2 * dy - n * dy + dy
         lasthWnd := -2
@@ -492,7 +494,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = ""){
             DllCall("SetWindowPos"
             , "UInt", hWnd ; handle
             , "UInt", lasthWnd ; z-index
-            , "Int", 0 ;  x
+            , "Int", 0 ; x
             , "Int", 0 ; y
             , "Int", 0 ; width
             , "Int", 0 ; height
