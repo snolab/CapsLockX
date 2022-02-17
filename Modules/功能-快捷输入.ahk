@@ -1,6 +1,7 @@
 ﻿; ========== CapsLockX ==========
-; 名称：快速输入各种时间戳
-; 作者：snomiaou
+; 名称：快速输入各种时间戳和随机数
+; 描述：快速输入各种时间戳和随机数
+; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.06.27
@@ -22,46 +23,60 @@ GenPassword(Chars, Length := 16)
     }
     Return pw
 }
-DateInput()
+DateStringGenerate()
 {
     FormatTime, TimeString, , (yyyyMMdd)
-    SendInput {Text}%TimeString%
+    return TimeString
 }
-TimeInput()
+TimeStringGenerate()
 {
     FormatTime, TimeString, , (yyyyMMdd.HHmmss)
-    SendInput {Text}%TimeString%
+    return TimeString
 }
-DateTimeInput()
+DateTimeStringGenerate()
 {
     FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
-    SendInput {Text}%TimeString%
+    return TimeString
+}
+QuickTextInput(str)
+{
+    SendInput {Text}%str%
 }
 
 #if
     
-:*:#D#::
-    DateInput()
+:*?:#D#:: ; 日期输入：如 (20220217)
+QuickTextInput(DateStringGenerate())
 return
-:*:#T#::
-    TimeInput()
+
+:*?:#T#:: ; 时间输入：(20220217.220717)
+QuickTextInput(TimeStringGenerate())
 return
-:*:#DT#::
-    DateTimeInput()
+
+:*?:#DT#:: ; 日期时间输入：2022-02-17 22:07:33
+QuickTextInput(DateTimeStringGenerate())
 return
-:*:#NPW#::
-    pw:= GenPassword("0123456789", 16)
-    SendInput {Text}%pw%
+
+:*?:#NPW#:: ; 随机输入数字密码如： 7500331260229289
+QuickTextInput(GenPassword("0123456789", 16))
 return
-:*:#PW#::
-    pw:= GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz", 16)
-    SendInput {Text}%pw%
+
+:*?:#HEX#:: ; 随机输入数字字母密码如：
+QuickTextInput(GenPassword("0123456789ABCDEF", 16))
 return
-:*:#WPW#::
-    pw:= GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz", 16)
-    SendInput {Text}%pw%
+
+:*?:#HEXL#:: ; 随机输入小写16进制如：
+QuickTextInput(GenPassword("0123456789abcdef", 16))
 return
-:*:#SPW#::
-    pw:= GenPassword("!""#$%&\'()*+, -./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_``abcdefghijklmnopqrstuvwxyz{|}~", 16)
-    SendInput {Text}%pw%
+
+:*?:#PW#:: ; 随机输入数字字母密码如： yyCTCNYodECTLr2h
+QuickTextInput(GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz", 16))
+return
+
+:*?:#WPW#:: ; 随机输入数字字母密码如： FtD5BB1m5H98eY7Y
+QuickTextInput(GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz", 16))
+return
+
+:*?:#SPW#:: ; 随机输入数字字母符号密码如：KO?C[D_>!c$sQ-|7]
+QuickTextInput(GenPassword("!""#$%&\'()*+, -./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_``abcdefghijklmnopqrstuvwxyz{|}~", 16))
 return
