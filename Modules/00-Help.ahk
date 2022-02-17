@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
 ; 名称：帮助模块及模块编写教程
-; 描述：打开 CapsLockX 的 Github 页面
+; 描述：用于提供帮助函数，打开 CapsLockX 的 Github 页面，不可禁用
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -20,7 +20,7 @@
 ;
 ; 以下条件语句表示这个模块只能在 CapsLockX 下工作，如果没有用到 CapsLockX 的变量则可以不写。
 
-if (!CapsLockX){
+if (!CapsLockX) {
     MsgBox, % "本模块只在 CapsLockX 下工作"
     ExitApp
 }
@@ -45,28 +45,32 @@ Return
 ; = 函数声名和热键区 =====================================================
 ;
 ; 定义函数，这里定义了 2 个用来操作帮助的函数。
-CapsLockX_LoadHelpFrom(file){
+CapsLockX_LoadHelpFrom(file)
+{
     FileEncoding UTF-8
     FileRead, helpStr, %file%
     helpStr := RegExReplace(helpStr, "m)^[^|#].*$")
     helpStr := RegExReplace(helpStr, "m)\r?\n(\r?\n)+", "`n")
     return helpStr
 }
-CapsLockX_AppendHelp(helpStr){
-    if(helpStr)
+CapsLockX_AppendHelp(helpStr)
+{
+    if (helpStr) {
         CapsLockX_HelpInfo .= helpStr "`n`n"
+    }
 }
-CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/"){
-    if (!inGlobal && !CapsLockXMode){
+CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/")
+{
+    if (!inGlobal && !CapsLockXMode) {
         SendEvent, /
         Return
     }
     Gui, Help:Destroy
     Gui, Help:Font, , SimHei
     Gui, Help:Add, Edit, ReadOnly, ==== CapsLockX Help ====
-    Gui, Help:Add, Edit, H768 ReadOnly, %helpStr% 
+    Gui, Help:Add, Edit, H768 ReadOnly, %helpStr%
     Gui, Help:Show, AutoSize Center
-
+    
     KeyWait, %waitKey%, T60 ; wait for 60 seconds, then auto close
     ; Gui, Hide
     Gui, Help:Destroy
@@ -77,7 +81,8 @@ CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/"){
 ;
 ; 比如这一行，指的是当前在 CapsLockX 模式时，生效的热键
 #if CapsLockXMode
-    ; #if CapsLockXMode
+    
+; #if CapsLockXMode
 ; 显示使用方法，直接调用前面定义的函数
 ; /:: CapsLockX_ShowHelp(CapsLockX_HelpInfo, 1)
 
@@ -89,5 +94,5 @@ CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/"){
 +/:: Run % CapsLockX_IssuesPage
 
 #if
-
+    
 ; 在这里你也可以定义无需按下 CapsLockX 就能触发的热键
