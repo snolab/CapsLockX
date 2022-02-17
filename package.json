@@ -10,7 +10,8 @@
     "format": "npx -y -- prettier --write .",
     "prerelease": "npm run format",
     "release": "standard-version --commit-all",
-    "postrelease": "git push --follow-tag --all"
+    "postrelease": "git push --follow-tag --all",
+    "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev"
   },
   "standard-version": {
     "scripts": {
