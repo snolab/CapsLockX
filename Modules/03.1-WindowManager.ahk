@@ -134,13 +134,16 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0){
         hWnd := id%A_Index%
         WinGet, style, style, ahk_id %hWnd%
         ; 跳过无标题窗口
-        if !(style & WS_CAPTION)
+        if (!(style & WS_CAPTION)){
             Continue
+        }
         ; 跳过工具窗口
-        if (style & WS_EX_TOOLWINDOW)
+        if (style & WS_EX_TOOLWINDOW){
             Continue
-        if (style & WS_POPUP)
+        }
+        if (style & WS_POPUP){
             Continue
+        }
         ; 只显示Alt+TAB里有的窗口
         if (!(style & WS_EX_APPWINDOW)){
             continue ; ; 跳 过弹出窗口
