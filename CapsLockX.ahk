@@ -19,7 +19,7 @@ SetWorkingDir, %A_ScriptDir%
 
 #Include %A_ScriptDir%/Core/CapsLockX-Config.ahk
 
-global CapsLockX_模块路径 := "./Modules" 
+global CapsLockX_模块路径 := "./Modules"
 global CapsLockX_核心路径 := "./Core"
 ; 版本
 global CapsLockX_Version
@@ -110,11 +110,6 @@ Return
     ToolTip % loadingTips
     sleep 2000
 }
-清洗为_UTF8_WITH_BOM_型编码(path){
-    FileRead ModuleCode, %path%
-    FileDelete %path%
-    FileAppend %ModuleCode%, %path%, UTF-8
-}
 模块编译和帮助README更新(sourceREADME, docs=""){
     FileEncoding UTF-8-Raw
     ; 列出模块文件
@@ -144,18 +139,24 @@ Return
         模块名称 := Match[2]
         模块帮助内容 := ""
         模块帮助文件 := ""
-        if(!模块帮助内容) {
+        if (!模块帮助内容) {
             模块帮助文件 := CapsLockX_模块路径 "/" 模块名称 ".md"
             if (FileExist(模块帮助文件)) {
                 FileRead, 模块帮助内容, %模块帮助文件%
             }
         }
-        if(!模块帮助内容) {
+        if (!模块帮助内容) {
             模块帮助文件 := CapsLockX_模块路径 "/" 模块文件名称 ".md"
             if (FileExist(模块帮助文件)) {
                 FileRead, 模块帮助内容, %模块帮助文件%
             }
         }
+        
+        FileRead, 模块文件内容, % CapsLockX_模块路径 "/" 模块文件
+        matchPos := RegExMatch(模块文件内容, "mi)^; 描述：(.*)", 模块描述)
+        
+        T%模块名称%_Disabled := CapsLockX_Config("ModuleDisable", "T" 模块名称 "_Disabled", 0, "是否禁用模块：" 模块名称 (模块描述1 ? " - " 模块描述1 : "") )
+        
         if (模块帮助内容) {
             模块帮助内容 := Trim(模块帮助内容, " `t`n")
             加载提示追加("加载模块帮助：" + i + "-" + 模块名称)
@@ -179,7 +180,7 @@ Return
             全部帮助 .= 模块帮助内容 "`n`n"
         }
         if (T%模块名称%_Disabled) {
-            加载提示追加("禁用模块：" i " " 模块名称)
+            加载提示追加("跳过模块：" i " " 模块名称)
         } else {
             ; 这里引入模块代码
             清洗为_UTF8_WITH_BOM_型编码(CapsLockX_模块路径 "/" 模块文件)
@@ -241,10 +242,10 @@ CapsLockX启动(){
     AHK_EXE_CORE_PATH := "./Core/CapsLockX.exe"
     AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX-AHK.exe"
     FileCopy, %AHK_EXE_ROOT_PATH%, %AHK_EXE_TEMP_PATH%, 1
-    if !FileExist(AHK_EXE_TEMP_PATH) {
+    if (!FileExist(AHK_EXE_TEMP_PATH)) {
         FileCopy, %AHK_EXE_CORE_PATH%, %AHK_EXE_TEMP_PATH%, 1
     }
-    if !FileExist(AHK_EXE_TEMP_PATH) {
+    if (!FileExist(AHK_EXE_TEMP_PATH)) {
         AHK_EXE_TEMP_PATH := AHK_EXE_ROOT_PATH
     }
     ; 运行更新组件
@@ -271,3 +272,16 @@ CapsLockX启动(){
     ExitApp
 }
 
+清洗为_UTF8_WITH_BOM_型编码(path){
+    if (FileExist(path ".lock")) {
+        return
+    }
+    FileAppend lock, %path%.lock
+    
+    FileEncoding UTF-8
+    FileRead content, %path%
+    FileDelete %path%
+    FileAppend %content%, %path%, UTF-8
+    
+    FileDelete %path%.lock
+}
