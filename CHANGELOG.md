@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.22.0](https://github.com/snolab/CapsLockX/compare/v1.21.21...v1.22.0) (2022-02-17)
+
+
+### Features
+
+* 增加模块禁用配置功能于配置文件[ModuleDisable]分区 ([68a0d5c](https://github.com/snolab/CapsLockX/commit/68a0d5c08facefaaf2613980464f5a0335addce3)), closes [#27](https://github.com/snolab/CapsLockX/issues/27)
+
+
+### Bug Fixes
+
+* fix config gui 更新配置修改界面 ([4678b3d](https://github.com/snolab/CapsLockX/commit/4678b3d669b796a132cbca398e9cb087566ecfd8))
+* fix config lock 修复配置锁定 ([187939a](https://github.com/snolab/CapsLockX/commit/187939a9b0a3f30df3b7bdc529d8c999aff5303c))
+* update helps description 更新帮助模块描述 ([5fefadf](https://github.com/snolab/CapsLockX/commit/5fefadf2a7218f12aebec0f422a5f2094a801a41))
+* 快捷输入文档更新、随机数各类增加 ([c1ea9c9](https://github.com/snolab/CapsLockX/commit/c1ea9c99ea34c168b015a8424f00aa0b6446ca61))
+* 桌面QQ增强 更换条件函数 ([f5b7983](https://github.com/snolab/CapsLockX/commit/f5b7983b47b28fd5b5dc049b7ce4a652caa1b265))
+* 添加脚本描述 ([8bad5b1](https://github.com/snolab/CapsLockX/commit/8bad5b11221c0a00f65062d2953d75f22b81f871))
+* **雪星并击:** 代码格式修复 ([73326d3](https://github.com/snolab/CapsLockX/commit/73326d3062207c5db77e0664db35c2c90cabcb8c))
+
 ### [1.21.21](https://github.com/snolab/CapsLockX/compare/v1.21.20...v1.21.21) (2022-01-21)
 
 ### [1.21.20](https://github.com/snolab/CapsLockX/compare/v1.21.19...v1.21.20) (2022-01-20)
