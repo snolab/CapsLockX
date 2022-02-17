@@ -9,7 +9,7 @@
     "prepare": "husky install",
     "format": "npx -y -- prettier --write .",
     "prerelease": "npm run format",
-    "release": "standard-version --no-verify --commit-all",
+    "release": "standard-version --commit-all",
     "postrelease": "git push --follow-tag --all"
   },
   "standard-version": {
