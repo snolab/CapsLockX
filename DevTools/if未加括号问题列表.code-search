@@ -1,35 +1,14 @@
 # Query: ^\\s*if[ ]*[^( ]
 # Flags: RegExp
+# Including: *.ahk
 # ContextLines: 1
 
-134 results - 13 files
+118 results - 10 files
 
 CapsLockX.ahk:
-  244      FileCopy, %AHK_EXE_ROOT_PATH%, %AHK_EXE_TEMP_PATH%, 1
-  245:     if !FileExist(AHK_EXE_TEMP_PATH) {
-  246          FileCopy, %AHK_EXE_CORE_PATH%, %AHK_EXE_TEMP_PATH%, 1
-  247      }
-  248:     if !FileExist(AHK_EXE_TEMP_PATH) {
-  249          AHK_EXE_TEMP_PATH := AHK_EXE_ROOT_PATH
-
   264          MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
   265:         IfMsgBox No
   266          return
-
-  275  清洗为_UTF8_WITH_BOM_型编码(path){
-  276:     if FileExist(path ".lock") {
-  277          return
-
-
-Modules\03-VirtualDesktop.ahk:
-  28  
-  29: if !CapsLockX
-  30      ExitApp
-
-Modules\03.1-WindowManager.ahk:
-  136          ; 跳过无标题窗口
-  137:         if !(style & WS_CAPTION)
-  138              Continue
 
 Modules\CapsLockX_Elevate.ahk:
   30          try {

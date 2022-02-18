@@ -8,21 +8,26 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to e
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址 🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
+<!-- culture badges  -->
+
+[![中文编程](https://github.com/Program-in-Chinese/overview/raw/master/%E4%B8%AD%E6%96%87%E7%BC%96%E7%A8%8B.svg)](https://github.com/Program-in-Chinese/overview)
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
 <!-- clicks / downloads -->
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
 [![Downloads-From-GitHub-Releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=Downloads-From-GitHub-Releases)](https://github.com/snolab/CapsLockX/releases)
 
-<!-- building status -->
+<!-- build and publish status -->
 
+[![GitHub version](https://badge.fury.io/gh/snolab%2FCapsLockX.svg)](https://badge.fury.io/gh/snolab%2FCapsLockX)
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
+[![npm version](https://badge.fury.io/js/capslockx.svg)](https://badge.fury.io/js/capslockx)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
 
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
-
----
 
 ## 新手快速入门教程 📖
 
@@ -487,7 +492,6 @@ Ctrl + Alt + 同上，但一般为全局热键
 文档地址 📄
 
 - 自动翻译文档 Netlify CDN：[https://capslockx.netlify.com](https://capslockx.netlify.com)
-- 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 - 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 
 星图 ⭐️
