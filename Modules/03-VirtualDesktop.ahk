@@ -26,8 +26,9 @@
 ; [MScholtes/VirtualDesktop: C# command line tool to manage virtual desktops in Windows 10]( https://github.com/MScholtes/VirtualDesktop )
 ;
 
-if !CapsLockX
+if (!CapsLockX) {
     ExitApp
+}
 
 Return
 

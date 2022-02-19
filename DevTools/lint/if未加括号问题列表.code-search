@@ -1,0 +1,413 @@
+# Query: ^\\s*if[ ]+[^( ]
+# Flags: RegExp
+# Including: *.ahk
+# ContextLines: 1
+
+110 results - 6 files
+
+Modules\Eval-Javascript.ahk:
+  43  GetObjJScript_DEPRECATED(){
+  44:     if !FileExist(ComObjFile := A_Temp "\JS.wsc")
+  45          FileAppend,
+
+Modules\LaptopKeyboardFix.ahk:
+  10  
+  11: if !CapsLockX
+  12      ExitApp
+
+Modules\应用-Anki增强.ahk:
+  106      ClipWait, 0, text
+  107:     if ErrorLevel {
+  108          MsgBox, 剪贴板里没有内容
+
+  118      file := FileOpen(FileName, "w", "UTF-8")
+  119:     if !IsObject(file) {
+  120          MsgBox Can't open "%FileName%" for writing.
+
+  155      WinShow ahk_id %addWindow%
+  156:     if ErrorLevel {
+  157          TrayTip, CapsLockX, 没有获取到剪贴板的内容
+
+  175      ClipWait, 10, 1
+  176:     if ErrorLevel
+  177      {
+
+Modules\WatchFolder\WatchFolder.ahk:
+   88              D := WatchedFolders[FolderName]
+   89:             If DllCall("GetOverlappedResult", "Ptr", D.Handle, "Ptr", D.OVLAddr, "UIntP", BytesRead, "Int", True) {
+   90                  Changes := []
+
+  142      For K, D In WatchedFolders
+  143:         If K Is Not Integer
+  144          DllCall("CloseHandle", "Ptr", D.Handle)
+
+  155      VarSetCapacity(LongPath, SizeOfLongPath, 0)
+  156:     If !DllCall("GetLongPathName", "Str", Folder, "Ptr", &LongPath, "UInt", SizeOfLongPath)
+  157          Return False
+
+  169      }
+  170:     If InStr(FileExist(Folder), "D") && (UserFunc <> "**DEL") && (EventArray.Length() < MAXIMUM_WAIT_OBJECTS) {
+  171          If (IsFunc(UserFunc) && (UserFunc := Func(UserFunc)) && (UserFunc.MinParams >= 2)) && (Watch &= 0x017F) {
+
+Modules\WinClip\WinClip.ahk:
+   10    {
+   11:     if !WinClipAPI.OpenClipboard()
+   12        Return 0
+
+   17      {
+   18:       if !( fmt := NumGet( data, offset, "UInt" ) )
+   19          break
+   20        offset += 4
+   21:       if !( dataSize := NumGet( data, offset, "UInt" ) )
+   22          break
+
+   25          break
+   26:       if !( pData := WinClipAPI.GlobalLock( WinClipAPI.GlobalAlloc( 0x0042, dataSize ) ) )
+   27        {
+
+   35          pClipData := pData
+   36:       if !pClipData
+   37          continue
+
+   50    {
+   51:     if !WinClipAPI.OpenClipboard()
+   52        Return 0
+
+   58      {
+   59:       if this.skipFormats.hasKey( nextformat )
+   60          continue
+
+   72            continue
+   73:         if !( pObjPtr && nObjSize )
+   74            continue
+
+   80      structSize := formatsNum*( 4 + 4 ) + clipSize  ;allocating 4 bytes for format ID and 4 for data size
+   81:     if !structSize
+   82        Return 0
+
+  104    {
+  105:     if !this.isinstance
+  106      {
+
+  115      f := FileOpen( filePath, "r","CP0" )
+  116:     if !IsObject( f )
+  117        Return 0
+
+  133    {
+  134:     if !size
+  135        Return 0
+  136:     if !ObjSetCapacity( this, "allData", size )
+  137        Return 0
+  138:     if !( pData := ObjGetAddress( this, "allData" ) )
+  139        Return 0
+
+  145    {
+  146:     if !( clipSize := ObjGetCapacity( this, "allData" ) )
+  147        Return 0
+  148:     if !( pData := ObjGetAddress( this, "allData" ) )
+  149        Return 0
+
+  166      {
+  167:       if !( fmt := NumGet( data, offset, "UInt" ) )
+  168          break
+  169        offset += 4
+  170:       if !( dataSize := NumGet( data, offset, "UInt" ) )
+  171          break
+
+  186    {
+  187:     if !IsObject( objClip )
+  188        Return 0
+
+  208    {
+  209:     if !( clipSize := this._fromclipboard( clipData ) )
+  210        Return 0
+
+  216      this._IsInstance( A_ThisFunc )
+  217:     if !( clipSize := this._getClipData( clipData ) )
+  218        Return 0
+
+  229      this._IsInstance( A_ThisFunc )
+  230:     if !( dataSize := this._fromclipboard( clipData ) )
+  231        Return 0
+
+  243      this._IsInstance( A_ThisFunc )
+  244:     if !( clipSize := this._getClipData( clipData ) )
+  245        Return 0
+
+  250    {
+  251:     if !( size := this._fromclipboard( data ) )
+  252        Return 0
+
+  258      this._IsInstance( A_ThisFunc )
+  259:     if !( clipSize := this._getClipData( clipData ) )
+  260            Return 0
+
+  265    {
+  266:     if !( dataSize := this._loadFile( filePath, dataBuf ) )
+  267        Return 0
+
+  273      this._IsInstance( A_ThisFunc )
+  274:     if !( dataSize := this._loadFile( filePath, dataBuf ) )
+  275        Return 0
+
+  280    {
+  281:     if !WinClipAPI.OpenClipboard()
+  282        Return 0
+
+  318      bytesCopied := 0
+  319:     if !this._isClipEmpty()
+  320      {
+
+  354      this.Snap( data )
+  355:     if !( bytesRestored := this.iRestore() )
+  356        Return 0
+
+  394      clipSize := this._getClipData( clipData )
+  395:     if !( clipSize := this._appendText( clipData, clipSize, textData, 1 ) )
+  396        Return 0
+
+  404      clipSize :=  this._fromclipboard( clipData )
+  405:     if !( clipSize := this._appendText( clipData, clipSize, textData, 1 ) )
+  406        Return 0
+
+  411    {
+  412:     if !( clipSize := this._fromclipboard( clipData ) )
+  413        Return ""
+  414:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, "Rich Text Format" ) )
+  415        Return ""
+
+  421      this._IsInstance( A_ThisFunc )
+  422:     if !( clipSize := this._getClipData( clipData ) )
+  423        Return ""
+  424:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, "Rich Text Format" ) )
+  425        Return ""
+
+  433      clipSize :=  this._fromclipboard( clipData )
+  434:     if !( clipSize := this._setRTF( clipData, clipSize, textData ) )
+  435            Return 0
+
+  444      clipSize :=  this._getClipData( clipData )
+  445:     if !( clipSize := this._setRTF( clipData, clipSize, textData ) )
+  446            Return 0
+
+  467      clipSize := this._getClipData( clipData )
+  468:     if !( clipSize := this._appendText( clipData, clipSize, textData ) )
+  469        Return 0
+
+  477      clipSize :=  this._fromclipboard( clipData )
+  478:     if !( clipSize := this._appendText( clipData, clipSize, textData ) )
+  479        Return 0
+
+  487      clipSize :=  this._fromclipboard( clipData )
+  488:     if !( clipSize := this._setHTML( clipData, clipSize, html, source ) )
+  489        Return 0
+
+  498      clipSize := this._getClipData( clipData )
+  499:     if !( clipSize := this._setHTML( clipData, clipSize, html, source ) )
+  500        Return 0
+
+  584      objFiles := WinClipAPI.RemoveDubls( objFiles )
+  585:     if !objFiles.MaxIndex()
+  586        Return 0
+
+  614      clipSize := this._fromclipboard( clipData )
+  615:     if !( clipSize := this._setFiles( clipData, clipSize, files, 0, isCut ) )
+  616        Return 0
+
+  625      clipSize := this._getClipData( clipData )
+  626:     if !( clipSize := this._setFiles( clipData, clipSize, files, 0, isCut ) )
+  627        Return 0
+
+  635      clipSize := this._fromclipboard( clipData )
+  636:     if !( clipSize := this._setFiles( clipData, clipSize, files, 1, isCut ) )
+  637        Return 0
+
+  646      clipSize := this._getClipData( clipData )
+  647:     if !( clipSize := this._setFiles( clipData, clipSize, files, 1, isCut ) )
+  648        Return 0
+
+  653    {
+  654:     if !( clipSize := this._fromclipboard( clipData ) )
+  655        Return ""
+  656:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, this.ClipboardFormats.CF_HDROP ) )
+  657        Return ""
+
+  663      this._IsInstance( A_ThisFunc )
+  664:     if !( clipSize := this._getClipData( clipData ) )
+  665        Return ""
+  666:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, this.ClipboardFormats.CF_HDROP ) )
+  667        Return ""
+
+  673      needleFormat := WinClipAPI.IsInteger( needleFormat ) ? needleFormat : WinClipAPI.RegisterClipboardFormat( needleFormat )
+  674:     if !needleFormat
+  675        Return 0
+
+  678      {
+  679:       if !( fmt := NumGet( data, offset, "UInt" ) )
+  680          break
+  681        offset += 4
+  682:       if !( dataSize := NumGet( data, offset, "UInt" ) )
+  683          break
+
+  709    {
+  710:     if !( clipSize := this._fromclipboard( clipData ) )
+  711        Return ""
+  712:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, this.ClipboardFormats.CF_DIB ) )
+  713        Return ""
+
+  719      this._IsInstance( A_ThisFunc )
+  720:     if !( clipSize := this._getClipData( clipData ) )
+  721        Return ""
+  722:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, this.ClipboardFormats.CF_DIB ) )
+  723        Return ""
+
+  728    {
+  729:     if !bitmap
+  730        Return 0
+  731:     if !WinClipAPI.IsInteger( bitmap )
+  732      {
+
+  741        hBitmap := bitmap, bmMade := 0
+  742:     if !hBitmap
+  743          Return 0
+  744      ;http://www.codeguru.com/Cpp/G-M/bitmap/article.php/c1765
+  745:     if !( hdc := DllCall( "GetDC", "Ptr", 0 ) )
+  746        goto, _BITMAPtoDIB_cleanup
+
+  767      ; Get BITMAPINFO. 
+  768:     if !DllCall("GetDIBits"
+  769                ,"ptr",hdc
+
+  791      WinClipAPI.memcopy( &DIB, &bmi, bmiLen )
+  792:     if !DllCall("GetDIBits"
+  793                ,"ptr",hdc
+
+  801  _BITMAPtoDIB_cleanup:
+  802:     if bmMade
+  803        DllCall( "DeleteObject", "ptr", hBitmap )
+
+  846    {
+  847:     if !( clipSize := this._fromclipboard( clipData ) )
+  848        Return ""
+  849:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, this.ClipboardFormats.CF_UNICODETEXT ) )
+  850        Return ""
+
+  856      this._IsInstance( A_ThisFunc )
+  857:     if !( clipSize := this._getClipData( clipData ) )
+  858        Return ""
+  859:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, this.ClipboardFormats.CF_UNICODETEXT ) )
+  860        Return ""
+
+  865    {
+  866:     if !( clipSize := this._fromclipboard( clipData ) )
+  867        Return ""
+  868:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, "HTML Format" ) )
+  869        Return ""
+
+  875      this._IsInstance( A_ThisFunc )
+  876:     if !( clipSize := this._getClipData( clipData ) )
+  877        Return ""
+  878:     if !( out_size := this._getFormatData( out_data, clipData, clipSize, "HTML Format" ) )
+  879        Return ""
+
+  884    {
+  885:     if this.formatByValue.HasKey( iformat )
+  886        Return this.formatByValue[ iformat ]
+
+  910    {
+  911:     if !fmt
+  912        Return 0
+
+  919      this._IsInstance( A_ThisFunc )
+  920:     if !( clipSize := this._getClipData( clipData ) )
+  921        Return 0
+
+  928                                                                    : WinClipAPI.RegisterClipboardFormat( needleFormat )
+  929:     if !needleFormat
+  930        Return 0
+
+  933      {
+  934:       if !( fmt := NumGet( data, offset, "UInt" ) )
+  935          break
+
+  938        offset += 4
+  939:       if !( dataSize := NumGet( data, offset, "UInt" ) )
+  940          break
+
+  950        Return 0
+  951:     if !( clipSize := this._getClipData( clipData ) )
+  952        Return 0
+  953:     if !( DIBsize := this._getFormatData( DIB, clipData, clipSize, this.ClipboardFormats.CF_DIB ) )
+  954        Return 0
+  955      gdip_token := WinClipAPI.Gdip_Startup()
+  956:     if !WinClipAPI.GetEncoderClsid( format, CLSID )
+  957        Return 0
+
+  968        Return 0
+  969:     if !( clipSize := this._fromclipboard( clipData ) )
+  970        Return 0
+  971:     if !( DIBsize := this._getFormatData( DIB, clipData, clipSize, this.ClipboardFormats.CF_DIB ) )
+  972        Return 0
+  973      gdip_token := WinClipAPI.Gdip_Startup()
+  974:     if !WinClipAPI.GetEncoderClsid( format, CLSID )
+  975        Return 0
+
+Modules\WinClip\WinClipAPI.ahk:
+    3    __Call( aTarget, aParams* ){
+    4:     if ObjHasKey( WinClip_base, aTarget )
+    5        Return WinClip_base[ aTarget ].( this, aParams* )
+
+   14      VarSetCapacity(msg,1000,0)
+   15:     if !len := DllCall("FormatMessageW"
+   16        ,"UInt",FORMAT_MESSAGE_FROM_SYSTEM := 0x00001000 | FORMAT_MESSAGE_IGNORE_INSERTS := 0x00000200		;dwflags
+
+   29    __Get( name ){
+   30:     if !ObjHasKey( this, initialized )
+   31        this.Init()
+
+   80    GetEnhMetaFileBits( hemf, ByRef buf ){
+   81:     if !( bufSize := DllCall( "GetEnhMetaFileBits", "Ptr", hemf, "Uint", 0, "Ptr", 0 ) )
+   82        Return 0
+   83      VarSetCapacity( buf, bufSize, 0 )
+   84:     if !( bytesCopied := DllCall( "GetEnhMetaFileBits", "Ptr", hemf, "Uint", bufSize, "Ptr", &buf ) )
+   85        Return 0
+
+   95      VarSetCapacity(msg,1000,0)
+   96:     if !len := DllCall("FormatMessageW"
+   97        ,"UInt",FORMAT_MESSAGE_FROM_SYSTEM := 0x00001000 | FORMAT_MESSAGE_IGNORE_INSERTS := 0x00000200		;dwflags
+
+  106    IsInteger( var ){
+  107:     if var is integer
+  108        Return True
+
+  112    LoadDllFunction( file, function ){
+  113:     if !hModule := DllCall( "GetModuleHandleW", "Wstr", file, "UPtr" )
+  114        hModule := DllCall( "LoadLibraryW", "Wstr", file, "UPtr" )
+
+  121  
+  122:     If not SendMessageW
+  123        SendMessageW := this.LoadDllFunction( "user32.dll", "SendMessageW" )
+
+  135      threadWnd := this.GetWindowThreadProcessId( hwnd )
+  136:     if not DllCall( "GetGUIThreadInfo", "uint", threadWnd, "UPtr", &GuiThreadInfo )
+  137        Return 0
+
+  172    Gdip_Startup(){
+  173:     if !DllCall( "GetModuleHandleW", "Wstr", "gdiplus", "UPtr" )
+  174        DllCall( "LoadLibraryW", "Wstr", "gdiplus", "UPtr" )
+
+  181      DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
+  182:     if hModule := DllCall( "GetModuleHandleW", "Wstr", "gdiplus", "UPtr" )
+  183        DllCall("FreeLibrary", "Ptr", hModule)
+
+  204        {
+  205:         if tempArr.haskey( val )
+  206          {
+
+  212        }
+  213:       if nodubls
+  214          break
+
+  239      ;~ png
+  240:     if !format
+  241        Return 0

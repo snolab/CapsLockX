@@ -8,10 +8,9 @@ Global Anki增强_Lock := 0
 #WinActivateForce
 Return
 
-AnkiEnlock(key, to)
-{
-    if Anki增强_Lock {
-        Send {%key% up}
+AnkiEnlock(key, to){
+    If (Anki增强_Lock){
+        Send {%key% up}r
         Return
     }
     Anki增强_Lock := 1
@@ -51,8 +50,11 @@ AnkiUnlock(x)
 | 在 Anki-添加卡片界面 | Alt + s | 按下 添加 按钮 |
 )")
 
-#if !CapsLockXMode && (WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
+#If 在Anki学习界面()
 
+在Anki学习界面(){
+    return !CapsLockXMode && (WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
+}
 $x:: SendEvent s ; study
 $q:: SendEvent d ; quit
 $c:: SendEvent a ; create

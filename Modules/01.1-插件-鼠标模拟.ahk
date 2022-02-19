@@ -1,6 +1,7 @@
 ﻿; ========== CapsLockX ==========
 ; 注：Save as UTF-8 with BOM please
 ; 名称：摸拟鼠标
+; 描述：WASD鼠标移动，QE 左右键 RF滚轮
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX

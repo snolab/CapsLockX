@@ -3,7 +3,7 @@
 ; 用户创建目录
 便携版配置目录   = ./User
 用户目录配置目录 = %USERPROFILE%/.CapsLockX
-APPDATA配置目录 = %APPDATA%/CapsLockX
+APPDATA配置目录  = %APPDATA%/CapsLockX
 
 ; 默认值
 启动配置目录 := APPDATA配置目录
@@ -30,7 +30,10 @@ if (!CapsLockX_配置路径) {
 ; 配置文件编码清洗
 global CapsLockX_ConfigChangedTickCount
 CapsLockX_ConfigChangedTickCount := A_TickCount
+; msgbox 清洗为_UTF16_WITH_BOM_型编码1
 清洗为_UTF16_WITH_BOM_型编码(CapsLockX_配置路径)
+; msgbox 清洗为_UTF16_WITH_BOM_型编码2
+
 CapsLockX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
 ; 基本设定
 ; [Core]
@@ -56,7 +59,7 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
     CapsLockX_ConfigChangedTickCount := A_TickCount
     content := setValue
     
-    CapsLockX_DontReload := 1
+    ConfigLock()
     ; 不对配置自动重新排序
     if (comment) {
         ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
@@ -64,25 +67,23 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
     }
     ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
-    CapsLockX_DontReload := 0
+    ConfigUnlock()
     return content
 }
 CapsLockX_ConfigGet(field, varName, defaultValue)
 {
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
-    IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
-    content := %varName% ; 千层套路XD
+    IniRead, content, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
     return content
 }
 CapsLockX_Config(field, varName, defaultValue, comment := "")
 {
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
-    IniRead, %varName%, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
-    content := %varName% ; 千层套路XD
+    IniRead, content, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
     
-    CapsLockX_DontReload := 1
+    ConfigLock(field varName)
     ; 对配置自动重新排序
     if (comment) {
         IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
@@ -90,13 +91,45 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
     }
     IniDelete, %CapsLockX_配置路径%, %field%, %varName%
     IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
-    CapsLockX_DontReload := 0
+    ConfigUnlock()
     return content
 }
 
 清洗为_UTF16_WITH_BOM_型编码(path){
+    ConfigLock("清洗为_UTF16_WITH_BOM_型编码")
+    
+    FileEncoding, UTF-8
     FileRead content, %path%
     FileDelete %path%
     FileAppend %content%, %path%, UTF-16
     FileRead content, %path%
+    
+    ConfigUnlock()
+}
+
+ConfigLock(名义:="")
+{
+    k:= 0
+    while (FileExist(CapsLockX_配置路径 ".lock")) {
+        k := k + 1
+        if ( k > 10 ) {
+            FileRead 上次名义, % CapsLockX_配置路径 ".lock"
+            ; MsgBox, 程序退出, %名义% 配置写入失败，配置文件被意外锁定，上次锁定名义为 %上次名义%
+            ConfigUnlock()
+            Reload
+            ExitApp
+            ; return False
+        }
+        Sleep, 1000
+    }
+    CapsLockX_DontReload := 1
+    
+    FileAppend %名义%, % CapsLockX_配置路径 ".lock"
+    return True
+}
+ConfigUnlock()
+{
+    FileDelete % CapsLockX_配置路径 ".lock"
+    CapsLockX_DontReload := 0
+    return True
 }

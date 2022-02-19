@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.21.21</version>
+    <version>1.22.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -65,6 +65,24 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.22.0](https://github.com/snolab/CapsLockX/compare/v1.21.21...v1.22.0) (2022-02-17)
+
+
+### Features
+
+* [ModuleDisable] ([68a0d5c](https://github.com/snolab/CapsLockX/commit/68a0d5c08facefaaf2613980464f5a0335addce3)), closes [#27](https://github.com/snolab/CapsLockX/issues/27)
+
+
+### Bug Fixes
+
+* fix config gui  ([4678b3d](https://github.com/snolab/CapsLockX/commit/4678b3d669b796a132cbca398e9cb087566ecfd8))
+* fix config lock  ([187939a](https://github.com/snolab/CapsLockX/commit/187939a9b0a3f30df3b7bdc529d8c999aff5303c))
+* update helps description  ([5fefadf](https://github.com/snolab/CapsLockX/commit/5fefadf2a7218f12aebec0f422a5f2094a801a41))
+* 、 ([c1ea9c9](https://github.com/snolab/CapsLockX/commit/c1ea9c99ea34c168b015a8424f00aa0b6446ca61))
+* QQ  ([f5b7983](https://github.com/snolab/CapsLockX/commit/f5b7983b47b28fd5b5dc049b7ce4a652caa1b265))
+*  ([8bad5b1](https://github.com/snolab/CapsLockX/commit/8bad5b11221c0a00f65062d2953d75f22b81f871))
+* **:**  ([73326d3](https://github.com/snolab/CapsLockX/commit/73326d3062207c5db77e0664db35c2c90cabcb8c))
+
 ### [1.21.21](https://github.com/snolab/CapsLockX/compare/v1.21.20...v1.21.21) (2022-01-21)
 
 ### [1.21.20](https://github.com/snolab/CapsLockX/compare/v1.21.19...v1.21.20) (2022-01-20)
@@ -79,24 +97,21 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.21.15](https://github.com/snolab/CapsLockX/compare/v1.21.14...v1.21.15) (2022-01-20)
 
-
 ### Bug Fixes
 
-*   .nupkg ([628f808](https://github.com/snolab/CapsLockX/commit/628f8080551c2f06a16097c6279f6ea38bb88df0))
+-  .nupkg ([628f808](https://github.com/snolab/CapsLockX/commit/628f8080551c2f06a16097c6279f6ea38bb88df0))
 
 ### [1.21.14](https://github.com/snolab/CapsLockX/compare/v1.21.13...v1.21.14) (2022-01-20)
 
-
 ### Bug Fixes
 
-* git add versioning files ([63f2ed7](https://github.com/snolab/CapsLockX/commit/63f2ed755a6b021f03a55963aec3e710884d1f8a))
+- git add versioning files ([63f2ed7](https://github.com/snolab/CapsLockX/commit/63f2ed755a6b021f03a55963aec3e710884d1f8a))
 
 ### [1.21.13](https://github.com/snolab/CapsLockX/compare/v1.21.12...v1.21.13) (2022-01-20)
 
-
 ### Bug Fixes
 
-* versioning ([94a4fe5](https://github.com/snolab/CapsLockX/commit/94a4fe5dbc00d4c64ce16faad603170d54dc5878))
+- versioning ([94a4fe5](https://github.com/snolab/CapsLockX/commit/94a4fe5dbc00d4c64ce16faad603170d54dc5878))
 
 ### [1.21.12](https://github.com/snolab/CapsLockX/compare/v1.21.11...v1.21.12) (2022-01-20)
 
@@ -112,42 +127,17 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.21.6](https://github.com/snolab/CapsLockX/compare/v1.21.5...v1.21.6) (2022-01-20)
 
-
 ### Bug Fixes
 
-* ignore pacakge-lock ([b97028d](https://github.com/snolab/CapsLockX/commit/b97028d5ca1284f45e3eab1c54d47c0cf44bd6a5))
-* todo fix sendinput ([e96b4e8](https://github.com/snolab/CapsLockX/commit/e96b4e858982344a7394d22b617887ba0c73a52b))
-* virtual desktop with win11 ([bffab64](https://github.com/snolab/CapsLockX/commit/bffab64aa8fa74811276dbbf49c43869b591d44c))
-* virtual desktop with win11 ([fb7e0f7](https://github.com/snolab/CapsLockX/commit/fb7e0f76d8b0d22c9666d32b7db68202488760f6))
+- ignore pacakge-lock ([b97028d](https://github.com/snolab/CapsLockX/commit/b97028d5ca1284f45e3eab1c54d47c0cf44bd6a5))
+- todo fix sendinput ([e96b4e8](https://github.com/snolab/CapsLockX/commit/e96b4e858982344a7394d22b617887ba0c73a52b))
+- virtual desktop with win11 ([bffab64](https://github.com/snolab/CapsLockX/commit/bffab64aa8fa74811276dbbf49c43869b591d44c))
+- virtual desktop with win11 ([fb7e0f7](https://github.com/snolab/CapsLockX/commit/fb7e0f76d8b0d22c9666d32b7db68202488760f6))
 
 ## [1.21.5](https://github.com/snolab/CapsLockX/compare/v1.21.4...v1.21.5) (2022-01-11)
 
-
 ### Bug Fixes
-
-* choco-pack ([46f079a](https://github.com/snolab/CapsLockX/commit/46f079a1bef0665a8aa014201a95b7ac2122b4fd))
-
-
-
-## [1.21.4](https://github.com/snolab/CapsLockX/compare/v1.21.3...v1.21.4) (2022-01-10)
-
-
-### Bug Fixes
-
-* arrow speed up ([09ece0b](https://github.com/snolab/CapsLockX/commit/09ece0bdcddd52c20c0abb0fce3fbd06ffede89f))
-* enhance switch to desktop by hotkey for win11 ([c7f47ae](https://github.com/snolab/CapsLockX/commit/c7f47aeff3ffbdd03267c3ed09ce53ecc035ea3d))
-* format ([a907ad0](https://github.com/snolab/CapsLockX/commit/a907ad0f6ad67c7b6f251d4243e832c3997e7f68))
-* OneNote2016_Win11_Detect ([79413be](https://github.com/snolab/CapsLockX/commit/79413be776be87ff0420895628ef599bb693698c))
-* SwitchToDesktopByHotkey enhanced for win11 ([0e33d25](https://github.com/snolab/CapsLockX/commit/0e33d25db5258828f79e6cfcaf263af9999a263f))
-
-
-
-## [1.21.3](https://github.com/snolab/CapsLockX/compare/v1.21.2...v1.21.3) (2022-01-06)
-
-
-### Bug Fixes
-
-* add version name ([01feb10](https://github.com/snolab/CapsLockX/commit/01feb10beb9004fc18e20e21f89b736b067a48bc))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
 ; 名称：编辑增强
-; 描述：HJKL操作光标
+; 描述：YUIO HJKL 操作光标 GT 回车删除
 ; 版本：v2020.06.27
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com

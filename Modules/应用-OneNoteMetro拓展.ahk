@@ -5,11 +5,7 @@ SetKeyDelay, 0, 0
 
 Return
 
-; YiDong 的笔记本 ‎- OneNote
-; ahk_class ApplicationFrameWindow
-; ahk_exe ApplicationFrameHost.exe
-
-#IfWinActive .*- OneNote ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe
+#IfWinActive .*- OneNote ahk_class ApplicationFrameWindow ahk_exe ApplicationFrameHost.exe ; OneNote_UWP_笔记本内
 
 $F2::SendEvent ^+t
 

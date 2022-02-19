@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.21.21",
+  "version": "1.22.0",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "scripts": {
     "start": "CapsLockX.exe",
@@ -9,8 +9,9 @@
     "prepare": "husky install",
     "format": "npx -y -- prettier --write .",
     "prerelease": "npm run format",
-    "release": "standard-version --no-verify --commit-all",
-    "postrelease": "git push --follow-tag --all"
+    "release": "standard-version --commit-all",
+    "postrelease": "git push --follow-tag --all",
+    "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev"
   },
   "standard-version": {
     "scripts": {
@@ -41,5 +42,7 @@
     "sno-utils": "^0.3.6",
     "standard-version": "^9.3.2"
   },
-  "workspaces": ["Panel"]
+  "workspaces": [
+    "DevTools/CLXConfig.js"
+  ]
 }

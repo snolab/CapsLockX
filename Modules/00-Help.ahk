@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
 ; 名称：帮助模块及模块编写教程
-; 描述：打开 CapsLockX 的 Github 页面
+; 描述：用于提供帮助函数，打开 CapsLockX 的 Github 页面，不可禁用
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -55,8 +55,9 @@ CapsLockX_LoadHelpFrom(file)
 }
 CapsLockX_AppendHelp(helpStr)
 {
-    if(helpStr)
+    if (helpStr) {
         CapsLockX_HelpInfo .= helpStr "`n`n"
+    }
 }
 CapsLockX_ShowHelp(helpStr, inGlobal := 0, waitKey := "/")
 {
