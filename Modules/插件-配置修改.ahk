@@ -27,9 +27,10 @@ return
 m:: CapsLockX_配置窗口()
 
 CapsLockX_配置窗口(){
+    ; TODO update this to web view
     Gui, Add, Text, , 你可以按 CapsLockX + M 打开此窗口
-    Gui, Add, Text, , CapsLockX_配置目录：%CapsLockX_配置目录%
     Gui, Add, Text, , 当前 CapsLockX_配置目录：%CapsLockX_配置目录%
+    Gui, Add, Text, , CLX脚本交流群： QQ群 100949388， https://t.me/capslockx
     Gui, Add, Text, , 版本: CapsLockX %CapsLockX_VersionName%
     Gui, Add, Text, , 作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )
     Gui, Add, Button, Default w80, 确认
@@ -67,16 +68,8 @@ CapsLockX_配置窗口(){
     Gui, Show
 }
 
-MakeSureStartup()
-{
-    content = start "" %A_AhkPath%
-    startCMDPath = %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\capslockx-startup.cmd
-    FileDelete, %startCMDPath%
-    FileAppend, %content%, %startCMDPath%
-}
-
 Button添加开机自动启动:
-    MakeSureStartup()
+    Func("CapsLockX_MakeStartup").Call()
 return
 Button打开BUG反馈与建议页面:
     Run https://github.com/snolab/CapsLockX/issues

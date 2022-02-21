@@ -24,9 +24,8 @@ global CapsLockX_核心路径 := "./Core"
 ; 版本
 global CapsLockX_Version
 FileRead, CapsLockX_Version, ./Core/version.txt
-if(!CapsLockX_Version) {
-    CapsLockX_Version := "未知版本"
-}
+CapsLockX_Version := CapsLockX_Version ? CapsLockX_Version : "未知版本"
+
 global CapsLockX_VersionName := "v" CapsLockX_Version
 ; 加载过程提示
 global loadingTips := ""
@@ -152,9 +151,9 @@ Return
             }
         }
         
+        ; 加载模块描述
         FileRead, 模块文件内容, % CapsLockX_模块路径 "/" 模块文件
         matchPos := RegExMatch(模块文件内容, "mi)^; 描述：(.*)", 模块描述)
-        
         T%模块名称%_Disabled := CapsLockX_Config("ModuleDisable", "T" 模块名称 "_Disabled", 0, "是否禁用模块：" 模块名称 (模块描述1 ? " - " 模块描述1 : "") )
         
         if (模块帮助内容) {
@@ -270,18 +269,4 @@ CapsLockX启动(){
         Sleep, 1000
     }
     ExitApp
-}
-
-清洗为_UTF8_WITH_BOM_型编码(path){
-    if (FileExist(path ".lock")) {
-        return
-    }
-    FileAppend lock, %path%.lock
-    
-    FileEncoding UTF-8
-    FileRead content, %path%
-    FileDelete %path%
-    FileAppend %content%, %path%, UTF-8
-    
-    FileDelete %path%.lock
 }

@@ -10,21 +10,26 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to e
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址 🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
+<!-- culture badges  -->
+
+[![中文编程](https://github.com/Program-in-Chinese/overview/raw/master/%E4%B8%AD%E6%96%87%E7%BC%96%E7%A8%8B.svg)](https://github.com/Program-in-Chinese/overview)
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
 <!-- clicks / downloads -->
 
 [![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
 [![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
 [![Downloads-From-GitHub-Releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=Downloads-From-GitHub-Releases)](https://github.com/snolab/CapsLockX/releases)
 
-<!-- building status -->
+<!-- build and publish status -->
 
+[![GitHub version](https://badge.fury.io/gh/snolab%2FCapsLockX.svg)](https://badge.fury.io/gh/snolab%2FCapsLockX)
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
+[![npm version](https://badge.fury.io/js/capslockx.svg)](https://badge.fury.io/js/capslockx)
 [![NPM](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
 
 <!-- [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml) -->
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
-
----
 
 ## 新手快速入门教程 📖
 
@@ -104,7 +109,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 2. 将它复制一份，命名为你自己的插件名称
 3. 将它本来的功能改成你自己需要的功能，插件的开发就完成啦！
 
-#### 本模块功能见下
+## 本模块功能见下
 
 | 作用于 | 按键                  | 功能                             |
 | ------ | --------------------- | -------------------------------- |
@@ -122,7 +127,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 —— 由 [秦金伟](http://rsytes.coding-pages.com/) 推荐
 
-#### 功能
+## 功能
 
 - 本模块使用按键区：CapsLockX + QWER ASDF
 - 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
@@ -130,7 +135,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 - 效果如图：
   ![鼠标模拟.gif](./docs/docs/media/鼠标模拟.gif)
 
-#### 使用方法如下
+## 使用方法如下
 
 | 作用于 | 按键                                  | 说明                      |
 | ------ | ------------------------------------- | ------------------------- |
@@ -143,7 +148,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | 全局   | `CapsLockX + e`                       | 鼠标左键                  |
 | 全局   | `CapsLockX + q`                       | 鼠标右键                  |
 
-#### 操作细节
+## 操作细节
 
 快速连按 AD 步进
 
@@ -172,7 +177,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 窗口增强插件 (CLX + 1234567890 ZXCV)
 
-#### 功能简述
+## 功能简述
 
 用好 Win 10 自带的 10 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、（注：任务栏和 AltTab 相关功能暂不兼容 Win11，窗口排列功能正常。）
 
@@ -184,14 +189,14 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 6. 高效使用虚拟桌面：`CapsLockX + 0123456789` 切换、增减虚拟桌面，加上 `Shift` 键可以转移当前窗口
 7. 虚拟机与远程桌面快速脱离：双击左边 `Shift + Ctrl + Alt`。
 
-#### 效果图
+## 效果图
 
 - Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./docs/docs/media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./docs/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 - CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
   ![02-插件-窗口增强_一键排列窗口.gif](./docs/docs/media/02-插件-窗口增强_一键排列窗口.gif)
 
-#### 使用方法如下 ( Alt+Tab 与 CapsLockX )
+## 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
 | 作用域       | 窗口增强模块                          | 说明                                       |
 | ------------ | ------------------------------------- | ------------------------------------------ |
@@ -297,7 +302,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 我很确定我们用的不是同一个 OneNote，因为，你没有装 CapsLockX ！
 
-#### 按键分布设计（开发中）
+## 按键分布设计（开发中）
 
 | 按键描述                | 作用                    | 备注       |
 | ----------------------- | ----------------------- | ---------- |
@@ -313,7 +318,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 | `Alt + /`               | 热键帮助、提示          | 开发中     |
 | `F2 F3`                 | 重命名、查找笔记        |            |
 
-#### 详细按键表 / CheatSheet
+## 详细按键表 / CheatSheet
 
 | 作用于                   | 格式热键                       | 功能                                                                      |
 | ------------------------ | ------------------------------ | ------------------------------------------------------------------------- |
@@ -357,18 +362,18 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ### 讯飞输入法悬浮窗插件
 
-#### 用法
+## 用法
 
 | 作用于 |      按键       | 功能说明              |
 | ------ | :-------------: | --------------------- |
 | 全局   | `Win + Alt + H` | 启动/切换讯飞语音输入 |
 
-#### 注
+## 注
 
 1. 原 `Win + H` 的功能是 Windows 自带听写，安装本插件后，可通过 `Win + Shift + H` 使用原 Windows 的听写
 2. 若没有安装讯飞语音则会自动询问是否引导下载安装
 
-#### 效果如下图
+## 效果如下图
 
 ![应用-讯飞语音输入法悬浮窗演示.gif](./docs/docs/media/应用-讯飞语音输入法悬浮窗演示.gif)
 
@@ -489,7 +494,6 @@ Ctrl + Alt + 同上，但一般为全局热键
 文档地址 📄
 
 - 自动翻译文档 Netlify CDN：[https://capslockx.netlify.com](https://capslockx.netlify.com)
-- 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 - 自动翻译文档 CloudFlare CDN：[https://capslockx.snomiao.com](https://capslockx.snomiao.com)
 
 星图 ⭐️
