@@ -14,7 +14,7 @@ global T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop := CapsLockX_Config("Tomat
 
 if (T_TomatoLife) {
     高精度时间配置()
-    GoSub CapsLockX定时任务   
+    GoSub CapsLockX定时任务
     ; [有一个难以复现的 bug・Issue #17・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/17 )
 }
 
@@ -75,19 +75,19 @@ Return
     ; MsgBox, 番茄：%番茄状态%
     ; TrayTip, 番茄：%番茄状态%, ： %番茄状态%
     ; 状态动作
-    if ("工作时间" == 番茄状态){
+    if ("工作时间" == 番茄状态) {
         ; SoundPlay % "C:\Windows\media\Windows Unlock.wav" ; 时间提醒
         sleep 30000 ; 暂缓30秒切工作桌面
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
-        if (T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop){
+        if (T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop) {
             Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
         }
     }
-    if ("休息时间" == 番茄状态){
+    if ("休息时间" == 番茄状态) {
         ; SoundPlay % "C:\Windows\media\Windows Balloon.wav" ; 时间提醒
         SoundPlay % "Data/NoteG_C.mp3" ; 降调
         sleep 30000 ; 暂缓30秒切休息桌面
-        if(T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop){
+        if(T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop) {
             Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
         }
     }

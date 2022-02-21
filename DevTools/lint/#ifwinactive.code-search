@@ -1,0 +1,6 @@
+# Query: #IfWinActive[^\\n;]*\\n
+# Flags: RegExp
+# Including: *.ahk
+# ContextLines: 1
+
+No Results

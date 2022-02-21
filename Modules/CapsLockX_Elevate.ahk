@@ -28,7 +28,7 @@ AskRunAsAdmin()
     if (!A_IsAdmin And !RegExMatch(full_command_line, " /restart(?!\S)")) {
         TrayTip, CapsLockX 权限受限, 当前权限受限，例如鼠标模拟等功能无法正常运行，正在请求提升权限。
         try {
-            if A_IsCompiled {
+            if (A_IsCompiled) {
                 Run *RunAs "%A_ScriptFullPath%" /restart, "%A_WorkingDir%"
             } else {
                 Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", "%A_WorkingDir%"

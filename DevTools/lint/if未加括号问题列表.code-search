@@ -1,28 +1,9 @@
-# Query: ^\\s*if[ ]*[^( ]
+# Query: ^\\s*if[ ]+[^( ]
 # Flags: RegExp
 # Including: *.ahk
 # ContextLines: 1
 
-118 results - 10 files
-
-CapsLockX.ahk:
-  264          MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
-  265:         IfMsgBox No
-  266          return
-
-Modules\CapsLockX_Elevate.ahk:
-  30          try {
-  31:             if A_IsCompiled {
-  32                  Run *RunAs "%A_ScriptFullPath%" /restart, "%A_WorkingDir%"
-
-Modules\CapsLockX_Reload.ahk:
-  40      MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
-  41:     IfMsgBox Yes
-  42      ; MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
-
-  70          MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否重载？
-  71:         IfMsgBox Yes
-  72          reload
+110 results - 6 files
 
 Modules\Eval-Javascript.ahk:
   43  GetObjJScript_DEPRECATED(){
@@ -35,35 +16,21 @@ Modules\LaptopKeyboardFix.ahk:
   12      ExitApp
 
 Modules\应用-Anki增强.ahk:
-   11  AnkiEnlock(key, to){
-   12:     If Anki增强_Lock{
-   13          Send {%key% up}
+  106      ClipWait, 0, text
+  107:     if ErrorLevel {
+  108          MsgBox, 剪贴板里没有内容
 
-  100      ClipWait, 0, text
-  101:     If ErrorLevel {
-  102          MsgBox, 剪贴板里没有内容
+  118      file := FileOpen(FileName, "w", "UTF-8")
+  119:     if !IsObject(file) {
+  120          MsgBox Can't open "%FileName%" for writing.
 
-  112      file := FileOpen(FileName, "w", "UTF-8")
-  113:     If !IsObject(file){
-  114          MsgBox Can't open "%FileName%" for writing.
+  155      WinShow ahk_id %addWindow%
+  156:     if ErrorLevel {
+  157          TrayTip, CapsLockX, 没有获取到剪贴板的内容
 
-  147      WinShow ahk_id %addWindow%
-  148:     if ErrorLevel {
-  149          TrayTip, CapsLockX, 没有获取到剪贴板的内容
-
-  167      ClipWait, 10, 1
-  168:     if ErrorLevel 
-  169      { 
-
-Modules\应用-讯飞输入法语音悬浮窗.ahk:
-  20      ; 非空检查，确保 iFlyPath 有值
-  21:     iFlyPath := (iFlyPath ? iFlyPath : "C:\Program Files (x86)\iFly Info Tek\iFlyIME\2.1.1708")
-  22:     iFlyWnd := WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe" )
-  23      if (iFlyWnd) {
-
-  33              MsgBox, 4, , 你似乎还没有安装讯飞语音输入法，是否现在下载安装包并【手动安装】到默认目录？
-  34:             IfMsgBox, NO, Return
-  35              UrlDownloadToFile https://download.voicecloud.cn/200ime/iFlyIME_Setup_2.1.1708.exe, %TEMP%/iFlyIME_Setup_2.1.1708.exe
+  175      ClipWait, 10, 1
+  176:     if ErrorLevel
+  177      {
 
 Modules\WatchFolder\WatchFolder.ahk:
    88              D := WatchedFolders[FolderName]
