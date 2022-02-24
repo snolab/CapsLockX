@@ -16,7 +16,7 @@ jobs:
           CONVENTIONAL_GITHUB_RELEASER_TOKEN: ${{secrets.GITHUB_TOKEN}}
       # pack
       - run: mkdir -p ./CapsLockX-${{ env.RELEASE_VERSION }}
-      - run: cp -r docs Core Data Modules Tools *.exe *.ahk *.txt *.md ./CapsLockX-${{ env.RELEASE_VERSION }}
+      - run: cp -r docs Core Data Modules Tools *.exe *.ahk *.md ./CapsLockX-${{ env.RELEASE_VERSION }}
       - run: zip -r CapsLockX-${{ env.RELEASE_VERSION }}.zip ./CapsLockX-${{ env.RELEASE_VERSION }} -UN=UTF8
       # upload
       - uses: svenstaro/upload-release-action@v2
