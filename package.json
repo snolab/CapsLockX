@@ -13,6 +13,17 @@
     "postrelease": "git push --follow-tag --all",
     "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev"
   },
+  "files": [
+    "Core",
+    "Data",
+    "package*",
+    "Modules",
+    "Tools",
+    "docs",
+    "CapsLockX*",
+    "*.txt",
+    "*.md"
+  ],
   "standard-version": {
     "scripts": {
       "precommit": "node DevTools/versioning.node.mjs && git add ."
