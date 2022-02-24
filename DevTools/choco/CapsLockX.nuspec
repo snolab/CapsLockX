@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.23.1</version>
+    <version>1.23.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2021</copyright>
@@ -64,6 +64,8 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
     <releaseNotes><![CDATA[# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.23.2](https://github.com/snolab/CapsLockX/compare/v1.23.1...v1.23.2) (2022-02-24)
 
 ### [1.23.1](https://github.com/snolab/CapsLockX/compare/v1.23.0...v1.23.1) (2022-02-24)
 
