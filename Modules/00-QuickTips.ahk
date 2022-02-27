@@ -5,9 +5,9 @@ return
 
 #if CapsLockXMode
     
-/:: 环境热键提示()
+/:: 环境热键提示切换()
 
-环境热键提示()
+环境热键提示切换()
 {
     环境热键提示 := !环境热键提示
     if ( 环境热键提示) {
@@ -41,4 +41,12 @@ SceneTips()
         showMsg := msg
         ToolTip %msg%
     }
+}
+CapsLockX_LongPressDown()
+{
+    SceneTips()
+}
+CapsLockX_LongPressUp()
+{
+    SceneTipsRemove()
 }
