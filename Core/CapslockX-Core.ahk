@@ -309,8 +309,12 @@ CapsLockX_Dn()
             if ( A_TickCount - CapsLockPressTimestamp > 1000) {
                 ; (20210817)长按（空格除外）
                 waitKey := CapsLockX_上次触发键
-                CapsLockX_ModeEnter()
+                ; 取消长按CLX进入CLX锁定模式
+                ; CapsLockX_ModeEnter()
+                ; 尝试增加长按显示热键提示
+                ; Func("CapsLockX_LongPressDown").Call()
                 KeyWait, %waitKey% ; wait to prevent flashing the quit and enter message
+                ; Func("CapsLockX_LongPressUp").Call()
             }
         }
     }

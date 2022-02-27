@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.22.0",
+  "version": "1.23.2",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "scripts": {
     "start": "CapsLockX.exe",
@@ -14,6 +14,17 @@
     "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev",
     "clxconfig-build": "cd DevTools/CLXConfig.js && npm run build"
   },
+  "files": [
+    "Core",
+    "Data",
+    "package*",
+    "Modules",
+    "Tools",
+    "docs",
+    "CapsLockX*",
+    "*.txt",
+    "*.md"
+  ],
   "standard-version": {
     "scripts": {
       "precommit": "node DevTools/versioning.node.mjs && git add ."
@@ -37,13 +48,22 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@types/pinyin": "^2.10.0",
+    "eslint": "^8.9.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.4",
     "husky": "^7.0.4",
+    "lint-staged": "^12.3.4",
     "lodash": "^4.17.21",
     "pinyin": "^2.10.2",
+    "prettier": "^2.5.1",
     "sno-utils": "^0.3.6",
     "standard-version": "^9.3.2"
   },
   "workspaces": [
     "DevTools/CLXConfig.js"
-  ]
+  ],
+  "lint-staged": {
+    "*.js": "eslint --cache --fix",
+    "*.{js,css,md}": "prettier --write"
+  }
 }
