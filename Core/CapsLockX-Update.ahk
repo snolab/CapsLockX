@@ -4,7 +4,7 @@
 ; 作者：snomiao (snomiao@gmail.com)
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2021.03.24
-; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
 
@@ -169,7 +169,7 @@ CapsLockX_ZIP下载解压更新(包网址, 包路径, 解压目录, 程序目录
         return CapsLockX_Update_Fail | CapsLockX_Update_Stop
     }
     CapsLockX_更新记录("解压完成...")
-
+    
     CapsLockX_更新提示("解压完成，将打开新版本文件夹，请把它手动复制到当前软件目录。")
     Run explorer /select`, %程序目录%
     Run explorer /select`, %A_ScriptDir%

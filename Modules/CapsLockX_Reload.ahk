@@ -4,7 +4,7 @@
 ; 作者：snomiao (snomiao@gmail.com)
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2021.01.20
-; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
 ; tooltip loaded
@@ -17,8 +17,8 @@ TrayTip CapsLockX 载入成功
 global Reload_DeveloperAsYouInstallMeByGitClone := FileExist(A_WorkingDir "/.git")
 return
 
-
-CapsLockX_JustConfigured(){
+CapsLockX_JustConfigured()
+{
     ; 跳过 CapsLockX 自己改的配置，容差 2-5 秒
     global CapsLockX_ConfigChangedTickCount
     return CapsLockX_ConfigChangedTickCount && A_TickCount - CapsLockX_ConfigChangedTickCount < 5000
@@ -30,7 +30,7 @@ CapsLockX_FolderModified(Folder, Changes) {
         return
     }
     ; don reload
-    if (CapsLockX_DontReload){
+    if (CapsLockX_DontReload) {
         return
     }
     ; 只在 git clone 安装方式下询问配置重载
@@ -51,7 +51,7 @@ CapsLockX_FolderChanged(Folder, Changes)
         return
     }
     ; don reload
-    if (CapsLockX_DontReload){
+    if (CapsLockX_DontReload) {
         return
     }
     
@@ -71,12 +71,12 @@ CapsLockX_FolderChanged(Folder, Changes)
         IfMsgBox Yes
         reload
         ; CapsLockX_Reload()
-
+        
     }
 }
 
 #if CapsLockXMode
-
+    
 \:: Reload ; CapsLockX_模块重载
 +\:: CapsLockX_Reload() ; CapsLockX_重新启动
 ^+\:: ExitApp ; CapsLockX_退出

@@ -11,7 +11,8 @@
     "prerelease": "npm run format",
     "release": "standard-version --commit-all",
     "postrelease": "git push --follow-tag --all",
-    "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev"
+    "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev",
+    "clxconfig-build": "cd DevTools/CLXConfig.js && npm run build"
   },
   "standard-version": {
     "scripts": {

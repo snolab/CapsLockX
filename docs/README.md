@@ -8,6 +8,10 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to e
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址 🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
+---
+
+## 版本墙 / 徽章墙
+
 <!-- culture badges  -->
 
 [![中文编程](https://github.com/Program-in-Chinese/overview/raw/master/%E4%B8%AD%E6%96%87%E7%BC%96%E7%A8%8B.svg)](https://github.com/Program-in-Chinese/overview)
@@ -22,7 +26,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 <!-- build and publish status -->
 
 [![GitHub version](https://badge.fury.io/gh/snolab%2FCapsLockX.svg)](https://badge.fury.io/gh/snolab%2FCapsLockX)
-[![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/release-github.yml)
+[![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/gh-pages-release.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/gh-pages-release.yml)
 
 [![npm version](https://badge.fury.io/js/capslockx.svg)](https://badge.fury.io/js/capslockx)
 [![npm publish](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
@@ -31,6 +35,8 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 [![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
 
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
+
+---
 
 ## 新手快速入门教程 📖
 
@@ -134,7 +140,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 - 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 - 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 - 效果如图：
-  ![鼠标模拟.gif](./media/鼠标模拟.gif)
+  ![鼠标模拟.gif]( ./media/鼠标模拟.gif )
 
 ## 使用方法如下
 
@@ -161,7 +167,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![光标移动.gif](./media/光标移动.gif)
+![光标移动.gif]( ./media/光标移动.gif )
 
 | 作用域     | Edit 模块             | 说明                             |
 | ---------- | --------------------- | -------------------------------- |
@@ -195,7 +201,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 - Alt + Tab 管理窗口增强
   ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 - CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
-  ![02-插件-窗口增强_一键排列窗口.gif](./media/02-插件-窗口增强_一键排列窗口.gif)
+  ![02-插件-窗口增强_一键排列窗口.gif]( ./media/02-插件-窗口增强_一键排列窗口.gif )
 
 ## 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
@@ -376,7 +382,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 ## 效果如下图
 
-![应用-讯飞语音输入法悬浮窗演示.gif](./media/应用-讯飞语音输入法悬浮窗演示.gif)
+![应用-讯飞语音输入法悬浮窗演示.gif]( ./media/应用-讯飞语音输入法悬浮窗演示.gif )
 
 <!-- 模块文件名：插件-媒体键.ahk-->
 
@@ -419,7 +425,6 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
 
 注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life](https://github.com/snomiao/tomato-life)
-
 <!-- 结束：抽取模块帮助 -->
 
 ## 过去与未来 🛰

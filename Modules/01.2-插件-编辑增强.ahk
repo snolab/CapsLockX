@@ -5,7 +5,7 @@
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
-; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 

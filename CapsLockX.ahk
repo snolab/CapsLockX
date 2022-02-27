@@ -5,7 +5,7 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 编码：UTF-8 with BOM
-; 版权：Copyright © 2017-2021 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
 ; 感谢：张工 QQ: 45289331 参与调试
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
