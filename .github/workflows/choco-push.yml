@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - "v*"
-name: Chocolatey
+name: chocolatey publish
 jobs:
   chocolatey-push:
     runs-on: windows-latest
