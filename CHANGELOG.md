@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.24.0](https://github.com/snolab/CapsLockX/compare/v1.23.2...v1.24.0) (2022-02-27)
+
+### Features
+
+- emoji-search-in-english ([5ef8280](https://github.com/snolab/CapsLockX/commit/5ef82802de30c9db431b4f63351f6653bcc73948))
+
+### Bug Fixes
+
+- merge ([406b1e5](https://github.com/snolab/CapsLockX/commit/406b1e57c4a9501b6c2420bfa3bb31b2254e2f2c))
+- 去掉长按锁定 CLX， 尝试增加长按显示热键提示 ([489ee64](https://github.com/snolab/CapsLockX/commit/489ee64ecdb370becfae84d3e7c97b4a49932d81))
+- 行尾回车+删除整行 ([2944734](https://github.com/snolab/CapsLockX/commit/2944734df081c3768f71cb85ffa3ef05f9a1f2a6))
+
 ### [1.23.2](https://github.com/snolab/CapsLockX/compare/v1.23.1...v1.23.2) (2022-02-24)
 
 ### [1.23.1](https://github.com/snolab/CapsLockX/compare/v1.23.0...v1.23.1) (2022-02-24)
