@@ -1,10 +1,11 @@
+name: npm-publish
 on:
   push:
     tags:
       - "v*"
-name: npm-publish
 jobs:
   npm-publish:
+    if: github.repository == 'snolab/CapsLockX'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
