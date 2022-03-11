@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.24.1</version>
+    <version>1.24.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,6 +65,14 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.24.2](https://github.com/snolab/CapsLockX/compare/v1.24.1...v1.24.2) (2022-03-11)
+
+
+### Bug Fixes
+
+* #if CapsLockXMode & CM_FN for esc swap ([8f56b1e](https://github.com/snolab/CapsLockX/commit/8f56b1e185cd51bd0974e78f1c1db5bfdd20c8d2))
+* try fix sendmode ([c94c56a](https://github.com/snolab/CapsLockX/commit/c94c56a1c54b7ea32b6a8ba2a26e82e36e2504a8))
+
 ### [1.24.1](https://github.com/snolab/CapsLockX/compare/v1.24.0...v1.24.1) (2022-02-27)
 
 ## [1.24.0](https://github.com/snolab/CapsLockX/compare/v1.23.2...v1.24.0) (2022-02-27)
@@ -108,10 +116,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 - || ([ee2687a](https://github.com/snolab/CapsLockX/commit/ee2687aa7b4f49a41a76833d9a6b67f818dfae42))
-- acrobat  ([dab9e76](https://github.com/snolab/CapsLockX/commit/dab9e76ee2270499309dff98fd818256c6c5445b))
-- ActivateLastFlashWindow  ([922664f](https://github.com/snolab/CapsLockX/commit/922664f2a67010cfa5f42630248926066d2ad230))
-- add version name ([01feb10](https://github.com/snolab/CapsLockX/commit/01feb10beb9004fc18e20e21f89b736b067a48bc))
-- alt+tab modify volume ([0136195](https://github.com/snolab/CapsLockX/commit/0136195989fe2619d0bfcdd3c2bbb5c9ab95cca0))]]></releaseNotes>
+- acrobat  ([dab9e76](https://github.com/snolab/CapsLockX/commit/dab9e76ee2270499309dff98fd818256c6c5445b))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.24.2](https://github.com/snolab/CapsLockX/compare/v1.24.1...v1.24.2) (2022-03-11)
+
+### Bug Fixes
+
+- #if CapsLockXMode & CM_FN for esc swap ([8f56b1e](https://github.com/snolab/CapsLockX/commit/8f56b1e185cd51bd0974e78f1c1db5bfdd20c8d2))
+- try fix sendmode ([c94c56a](https://github.com/snolab/CapsLockX/commit/c94c56a1c54b7ea32b6a8ba2a26e82e36e2504a8))
+
 ### [1.24.1](https://github.com/snolab/CapsLockX/compare/v1.24.0...v1.24.1) (2022-02-27)
 
 ## [1.24.0](https://github.com/snolab/CapsLockX/compare/v1.23.2...v1.24.0) (2022-02-27)
