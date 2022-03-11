@@ -55,18 +55,18 @@ AnkiUnlock(x)
 在Anki学习界面(){
     return !CapsLockXMode && (WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
 }
-$x:: SendEvent s ; study
-$q:: SendEvent d ; quit
-$c:: SendEvent a ; create
+$x:: Send s ; study
+$q:: Send d ; quit
+$c:: Send a ; create
 
 ; 撤销
-$5:: SendEvent ^z
-$Numpad5:: SendEvent ^z
+$5:: Send ^z
+$Numpad5:: Send ^z
 
 ; 暂停卡片
-$`:: SendEvent {Space}
-$6:: SendEvent @
-$Numpad6:: SendEvent @
+$`:: Send {Space}
+$6:: Send @
+$Numpad6:: Send @
 
 ; 方向键控制
 $w:: AnkiEnlock("w", "^z")
@@ -178,11 +178,11 @@ $!c::
         TrayTip, CapsLockX, 没有获取到剪贴板的内容
     Return
 }
-SendEvent ^v
+Send ^v
 Return
 
-$!s:: SendEvent ^{Enter}
-$!x:: SendEvent ^+x
+$!s:: Send ^{Enter}
+$!x:: Send ^+x
 
 #if (WinExist("添加|Add ahk_class QWidget ahk_exe anki.exe") or WinExist("添加|Add ahk_class Qt5QWindowIcon ahk_exe anki.exe")) ;
 
@@ -190,20 +190,20 @@ $F1::
     if (!CaptureScreenNoteAdd()) {
     Return
 }
-SendEvent ^v
+Send ^v
 Sleep 200
-SendEvent {Tab}
+Send {Tab}
 Return
 $F2::
     if (!CaptureScreenNoteAdd()) {
     Return
 }
-SendEvent ^v
+Send ^v
 Sleep 200
-SendEvent ^{Enter}
+Send ^{Enter}
 $F3::
     if (!CaptureScreenNoteAdd()) {
     Return
 }
-SendEvent ^+o
+Send ^+o
 Return

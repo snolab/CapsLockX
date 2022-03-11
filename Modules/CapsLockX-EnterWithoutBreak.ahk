@@ -15,5 +15,5 @@ return
 ; [[建议]增加backspace删除整行 · Issue #33 · snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/33 )
 
 ; tested in vscode multiline mode
-Enter:: SendEvent {End 2}{Enter} ; 行尾回车
-BackSpace:: SendEvent {Home 2}{End}{Home 2}+{End 2}+{Right}{Delete} ; 删除整行
+Enter:: Send {End 2}{Enter} ; 行尾回车
+BackSpace:: Send {Home 2}{End}{Home 2}+{End 2}+{Right}{Delete} ; 删除整行

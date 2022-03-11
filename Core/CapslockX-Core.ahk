@@ -147,7 +147,7 @@ UpdateCapsLockXLight()
     UpEdge := NowLightState && !LastLightState
     
     if (T_UseScrollLockLight && GetKeyState("ScrollLock", "T") != NowLightState) {
-        SendEvent {ScrollLock}
+        Send {ScrollLock}
     }
     if (T_UseCursor) {
         ; Module
@@ -278,9 +278,9 @@ CapsLockX_Dn()
     if (BypassCapsLockX) {
         CapsLockX_上次触发键 := ""
         ; ToolTip, % first5char "_" 触发键
-        SendEvent {Blind}{%触发键% Down}
+        Send {Blind}{%触发键% Down}
         KeyWait %触发键%
-        SendEvent {Blind}{%触发键% Up}
+        Send {Blind}{%触发键% Up}
         Return
     }
     ; 记录 CapsLockX 按住的时间
@@ -303,7 +303,7 @@ CapsLockX_Dn()
             ; 长按空格时保持原功能
             ; TODO: read system repeat interval
             if ( A_TickCount - CapsLockPressTimestamp > 200) {
-                SendEvent, {Blind}{Space}
+                Send, {Blind}{Space}
             }
         } else {
             if ( A_TickCount - CapsLockPressTimestamp > 1000) {
@@ -340,7 +340,7 @@ CapsLockX_Up()
                 }
             }
             if (CapsLockX_上次触发键 == "Space") {
-                SendEvent {Blind}{Space}
+                Send {Blind}{Space}
             }
         }
     }

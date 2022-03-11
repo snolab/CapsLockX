@@ -17,6 +17,8 @@ if (!CapsLockX) {
 global TMouse_Disabled := CapsLockX_Config("TMouse", "Disabled", 0, "禁用模拟鼠标模块")
 global TMouse_SendInput := CapsLockX_Config("TMouse", "SendInput", 1, "使用 SendInput 方法提高模拟鼠标点击、移动性能")
 global TMouse_SendInputAPI := CapsLockX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")
+global TMouse_SendInputScroll := CapsLockX_Config("TMouse", "TMouse_SendInputScroll", 0, "使用 Windows API 强势提升模拟鼠标滚轮性能（目前有bug不建议启用）")
+
 global TMouse_StickyCursor := CapsLockX_Config("TMouse", "StickyCursor", 1, "启用自动粘附各种按钮，编辑框")
 global TMouse_StopAtScreenEdge := CapsLockX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
 
@@ -33,9 +35,9 @@ global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio
 global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
-if (TMouse_SendInput)
+if (TMouse_SendInput) {
     SendMode Input
-
+}
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
 
@@ -92,20 +94,20 @@ SendInput_MouseMsg32(dwFlag, mouseData := 0)
     NumPut(dwFlag, sendData, 16, "UInt")
     DllCall("SendInput", "UInt", 1, "Str", sendData, "UInt", 28)
 }
-ScrollMouse(dx, dy)
-{
-    if (TMouse_SendInputAPI) {
-        SendInput_ScrollMouse(dx, dy)
-    } else {
-        PostMessage_ScrollMouse(dx, dy)
-    }
-}
 PostMessage_ScrollMouse(dx, dy)
 {
     WM_MOUSEWHEEL := 0x020A
     WM_MOUSEWHEELH := 0x020E
     _:= dy && PostMessageForScroll(WM_MOUSEWHEEL, -dy)
     _:= dx && PostMessageForScroll(WM_MOUSEWHEELH, dx)
+}
+ScrollMouse(dx, dy)
+{
+    if (TMouse_SendInputScroll) {
+        SendInput_ScrollMouse(dx, dy)
+    } else {
+        PostMessage_ScrollMouse(dx, dy)
+    }
 }
 SendInput_ScrollMouse(dx, dy)
 {

@@ -16,25 +16,28 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 <!-- culture badges  -->
 
-[![中文编程](https://github.com/Program-in-Chinese/overview/raw/master/%E4%B8%AD%E6%96%87%E7%BC%96%E7%A8%8B.svg)](https://github.com/Program-in-Chinese/overview)
+[![中文编程](https://github.com/Program-in-Chinese/overview/raw/master/%E4%B8%AD%E6%96%87%E7%BC%96%E7%A8%8B.svg)](https://github.com/Program-in-Chinese/overview),
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
-
-<!-- clicks / downloads -->
-
-[![jsdelivr_NPM](https://data.jsdelivr.com/v1/package/npm/capslockx/badge)](https://www.jsdelivr.com/package/npm/capslockx)
-[![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
-[![Downloads-From-GitHub-Releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total.svg?style=flat-square&label=Downloads-From-GitHub-Releases)](https://github.com/snolab/CapsLockX/releases)
+[![GitHub license](https://img.shields.io/github/license/snolab/CapsLockX)](https://github.com/snolab/CapsLockX/blob/master/LICENSE.md)
+![GitHub top language](https://img.shields.io/github/languages/top/snolab/CapsLockX)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/snolab/CapsLockX)
+[![GitHub stars](https://img.shields.io/github/stars/snolab/CapsLockX)](https://github.com/snolab/CapsLockX/stargazers)
 
 <!-- build and publish status -->
 
-[![GitHub version](https://badge.fury.io/gh/snolab%2FCapsLockX.svg)](https://badge.fury.io/gh/snolab%2FCapsLockX)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/snolab/CapsLockX)
 [![gh-pages](https://github.com/snolab/CapsLockX/actions/workflows/gh-pages-release.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/gh-pages-release.yml)
+![GitHub all releases](https://img.shields.io/github/downloads/snolab/CapsLockX/total)
+[![jsdelivr_GITHUB](https://data.jsdelivr.com/v1/package/gh/snolab/capslockx/badge)](https://www.jsdelivr.com/package/gh/snolab/capslockx)
 
-[![npm version](https://badge.fury.io/js/capslockx.svg)](https://badge.fury.io/js/capslockx)
+[![npm](https://img.shields.io/npm/v/capslockx)](https://www.npmjs.com/capslockx)
 [![npm publish](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/npm-publish.yml)
+![npm](https://img.shields.io/npm/dt/capslockx)
+![jsDelivr hits (npm)](https://img.shields.io/jsdelivr/npm/hy/capslockx)
 
 [![Chocolatey version](https://img.shields.io/chocolatey/v/capslockx)](https://community.chocolatey.org/packages/CapsLockX/)
-[![Chocolatey](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
+[![Chocolatey Publish](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/choco-push.yml)
+[![Chocolatey Downloads](https://img.shields.io/chocolatey/dt/CapsLockX)](https://community.chocolatey.org/packages/CapsLockX/)
 
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 

@@ -44,27 +44,27 @@ DisableLockWorkstation()
 
 左方向键发送(n:=1){
     loop %n%{
-        SendEvent {Blind}{Left}
+        Send {Blind}{Left}
     }
 }
 右方向键发送(n:=1){
     loop %n%{
-        SendEvent {Blind}{Right}
+        Send {Blind}{Right}
     }
 }
 上翻页键发送(n:=1){
     loop %n%{
-        SendEvent {Blind}{PgUp}
+        Send {Blind}{PgUp}
     }
 }
 下翻页键发送(n:=1){
     loop %n%{
-        SendEvent {Blind}{PgDn}
+        Send {Blind}{PgDn}
     }
 }
 上方向键发送(n:=1)
 {
-    ; 在 OneNote 笔记内部直接 SendEvent 上下方向键无反应， 故特殊处理使用 ControlSend 。
+    ; 在 OneNote 笔记内部直接 Send 上下方向键无反应， 故特殊处理使用 ControlSend 。
     if (hWnd := WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")) {
         ControlGetFocus, focusedClassNN, ahk_id %hWnd%
         if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
@@ -74,12 +74,12 @@ DisableLockWorkstation()
         }
     }
     loop %n%{
-        SendEvent {Blind}{up}
+        Send {Blind}{up}
     }
 }
 下方向键发送(n:=1)
 {
-    ; 在 OneNote 笔记内部直接 SendEvent 上下方向键无反应， 故特殊处理使用 ControlSend 。
+    ; 在 OneNote 笔记内部直接 Send 上下方向键无反应， 故特殊处理使用 ControlSend 。
     if (hWnd := WinActive(".*- OneNote ahk_class Framework\:\:CFrame ahk_exe ONENOTE.EXE")) {
         ControlGetFocus, focusedClassNN, ahk_id %hWnd%
         if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
@@ -90,7 +90,7 @@ DisableLockWorkstation()
         }
     }
     loop %n%{
-        SendEvent {Blind}{Down}
+        Send {Blind}{Down}
     }
 }
 
@@ -112,7 +112,7 @@ TurboTab(dx, dy, 状态)
         return
     }
     loop %dy%{
-        SendEvent {Blind}{Tab}
+        Send {Blind}{Tab}
     }
 }
 
@@ -125,9 +125,9 @@ TurboTab(dx, dy, 状态)
         ; hl 选词
         ; 先按右再按左
         if (dx > 0) {
-            SendEvent ^{Right}^+{Left}
+            Send ^{Right}^+{Left}
         } else {
-            SendEvent ^{Left}^+{Right}
+            Send ^{Left}^+{Right}
         }
         return 方向键模拟.止动()
     }
@@ -136,11 +136,11 @@ TurboTab(dx, dy, 状态)
         ; 先按下再按上
         if (dy > 0) {
             上方向键发送(1)
-            SendEvent  {Home}+{End}
-            ; SendEvent {End}+{Home}
+            Send  {Home}+{End}
+            ; Send {End}+{Home}
         } else {
             下方向键发送(1)
-            SendEvent  {Home}+{End}
+            Send  {Home}+{End}
         }
         return 方向键模拟.止动()
     }

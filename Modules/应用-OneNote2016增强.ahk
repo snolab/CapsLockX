@@ -373,7 +373,7 @@ F2:: SendEvent ^+t ; 重命名笔记
     Clipboard := ""
     SendEvent ^+a{AppsKey}l
     ClipWait, 1
-    if(ErrorLevel)
+    if (ErrorLevel)
         Return
     Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
 }
