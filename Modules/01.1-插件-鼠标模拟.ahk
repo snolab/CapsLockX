@@ -42,6 +42,19 @@ if (TMouse_SendInput) {
 ; 解决多屏 DPI 问题
 DllCall("Shcore.dll\SetProcessDpiAwareness", "UInt", 2)
 
+; gestures supports
+; [[AHK_H+Hv2] - WinApi() - Page 2 - Scripts and Functions - AutoHotkey Community]( https://www.autohotkey.com/board/topic/51243-ahk-hhv2-winapi/page-2 )
+global WM_GESTURE:=281
+global WM_GESTURENOTIFY:=282
+
+global GID_BEGIN:=1
+global GID_END:=2
+global GID_ZOOM:=3
+global GID_PAN:=4
+global GID_ROTATE:=5
+global GID_TWOFINGERTAP:=6
+global GID_PRESSANDTAP:=7
+
 Return
 
 CursorHandleGet()
@@ -161,6 +174,19 @@ SendInput_MouseMove(x, y)
     SendInput_MouseMove(dx, dy)
     
 }
+ScrollModeToggle()
+{
+    global CapsLockX_WASD_MouseOrScroll
+    if (CapsLockX_WASD_MouseOrScroll != 0) {
+        CapsLockX_WASD_MouseOrScroll := 0
+        ToolTip 鼠标模拟 已切换到 WASD 滚轮模式，再次按 CapsLockX+AD 可取消
+        SetTimer 鼠标模拟_ToolTipRemove, -3000
+    } else {
+        CapsLockX_WASD_MouseOrScroll := 1
+        ToolTip 鼠标模拟 已切换到 WASD 鼠标模式
+        SetTimer 鼠标模拟_ToolTipRemove, -3000
+    }
+}
 ScrollModeEnter()
 {
     global CapsLockX_WASD_MouseOrScroll
@@ -187,12 +213,12 @@ ScrollModeExit()
         return
     }
     if (状态 == "横中键") {
-        ScrollModeEnter()
+        ScrollModeToggle()
         鼠标模拟.止动()
         return
     }
     if (状态 == "纵中键") {
-        ScrollModeEnter()
+        ScrollModeToggle()
         鼠标模拟.止动()
         return
     }
@@ -276,7 +302,7 @@ ScrollModeExit()
 }
 PostMessageForScroll(msg, zDelta)
 {
-    ; 目前还不支持UWP
+    ; 目前还不支持 UWP which should use WM_TOUCH
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
     wParam := zDelta << 16 ;zDelta
@@ -284,9 +310,9 @@ PostMessageForScroll(msg, zDelta)
     MouseGetPos, , , , ControlClass2, 2
     MouseGetPos, , , , , ControlClass3, 3
     if (A_Is64bitOS) {
-        ControlClass1 := DllCall("WindowFromPoint", "int64", x | (y << 32), "Ptr")|0x0
+        ControlClass1 := DllCall("WindowFromPoint", "int64", x | (y << 32), "Ptr") | 0x0
     } else {
-        ControlClass1 := DllCall("WindowFromPoint", "int", x, "int", y) |0x0
+        ControlClass1 := DllCall("WindowFromPoint", "int", x, "int", y) | 0x0
     }
     ;Detect modifer keys held down (only Shift and Control work)
     wParam |= GetKeyState("Shift", "p") ? 0x4 : 0
@@ -309,6 +335,7 @@ PostMessageForScroll(msg, zDelta)
 }
 
 CapsLockX_鼠标左键按下(wait){
+    ScrollModeExit()
     global CapsLockX_鼠标左键等待
     if (CapsLockX_鼠标左键等待) {
         return
@@ -325,6 +352,7 @@ CapsLockX_鼠标左键弹起(){
     
 }
 CapsLockX_鼠标右键按下(wait){
+    ScrollModeExit()
     global CapsLockX_鼠标右键等待
     if (CapsLockX_鼠标右键等待) {
         return
@@ -363,8 +391,8 @@ CapsLockX_鼠标右键弹起(){
 *e Up::CapsLockX_鼠标右键弹起()
 *q Up:: CapsLockX_鼠标左键弹起()
 
-#if CapsLockXMode && CapsLockX_WASD_MouseOrScroll
-
+#if CapsLockXMode
+    
 ; 鼠标运动处理
 *a:: 鼠标模拟.左按("a")
 *d:: 鼠标模拟.右按("d")
@@ -374,10 +402,16 @@ CapsLockX_鼠标右键弹起(){
 #if CapsLockXMode && !CapsLockX_WASD_MouseOrScroll
 
 ; 滚轮运动处理
-*a:: 滚轮模拟.左按("a")
-*d:: 滚轮模拟.右按("d")
-*w:: 滚轮模拟.上按("w")
-*s:: 滚轮模拟.下按("s")
+; *a:: 滚轮模拟.左按("a")
+; *d:: 滚轮模拟.右按("d")
+; *w:: 滚轮模拟.上按("w")
+; *s:: 滚轮模拟.下按("s")¦
+
+; 滚轮运动处理
+*h:: 滚轮模拟.左按("h")
+*l:: 滚轮模拟.右按("l")
+*k:: 滚轮模拟.上按("k")
+*j:: 滚轮模拟.下按("j")
 
 #if CapsLockXMode
     
@@ -390,6 +424,7 @@ CapsLockX_鼠标右键弹起(){
 ; *^!f:: 滚轮自动控制.下按("f")
 ; *+r:: 滚轮模拟.左按("r")
 ; *+f:: 滚轮模拟.右按("f")
+
 *r::
     ScrollModeExit()
     滚轮模拟.上按("r")
