@@ -23,10 +23,11 @@ global TMouse_StickyCursor := CapsLockX_Config("TMouse", "StickyCursor", 1, "启
 global TMouse_StopAtScreenEdge := CapsLockX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
 
 ; 根据屏幕 DPI 比率，自动计算，得出，如果数值不对，才需要纠正
-global TMouse_UseDPIRatio := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
-global TMouse_MouseSpeedRatio := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global TMouse_WheelSpeedRatio := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
+global TMouse_UseDPIRatio           := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
+global TMouse_MouseSpeedRatio       := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_WheelSpeedRatio       := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_DPIRatio              := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
+global CapsLockX_WASD_MouseOrScroll := 1
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
@@ -103,6 +104,7 @@ PostMessage_ScrollMouse(dx, dy)
 }
 ScrollMouse(dx, dy)
 {
+    global TMouse_SendInputScroll
     if (TMouse_SendInputScroll) {
         SendInput_ScrollMouse(dx, dy)
     } else {
@@ -159,6 +161,24 @@ SendInput_MouseMove(x, y)
     SendInput_MouseMove(dx, dy)
     
 }
+ScrollModeEnter()
+{
+    global CapsLockX_WASD_MouseOrScroll
+    if (CapsLockX_WASD_MouseOrScroll != 0) {
+        CapsLockX_WASD_MouseOrScroll := 0
+        ToolTip 鼠标模拟 已切换到 WASD 滚轮模式，再次按 CapsLockX+AD 可取消
+        SetTimer 鼠标模拟_ToolTipRemove, -3000
+    }
+}
+ScrollModeExit()
+{
+    global CapsLockX_WASD_MouseOrScroll
+    if (CapsLockX_WASD_MouseOrScroll != 1) {
+        CapsLockX_WASD_MouseOrScroll := 1
+        ToolTip 鼠标模拟 已切换到 WASD 鼠标模式
+        SetTimer 鼠标模拟_ToolTipRemove, -3000
+    }
+}
 
 ; void 鼠标模拟
 鼠标模拟(dx, dy, 状态){
@@ -167,14 +187,12 @@ SendInput_MouseMove(x, y)
         return
     }
     if (状态 == "横中键") {
-        Func("SNOCLICK").Call()
-        ; SendEvent {Click 2}
+        ScrollModeEnter()
         鼠标模拟.止动()
         return
     }
     if (状态 == "纵中键") {
-        Func("SNOCLICK").Call()
-        ; SendEvent {Click 3}
+        ScrollModeEnter()
         鼠标模拟.止动()
         return
     }
@@ -238,6 +256,8 @@ SendInput_MouseMove(x, y)
         return 滚轮模拟.止动()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
+        ScrollModeExit()
+        
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
@@ -330,37 +350,53 @@ CapsLockX_鼠标右键弹起(){
 #if CapsLockXMode && !CapsLockX_MouseButtonSwitched
 
 ; 鼠标按键处理
-$*e:: CapsLockX_鼠标左键按下("e")
-$*q:: CapsLockX_鼠标右键按下("q")
+*e:: CapsLockX_鼠标左键按下("e")
+*q:: CapsLockX_鼠标右键按下("q")
+*e Up::CapsLockX_鼠标左键弹起()
+*q Up:: CapsLockX_鼠标右键弹起()
 
 #if CapsLockXMode && CapsLockX_MouseButtonSwitched
 
 ; 鼠标按键处理
-$*e:: CapsLockX_鼠标右键按下("e")
-$*q:: CapsLockX_鼠标左键按下("q")
+*e:: CapsLockX_鼠标右键按下("e")
+*q:: CapsLockX_鼠标左键按下("q")
+*e Up::CapsLockX_鼠标右键弹起()
+*q Up:: CapsLockX_鼠标左键弹起()
 
-#if CapsLockXMode
-    
-; 鼠标按键处理
-*e::CapsLockX_鼠标左键按下("e")
-*q:: CapsLockX_鼠标右键按下("q")
-*e Up::CapsLockX_鼠标左键弹起()
-*q Up:: CapsLockX_鼠标右键弹起()
+#if CapsLockXMode && CapsLockX_WASD_MouseOrScroll
+
 ; 鼠标运动处理
 *a:: 鼠标模拟.左按("a")
 *d:: 鼠标模拟.右按("d")
 *w:: 鼠标模拟.上按("w")
 *s:: 鼠标模拟.下按("s")
+
+#if CapsLockXMode && !CapsLockX_WASD_MouseOrScroll
+
+; 滚轮运动处理
+*a:: 滚轮模拟.左按("a")
+*d:: 滚轮模拟.右按("d")
+*w:: 滚轮模拟.上按("w")
+*s:: 滚轮模拟.下按("s")
+
+#if CapsLockXMode
+    
 ; 滚轮运动处理
 ; *+^!r:: 滚轮自动控制.左按("r")
 ; *+^!f:: 滚轮自动控制.右按("f")
-*^![:: 滚轮自动控制.左按("[")
-*^!]:: 滚轮自动控制.右按("]")
+; *^![:: 滚轮自动控制.左按("[")
+; *^!]:: 滚轮自动控制.右按("]")
 ; *^!r:: 滚轮自动控制.上按("r")
 ; *^!f:: 滚轮自动控制.下按("f")
 ; *+r:: 滚轮模拟.左按("r")
 ; *+f:: 滚轮模拟.右按("f")
-*r:: 滚轮模拟.上按("r")
-*f:: 滚轮模拟.下按("f")
-*[:: 滚轮模拟.左按("[")
-*]:: 滚轮模拟.右按("]")
+*r::
+    ScrollModeExit()
+    滚轮模拟.上按("r")
+return
+*f::
+    ScrollModeExit()
+    滚轮模拟.下按("f")
+return
+; *[:: 滚轮模拟.左按("[")
+; *]:: 滚轮模拟.右按("]")
