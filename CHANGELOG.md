@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.25.0](https://github.com/snolab/CapsLockX/compare/v1.24.2...v1.25.0) (2022-03-13)
+
+### Features
+
+- | `CapsLockX + ad` | 将 WASD 切换到滚轮模式（上下左右滚动） | ([5dc5a1d](https://github.com/snolab/CapsLockX/commit/5dc5a1dd44f050cdb28633d923efec96a8f1c5d5))
+
+### Bug Fixes
+
+- add keywords ([cc7ed6e](https://github.com/snolab/CapsLockX/commit/cc7ed6e18ffee8d08257bda4861a845829b79a45))
+- **config:** show keyboard ([7c2742d](https://github.com/snolab/CapsLockX/commit/7c2742d1d9d97cdd4a755f99d46ab38330cac99a))
+- fix licenseUrl ([107e693](https://github.com/snolab/CapsLockX/commit/107e693d28a554c5b0e2243856972d7dde00efd6))
+- publish only in snolab ([d7311a2](https://github.com/snolab/CapsLockX/commit/d7311a23769566f030ef32e736a4552b13a14878))
+- 改为 | 全局 | `CapsLockX + ad` | 将 HJKL 键切换到滚轮模式（上下左右滚动） | ([21ca801](https://github.com/snolab/CapsLockX/commit/21ca8016b8974dc48f91c484e86e0a8e4d49a9ce))
+
 ### [1.24.2](https://github.com/snolab/CapsLockX/compare/v1.24.1...v1.24.2) (2022-03-11)
 
 ### Bug Fixes
