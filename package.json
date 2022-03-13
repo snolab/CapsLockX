@@ -68,5 +68,8 @@
   },
   "directories": {
     "doc": "docs"
-  }
+  },
+  "keywords": [
+    "CapsLockX"
+  ]
 }
