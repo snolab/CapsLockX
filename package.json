@@ -6,7 +6,7 @@
     "start": "CapsLockX.exe",
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
     "prepare": "husky install",
-    "release": "pnpm upgrade -y & standard-version --commit-all && git push --follow-tag --all"
+    "release": "pnpm upgrade & standard-version --commit-all && git push --follow-tag --all"
   },
   "files": [
     "Core",
