@@ -241,6 +241,8 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 > 以 CapsLock 为抓手,打通底层逻辑,拉齐 Windows 和 Linux WM,解决了 Windows 难用的痛点
 
+(20220313) 对于两端都是 Windows 的情况，也可以考虑使用 [RemoteApp Tool - Kim Knight](http://www.kimknight.net/remoteapptool) 来代替远程桌面。
+
 <!-- 模块文件名：Eval-Javascript.ahk-->
 
 ### JavaScript 计算 (建议安装 NodeJS )

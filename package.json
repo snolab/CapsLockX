@@ -5,14 +5,8 @@
   "scripts": {
     "start": "CapsLockX.exe",
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-    "build": "npm upgrade && npm run test",
     "prepare": "husky install",
-    "format": "npx -y -- prettier --write .",
-    "prerelease": "npm run format",
-    "release": "standard-version --commit-all",
-    "postrelease": "git push --follow-tag --all",
-    "clxconfig-dev": "cd DevTools/CLXConfig.js && npm run dev",
-    "clxconfig-build": "cd DevTools/CLXConfig.js && npm run build"
+    "release": "pnpm upgrade -y & standard-version --commit-all && git push --follow-tag --all"
   },
   "files": [
     "Core",
@@ -45,16 +39,17 @@
   },
   "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
-    "@commitlint/cli": "^16.1.0",
-    "@commitlint/config-conventional": "^16.0.0",
+    "@commitlint/cli": "^16.2.1",
+    "@commitlint/config-conventional": "^16.2.1",
     "@types/pinyin": "^2.10.0",
-    "eslint": "^8.9.0",
+    "eslint": "^8.11.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4",
     "husky": "^7.0.4",
-    "lint-staged": "^12.3.4",
+    "lint-staged": "^12.3.5",
     "lodash": "^4.17.21",
-    "pinyin": "^2.10.2",
+    "pinyin": "^2.11.1",
+    "pnpm": "^6.32.3",
     "prettier": "^2.5.1",
     "sno-utils": "^0.3.6",
     "standard-version": "^9.3.2"
