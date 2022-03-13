@@ -5,6 +5,7 @@ on:
 name: gh-pages-release
 jobs:
   github-release:
+    if: github.repository == 'snolab/CapsLockX'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
