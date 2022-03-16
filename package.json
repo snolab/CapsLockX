@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.25.2",
+  "version": "1.25.3",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "scripts": {
     "start": "CapsLockX.exe",
@@ -39,18 +39,18 @@
   },
   "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
-    "@commitlint/cli": "^16.2.1",
+    "@commitlint/cli": "^16.2.3",
     "@commitlint/config-conventional": "^16.2.1",
     "@types/pinyin": "^2.10.0",
     "eslint": "^8.11.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4",
     "husky": "^7.0.4",
-    "lint-staged": "^12.3.5",
+    "lint-staged": "^12.3.6",
     "lodash": "^4.17.21",
     "pinyin": "^2.11.1",
     "pnpm": "^6.32.3",
-    "prettier": "^2.5.1",
+    "prettier": "^2.6.0",
     "sno-utils": "^0.3.6",
     "standard-version": "^9.3.2"
   },

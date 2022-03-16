@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.25.2</version>
+    <version>1.25.3</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,6 +65,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.3](https://github.com/snolab/CapsLockX/compare/v1.25.2...v1.25.3) (2022-03-16)
+
+
+### Bug Fixes
+
+*  SendEvent  hl  ([b67c601](https://github.com/snolab/CapsLockX/commit/b67c6010bea6368838c6c91920b48826ace5d03f))
+
 ### [1.25.2](https://github.com/snolab/CapsLockX/compare/v1.25.1...v1.25.2) (2022-03-16)
 
 ### [1.25.1](https://github.com/snolab/CapsLockX/compare/v1.25.0...v1.25.1) (2022-03-13)
@@ -120,8 +127,7 @@ All notable changes to this project will be documented in this file. See [standa
 - 、 ([25c3c63](https://github.com/snolab/CapsLockX/commit/25c3c635761fa74d256f52ed14fa81359202cdeb))
 - ， ([4e4da34](https://github.com/snolab/CapsLockX/commit/4e4da34da7996880d82a5258c06fb5eda8eb5e17))
 -  |  Shift+Ctrl+Alt | （） | ([6c32ac7](https://github.com/snolab/CapsLockX/commit/6c32ac789ace1127678c7fb5b97210c6f1fe25da))
--  ([26e729e](https://github.com/snolab/CapsLockX/commit/26e729e711ed78a91f6f82af912af59eb1d612f0))
-- [ModuleDisable] ([68a0d5c](https://github.com/snolab/CapsLockX/commit/68a0d5c08facefaaf2613980464f5a0335addce3)), closes [#27](https://github.com/snolab/CapsLockX/issues/27)]]></releaseNotes>
+-  ([26e729e](https://github.com/snolab/CapsLockX/commit/26e729e711ed78a91f6f82af912af59eb1d612f0))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

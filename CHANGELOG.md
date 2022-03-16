@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.3](https://github.com/snolab/CapsLockX/compare/v1.25.2...v1.25.3) (2022-03-16)
+
+### Bug Fixes
+
+- 用 SendEvent 防止把 hl 按出来 ([b67c601](https://github.com/snolab/CapsLockX/commit/b67c6010bea6368838c6c91920b48826ace5d03f))
+
 ### [1.25.2](https://github.com/snolab/CapsLockX/compare/v1.25.1...v1.25.2) (2022-03-16)
 
 ### [1.25.1](https://github.com/snolab/CapsLockX/compare/v1.25.0...v1.25.1) (2022-03-13)
