@@ -22,7 +22,6 @@ version-*.txt
 /User
 /User*
 debug.log
-package-lock.json
 
 #cache
 .eslintcache
