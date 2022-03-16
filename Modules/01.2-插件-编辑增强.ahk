@@ -42,24 +42,25 @@ DisableLockWorkstation()
     RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, %value%
 }
 
+; 这里用 SendEvent 防止把 hl 按出来
 左方向键发送(n:=1){
     loop %n%{
-        Send {Blind}{Left}
+        SendEvent {Blind}{Left}
     }
 }
 右方向键发送(n:=1){
     loop %n%{
-        Send {Blind}{Right}
+        SendEvent {Blind}{Right}
     }
 }
 上翻页键发送(n:=1){
     loop %n%{
-        Send {Blind}{PgUp}
+        SendEvent {Blind}{PgUp}
     }
 }
 下翻页键发送(n:=1){
     loop %n%{
-        Send {Blind}{PgDn}
+        SendEvent {Blind}{PgDn}
     }
 }
 上方向键发送(n:=1)
