@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.2](https://github.com/snolab/CapsLockX/compare/v1.25.1...v1.25.2) (2022-03-16)
+
 ### [1.25.1](https://github.com/snolab/CapsLockX/compare/v1.25.0...v1.25.1) (2022-03-13)
 
 ## [1.25.0](https://github.com/snolab/CapsLockX/compare/v1.24.2...v1.25.0) (2022-03-13)
