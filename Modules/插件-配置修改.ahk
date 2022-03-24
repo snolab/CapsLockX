@@ -101,7 +101,7 @@ CapsLockX_ConfigureUpdate:
 return
 Button确认:
     Gosub, CapsLockX_ConfigureUpdate
-    TrayTip conf, %T_XKeyAsCapsLock% %T_XKeyAsSpace% %T_AskRunAsAdmin% %CLX_CONFIG_ONSTARTUP%
+    ; TrayTip conf, %T_XKeyAsCapsLock% %T_XKeyAsSpace% %T_AskRunAsAdmin% %CLX_CONFIG_ONSTARTUP%
     gui, destroy
 return
 Button配置文件编辑:
