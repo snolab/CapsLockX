@@ -4,6 +4,7 @@ specifiers:
   '@commitlint/cli': ^16.2.3
   '@commitlint/config-conventional': ^16.2.1
   '@types/pinyin': ^2.10.0
+  commitlint: ^16.2.3
   eslint: ^8.11.0
   eslint-config-airbnb-base: ^15.0.0
   eslint-plugin-import: ^2.25.4
@@ -20,6 +21,7 @@ devDependencies:
   '@commitlint/cli': 16.2.3
   '@commitlint/config-conventional': 16.2.1
   '@types/pinyin': 2.10.0
+  commitlint: 16.2.3
   eslint: 8.11.0
   eslint-config-airbnb-base: 15.0.0_fe22d862ffeecaee86c93a006d59e41e
   eslint-plugin-import: 2.25.4_eslint@8.11.0
@@ -625,6 +627,18 @@ packages:
   /commander/8.3.0:
     resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
     engines: {node: '>= 12'}
+    dev: true
+
+  /commitlint/16.2.3:
+    resolution: {integrity: sha512-GjeGQZNNfFrWteskgrz9qaIvx7T+F7bz/ivkoVjj+LRTPqf5rfbrNtslQpKlcmZ610Ri1ONjN/uu935nx0/LcA==}
+    engines: {node: '>=v12'}
+    hasBin: true
+    dependencies:
+      '@commitlint/cli': 16.2.3
+      '@commitlint/types': 16.2.1
+    transitivePeerDependencies:
+      - '@swc/core'
+      - '@swc/wasm'
     dev: true
 
   /compare-func/2.0.0:
