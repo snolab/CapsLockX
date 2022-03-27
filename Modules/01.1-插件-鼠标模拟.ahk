@@ -227,17 +227,10 @@ ScrollModeExit()
     }
     ; Shift 减速
     if (GetKeyState("Shift", "P")) {
-        ; TODO fix on 1
-        ; tooltip %dx% %dy% x
-        dx := dx * 0.1, dy := dy * 0.1
-        if (dx != 0 && abs(dx) < 1) {
-            Random ran, 0, 100
-            dx := rnd < abs(dx) * 100 ? (dx > 0 ? 1 : -1) : 0
-        }
-        if (dy != 0 && abs(dy) < 1) {
-            Random ran, 0, 100
-            dy := rnd < abs(dx) * 100 ? (dy > 0 ? 1 : -1) : 0
-        }
+        鼠标模拟.横速 *= 0.02
+        鼠标模拟.纵速 *= 0.02
+        dx := dx * 1, 
+        dy := dy * 1
     }
     if (TMouse_SendInputAPI) {
         ; 支持64位AHK！
