@@ -167,7 +167,7 @@ Windows 10 默认窗口排列的限制：
 
 ##### Linux 与 Mac 窗口的管理
 
-i3 窗口管理
+TODO: i3 窗口管理
 
 ##### Android 与 iOS 的窗口管理
 
