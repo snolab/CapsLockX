@@ -75,7 +75,8 @@ OneNote快速笔记窗口启动(){
     if (OneNote2016_Win11_Detect()) {
         SendEvent #!n
     } else {
-        SendEvent #n
+        ; SendEvent #n
+        SendEvent #!n
     }
     
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
