@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.4](https://github.com/snolab/CapsLockX/compare/v1.25.3...v1.25.4) (2022-04-08)
+
+### Bug Fixes
+
+- **mouse:** reduce speed with shift ([29f1363](https://github.com/snolab/CapsLockX/commit/29f1363cc0371658abc3f51cca715b36e612bde1))
+
 ### [1.25.3](https://github.com/snolab/CapsLockX/compare/v1.25.2...v1.25.3) (2022-03-16)
 
 ### Bug Fixes
