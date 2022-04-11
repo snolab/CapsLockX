@@ -75,7 +75,8 @@ DisableLockWorkstation()
         }
     }
     loop %n%{
-        Send {Blind}{up}
+        ; 这里如果使用 SendInput 则会出现打出kj的情况。
+        SendEvent {Blind}{up}
     }
 }
 下方向键发送(n:=1)
@@ -91,7 +92,8 @@ DisableLockWorkstation()
         }
     }
     loop %n%{
-        Send {Blind}{Down}
+        ; 这里如果使用 SendInput 则会出现打出kj的情况。
+        SendEvent {Blind}{Down}
     }
 }
 
