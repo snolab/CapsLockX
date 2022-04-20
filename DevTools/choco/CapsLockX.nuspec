@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.25.6</version>
+    <version>1.25.7</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,12 +65,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.25.6](https://github.com/snolab/CapsLockX/compare/v1.25.5...v1.25.6) (2022-04-20)
+### [1.25.7](https://github.com/snolab/CapsLockX/compare/v1.25.6...v1.25.7) (2022-04-20)
 
+### [1.25.6](https://github.com/snolab/CapsLockX/compare/v1.25.5...v1.25.6) (2022-04-20)
 
 ### Bug Fixes
 
-* [#39](https://github.com/snolab/CapsLockX/issues/39) ([b8606ee](https://github.com/snolab/CapsLockX/commit/b8606eea048702f0ae3368444e0763a977c70875))
+- [#39](https://github.com/snolab/CapsLockX/issues/39) ([b8606ee](https://github.com/snolab/CapsLockX/commit/b8606eea048702f0ae3368444e0763a977c70875))
 
 ### [1.25.5](https://github.com/snolab/CapsLockX/compare/v1.25.4...v1.25.5) (2022-04-11)
 
@@ -138,8 +139,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Features
 
 - BlenderEnhanced ([345a9b6](https://github.com/snolab/CapsLockX/commit/345a9b694806a5ce8815651642a6e55cc9d84bb7))
-- long-press to lock in CLX mode ([e9884da](https://github.com/snolab/CapsLockX/commit/e9884dadb33a86c69f0e9756eb45c6c2b0af3c9e))
-- QuickTips ([f5985c7](https://github.com/snolab/CapsLockX/commit/f5985c7d62724ea100c2f1f55d83253cb62f2199))]]></releaseNotes>
+- long-press to lock in CLX mode ([e9884da](https://github.com/snolab/CapsLockX/commit/e9884dadb33a86c69f0e9756eb45c6c2b0af3c9e))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
