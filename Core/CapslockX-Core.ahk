@@ -248,13 +248,13 @@ CapsLockX_Dn()
     模式：
     普通模式 + 按住CLX -> CLX模式
     普通模式 + 长按CLX -> CLX锁定模式
-    普通模式 + 同时按下 -> CLX锁定模式
+    普通模式 + (CLX+SPACE) -> CLX锁定模式
     CLX模式 + 弹起CLX -> 普通模式
     CLX锁定模式 + 按住CLX -> CLX模式
     
     CapsLock + Space 同时按下：进入CLX模式
-    CLX长按：进入CLX模式
-    CLX单击：退出CLX模式
+    CLX长按：进入CLX锁定模式
+    CLX单击：退出CLX锁定模式
     
     */
     ; 按住其它键的时候 不触发 CapsLockX 避免影响打字
@@ -265,7 +265,9 @@ CapsLockX_Dn()
     CapsLockQ := 触发键 == "CapsLock"
     ModifierQ := InStr("LControl|RControl|LShift|RShift|LAlt|RAlt|LWin|RWin", A_PriorKey)
     ModifierEnableQ := !SpaceQ && ModifierQ
-        if ((A_PriorKey == "CapsLock" && 触发键 == "Space") || (触发键 == "CapsLock" && A_PriorKey == "Space" )) {
+        
+    CLX_AND_SPACE_Q := (A_PriorKey == "CapsLock" && 触发键 == "Space") || (触发键 == "CapsLock" && A_PriorKey == "Space" )
+    if (CLX_AND_SPACE_Q && A_TimeSincePriorHotkey < 250) {
         ; CapsLockX_ModeEnter()
         CapsLockXMode |= CM_CapsLockX
         UpdateCapsLockXLight()
