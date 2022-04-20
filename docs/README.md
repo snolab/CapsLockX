@@ -10,7 +10,7 @@ CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可
 
 ---
 
-## 版本墙 / 徽章墙 📛 Badges
+## 版本墙 - 徽章墙 📛 Badges
 
 <!-- culture badges  -->
 
@@ -95,9 +95,7 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 6. `winget capslockx` -- TODO #40
 7. `scoop capslockx` -- TODO #41
 
-## 使用手册 📖 / Usage Manual
-
-### 目录
+## 使用手册 📖 - Usage Manual
 
 ### 基础操作
 
@@ -111,7 +109,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 你也可以编写自己的 `my-ahk.user.ahk` 然后放到 `./User/` 目录下，CapsLockX 会自动识别并加载它们。
 
-### 多任务工作的噩梦 / Multitasking
+### 多任务工作的噩梦 - Multitasking
 
 #### 虚拟桌面概述：情景模式、工作桌面、娱乐桌面、项目分类……
 
@@ -140,7 +138,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 （注：如果你喜欢同时处理很多个任务，你可能不止需要一台内存不小的电脑，还需要一团容量不小的脑子 :D ）
 
-#### Windows 窗口切换的用户体验提升 / Win+tab
+#### Windows 窗口切换的用户体验提升 - Win+tab
 
 Alt+Tab 窗口切换时，如果窗口过多，就会显示一个二维窗口预排列。
 一般来说，Alt+Tab 和 Alt+Shift+Tab 是一个纯左手的键位，如果用户希望选选择下一行的窗口，就会本能地按很多下 Alt+Tab。
@@ -161,20 +159,20 @@ Alt+Tab 窗口切换时，如果窗口过多，就会显示一个二维窗口预
 
 每个桌面只有一个活动焦点窗口，而虚拟桌面可以实现切换到该桌面时自动切换该虚拟桌面的焦点窗口，实现多个任务焦点（即活动窗口）。
 
-#### 多屏幕的利用 / Multi-screening
+#### 多屏幕的利用 - Multi-screening
 
-#### 4K 时代的窗口排列 / Window arrange with 4k screen
+#### 4K 时代的窗口排列 - Window arrange with 4k screen
 
 Windows 10 默认窗口排列的限制：
 
 1. 不适用于多桌面
 2. 不必要的窗口间隙过大
 
-##### Linux 与 Mac 窗口的管理 / Window Manager in Linux and mac
+##### Linux 与 Mac 窗口的管理 - Window Manager in Linux and mac
 
 TODO: i3 窗口管理
 
-##### Android 与 iOS 的窗口管理 / Window Manage in android
+##### Android 与 iOS 的窗口管理 - Window Manage in android
 
 系统级两种方案：左右上下分屏、浮动窗口；应用级：浮动组件、
 
@@ -224,9 +222,9 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 
 | 作用于 | 按键                  | 功能                             |
 | ------ | --------------------- | -------------------------------- |
-| 全局   | CapsLockX + /         | 临时显示热键提示                 |
-| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
+| 全局   | CapsLockX + -         | 临时显示热键提示                 |
+| 全局   | CapsLockX + Alt + -   | 🔗 打开 CapsLockX 的完整文档页面 |
+| 全局   | CapsLockX + Shift + - | 🕷 提交 bug、建议等               |
 
 <!-- 模块文件名：01.1-插件-鼠标模拟.ahk-->
 
@@ -403,7 +401,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | 在 Anki-学习界面     | `4 或 NumPad4` | 顺利（原键位不动）                                          |
 | 在 Anki-学习界面     | `5 或 NumPad5` | 撤销                                                        |
 | 在 Anki-学习界面     | `6 或 NumPad6` | 暂停卡片                                                    |
-| 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
+| 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） - 比如可以从 Excel 复制 |
 | 在 Anki-添加卡片界面 |   `Alt + s`    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
@@ -432,7 +430,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | `Alt + /`               | 热键帮助、提示          | 开发中     |
 | `F2 F3`                 | 重命名、查找笔记        |            |
 
-## 详细按键表 / CheatSheet
+## 详细按键表 - CheatSheet
 
 | 作用于                   | 格式热键                       | 功能                                                                      |
 | ------------------------ | ------------------------------ | ------------------------------------------------------------------------- |
@@ -548,7 +546,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 
 本项目的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。
 
-1. [x] 按 CapsLockX + / 键显示对应帮助（目前的显示样式相当草率）
+1. [x] 按 CapsLockX + - 键显示对应帮助（目前的显示样式相当草率）
 2. [ ] 自动更新（虽然 git pull 一下也不是不行）
 3. [ ] 初次使用上手教程（这个现在有点简陋……）
 4. [ ] 插件管理器（虽然文件系统也可以搞定）
@@ -596,7 +594,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 | 内存占用         | ✅ 约 2~3M                                       |                                                     |                                                     |                                                 |
 | 模块化           | ✅                                               | 🈚 无                                               | 🈚 无                                               | 🈚 无                                           |
 | 系统             | Win                                              | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
-| 支持语言         | 中文                                             | 中文 / English                                      | 中文                                                | 中文 / English                                  |
+| 支持语言         | 中文                                             | 中文 - English                                      | 中文                                                | 中文 - English                                  |
 
 #### 本项目地址 🔗 Project Urls
 
@@ -673,18 +671,86 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK](https://www.autoahk.com/archives/34996)
 - 感谢在 issues 里和群里提问并帮助完善本项目的各位。
 
-### 相关话题 / Related Topics
+### 相关话题 - Related Topics
 
 - [CapsLockX - 像黑客一样操作电脑 - V2EX](https://v2ex.com/t/772052#reply1)
 - [CapsLockX - 像黑客一样操作电脑！ - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=28&t=88593)
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora](https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI)
 - [如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/questionz/23443944/answer/1670521971)
 - [有哪位残友用的是单手键盘？ - 知乎](https://www.zhihu.com/question/50621709/answer/1681247637)
-- [(5 封私信 / 50 条消息) 怎么样才能只用键盘不用鼠标，包括任何指针触控设备，并优雅地使用电脑？ - 知乎](https://www.zhihu.com/question/21281518/answer/1770669886)
-- [(5 封私信 / 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/question/23443944/answer/1670521971)
+- [(5 封私信 - 50 条消息) 怎么样才能只用键盘不用鼠标，包括任何指针触控设备，并优雅地使用电脑？ - 知乎](https://www.zhihu.com/question/21281518/answer/1770669886)
+- [(5 封私信 - 50 条消息) 如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/question/23443944/answer/1670521971)
 - [我是职场达人，AutoHotKey 让我成为职场超人 - 知乎](https://zhuanlan.zhihu.com/p/60372361)
 - [AutoHotKey 中文网专栏 - 知乎](https://www.zhihu.com/column/autoahk)
 - [电脑一族如何防治“鼠标手” - 陕西日报](http://www.sxjkjy.com/uploadfiles/files/2017062110481454.pdf)
+
+## 页尾目录 - Table of Contents
+
+- [CapsLockX - 💻 Get Hacker's Keyboard. 像**黑客**一样操作电脑](#capslockx----get-hackers-keyboard-像黑客一样操作电脑)
+  - [版本墙 - 徽章墙 📛 Badges](#版本墙---徽章墙--badges)
+  - [新手快速入门教程 📖 Tutorial](#新手快速入门教程--tutorial)
+    - [简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）](#简易入门教程读完这一小节便算是入门了-capslockx-的使用-)
+  - [进阶参考手册 🦽 Manual](#进阶参考手册--manual)
+    - [安装与使用 🛠 Installation](#安装与使用--installation)
+      - [绿色便携程序包（新手适用，稳定版） 📦 Packaged Bins](#绿色便携程序包新手适用稳定版--packaged-bins)
+      - [命令行方式安装（进阶用户推荐，可自动更新）🖥️ Install by command](#命令行方式安装进阶用户推荐可自动更新️-install-by-command)
+  - [使用手册 📖 - Usage Manual](#使用手册----usage-manual)
+    - [基础操作](#基础操作)
+    - [模块说明](#模块说明)
+    - [多任务工作的噩梦 - Multitasking](#多任务工作的噩梦---multitasking)
+      - [虚拟桌面概述：情景模式、工作桌面、娱乐桌面、项目分类……](#虚拟桌面概述情景模式工作桌面娱乐桌面项目分类)
+      - [Windows 窗口切换的用户体验提升 - Win+tab](#windows-窗口切换的用户体验提升---wintab)
+      - [TODO-Docs](#todo-docs)
+      - [焦点数量：活动窗口、默认活动窗口、……](#焦点数量活动窗口默认活动窗口)
+      - [多屏幕的利用 - Multi-screening](#多屏幕的利用---multi-screening)
+      - [4K 时代的窗口排列 - Window arrange with 4k screen](#4k-时代的窗口排列---window-arrange-with-4k-screen)
+        - [Linux 与 Mac 窗口的管理 - Window Manager in Linux and mac](#linux-与-mac-窗口的管理---window-manager-in-linux-and-mac)
+        - [Android 与 iOS 的窗口管理 - Window Manage in android](#android-与-ios-的窗口管理---window-manage-in-android)
+    - [编辑操作的困扰](#编辑操作的困扰)
+      - [键入区与编辑控制区的疏远](#键入区与编辑控制区的疏远)
+      - [并击的概念](#并击的概念)
+    - [图形界面的困扰](#图形界面的困扰)
+    - [人类的速度认知](#人类的速度认知)
+    - [软件的热键缺陷](#软件的热键缺陷)
+    - [便携键盘的可用性](#便携键盘的可用性)
+    - [帮助模块](#帮助模块)
+  - [本模块功能见下](#本模块功能见下)
+    - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
+  - [功能](#功能)
+  - [使用方法如下](#使用方法如下)
+  - [操作细节](#操作细节)
+    - [编辑增强插件（ TG YUIO HJKL ）](#编辑增强插件-tg-yuio-hjkl-)
+    - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
+  - [功能简述](#功能简述)
+  - [效果图](#效果图)
+  - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
+    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
+    - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
+    - [快捷输入](#快捷输入)
+    - [Anki 增强模块](#anki-增强模块)
+    - [OneNote 2016](#onenote-2016)
+  - [按键分布设计（开发中）](#按键分布设计开发中)
+  - [详细按键表 - CheatSheet](#详细按键表---cheatsheet)
+    - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
+  - [用法](#用法)
+  - [注](#注)
+  - [效果如下图](#效果如下图)
+    - [媒体键模块](#媒体键模块)
+    - [番茄时钟](#番茄时钟)
+  - [过去与未来 🛰](#过去与未来-)
+    - [制作背景 ( 2017 年秋) 🍁 Background](#制作背景--2017-年秋--background)
+    - [发展路线 🛰️ RoadMap](#发展路线-️-roadmap)
+    - [组合键含义设计 ⌨ Chore Design](#组合键含义设计--chore-design)
+    - [本项目与类似项目的功能对比 ⚔ Feat Compare Matrix](#本项目与类似项目的功能对比--feat-compare-matrix)
+      - [本项目地址 🔗 Project Urls](#本项目地址--project-urls)
+      - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
+  - [答疑相关 ❓ Questions](#答疑相关--questions)
+    - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
+  - [支持 ⭐️ Supports](#支持-️-supports)
+    - [捐赠记录(截至 20210821) 📄 Donate Records](#捐赠记录截至-20210821--donate-records)
+    - [鸣谢 🙏🏻 Thanks](#鸣谢--thanks)
+    - [相关话题 - Related Topics](#相关话题---related-topics)
+  - [页尾目录 - Table of Contents](#页尾目录---table-of-contents)
 
 ---
 
