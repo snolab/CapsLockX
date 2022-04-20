@@ -95,6 +95,7 @@ Return
     PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->`n`n"
     StringReplace, target, target, ./media/, ./docs/media/, All
     StringReplace, target, target, ./, ./docs/, All
+    StringReplace, target, target, ./docs/docs/, ./docs/, All
     FileAppend %PREFIX%%target%, ./README.md, UTF-8-Raw
     ; Reload
     ; ExitApp
