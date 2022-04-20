@@ -9,6 +9,9 @@
 ; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
+; will include once
+#Include, Modules/AccModel/AccModel.ahk
+
 if (!CapsLockX) {
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp

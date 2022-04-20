@@ -9,6 +9,9 @@
 ; ========== CapsLockX ==========
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 
+; will include once
+#Include, Modules/AccModel/AccModel.ahk
+
 if (!CapsLockX) {
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp

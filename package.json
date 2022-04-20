@@ -6,6 +6,7 @@
     "start": "CapsLockX.exe",
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
     "prepare": "husky install",
+    "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
     "release": "pnpm upgrade & standard-version --commit-all && git push --follow-tag --all",
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build"
   },
