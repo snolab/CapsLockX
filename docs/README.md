@@ -109,7 +109,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 你也可以编写自己的 `my-ahk.user.ahk` 然后放到 `./User/` 目录下，CapsLockX 会自动识别并加载它们。
 
-### 多任务工作的噩梦 - Multitasking
+### 多任务工作的噩梦 - Nightmares of Multitasking
 
 #### 虚拟桌面概述：情景模式、工作桌面、娱乐桌面、项目分类……
 
@@ -697,7 +697,7 @@ Ctrl + Alt + 同上，但一般为全局热键
   - [使用手册 📖 - Usage Manual](#使用手册----usage-manual)
     - [基础操作](#基础操作)
     - [模块说明](#模块说明)
-    - [多任务工作的噩梦 - Multitasking](#多任务工作的噩梦---multitasking)
+    - [多任务工作的噩梦 - Nightmares of Multitasking](#多任务工作的噩梦---nightmares-of-multitasking)
       - [虚拟桌面概述：情景模式、工作桌面、娱乐桌面、项目分类……](#虚拟桌面概述情景模式工作桌面娱乐桌面项目分类)
       - [Windows 窗口切换的用户体验提升 - Win+tab](#windows-窗口切换的用户体验提升---wintab)
       - [TODO-Docs](#todo-docs)
