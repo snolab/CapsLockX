@@ -99,7 +99,7 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 
 ### 基础操作
 
-- 按住 `CapsLockX` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
+- 按住 `CapsLockX` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下）
 - 长按 `CapsLockX` 键将锁定 `CLX` 模式，此时弹起 `CapsLockX` 键将保持 `CLX` 到下一次按下 `CaspLockX` 键为止。[功能由来](https://github.com/snolab/CapsLockX/issues/21)
 
 ### 模块说明
@@ -730,7 +730,7 @@ Ctrl + Alt + 同上，但一般为全局热键
     - [Anki 增强模块](#anki-增强模块)
     - [OneNote 2016](#onenote-2016)
   - [按键分布设计（开发中）](#按键分布设计开发中)
-  - [详细按键表 - CheatSheet](#详细按键表---cheatsheet)
+  - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
     - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
   - [用法](#用法)
   - [注](#注)

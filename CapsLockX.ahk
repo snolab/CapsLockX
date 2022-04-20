@@ -93,9 +93,12 @@ Return
     ; 输出根目录 README.md （用于 github 首页）
     FileDelete ./README.md
     PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->`n`n"
-    StringReplace, target, target, ./media/, ./docs/media/, All
-    StringReplace, target, target, ./, ./docs/, All
-    StringReplace, target, target, ./docs/docs/, ./docs/, All
+    
+    ; replace docs/media
+    StringReplace, target, target, % "(./", % "(./docs/", All
+    StringReplace, target, target, % "( ./", % "( ./docs/", All
+    ; StringReplace, target, target, ./media/, ./docs/media/, All
+    ; StringReplace, target, target, ./docs/, ./docs/, All
     FileAppend %PREFIX%%target%, ./README.md, UTF-8-Raw
     ; Reload
     ; ExitApp
