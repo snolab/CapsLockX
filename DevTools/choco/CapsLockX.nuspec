@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.25.8</version>
+    <version>1.25.9</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -64,6 +64,14 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
     <releaseNotes><![CDATA[# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.25.9](https://github.com/snolab/CapsLockX/compare/v1.25.8...v1.25.9) (2022-05-01)
+
+
+### Bug Fixes
+
+* use #Include to load accmodel ([b11d2c8](https://github.com/snolab/CapsLockX/commit/b11d2c84bad68f3cc8b3986c9421d76d79ff3eda))
+*  [#43](https://github.com/snolab/CapsLockX/issues/43) ([3e05303](https://github.com/snolab/CapsLockX/commit/3e05303de770c4884c4885a072a688b2715be6a9))
 
 ### [1.25.8](https://github.com/snolab/CapsLockX/compare/v1.25.7...v1.25.8) (2022-04-20)
 
@@ -131,16 +139,7 @@ All notable changes to this project will be documented in this file. See [standa
 - merge ([406b1e5](https://github.com/snolab/CapsLockX/commit/406b1e57c4a9501b6c2420bfa3bb31b2254e2f2c))
 -  CLX，  ([489ee64](https://github.com/snolab/CapsLockX/commit/489ee64ecdb370becfae84d3e7c97b4a49932d81))
 - + ([2944734](https://github.com/snolab/CapsLockX/commit/2944734df081c3768f71cb85ffa3ef05f9a1f2a6))
-
-### [1.23.2](https://github.com/snolab/CapsLockX/compare/v1.23.1...v1.23.2) (2022-02-24)
-
-### [1.23.1](https://github.com/snolab/CapsLockX/compare/v1.23.0...v1.23.1) (2022-02-24)
-
-## 1.23.0 (2022-02-24)
-
-### Features
-
-- BlenderEnhanced ([345a9b6](https://github.com/snolab/CapsLockX/commit/345a9b694806a5ce8815651642a6e55cc9d84bb7))]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
