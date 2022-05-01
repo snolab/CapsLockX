@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.9](https://github.com/snolab/CapsLockX/compare/v1.25.8...v1.25.9) (2022-05-01)
+
+### Bug Fixes
+
+- use #Include to load accmodel ([b11d2c8](https://github.com/snolab/CapsLockX/commit/b11d2c84bad68f3cc8b3986c9421d76d79ff3eda))
+- 降低光标移动速度 [#43](https://github.com/snolab/CapsLockX/issues/43) ([3e05303](https://github.com/snolab/CapsLockX/commit/3e05303de770c4884c4885a072a688b2715be6a9))
+
 ### [1.25.8](https://github.com/snolab/CapsLockX/compare/v1.25.7...v1.25.8) (2022-04-20)
 
 ### [1.25.7](https://github.com/snolab/CapsLockX/compare/v1.25.6...v1.25.7) (2022-04-20)

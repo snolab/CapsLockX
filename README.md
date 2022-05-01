@@ -99,7 +99,7 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 
 ### 基础操作
 
-- 按住 `CapsLockX` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下
+- 按住 `CapsLockX` 进入 CapsLockX 模式，此时你的键盘会成为像 Vim 默认模式那样的功能键盘，（键位见下）
 - 长按 `CapsLockX` 键将锁定 `CLX` 模式，此时弹起 `CapsLockX` 键将保持 `CLX` 到下一次按下 `CaspLockX` 键为止。[功能由来](https://github.com/snolab/CapsLockX/issues/21)
 
 ### 模块说明
@@ -109,7 +109,7 @@ CapsLockX 默认加载了一些常用的模块，功能与使用方法已在下�
 
 你也可以编写自己的 `my-ahk.user.ahk` 然后放到 `./User/` 目录下，CapsLockX 会自动识别并加载它们。
 
-### 多任务工作的噩梦 - Multitasking
+### 多任务工作的噩梦 - Nightmares of Multitasking
 
 #### 虚拟桌面概述：情景模式、工作桌面、娱乐桌面、项目分类……
 
@@ -222,9 +222,9 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 
 | 作用于 | 按键                  | 功能                             |
 | ------ | --------------------- | -------------------------------- |
-| 全局   | CapsLockX + -         | 临时显示热键提示                 |
-| 全局   | CapsLockX + Alt + -   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + - | 🕷 提交 bug、建议等               |
+| 全局   | CapsLockX + /         | 临时显示热键提示                 |
+| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
+| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
 
 <!-- 模块文件名：01.1-插件-鼠标模拟.ahk-->
 
@@ -401,7 +401,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | 在 Anki-学习界面     | `4 或 NumPad4` | 顺利（原键位不动）                                          |
 | 在 Anki-学习界面     | `5 或 NumPad5` | 撤销                                                        |
 | 在 Anki-学习界面     | `6 或 NumPad6` | 暂停卡片                                                    |
-| 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） - 比如可以从 Excel 复制 |
+| 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
 | 在 Anki-添加卡片界面 |   `Alt + s`    | 按下 添加 按钮                                              |
 
 > 此插件可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。
@@ -430,7 +430,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | `Alt + /`               | 热键帮助、提示          | 开发中     |
 | `F2 F3`                 | 重命名、查找笔记        |            |
 
-## 详细按键表 - CheatSheet
+## 详细按键表 / CheatSheet
 
 | 作用于                   | 格式热键                       | 功能                                                                      |
 | ------------------------ | ------------------------------ | ------------------------------------------------------------------------- |
@@ -697,7 +697,7 @@ Ctrl + Alt + 同上，但一般为全局热键
   - [使用手册 📖 - Usage Manual](#使用手册----usage-manual)
     - [基础操作](#基础操作)
     - [模块说明](#模块说明)
-    - [多任务工作的噩梦 - Multitasking](#多任务工作的噩梦---multitasking)
+    - [多任务工作的噩梦 - Nightmares of Multitasking](#多任务工作的噩梦---nightmares-of-multitasking)
       - [虚拟桌面概述：情景模式、工作桌面、娱乐桌面、项目分类……](#虚拟桌面概述情景模式工作桌面娱乐桌面项目分类)
       - [Windows 窗口切换的用户体验提升 - Win+tab](#windows-窗口切换的用户体验提升---wintab)
       - [TODO-Docs](#todo-docs)
@@ -730,7 +730,7 @@ Ctrl + Alt + 同上，但一般为全局热键
     - [Anki 增强模块](#anki-增强模块)
     - [OneNote 2016](#onenote-2016)
   - [按键分布设计（开发中）](#按键分布设计开发中)
-  - [详细按键表 - CheatSheet](#详细按键表---cheatsheet)
+  - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
     - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
   - [用法](#用法)
   - [注](#注)
