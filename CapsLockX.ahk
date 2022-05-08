@@ -28,6 +28,7 @@ CapsLockX_Version := CapsLockX_Version ? CapsLockX_Version : "未知版本"
 
 global CapsLockX_VersionName := "v" CapsLockX_Version
 ; 加载过程提示
+global 显示加载提示 := 1
 global loadingTips := ""
 
 ; 对 核心模块 进行 编码清洗
@@ -47,6 +48,12 @@ FileCopy %CapsLockX_配置目录%/*.user.md, %CapsLockX_模块路径%/, 1
 global CapsLockX_ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
 global CapsLockX_ModulesLoader := CapsLockX_核心路径 "/CapsLockX-ModulesLoader.ahk"
 ; LoadModules(CapsLockX_ModulesRunner, CapsLockX_ModulesLoader)
+
+; 判断安装方式
+global NPM全局安装也 := InStr(A_ScriptFullPath, APPDATA) == 1 && InStr("node_modules", A_ScriptFullPath)
+global GIT仓库安装也 := "true" == Trim(CapsLockX_RunSilent("cmd /c git rev-parse --is-inside-work-tree"), "`r`n`t` ")
+
+;
 模块帮助向README编译()
 ; 隐藏 ToolTip
 ToolTip
@@ -74,11 +81,14 @@ Return
     FileRead, source, %INPUT_README_FILE%
     
     ; 编译一次
+    global 显示加载提示
+    显示加载提示 := 0
     target := 模块编译和帮助README更新(source)
     if (target == source) {
         return "NOT_CHANGED"
     }
-    ; 如果不一样，就再编译一次
+    ; 如果不一样，就再编译一次，并且显示加载提示
+    显示加载提示 := 1
     加载提示追加("模块帮助有变更")
     ; 然后进行稳定性检查
     source := 模块编译和帮助README更新(target)
@@ -104,6 +114,8 @@ Return
     ; ExitApp
 }
 加载提示追加(msg, clear = 0){
+    global 显示加载提示
+    if(!显示加载提示) return
     if (clear || loadingTips == "") {
         loadingTips := "CapsLockX " CapsLockX_Version "`n"
     }

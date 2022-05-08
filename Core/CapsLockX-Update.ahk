@@ -67,8 +67,8 @@ CapsLockX_仓库版本号比对(remote, local){
 }
 CapsLockX_通过npm更新尝试(){
     EnvGet, APPDATA, APPDATA
-    是NPM全局安装 := InStr(A_ScriptFullPath, APPDATA) == 1 && InStr("node_modules", A_ScriptFullPath)
-    if(!是NPM全局安装) {
+    NPM全局安装也 := InStr(A_ScriptFullPath, APPDATA) == 1 && InStr("node_modules", A_ScriptFullPath)
+    if(!NPM全局安装也) {
         return CapsLockX_Update_Fail
     }
     CapsLockX_更新记录("当前版本由 npm i -g 安装，正在尝试通过 npm update -g capslockx 更新")
@@ -78,8 +78,8 @@ CapsLockX_通过npm更新尝试(){
     return 更新成功 ? CapsLockX_Update_AlreadyLatest : CapsLockX_Update_Fail
 }
 CapsLockX_通过gitpull更新(tryAgainFlag := 0){
-    是GIT仓库 := "true" == Trim(CapsLockX_RunSilent("cmd /c git rev-parse --is-inside-work-tree"), "`r`n`t` ")
-    if(!是GIT仓库) {
+    GIT仓库安装也 := "true" == Trim(CapsLockX_RunSilent("cmd /c git rev-parse --is-inside-work-tree"), "`r`n`t` ")
+    if(!GIT仓库安装也) {
         return CapsLockX_Update_Fail
     }
     CapsLockX_更新记录("当前版本由 git clone 安装，正在尝试通过 git pull 更新" tryAgainFlag)
