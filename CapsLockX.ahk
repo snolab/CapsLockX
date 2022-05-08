@@ -19,6 +19,8 @@ SetWorkingDir, %A_ScriptDir%
 
 #Include %A_ScriptDir%/Core/CapsLockX-Config.ahk
 
+#Include %A_ScriptDir%/Core/CapsLockX-RunSilent.ahk
+
 global CapsLockX_模块路径 := "./Modules"
 global CapsLockX_核心路径 := "./Core"
 ; 版本
