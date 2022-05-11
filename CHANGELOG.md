@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.10](https://github.com/snolab/CapsLockX/compare/v1.25.9...v1.25.10) (2022-05-11)
+
+### Bug Fixes
+
+- ] ([e1ae74f](https://github.com/snolab/CapsLockX/commit/e1ae74f994fd76eb013e2fa37be7d332e738807b))
+- fix RunSilent ([c14b501](https://github.com/snolab/CapsLockX/commit/c14b5010ff5301e86d2f15c55671962438d28398))
+- 在模块没有更改时不显示加载提示 ([6c188be](https://github.com/snolab/CapsLockX/commit/6c188be28b9d1054d400bedaa07655df01433b56))
+
 ### [1.25.9](https://github.com/snolab/CapsLockX/compare/v1.25.8...v1.25.9) (2022-05-01)
 
 ### Bug Fixes
