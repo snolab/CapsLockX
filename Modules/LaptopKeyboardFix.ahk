@@ -44,9 +44,9 @@ Return
 
 ; Windows 键模拟于 ] + [
 ] & [:: LWin
-+]:: Send {Blind}]
-!]:: Send {Blind}]
-^]:: Send {Blind}]
+*+]:: Send {Blind}]
+*!]:: Send {Blind}]
+*^]:: Send {Blind}]
 ] Up:: Send {Blind}]
 
 ; Alt+Tab 模拟
