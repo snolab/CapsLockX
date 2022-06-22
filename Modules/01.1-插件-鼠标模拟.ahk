@@ -228,12 +228,11 @@ ScrollModeExit()
     if (状态 != "移动") {
         return
     }
-    ; Shift 减速
+    ; Shift 减速 =1
     if (GetKeyState("Shift", "P")) {
-        鼠标模拟.横速 *= 0.02
-        鼠标模拟.纵速 *= 0.02
-        dx := dx * 1, 
-        dy := dy * 1
+        sleep 100
+        dx := dx == 0 ?  0 : (dx > 0 ? 1 : -1 )
+        dy := dy == 0 ?  0 : (dy > 0 ? 1 : -1 )
     }
     if (TMouse_SendInputAPI) {
         ; 支持64位AHK！
