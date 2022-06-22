@@ -30,6 +30,18 @@ if (!CapsLockX) {
     ExitApp
 }
 
+global VirtualDesktopPinPattern1 := CapsLockX_Config("VirtualDesktopPinPattern", "p1", "#Desktop1", "Pin matched window to desktop 1")
+global VirtualDesktopPinPattern2 := CapsLockX_Config("VirtualDesktopPinPattern", "p2", "#Desktop2", "Pin matched window to desktop 2")
+global VirtualDesktopPinPattern3 := CapsLockX_Config("VirtualDesktopPinPattern", "p3", "#Desktop3", "Pin matched window to desktop 3")
+global VirtualDesktopPinPattern4 := CapsLockX_Config("VirtualDesktopPinPattern", "p4", "#Desktop4", "Pin matched window to desktop 4")
+global VirtualDesktopPinPattern5 := CapsLockX_Config("VirtualDesktopPinPattern", "p5", "#Desktop5", "Pin matched window to desktop 5")
+global VirtualDesktopPinPattern6 := CapsLockX_Config("VirtualDesktopPinPattern", "p6", "#Desktop6", "Pin matched window to desktop 6")
+global VirtualDesktopPinPattern7 := CapsLockX_Config("VirtualDesktopPinPattern", "p7", "#Desktop7", "Pin matched window to desktop 7")
+global VirtualDesktopPinPattern8 := CapsLockX_Config("VirtualDesktopPinPattern", "p8", "#Desktop8", "Pin matched window to desktop 8")
+global VirtualDesktopPinPattern9 := CapsLockX_Config("VirtualDesktopPinPattern", "p9", "#Desktop9", "Pin matched window to desktop 9")
+global VirtualDesktopPinPattern0 := CapsLockX_Config("VirtualDesktopPinPattern", "p0", "#Desktop0", "Pin matched window to desktop 0")
+
+
 Return
 
 ; Define hotkeys
@@ -49,6 +61,8 @@ Return
 ; Add or delete desktop
 !Backspace:: SendEvent ^#{F4}
 !+Backspace:: SendEvent ^#d
+
+
 
 ; Switch to desktop
 1:: SwitchToDesktop(1)
@@ -241,7 +255,33 @@ SwitchToDesktop(idx)
     } else {
         Tooltip, WARN SwitchToDesktop FAILED
     }
+    EnsureCurrentEnviromentRule(idx)
     return idx
+}
+EnsureCurrentEnviromentRule(idx)
+{
+    listOfWindow := WindowsListInAllVirtualDesktop()
+    out:=""
+    pinPatterns := VirtualDesktopPinPattern1 "`n" VirtualDesktopPinPattern2 "`n" VirtualDesktopPinPattern3 "`n" VirtualDesktopPinPattern4 "`n" VirtualDesktopPinPattern5 "`n" VirtualDesktopPinPattern6 "`n" VirtualDesktopPinPattern7 "`n" VirtualDesktopPinPattern8 "`n" VirtualDesktopPinPattern9 "`n" VirtualDesktopPinPattern0
+    loop, Parse, listOfWindow, `n
+    {
+        win := A_LoopField
+        hWnd := RegExReplace(win, "^.*?ahk_id (\S+).*?$", "$1")
+        if (IsWindowOnCurrentVirtualDesktop(hWnd)) {
+            continue
+        }
+        k:= 0
+        loop, Parse, pinPatterns, `n
+        {
+            k := k + 1
+            pattern := A_LoopField
+            if (idx == k && RegExMatch(win, "i)" pattern)) {
+                WinHide ahk_id %hWnd%
+                WinShow ahk_id %hWnd%
+            }
+        }
+    }
+    tooltip %out%
 }
 SwitchToDesktopByHotkey(idx)
 {
@@ -348,4 +388,98 @@ vtable(ptr, n)
     ; table (vtable for short). The remainder of the expression retrieves
     ; the address of the nth function's address from the vtable.
     Return NumGet(NumGet(ptr+0), n*A_PtrSize)
+}
+WindowsListInAllVirtualDesktop()
+{
+    windowsMatches := ""
+    ; 常量定义
+    WS_EX_TOOLWINDOW := 0x00000080
+    WS_EX_APPWINDOW := 0x00040000
+    WS_CAPTION := 0x00C00000
+    WS_EX_NOANIMATION := 0x04000000
+    WS_EX_NOACTIVATE := 0x08000000
+    WS_POPUP := 0x80000000
+    DetectHiddenWindows, Off
+    WinGet, id, List, , , 
+    loop %id% {
+        hWnd := id%A_Index%
+        filter := !WindowsListOfMonitorInAllVirtualDesktopFilter(hWnd)
+        if (filter) {
+            continue
+        }
+        WinGet, this_exe, ProcessName, ahk_id %hWnd%
+        WinGetTitle, this_title, ahk_id %hWnd%
+        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd " " . this_title . "`n"
+        ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+    }
+    Sort windowsMatches, R
+    return windowsMatches
+}
+WindowsListOfMonitorInAllVirtualDesktopFilter(hWnd)
+{
+    ; 常量定义
+    WS_EX_TOOLWINDOW := 0x00000080
+    WS_EX_APPWINDOW := 0x00040000
+    WS_CAPTION := 0x00C00000
+    WS_EX_NOANIMATION := 0x04000000
+    WS_EX_NOACTIVATE := 0x08000000
+    WS_POPUP := 0x80000000
+    WinGet, style, style, ahk_id %hWnd%
+    ; ; 跳过无标题窗口
+    ; if !(style & WS_CAPTION)
+    ;     Continue
+    ; ; 跳过工具窗口
+    ; if (style & WS_EX_TOOLWINDOW)
+    ;     Continue
+    ; if (style & WS_POPUP)
+    ;     Continue
+    ; 只显示Alt+TAB里有的窗口
+    if (!(style & WS_EX_APPWINDOW)) {
+        return False ; ; 跳 过弹出窗口
+    }
+    ; ToolTip, %hWnd% mi %MonitorIndex%
+    ; 尝试跳过隐藏窗口
+    GWL_STYLE := -16
+    GWL_EXSTYLE := -20
+    ; WS_STYLE := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hWnd, "Int", GWL_STYLE, "PTR")
+    WS_VISIBLE := 0x10000000
+    if (!(style & WS_VISIBLE)) {
+        return False
+    }
+    ; 跳过不在当前虚拟桌面的窗口
+    ; if (!IsWindowOnCurrentVirtualDesktop(hWnd)) {
+    ;     return False
+    ; }
+    ; 排除不归属于当前参数显示器的窗口
+    ; if (!!MonitorIndex) {
+    ;     this_monitor := GetMonitorIndexFromWindow(hWnd)
+    ;     if (MonitorIndex != this_monitor) {
+    ;         return False
+    ;     }
+    ; }
+    ; 尝试跳过隐藏窗口
+    if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ) {
+        return False
+    }
+    ; ; 跳过最大化窗口
+    ; WinGet, minmax, minmax, ahk_id %hWnd%
+    ; if (minmax == 1 && !(arrangeFlags & ARRANGE_MAXWINDOW)) {
+    ;     return False
+    ; }
+    ; ; 跳过最小化的窗口
+    ; if (minmax == -1 && !(arrangeFlags & ARRANGE_MINWINDOW)) {
+    ;     return False
+    ; }
+    WinGetTitle, this_title, ahk_id %hWnd%
+    ; 排除空标题窗口
+    if (!RegExMatch(this_title, ".+")) {
+        return False ; If (this_class == "Progman") ; return False ; 排除 Win10 的常驻窗口管理器
+    }
+    ; 跳过不可见的 UWP 窗口
+    WinGetClass, this_class, ahk_id %hWnd%
+    if ( this_class == "ApplicationFrameWindow") {
+        return False
+    }
+    ; true
+    return True
 }
