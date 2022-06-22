@@ -177,7 +177,7 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0)
     }
     return windowsMatches
 }
-WindowsListOfMonitor(arrangeFlags, MonitorIndex := 0)
+WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
 {
     windowsMatches := ""
     ; 常量定义
@@ -252,6 +252,7 @@ WindowsListOfMonitor(arrangeFlags, MonitorIndex := 0)
         windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
+    Sort windowsMatches, R
     return windowsMatches
 }
 WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
@@ -337,8 +338,7 @@ ArrangeWindows(arrangeFlags = "0")
     ; 列出每个显示器内的窗口
     loop %MonitorCount% {
         MonitorIndex := A_Index
-        listOfWindow_%MonitorIndex% := WindowsListOfMonitor(arrangeFlags, MonitorIndex)
-        Sort listOfWindow_%MonitorIndex%, R
+        listOfWindow_%MonitorIndex% := WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex)
     }
     ; 位置调整
     loop %MonitorCount% {
