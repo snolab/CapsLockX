@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.26.0](https://github.com/snolab/CapsLockX/compare/v1.25.10...v1.26.0) (2022-06-26)
+
+### Features
+
+- **virtualdesktop:** EnsureCurrentEnviromentRule ([3618182](https://github.com/snolab/CapsLockX/commit/36181829d8821a91b11340fe9bdb10ad75d5155a))
+
+### Bug Fixes
+
+- **doc:** 锁定 capslockx 模式 ([b6350f3](https://github.com/snolab/CapsLockX/commit/b6350f30d8a5ca8794b34e572790bab9f3476c5e))
+- **mouse:** shift to move 1px ([9b3b430](https://github.com/snolab/CapsLockX/commit/9b3b430bd746fded3addef49eda3a2913ee2a5e4))
+
 ### [1.25.10](https://github.com/snolab/CapsLockX/compare/v1.25.9...v1.25.10) (2022-05-11)
 
 ### Bug Fixes

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.25.10</version>
+    <version>1.26.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,14 +65,26 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.25.10](https://github.com/snolab/CapsLockX/compare/v1.25.9...v1.25.10) (2022-05-11)
+## [1.26.0](https://github.com/snolab/CapsLockX/compare/v1.25.10...v1.26.0) (2022-06-26)
+
+
+### Features
+
+* **virtualdesktop:** EnsureCurrentEnviromentRule ([3618182](https://github.com/snolab/CapsLockX/commit/36181829d8821a91b11340fe9bdb10ad75d5155a))
 
 
 ### Bug Fixes
 
-* ] ([e1ae74f](https://github.com/snolab/CapsLockX/commit/e1ae74f994fd76eb013e2fa37be7d332e738807b))
-* fix RunSilent ([c14b501](https://github.com/snolab/CapsLockX/commit/c14b5010ff5301e86d2f15c55671962438d28398))
-*  ([6c188be](https://github.com/snolab/CapsLockX/commit/6c188be28b9d1054d400bedaa07655df01433b56))
+* **doc:** capslockx ([b6350f3](https://github.com/snolab/CapsLockX/commit/b6350f30d8a5ca8794b34e572790bab9f3476c5e))
+* **mouse:** shift to move 1px ([9b3b430](https://github.com/snolab/CapsLockX/commit/9b3b430bd746fded3addef49eda3a2913ee2a5e4))
+
+### [1.25.10](https://github.com/snolab/CapsLockX/compare/v1.25.9...v1.25.10) (2022-05-11)
+
+### Bug Fixes
+
+- ] ([e1ae74f](https://github.com/snolab/CapsLockX/commit/e1ae74f994fd76eb013e2fa37be7d332e738807b))
+- fix RunSilent ([c14b501](https://github.com/snolab/CapsLockX/commit/c14b5010ff5301e86d2f15c55671962438d28398))
+-  ([6c188be](https://github.com/snolab/CapsLockX/commit/6c188be28b9d1054d400bedaa07655df01433b56))
 
 ### [1.25.9](https://github.com/snolab/CapsLockX/compare/v1.25.8...v1.25.9) (2022-05-01)
 
@@ -130,15 +142,6 @@ All notable changes to this project will be documented in this file. See [standa
 ### [1.24.2](https://github.com/snolab/CapsLockX/compare/v1.24.1...v1.24.2) (2022-03-11)
 
 ### Bug Fixes
-
-- #if CapsLockXMode & CM_FN for esc swap ([8f56b1e](https://github.com/snolab/CapsLockX/commit/8f56b1e185cd51bd0974e78f1c1db5bfdd20c8d2))
-- try fix sendmode ([c94c56a](https://github.com/snolab/CapsLockX/commit/c94c56a1c54b7ea32b6a8ba2a26e82e36e2504a8))
-
-### [1.24.1](https://github.com/snolab/CapsLockX/compare/v1.24.0...v1.24.1) (2022-02-27)
-
-## [1.24.0](https://github.com/snolab/CapsLockX/compare/v1.23.2...v1.24.0) (2022-02-27)
-
-### Features
 ]]></releaseNotes>
     
     <dependencies></dependencies>
