@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.26.1](https://github.com/snolab/CapsLockX/compare/v1.26.0...v1.26.1) (2022-06-28)
+
+### Bug Fixes
+
+- **onenote:** !r:: altSend(wi2) ; 视图 - 缩放到页面宽度 ([7185268](https://github.com/snolab/CapsLockX/commit/7185268cbcea507bc47cf73ff7d785dad73a1774))
+
 ## [1.26.0](https://github.com/snolab/CapsLockX/compare/v1.25.10...v1.26.0) (2022-06-26)
 
 ### Features
