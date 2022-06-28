@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.26.0</version>
+    <version>1.26.1</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,18 +65,23 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [1.26.0](https://github.com/snolab/CapsLockX/compare/v1.25.10...v1.26.0) (2022-06-26)
-
-
-### Features
-
-* **virtualdesktop:** EnsureCurrentEnviromentRule ([3618182](https://github.com/snolab/CapsLockX/commit/36181829d8821a91b11340fe9bdb10ad75d5155a))
+### [1.26.1](https://github.com/snolab/CapsLockX/compare/v1.26.0...v1.26.1) (2022-06-28)
 
 
 ### Bug Fixes
 
-* **doc:** capslockx ([b6350f3](https://github.com/snolab/CapsLockX/commit/b6350f30d8a5ca8794b34e572790bab9f3476c5e))
-* **mouse:** shift to move 1px ([9b3b430](https://github.com/snolab/CapsLockX/commit/9b3b430bd746fded3addef49eda3a2913ee2a5e4))
+* **onenote:** !r:: altSend(wi2) ;  -  ([7185268](https://github.com/snolab/CapsLockX/commit/7185268cbcea507bc47cf73ff7d785dad73a1774))
+
+## [1.26.0](https://github.com/snolab/CapsLockX/compare/v1.25.10...v1.26.0) (2022-06-26)
+
+### Features
+
+- **virtualdesktop:** EnsureCurrentEnviromentRule ([3618182](https://github.com/snolab/CapsLockX/commit/36181829d8821a91b11340fe9bdb10ad75d5155a))
+
+### Bug Fixes
+
+- **doc:**  capslockx  ([b6350f3](https://github.com/snolab/CapsLockX/commit/b6350f30d8a5ca8794b34e572790bab9f3476c5e))
+- **mouse:** shift to move 1px ([9b3b430](https://github.com/snolab/CapsLockX/commit/9b3b430bd746fded3addef49eda3a2913ee2a5e4))
 
 ### [1.25.10](https://github.com/snolab/CapsLockX/compare/v1.25.9...v1.25.10) (2022-05-11)
 
@@ -136,13 +141,7 @@ All notable changes to this project will be documented in this file. See [standa
 - add keywords ([cc7ed6e](https://github.com/snolab/CapsLockX/commit/cc7ed6e18ffee8d08257bda4861a845829b79a45))
 - **config:** show keyboard ([7c2742d](https://github.com/snolab/CapsLockX/commit/7c2742d1d9d97cdd4a755f99d46ab38330cac99a))
 - fix licenseUrl ([107e693](https://github.com/snolab/CapsLockX/commit/107e693d28a554c5b0e2243856972d7dde00efd6))
-- publish only in snolab ([d7311a2](https://github.com/snolab/CapsLockX/commit/d7311a23769566f030ef32e736a4552b13a14878))
--  |  | `CapsLockX + ad` |  HJKL （） | ([21ca801](https://github.com/snolab/CapsLockX/commit/21ca8016b8974dc48f91c484e86e0a8e4d49a9ce))
-
-### [1.24.2](https://github.com/snolab/CapsLockX/compare/v1.24.1...v1.24.2) (2022-03-11)
-
-### Bug Fixes
-]]></releaseNotes>
+- publish only in snolab ([d7311a2](https://github.com/snolab/CapsLockX/commit/d7311a23769566f030ef32e736a4552b13a14878))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
