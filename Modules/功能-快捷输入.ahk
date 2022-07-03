@@ -23,9 +23,14 @@ GenPassword(Chars, Length := 16)
     }
     Return pw
 }
-DateStringGenerate()
+SNODateStringGenerate()
 {
     FormatTime, TimeString, , (yyyyMMdd)
+    return TimeString
+}
+ISODateStringGenerate()
+{
+    FormatTime, TimeString, , yyyy-MM-dd
     return TimeString
 }
 TimeStringGenerate()
@@ -46,7 +51,11 @@ QuickTextInput(str)
 #if
     
 :*?:#D#:: ; 日期输入：如 (20220217)
-QuickTextInput(DateStringGenerate())
+QuickTextInput(ISODateStringGenerate())
+return
+
+:*?:#F#:: ; 日期输入：如 2022-02-17
+QuickTextInput(SNODateStringGenerate())
 return
 
 :*?:#T#:: ; 时间输入：(20220217.220717)
