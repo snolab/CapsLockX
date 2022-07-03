@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.27.0](https://github.com/snolab/CapsLockX/compare/v1.26.1...v1.27.0) (2022-07-03)
+
+### Features
+
+- **quickinput:** ISODateStringGenerate ([d321b99](https://github.com/snolab/CapsLockX/commit/d321b996dd9903a6a136e03742b53f52ac3fef1b))
+
 ### [1.26.1](https://github.com/snolab/CapsLockX/compare/v1.26.0...v1.26.1) (2022-06-28)
 
 ### Bug Fixes
