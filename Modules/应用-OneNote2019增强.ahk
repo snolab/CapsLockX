@@ -57,7 +57,7 @@ getAscStr(str)
     Return out
 }
 
-OneNote2016_Win11_Detect()
+OneNote2019_Win11_Detect()
 {
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
@@ -69,16 +69,25 @@ OneNote2016_Win11_Detect()
     ; it is Win11 maybe
     return true
 }
-
+   
+OneNote2019_SNODateStringGenerate()
+{
+    FormatTime, TimeString, , (yyyyMMdd)
+    return TimeString
+}
+OneNote2019_QuickTextInput(str)
+{
+    SendInput {Text}%str%
+}
 ; 打开快速笔记主页
 OneNote快速笔记窗口启动(){
-    if (OneNote2016_Win11_Detect()) {
+    if (OneNote2019_Win11_Detect()) {
         SendEvent #!n
     } else {
         ; SendEvent #n
         SendEvent #!n
     }
-    
+ 
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
     if (ErrorLevel) {
@@ -90,16 +99,18 @@ OneNote快速笔记窗口启动(){
         WinActivate %OneNote窗口匹配串%
     }
 }
-OneNote2016主页启动(){
+OneNote2019主页启动(){
     OneNote快速笔记窗口启动()
     SendEvent !{Home}^{Home}!{Enter}{Left}
     ; SendEvent ^{End}!{Enter}
     Return
 }
-OneNote2016搜索启动() {
+OneNote2019搜索启动() {
     OneNote快速笔记窗口启动()
     SendEvent ^e{Text}""
     SendEvent {Left}
+    OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
+    SendEvent +{Left 10}
     Return
 }
 
@@ -203,9 +214,9 @@ OneNote2016搜索启动() {
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
-#!n:: OneNote2016主页启动()
-; 打开 OneNote 并精确匹配查找搜索笔记
-#+n:: OneNote2016搜索启动()
+#!n:: OneNote2019主页启动()
+; 打开 OneNote 并精确匹配查找搜索笔记j
+#+n:: OneNote2019搜索启动()
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
@@ -215,9 +226,9 @@ OneNote2016搜索启动() {
 ^+!F12:: ExitApp ; 退出脚本
 
 ;
-#if OneNote2016搜索界面内()
+#if OneNote2019搜索界面内()
 
-OneNote2016搜索界面内(){
+OneNote2019搜索界面内(){
     return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
 }
 ; $^f::
@@ -251,21 +262,21 @@ OneNote2016搜索界面内(){
 ; Return
 ; }
 
-#if OneNote2016创建链接窗口内()
+#if OneNote2019创建链接窗口内()
 
-OneNote2016创建链接窗口内(){
+OneNote2019创建链接窗口内(){
     return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
 }
 
-; /:: CapsLockX_ShowHelp OneNote2016创建链接窗口
+; /:: CapsLockX_ShowHelp OneNote2019创建链接窗口
 
 ; 复制链接笔记页面的搜索结果
 !+s:: 笔记条目搜索结果复制整理向页面粘贴条数()
 !s:: 笔记条目搜索结果复制整理条数()
 
-#if OneNote2016笔记编辑窗口内()
+#if OneNote2019笔记编辑窗口内()
 
-OneNote2016笔记编辑窗口内(){
+OneNote2019笔记编辑窗口内(){
     return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
 
@@ -372,7 +383,7 @@ F2:: SendEvent ^+t ; 重命名笔记
 ; 复制页面链接（并清洗成 onenote 链接
 页面链接复制(){
     Clipboard := ""
-    SendEvent ^+a{AppsKey}l
+    SendEvent ^+a{AppsKey}lp
     ClipWait, 1
     if (ErrorLevel)
         Return
@@ -419,8 +430,11 @@ F2:: SendEvent ^+t ; 重命名笔记
         SendEvent {Home}{Left}^a{Delete}
     }
 }
-
-$!+k:: SendEvent {Home}[[{End}]] ; 快速将内容做成单独链接
+OneNote2019NoteSplit()
+{
+    SendEvent {Home}[[{End}]] ; 将内容做成单独链接
+}
+$!+k:: OneNote2019NoteSplit()
 $!1:: SendEvent !+1 ; 大纲折叠展开到1
 $!2:: SendEvent !+2 ; 大纲折叠展开到2
 $!3:: SendEvent !+3 ; 大纲折叠展开到3
@@ -440,9 +454,9 @@ $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
 $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
-#if OneNote2016换笔界面()
+#if OneNote2019换笔界面()
 
-OneNote2016换笔界面(){
+OneNote2019换笔界面(){
     return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
 }
 $1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
