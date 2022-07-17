@@ -334,14 +334,18 @@ CapsLockX_Up()
         if (CapsLockXMode & CM_CapsLockX) {
             ; CapsLockX_ModeExit()
         } else {
+            ; 单击 CapsLockX
             if (CapsLockX_上次触发键 == "CapsLock") {
+                ; 切换 CapsLock 状态（原功能）
                 if (GetKeyState("CapsLock", "T")) {
                     SetCapsLockState, Off
                 } else {
                     SetCapsLockState, On
                 }
             }
+            ; 单击 空格键
             if (CapsLockX_上次触发键 == "Space") {
+                ; 原功能（按空格键）
                 Send {Blind}{Space}
             }
         }

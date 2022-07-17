@@ -1,4 +1,14 @@
-﻿;SetTitleMatchMode RegEx
+﻿; ========== CapsLockX ==========
+; 名称：Anki 增强
+; 描述：rt
+; 作者：snomiao
+; 联系：snomiao@gmail.com
+; 版权：Copyright 2020-2022 snomiao@gmail.com
+; 版本：2.0.0
+; 日期：2022-07-17
+; ========== CapsLockX ==========
+
+;SetTitleMatchMode RegEx
 ; FileEncoding, UTF-8
 ; save with utf8 with bom
 

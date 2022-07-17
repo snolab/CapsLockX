@@ -10,4 +10,4 @@
     ;    Run %cmdScreenOff%, , Hide
 Return
 
-; 创意参考： [按下Win+L键，玄机来了]( http://m.cfan.com.cn/article/105095 )
+; ref： [按下Win+L键，玄机来了]( http://m.cfan.com.cn/article/105095 )
