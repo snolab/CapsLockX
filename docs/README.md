@@ -232,7 +232,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 
 > 一直以来，我总是以键盘控自居，应该是在从前做模型的时候伤到了手指关节开始，成为键盘重度用户的。各种键盘加速工具，主动去记住各种快捷键，力求少用鼠标，甚至去学习了 vim 和 emacs。但是，很多时候，鼠标是无可替代的，尤其是在图形界面大行其道时候。
 
-—— 以上是来自 [SimClick 模拟点击](https://github.com/rywiki/simclick) 作者的一段话，这是一款以网格细分方式模拟鼠标的作品，可以与本项目互补
+—— 以上是来自 [SimClick 模拟点击](https://github.com/rywiki/simclick) 作者的一段话，这是一款以网格细分方式模拟鼠标的作品，可以与 CapsLockX 互补
 
 —— 由 [秦金伟](http://rsytes.coding-pages.com/) 推荐
 
@@ -564,7 +564,7 @@ Anki 操作增强
 
 ### 发展路线 🛰️ RoadMap
 
-本项目的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。
+CapsLockX 的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。
 
 1. [x] 按 CapsLockX + - 键显示对应帮助（目前的显示样式相当草率）
 2. [ ] 自动更新（虽然 git pull 一下也不是不行）
@@ -589,7 +589,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 
 而 Shift 键 用来在以上功能的基础上稍微改变按键的含义（例如反向操作如 Shift+Alt+Tab，或功能范围扩大如 Shift+方向键调整选区等）
 
-### 本项目与类似项目的功能对比 ⚔ Feat Compare Matrix
+### CapsLockX 与类似项目的功能对比 ⚔ Feat Compare Matrix
 
 更新于(20200627) 其中的信息可能慢慢过时
 
@@ -616,7 +616,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 | 系统             | Win                                              | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
 | 支持语言         | 中文                                             | 中文 - English                                      | 中文                                                | 中文 - English                                  |
 
-#### 本项目地址 🔗 Project Urls
+#### CapsLockX 地址 🔗 Project Urls
 
 以下几个仓库同步更新：
 
@@ -643,34 +643,35 @@ Ctrl + Alt + 同上，但一般为全局热键
 - [CapsLock+](https://capslox.com/CapsLock-plus/)
 - [Capslox](https://capslox.com/cn/)
 - CapsLock++ [matrix1001/CapsLock-plus-plus: ⌨Amazing, extendable, readable autohotkey scripts framework utilized by CapsLock.](https://github.com/matrix1001/CapsLock-plus-plus)
+- [Power Keys | 解放电脑使用效率](https://powerkeys.github.io/)
 
 ## 答疑相关 ❓ Questions
 
 相关社群：
 
-- [本项目的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues) ✉️
+- [ CapsLockX 的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues) ✉️
 - CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)📱
 - CapsLockX 用户 QQ 群 🐧：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群 🐧： 271105729
 - AHK 高级 QQ 群 🐧： 717947647
 
-本项目相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
+CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) 或私聊提问也可。
 
 ### 隐私与安全性 🔒 Privacy
 
-考虑到任何能够获取到管理员权限的软件对于用户的操作系统都是相当危险的，故本项目必须采用开源的方式以使社区可以自由且随意地检查本项目中可能涉及到的任何部分的代码，以保证所有用户的操作系统安全性不因本软件而受损害。
+考虑到任何能够获取到管理员权限的软件对于用户的操作系统都是相当危险的，故 CapsLockX 必须采用开源的方式以使社区可以自由且随意地检查 CapsLockX 中可能涉及到的任何部分的代码，以保证所有用户的操作系统安全性不因本软件而受损害。
 
 ## 支持 ⭐️ Supports
 
-如何帮助本项目生存下去？如果本项目有帮助到你：
+如何帮助 CapsLockX 生存下去？如果 CapsLockX 有帮助到你：
 
-1. ⭐️ 请在本项目 Github 上点星 <a class="github-button" href="https://github.com/snolab/CapsLockX" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star snolab/CapsLockX on GitHub">Star</a>
+1. ⭐️ 请在 CapsLockX Github 上点星 <a class="github-button" href="https://github.com/snolab/CapsLockX" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star snolab/CapsLockX on GitHub">Star</a>
 2. 🔗 请把我转发分享给你身边的朋友们。
 3. 欢迎帮我翻译本文档到各国语言。 🌐
 4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues) 🐞
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
 6. 欢迎创作关于本软件的作品，比如录制使用教学视频投稿到 Youtube 或 Bilibili ，雪星会去给你点赞的哦。
-7. 欢迎在此捐助本项目的开发，每一笔捐赠都会记录到下方的列表中：💰
+7. 欢迎在此捐助 CapsLockX 的开发，每一笔捐赠都会记录到下方的列表中：💰
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
@@ -689,10 +690,15 @@ Ctrl + Alt + 同上，但一般为全局热键
 - 感谢来自以上捐赠者的经济支持。
 - 感谢 [秦金伟](http://rsytes.coding-pages.com/) 的引用推荐文章、和发展建议：[2020-02-23 当键盘模拟鼠标 - 简书](https://www.jianshu.com/p/f757f56a7de6)
 - 感谢 @河许人 帮助转载推广： [CapsLockX – 像黑客一样操作电脑！【雪星】 – AutoAHK](https://www.autoahk.com/archives/34996)
-- 感谢在 issues 里和群里提问并帮助完善本项目的各位。
+- 感谢在 issues 里和群里提问并帮助完善 CapsLockX 的各位。
 
 ### 相关话题 - Related Topics
 
+- [有没有办法将 Chrome OS 中的快捷键实现到 Windows 10 中 - V2EX](https://www.v2ex.com/t/778967)
+- [推荐一下我的键位映射工具 MyKeymap - V2EX](https://v2ex.com/t/844432)
+- [有多少人会把键盘上的 CapsLock 和 Backspace 对调？ - V2EX](https://www.v2ex.com/t/855901)
+- [分享一个用 CapsLock+H/J/K/L 模拟方向键的小工具 - V2EX](https://www.v2ex.com/t/318182)
+- [推荐一个适合程序员的效率工具 AltPlus，左边大拇指按下 Alt 键,就可以像使用 vim 一样编程了. - V2EX](https://www.v2ex.com/t/800721)
 - [CapsLockX - 像黑客一样操作电脑 - V2EX](https://v2ex.com/t/772052#reply1)
 - [CapsLockX - 像黑客一样操作电脑！ - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=28&t=88593)
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora](https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI)
@@ -747,13 +753,17 @@ Ctrl + Alt + 同上，但一般为全局热键
     - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
     - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [快捷输入](#快捷输入)
+    - [锁屏自动息屏](#锁屏自动息屏)
     - [Anki 增强模块](#anki-增强模块)
-    - [OneNote 2016](#onenote-2016)
+  - [常用功能/特性](#常用功能特性)
+  - [说明](#说明)
+    - [OneNote 2016 - 2019 增强](#onenote-2016---2019-增强)
+  - [雪星喵常用功能](#雪星喵常用功能)
   - [按键分布设计（开发中）](#按键分布设计开发中)
   - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
     - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
   - [用法](#用法)
-  - [注](#注)
+  - [注：](#注)
   - [效果如下图](#效果如下图)
     - [媒体键模块](#媒体键模块)
     - [番茄时钟](#番茄时钟)
@@ -761,9 +771,19 @@ Ctrl + Alt + 同上，但一般为全局热键
     - [制作背景 ( 2017 年秋) 🍁 Background](#制作背景--2017-年秋--background)
     - [发展路线 🛰️ RoadMap](#发展路线-️-roadmap)
     - [组合键含义设计 ⌨ Chore Design](#组合键含义设计--chore-design)
-    - [本项目与类似项目的功能对比 ⚔ Feat Compare Matrix](#本项目与类似项目的功能对比--feat-compare-matrix)
-      - [本项目地址 🔗 Project Urls](#本项目地址--project-urls)
+    - [CapsLockX 与类似项目的功能对比 ⚔ Feat Compare Matrix](#capslockx-与类似项目的功能对比--feat-compare-matrix)
+      - [CapsLockX 地址 🔗 Project Urls](#capslockx-地址--project-urls)
       - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
+  - [答疑相关 ❓ Questions](#答疑相关--questions)
+    - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
+  - [支持 ⭐️ Supports](#支持-️-supports)
+    - [捐赠记录(截至 20210821) 📄 Donate Records](#捐赠记录截至-20210821--donate-records)
+    - [鸣谢 🙏🏻 Thanks](#鸣谢--thanks)
+    - [相关话题 - Related Topics](#相关话题---related-topics)
+  - [页尾目录 - Table of Contents](#页尾目录---table-of-contents)
+    CapsLockX - [与类似项目的功能对比 ⚔ Feat Compare Matrix](#与类似项目的功能对比--feat-compare-matrix)
+    - [地址 🔗 Project Urls](#地址--project-urls)
+    - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
   - [答疑相关 ❓ Questions](#答疑相关--questions)
     - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
   - [支持 ⭐️ Supports](#支持-️-supports)

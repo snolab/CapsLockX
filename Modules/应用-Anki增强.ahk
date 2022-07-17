@@ -15,6 +15,7 @@
 ;^!F12:: ExitApp
 
 Global Anki增强_Lock := 0
+
 #WinActivateForce
 Return
 
