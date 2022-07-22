@@ -675,7 +675,7 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
-   - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
+   - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 [发展路线](#发展路线-roadmap)
 
