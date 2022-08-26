@@ -77,7 +77,7 @@ AnkiWindowActiveQ(){
 #If 在Anki学习界面()
 
 在Anki学习界面(){
-    return !CapsLockXMode && (WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") or WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
+    return !CapsLockXMode && AnkiWindowActiveQ()
 }
 $x:: Send s ; study
 $q:: Send d ; quit
