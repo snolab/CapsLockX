@@ -37,7 +37,20 @@ AnkiUnlock(x)
 ;#UseHook On
 
 ; ANKI 2.0 and 2.1
-#if CapsLockXMode && ( WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe") || WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe"))
+#if CapsLockXMode && AnkiWindowActiveQ()
+
+AnkiWindowActiveQ(){
+    if(WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe")){
+        return 1
+    }
+    if( WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe")){
+        return 1
+    }
+    if( WinActive("Anki - .*|.* - Anki ahk_class Qt631QWindowIcon ahk_exe anki.exe")){
+        return 1
+    }
+    return 0
+}
 
 ; DEPRECATED -- USE .md please
 /:: CapsLockX_ShowHelp("
