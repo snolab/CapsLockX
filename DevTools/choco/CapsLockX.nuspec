@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.28.1</version>
+    <version>1.28.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -64,6 +64,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
     <releaseNotes><![CDATA[# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.28.2](https://github.com/snolab/CapsLockX/compare/v1.28.1...v1.28.2) (2022-08-26)
+
+
+### Bug Fixes
+
+* anki 631 ([483687a](https://github.com/snolab/CapsLockX/commit/483687a42cca80fd8b8b29cb6b35f3e68a74b085))
 
 ### [1.28.1](https://github.com/snolab/CapsLockX/compare/v1.28.0...v1.28.1) (2022-07-17)
 
@@ -140,12 +147,6 @@ All notable changes to this project will be documented in this file. See [standa
 -  SendEvent  hl  ([b67c601](https://github.com/snolab/CapsLockX/commit/b67c6010bea6368838c6c91920b48826ace5d03f))
 
 ### [1.25.2](https://github.com/snolab/CapsLockX/compare/v1.25.1...v1.25.2) (2022-03-16)
-
-### [1.25.1](https://github.com/snolab/CapsLockX/compare/v1.25.0...v1.25.1) (2022-03-13)
-
-## [1.25.0](https://github.com/snolab/CapsLockX/compare/v1.24.2...v1.25.0) (2022-03-13)
-
-### Features
 ]]></releaseNotes>
     
     <dependencies></dependencies>
