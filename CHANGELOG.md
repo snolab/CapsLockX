@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.28.4](https://github.com/snolab/CapsLockX/compare/v1.28.3...v1.28.4) (2022-09-03)
+
+### [1.28.3](https://github.com/snolab/CapsLockX/compare/v1.28.2...v1.28.3) (2022-08-26)
+
+### [1.28.2](https://github.com/snolab/CapsLockX/compare/v1.28.1...v1.28.2) (2022-08-26)
+
+### Bug Fixes
+
+- anki 631 ([483687a](https://github.com/snolab/CapsLockX/commit/483687a42cca80fd8b8b29cb6b35f3e68a74b085))
+
 ### [1.28.1](https://github.com/snolab/CapsLockX/compare/v1.28.0...v1.28.1) (2022-07-17)
 
 ## [1.28.0](https://github.com/snolab/CapsLockX/compare/v1.27.0...v1.28.0) (2022-07-17)
