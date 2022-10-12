@@ -46,7 +46,7 @@ FileDelete, %CapsLockX_模块路径%/*.user.md
 FileCopy %CapsLockX_配置目录%/*.user.ahk, %CapsLockX_模块路径%/, 1
 FileCopy %CapsLockX_配置目录%/*.user.md, %CapsLockX_模块路径%/, 1
 
-; 加载模块
+; 模块加载器路径
 global CapsLockX_ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
 global CapsLockX_ModulesLoader := CapsLockX_核心路径 "/CapsLockX-ModulesLoader.ahk"
 ; LoadModules(CapsLockX_ModulesRunner, CapsLockX_ModulesLoader)
@@ -230,6 +230,12 @@ Return
     FileEncoding UTF-8
     FileDelete %CapsLockX_ModulesRunner%
     FileAppend %模块运行器%, %CapsLockX_ModulesRunner%
+    if(!FileExist(CapsLockX_ModulesRunner)){
+        msg=
+        msg.= Unable to write ModulesRunner.ahk, if you are install with chocolatey, run me as admin at the first time please.`n
+        msg.= 注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。
+        msgbox %msg%
+    }
     FileDelete %CapsLockX_ModulesLoader%
     FileAppend %模块加载器%, %CapsLockX_ModulesLoader%
     
