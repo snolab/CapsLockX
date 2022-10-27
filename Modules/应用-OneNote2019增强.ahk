@@ -315,6 +315,57 @@ F3:: 精确查找笔记()
 F2:: SendEvent ^+t ; 重命名笔记
 +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
 !F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
+^Enter:: OneNote2019_ToggleTODO()
+
+OneNote2019_ToggleTODO(){
+    ; request clipboard
+    backup:=ClipboardAll
+    Clipboard:=""
+    ; select current line 行は選る
+    Send {End}^a^c
+    
+    ; get clipboard
+    ClipWait, 2
+    if(ErrorLevel) {
+        Clipboard := backup
+        return
+    }
+    s := clipboard
+    Clipboard := backup
+
+    ; TURNING TODO STATES
+
+    isTODO := !!RegExMatch(s, "^TODO")
+    if (isTODO ) {
+        so := RegExReplace(s, "^TODO ?", "DOING ")
+        SendEvent, {Text}%so%
+        SendEvent {Left}
+        return
+    }
+    
+    isDOING := !!RegExMatch(s, "^DOING")
+    if (isDOING ) {
+        so := RegExReplace(s, "^DOING ?", "DONE ")
+        SendEvent, {Text}%so%
+        SendEvent {Left}
+        return
+    }
+    
+    isDONE := !!RegExMatch(s, "^DONE")
+    if (isDONE ) {
+        so := RegExReplace(s, "^DONE ?", "")
+        SendEvent, {Text}%so%
+        SendEvent {Left}
+        return
+    }
+
+    ; is nothing
+    so := RegExReplace(s, "^ ?", "TODO ")
+    SendEvent, {Text}%so%
+    SendEvent {Left}
+    return
+}
+
 把笔记时间显式填充到标题(){
     backup := ClipboardAll
     Clipboard:=""
@@ -453,6 +504,7 @@ $!\:: altSendEx("w", "{Down}{Tab 5}{Enter}") ; 调整缩放复原
 $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
 $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
+
 
 #if OneNote2019换笔界面()
 
