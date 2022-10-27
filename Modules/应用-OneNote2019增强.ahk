@@ -315,7 +315,7 @@ F3:: 精确查找笔记()
 F2:: SendEvent ^+t ; 重命名笔记
 +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
 !F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
-^Enter:: OneNote2019_ToggleTODO()
++^Enter:: OneNote2019_ToggleTODO()
 
 OneNote2019_ToggleTODO(){
     ; request clipboard
