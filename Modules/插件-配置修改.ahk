@@ -12,7 +12,7 @@ global CLX_CONFIG_ONSTARTUP   := CapsLockX_Config("Core", "CLX_CONFIG_ONSTARTUP"
 
 Menu, Tray, Add ; Creates a separator line.
 Menu, Tray, Add, 配置文件编辑, 配置文件编辑 ; Creates a new menu item.
-; Menu, Tray, Add, Exit, Exit ; Creates a new menu item.
+Menu, Tray, Add, Exit, ExitCapsLockX ; Creates a new menu item.
 
 if (CLX_CONFIG_ONSTARTUP) {
     SetTimer CapsLockX_配置窗口, -1
@@ -20,6 +20,10 @@ if (CLX_CONFIG_ONSTARTUP) {
 
 return
 
+ExitCapsLockX()
+{
+    exit
+}
 ; 修改配置
 #if CapsLockXMode
     
@@ -27,6 +31,7 @@ return
 m:: CapsLockX_配置窗口()
 
 CapsLockX_配置窗口(){
+    Gui, Destroy
     ; TODO update this to web view
     Gui, Add, Text, , 你可以按 CapsLockX + M 打开此窗口
     Gui, Add, Text, , 当前 CapsLockX_配置目录：%CapsLockX_配置目录%
@@ -38,6 +43,13 @@ CapsLockX_配置窗口(){
     Gui, Add, Button, w80, 打开官方文档
     Gui, Add, Button, w80, 添加开机自动启动
     Gui, Add, Button, w80, 配置文件编辑
+    
+    global T_TomatoLife
+        if (T_TomatoLife) {
+        Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife Checked, 启用番茄时钟，每25分钟休息5分钟·。
+    } else {
+        Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife, 启用番茄时钟，每25分钟休息5分钟·。
+    }
     
     global T_XKeyAsCapsLock
     if (T_XKeyAsCapsLock) {
@@ -78,7 +90,8 @@ Button打开官方文档:
     Run https://capslockx.snomiao.com/
 return
 CapsLockX_ConfigureUpdate:
-    global T_XKeyAsCapsLock
+    global T_TomatoLife
+        global T_XKeyAsCapsLock
     global T_XKeyAsSpace
     global T_AskRunAsAdmin
     global CLX_CONFIG_ONSTARTUP
@@ -88,6 +101,7 @@ CapsLockX_ConfigureUpdate:
     reloadFlag := reloadFlag || ( CapsLockX_ConfigGet("Core", "T_XKeyAsSpace", T_XKeyAsSpace) != T_XKeyAsSpace )
     reloadFlagAdmin := 0
     reloadFlagAdmin := reloadFlagAdmin || ( CapsLockX_ConfigGet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin) != T_AskRunAsAdmin )
+    CapsLockX_ConfigSet("TomatoLife", "Enable", T_TomatoLife, "使用番茄时钟（默认禁用，改为 1 开启）")
     CapsLockX_ConfigSet("Core", "T_XKeyAsCapsLock", T_XKeyAsCapsLock, "使用 Space 作为引导键（默认启用，用户启用）")
     CapsLockX_ConfigSet("Core", "T_XKeyAsSpace", T_XKeyAsSpace, "使用 CapsLock 作为引导键（默认启用，用户启用）")
     CapsLockX_ConfigSet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
