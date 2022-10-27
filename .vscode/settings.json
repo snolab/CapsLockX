@@ -1,3 +1,4 @@
 {
-  "files.eol": "\r\n"
+  "files.eol": "\r\n",
+  "task.allowAutomaticTasks": "on"
 }

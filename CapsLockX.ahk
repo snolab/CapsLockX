@@ -231,9 +231,9 @@ Return
     FileDelete %CapsLockX_ModulesRunner%
     FileAppend %模块运行器%, %CapsLockX_ModulesRunner%
     if(!FileExist(CapsLockX_ModulesRunner)){
-        msg=
-        msg.= Unable to write ModulesRunner.ahk, if you are install with chocolatey, run me as admin at the first time please.`n
-        msg.= 注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。
+        msg =
+        msg .= "Unable to write ModulesRunner.ahk, if you are install with chocolatey, run me as admin at the first time please.`n"
+        msg .= "注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。"
         msgbox %msg%
     }
     FileDelete %CapsLockX_ModulesLoader%
