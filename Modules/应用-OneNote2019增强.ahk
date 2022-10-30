@@ -107,6 +107,7 @@ OneNote2019主页启动(){
 }
 OneNote2019搜索启动() {
     OneNote快速笔记窗口启动()
+    SendEvent ^{PgUp}
     SendEvent ^e{Text}""
     SendEvent {Left}
     OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
@@ -119,7 +120,7 @@ OneNote2019搜索启动() {
     条数 := 笔记条目搜索结果复制整理条数()
     ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
     WinWaitActive %OneNote窗口匹配串%, , 5 ; wait for 5 seconds
-    if(ErrorLevel) {
+    if(ErrorLevel) {                                                                               
         TrayTip, 错误, 未找到OneNote窗口
         return
     }
@@ -322,7 +323,7 @@ OneNote2019_ToggleTODO(){
     backup:=ClipboardAll
     Clipboard:=""
     ; select current line 行は選る
-    Send {End}^a^c
+    Send {Home}^a{Home}+{End}^c
     
     ; get clipboard
     ClipWait, 2
@@ -339,7 +340,7 @@ OneNote2019_ToggleTODO(){
     if (isTODO ) {
         so := RegExReplace(s, "^TODO ?", "DOING ")
         SendEvent, {Text}%so%
-        SendEvent {Left}
+        SendEvent, ^a{End}
         return
     }
     
@@ -347,7 +348,7 @@ OneNote2019_ToggleTODO(){
     if (isDOING ) {
         so := RegExReplace(s, "^DOING ?", "DONE ")
         SendEvent, {Text}%so%
-        SendEvent {Left}
+        SendEvent, ^a{End}
         return
     }
     
@@ -355,14 +356,13 @@ OneNote2019_ToggleTODO(){
     if (isDONE ) {
         so := RegExReplace(s, "^DONE ?", "")
         SendEvent, {Text}%so%
-        SendEvent {Left}
+        SendEvent, ^a{End}
         return
     }
-
     ; is nothing
     so := RegExReplace(s, "^ ?", "TODO ")
     SendEvent, {Text}%so%
-    SendEvent {Left}
+    SendEvent, ^a{End}
     return
 }
 
