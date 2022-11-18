@@ -42,8 +42,6 @@
   },
   "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
-    "@commitlint/cli": "^16.3.0",
-    "@commitlint/config-conventional": "^16.2.4",
     "@types/pinyin": "^2.10.0",
     "eslint": "^8.23.0",
     "eslint-config-airbnb-base": "^15.0.0",

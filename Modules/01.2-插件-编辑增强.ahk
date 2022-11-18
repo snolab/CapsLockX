@@ -48,21 +48,33 @@ DisableLockWorkstation()
 ; 这里用 SendEvent 防止把 hl 按出来
 左方向键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{Left}
     }
 }
 右方向键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{Right}
     }
 }
 上翻页键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{PgUp}
     }
 }
 下翻页键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{PgDn}
     }
 }
@@ -73,11 +85,17 @@ DisableLockWorkstation()
         ControlGetFocus, focusedClassNN, ahk_id %hWnd%
         if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
             loop %n%{
+                if (A_Index > 128) {
+                    return
+                }
                 ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
             }
         }
     }
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         ; 这里如果使用 SendInput 则会出现打出kj的情况。
         SendEvent {Blind}{up}
     }
@@ -89,12 +107,18 @@ DisableLockWorkstation()
         ControlGetFocus, focusedClassNN, ahk_id %hWnd%
         if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
             loop %n%{
+                if (A_Index > 128) {
+                    return
+                }
                 ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
             }
             return
         }
     }
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         ; 这里如果使用 SendInput 则会出现打出kj的情况。
         SendEvent {Blind}{Down}
     }
