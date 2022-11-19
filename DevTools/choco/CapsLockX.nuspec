@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.28.4</version>
+    <version>1.28.7</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -64,6 +64,16 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
     <releaseNotes><![CDATA[# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.28.7](https://github.com/snolab/CapsLockX/compare/v1.28.6...v1.28.7) (2022-11-19)
+
+
+### Bug Fixes
+
+* **capslockx:** on a{End} ([761210a](https://github.com/snolab/CapsLockX/commit/761210ab5dfc663efadb72d5d4380e5040b6abf7))
+* **edit-enhance:** dead loop ([3342d9b](https://github.com/snolab/CapsLockX/commit/3342d9b935ac8390364e758e77413b0ce5ceddd1))
+* **Modules:** onenote toggle todo without table conflict ([8fa0766](https://github.com/snolab/CapsLockX/commit/8fa0766e1c7e9851a72e64cadff3d59c6b553d5c))
+* **Modules:** pomodoro enable ([7c3c838](https://github.com/snolab/CapsLockX/commit/7c3c83881905b4f1437e53582d5f318241645be8))
 
 ### [1.28.4](https://github.com/snolab/CapsLockX/compare/v1.28.3...v1.28.4) (2022-09-03)
 
@@ -130,22 +140,6 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 - [#39](https://github.com/snolab/CapsLockX/issues/39) ([b8606ee](https://github.com/snolab/CapsLockX/commit/b8606eea048702f0ae3368444e0763a977c70875))
-
-### [1.25.5](https://github.com/snolab/CapsLockX/compare/v1.25.4...v1.25.5) (2022-04-11)
-
-### Bug Fixes
-
-- [#31](https://github.com/snolab/CapsLockX/issues/31) ([1018ce0](https://github.com/snolab/CapsLockX/commit/1018ce0cab748c221bda8c1e14fb5de70e985f12))
-
-### [1.25.4](https://github.com/snolab/CapsLockX/compare/v1.25.3...v1.25.4) (2022-04-08)
-
-### Bug Fixes
-
-- **mouse:** reduce speed with shift ([29f1363](https://github.com/snolab/CapsLockX/commit/29f1363cc0371658abc3f51cca715b36e612bde1))
-
-### [1.25.3](https://github.com/snolab/CapsLockX/compare/v1.25.2...v1.25.3) (2022-03-16)
-
-### Bug Fixes
 ]]></releaseNotes>
     
     <dependencies></dependencies>
