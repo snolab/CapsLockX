@@ -277,6 +277,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
 | 全局(基本) | `CapsLockX + y o`     | Home End                         |
 | 全局(基本) | `CapsLockX + u i`     | PageUp PageDown                  |
+| 全局(基本) | `CapsLockX + m n`     | Shift+Tab 和 2 Tab               |
 | 全局(基本) | `CapsLockX + g`       | 回车                             |
 | 全局(进阶) | `CapsLockX + t`       | Delete                           |
 | 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
