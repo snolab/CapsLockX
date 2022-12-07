@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.29.0](https://github.com/snolab/CapsLockX/compare/v1.28.7...v1.29.0) (2022-12-07)
+
+### Features
+
+- **edit-enhance:** CLX+N/M to control tab ([7a677f7](https://github.com/snolab/CapsLockX/commit/7a677f7f36f4254b70230a6662927dd13e73461f))
+
 ### [1.28.7](https://github.com/snolab/CapsLockX/compare/v1.28.6...v1.28.7) (2022-11-19)
 
 ### Bug Fixes
