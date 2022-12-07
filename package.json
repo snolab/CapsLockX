@@ -6,9 +6,9 @@
     "start": "CapsLockX.exe",
     "build": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-    "prepare": "husky install",
+    "prepare": "husky install && pnpm upgrade",
     "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
-    "release": "pnpm upgrade & standard-version --commit-all && git push --follow-tag --all",
+    "release": "standard-version --commit-all && git push --follow-tag --all",
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build"
   },
   "files": [
@@ -43,7 +43,7 @@
   "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
     "@types/pinyin": "^2.10.0",
-    "eslint": "^8.28.0",
+    "eslint": "^8.29.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
     "husky": "^7.0.4",
@@ -51,7 +51,7 @@
     "lodash": "^4.17.21",
     "pinyin": "^2.11.2",
     "pnpm": "^6.35.1",
-    "prettier": "^2.7.1",
+    "prettier": "^2.8.0",
     "sno-utils": "^0.3.16",
     "standard-version": "^9.5.0"
   },
