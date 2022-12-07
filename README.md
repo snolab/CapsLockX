@@ -535,7 +535,7 @@ Anki 操作增强
 
 25 分钟固定循环休息提醒。
 
-使用 CapsLockX + M 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
+使用 `CapsLockX + ,` 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
 
 - 使用番茄报时（00 分和 30 分播放工作铃声，每小时的 25 分和 55 分播放休息铃声）（需要先开启定时任务）
 
@@ -776,16 +776,6 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
     - [CapsLockX 与类似项目的功能对比 ⚔ Feat Compare Matrix](#capslockx-与类似项目的功能对比--feat-compare-matrix)
       - [CapsLockX 地址 🔗 Project Urls](#capslockx-地址--project-urls)
       - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
-  - [答疑相关 ❓ Questions](#答疑相关--questions)
-    - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
-  - [支持 ⭐️ Supports](#支持-️-supports)
-    - [捐赠记录(截至 20210821) 📄 Donate Records](#捐赠记录截至-20210821--donate-records)
-    - [鸣谢 🙏🏻 Thanks](#鸣谢--thanks)
-    - [相关话题 - Related Topics](#相关话题---related-topics)
-  - [页尾目录 - Table of Contents](#页尾目录---table-of-contents)
-    CapsLockX - [与类似项目的功能对比 ⚔ Feat Compare Matrix](#与类似项目的功能对比--feat-compare-matrix)
-    - [地址 🔗 Project Urls](#地址--project-urls)
-    - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
   - [答疑相关 ❓ Questions](#答疑相关--questions)
     - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
   - [支持 ⭐️ Supports](#支持-️-supports)

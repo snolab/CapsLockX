@@ -69,7 +69,7 @@ OneNote2019_Win11_Detect()
     ; it is Win11 maybe
     return true
 }
-   
+
 OneNote2019_SNODateStringGenerate()
 {
     FormatTime, TimeString, , (yyyyMMdd)
@@ -87,7 +87,7 @@ OneNote快速笔记窗口启动(){
         ; SendEvent #n
         SendEvent #!n
     }
- 
+
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
     if (ErrorLevel) {
@@ -120,7 +120,7 @@ OneNote2019搜索启动() {
     条数 := 笔记条目搜索结果复制整理条数()
     ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
     WinWaitActive %OneNote窗口匹配串%, , 5 ; wait for 5 seconds
-    if(ErrorLevel) {                                                                               
+    if(ErrorLevel) {
         TrayTip, 错误, 未找到OneNote窗口
         return
     }
@@ -140,23 +140,23 @@ OneNote2019搜索启动() {
     ; 标题 ClassNN:	RICHEDIT60W3
     ; 地址 ClassNN:	RICHEDIT60W2
     ; 定位到第一项
-    
+
     prev_addr := ""
     this_addr := ""
-    
+
     links := ""
     prev_link := ""
     this_link := ""
-    
+
     links_html := ""
     prev_link_html := ""
     this_link_html := ""
-    
+
     samecount := 0
     k := -1
     ; 这里不加{Blind}{AltUp} 会出现连 ctrl也一起按下的bug...原因未明
     SendEvent {Blind}{AltUp}!o{Down}{Home}
-    
+
     loop, 10000 {
         ControlGetText, title, RICHEDIT60W3, A
         ControlGetText, addr, RICHEDIT60W2, A
@@ -167,10 +167,10 @@ OneNote2019搜索启动() {
             title := "§ " title
             title_html := "§ " title_html
         }
-        
+
         this_link := "[" title_html "]" "( " addr " )" "`n"
         this_link_html := "<a title=""" title_html """ href=""" addr """>" title_html "</a>" "<br />`n"
-        
+
         SendEvent {Down}
         Sleep, 32
         if (this_addr == prev_addr) {
@@ -182,19 +182,19 @@ OneNote2019搜索启动() {
             samecount := 0
             prev_addr := this_addr
             k += 1
-            
+
             ; 这里用 prev_addr 意在去掉最后一条（一般是新建笔记）
             ; OneNote搜索默认倒字母序排列，这里把它正过来 /(20210401)发现不是这样的 ，决定在下面另外排序
             links := prev_link . links
             prev_link := this_link
-            
+
             ; 这里用 prev_link_html 意在去掉最后一条（一般是新建笔记）
             ; OneNote搜索默认倒字母序排列，这里把它正过来 /(20210401)发现不是这样的 ，决定在下面另外排序
             links_html := prev_link_html . links_html
             prev_link_html := this_link_html
         }
     }
-    
+
     ; links_html
     ; Clipboard := links
     Sort links
@@ -206,7 +206,7 @@ OneNote2019搜索启动() {
     wc.SetText(links)
     wc.SetHTML(links_html)
     SendEvent {Escape}
-    
+
     TrayTip, %k% 条笔记链接已复制, %links%, 1
     return k
 }
@@ -223,7 +223,7 @@ OneNote2019搜索启动() {
 
 ; 单独运行
 #if (!CapsLockX)
-    
+
 ^+!F12:: ExitApp ; 退出脚本
 
 ;
@@ -324,7 +324,7 @@ OneNote2019_ToggleTODO(){
     Clipboard:=""
     ; select current line 行は選る
     Send {Home}^a{Home}+{End}^c
-    
+
     ; get clipboard
     ClipWait, 2
     if(ErrorLevel) {
@@ -343,7 +343,7 @@ OneNote2019_ToggleTODO(){
         SendEvent, ^a{End}
         return
     }
-    
+
     isDOING := !!RegExMatch(s, "^DOING")
     if (isDOING ) {
         so := RegExReplace(s, "^DOING ?", "DONE ")
@@ -351,7 +351,7 @@ OneNote2019_ToggleTODO(){
         SendEvent, ^a{End}
         return
     }
-    
+
     isDONE := !!RegExMatch(s, "^DONE")
     if (isDONE ) {
         so := RegExReplace(s, "^DONE ?", "")
