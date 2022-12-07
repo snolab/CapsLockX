@@ -64,6 +64,7 @@
       "eslint --cache --fix"
     ],
     "*.{css,md}": "prettier --write",
+    "*.ahk": [],
     "*": []
   },
   "directories": {
