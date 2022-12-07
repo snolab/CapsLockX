@@ -5,7 +5,7 @@ specifiers:
   eslint: ^8.29.0
   eslint-config-airbnb-base: ^15.0.0
   eslint-plugin-import: ^2.26.0
-  husky: ^7.0.4
+  husky: ^8.0.2
   lint-staged: ^13.1.0
   lodash: ^4.17.21
   pinyin: ^2.11.2
@@ -19,7 +19,7 @@ devDependencies:
   eslint: 8.29.0
   eslint-config-airbnb-base: 15.0.0_lt3hqehuojhfcbzgzqfngbtmrq
   eslint-plugin-import: 2.26.0_eslint@8.29.0
-  husky: 7.0.4
+  husky: 8.0.2
   lint-staged: 13.1.0
   lodash: 4.17.21
   pinyin: 2.11.2
@@ -1384,9 +1384,9 @@ packages:
     engines: {node: '>=12.20.0'}
     dev: true
 
-  /husky/7.0.4:
-    resolution: {integrity: sha512-vbaCKN2QLtP/vD4yvs6iz6hBEo6wkSzs8HpRah1Z6aGmF2KW5PdYuAd7uX5a+OyBZHBhd+TFLqgjUgytQr4RvQ==}
-    engines: {node: '>=12'}
+  /husky/8.0.2:
+    resolution: {integrity: sha512-Tkv80jtvbnkK3mYWxPZePGFpQ/tT3HNSs/sasF9P2YfkMezDl3ON37YN6jUUI4eTg5LcyVynlb6r4eyvOmspvg==}
+    engines: {node: '>=14'}
     hasBin: true
     dev: true
 
