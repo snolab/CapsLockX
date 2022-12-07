@@ -9,5 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
-      - run: npm i
-      - run: npm run build
+      - run: npm i -g pnpm
+      - run: pnpm i
+      - run: pnpm run build
