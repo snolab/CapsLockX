@@ -8,7 +8,15 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
+      # pnpm install
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 6.32.9
       - uses: actions/setup-node@v3
-      - run: npm i -g pnpm
-      - run: pnpm i
-      - run: pnpm run build
+        with:
+          node-version: '14'
+          registry-url: https://registry.npmjs.org/
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      # npm run build
+      - run: npm run build
