@@ -1,29 +1,29 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@types/lodash-es': ^4.17.6
   '@types/pinyin': ^2.10.0
   eslint: ^8.29.0
   eslint-config-airbnb-base: ^15.0.0
   eslint-plugin-import: ^2.26.0
   husky: ^8.0.2
   lint-staged: ^13.1.0
-  lodash: ^4.17.21
+  lodash-es: ^4.17.21
   pinyin: ^2.11.2
-  pnpm: ^6.35.1
   prettier: ^2.8.1
   sno-utils: ^0.3.16
   standard-version: ^9.5.0
 
 devDependencies:
+  '@types/lodash-es': 4.17.6
   '@types/pinyin': 2.10.0
   eslint: 8.29.0
   eslint-config-airbnb-base: 15.0.0_lt3hqehuojhfcbzgzqfngbtmrq
   eslint-plugin-import: 2.26.0_eslint@8.29.0
   husky: 8.0.2
   lint-staged: 13.1.0
-  lodash: 4.17.21
+  lodash-es: 4.17.21
   pinyin: 2.11.2
-  pnpm: 6.35.1
   prettier: 2.8.1
   sno-utils: 0.3.16
   standard-version: 9.5.0
@@ -135,6 +135,16 @@ packages:
 
   /@types/json5/0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
+    dev: true
+
+  /@types/lodash-es/4.17.6:
+    resolution: {integrity: sha512-R+zTeVUKDdfoRxpAryaQNRKk3105Rrgx2CFRClIgRGaqDTdjsm8h6IYA8ir584W3ePzkZfst5xIgDwYrlh9HLg==}
+    dependencies:
+      '@types/lodash': 4.14.191
+    dev: true
+
+  /@types/lodash/4.14.191:
+    resolution: {integrity: sha512-BdZ5BCCvho3EIXw6wUCXHe7rS53AIDPLE+JzwgT+OsJk53oBfbSmZZ7CX4VaRoN78N+TJpFi9QPlfIVNmJYWxQ==}
     dev: true
 
   /@types/minimist/1.2.2:
@@ -1736,6 +1746,10 @@ packages:
       p-locate: 5.0.0
     dev: true
 
+  /lodash-es/4.17.21:
+    resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
+    dev: true
+
   /lodash.ismatch/4.4.0:
     resolution: {integrity: sha512-fPMfXjGQEV9Xsq/8MTSgUf255gawYRbjwMyDbcvDhXgV7enSZA0hynz6vMPnpAb5iONEzBHBPsT+0zes5Z301g==}
     dev: true
@@ -2217,12 +2231,6 @@ packages:
     transitivePeerDependencies:
       - encoding
       - supports-color
-    dev: true
-
-  /pnpm/6.35.1:
-    resolution: {integrity: sha512-Pt5JEjV2JSORAqw/XtjfF4k34PBQFpqV3kUMFYSlyrWJsio5Hr3lqy2oJkpprMrVbOyBJsxXfZDQOlvmytIrgA==}
-    engines: {node: '>=12.17'}
-    hasBin: true
     dev: true
 
   /prelude-ls/1.2.1:
