@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.29.0</version>
+    <version>1.29.1</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,12 +65,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [1.29.0](https://github.com/snolab/CapsLockX/compare/v1.28.7...v1.29.0) (2022-12-07)
+### [1.29.1](https://github.com/snolab/CapsLockX/compare/v1.29.0...v1.29.1) (2022-12-07)
 
+## [1.29.0](https://github.com/snolab/CapsLockX/compare/v1.28.7...v1.29.0) (2022-12-07)
 
 ### Features
 
-* **edit-enhance:** CLX+N/M to control tab ([7a677f7](https://github.com/snolab/CapsLockX/commit/7a677f7f36f4254b70230a6662927dd13e73461f))
+- **edit-enhance:** CLX+N/M to control tab ([7a677f7](https://github.com/snolab/CapsLockX/commit/7a677f7f36f4254b70230a6662927dd13e73461f))
 
 ### [1.28.7](https://github.com/snolab/CapsLockX/compare/v1.28.6...v1.28.7) (2022-11-19)
 
@@ -140,8 +141,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### [1.25.8](https://github.com/snolab/CapsLockX/compare/v1.25.7...v1.25.8) (2022-04-20)
 
 ### [1.25.7](https://github.com/snolab/CapsLockX/compare/v1.25.6...v1.25.7) (2022-04-20)
-
-### [1.25.6](https://github.com/snolab/CapsLockX/compare/v1.25.5...v1.25.6) (2022-04-20)]]></releaseNotes>
+]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
