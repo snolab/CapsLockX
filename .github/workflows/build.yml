@@ -8,7 +8,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
       - run: npm i -g pnpm
       - run: pnpm i
       - run: pnpm run build
