@@ -160,8 +160,11 @@ Tab键模拟(dx, dy, 状态){
     if (状态 != "移动") {
         return
     }
-    _ := dy < 0 && 反Tab键发送(-dy)
-    _ := dy > 0 && 正Tab键发送(dy )
+    ; reverse by shift key pressed
+    sdy := GetKeyState("Shift", "P") ? -dy : dy
+    ;
+    _ := sdy < 0 && 反Tab键发送(-sdy)
+    _ := sdy > 0 && 正Tab键发送(sdy )
 }
 
 TurboTab(dx, dy, 状态)
