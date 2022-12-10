@@ -22,7 +22,7 @@ return
 
 ExitCapsLockX()
 {
-    exit
+    ExitApp
 }
 ; 修改配置
 #if CapsLockXMode
