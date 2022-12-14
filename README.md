@@ -228,20 +228,20 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
 | 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
 
-<!-- 模块文件名：AnkiEnhanced.ahk-->
+<!-- 模块文件名：App-AnkiEnhanced.ahk-->
 
 ### Anki 增强模块
 
 Anki 操作增强
 
-#### 常用功能/特性
+## 常用功能/特性
 
 1. 使用 WASD 或 HJKL 来快速连续地（并且可以撤销）切换记忆卡片
 2. 在 Excel 制作一个单词列表，共 2 列， 全选复制，然后在 Anki 中按 Alt + i 来快速导入单词列表。
 3. 简化 4 个选项为 3 个方向键，左易，下中，右难，上撤销。
 4. 可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。效果请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
 
-#### 说明
+## 说明
 
 | 模式                 | Anki 增强模块  | 说明                                                        |
 | -------------------- | :------------: | ----------------------------------------------------------- |
@@ -266,14 +266,14 @@ Anki 操作增强
 
 朴素地增强 OneNote 2016 - 2019 的键盘操作，便捷地使用键盘来：换笔，制作链接，整理页面，调整视图……
 
-#### 雪星喵常用功能
+## 雪星喵常用功能
 
 1. 做日志的时候，先在笔记页面 `Alt + T` 给笔记标题添加日期标签（用于将来搜索），然后全局 `Win + Shift + N` 在 OneNote 搜索带有 今日标签 的所有笔记，用来方便地检索你今日的：恋爱日记、训练日志、每日书单、项目日报……总之在 OneNote 写日记就很方便了，一按就出来，不用找 XD
 2. 选一个词按 `Alt + K` ，会把所有相关的页面链接列到这个词的下方，用来做索引目录，把你的 OneNote 织成一张网。
 3. 新建一个笔记，改名叫 `我的剪贴板`，然后在复制文本、图片的时候，CLX 会帮你自动追加到这个笔记，用于方便地收集资料或摘抄文章。
 4. Alt + 1234567 层级折叠，轻松地在不同抽象层次的思考上切换。
 
-#### 按键分布设计（开发中）
+## 按键分布设计（开发中）
 
 | 按键描述                | 作用                    | 备注       |
 | ----------------------- | ----------------------- | ---------- |
@@ -289,7 +289,7 @@ Anki 操作增强
 | `Alt + /`               | 热键帮助、提示          | 开发中     |
 | `F2 F3`                 | 重命名、查找笔记        |            |
 
-#### 详细按键表 / CheatSheet
+## 详细按键表 / CheatSheet
 
 | 作用于                   | 格式热键                     | 功能                                                                      |
 | ------------------------ | ---------------------------- | ------------------------------------------------------------------------- |
@@ -329,7 +329,7 @@ Anki 操作增强
 | OneNote2019 创建链接窗口 | `Alt + Shift + s`            | 编辑：复制当前所有搜索结果页面的链接并粘贴                                |
 | OneNote2019 剪贴板笔记   | `Ctrl + C`                   | 编辑：⭐ 追加复制的内容到名称中含有 "Clipboard" 或 "剪贴板" 的笔记        |
 
-<!-- 模块文件名：EditEnhance.ahk-->
+<!-- 模块文件名：CLX-Edit.ahk-->
 
 ### 编辑增强插件（ TG YUIO HJKL ）
 
@@ -337,7 +337,7 @@ Anki 操作增强
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![光标移动.gif](./docs/media/光标移动.gif)
+![EditorCursorMovement.gif](./docs/media/EditorCursorMovement.gif)
 
 | 作用域     | Edit 模块             | 说明                             |
 | ---------- | --------------------- | -------------------------------- |
@@ -351,7 +351,7 @@ Anki 操作增强
 | 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
 | 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
 
-<!-- 模块文件名：Eval-Javascript.ahk-->
+<!-- 模块文件名：CLX-JavaScriptEval.ahk-->
 
 ### JavaScript 计算 (建议安装 NodeJS )
 
@@ -360,7 +360,7 @@ Anki 操作增强
 | 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
 | 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
 
-<!-- 模块文件名：LaptopKeyboardFix.ahk-->
+<!-- 模块文件名：CLX-LaptopKeyboardFix.ahk-->
 
 ### Surface 笔记本扩充功能键
 
@@ -378,7 +378,7 @@ Anki 操作增强
 | Win 键模拟启用后 | ] 按住同时，[ 按下                    | 相当于按 Win 键                    |
 | Win 键模拟启用后 | RAlt+\| 相当于按 Alt+Tab 只不过在右手 |
 
-<!-- 模块文件名：MediaKeys.ahk-->
+<!-- 模块文件名：CLX-MediaKeys.ahk-->
 
 ### 媒体键模块
 
@@ -396,7 +396,7 @@ Anki 操作增强
 | 全局   | `CapsLockX + F10` | 音量减                                      |
 | 全局   | `CapsLockX + F11` | 静音                                        |
 
-<!-- 模块文件名：MouseSimulator.ahk-->
+<!-- 模块文件名：CLX-Mouse.ahk-->
 
 ### 模拟鼠标插件（ WASD QERF ）
 
@@ -412,7 +412,7 @@ Anki 操作增强
 - 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 - 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 - 效果如图：
-  ![MouseSimulator.gif](./docs/media/MouseSimulator.gif)
+  ![CLX-Mouse.gif](./docs/media/CLX-Mouse.gif)
 
 ## 使用方法如下
 
@@ -432,51 +432,7 @@ Anki 操作增强
 
 快速连按 AD 步进
 
-<!-- 模块文件名：QuickInput.ahk-->
-
-### 快捷输入
-
-| 模式 | 快捷输入 | 说明                                            |
-| ---- | -------- | ----------------------------------------------- |
-| 全局 | `#D#`    | 日期输入：`(20220217)`                          |
-| 全局 | `#T#`    | 时间输入：`(20220217.220717)`                   |
-| 全局 | `#DT#`   | 日期时间输入：`2022-02-17 22:07:33`             |
-| 全局 | `#NPW#`  | 随机输入数字密码如： `7500331260229289`         |
-| 全局 | `#PW#`   | 随机输入数字字母密码如： `yyCTCNYodECTLr2h`     |
-| 全局 | `#WPW#`  | 随机输入数字字母密码如： `FtD5BB1m5H98eY7Y`     |
-| 全局 | `#SPW#`  | 随机输入数字字母符号密码如： `/})y+xK]z~>XKQ+p` |
-
-<!-- 模块文件名：TomatoLife.ahk-->
-
-### 番茄时钟
-
-25 分钟固定循环休息提醒。
-
-使用 `CapsLockX + ,` 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
-
-- 使用番茄报时（00 分和 30 分播放工作铃声，每小时的 25 分和 55 分播放休息铃声）（需要先开启定时任务）
-
-  ```ini
-  UseTomatoLife=1
-  ```
-
-- 使用番茄报时时，自动切换桌面（使用番茄报时时，自动切换桌面（休息桌面为 1，工作桌面为 2）
-
-  ```ini
-  UseTomatoLifeSwitchVirtualDesktop=1
-  ```
-
-注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
-
-注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life](https://github.com/snomiao/tomato-life)
-
-<!-- 模块文件名：TurnOffScreenWhenLock.ahk-->
-
-### 锁屏自动息屏
-
-按 Win + L 锁屏时，立即关闭屏幕，适用于准备睡觉的时候自动把电脑屏幕关掉，不让它在睡觉的时候刺眼……
-
-<!-- 模块文件名：WindowManager.ahk-->
+<!-- 模块文件名：CLX-WindowManager.ahk-->
 
 ### 窗口增强插件 (CLX + 1234567890 ZXCV)
 
@@ -534,6 +490,50 @@ Anki 操作增强
 > 以 CapsLock 为抓手,打通底层逻辑,拉齐 Windows 和 Linux WM,解决了 Windows 难用的痛点
 
 (20220313) 对于两端都是 Windows 的情况，也可以考虑使用 [RemoteApp Tool - Kim Knight](http://www.kimknight.net/remoteapptool) 来代替远程桌面。
+
+<!-- 模块文件名：QuickInput.ahk-->
+
+### 快捷输入
+
+| 模式 | 快捷输入 | 说明                                            |
+| ---- | -------- | ----------------------------------------------- |
+| 全局 | `#D#`    | 日期输入：`(20220217)`                          |
+| 全局 | `#T#`    | 时间输入：`(20220217.220717)`                   |
+| 全局 | `#DT#`   | 日期时间输入：`2022-02-17 22:07:33`             |
+| 全局 | `#NPW#`  | 随机输入数字密码如： `7500331260229289`         |
+| 全局 | `#PW#`   | 随机输入数字字母密码如： `yyCTCNYodECTLr2h`     |
+| 全局 | `#WPW#`  | 随机输入数字字母密码如： `FtD5BB1m5H98eY7Y`     |
+| 全局 | `#SPW#`  | 随机输入数字字母符号密码如： `/})y+xK]z~>XKQ+p` |
+
+<!-- 模块文件名：TomatoLife.ahk-->
+
+### 番茄时钟
+
+25 分钟固定循环休息提醒。
+
+使用 `CapsLockX + ,` 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
+
+- 使用番茄报时（00 分和 30 分播放工作铃声，每小时的 25 分和 55 分播放休息铃声）（需要先开启定时任务）
+
+  ```ini
+  UseTomatoLife=1
+  ```
+
+- 使用番茄报时时，自动切换桌面（使用番茄报时时，自动切换桌面（休息桌面为 1，工作桌面为 2）
+
+  ```ini
+  UseTomatoLifeSwitchVirtualDesktop=1
+  ```
+
+注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
+
+注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life](https://github.com/snomiao/tomato-life)
+
+<!-- 模块文件名：TurnOffScreenWhenLock.ahk-->
+
+### 锁屏自动息屏
+
+按 Win + L 锁屏时，立即关闭屏幕，适用于准备睡觉的时候自动把电脑屏幕关掉，不让它在睡觉的时候刺眼……
 
 <!-- 结束：抽取模块帮助 -->
 
