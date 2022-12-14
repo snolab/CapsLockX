@@ -70,7 +70,7 @@ if (!T_IgnoresByLinesUser) {
 global CapsLockX_Paused := 0
 
 #if CapsLockX_Avaliable()
-    
+
 #if !CapsLockX_Avaliable()
 
 #If
@@ -114,6 +114,7 @@ if(T_XKeyAsScrollLock)
 if(T_XKeyAsRAlt)
     Hotkey *RAlt Up, CapsLockX_Up
 
+#Include Core\CapsLockX-i18n.ahk
 #Include Core\CapsLockX-ModulesRunner.ahk
 CapsLockX_Loaded()
 #Include Core\CapsLockX-ModulesLoader.ahk
@@ -127,7 +128,7 @@ UpdateCapsLockXLight()
 {
     NowLightState := ((CapsLockXMode & CM_CapsLockX) || (CapsLockXMode & CM_FN))
     static LastLightState := NowLightState
-    
+
     ; notice
     static LastCapsLockXMode := CapsLockXMode
     if (!(LastCapsLockXMode & CM_CapsLockX) && (CapsLockXMode & CM_CapsLockX)) {
@@ -139,13 +140,13 @@ UpdateCapsLockXLight()
         SetTimer CLX_HideToolTips, -1000
     }
     LastCapsLockXMode := CapsLockXMode
-    
+
     IsEdge := !(NowLightState == LastLightState)
     if (!IsEdge) {
         Return
     }
     UpEdge := NowLightState && !LastLightState
-    
+
     if (T_UseScrollLockLight && GetKeyState("ScrollLock", "T") != NowLightState) {
         Send {ScrollLock}
     }
@@ -203,7 +204,7 @@ CapsLockX_Loaded()
 {
     ; 使用退出键退出其它实例
     SendInput ^!+\
-    
+
     TrayTip CapsLockX %CapsLockX_VersionName%, 加载成功
     Menu, Tray, Tip, CapsLockX %CapsLockX_VersionName%
 }
@@ -251,11 +252,11 @@ CapsLockX_Dn()
     普通模式 + (CLX+SPACE) -> CLX锁定模式
     CLX模式 + 弹起CLX -> 普通模式
     CLX锁定模式 + 按住CLX -> CLX模式
-    
+
     CapsLock + Space 同时按下：进入CLX模式
     CLX长按：进入CLX锁定模式
     CLX单击：退出CLX锁定模式
-    
+
     */
     ; 按住其它键的时候 不触发 CapsLockX 避免影响打字
     CapsLockX_上次触发键 := 触发键 := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
@@ -265,7 +266,7 @@ CapsLockX_Dn()
     CapsLockQ := 触发键 == "CapsLock"
     ModifierQ := InStr("LControl|RControl|LShift|RShift|LAlt|RAlt|LWin|RWin", A_PriorKey)
     ModifierEnableQ := !SpaceQ && ModifierQ
-        
+
     CLX_AND_SPACE_Q := (A_PriorKey == "CapsLock" && 触发键 == "Space") || (触发键 == "CapsLock" && A_PriorKey == "Space" )
     if (CLX_AND_SPACE_Q && A_TimeSincePriorHotkey < 250) {
         ; CapsLockX_ModeEnter()
@@ -274,7 +275,7 @@ CapsLockX_Dn()
         KeyWait %触发键%
         return
     }
-    
+
     ; tooltip % ModifierQ "a" ModifierEnableQ "a" WheelQ "a"  其它键按住
     BypassCapsLockX := !ModifierEnableQ && !WheelQ && 其它键按住
     if (BypassCapsLockX) {
@@ -295,10 +296,10 @@ CapsLockX_Dn()
     ;     KeyWait, %waitKey% ; wait to prevent flashing the quit and enter message
     ; }
     ; CapsLockX_ModeExit()
-    
+
     CapsLockXMode |= CM_FN
     CapsLockXMode &= ~CM_CapsLockX
-    
+
     ; ToolTip clxmode
     if (A_PriorKey == CapsLockX_上次触发键) {
         if (A_PriorKey == "Space") {
@@ -325,10 +326,10 @@ CapsLockX_Dn()
 CapsLockX_Up()
 {
     CapsLockPressTimestamp := 0
-    
+
     ; CLX弹起时退出 Fn 模式
     CapsLockXMode &= ~CM_FN
-    
+
     ; CLX单击弹起时
     if (A_PriorKey == CapsLockX_上次触发键) {
         if (CapsLockXMode & CM_CapsLockX) {
@@ -377,7 +378,7 @@ RunAsLimitiedUser(CMD, WorkingDir)
 }
 ; 接下来是流程控制
 #if
-    
+
 ; CapsLockX 模式切换处理
 CapsLockX_NotAvaliable:
     TrayTip, CapsLockX, NotAvaliable

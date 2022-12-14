@@ -7,15 +7,16 @@
 ; 版本：v0.0.1
 ; ========== CapsLockX ==========
 
-global CapsLockX_FIRST_LAUNCH := CapsLockX_Config("_NOTICE_", "FIRST_LAUNCH", 1, "首次启动？若想重新进入首次使用教学，请改为 1 并保存，然后使用 Ctrl+Alt+\ 重载 CapsLockX。")
-global CLX_CONFIG_ONSTARTUP   := CapsLockX_Config("Core", "CLX_CONFIG_ONSTARTUP", 1, "启动时显示配置窗口")
+global CapsLockX_FIRST_LAUNCH := CapsLockX_Config("_NOTICE_", "FIRST_LAUNCH", 1, t("首次启动？若想重新进入首次使用教学，请改为 1 并保存，然后使用 Ctrl+Alt+\ 重载 CapsLockX。"))
+global CLX_CONFIG_ONSTARTUP := CapsLockX_Config("Core", "CLX_CONFIG_ONSTARTUP", 1, t("启动时显示配置窗口"))
 
 Menu, Tray, Add ; Creates a separator line.
-Menu, Tray, Add, 配置文件编辑, 配置文件编辑 ; Creates a new menu item.
-Menu, Tray, Add, Exit, ExitCapsLockX ; Creates a new menu item.
+Menu, Tray, Add, % t("Edit config.ini"), 配置文件编辑
+Menu, Tray, Add, % t("Reload CapsLockX"), CapsLockX_Reload
+Menu, Tray, Add, % t("Exit CapsLockX"), ExitCapsLockX
 
 if (CLX_CONFIG_ONSTARTUP) {
-    SetTimer CapsLockX_配置窗口, -1
+    SetTimer CapsLockX_ConfigWindow, -1
 }
 
 return
@@ -28,9 +29,9 @@ ExitCapsLockX()
 #if CapsLockXMode
 
 ; ,:: 配置文件编辑()
-,:: CapsLockX_配置窗口()
+,:: CapsLockX_ConfigWindow()
 
-CapsLockX_配置窗口(){
+CapsLockX_ConfigWindow(){
     Gui, Destroy
     ; TODO update this to web view
     Gui, Add, Text, , 你可以按 "CapsLockX + ," 打开此窗口
@@ -39,13 +40,13 @@ CapsLockX_配置窗口(){
     Gui, Add, Text, , 版本: CapsLockX %CapsLockX_VersionName%
     Gui, Add, Text, , 作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )
     Gui, Add, Button, Default w80, 确认
-    Gui, Add, Button, w80, 打开BUG反馈与建议页面
+    Gui, Add, Button, w80, 打开BUG反馈与建议页面 ; warn : hard to translate as its variable name
     Gui, Add, Button, w80, 打开官方文档
     Gui, Add, Button, w80, 添加开机自动启动
     Gui, Add, Button, w80, 配置文件编辑
 
     global T_TomatoLife
-        if (T_TomatoLife) {
+    if (T_TomatoLife) {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife Checked, 启用番茄时钟，每25分钟休息5分钟·。
     } else {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife, 启用番茄时钟，每25分钟休息5分钟·。
@@ -67,9 +68,9 @@ CapsLockX_配置窗口(){
 
     global T_AskRunAsAdmin
     if (T_AskRunAsAdmin) {
-        Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_AskRunAsAdmin Checked, 请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）
+        Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_AskRunAsAdmin Checked, % t("请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
     } else {
-        Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_AskRunAsAdmin, 请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）
+        Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_AskRunAsAdmin, % t("请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
     }
     global vCLX_CONFIG_ONSTARTUP
     if (vCLX_CONFIG_ONSTARTUP) {
@@ -91,7 +92,7 @@ Button打开官方文档:
 return
 CapsLockX_ConfigureUpdate:
     global T_TomatoLife
-        global T_XKeyAsCapsLock
+    global T_XKeyAsCapsLock
     global T_XKeyAsSpace
     global T_AskRunAsAdmin
     global CLX_CONFIG_ONSTARTUP
