@@ -54,9 +54,9 @@ CapsLockX_FolderChanged(Folder, Changes)
     if (CapsLockX_DontReload) {
         return
     }
-    
+
     global T_AutoReloadOnConfigsChange := CapsLockX_Config("Advanced", "T_AutoReloadOnConfigsChange", 0, "用户配置修改保存时自动重载")
-    
+
     if (T_AutoReloadOnConfigsChange) {
         TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
         sleep 200
@@ -71,12 +71,12 @@ CapsLockX_FolderChanged(Folder, Changes)
         IfMsgBox Yes
         reload
         ; CapsLockX_Reload()
-        
+
     }
 }
 
 #if CapsLockXMode
-    
+
 \:: Reload ; CapsLockX_模块重载
 +\:: CapsLockX_Reload() ; CapsLockX_重新启动
 ^+\:: ExitApp ; CapsLockX_退出
