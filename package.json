@@ -42,6 +42,8 @@
   },
   "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
+    "prettier-plugin-packagejson": "2.3.0",
+    "prettier-plugin-tsconfig": "^0.0.1",
     "@types/lodash-es": "^4.17.6",
     "@types/pinyin": "^2.10.0",
     "eslint": "^8.29.0",
@@ -59,13 +61,9 @@
     "DevTools/CLXConfig.js"
   ],
   "lint-staged": {
-    "*.js": [
-      "prettier --write",
-      "eslint --cache --fix"
-    ],
-    "*.{css,md}": "prettier --write",
-    "*.ahk": [],
-    "*": []
+    "*.{js,ts}":"eslint --cache --fix",
+    "*.{css,md,js,ts}": "prettier --write",
+    "*.ahk": []
   },
   "directories": {
     "doc": "docs"
