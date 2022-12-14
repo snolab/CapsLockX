@@ -61,7 +61,7 @@
     "DevTools/CLXConfig.js"
   ],
   "lint-staged": {
-    "*.{js,ts}":"eslint --cache --fix",
+    "*.{js,ts}": "eslint --cache --fix",
     "*.{css,md,js,ts}": "prettier --write",
     "*.ahk": []
   },

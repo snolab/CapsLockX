@@ -331,7 +331,7 @@ Anki 操作增强
 
 <!-- 模块文件名：CLX-Edit.ahk-->
 
-### 编辑增强插件（ TG YUIO HJKL ）
+### 编辑增强插件（ TG YUIO HJKL ） 🌟
 
 这个世界上还有比 Vim 模式的 HJKL 移动光标更棒的东西吗？
 这个必须有！
