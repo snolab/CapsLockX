@@ -11,10 +11,12 @@ specifiers:
   lodash-es: ^4.17.21
   pinyin: ^2.11.2
   prettier: ^2.8.1
+  prettier-plugin-organize-imports: ^3.2.1
   prettier-plugin-packagejson: 2.3.0
   prettier-plugin-tsconfig: ^0.0.1
   sno-utils: ^0.3.16
   standard-version: ^9.5.0
+  typescript: ^4.9.4
 
 devDependencies:
   '@types/lodash-es': 4.17.6
@@ -27,10 +29,12 @@ devDependencies:
   lodash-es: 4.17.21
   pinyin: 2.11.2
   prettier: 2.8.1
+  prettier-plugin-organize-imports: 3.2.1_2gbcgqmzq2pxiocqw2qs7hdeqe
   prettier-plugin-packagejson: 2.3.0_prettier@2.8.1
   prettier-plugin-tsconfig: 0.0.1_prettier@2.8.1
   sno-utils: 0.3.16
   standard-version: 9.5.0
+  typescript: 4.9.4
 
 packages:
 
@@ -2334,6 +2338,23 @@ packages:
     engines: {node: '>= 0.8.0'}
     dev: true
 
+  /prettier-plugin-organize-imports/3.2.1_2gbcgqmzq2pxiocqw2qs7hdeqe:
+    resolution: {integrity: sha512-bty7C2Ecard5EOXirtzeCAqj4FU4epeuWrQt/Z+sh8UVEpBlBZ3m3KNPz2kFu7KgRTQx/C9o4/TdquPD1jOqjQ==}
+    peerDependencies:
+      '@volar/vue-language-plugin-pug': ^1.0.4
+      '@volar/vue-typescript': ^1.0.4
+      prettier: '>=2.0'
+      typescript: '>=2.9'
+    peerDependenciesMeta:
+      '@volar/vue-language-plugin-pug':
+        optional: true
+      '@volar/vue-typescript':
+        optional: true
+    dependencies:
+      prettier: 2.8.1
+      typescript: 4.9.4
+    dev: true
+
   /prettier-plugin-packagejson/2.3.0_prettier@2.8.1:
     resolution: {integrity: sha512-2SAPMMk1UDkqsB7DifWKcwCm6VC52JXMrzLHfbcQHJRWhRCj9zziOy+s+2XOyPBeyqFqS+A/1IKzOrxKFTo6pw==}
     peerDependencies:
@@ -2912,6 +2933,12 @@ packages:
 
   /typedarray/0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
+    dev: true
+
+  /typescript/4.9.4:
+    resolution: {integrity: sha512-Uz+dTXYzxXXbsFpM86Wh3dKCxrQqUcVMxwU54orwlJjOpO3ao8L7j5lH+dWfTwgCwIuM9GQ2kvVotzYJMXTBZg==}
+    engines: {node: '>=4.2.0'}
+    hasBin: true
     dev: true
 
   /uglify-js/3.17.4:
