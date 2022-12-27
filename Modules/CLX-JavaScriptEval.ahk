@@ -83,7 +83,7 @@ EvalJavaScriptByNodeServer(code){
     static PassTutorial := ""
     if(!PassTutorial)
         PassTutorial := CapsLockX_Config("EvalJS", "PassTutorial", 0, "忽略使用提示")
-    /* 
+    /*
     sno.md5("asdf")=
     */
     ; if(!PassTutorial){
@@ -104,7 +104,7 @@ EvalJavaScriptByNodeServer(code){
     ; pid 文件读取尝试
     if(!nodePID)
         FileRead, nodePID, %EvalNodeJS_PIDFile%, *P65001
-    ; 进程存在检查
+    ; 进程存在检查 
     Process Exist, %nodePID%
     if (ErrorLevel != nodePID)
         nodePID := 0
