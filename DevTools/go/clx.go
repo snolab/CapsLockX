@@ -138,23 +138,23 @@ func reg(key chan int, i hotkey.Key) (*hotkey.Hotkey, *hotkey.Hotkey) {
 	select {
 	case <-hk.Keydown():
 		keydown <- int(i)
-		<- hk.Keyup()
+		<-hk.Keyup()
 		keyup <- int(i)
 	case <-hka.Keydown():
 		keydown <- int(i)
-		<- hka.Keyup()
+		<-hka.Keyup()
 		keyup <- int(i)
 	case <-hkc.Keydown():
 		keydown <- int(i)
-		<- hkc.Keyup()
+		<-hkc.Keyup()
 		keyup <- int(i)
 	case <-hks.Keydown():
 		keydown <- int(i)
-		<- hks.Keyup()
+		<-hks.Keyup()
 		keyup <- int(i)
 	case <-hkm.Keydown():
 		keydown <- int(i)
-		<- hkm.Keyup()
+		<-hkm.Keyup()
 		keyup <- int(i)
 	}
 	key <- hk.Keyup()
