@@ -651,11 +651,11 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
 
 1. ⭐️ 请在 CapsLockX Github 上点星 <a class="github-button" href="https://github.com/snolab/CapsLockX" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star snolab/CapsLockX on GitHub">Star</a>
 2. 🔗 请把我转发分享给你身边的朋友们。
-3. 欢迎帮我翻译本文档到各国语言。 🌐
-4. 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues) 🐞
+3. 🌐 欢迎帮我翻译本文档到各国语言。
+4. 🐞 欢迎提交 bug、提出完善建议 [issues](https://github.com/snolab/CapsLockX/issues)
 5. 欢迎提交代码 PR，哪怕是修改错别字也是可以的～
 6. 欢迎创作关于本软件的作品，比如录制使用教学视频投稿到 Youtube 或 Bilibili ，雪星会去给你点赞的哦。
-7. 欢迎在此捐助 CapsLockX 的开发，每一笔捐赠都会记录到下方的列表中：💰
+7. 💰 欢迎在此捐助 CapsLockX 的开发，每一笔捐赠都会记录到下方的列表中：
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./docs/支付宝捐助.png)
