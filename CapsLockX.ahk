@@ -243,7 +243,7 @@ Return
     全部帮助 := Trim(全部帮助, " `t`n")
 
     ; 生成 README 替换代码
-    NeedleRegEx := "m)(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n(\s*)(<!-- 结束：抽取模块帮助 -->)"
+    NeedleRegEx := "m)(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n(\s*)(\r?\n<!-- 结束：抽取模块帮助 -->)"
     Replacement := "$1$2`n" 全部帮助 "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
 
