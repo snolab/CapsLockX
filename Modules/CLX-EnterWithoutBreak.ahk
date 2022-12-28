@@ -9,7 +9,7 @@
 return
 
 #if CapsLockXMode
-    
+
 ; refs:
 ; https://github.com/snolab/CapsLockX/issues/32
 ; [[建议]增加backspace删除整行 · Issue #33 · snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/33 )

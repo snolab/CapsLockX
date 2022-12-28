@@ -81,7 +81,7 @@ Return
     INPUT_README_FILE := "./docs/README.md"
     FileEncoding, UTF-8-Raw
     FileRead, source, %INPUT_README_FILE%
-    
+
     ; 编译一次
     global 显示加载提示
     显示加载提示 := 0
@@ -101,11 +101,11 @@ Return
     ; docs_target := 模块编译和帮助README更新(source, 1)
     FileDelete ./docs/README.md
     FileAppend %target%, ./docs/README.md, UTF-8-Raw
-    
+
     ; 输出根目录 README.md （用于 github 首页）
     FileDelete ./README.md
     PREFIX := "<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->`n`n"
-    
+
     ; replace docs/media
     StringReplace, target, target, % "(./", % "(./docs/", All
     StringReplace, target, target, % "( ./", % "( ./docs/", All
@@ -168,24 +168,24 @@ Return
                 FileRead, 模块帮助内容, %模块帮助文件%
             }
         }
-        
+
         ; 加载模块描述
         FileRead, 模块文件内容, % CapsLockX_模块路径 "/" 模块文件
         matchPos := RegExMatch(模块文件内容, "mi)^; 描述：(.*)", 模块描述)
         T%模块名称%_Disabled := CapsLockX_Config("ModuleDisable", "T" 模块名称 "_Disabled", 0, "是否禁用模块：" 模块名称 (模块描述1 ? " - " 模块描述1 : "") )
-        
+
         if (模块帮助内容) {
             模块帮助内容 := Trim(模块帮助内容, " `t`n")
             加载提示追加("加载模块帮助：" + i + "-" + 模块名称)
-            
+
             全部帮助 .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n`n"
             ; 替换标题层级
             模块帮助内容 := RegExReplace(模块帮助内容, "m)^#", "###")
-            
+
             ; 替换资源链接的相对目录（图片gif等）
             FileCopy, %CapsLockX_模块路径%\*.gif, .\docs\media\, 1
             FileCopy, %CapsLockX_模块路径%\*.png, .\docs\media\, 1
-            模块帮助内容 := RegExReplace(模块帮助内容, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1]( ./media/$2 )")
+            模块帮助内容 := RegExReplace(模块帮助内容, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1](./media/$2)")
             ; 没有标题的，给自动加标题
             if (!RegExMatch(模块帮助内容, "^#")) {
                 if (T%模块名称%_Disabled) {
@@ -216,17 +216,17 @@ Return
         }
     }
     加载提示显示()
-    
+
     ; 拼接模块加载器代码
     常量语句 .= "; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)" "`n"
     常量语句 .= "global CapsLockX_模块路径 := " """" CapsLockX_模块路径 """" "`n"
     常量语句 .= "global CapsLockX_核心路径 := " """" CapsLockX_核心路径 """" "`n"
     常量语句 .= "global CapsLockX_Version := " """" CapsLockX_Version """" "`n"
     常量语句 .= "global CapsLockX_VersionName := " """" CapsLockX_VersionName """" "`n"
-    
+
     模块运行器 .= 常量语句 "`n" 模块初始化代码
     模块加载器 .= "Return" "`n" 模块导入代码
-    
+
     FileEncoding UTF-8
     FileDelete %CapsLockX_ModulesRunner%
     FileAppend %模块运行器%, %CapsLockX_ModulesRunner%
@@ -238,15 +238,15 @@ Return
     }
     FileDelete %CapsLockX_ModulesLoader%
     FileAppend %模块加载器%, %CapsLockX_ModulesLoader%
-    
+
     加载提示显示()
     全部帮助 := Trim(全部帮助, " `t`n")
-    
+
     ; 生成 README 替换代码
     NeedleRegEx := "m)(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n(\s*)(<!-- 结束：抽取模块帮助 -->)"
     Replacement := "$1$2`n" 全部帮助 "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
-    
+
     ; 检查 README 替换情况
     if (!Replaces) {
         Run https://capslockx.snomiao.com/
@@ -254,7 +254,7 @@ Return
         MsgBox % targetREADME
         Return sourceREADME
     }
-    
+
     Return targetREADME
 }
 CapsLockX启动(){
@@ -273,7 +273,7 @@ CapsLockX启动(){
     }
     ; 运行更新组件
     Run %AHK_EXE_TEMP_PATH% %UpdatorAHK%, %A_ScriptDir%
-    
+
     ; 运行核心
     ; 启动
     global T_AskRunAsAdmin := CapsLockX_ConfigGet("Core", "T_AskRunAsAdmin", 0)
