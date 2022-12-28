@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.30.0](https://github.com/snolab/CapsLockX/compare/v1.29.1...v1.30.0) (2022-12-28)
+
+### Features
+
+- **capslockx:** branches and file renames ([456e384](https://github.com/snolab/CapsLockX/commit/456e384abfadcd96c9dc030e4d1bd857a8a09cbc))
+- **capslockx:** move tab with clx+c\v and clx+n\m for windows manage ([990c1b7](https://github.com/snolab/CapsLockX/commit/990c1b7f0e7139acc0eeadfd743e89824f69285e))
+
+### Bug Fixes
+
+- **capslockx:** format ([65db913](https://github.com/snolab/CapsLockX/commit/65db913211c7a8f73d82227d9e23347c0e6e97ff))
+- **capslockx:** format readme.md ([09174e7](https://github.com/snolab/CapsLockX/commit/09174e7cd8552b9cfcaaf5997bab569aba8fc542))
+- **capslockx:** renames.. ([66c4600](https://github.com/snolab/CapsLockX/commit/66c460055da23eb2df12aa95db7ac8fd590f63e1))
+- **capslockx:** update lint-staged ([39ce1d4](https://github.com/snolab/CapsLockX/commit/39ce1d408687a91a4c82485fafac786871761ac6))
+- **edit-enhanced:** reverse by shift key pressed ([3e57d4e](https://github.com/snolab/CapsLockX/commit/3e57d4e75c7f73f4c8f8fd170b1b5ce70bc0a977))
+- **go:** go ([d2ef990](https://github.com/snolab/CapsLockX/commit/d2ef990cf693af156488bac485e7c0b1253ce7a1))
+- **go:** golang stage ([3a67fe9](https://github.com/snolab/CapsLockX/commit/3a67fe9313ced1c45484999d7aa431385b973970))
+- **go:** stash ([8970c12](https://github.com/snolab/CapsLockX/commit/8970c12f50d12c79567e29f74489f47e87b379f9))
+- **Modules:** onenote date 曜日 ([46fd3d8](https://github.com/snolab/CapsLockX/commit/46fd3d87ec6d1e8e1aa47ff5c37e18d2d890d8c9))
+
 ### [1.29.1](https://github.com/snolab/CapsLockX/compare/v1.29.0...v1.29.1) (2022-12-07)
 
 ## [1.29.0](https://github.com/snolab/CapsLockX/compare/v1.28.7...v1.29.0) (2022-12-07)
