@@ -64,6 +64,13 @@ QuickTextInput(str)
     SendInput {Text}%str%
 }
 
+JapaneseRomajiChar(){
+    return GenPassword("xktnmwhrypbdsfg", 1)GenPassword("aeiou", 1)
+}
+JapaneseRomaji7Char(){
+    return JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()
+}
+
 #if
 
 :*?:#D#:: ; 日期输入：如 (20220217)
@@ -116,4 +123,8 @@ return
 
 :*?:#SPW#:: ; 随机输入数字字母符号密码如：KO?C[D_>!c$sQ-|7]
 QuickTextInput(GenPassword("!""#$%&\'()*+, -./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_``abcdefghijklmnopqrstuvwxyz{|}~", 16))
+return
+
+:*?:#JPW#:: ; 随机输入日本語発音密码如：
+QuickTextInput( JapaneseRomaji7Char() "-" JapaneseRomaji7Char() )
 return
