@@ -12,7 +12,7 @@ node_modules
 *.sha256
 *.bak
 CapsLockX-ModulesRunner.ahk
-CapsLockX-ModulesLoader.ahk
+CapsLockX-ModulesFunctions.ahk
 *.!sync
 version-*.txt
 

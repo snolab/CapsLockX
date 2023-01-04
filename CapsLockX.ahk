@@ -48,8 +48,8 @@ FileCopy %CapsLockX_配置目录%/*.user.md, %CapsLockX_模块路径%/, 1
 
 ; 模块加载器路径
 global CapsLockX_ModulesRunner := CapsLockX_核心路径 "/CapsLockX-ModulesRunner.ahk"
-global CapsLockX_ModulesLoader := CapsLockX_核心路径 "/CapsLockX-ModulesLoader.ahk"
-; LoadModules(CapsLockX_ModulesRunner, CapsLockX_ModulesLoader)
+global CapsLockX_ModulesFunctions := CapsLockX_核心路径 "/CapsLockX-ModulesFunctions.ahk"
+; LoadModules(CapsLockX_ModulesRunner, CapsLockX_ModulesFunctions)
 
 ; 判断安装方式
 global NPM全局安装也 := InStr(A_ScriptFullPath, APPDATA) == 1 && InStr("node_modules", A_ScriptFullPath)
@@ -236,8 +236,8 @@ Return
         msg .= "注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。"
         msgbox %msg%
     }
-    FileDelete %CapsLockX_ModulesLoader%
-    FileAppend %模块加载器%, %CapsLockX_ModulesLoader%
+    FileDelete %CapsLockX_ModulesFunctions%
+    FileAppend %模块加载器%, %CapsLockX_ModulesFunctions%
 
     加载提示显示()
     全部帮助 := Trim(全部帮助, " `t`n")
