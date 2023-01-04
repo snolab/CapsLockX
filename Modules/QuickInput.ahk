@@ -43,13 +43,29 @@ DateTimeStringGenerate()
     FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
     return TimeString
 }
+GenRandomHex(Length){
+	; 此处 `` 为转义
+    Chars := "0123456789abcdef"
+    Min := 1
+    Max := StrLen(chars)
+
+	randHex := ""
+    Loop %Length% {
+	    Random StartPos, Min, Max
+	    randHex := randHex SubStr(Chars, StartPos, 1)
+    }
+    Return randHex
+}
+GenRandomUUID(){
+    Return GenRandomHex(8) "-" GenRandomHex(4) "-" GenRandomHex(4) "-" GenRandomHex(4) "-" GenRandomHex(12)
+}
 QuickTextInput(str)
 {
     SendInput {Text}%str%
 }
 
 #if
-    
+
 :*?:#D#:: ; 日期输入：如 (20220217)
 QuickTextInput(ISODateStringGenerate())
 return
@@ -76,6 +92,18 @@ return
 
 :*?:#HEXL#:: ; 随机输入小写16进制如：
 QuickTextInput(GenPassword("0123456789abcdef", 16))
+return
+
+:*?:#DPW#:: ; 随机输入2段密码如：ZG1Y9XY-HCSWT71
+QuickTextInput(GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 7) "-" GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 7))
+return
+
+:*?:#QPW#:: ; 随机输入4段密码如：4428-UW4R-58YS-ALLR
+QuickTextInput(GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 4) "-" GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 4) "-" GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 4) "-" GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 4))
+return
+
+:*?:#UUID#:: ; 随机输入偽UUID如：345103d0-9de1-d5c6-425f-867dfbf555ea
+QuickTextInput(GenRandomUUID())
 return
 
 :*?:#PW#:: ; 随机输入数字字母密码如： yyCTCNYodECTLr2h
