@@ -114,10 +114,15 @@ if(T_XKeyAsScrollLock)
 if(T_XKeyAsRAlt)
     Hotkey *RAlt Up, CapsLockX_Up
 
+SetWorkingDir, %A_ScriptDir%\..\
+
 #Include Core\CapsLockX-i18n.ahk
 #Include Core\CapsLockX-ModulesRunner.ahk
 CapsLockX_Loaded()
-#Include Core\CapsLockX-ModulesLoader.ahk
+#Include Core\CapsLockX-ModulesFunctions.ahk
+
+SetWorkingDir, %A_ScriptDir%\..\
+
 #Include Core\CapsLockX-RunSilent.ahk
 
 #Include Core\CapsLockX-QuickTips.ahk
