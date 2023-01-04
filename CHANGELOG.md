@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.1](https://github.com/snolab/CapsLockX/compare/v1.30.0...v1.30.1) (2023-01-04)
+
+### Bug Fixes
+
+- **Modules:** DPW, QPW, UUID ([f665811](https://github.com/snolab/CapsLockX/commit/f6658117576e71b179ec81bae8b1f2c5cd733963))
+
 ## [1.30.0](https://github.com/snolab/CapsLockX/compare/v1.29.1...v1.30.0) (2022-12-28)
 
 ### Features
