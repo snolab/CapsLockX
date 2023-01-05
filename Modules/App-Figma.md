@@ -7,9 +7,9 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 
 ## 说明
 
-| 模式          | Anki 增强模块 | 说明       |
-| ------------- | :-----------: | ---------- |
-| 在 figma 界面 |      `k`      | ↑ 切換元素 |
-| 在 figma 界面 |      `j`      | ↓ 切換元素 |
-| 在 figma 界面 |      `h`      | ← 切換層級 |
-| 在 figma 界面 |      `l`      | → 切換層級 |
+| 模式             | Figma Enhanced | 说明                    |
+| ---------------- | :------------: | ----------------------- |
+| Figma in browser |      `k`       | ↑ 切換元素 Prev Element |
+| Figma in browser |      `j`       | ↓ 切換元素 Next Element |
+| Figma in browser |      `h`       | ← 切換層級 Level parent |
+| Figma in browser |      `l`       | → 切換層級 Level child  |
