@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.30.1</version>
+    <version>1.30.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,12 +65,24 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.30.1](https://github.com/snolab/CapsLockX/compare/v1.30.0...v1.30.1) (2023-01-04)
+### [1.30.2](https://github.com/snolab/CapsLockX/compare/v1.30.1...v1.30.2) (2023-01-05)
 
 
 ### Bug Fixes
 
-* **Modules:** DPW, QPW, UUID ([f665811](https://github.com/snolab/CapsLockX/commit/f6658117576e71b179ec81bae8b1f2c5cd733963))
+* **capslockx:** workdir ([b2a590e](https://github.com/snolab/CapsLockX/commit/b2a590e0ca877b42058c0734944fef213b6c6a67))
+* **Core:** fix workdir ([2f6b9ee](https://github.com/snolab/CapsLockX/commit/2f6b9ee163d79c985d8cf58168d9796c81e89170))
+* **Modules:** element ([442ef4c](https://github.com/snolab/CapsLockX/commit/442ef4c3518fc24342711d3ad83a377fb38b901d))
+* **Modules:** figma ([50cf711](https://github.com/snolab/CapsLockX/commit/50cf711af5b552228ae4c4dc218fb96cc73a702f))
+* **Modules:** figma inbrowser ([131d276](https://github.com/snolab/CapsLockX/commit/131d27689503e43938e1c1deda9ecccff20612f2))
+* **Modules:** japanese style password (like .... incantations? ([78f125e](https://github.com/snolab/CapsLockX/commit/78f125e0954a33736e5b9668fe8bddf062bba89a))
+* **Modules:** remove figma msgbox ([fc9bbb8](https://github.com/snolab/CapsLockX/commit/fc9bbb8f74add6cb971ad94ebf658df7a0e0806a))
+
+### [1.30.1](https://github.com/snolab/CapsLockX/compare/v1.30.0...v1.30.1) (2023-01-04)
+
+### Bug Fixes
+
+- **Modules:** DPW, QPW, UUID ([f665811](https://github.com/snolab/CapsLockX/commit/f6658117576e71b179ec81bae8b1f2c5cd733963))
 
 ## [1.30.0](https://github.com/snolab/CapsLockX/compare/v1.29.1...v1.30.0) (2022-12-28)
 
@@ -105,31 +117,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 - **capslockx:** on a{End} ([761210a](https://github.com/snolab/CapsLockX/commit/761210ab5dfc663efadb72d5d4380e5040b6abf7))
 - **edit-enhance:** dead loop ([3342d9b](https://github.com/snolab/CapsLockX/commit/3342d9b935ac8390364e758e77413b0ce5ceddd1))
-- **Modules:** onenote toggle todo without table conflict ([8fa0766](https://github.com/snolab/CapsLockX/commit/8fa0766e1c7e9851a72e64cadff3d59c6b553d5c))
-- **Modules:** pomodoro enable ([7c3c838](https://github.com/snolab/CapsLockX/commit/7c3c83881905b4f1437e53582d5f318241645be8))
-
-### [1.28.4](https://github.com/snolab/CapsLockX/compare/v1.28.3...v1.28.4) (2022-09-03)
-
-### [1.28.3](https://github.com/snolab/CapsLockX/compare/v1.28.2...v1.28.3) (2022-08-26)
-
-### [1.28.2](https://github.com/snolab/CapsLockX/compare/v1.28.1...v1.28.2) (2022-08-26)
-
-### Bug Fixes
-
-- anki 631 ([483687a](https://github.com/snolab/CapsLockX/commit/483687a42cca80fd8b8b29cb6b35f3e68a74b085))
-
-### [1.28.1](https://github.com/snolab/CapsLockX/compare/v1.28.0...v1.28.1) (2022-07-17)
-
-## [1.28.0](https://github.com/snolab/CapsLockX/compare/v1.27.0...v1.28.0) (2022-07-17)
-
-### Features
-
-- search today ([dcf4f86](https://github.com/snolab/CapsLockX/commit/dcf4f86e09b7d3f3ebdf2b462c954657ef10b61b))
-
-## [1.27.0](https://github.com/snolab/CapsLockX/compare/v1.26.1...v1.27.0) (2022-07-03)
-
-### Features
-]]></releaseNotes>
+- **Modules:** onenote toggle todo without table conflict ([8fa0766](https://github.com/snolab/CapsLockX/commit/8fa0766e1c7e9851a72e64cadff3d59c6b553d5c))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

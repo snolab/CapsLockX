@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.2](https://github.com/snolab/CapsLockX/compare/v1.30.1...v1.30.2) (2023-01-05)
+
+### Bug Fixes
+
+- **capslockx:** workdir ([b2a590e](https://github.com/snolab/CapsLockX/commit/b2a590e0ca877b42058c0734944fef213b6c6a67))
+- **Core:** fix workdir ([2f6b9ee](https://github.com/snolab/CapsLockX/commit/2f6b9ee163d79c985d8cf58168d9796c81e89170))
+- **Modules:** element ([442ef4c](https://github.com/snolab/CapsLockX/commit/442ef4c3518fc24342711d3ad83a377fb38b901d))
+- **Modules:** figma ([50cf711](https://github.com/snolab/CapsLockX/commit/50cf711af5b552228ae4c4dc218fb96cc73a702f))
+- **Modules:** figma inbrowser ([131d276](https://github.com/snolab/CapsLockX/commit/131d27689503e43938e1c1deda9ecccff20612f2))
+- **Modules:** japanese style password (like .... incantations? ([78f125e](https://github.com/snolab/CapsLockX/commit/78f125e0954a33736e5b9668fe8bddf062bba89a))
+- **Modules:** remove figma msgbox ([fc9bbb8](https://github.com/snolab/CapsLockX/commit/fc9bbb8f74add6cb971ad94ebf658df7a0e0806a))
+
 ### [1.30.1](https://github.com/snolab/CapsLockX/compare/v1.30.0...v1.30.1) (2023-01-04)
 
 ### Bug Fixes
