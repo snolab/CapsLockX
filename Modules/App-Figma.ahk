@@ -1,7 +1,5 @@
 ﻿
 
-
-
 Return
 
 #if FigmaWindowActiveQ()
@@ -9,7 +7,6 @@ Return
 FigmaWindowActiveQ(){
     ; 作成中 📝 – Figma
     if(WinActive(".*– Figma.*")){
-        msgbox figma active
         return 1
     }
     return 0
