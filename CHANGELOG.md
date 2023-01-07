@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.3](https://github.com/snolab/CapsLockX/compare/v1.30.2...v1.30.3) (2023-01-07)
+
+### Bug Fixes
+
+- **Modules:** tab enhanced by [] ([2066796](https://github.com/snolab/CapsLockX/commit/20667963b0a18ef1bbe716d8c769a6edbcd3f944))
+- **Modules:** tab enhanced by [] ([f3bff2e](https://github.com/snolab/CapsLockX/commit/f3bff2e719735c3e0c26483fbe1111bb3ce50e9c))
+
 ### [1.30.2](https://github.com/snolab/CapsLockX/compare/v1.30.1...v1.30.2) (2023-01-05)
 
 ### Bug Fixes
