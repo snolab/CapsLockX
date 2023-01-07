@@ -27,15 +27,6 @@ global Tab键模拟 := new AccModel2D(Func("Tab键模拟"), 0.1, 15 * 编辑增�
 翻页键模拟.最大速度 := 250
 Tab键模拟.最大速度 := 250
 
-global 编辑增强_TurboTab := CapsLockX_Config("EditEnhance", "TurboTab", 0, "Tab键加速，可能和一些游戏不兼容，默认禁用")
-if (编辑增强_TurboTab) {
-    global TurboTab := new AccModel2D(Func("TurboTab"), 0.1, 10)
-    TurboTab.最大速度 := 500
-}
-
-; Tab加速器 := new AccModel2D(1, 0, 0.01)
-; Tab加速器.实动 := Func("Tab加速器")
-
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 ; DisableLockWorkstation()
 Return
@@ -78,6 +69,22 @@ DisableLockWorkstation()
             return
         }
         SendEvent {Blind}{PgDn}
+    }
+}
+左翻页键发送(n:=1){
+    loop %n%{
+        if (A_Index > 128) {
+            return
+        }
+        SendEvent {Blind}{Home}
+    }
+}
+右翻页键发送(n:=1){
+    loop %n%{
+        if (A_Index > 128) {
+            return
+        }
+        SendEvent {Blind}{End}
     }
 }
 正Tab键发送(n:=1){
@@ -149,8 +156,21 @@ DisableLockWorkstation()
     if (状态 != "移动") {
         return
     }
+    if (状态 == "纵中键") {
+        return 翻页键模拟.止动()
+    }
+    if (状态 == "横中键") {
+        if (dx > 0) {
+            Send {End}+{Home}
+        } else {
+            Send {Home}+{End}
+        }
+        return 翻页键模拟.止动()
+    }
     _ := dy < 0 && 上翻页键发送(-dy)
     _ := dy > 0 && 下翻页键发送(dy )
+    _ := dx < 0 && 左翻页键发送(-dx)
+    _ := dx > 0 && 右翻页键发送(dx )
 }
 
 Tab键模拟(dx, dy, 状态){
@@ -165,17 +185,6 @@ Tab键模拟(dx, dy, 状态){
     ;
     _ := sdy < 0 && 反Tab键发送(-sdy)
     _ := sdy > 0 && 正Tab键发送(sdy )
-}
-
-TurboTab(dx, dy, 状态)
-{
-    ; _ := dy < 0 && 上翻页键发送(-dy)
-    if (状态 != "移动") {
-        return
-    }
-    loop %dy%{
-        Send {Blind}{Tab}
-    }
 }
 
 方向键模拟(dx, dy, 状态)
@@ -198,11 +207,11 @@ TurboTab(dx, dy, 状态)
         ; 先按下再按上
         if (dy > 0) {
             上方向键发送(1)
-            Send  {Home}+{End}
+            Send {Home}+{End}
             ; Send {End}+{Home}
         } else {
             下方向键发送(1)
-            Send  {Home}+{End}
+            Send {Home}+{End}
         }
         return 方向键模拟.止动()
     }
@@ -216,31 +225,29 @@ TurboTab(dx, dy, 状态)
     _ := dx > 0 && 右方向键发送(dx )
 }
 
-#if 编辑增强_TurboTab
-
-*Tab:: TurboTab.下按("Tab")
-
 #if CapsLockXMode
 
-*c:: Tab键模拟.上按("c")
-*v:: Tab键模拟.下按("v")
+*[:: Tab键模拟.上按("[")
+*]:: Tab键模拟.下按("]")
+
 *i:: 翻页键模拟.上按("i")
 *u:: 翻页键模拟.下按("u")
+*y:: 翻页键模拟.左按("y")
+*o:: 翻页键模拟.右按("o")
+
 *h:: 方向键模拟.左按("h")
 *l:: 方向键模拟.右按("l")
 *k:: 方向键模拟.上按("k")
 *j:: 方向键模拟.下按("j")
 
-
-*y:: Home
-*o:: End
-; 一起按相当于选择当前行，不同的顺序影响按完之后的光标位置（在前在后）
-y & o:: Send {Home}+{End}
-o & y:: Send {End}+{Home}
+; *y:: Home
+; *o:: End
+; ; 一起按相当于选择当前行，不同的顺序影响按完之后的光标位置（在前在后）
+; y & o:: Send {Home}+{End}
+; o & y:: Send {End}+{Home}
 
 ; 删除
 *t:: Send {Blind}{Delete}
-; *+t:: Send {Blind}{Shift Up}{BackSpace}{Shift Down}
 
 ; 回车
 *g:: Enter
