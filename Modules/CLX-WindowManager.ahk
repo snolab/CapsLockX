@@ -22,7 +22,7 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PAT
 ; flags
 global 上次CtrlShiftAlt时刻 := 0
 global 上次CtrlShiftAlt锁 := 0
-global FLAG_CtrlShiftAlt按下 := 0j
+global FLAG_CtrlShiftAlt按下 := 0
 
 global ARRANGE_SIDE_BY_SIDE := 0x00
 ; if not then arrange SIDE_BY_SIDE
@@ -598,13 +598,13 @@ z:: 最近1分钟内闪动窗口激活()
 x:: Send ^w ; 关闭标签
 +x:: 关闭窗口并切到下一窗口()
 ^!x:: 杀死窗口并切到下一窗口()
-n:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
-^n:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
-+n:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
-^+n:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
-+m:: 当前窗口置顶透明切换()
-m:: 当前窗口临时透明()
-m Up:: 当前窗口临时透明取消()
+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
+^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
++c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
+^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
++v:: 当前窗口置顶透明切换()
+v:: 当前窗口临时透明()
+v Up:: 当前窗口临时透明取消()
 b:: 任务栏任务切换()
 
 当前窗口置顶透明切换()
