@@ -360,7 +360,7 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
 | 全局(基本) | `CapsLockX + y o`     | Home End                         |
 | 全局(基本) | `CapsLockX + u i`     | PageUp PageDown                  |
-| 全局(基本) | `CapsLockX + c v`     | Shift+Tab 和 Tab                 |
+| 全局(基本) | `CapsLockX + [ ]`     | Shift+Tab 和 Tab                 |
 | 全局(基本) | `CapsLockX + g`       | 回车                             |
 | 全局(进阶) | `CapsLockX + t`       | Delete                           |
 | 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
@@ -479,23 +479,22 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | Alt+Tab 界面 | `W A S D`                             | 上下左右切换窗口选择                       |
 | Alt+Tab 界面 | `X C`                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
 | Win+Tab 视图 | `Alt + W A S D`                       | 切换窗口选择                               |
-| 全局         | `Win + [Shift] + b`                   | 定位到托盘或任务栏任务                     |
+| 全局         | `Win + [Shift] + B`                   | 定位到托盘或任务栏任务                     |
 | 全局         | `Win + Shift + hjkl`                  | 在窗口之间按方向切换焦点                   |
 | 任务栏       | `Ctrl + W 或 Delete`                  | 在托盘图标或任务栏任务上，选择退出按钮     |
 | 全局         | `CapsLockX + 1 2 ... 9 0`             | 切换到第 1 .. 12 个桌面                    |
 | 全局         | `CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
 | 全局         | `CapsLockX + Alt + Backspace`         | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局         | `CapsLockX + N`                       | 快速排列当前桌面的窗口                     |
-| 全局         | `CapsLockX + Ctrl + N`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Shift + N`               | 快速堆叠当前桌面的窗口                     |
-| 全局         | `CapsLockX + Shift + Ctrl + N`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Shift + [ ]`             | 把当前窗口移到上一个/下一个桌面            |
+| 全局         | `CapsLockX + C`                       | 快速排列当前桌面的窗口                     |
+| 全局         | `CapsLockX + Ctrl + C`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
+| 全局         | `CapsLockX + Shift + C`               | 快速堆叠当前桌面的窗口                     |
+| 全局         | `CapsLockX + Shift + Ctrl + C`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
 | 全局         | `CapsLockX + Z`                       | 循环切到最近使用的窗口                     |
 | 全局         | `CapsLockX + Shift + Z`               | 循环切到最不近使用的窗口                   |
 | 全局         | `CapsLockX + X`                       | 关掉当前标签页 Ctrl+W                      |
 | 全局         | `CapsLockX + Shift + X`               | 关掉当前窗口 Alt+F4                        |
-| 全局         | `CapsLockX + M`                       | 让窗口透明                                 |
-| 全局         | `CapsLockX + Shift + M`               | 让窗口保持透明（并置顶）                   |
+| 全局         | `CapsLockX + V`                       | 让窗口透明                                 |
+| 全局         | `CapsLockX + Shift + V`               | 让窗口保持透明（并置顶）                   |
 | 任意窗口     | `双击左边 Shift+Ctrl+Alt`             | 后置当前窗口， \* 见下方注                 |
 
 \*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
