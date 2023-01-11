@@ -77,6 +77,6 @@ CapsLockX_FolderChanged(Folder, Changes)
 
 #if CapsLockXMode
 
-\:: Reload ; CapsLockX_模块重载
-+\:: CapsLockX_Reload() ; CapsLockX_重新启动
-^+\:: ExitApp ; CapsLockX_退出
+.:: Reload ; CapsLockX_模块重载
++.:: CapsLockX_Reload() ; CapsLockX_重新启动
+^+.:: ExitApp ; CapsLockX_退出

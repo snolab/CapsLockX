@@ -1,6 +1,6 @@
 ﻿
 Return
- 
+
 ; 用户触发的
 QuickTips(){
     msg := ""
