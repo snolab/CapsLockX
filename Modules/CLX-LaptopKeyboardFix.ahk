@@ -59,11 +59,11 @@ RAlt & \:: Send {Blind}{Tab}
 Esc:: FLAG_SWAP_ESC_STROKE := CapsLockX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
 
 #if (FLAG_SWAP_ESC_STROKE && !CapsLockXMode) || (!FLAG_SWAP_ESC_STROKE && CapsLockXMode)
-    
+
 *`:: Esc
 <^`:: LWin
 *Esc:: `
 
 #if (!FLAG_SWAP_ESC_STROKE && !CapsLockXMode) || (!!FLAG_SWAP_ESC_STROKE && CapsLockXMode)
-    
+
 ; <^Esc:: LWin
