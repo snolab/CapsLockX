@@ -31,28 +31,7 @@ EscapeDoubleQuotedForBatch(code){
     encodedCode := RegExReplace(encodedCode, "\r", "\r")
     Return """" encodedCode """"
 }
-
-EvalJScript_DEPRECATED(code){
-    ; 生成代码
-    realcode := "(function(){try{Return eval(" . EscapeQuoted(code) . ")}catch(e){Return e.toString()}})()"
-    ; 执行代码
-    JS := GetObjJScript_DEPRECATED()
-    re := JS.Eval(realcode)
-    Return re
-}
-GetObjJScript_DEPRECATED(){
-    if !FileExist(ComObjFile := A_Temp "\JS.wsc")
-        FileAppend,
-    (LTrim
-    <component>
-    <public><method name='eval'/></public>
-    <script language='JScript'></script>
-    </component>
-    ), % ComObjFile
-    Return ComObjGet("script:" . ComObjFile)
-}
 SafetyEvalJavascript(code){
-    ; return EvalJavaScriptFromBrowser_TODO(code)
     static nodejsExists := !!FileExist("C:\Program Files\nodejs\node.exe")
     if(nodejsExists)
         Return EvalJavaScriptByNodeServer(code)
@@ -60,8 +39,8 @@ SafetyEvalJavascript(code){
         Run explorer "https://nodejs.org/zh-cn/download/current/"
         MsgBox, 运行此功能需要安装 NodeJS，已为你打开下载页面。
     }
-    ; Return EvalJScript_DEPRECATED(code)
 }
+; PENDING: waiting for when Browser as OS standard browser
 EvalJavaScriptByBrowser_TODO(code){
     static window:=""
     if(!window){
@@ -104,45 +83,60 @@ EvalJavaScriptByNodeServer(code){
     ; pid 文件读取尝试
     if(!nodePID)
         FileRead, nodePID, %EvalNodeJS_PIDFile%, *P65001
-    ; 进程存在检查 
+    ; 进程存在检查
     Process Exist, %nodePID%
     if (ErrorLevel != nodePID)
         nodePID := 0
     ; 不存在则尝试启动
     if(!nodePID){
-        TrayTip, EvalJS 模块, 正在启动 NodeJS...
+        TrayTip, EvalJS 模块, 正在启动 NodeJS 筆記服務...
         EnvGet, USERPROFILE, USERPROFILE
         escaped_USERPROFILE := RegExReplace(USERPROFILE, "\\", "\\")
         ; 生成服务端代码
         serverCode =
         (
-        const _require = require;{
-        const require = (m) => {
-            try{
-                _require.resolve(m)
-            }catch(e){
-                _require('child_process').execSync('cd "%escaped_USERPROFILE%" && npm i -S '+m)
-            }
-            return _require(m)
-        }
-        const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;
-        const _eval = async (code) => await eval(code)
-        require('http').createServer(async (req,res)=>{
-            let body = [];
-            req.on('data', (chunk) => {
-                body.push(chunk);
-            }).on('end', () => {
-                let code = Buffer.concat(body).toString() || decodeURI(req.url.split('?').slice(1).join('?'))
-                res.writeHead(200, {"Content-Type": "text/plain; charset=utf-8"});
+            const port = %port%;
+            const _eval = async (code) => {
+            const __sno_import = async (m) => {
+                try {
+                return await import(m);
+                } catch (e) {
+                process.chdir(process.env.TEMP);
+                (await import("child_process")).execSync("npm init -y && npm i -D " + m);
+                return await import(m);
+                }
+            };
+            const cc = code
+                .replace(/#([a-zA-Z0-9_]+)/, (_, $1) => '(await import("' + $1 + '"))')
+                .replace(/import/, () => "(" + String(__sno_import) + ")")
+                .replace(/^[\s\S]*$/, (_) => "(async()=>{return await (\n\n" + _ + "\n\n)})()");
+            console.log({cc});
+            return await eval(cc);
+            };
+            (await import("http"))
+            .createServer(async (req, res) => {
+                let body = [];
+                req
+                .on("data", (chunk) => {
+                    body.push(chunk);
+                })
+                .on("end", () => {
+                    let code =
+                    Buffer.concat(body).toString() ||
+                    decodeURI(req.url.split("?").slice(1).join("?"));
+                    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
                     _eval(code)
-                    .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res))
-                    .catch(e => (console.error('错误', e), e.toString()))
-                        .then(s => (res.end(s), console.log('入：', code, '\n出：', s)))
+                    .then(
+                        (res) =>
+                        (res?.toString !== {}.toString && String(res)) ||
+                        JSON.stringify(res))
+                    .catch((e) => (console.error("错误", e), e.toString()))
+                    .then((s) => (res.end(s), console.log("入：", code, "\n出：", s)));
                 });
-            }).listen(%port%)
-        }
+            })
+            .listen(port);
         )
-        serverScriptPath := A_Temp . "\eval-javascript-server.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.js"
+        serverScriptPath := A_Temp . "\eval-javascript-server.b1fd357f-67fe-4e2f-b9ac-e123f10b8c54.mjs"
         FileDelete %serverScriptPath%
         FileAppend, %serverCode%, %serverScriptPath%, UTF-8-Raw
         ; 启动 nodejs 并启用调试，注意工作目录在用户文件夹，需要调试请打开 chrome -> f12 -> node
@@ -154,7 +148,7 @@ EvalJavaScriptByNodeServer(code){
     ; 若没有代码需要执行则将进程退出
     if(!code){
         Process Exist, %nodePID%
-        if (ErrorLevel == nodePID)
+        if (ErrorLev el == nodePID)
             Process Close, %nodePID%
         return
     }
