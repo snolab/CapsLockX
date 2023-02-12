@@ -41,6 +41,13 @@ global CM_CapsLockX := 2 ; CapsLockX 模式，通过长按CLX键进入
 global CapsLockPressTimestamp := 0
 global CapsLockX_上次触发键 := ""
 
+; value func
+CapsLockX(){
+    return CapsLockX
+}
+CapsLockXMode(){
+    return CapsLockXMode
+}
 ; 根据灯的状态来切换到上次程序退出时使用的模式（不）
 UpdateCapsLockXMode()
 {
@@ -69,11 +76,9 @@ if (!T_IgnoresByLinesUser) {
 
 global CapsLockX_Paused := 0
 
-#if CapsLockX_Avaliable()
-
-#if !CapsLockX_Avaliable()
-
-#If
+#If CapsLockX_Avaliable()
+    #If CapsLockX_NotAvaliable()
+    #If
 
 Hotkey, If, CapsLockX_Avaliable()
 
@@ -88,7 +93,7 @@ if(T_XKeyAsScrollLock)
 if(T_XKeyAsRAlt)
     Hotkey *RAlt, CapsLockX_Dn
 
-Hotkey, If, !CapsLockX_Avaliable()
+Hotkey, If, CapsLockX_NotAvaliable()
 
 if(T_XKeyAsCapsLock)
     Hotkey CapsLock, CapsLockX_NotAvaliable
@@ -187,6 +192,10 @@ CapsLockXTurnOn()
     CapsLockXMode |= CM_CapsLockX
     re := UpdateCapsLockXLight()
     Return re
+}
+CapsLockX_NotAvaliable()
+{
+    return !CapsLockX_Avaliable()
 }
 CapsLockX_Avaliable()
 {

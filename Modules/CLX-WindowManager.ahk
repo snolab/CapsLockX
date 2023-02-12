@@ -313,7 +313,7 @@ WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
         ; WinGetTitle, 当前标题, ahk_id %hWnd%
         ; msgbox %当前标题% `n 方向 %方向% %距离% `n %DX% %DY% `n %rotatedDX% %rotatedDY%
         if (距离 && (距离 < 最优距离 || !最优距离) && ( 0
-        || (direction == 1 && 方向 == "右")
+            || (direction == 1 && 方向 == "右")
         || (direction == 2 && 方向 == "上")
         || (direction == 3 && 方向 == "左")
         || (direction == 4 && 方向 == "下")))
@@ -687,11 +687,11 @@ CLX_MoveCurrentWindowTo(x)
 !0:: CLX_MoveCurrentWindowTo(10) ; 选中窗口移动到10号桌面
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
-!a:: Left        ; 左
-!d:: Right       ; 右
-!w:: Up          ; 上
-!s:: Down        ; 下
-!r:: Volume_Up   ; 音量+
+!a:: Left ; 左
+!d:: Right ; 右
+!w:: Up ; 上
+!s:: Down ; 下
+!r:: Volume_Up ; 音量+
 !f:: Volume_Down ; 音量-
 
 ; cx 关闭应用
@@ -703,7 +703,7 @@ CLX_MoveCurrentWindowTo(x)
 !e:: Send ^#{Right} ; 向右切换多桌面
 
 #if
-    CtrlShiftAlt按下() {
+CtrlShiftAlt按下() {
     FLAG_CtrlShiftAlt按下 := 1
 }
 ~$<!<+LCtrl:: CtrlShiftAlt按下()
@@ -753,9 +753,9 @@ CtrlShiftAlt弹起() {
 ^w:: 任务栏中关闭窗口()
 Delete:: 任务栏中关闭窗口()
 
-#if CapsLockXMode && 任务栏中()
-
-x:: 任务栏中关闭窗口()
+; #if
+; ; CapsLockXMode && 任务栏中()
+; x:: 任务栏中关闭窗口()
 
 #if
 
@@ -866,8 +866,8 @@ ShellMessage( wParam, lParam )
 最近1分钟内闪动窗口激活()
 {
     TimeStampNow := 窗口增强_UnixTimeStamp()
-    hWnd         := 最迟闪动窗口.hWnd
-    TimeStamp    := 最迟闪动窗口.TimeStamp
+    hWnd := 最迟闪动窗口.hWnd
+    TimeStamp := 最迟闪动窗口.TimeStamp
     if (hWnd && TimeStampNow - TimeStamp <= 60) {
         鼠标位置记忆尝试()
         WinActivate, ahk_id %hWnd%

@@ -26,3 +26,5 @@ debug.log
 #cache
 .eslintcache
 /worktrees
+
+dist

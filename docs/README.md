@@ -367,15 +367,6 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
 | 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
 
-<!-- 模块文件名：CLX-JavaScriptEval.ahk-->
-
-### JavaScript 计算 (建议安装 NodeJS )
-
-| 作用于 | 按键            | 效果                                   |
-| ------ | --------------- | -------------------------------------- |
-| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
-| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
-
 <!-- 模块文件名：CLX-LaptopKeyboardFix.ahk-->
 
 ### Surface 笔记本扩充功能键
@@ -447,6 +438,15 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 ## 操作细节
 
 快速连按 AD 步进
+
+<!-- 模块文件名：CLX-NodeEval.ahk-->
+
+### JavaScript 计算 (建议安装 NodeJS )
+
+| 作用于 | 按键            | 效果                                   |
+| ------ | --------------- | -------------------------------------- |
+| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
+| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
 
 <!-- 模块文件名：CLX-WindowManager.ahk-->
 

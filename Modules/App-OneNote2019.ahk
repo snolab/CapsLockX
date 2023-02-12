@@ -222,16 +222,18 @@ OneNote2019搜索启动() {
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
 ; 单独运行
-#if (!CapsLockX)
+#if OneNote2019StandAlone()
+OneNote2019StandAlone(){
+    return !CapsLockX
+}
 
 ^+!F12:: ExitApp ; 退出脚本
 
-;
 #if OneNote2019搜索界面内()
-
 OneNote2019搜索界面内(){
     return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
 }
+
 ; $^f::
 ; $^e::
 ; enhanced_search(){
@@ -276,7 +278,6 @@ OneNote2019创建链接窗口内(){
 !s:: 笔记条目搜索结果复制整理条数()
 
 #if OneNote2019笔记编辑窗口内()
-
 OneNote2019笔记编辑窗口内(){
     return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }
@@ -493,9 +494,9 @@ $!4:: SendEvent !+4 ; 大纲折叠展开到4
 $!5:: SendEvent !+5 ; 大纲折叠展开到5
 $!6:: SendEvent !+6 ; 大纲折叠展开到6
 $!7:: SendEvent !+7 ; 大纲折叠展开到7
-$!`:: altSendEx("dp", "{Down 2}{Left}")      ; 自定义颜色
-$!+`:: altSend("dc")                         ; 自定义颜色
-$!v:: SendEvent !h!i                         ; 自定义颜色
+$!`:: altSendEx("dp", "{Down 2}{Left}") ; 自定义颜色
+$!+`:: altSend("dc") ; 自定义颜色
+$!v:: SendEvent !h!i ; 自定义颜色
 $![:: altSendEx("w", "{Down}{Tab 3}{Enter}") ; 调整缩放+
 $!]:: altSendEx("w", "{Down}{Tab 4}{Enter}") ; 调整缩放-
 $!\:: altSendEx("w", "{Down}{Tab 5}{Enter}") ; 调整缩放复原
@@ -505,29 +506,26 @@ $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
 $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
 $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
-
 #if OneNote2019换笔界面()
-
 OneNote2019换笔界面(){
     return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
 }
-$1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
-$2:: SendEvent {Right 1}{Enter}           ; 向第1行第2支笔切换
-$3:: SendEvent {Right 2}{Enter}           ; 向第1行第3支笔切换
-$4:: SendEvent {Right 3}{Enter}           ; 向第1行第4支笔切换
-$5:: SendEvent {Right 4}{Enter}           ; 向第1行第5支笔切换
-$6:: SendEvent {Right 5}{Enter}           ; 向第1行第6支笔切换
-$7:: SendEvent {Right 6}{Enter}           ; 向第1行第7支笔切换
-$+1:: SendEvent {Down 1}{Right 0}{Enter}  ; 向第2行第1支笔切换
-$+2:: SendEvent {Down 1}{Right 1}{Enter}  ; 向第2行第2支笔切换
-$+3:: SendEvent {Down 1}{Right 2}{Enter}  ; 向第2行第3支笔切换
-$+4:: SendEvent {Down 1}{Right 3}{Enter}  ; 向第2行第4支笔切换
-$+5:: SendEvent {Down 1}{Right 4}{Enter}  ; 向第2行第5支笔切换
-$+6:: SendEvent {Down 1}{Right 5}{Enter}  ; 向第2行第6支笔切换
-$+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
+$1:: SendEvent {Right 0}{Enter} ; 向第1行第1支笔切换
+$2:: SendEvent {Right 1}{Enter} ; 向第1行第2支笔切换
+$3:: SendEvent {Right 2}{Enter} ; 向第1行第3支笔切换
+$4:: SendEvent {Right 3}{Enter} ; 向第1行第4支笔切换
+$5:: SendEvent {Right 4}{Enter} ; 向第1行第5支笔切换
+$6:: SendEvent {Right 5}{Enter} ; 向第1行第6支笔切换
+$7:: SendEvent {Right 6}{Enter} ; 向第1行第7支笔切换
+$+1:: SendEvent {Down 1}{Right 0}{Enter} ; 向第2行第1支笔切换
+$+2:: SendEvent {Down 1}{Right 1}{Enter} ; 向第2行第2支笔切换
+$+3:: SendEvent {Down 1}{Right 2}{Enter} ; 向第2行第3支笔切换
+$+4:: SendEvent {Down 1}{Right 3}{Enter} ; 向第2行第4支笔切换
+$+5:: SendEvent {Down 1}{Right 4}{Enter} ; 向第2行第5支笔切换
+$+6:: SendEvent {Down 1}{Right 5}{Enter} ; 向第2行第6支笔切换
+$+7:: Send {Down 1}{Right 6}{Enter} ; 向第2行第7支笔切换
 
 #if 名为剪贴板的OneNote窗口存在()
-
 名为剪贴板的OneNote窗口存在(){
     return WinExist("剪贴板.*|Clipboard ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
 }

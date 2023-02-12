@@ -1,5 +1,3 @@
-<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->
-
 # CapsLockX - 💻 Get Hacker's Keyboard. 像**黑客**一样操作电脑
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to easily operate the computer efficiently like a hacker in a movie without leaving the keyboard with both hands . There are a lot of functions that you can understand at a touch and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to personally define.
@@ -355,7 +353,7 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 这个必须有！
 那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
 
-![EditorCursorMovement.gif](./docs/media/EditorCursorMovement.gif)
+![EditorCursorMovement.gif](./media/EditorCursorMovement.gif)
 
 | 作用域     | Edit 模块             | 说明                             |
 | ---------- | --------------------- | -------------------------------- |
@@ -421,7 +419,7 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 - 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
 - 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
 - 效果如图：
-  ![CLX-Mouse.gif](./docs/media/CLX-Mouse.gif)
+  ![CLX-Mouse.gif](./media/CLX-Mouse.gif)
 
 ## 使用方法如下
 
@@ -469,9 +467,9 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 ## 效果图
 
 - Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./docs/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 - CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
-  ![02-插件-窗口增强_一键排列窗口.gif](./docs/media/02-插件-窗口增强_一键排列窗口.gif)
+  ![02-插件-窗口增强_一键排列窗口.gif](./media/02-插件-窗口增强_一键排列窗口.gif)
 
 ## 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
@@ -675,7 +673,7 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
 7. 💰 欢迎在此捐助 CapsLockX 的开发，每一笔捐赠都会记录到下方的列表中：
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
-   - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./docs/支付宝捐助.png)
+   - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
    - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 [发展路线](#发展路线-roadmap)
@@ -753,13 +751,13 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
   - [按键分布设计（开发中）](#按键分布设计开发中)
   - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
     - [编辑增强插件（ TG YUIO HJKL ） 🌟](#编辑增强插件-tg-yuio-hjkl--)
-    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
     - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [媒体键模块](#媒体键模块)
     - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
   - [功能](#功能)
   - [使用方法如下](#使用方法如下)
   - [操作细节](#操作细节)
+    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
     - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
   - [功能简述](#功能简述)
   - [效果图](#效果图)

@@ -70,10 +70,10 @@ if ("CI_TEST" == ENVIROMENT || !!RegExMatch(DllCall("GetCommandLine", "str"), "/
     OutputDebug, % "[INFO] MODULE LOAD OK, SKIP CORE"
     ExitApp
 } else {
-    CapsLockX启动()
+    CapsLockX_Launch()
 }
 ; #Persistent
-; SetTimer, CapsLockX启动, -1
+; SetTimer, CapsLockX_Launch, -1
 Return
 
 模块帮助向README编译(){
@@ -257,7 +257,7 @@ Return
 
     Return targetREADME
 }
-CapsLockX启动(){
+CapsLockX_Launch(){
     CoreAHK := CapsLockX_核心路径 "\CapsLockX-Core.ahk"
     UpdatorAHK := CapsLockX_核心路径 "\CapsLockX-Update.ahk"
     ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再使用 Temp 里的 AHK 来运行本核心。
@@ -271,11 +271,9 @@ CapsLockX启动(){
     if (!FileExist(AHK_EXE_TEMP_PATH)) {
         AHK_EXE_TEMP_PATH := AHK_EXE_ROOT_PATH
     }
-    ; 运行更新组件
+    ; Updator
     Run %AHK_EXE_TEMP_PATH% %UpdatorAHK%, %A_ScriptDir%
-
-    ; 运行核心
-    ; 启动
+    ; Core Launch
     global T_AskRunAsAdmin := CapsLockX_ConfigGet("Core", "T_AskRunAsAdmin", 0)
     adminCommand := RegExMatch(DllCall("GetCommandLine", "str"), "/admin")
     if (!A_IsAdmin && T_AskRunAsAdmin || adminCommand) {

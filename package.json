@@ -2,14 +2,32 @@
   "name": "capslockx",
   "version": "1.30.3",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
-  "scripts": {
-    "start": "CapsLockX.exe",
-    "build": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-    "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-    "prepare": "husky install",
-    "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
-    "release": "pnpm upgrade && standard-version --commit-all && git push --follow-tag --all",
-    "build-tauri": "cd DevTools/CLXConfig.js && npm run build"
+  "keywords": [
+    "CapsLockX"
+  ],
+  "homepage": "https://github.com/snolab/CapsLockX#readme",
+  "bugs": {
+    "url": "https://github.com/snolab/CapsLockX/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snolab/CapsLockX.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "author": "snomiao@gmail.com",
+  "type": "module",
+  "exports": {
+    "require": "./dist/index.cjs",
+    "import": "./dist/index.mjs"
+  },
+  "main": "DevTools/CapsLockX.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "capslockx": "CapsLockX.exe"
+  },
+  "directories": {
+    "doc": "docs"
   },
   "files": [
     "Core",
@@ -22,31 +40,76 @@
     "*.txt",
     "*.md"
   ],
-  "standard-version": {
-    "scripts": {
-      "precommit": "node DevTools/versioning.node.mjs && git add ."
-    }
+  "workspaces": [
+    "DevTools/CLXConfig.js"
+  ],
+  "scripts": {
+    "build": "snobuild",
+    "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
+    "eslint": "eslint --fix",
+    "prepack": "npm run build",
+    "prepare": "husky install",
+    "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
+    "release": "semantic-release",
+    "start": "tsx src/cli.ts",
+    "test:CapsLockX": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
+    "test:vitest": "vitest --run"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/snolab/CapsLockX.git"
+  "lint-staged": {
+    "*.{js,ts}": "eslint --cache --fix",
+    "*.{css,md,js,ts}": "prettier --write",
+    "*.ahk": []
   },
-  "author": "snomiao@gmail.com",
-  "license": "GPL-3.0-or-later",
-  "bugs": {
-    "url": "https://github.com/snolab/CapsLockX/issues"
+  "release": {
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "main",
+      "next",
+      "next-major",
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/npm",
+      "@semantic-release/github",
+      [
+        "@semantic-release/exec",
+        {
+          "prepareCmd": "npm run versioning -- ${nextRelease.version}"
+        }
+      ]
+    ]
   },
-  "homepage": "https://github.com/snolab/CapsLockX#readme",
-  "bin": {
-    "capslockx": "CapsLockX.exe"
+  "dependencies": {
+    "aswitcher": "^1.0.1",
+    "read-file-utf8": "^2.0.4",
+    "snorun": "^1.1.17",
+    "work-package-dir": "^1.0.0"
   },
-  "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
     "@types/lodash-es": "^4.17.6",
+    "@types/node": "^18.11.18",
     "@types/pinyin": "^2.10.0",
-    "eslint": "^8.31.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.51.0",
+    "caller-path": "^4.0.0",
+    "eslint": "^8.0.1",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.26.0",
+    "eslint-config-standard-with-typescript": "^34.0.0",
+    "eslint-config-xo": "^0.43.1",
+    "eslint-config-xo-typescript": "^0.56.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-react": "^7.32.2",
     "husky": "^8.0.3",
     "lint-staged": "^13.1.0",
     "lodash-es": "^4.17.21",
@@ -55,22 +118,12 @@
     "prettier-plugin-organize-imports": "^3.2.1",
     "prettier-plugin-packagejson": "2.3.0",
     "prettier-plugin-tsconfig": "^0.0.1",
+    "rambda": "^7.4.0",
+    "rambdax": "^9.0.0",
     "sno-utils": "^0.3.16",
+    "snobuild": "^3.2.11",
     "standard-version": "^9.5.0",
-    "typescript": "^4.9.4"
-  },
-  "workspaces": [
-    "DevTools/CLXConfig.js"
-  ],
-  "lint-staged": {
-    "*.{js,ts}": "eslint --cache --fix",
-    "*.{css,md,js,ts}": "prettier --write",
-    "*.ahk": []
-  },
-  "directories": {
-    "doc": "docs"
-  },
-  "keywords": [
-    "CapsLockX"
-  ]
+    "typescript": "*",
+    "vitest": "^0.28.3"
+  }
 }

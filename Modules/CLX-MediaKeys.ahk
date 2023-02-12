@@ -5,7 +5,7 @@
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
 Return
 
-#if !!(CapsLockXMode & CM_FN) || !!(CapsLockXMode & CM_CapsLockX)
+#if CapsLockXMode
 
 F1:: Launch_App1 ; 打开我的电脑
 F2:: Launch_App2 ; 计算器

@@ -49,7 +49,7 @@ Blender视图运动(启动键, dx, dy, 状态)
         return
     }
     MouseMove, %X%, %Y%, 0
-    
+
     BlenderEnhanced_SendInput_MouseMoveR32(dx, dy)
 }
 
@@ -135,7 +135,7 @@ Blender物件调整(){
     SetTimer Blender物件调整, Off
     global Blender物件调整中 := 0
     tooltip %msg%
-    
+
     ; Sleep 16 ; a frame
 }
 Blender数值输入(启动键, 数值, 状态){
@@ -150,7 +150,7 @@ Blender数值输入(启动键, 数值, 状态){
     if (状态 != "移动") {
         return
     }
-    
+
     ; 数值 := Round(数值, Log(平移精度)/Log(10))
     if(数值 != 0) {
         SendEvent %启动键%%数值%{Enter}
@@ -188,8 +188,11 @@ return
 \ & r:: 旋转导航.上按("r")
 \ & f:: 旋转导航.下按("f")
 
-#if Blender窗口内() && Blender增强模式
+#if Blender窗口内增强模式()
 
+Blender窗口内增强模式(){
+    return Blender窗口内() && Blender增强模式
+}
 j & r:: 平移精度控制.上按("r")
 u & r:: 平移精度控制.上按("r")
 j & f:: 平移精度控制.下按("f")
