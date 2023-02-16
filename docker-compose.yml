@@ -1,9 +1,15 @@
 version: '3'
 services:
-  code-clx-go:
+  # code-clx-go:
+  #   build: go/code
+  #   volumes:
+  #     - ./.vscode/.vscode-server/:/root/.vscode-server/
+  #     - ./.vscode/.go:/go
+  #     - ./go:/code
+  #   ports:
+  #     - 127.0.0.1:35882:8000
+  clx-go-build:
     build: go
     volumes:
-      - ./.vscode/.vscode-server/:/root/.vscode-server/
+      - ./.vscode/.go:/go
       - ./go:/code
-    ports:
-      - 127.0.0.1:35882:8000

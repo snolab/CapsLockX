@@ -3,14 +3,15 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"time"
-	"fmt"
 
 	"github.com/go-vgo/robotgo"
 	"golang.design/x/hotkey"
 	"golang.design/x/hotkey/mainthread"
 )
+
 // https://stackoverflow.com/questions/58793857/robotgo-for-windows-10-fatal-error-zlib-h-no-such-file-or-directory
 
 func main() { mainthread.Init(mainThread) }
@@ -21,6 +22,7 @@ func mainThread() {
 	for {
 		escaped := false
 		unspacex = spacex(func() {
+			fmt.Println("space x tap")
 			unspacex()
 			robotgo.KeyTap("space")
 			escaped = true
@@ -31,7 +33,7 @@ func mainThread() {
 	}
 	// return unspacex()
 }
-
+ 
 func spacex(tap func()) func() {
 	fmt.Println("spacex")
 	unclxedit := func() {}
@@ -40,46 +42,60 @@ func spacex(tap func()) func() {
 	act := func() { acted = true }
 	unreg := myreg([]hotkey.Modifier{}, hotkey.KeySpace,
 		func() {
+			fmt.Println("space x pressed")
 			acted = false
 			unclxedit = clxedit(act)
 			unclxmouse = clxmouse(act)
 		},
 		func() {
-			unclxedit()
-			unclxmouse()
+			fmt.Println("space x released")
 			if !acted {
 				tap()
 			}
+			unclxedit()
+			unclxmouse()
 		})
 	return unreg
 }
 
 func clxmouse(act func()) func() {
 	unA := turboTap(hotkey.KeyA,
-		func(k int, taps int) { r := int(math.Log2(float64(taps))); robotgo.MoveA rgs(-r, 0) },
+		func(k int,m int, taps int) {
+			r := int(math.Log2(float64(taps)))
+			robotgo.MoveRelative(-r, 0)
+		},
 		act)
 	unD := turboTap(hotkey.KeyD,
-		func(k int, taps int) { r := int(math.Log2(float64(taps))); robotgo.MoveArgs(r, 0) },
+		func(k int,m int, taps int) {
+			r := int(math.Log2(float64(taps)))
+			robotgo.MoveRelative(r, 0)
+		},
 		act)
 	unW := turboTap(hotkey.KeyW,
-		func(k int, taps int) { r := int(math.Log2(float64(taps))); robotgo.MoveArgs(0, -r) },
+		func(k int,m int, taps int) {
+			r := int(math.Log2(float64(taps)))
+			robotgo.MoveRelative(0, -r)
+		},
 		act)
 	unS := turboTap(hotkey.KeyS,
-		func(k int, taps int) { r := int(math.Log2(float64(taps))); robotgo.MoveArgs(0, r) },
+		func(k int,m int, taps int) {
+			r := int(math.Log2(float64(taps)))
+			robotgo.MoveRelative(0, r)
+		},
 		act)
 	// TODO HOLD
 	unE := modsreg(hotkey.KeyE,
-		func(k int, taps int) { act(); robotgo.Toggle("left") },
+		func(k int, m int) { act(); robotgo.Toggle("left") },
 		func() { act(); robotgo.Toggle("left", "up") })
 	unQ := modsreg(hotkey.KeyQ,
-		func(k int, taps int) { act(); robotgo.Toggle("right") },
+		func(k int, m int) { act(); robotgo.Toggle("right") },
 		func() { act(); robotgo.Toggle("right", "up") })
 	//
 	unR := turboTap(hotkey.KeyR,
-		func(k int, taps int) { r := int((float64(taps))); robotgo.Scroll(0, r) },
+		func(k int,m int, taps int) { r := int((float64(taps))); robotgo.Scroll(0, r) },
 		act)
 	unF := turboTap(hotkey.KeyF,
-		func(k int, taps int) { r := int((float64(taps))); robotgo.Scroll(0, -r) },
+		func(k int,m int, taps int) { r := int((float64(taps))); robotgo.Scroll(0, -r) },
 		act)
 	return func() {
 		unA()
@@ -106,10 +122,10 @@ func clxedit(act func()) func() {
 	unturboU := turboKey(hotkey.KeyU, "pagedown", act)
 	unturboI := turboKey(hotkey.KeyI, "pageup", act)
 	//
-	unturboN := turboTap(hotkey.KeyN, func(k int, taps int) {
+	unturboN := turboTap(hotkey.KeyN, func(k int, m int, taps int) {
 		robotgo.KeyTap("tab", "shift")
 	}, act)
-	unturboM := turboTap(hotkey.KeyM, func(k int, taps int) {
+	unturboM := turboTap(hotkey.KeyM, func(k int, m int, taps int) {
 		robotgo.KeyTap("tab")
 	}, act)
 	return func() {
@@ -128,8 +144,8 @@ func clxedit(act func()) func() {
 	}
 }
 func turboKey(i hotkey.Key, o string, act func()) func() {
-	return turboTap(i, func(k int, taps int) {
-		mods := modsDecode(k)
+	return turboTap(i, func(k int, m int, taps int) {
+		mods := modsDecode(m)
 		if len(mods) == 0 {
 			robotgo.KeyTap(o)
 		} else {
@@ -138,15 +154,15 @@ func turboKey(i hotkey.Key, o string, act func()) func() {
 	}, act)
 }
 
-func turboTap(i hotkey.Key, tap func(k int, taps int), act func()) func() {
+func turboTap(key hotkey.Key, tap func(k int, m int, taps int), act func()) func() {
 	taps := 0
-	unreg := modsreg(i,
-		func(kk int, k int) {
+	unreg := modsreg(key,
+		func(k int, m int) {
 			taps = 0
 			act()
 			go func() {
 				for taps >= 0 {
-					tap(k, taps)
+					tap(k, m, taps)
 					ms := math.Max(0, 120*(math.Pow(0.5, 0.5*float64(taps))))
 					time.Sleep(time.Millisecond * time.Duration(ms))
 					taps++
@@ -159,4 +175,3 @@ func turboTap(i hotkey.Key, tap func(k int, taps int), act func()) func() {
 		unreg()
 	}
 }
-

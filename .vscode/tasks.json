@@ -23,8 +23,20 @@
       "script": "code",
       "problemMatcher": [],
       "label": "npm: code",
-      "runOptions": {"instanceLimit": 2},
+      "runOptions": {
+        "instanceLimit": 2
+      },
       "detail": "docker-compose up"
+    },
+    {
+      "type": "npm",
+      "script": "go",
+      "problemMatcher": [],
+      "label": "npm: go",
+      "runOptions": {
+        "instanceLimit": 2
+      },
+      "detail": "docker-compose up && go/clx_win64.exe"
     }
   ]
 }

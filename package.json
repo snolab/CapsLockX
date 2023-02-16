@@ -44,8 +44,9 @@
     "DevTools/CLXConfig.js"
   ],
   "scripts": {
+    "go": "docker-compose up && go/clx_win64.exe",
     "code": "docker-compose up",
-    "build": "snobuild",
+    "build": "docker-compose up",
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
     "eslint": "eslint --fix",
     "prepack": "npm run build",
