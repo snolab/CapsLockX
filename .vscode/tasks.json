@@ -17,6 +17,14 @@
       "problemMatcher": [],
       "label": "npm: release",
       "detail": "pnpm upgrade & standard-version --commit-all && git push --follow-tag --all"
+    },
+    {
+      "type": "npm",
+      "script": "code",
+      "problemMatcher": [],
+      "label": "npm: code",
+      "runOptions": {"instanceLimit": 2},
+      "detail": "docker-compose up"
     }
   ]
 }

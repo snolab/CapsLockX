@@ -24,6 +24,8 @@ version-*.txt
 debug.log
 
 #cache
+.vscode/.vscode-server
+
 .eslintcache
 /worktrees
 
