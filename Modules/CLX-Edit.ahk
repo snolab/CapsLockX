@@ -235,6 +235,8 @@ Tab键模拟(dx, dy, 状态){
 *y:: 翻页键模拟.左按("y")
 *o:: 翻页键模拟.右按("o")
 
+#if CapsLockXMode && !CapsLockX_HJKL_Scroll
+
 *h:: 方向键模拟.左按("h")
 *l:: 方向键模拟.右按("l")
 *k:: 方向键模拟.上按("k")
