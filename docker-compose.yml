@@ -8,8 +8,11 @@ services:
   #     - ./go:/code
   #   ports:
   #     - 127.0.0.1:35882:8000
-  clx-go-build:
+  build:
     build: go
     volumes:
-      - ./.vscode/.go:/go
-      - ./go:/code
+      # got build result
+      - ./go/bin/:/src/go/bin:wo
+    # volumes:
+    #   - ./.vscode/.go:/go
+    #   - ./go:/code
