@@ -26,3 +26,15 @@ debug.log
 #cache
 .eslintcache
 /worktrees
+.vscode/.go
+.vscode/.vscode-server
+
+dist
+dist/cli.cjs
+dist/cli.cjs.map
+dist/cli.min.cjs
+dist/cli.min.cjs.map
+dist/cli.min.mjs
+dist/cli.min.mjs.map
+dist/cli.mjs
+dist/cli.mjs.map
