@@ -30,12 +30,13 @@ global TMouse_UseDPIRatio := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是�
 global TMouse_MouseSpeedRatio := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global TMouse_WheelSpeedRatio := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
-global CapsLockX_HJKL_Scroll := CapsLockX_Config("TMouse", "CapsLockX_HJKL_Scroll", 1, "使用HJKL滚轮移动滚轮，比RF多一个横轴。")
+global CapsLockX_HJKL_Scroll := CapsLockX_Config("TMouse", "CapsLockX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
 global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
 global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
+global ZoomSimu := new AccModel2D(Func("ZoomSimu"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
 global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
@@ -182,11 +183,11 @@ ScrollModeToggle()
     global CapsLockX_HJKL_Scroll
     if (CapsLockX_HJKL_Scroll != 1) {
         CapsLockX_HJKL_Scroll := 1
-        ToolTip 鼠标模拟 已切换到 HJKL 滚轮模式，再次按 CapsLockX+AD 可取消
+        ToolTip 鼠标模拟 已切换到 IJKL 滚轮模式，再次按 CapsLockX+AD 可取消
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     } else {
         CapsLockX_HJKL_Scroll := 0
-        ToolTip 鼠标模拟 已切换到 HJKL 鼠标模式
+        ToolTip 鼠标模拟 已切换到 IJKL 光標模式
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     }
 }
@@ -195,7 +196,7 @@ ScrollModeExit()
     global CapsLockX_HJKL_Scroll
     if (CapsLockX_HJKL_Scroll != 0) {
         CapsLockX_HJKL_Scroll := 0
-        ToolTip 鼠标模拟 已切换到 HJKL 鼠标模式
+        ToolTip 鼠标模拟 已切换到 IJKL 光標模式
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     }
 }
@@ -284,6 +285,17 @@ ScrollModeExit()
         return
     }
     ScrollMouse(dx, dy)
+}
+ZoomSimu(dx, dy, action){
+    if (!CapsLockXMode) {
+        return ZoomSimu.止动()
+    }
+    if (action != "移动") {
+        return
+    }
+    SendEvent, {CtrlDown}
+    ScrollMouse(dx, dy)
+    SendEvent, {CtrlUp}
 }
 PostMessageForScroll(msg, zDelta)
 {
@@ -387,12 +399,20 @@ CapsLockX_鼠标右键弹起(){
 #if CapsLockXMode && CapsLockX_HJKL_Scroll
 
 ; 滚轮运动处理
+; *j:: 滚轮模拟.左按("j")
+; *l:: 滚轮模拟.右按("l")
+; *i:: 滚轮模拟.上按("i")
+; *k:: 滚轮模拟.下按("k")
 *h:: 滚轮模拟.左按("h")
 *l:: 滚轮模拟.右按("l")
 *k:: 滚轮模拟.上按("k")
 *j:: 滚轮模拟.下按("j")
 
-#if CapsLockXMode
+
+*r:: ZoomSimu.上按("r")
+*f:: ZoomSimu.下按("f")
+
+#if CapsLockXMode && !CapsLockX_HJKL_Scroll
 
 ; 滚轮运动处理
 ; *+^!r:: 滚轮自动控制.左按("r")
@@ -412,5 +432,3 @@ return
     ScrollModeExit()
     滚轮模拟.下按("f")
 return
-; *[:: 滚轮模拟.左按("[")
-; *]:: 滚轮模拟.右按("]")
