@@ -16,6 +16,8 @@ if (!CapsLockX) {
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
+
+global CapsLockX_HJKL_Scroll := CapsLockX_Config("TMouse", "CapsLockX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
 global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_PageSpeed := CapsLockX_Config("EditEnhance", "PageSpeed", 1, "翻页速率")
@@ -227,27 +229,21 @@ Tab键模拟(dx, dy, 状态){
 
 #if CapsLockXMode
 
-*[:: Tab键模拟.上按("[")
-*]:: Tab键模拟.下按("]")
+*t:: Delete
+*g:: Enter
+
+; *[:: Tab键模拟.上按("[")
+; *]:: Tab键模拟.下按("]")
+
+*p:: Tab键模拟.上按("p")
+*n:: Tab键模拟.下按("n")
+#if CapsLockXMode && !CapsLockX_IJKL_Scroll
 
 *i:: 翻页键模拟.上按("i")
 *u:: 翻页键模拟.下按("u")
 *y:: 翻页键模拟.左按("y")
 *o:: 翻页键模拟.右按("o")
-
 *h:: 方向键模拟.左按("h")
 *l:: 方向键模拟.右按("l")
 *k:: 方向键模拟.上按("k")
 *j:: 方向键模拟.下按("j")
-
-; *y:: Home
-; *o:: End
-; ; 一起按相当于选择当前行，不同的顺序影响按完之后的光标位置（在前在后）
-; y & o:: Send {Home}+{End}
-; o & y:: Send {End}+{Home}
-
-; 删除
-*t:: Send {Blind}{Delete}
-
-; 回车
-*g:: Enter

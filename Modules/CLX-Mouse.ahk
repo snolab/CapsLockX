@@ -26,16 +26,17 @@ global TMouse_StickyCursor := CapsLockX_Config("TMouse", "StickyCursor", 1, "启
 global TMouse_StopAtScreenEdge := CapsLockX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
 
 ; 根据屏幕 DPI 比率，自动计算，得出，如果数值不对，才需要纠正
-global TMouse_UseDPIRatio           := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
-global TMouse_MouseSpeedRatio       := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global TMouse_WheelSpeedRatio       := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global TMouse_DPIRatio              := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
-global CapsLockX_WASD_MouseOrScroll := 1
+global TMouse_UseDPIRatio := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
+global TMouse_MouseSpeedRatio := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_WheelSpeedRatio := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
+global CapsLockX_HJKL_Scroll := CapsLockX_Config("TMouse", "CapsLockX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
 
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
 global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
 global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
+global ZoomSimu := new AccModel2D(Func("ZoomSimu"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
 global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
 
@@ -66,7 +67,7 @@ CursorHandleGet()
     NumPut(20, PCURSORINFO, 0, "UInt") ;*声明出 结构 的大小cbSize = 20字节
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
     if (NumGet(PCURSORINFO, 4, "UInt") == 0 ) ;当光标隐藏时，直接输出特征码为0
-    Return 0
+        Return 0
     Return NumGet(PCURSORINFO, 8)
 }
 
@@ -140,10 +141,10 @@ SendInput_ScrollMouse(dx, dy)
     if (dy) {
         size := A_PtrSize+4*4+A_PtrSize*2
         VarSetCapacity(mi, size, 0)
-        NumPut(x, mi, A_PtrSize, "Int")   ; LONG dx
-        NumPut(y, mi, A_PtrSize+4, "Int")  ; LONG dy
-        NumPut(-dy, mi, A_PtrSize+4+4, "Int")  ; DWORD mouseData
-        NumPut(MOUSEEVENTF_WHEEL, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags
+        NumPut(x, mi, A_PtrSize, "Int") ; LONG dx
+        NumPut(y, mi, A_PtrSize+4, "Int") ; LONG dy
+        NumPut(-dy, mi, A_PtrSize+4+4, "Int") ; DWORD mouseData
+        NumPut(MOUSEEVENTF_WHEEL, mi, A_PtrSize+4+4+4, "UInt") ; DWORD dwFlags
         DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
         ; perf_timing()
     }
@@ -168,43 +169,34 @@ SendInput_MouseMove(x, y)
     ; [MOUSEINPUT (winuser.h) - Win32 apps | Microsoft Docs]( https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-mouseinput )
     size := A_PtrSize+4*4+A_PtrSize*2
     VarSetCapacity(mi, size, 0)
-    NumPut(x, mi, A_PtrSize, "Int")   ; int dx
-    NumPut(y, mi, A_PtrSize+4, "Int")  ; int dy
-    NumPut(0x0001, mi, A_PtrSize+4+4+4, "UInt")   ; DWORD dwFlags MOUSEEVENTF_MOVE
+    NumPut(x, mi, A_PtrSize, "Int") ; int dx
+    NumPut(y, mi, A_PtrSize+4, "Int") ; int dy
+    NumPut(0x0001, mi, A_PtrSize+4+4+4, "UInt") ; DWORD dwFlags MOUSEEVENTF_MOVE
     DllCall("SendInput", "UInt", 1, "Ptr", &mi, "Int", size )
 }
 鼠标模拟2(dx, dy){
     SendInput_MouseMove(dx, dy)
-    
+
 }
 ScrollModeToggle()
 {
-    global CapsLockX_WASD_MouseOrScroll
-    if (CapsLockX_WASD_MouseOrScroll != 0) {
-        CapsLockX_WASD_MouseOrScroll := 0
-        ToolTip 鼠标模拟 已切换到 WASD 滚轮模式，再次按 CapsLockX+AD 可取消
+    global CapsLockX_HJKL_Scroll
+    if (CapsLockX_HJKL_Scroll != 1) {
+        CapsLockX_HJKL_Scroll := 1
+        ToolTip 鼠标模拟 已切换到 IJKL 滚轮模式，再次按 CapsLockX+AD 可取消
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     } else {
-        CapsLockX_WASD_MouseOrScroll := 1
-        ToolTip 鼠标模拟 已切换到 WASD 鼠标模式
-        SetTimer 鼠标模拟_ToolTipRemove, -3000
-    }
-}
-ScrollModeEnter()
-{
-    global CapsLockX_WASD_MouseOrScroll
-    if (CapsLockX_WASD_MouseOrScroll != 0) {
-        CapsLockX_WASD_MouseOrScroll := 0
-        ToolTip 鼠标模拟 已切换到 WASD 滚轮模式，再次按 CapsLockX+AD 可取消
+        CapsLockX_HJKL_Scroll := 0
+        ToolTip 鼠标模拟 已切换到 IJKL 光標模式
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     }
 }
 ScrollModeExit()
 {
-    global CapsLockX_WASD_MouseOrScroll
-    if (CapsLockX_WASD_MouseOrScroll != 1) {
-        CapsLockX_WASD_MouseOrScroll := 1
-        ToolTip 鼠标模拟 已切换到 WASD 鼠标模式
+    global CapsLockX_HJKL_Scroll
+    if (CapsLockX_HJKL_Scroll != 0) {
+        CapsLockX_HJKL_Scroll := 0
+        ToolTip 鼠标模拟 已切换到 IJKL 光標模式
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     }
 }
@@ -231,8 +223,8 @@ ScrollModeExit()
     ; Shift 减速 =1
     if (GetKeyState("Shift", "P")) {
         sleep 100
-        dx := dx == 0 ?  0 : (dx > 0 ? 1 : -1 )
-        dy := dy == 0 ?  0 : (dy > 0 ? 1 : -1 )
+        dx := dx == 0 ? 0 : (dx > 0 ? 1 : -1 )
+        dy := dy == 0 ? 0 : (dy > 0 ? 1 : -1 )
     }
     if (TMouse_SendInputAPI) {
         ; 支持64位AHK！
@@ -240,14 +232,13 @@ ScrollModeExit()
     } else {
         MouseMove, %dx%, %dy%, 0, R
     }
-    
+
     ; TODO: 撞到屏幕边角就停下来
     ; if(TMouse_StopAtScreenEdge )
     ; MouseGetPos, xb, yb
     ; 鼠标模拟.横速 *= dx && xa == xb ? 0 : 1
     ; 鼠标模拟.纵速 *= dy && ya == yb ? 0 : 1
-    
-    
+
     ; 在各种按钮上减速，进出按钮时减速80%
     if (TMouse_StickyCursor && CursorShapeChangedQ()) {
         鼠标模拟.横速 *= 0.2
@@ -267,7 +258,7 @@ ScrollModeExit()
     }
     滚轮自动.横速 += dx, 滚轮自动.纵速 += dy, 滚轮自动.始动()
     msg := "【雪星滚轮自动v2】`n"
-    msg .= "横：" (滚轮自动.横速|0) "px/s`n纵：" (滚轮自动.纵速|0)  "px/s`n"
+    msg .= "横：" (滚轮自动.横速|0) "px/s`n纵：" (滚轮自动.纵速|0) "px/s`n"
     msg .= "CapsLockX + Ctrl + Alt + RF 调整纵向自动滚轮`n"
     msg .= "CapsLockX + Ctrl + Alt + Shift + RF 调整横向自动滚轮`n"
     鼠标模拟_ToolTip(msg)
@@ -278,7 +269,7 @@ ScrollModeExit()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
         ScrollModeExit()
-        
+
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
@@ -294,6 +285,17 @@ ScrollModeExit()
         return
     }
     ScrollMouse(dx, dy)
+}
+ZoomSimu(dx, dy, action){
+    if (!CapsLockXMode) {
+        return ZoomSimu.止动()
+    }
+    if (action != "移动") {
+        return
+    }
+    SendEvent, {CtrlDown}
+    ScrollMouse(dx, dy)
+    SendEvent, {CtrlUp}
 }
 PostMessageForScroll(msg, zDelta)
 {
@@ -311,7 +313,7 @@ PostMessageForScroll(msg, zDelta)
     }
     ;Detect modifer keys held down (only Shift and Control work)
     wParam |= GetKeyState("Shift", "p") ? 0x4 : 0
-    wParam |= GetKeyState("Ctrl", "p")  ? 0x8 : 0
+    wParam |= GetKeyState("Ctrl", "p") ? 0x8 : 0
     if (ControlClass2 == "") {
         ; PostMessage, %msg%, %wParam%, %lParam%, %fcontrol%, ahk_id %ControlClass1%
         DllCall("PostMessage", "UInt", ControlClass1, "UInt", msg, "UInt", wParam, "UInt", lParam, "UInt")
@@ -344,7 +346,7 @@ CapsLockX_鼠标左键弹起(){
     global CapsLockX_鼠标左键等待
     SendEvent {Blind}{LButton Up}
     CapsLockX_鼠标左键等待 := ""
-    
+
 }
 CapsLockX_鼠标右键按下(wait){
     ScrollModeExit()
@@ -387,14 +389,14 @@ CapsLockX_鼠标右键弹起(){
 *q Up:: CapsLockX_鼠标左键弹起()
 
 #if CapsLockXMode
-    
+
 ; 鼠标运动处理
 *a:: 鼠标模拟.左按("a")
 *d:: 鼠标模拟.右按("d")
 *w:: 鼠标模拟.上按("w")
 *s:: 鼠标模拟.下按("s")
 
-#if CapsLockXMode && !CapsLockX_WASD_MouseOrScroll
+#if CapsLockXMode && CapsLockX_HJKL_Scroll
 
 ; 滚轮运动处理
 ; *a:: 滚轮模拟.左按("a")
@@ -403,13 +405,22 @@ CapsLockX_鼠标右键弹起(){
 ; *s:: 滚轮模拟.下按("s")
 
 ; 滚轮运动处理
+; *j:: 滚轮模拟.左按("j")
+; *l:: 滚轮模拟.右按("l")
+; *i:: 滚轮模拟.上按("i")
+; *k:: 滚轮模拟.下按("k")
+
+
 *h:: 滚轮模拟.左按("h")
 *l:: 滚轮模拟.右按("l")
 *k:: 滚轮模拟.上按("k")
 *j:: 滚轮模拟.下按("j")
 
-#if CapsLockXMode
-    
+*r:: ZoomSimu.上按("r")
+*f:: ZoomSimu.下按("f")
+
+#if CapsLockXMode && !CapsLockX_HJKL_Scroll
+
 ; 滚轮运动处理
 ; *+^!r:: 滚轮自动控制.左按("r")
 ; *+^!f:: 滚轮自动控制.右按("f")
@@ -428,5 +439,3 @@ return
     ScrollModeExit()
     滚轮模拟.下按("f")
 return
-; *[:: 滚轮模拟.左按("[")
-; *]:: 滚轮模拟.右按("]")
