@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [main, master]
+    branches: [main, next]
 name: build - wip
 jobs:
   build:
