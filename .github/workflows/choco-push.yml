@@ -1,3 +1,4 @@
+# @deprecated use semantic-release
 # ref [自动化发布npm包及生成Github Changelog]( https://banyudu.com/posts/auto_publish_npm_and_generate_github_changelog.882513 )
 on:
   push:
@@ -76,3 +77,4 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: CapsLockX.nupkg
           tag: ${{ github.ref }}
+
