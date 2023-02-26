@@ -367,15 +367,6 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
 | 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
 
-<!-- 模块文件名：CLX-JavaScriptEval.ahk-->
-
-### JavaScript 计算 (建议安装 NodeJS )
-
-| 作用于 | 按键            | 效果                                   |
-| ------ | --------------- | -------------------------------------- |
-| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
-| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
-
 <!-- 模块文件名：CLX-LaptopKeyboardFix.ahk-->
 
 ### Surface 笔记本扩充功能键
@@ -447,6 +438,15 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 ## 操作细节
 
 快速连按 AD 步进
+
+<!-- 模块文件名：CLX-NodeEval.ahk-->
+
+### JavaScript 计算 (建议安装 NodeJS )
+
+| 作用于 | 按键            | 效果                                   |
+| ------ | --------------- | -------------------------------------- |
+| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
+| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
 
 <!-- 模块文件名：CLX-WindowManager.ahk-->
 
@@ -751,13 +751,13 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
   - [按键分布设计（开发中）](#按键分布设计开发中)
   - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
     - [编辑增强插件（ TG YUIO HJKL ） 🌟](#编辑增强插件-tg-yuio-hjkl--)
-    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
     - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [媒体键模块](#媒体键模块)
     - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
   - [功能](#功能)
   - [使用方法如下](#使用方法如下)
   - [操作细节](#操作细节)
+    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
     - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
   - [功能简述](#功能简述)
   - [效果图](#效果图)
