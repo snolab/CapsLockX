@@ -87,10 +87,10 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 
 #### 命令行方式安装（进阶用户推荐，可自动更新）🖥️ Install by command
 
-以下几种任选其一，其它地区用户推荐第 2 个
+以下几种任选其一，大陆地区用户推荐第 4 个
 
-1. `npx capslockx`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
-2. `choco upgrade capslockx && capslockx` -- [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) 安装可使用 cup 自动更新，推荐
+1. `npx capslockx@latest`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
+2. `choco update capslockx && capslockx` -- [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) 安装可使用 cup 自动更新，推荐
 3. `npm i -g capslockx && npx capslockx` -- npm 全局安装
 4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- 大陆源码包（绿色软件包）解压使用，中国大陆地区用户推荐
 5. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe` -- github 源码包（绿色软件包）解压使用
@@ -369,15 +369,6 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
 | 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
 
-<!-- 模块文件名：CLX-JavaScriptEval.ahk-->
-
-### JavaScript 计算 (建议安装 NodeJS )
-
-| 作用于 | 按键            | 效果                                   |
-| ------ | --------------- | -------------------------------------- |
-| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
-| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
-
 <!-- 模块文件名：CLX-LaptopKeyboardFix.ahk-->
 
 ### Surface 笔记本扩充功能键
@@ -449,6 +440,15 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 ## 操作细节
 
 快速连按 AD 步进
+
+<!-- 模块文件名：CLX-NodeEval.ahk-->
+
+### JavaScript 计算 (建议安装 NodeJS )
+
+| 作用于 | 按键            | 效果                                   |
+| ------ | --------------- | -------------------------------------- |
+| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
+| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
 
 <!-- 模块文件名：CLX-WindowManager.ahk-->
 
@@ -741,33 +741,32 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
     - [软件的热键缺陷](#软件的热键缺陷)
     - [便携键盘的可用性](#便携键盘的可用性)
     - [帮助模块](#帮助模块)
-      - [本模块功能见下](#本模块功能见下)
-    - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
-      - [功能](#功能)
-      - [使用方法如下](#使用方法如下)
-      - [操作细节](#操作细节)
-    - [编辑增强插件（ TG YUIO HJKL ）](#编辑增强插件-tg-yuio-hjkl-)
-    - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
-      - [功能简述](#功能简述)
-      - [效果图](#效果图)
-      - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
-    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
-    - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
-    - [快捷输入](#快捷输入)
-    - [锁屏自动息屏](#锁屏自动息屏)
+  - [本模块功能见下](#本模块功能见下)
     - [Anki 增强模块](#anki-增强模块)
-      - [常用功能/特性](#常用功能特性)
-      - [说明](#说明)
+  - [常用功能/特性](#常用功能特性)
+  - [说明](#说明)
+    - [Figma Enhanced](#figma-enhanced)
+  - [常用功能/特性](#常用功能特性-1)
+  - [说明](#说明-1)
     - [OneNote 2016 - 2019 增强](#onenote-2016---2019-增强)
-      - [雪星喵常用功能](#雪星喵常用功能)
-      - [按键分布设计（开发中）](#按键分布设计开发中)
-      - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
-    - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
-      - [用法](#用法)
-      - [注：](#注)
-      - [效果如下图](#效果如下图)
+  - [雪星喵常用功能](#雪星喵常用功能)
+  - [按键分布设计（开发中）](#按键分布设计开发中)
+  - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
+    - [编辑增强插件（ TG YUIO HJKL ） 🌟](#编辑增强插件-tg-yuio-hjkl--)
+    - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [媒体键模块](#媒体键模块)
+    - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
+  - [功能](#功能)
+  - [使用方法如下](#使用方法如下)
+  - [操作细节](#操作细节)
+    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
+    - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
+  - [功能简述](#功能简述)
+  - [效果图](#效果图)
+  - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
+    - [快捷输入](#快捷输入)
     - [番茄时钟](#番茄时钟)
+    - [锁屏自动息屏](#锁屏自动息屏)
   - [过去与未来 🛰](#过去与未来-)
     - [制作背景 ( 2017 年秋) 🍁 Background](#制作背景--2017-年秋--background)
     - [发展路线 🛰️ RoadMap](#发展路线-️-roadmap)
