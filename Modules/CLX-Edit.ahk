@@ -231,13 +231,12 @@ Tab键模拟(dx, dy, 状态){
 
 *t:: Delete
 *g:: Enter
-
 ; *[:: Tab键模拟.上按("[")
 ; *]:: Tab键模拟.下按("]")
-
 *p:: Tab键模拟.上按("p")
 *n:: Tab键模拟.下按("n")
-#if CapsLockXMode && !CapsLockX_IJKL_Scroll
+
+#if CapsLockXMode && !CapsLockX_HJKL_Scroll
 
 *i:: 翻页键模拟.上按("i")
 *u:: 翻页键模拟.下按("u")

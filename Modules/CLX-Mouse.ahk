@@ -245,7 +245,6 @@ ScrollModeExit()
         鼠标模拟.纵速 *= 0.2
     }
 }
-
 滚轮自动(dx, dy, 状态){
     if (状态 != "移动") {
         return
@@ -269,7 +268,6 @@ ScrollModeExit()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
         ; ScrollModeExit()
-
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
@@ -289,6 +287,10 @@ ScrollModeExit()
 ZoomSimu(dx, dy, action){
     if (!CapsLockXMode) {
         return ZoomSimu.止动()
+    }
+    if ( action == "横中键" || action == "纵中键") {
+        ScrollModeToggle()
+        return
     }
     if (action != "移动") {
         return
@@ -407,8 +409,6 @@ CapsLockX_鼠标右键弹起(){
 *l:: 滚轮模拟.右按("l")
 *k:: 滚轮模拟.上按("k")
 *j:: 滚轮模拟.下按("j")
-
-
 *r:: ZoomSimu.上按("r")
 *f:: ZoomSimu.下按("f")
 
@@ -424,11 +424,5 @@ CapsLockX_鼠标右键弹起(){
 ; *+r:: 滚轮模拟.左按("r")
 ; *+f:: 滚轮模拟.右按("f")
 
-*r::
-    ScrollModeExit()
-    滚轮模拟.上按("r")
-return
-*f::
-    ScrollModeExit()
-    滚轮模拟.下按("f")
-return
+*r:: 滚轮模拟.上按("r")
+*f:: 滚轮模拟.下按("f")
