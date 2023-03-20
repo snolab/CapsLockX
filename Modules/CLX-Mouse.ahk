@@ -67,7 +67,7 @@ CursorHandleGet()
     NumPut(20, PCURSORINFO, 0, "UInt") ;*声明出 结构 的大小cbSize = 20字节
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
     if (NumGet(PCURSORINFO, 4, "UInt") == 0 ) ;当光标隐藏时，直接输出特征码为0
-        Return 0
+    Return 0
     Return NumGet(PCURSORINFO, 8)
 }
 
@@ -97,7 +97,7 @@ Pos2Long(x, y)
 ; MouseGetPos, x, y
 ; hMonitor := DllCall("User32.dll\MonitorFromPoint", "UInt", x, "UInt", y, "UInt", 0)
 ; ;DllCall("Shcore.dll\GetDpiForMonitor", "Ptr", hMonitor, "UInt", 2, "UInt*", dpiX, "UInt*", dpiY)
-; DllCall("Shcore.dll\GetDpiForMonitor", "Ptr", hMonitor, "UInt", 0, "UInt*", dpiX, "UInt*", dpiY)
+; ;DllCall("Shcore.dll\GetDpiForMonitor", "Ptr", hMonitor, "UInt", 0, "UInt*", dpiX, "UInt*", dpiY)
 ; ;A_ScreenDPI
 ; DllCall("GetDeviceCaps", "UInt", DllCall("GetDC", "UInt", 0), "UInt", 0)
 
@@ -200,20 +200,20 @@ ScrollModeExit()
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     }
 }
-
-; void 鼠标模拟
 鼠标模拟(dx, dy, 状态){
     if (!CapsLockXMode) {
         鼠标模拟.止动()
         return
     }
     if (状态 == "横中键") {
-        ScrollModeToggle()
+        Send {Blind}{LButton}
+        MouseAttack()
         鼠标模拟.止动()
         return
     }
     if (状态 == "纵中键") {
-        ScrollModeToggle()
+        Send {Blind}{LButton}
+        MouseAttack()
         鼠标模拟.止动()
         return
     }
@@ -226,13 +226,13 @@ ScrollModeExit()
         dx := dx == 0 ? 0 : (dx > 0 ? 1 : -1 )
         dy := dy == 0 ? 0 : (dy > 0 ? 1 : -1 )
     }
+
     if (TMouse_SendInputAPI) {
         ; 支持64位AHK！
         SendInput_MouseMove(dx, dy)
     } else {
         MouseMove, %dx%, %dy%, 0, R
     }
-
     ; TODO: 撞到屏幕边角就停下来
     ; if(TMouse_StopAtScreenEdge )
     ; MouseGetPos, xb, yb
@@ -266,7 +266,11 @@ ScrollModeExit()
     if (!CapsLockXMode) {
         return 滚轮模拟.止动()
     }
-    if ( 状态 == "横中键" || 状态 == "纵中键") {
+    if (状态 == "纵中键") {
+        ScrollModeToggle()
+        return
+    }
+    if ( 状态 == "横中键") {
         ; ScrollModeExit()
         SendEvent {Blind}{MButton Down}
         KeyWait r
@@ -284,7 +288,8 @@ ScrollModeExit()
     }
     ScrollMouse(dx, dy)
 }
-ZoomSimu(dx, dy, action){
+ZoomSimu(dx, dy, action)
+{
     if (!CapsLockXMode) {
         return ZoomSimu.止动()
     }
@@ -333,6 +338,26 @@ PostMessageForScroll(msg, zDelta)
     ; tooltip % x " " y "`n" ControlClass1  "`n"  ControlClass2 "`n" ControlClass3 "`n" wid
 }
 
+MouseAttack()
+{
+    static lx := 0
+    static ly := 0
+    static lt := 0
+    MouseGetPos, cx, cy
+    now := A_TickCount
+    if ( now <= lt + 1000 ) {
+        dx := cx - lx
+        dy := cy - ly
+        ; tooltip %cx% %cy% %dx% %dy%
+        MouseMove, %dx%, %dy%, 0, R
+    } else {
+        ; tooltip %cx% %cy%
+    }
+    lx := cx
+    ly := cy
+    lt := now
+}
+
 CapsLockX_鼠标左键按下(wait){
     ; ScrollModeExit()
     global CapsLockX_鼠标左键等待
@@ -347,6 +372,7 @@ CapsLockX_鼠标左键按下(wait){
 CapsLockX_鼠标左键弹起(){
     global CapsLockX_鼠标左键等待
     SendEvent {Blind}{LButton Up}
+    MouseAttack()
     CapsLockX_鼠标左键等待 := ""
 
 }
@@ -364,6 +390,7 @@ CapsLockX_鼠标右键按下(wait){
 CapsLockX_鼠标右键弹起(){
     global CapsLockX_鼠标右键等待
     SendEvent {Blind}{RButton Up}
+    MouseAttack()
     CapsLockX_鼠标右键等待 := ""
 }
 鼠标模拟_ToolTip(tips){
@@ -409,8 +436,8 @@ CapsLockX_鼠标右键弹起(){
 *l:: 滚轮模拟.右按("l")
 *k:: 滚轮模拟.上按("k")
 *j:: 滚轮模拟.下按("j")
-*r:: ZoomSimu.上按("r")
-*f:: ZoomSimu.下按("f")
+*u:: ZoomSimu.上按("u")
+*i:: ZoomSimu.下按("i")
 
 #if CapsLockXMode && !CapsLockX_HJKL_Scroll
 
