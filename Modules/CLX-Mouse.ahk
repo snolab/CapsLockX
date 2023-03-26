@@ -207,13 +207,13 @@ ScrollModeExit()
     }
     if (状态 == "横中键") {
         Send {Blind}{LButton}
-        MouseAttack()
+        MouseAttack(60000)
         鼠标模拟.止动()
         return
     }
     if (状态 == "纵中键") {
         Send {Blind}{LButton}
-        MouseAttack()
+        MouseAttack(60000)
         鼠标模拟.止动()
         return
     }
@@ -309,7 +309,7 @@ PostMessageForScroll(msg, zDelta)
     ; 目前还不支持 UWP which should use WM_TOUCH
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
-    wParam := zDelta << 16 ;zDelta
+    wParam := zDelta << 16 ; zDelta
     lParam := x | (y << 16) ; pos2long
     MouseGetPos, , , , ControlClass2, 2
     MouseGetPos, , , , , ControlClass3, 3
@@ -338,14 +338,14 @@ PostMessageForScroll(msg, zDelta)
     ; tooltip % x " " y "`n" ControlClass1  "`n"  ControlClass2 "`n" ControlClass3 "`n" wid
 }
 
-MouseAttack()
+MouseAttack(ms = 10000)
 {
     static lx := 0
     static ly := 0
     static lt := 0
     MouseGetPos, cx, cy
     now := A_TickCount
-    if ( now <= lt + 1000 ) {
+    if ( now <= lt + ms ) {
         dx := cx - lx
         dy := cy - ly
         ; tooltip %cx% %cy% %dx% %dy%
