@@ -340,22 +340,22 @@ PostMessageForScroll(msg, zDelta)
 
 MouseAttack(ms = 10000)
 {
-    static lx := 0
-    static ly := 0
-    static lt := 0
-    MouseGetPos, cx, cy
-    now := A_TickCount
-    if ( now <= lt + ms ) {
-        dx := cx - lx
-        dy := cy - ly
-        ; tooltip %cx% %cy% %dx% %dy%
-        MouseMove, %dx%, %dy%, 0, R
-    } else {
-        ; tooltip %cx% %cy%
-    }
-    lx := cx
-    ly := cy
-    lt := now
+    ; static lx := 0
+    ; static ly := 0
+    ; static lt := 0
+    ; MouseGetPos, cx, cy
+    ; now := A_TickCount
+    ; if ( now <= lt + ms ) {
+    ;     dx := cx - lx
+    ;     dy := cy - ly
+    ;     ; tooltip %cx% %cy% %dx% %dy%
+    ;     MouseMove, %dx%, %dy%, 0, R
+    ; } else {
+    ;     ; tooltip %cx% %cy%
+    ; }
+    ; lx := cx
+    ; ly := cy
+    ; lt := now
 }
 
 CapsLockX_鼠标左键按下(wait){
