@@ -221,7 +221,7 @@ class AccModel2D
             return
         }
         this.上等键 := 上等键
-        this.上 aw刻 := this.上刻 ? this.上刻 : this._QPC()
+        this.上刻 := this.上刻 ? this.上刻 : this._QPC()
         this.始动()
     }
     上放(){
