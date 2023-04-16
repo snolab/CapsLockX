@@ -36,6 +36,7 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.m
 ; global debug_fps := new FPS_Debugger()
 global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
 global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
+global 拖拽模拟 := new AccModel2D(Func("拖拽模拟"), 0.1, TMouse_DPIRatio * 120 * 16 * TMouse_WheelSpeedRatio)
 global ZoomSimu := new AccModel2D(Func("ZoomSimu"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
 global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
@@ -67,7 +68,7 @@ CursorHandleGet()
     NumPut(20, PCURSORINFO, 0, "UInt") ;*声明出 结构 的大小cbSize = 20字节
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
     if (NumGet(PCURSORINFO, 4, "UInt") == 0 ) ;当光标隐藏时，直接输出特征码为0
-    Return 0
+        Return 0
     Return NumGet(PCURSORINFO, 8)
 }
 
@@ -182,12 +183,17 @@ ScrollModeToggle()
 {
     global CapsLockX_HJKL_Scroll
     if (CapsLockX_HJKL_Scroll != 1) {
+        ScrollModeEnter()
+    } else {
+        ScrollModeExit()
+    }
+}
+ScrollModeEnter()
+{
+    global CapsLockX_HJKL_Scroll
+    if (CapsLockX_HJKL_Scroll != 1) {
         CapsLockX_HJKL_Scroll := 1
         ToolTip 鼠标模拟 已切换到 IJKL 滚轮模式，再次按 CapsLockX+AD 可取消
-        SetTimer 鼠标模拟_ToolTipRemove, -3000
-    } else {
-        CapsLockX_HJKL_Scroll := 0
-        ToolTip 鼠标模拟 已切换到 IJKL 光標模式
         SetTimer 鼠标模拟_ToolTipRemove, -3000
     }
 }
@@ -266,12 +272,9 @@ ScrollModeExit()
     if (!CapsLockXMode) {
         return 滚轮模拟.止动()
     }
-    if (状态 == "纵中键") {
-        ScrollModeToggle()
-        return
-    }
-    if ( 状态 == "横中键") {
-        ; ScrollModeExit()
+    if ( 状态 == "横中键" || 状态 == "纵中键") {
+        ScrollModeExit()
+
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
@@ -288,14 +291,31 @@ ScrollModeExit()
     }
     ScrollMouse(dx, dy)
 }
-ZoomSimu(dx, dy, action)
-{
+拖拽模拟(dx, dy, 状态){
+    if (!CapsLockXMode) {
+        return 拖拽模拟.止动()
+    }
+    if ( 状态 == "横中键" || 状态 == "纵中键") {
+        ScrollModeExit()
+        SendEvent {Blind}{MButton Down}
+        KeyWait r
+        KeyWait f
+        SendEvent {Blind}{MButton Up}
+        ; 关闭滚轮自动
+        if (滚轮自动.横速 || 滚轮自动.纵速) {
+            滚轮自动.止动()
+            滚轮自动控制(0, 0, "止动")
+        }
+        return
+    }
+    if (状态 != "移动") {
+        return
+    }
+    ScrollMouse(dx, dy)
+}
+ZoomSimu(dx, dy, action){
     if (!CapsLockXMode) {
         return ZoomSimu.止动()
-    }
-    if ( action == "横中键" || action == "纵中键") {
-        ScrollModeToggle()
-        return
     }
     if (action != "移动") {
         return
@@ -428,16 +448,30 @@ CapsLockX_鼠标右键弹起(){
 #if CapsLockXMode && CapsLockX_HJKL_Scroll
 
 ; 滚轮运动处理
+; *a:: 滚轮模拟.左按("a")
+; *d:: 滚轮模拟.右按("d")
+; *w:: 滚轮模拟.上按("w")
+; *s:: 滚轮模拟.下按("s")
+
+; 滚轮运动处理
 ; *j:: 滚轮模拟.左按("j")
 ; *l:: 滚轮模拟.右按("l")
 ; *i:: 滚轮模拟.上按("i")
 ; *k:: 滚轮模拟.下按("k")
-*h:: 滚轮模拟.左按("h")
-*l:: 滚轮模拟.右按("l")
-*k:: 滚轮模拟.上按("k")
-*j:: 滚轮模拟.下按("j")
+; *h:: 滚轮模拟.左按("h")
+; *l:: 滚轮模拟.右按("l")
+; *k:: 滚轮模拟.上按("k")
+; *j:: 滚轮模拟.下按("j")
 *u:: ZoomSimu.上按("u")
 *i:: ZoomSimu.下按("i")
+
+*h:: 拖拽模拟.左按("h")
+*l:: 拖拽模拟.右按("l")
+*k:: 拖拽模拟.上按("k")
+*j:: 拖拽模拟.下按("j")
+
+*r:: ZoomSimu.上按("r")
+*f:: ZoomSimu.下按("f")
 
 #if CapsLockXMode && !CapsLockX_HJKL_Scroll
 
