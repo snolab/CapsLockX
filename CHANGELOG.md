@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.5](https://github.com/snolab/CapsLockX/compare/v1.30.4...v1.30.5) (2023-04-16)
+
+### Bug Fixes
+
+- **AccModel:** aw ([e7a376b](https://github.com/snolab/CapsLockX/commit/e7a376b9fee8e95e01d40b3f53f77ebc4220c2bd))
+- **capslockx:** cli ([9fd4500](https://github.com/snolab/CapsLockX/commit/9fd4500997ef879e5331c3a6687767d60f3e3809))
+
 ### [1.30.4](https://github.com/snolab/CapsLockX/compare/v1.30.3...v1.30.4) (2023-04-16)
 
 ### Bug Fixes
