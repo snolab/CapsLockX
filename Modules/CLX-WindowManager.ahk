@@ -687,11 +687,11 @@ CLX_MoveCurrentWindowTo(x)
 !0:: CLX_MoveCurrentWindowTo(10) ; 选中窗口移动到10号桌面
 
 ; 在 Win + Tab 下, WASD 模拟方向键, 1803之后还可以用
-!a:: Left        ; 左
-!d:: Right       ; 右
-!w:: Up          ; 上
-!s:: Down        ; 下
-!r:: Volume_Up   ; 音量+
+!a:: Left ; 左
+!d:: Right ; 右
+!w:: Up ; 上
+!s:: Down ; 下
+!r:: Volume_Up ; 音量+
 !f:: Volume_Down ; 音量-
 
 ; cx 关闭应用
@@ -753,9 +753,9 @@ CtrlShiftAlt弹起() {
 ^w:: 任务栏中关闭窗口()
 Delete:: 任务栏中关闭窗口()
 
-#if CapsLockXMode && 任务栏中()
-
-x:: 任务栏中关闭窗口()
+; #if
+; ; CapsLockXMode && 任务栏中()
+; x:: 任务栏中关闭窗口()
 
 #if
 
@@ -866,8 +866,8 @@ ShellMessage( wParam, lParam )
 最近1分钟内闪动窗口激活()
 {
     TimeStampNow := 窗口增强_UnixTimeStamp()
-    hWnd         := 最迟闪动窗口.hWnd
-    TimeStamp    := 最迟闪动窗口.TimeStamp
+    hWnd := 最迟闪动窗口.hWnd
+    TimeStamp := 最迟闪动窗口.TimeStamp
     if (hWnd && TimeStampNow - TimeStamp <= 60) {
         鼠标位置记忆尝试()
         WinActivate, ahk_id %hWnd%

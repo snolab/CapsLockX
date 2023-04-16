@@ -195,14 +195,13 @@ Tab键模拟(dx, dy, 状态){
         return 方向键模拟.止动()
     }
     if (状态 == "横中键") {
-        ; ; hl 选词
-        ; ; 先按右再按左
-        ; if (dx > 0) {
-        ;     Send ^{Right}^+{Left}
-        ; } else {
-        ;     Send ^{Left}^+{Right}
-        ; }
-        ScrollModeEnter()
+        ; hl 选词
+        ; 先按右再按左
+        if (dx > 0) {
+            Send ^{Right}^+{Left}
+        } else {
+            Send ^{Left}^+{Right}
+        }
         return 方向键模拟.止动()
     }
     if (状态 == "纵中键") {
@@ -232,12 +231,11 @@ Tab键模拟(dx, dy, 状态){
 
 *t:: Delete
 *g:: Enter
-
 ; *[:: Tab键模拟.上按("[")
 ; *]:: Tab键模拟.下按("]")
-
 *p:: Tab键模拟.上按("p")
 *n:: Tab键模拟.下按("n")
+
 #if CapsLockXMode && !CapsLockX_HJKL_Scroll
 
 *i:: 翻页键模拟.上按("i")

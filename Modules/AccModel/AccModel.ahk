@@ -60,7 +60,7 @@ class AccModel2D
         ; 1x 指数函数 + 1x 4次函数
         a := 0
         a += 1 * sgn * ( Exp(abs) - 1 )
-        a += 1 * sgn
+        a += 3 * sgn
         a += 4 * sgn * abs
         a += 9 * sgn * abs * abs
         a += 16 * sgn * abs * abs * abs
@@ -85,7 +85,7 @@ class AccModel2D
         if (a * v > 0) {
             Return v
         }
-        
+
         ; 简单粗暴倍数降速
         v *= Exp(-dt*20)
         v -= this._sign(v) * dt
@@ -127,14 +127,14 @@ class AccModel2D
         this.纵速 += 纵加速 * dt
         this.横速 := this._damping(this.横速, 横加速, dt)
         this.纵速 := this._damping(this.纵速, 纵加速, dt)
-        
+
         ; perf_timing(1)
         ; 快速启动
         if (!dt) {
             this.启动中 := 1
             this.实动函数.Call(0, 0, "启动")
             this.启动中 := 0
-            
+
             this.横移 := this._sign(横加速)
             this.纵移 := this._sign(纵加速)
         }
@@ -144,11 +144,11 @@ class AccModel2D
         纵输出 := this.纵移 | 0  ; 取整输出
         this.横移 -= 横输出      ; 收回零头攒起来
         this.纵移 -= 纵输出      ; 收回零头攒起来
-        
+
         ; debug
         ; msg := dt "`n" 现刻 "`n" this.动刻 "`n" 横加速 "`n" this.横速 "`n" this.横移 "`n" this.横输出
         ; tooltip %msg%
-        
+
         if (横输出 || 纵输出) {
             ; tooltip %dt% %横输出% %纵输出% %横加速% %纵加速%
             this.实动函数.Call(横输出, 纵输出, "移动")
@@ -221,7 +221,7 @@ class AccModel2D
             return
         }
         this.上等键 := 上等键
-        this.上刻 := this.上刻 ? this.上刻 : this._QPC()
+        this.上 aw刻 := this.上刻 ? this.上刻 : this._QPC()
         this.始动()
     }
     上放(){
