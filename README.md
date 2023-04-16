@@ -85,9 +85,9 @@ CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以
 
 #### 命令行方式安装（进阶用户推荐，可自动更新）🖥️ Install by command
 
-以下几种任选其一，其它地区用户推荐第 2 个
+以下几种任选其一，大陆地区用户推荐第 4 个
 
-1. `npx capslockx`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
+1. `npx capslockx@latest`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
 2. `choco update capslockx && capslockx` -- [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) 安装可使用 cup 自动更新，推荐
 3. `npm i -g capslockx && npx capslockx` -- npm 全局安装
 4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- 大陆源码包（绿色软件包）解压使用，中国大陆地区用户推荐
@@ -360,21 +360,12 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
 | 全局(基本) | `CapsLockX + y o`     | Home End                         |
 | 全局(基本) | `CapsLockX + u i`     | PageUp PageDown                  |
-| 全局(基本) | `CapsLockX + c v`     | Shift+Tab 和 Tab                 |
+| 全局(基本) | `CapsLockX + [ ]`     | Shift+Tab 和 Tab                 |
 | 全局(基本) | `CapsLockX + g`       | 回车                             |
 | 全局(进阶) | `CapsLockX + t`       | Delete                           |
 | 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
 | 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
 | 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
-
-<!-- 模块文件名：CLX-JavaScriptEval.ahk-->
-
-### JavaScript 计算 (建议安装 NodeJS )
-
-| 作用于 | 按键            | 效果                                   |
-| ------ | --------------- | -------------------------------------- |
-| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
-| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
 
 <!-- 模块文件名：CLX-LaptopKeyboardFix.ahk-->
 
@@ -448,6 +439,15 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 
 快速连按 AD 步进
 
+<!-- 模块文件名：CLX-NodeEval.ahk-->
+
+### JavaScript 计算 (建议安装 NodeJS )
+
+| 作用于 | 按键            | 效果                                   |
+| ------ | --------------- | -------------------------------------- |
+| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
+| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
+
 <!-- 模块文件名：CLX-WindowManager.ahk-->
 
 ### 窗口增强插件 (CLX + 1234567890 ZXCV)
@@ -479,23 +479,22 @@ Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
 | Alt+Tab 界面 | `W A S D`                             | 上下左右切换窗口选择                       |
 | Alt+Tab 界面 | `X C`                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
 | Win+Tab 视图 | `Alt + W A S D`                       | 切换窗口选择                               |
-| 全局         | `Win + [Shift] + b`                   | 定位到托盘或任务栏任务                     |
+| 全局         | `Win + [Shift] + B`                   | 定位到托盘或任务栏任务                     |
 | 全局         | `Win + Shift + hjkl`                  | 在窗口之间按方向切换焦点                   |
 | 任务栏       | `Ctrl + W 或 Delete`                  | 在托盘图标或任务栏任务上，选择退出按钮     |
 | 全局         | `CapsLockX + 1 2 ... 9 0`             | 切换到第 1 .. 12 个桌面                    |
 | 全局         | `CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
 | 全局         | `CapsLockX + Alt + Backspace`         | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局         | `CapsLockX + N`                       | 快速排列当前桌面的窗口                     |
-| 全局         | `CapsLockX + Ctrl + N`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Shift + N`               | 快速堆叠当前桌面的窗口                     |
-| 全局         | `CapsLockX + Shift + Ctrl + N`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Shift + [ ]`             | 把当前窗口移到上一个/下一个桌面            |
+| 全局         | `CapsLockX + C`                       | 快速排列当前桌面的窗口                     |
+| 全局         | `CapsLockX + Ctrl + C`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
+| 全局         | `CapsLockX + Shift + C`               | 快速堆叠当前桌面的窗口                     |
+| 全局         | `CapsLockX + Shift + Ctrl + C`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
 | 全局         | `CapsLockX + Z`                       | 循环切到最近使用的窗口                     |
 | 全局         | `CapsLockX + Shift + Z`               | 循环切到最不近使用的窗口                   |
 | 全局         | `CapsLockX + X`                       | 关掉当前标签页 Ctrl+W                      |
 | 全局         | `CapsLockX + Shift + X`               | 关掉当前窗口 Alt+F4                        |
-| 全局         | `CapsLockX + M`                       | 让窗口透明                                 |
-| 全局         | `CapsLockX + Shift + M`               | 让窗口保持透明（并置顶）                   |
+| 全局         | `CapsLockX + V`                       | 让窗口透明                                 |
+| 全局         | `CapsLockX + Shift + V`               | 让窗口保持透明（并置顶）                   |
 | 任意窗口     | `双击左边 Shift+Ctrl+Alt`             | 后置当前窗口， \* 见下方注                 |
 
 \*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
@@ -740,33 +739,32 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
     - [软件的热键缺陷](#软件的热键缺陷)
     - [便携键盘的可用性](#便携键盘的可用性)
     - [帮助模块](#帮助模块)
-      - [本模块功能见下](#本模块功能见下)
-    - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
-      - [功能](#功能)
-      - [使用方法如下](#使用方法如下)
-      - [操作细节](#操作细节)
-    - [编辑增强插件（ TG YUIO HJKL ）](#编辑增强插件-tg-yuio-hjkl-)
-    - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
-      - [功能简述](#功能简述)
-      - [效果图](#效果图)
-      - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
-    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
-    - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
-    - [快捷输入](#快捷输入)
-    - [锁屏自动息屏](#锁屏自动息屏)
+  - [本模块功能见下](#本模块功能见下)
     - [Anki 增强模块](#anki-增强模块)
-      - [常用功能/特性](#常用功能特性)
-      - [说明](#说明)
+  - [常用功能/特性](#常用功能特性)
+  - [说明](#说明)
+    - [Figma Enhanced](#figma-enhanced)
+  - [常用功能/特性](#常用功能特性-1)
+  - [说明](#说明-1)
     - [OneNote 2016 - 2019 增强](#onenote-2016---2019-增强)
-      - [雪星喵常用功能](#雪星喵常用功能)
-      - [按键分布设计（开发中）](#按键分布设计开发中)
-      - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
-    - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
-      - [用法](#用法)
-      - [注：](#注)
-      - [效果如下图](#效果如下图)
+  - [雪星喵常用功能](#雪星喵常用功能)
+  - [按键分布设计（开发中）](#按键分布设计开发中)
+  - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
+    - [编辑增强插件（ TG YUIO HJKL ） 🌟](#编辑增强插件-tg-yuio-hjkl--)
+    - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [媒体键模块](#媒体键模块)
+    - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
+  - [功能](#功能)
+  - [使用方法如下](#使用方法如下)
+  - [操作细节](#操作细节)
+    - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
+    - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
+  - [功能简述](#功能简述)
+  - [效果图](#效果图)
+  - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
+    - [快捷输入](#快捷输入)
     - [番茄时钟](#番茄时钟)
+    - [锁屏自动息屏](#锁屏自动息屏)
   - [过去与未来 🛰](#过去与未来-)
     - [制作背景 ( 2017 年秋) 🍁 Background](#制作背景--2017-年秋--background)
     - [发展路线 🛰️ RoadMap](#发展路线-️-roadmap)

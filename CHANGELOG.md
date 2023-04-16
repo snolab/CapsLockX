@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.4](https://github.com/snolab/CapsLockX/compare/v1.30.3...v1.30.4) (2023-04-16)
+
+### Bug Fixes
+
+- **capslockx:** change reload key ([7a8d365](https://github.com/snolab/CapsLockX/commit/7a8d365cdd4e4cca33f329713f59f7a92d1e2b4d))
+- **capslockx:** semantic release ([faee9ce](https://github.com/snolab/CapsLockX/commit/faee9ce443128e87ca67834317f8d58668596031))
+- **capslockx:** tabnpm ([182ef61](https://github.com/snolab/CapsLockX/commit/182ef61c7eda45d30d4e87f5b08de4fbb42a4180))
+- **docs:** nodeeval rename ([816bc4f](https://github.com/snolab/CapsLockX/commit/816bc4f83c6d97e665abc0647ccec3be2855f57b))
+- ignores ([48c0f23](https://github.com/snolab/CapsLockX/commit/48c0f23985355e22202225294f4590c1fdfdb1f6))
+- **Modules:** clx+np as tab ([85ac58b](https://github.com/snolab/CapsLockX/commit/85ac58b4d4cbc8203fda6cd795aafd6c203d1507))
+- **Modules:** format ([5d3a508](https://github.com/snolab/CapsLockX/commit/5d3a508a473427280b4656264a5cd0d8491ca4f6))
+- **nodeeval:** module ([f74e614](https://github.com/snolab/CapsLockX/commit/f74e6149d53b5d16510b1dd507f06025b1678487))
+- **Tools:** rename full all screens ([b3a6ff5](https://github.com/snolab/CapsLockX/commit/b3a6ff57b98cb54bc312a4d87b948b277b61e969))
+- **workflows:** comment ([a68325e](https://github.com/snolab/CapsLockX/commit/a68325e52201d692855723d411847833929d28f2))
+- **workflows:** wf ([c5e6088](https://github.com/snolab/CapsLockX/commit/c5e60881e66688fd073cf9583af241c9c9e37f06))
+
 ### [1.30.3](https://github.com/snolab/CapsLockX/compare/v1.30.2...v1.30.3) (2023-01-07)
 
 ### Bug Fixes
