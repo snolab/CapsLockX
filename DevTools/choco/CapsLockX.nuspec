@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.30.3</version>
+    <version>1.30.4</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,13 +65,29 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.30.3](https://github.com/snolab/CapsLockX/compare/v1.30.2...v1.30.3) (2023-01-07)
+### [1.30.4](https://github.com/snolab/CapsLockX/compare/v1.30.3...v1.30.4) (2023-04-16)
 
 
 ### Bug Fixes
 
-* **Modules:** tab enhanced by [] ([2066796](https://github.com/snolab/CapsLockX/commit/20667963b0a18ef1bbe716d8c769a6edbcd3f944))
-* **Modules:** tab enhanced by [] ([f3bff2e](https://github.com/snolab/CapsLockX/commit/f3bff2e719735c3e0c26483fbe1111bb3ce50e9c))
+* **capslockx:** change reload key ([7a8d365](https://github.com/snolab/CapsLockX/commit/7a8d365cdd4e4cca33f329713f59f7a92d1e2b4d))
+* **capslockx:** semantic release ([faee9ce](https://github.com/snolab/CapsLockX/commit/faee9ce443128e87ca67834317f8d58668596031))
+* **capslockx:** tabnpm ([182ef61](https://github.com/snolab/CapsLockX/commit/182ef61c7eda45d30d4e87f5b08de4fbb42a4180))
+* **docs:** nodeeval rename ([816bc4f](https://github.com/snolab/CapsLockX/commit/816bc4f83c6d97e665abc0647ccec3be2855f57b))
+* ignores ([48c0f23](https://github.com/snolab/CapsLockX/commit/48c0f23985355e22202225294f4590c1fdfdb1f6))
+* **Modules:** clx+np as tab ([85ac58b](https://github.com/snolab/CapsLockX/commit/85ac58b4d4cbc8203fda6cd795aafd6c203d1507))
+* **Modules:** format ([5d3a508](https://github.com/snolab/CapsLockX/commit/5d3a508a473427280b4656264a5cd0d8491ca4f6))
+* **nodeeval:** module ([f74e614](https://github.com/snolab/CapsLockX/commit/f74e6149d53b5d16510b1dd507f06025b1678487))
+* **Tools:** rename full all screens ([b3a6ff5](https://github.com/snolab/CapsLockX/commit/b3a6ff57b98cb54bc312a4d87b948b277b61e969))
+* **workflows:** comment ([a68325e](https://github.com/snolab/CapsLockX/commit/a68325e52201d692855723d411847833929d28f2))
+* **workflows:** wf ([c5e6088](https://github.com/snolab/CapsLockX/commit/c5e60881e66688fd073cf9583af241c9c9e37f06))
+
+### [1.30.3](https://github.com/snolab/CapsLockX/compare/v1.30.2...v1.30.3) (2023-01-07)
+
+### Bug Fixes
+
+- **Modules:** tab enhanced by [] ([2066796](https://github.com/snolab/CapsLockX/commit/20667963b0a18ef1bbe716d8c769a6edbcd3f944))
+- **Modules:** tab enhanced by [] ([f3bff2e](https://github.com/snolab/CapsLockX/commit/f3bff2e719735c3e0c26483fbe1111bb3ce50e9c))
 
 ### [1.30.2](https://github.com/snolab/CapsLockX/compare/v1.30.1...v1.30.2) (2023-01-05)
 
@@ -100,28 +116,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-- **capslockx:** format ([65db913](https://github.com/snolab/CapsLockX/commit/65db913211c7a8f73d82227d9e23347c0e6e97ff))
-- **capslockx:** format readme.md ([09174e7](https://github.com/snolab/CapsLockX/commit/09174e7cd8552b9cfcaaf5997bab569aba8fc542))
-- **capslockx:** renames.. ([66c4600](https://github.com/snolab/CapsLockX/commit/66c460055da23eb2df12aa95db7ac8fd590f63e1))
-- **capslockx:** update lint-staged ([39ce1d4](https://github.com/snolab/CapsLockX/commit/39ce1d408687a91a4c82485fafac786871761ac6))
-- **edit-enhanced:** reverse by shift key pressed ([3e57d4e](https://github.com/snolab/CapsLockX/commit/3e57d4e75c7f73f4c8f8fd170b1b5ce70bc0a977))
-- **go:** go ([d2ef990](https://github.com/snolab/CapsLockX/commit/d2ef990cf693af156488bac485e7c0b1253ce7a1))
-- **go:** golang stage ([3a67fe9](https://github.com/snolab/CapsLockX/commit/3a67fe9313ced1c45484999d7aa431385b973970))
-- **go:** stash ([8970c12](https://github.com/snolab/CapsLockX/commit/8970c12f50d12c79567e29f74489f47e87b379f9))
-- **Modules:** onenote date  ([46fd3d8](https://github.com/snolab/CapsLockX/commit/46fd3d87ec6d1e8e1aa47ff5c37e18d2d890d8c9))
-
-### [1.29.1](https://github.com/snolab/CapsLockX/compare/v1.29.0...v1.29.1) (2022-12-07)
-
-## [1.29.0](https://github.com/snolab/CapsLockX/compare/v1.28.7...v1.29.0) (2022-12-07)
-
-### Features
-
-- **edit-enhance:** CLX+N/M to control tab ([7a677f7](https://github.com/snolab/CapsLockX/commit/7a677f7f36f4254b70230a6662927dd13e73461f))
-
-### [1.28.7](https://github.com/snolab/CapsLockX/compare/v1.28.6...v1.28.7) (2022-11-19)
-
-### Bug Fixes
-]]></releaseNotes>
+- **capslockx:** format ([65db913](https://github.com/snolab/CapsLockX/commit/65db913211c7a8f73d82227d9e23347c0e6e97ff))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

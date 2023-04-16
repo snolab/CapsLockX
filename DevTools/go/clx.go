@@ -9,6 +9,7 @@ import (
 	"golang.design/x/hotkey/mainthread"
 )
 
+
 func main() { mainthread.Init(mainThread) }
 func mainThread() {
 	space()
