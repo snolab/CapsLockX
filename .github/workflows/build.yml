@@ -1,0 +1,22 @@
+# @deprecated use semantic-release
+on:
+  push:
+    branches: [main, next]
+name: build - wip
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      # pnpm install
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 6.32.9
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          registry-url: https://registry.npmjs.org/
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      # npm run build
+      - run: npm run build
