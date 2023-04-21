@@ -382,7 +382,12 @@ OneNote2019_ToggleTODO(){
     calcCode =
     (
     '('
-    + new Date(+new Date("%dateString%".replace(/年|月/g, '-').replace(/日|星期.|.曜日/g, '').trim())+8*3600e3)
+    + new Date(+new Date(
+        "%dateString%"
+        .replace(/星期.|.曜日/g, '')
+        .replace(/日/g, '')
+        .replace(/年|月/g,'-')
+        .trim()) +-new Date().getTimezoneOffset()*60e3)
     .toISOString()
     .slice(0, 10)
     .replace(/-/g, '')
