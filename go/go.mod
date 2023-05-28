@@ -1,4 +1,4 @@
-module example/hello
+module capslockx/clx
 
 go 1.19
 
@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
+	github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/otiai10/gosseract v2.2.1+incompatible // indirect
