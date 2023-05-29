@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.31.0](https://github.com/snolab/CapsLockX/compare/v1.30.5...v1.31.0) (2023-05-29)
+
+
+### Features
+
+* **mac:** go ([0d4259e](https://github.com/snolab/CapsLockX/commit/0d4259ea976a84e118e7533b79827042e40b0f02))
+
+
+### Bug Fixes
+
+* **docs:** 2023-05-12 ([1808642](https://github.com/snolab/CapsLockX/commit/180864279b2069f3b86ab3a74070136710f25b9a))
+* **docs:** yu ([2126fbe](https://github.com/snolab/CapsLockX/commit/2126fbe0262598e5fd4bc9156666f6f135d35e2a))
+* **go:** main ([7931959](https://github.com/snolab/CapsLockX/commit/7931959f1b28267cd7eb6b78bdcc092794a4eb2a))
+* **Modules:** date ([cf36b5e](https://github.com/snolab/CapsLockX/commit/cf36b5e268ac8ab1e2a9b746dc88ff920f9b5a61))
+
 ### [1.30.5](https://github.com/snolab/CapsLockX/compare/v1.30.4...v1.30.5) (2023-04-16)
 
 ### Bug Fixes
