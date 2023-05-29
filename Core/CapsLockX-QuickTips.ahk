@@ -35,7 +35,7 @@ QuickTips(){
     }
 
     try{
-        if (Blender窗口内() && Blender增强模式) {
+        if (Func("Blender窗口内").Call() && Blender增强模式) {
             msg .= "|	i + a	|	X全局缩放+	|`n"
             msg .= "|	i + d	|	X全局缩放-	|`n"
             msg .= "|	i + e	|	Z全局缩放-	|`n"

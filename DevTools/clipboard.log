@@ -1,0 +1,32 @@
+﻿--code 
+
+---
+
+ import Link from "next/link";
+// TODO: add active class for links
+export function CrawlerNav() {
+  return <div
+    style={{ textAlign: "center" }}
+    className="flex flex-row justify-center gap-4"
+  >
+    <Link className="underline" href="/admin/crawler/">
+      [Tiktok]
+    </Link>
+    <Link className="underline" href="/admin/crawler/instagram">
+      [Instagram]
+    </Link>
+    <Link className="underline" href="/admin/crawler/tags">
+      [Tags]
+    </Link>
+    <Link className="underline" href="/admin/crawler/users">
+      [Users]
+    </Link>
+
+    <Link className="underline" href="/api/crawler/install.user.js">
+      [Install Crawler]
+    </Link>
+    {/* <Link className="underline" href="/api/crawler/crawler.user.js">
+      [(Or Install Crawler Static Version)] @deprecated
+    </Link> */}
+  </div>;
+}

@@ -22,6 +22,7 @@ SetWorkingDir, %A_ScriptDir%
 #Include %A_ScriptDir%/Core/CapsLockX-RunSilent.ahk
 
 global CapsLockX_模块路径 := "./Modules"
+; global CapsLockX_用户模块路径 := CapsLockX_配置目录 "/Modules"
 global CapsLockX_核心路径 := "./Core"
 ; 版本
 global CapsLockX_Version
@@ -136,6 +137,7 @@ Return
         ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
         ModuleFiles .= A_LoopFileName "`n"
     }
+
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
     ; 生成帮助
@@ -230,7 +232,7 @@ Return
     FileEncoding UTF-8
     FileDelete %CapsLockX_ModulesRunner%
     FileAppend %模块运行器%, %CapsLockX_ModulesRunner%
-    if(!FileExist(CapsLockX_ModulesRunner)){
+    if (!FileExist(CapsLockX_ModulesRunner)) {
         msg =
         msg .= "Unable to write ModulesRunner.ahk, if you are install with chocolatey, run me as admin at the first time please.`n"
         msg .= "注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。"

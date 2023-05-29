@@ -258,24 +258,6 @@ Anki 操作增强
 | 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
 | 在 Anki-添加卡片界面 |   `Alt + s`    | 按下 添加 按钮                                              |
 
-<!-- 模块文件名：App-Figma.ahk-->
-
-### Figma Enhanced
-
-Use Alt+HJKL to navigate, switch focus, zoom in and out in figma.
-使用 Alt+HJKL 在 figma 中导航，切換焦点，縮放。
-
-## 常用功能/特性
-
-## 说明
-
-| 模式             | Figma Enhanced | 说明                    |
-| ---------------- | :------------: | ----------------------- |
-| Figma in browser |      `k`       | ↑ 切換元素 Prev Element |
-| Figma in browser |      `j`       | ↓ 切換元素 Next Element |
-| Figma in browser |      `h`       | ← 切換層級 Level parent |
-| Figma in browser |      `l`       | → 切換層級 Level child  |
-
 <!-- 模块文件名：App-OneNote2019.ahk-->
 
 ### OneNote 2016 - 2019 增强

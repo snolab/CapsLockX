@@ -4,7 +4,7 @@ global 环境热键提示 := 0
 return
 
 #if CapsLockXMode
-    
+
 /:: 环境热键提示切换()
 
 环境热键提示切换()
@@ -36,7 +36,7 @@ SceneTips()
     } else {
         msg .= "环境：普通模式 "  "`n"
     }
-    msg .= QuickTips()
+    msg .= Func("QuickTips").Call()
     if (showMsg != msg) {
         showMsg := msg
         ToolTip %msg%

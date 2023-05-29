@@ -44,7 +44,7 @@ Return
 
 #if CapsLockXMode
 
-UserModuleEdit(路径, 使用进程名AHK := 0)
+UserModuleEdit(dir, filename := "")
 {
     global CapsLockX_DontReload
     CapsLockX_DontReload := 1
@@ -52,24 +52,24 @@ UserModuleEdit(路径, 使用进程名AHK := 0)
     WinGet, hWnd, ID, A
     WinGetClass, 窗口类名, ahk_id %hWnd%
     WinGet, 进程名, ProcessName, ahk_id %hWnd%
-    if (使用进程名AHK) {
-        路径 := 路径 "/应用-" 进程名 ".user.ahk"
-    }
+
+    filename := filename || "/应用-" 进程名 ".user.ahk"
+    path := dir "/" filename
+
     WinGetTitle, title, ahk_id %hWnd%
     match = %title% ahk_class %窗口类名% ahk_exe %进程名%
 
-    msgbox %路径%
-
-    if (!FileExist(路径)) {
-        FileAppend, %快速窗口热键编辑初始内容%, %路径%
+    MsgBox 开始编辑用户脚本： %path%
+    if (!FileExist(path)) {
+        FileAppend, %快速窗口热键编辑初始内容%, %path%
     }
-    填充内容 := "`n" "`n" "#if WinActive(""" match """)" "`n" "`n" "!d`:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+d" "`n"
+    填充内容 := "`n" "`n" "; #if WinActive(""" match """)" "`n" "`n" "; !d`:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+d" "`n"
+    FileAppend, %填充内容%, %path%
 
-    FileAppend, %填充内容%, %路径%
     CapsLockX_DontReload := 0
 
     ; clipboard := 填充内容
-    Run code.cmd "%路径%" || notepad "%路径%"
+    Run code.cmd "%path%" || notepad "%path%"
     ; WinWaitActive Notepad, , 3
     ; if(ErrorLevel){
     ;     return aw
@@ -78,7 +78,7 @@ UserModuleEdit(路径, 使用进程名AHK := 0)
     ; SendEvent ^{End}^v
 }
 
-; 快速宏
-!,:: UserModuleEdit(快速窗口热键编辑用户模块目录 . "/CapsLockX_用户脚本.user.ahk")
+; 自定义脚本创建
+!,:: UserModuleEdit(快速窗口热键编辑用户模块目录, "CapsLockX_用户脚本.user.ahk")
 +!,:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
 

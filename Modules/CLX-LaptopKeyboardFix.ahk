@@ -50,7 +50,7 @@ Return
 ] Up:: Send {Blind}]
 
 ; Alt+Tab 模拟
-RAlt & \:: Send {Blind}{Tab}
+; RAlt & \:: Send {Blind}{Tab}
 
 ; 对于没有Esc或没有 Stroke 键的键
 #if CapsLockXMode & CM_FN

@@ -68,7 +68,7 @@ CursorHandleGet()
     NumPut(20, PCURSORINFO, 0, "UInt") ;*声明出 结构 的大小cbSize = 20字节
     DllCall("GetCursorInfo", "Ptr", &PCURSORINFO) ;获取 结构-光标信息
     if (NumGet(PCURSORINFO, 4, "UInt") == 0 ) ;当光标隐藏时，直接输出特征码为0
-        Return 0
+    Return 0
     Return NumGet(PCURSORINFO, 8)
 }
 
@@ -314,7 +314,8 @@ ScrollModeExit()
     }
     ScrollMouse(dx, dy)
 }
-ZoomSimu(dx, dy, action){
+ZoomSimu(dx, dy, action)
+{
     if (!CapsLockXMode) {
         return ZoomSimu.止动()
     }
