@@ -28,8 +28,31 @@ func mainThread() {
 	)
 	arrowPushX, arrowPushY := pusher(
 		func(dx int, dy int) {
-			// println("A", dx, dy)
-			// mods := modsDecode(k)
+
+			mods := modsDecode(0)
+
+			tap := func(o string, t int) {
+				for i := 0; i < t; i++ {
+					if len(mods) == 0 {
+						robotgo.KeyTap(o)
+					} else {
+						robotgo.KeyTap(o, mods)
+					}
+				}
+			}
+
+			if dx > 0 {
+				tap("right", dx)
+			}
+			if dx < 0 {
+				tap("left", -dx)
+			}
+			if dy > 0 {
+				tap("up", dy)
+			}
+			if dy < 0 {
+				tap("down", -dy)
+			}
 		},
 		1, 1,
 		16, 16,
@@ -50,7 +73,7 @@ func mainThread() {
 	// ()
 	for {
 		escaped := false
-		unspacex = spacex(func() {
+		unspacex = spacex(func() { 
 			unspacex()
 			robotgo.KeyTap("space")
 			escaped = true
@@ -170,14 +193,27 @@ func clxdesktop(act func()) func() {
 func clxedit(act func(),
 	arrowPushX func(float64), arrowPushY func(float64),
 ) func() {
-
 	unturboT := turboKey(hotkey.KeyT, "delete", act)
 	unturboG := turboKey(hotkey.KeyG, "enter", act)
 	//
-	unturboH := turboKey(hotkey.KeyH, "left", act)
-	unturboJ := turboKey(hotkey.KeyJ, "down", act)
-	unturboK := turboKey(hotkey.KeyK, "up", act)
-	unturboL := turboKey(hotkey.KeyL, "right", act)
+	unregs := []func(){
+		modsreg(hotkey.KeyA,
+			func(k int, d int) { act(); arrowPushX(-1) },
+			func() { arrowPushX(0) }),
+		modsreg(hotkey.KeyD,
+			func(k int, d int) { act(); arrowPushX(1) },
+			func() { arrowPushX(0) }),
+		modsreg(hotkey.KeyW,
+			func(k int, d int) { act(); arrowPushY(-1) },
+			func() { arrowPushY(0) }),
+		modsreg(hotkey.KeyS,
+			func(k int, d int) { act(); arrowPushY(1) },
+			func() { arrowPushY(0) }),
+	}
+	// unturboH := turboKey(hotkey.KeyH, "left", act)
+	// unturboJ := turboKey(hotkey.KeyJ, "down", act)
+	// unturboK := turboKey(hotkey.KeyK, "up", act)
+	// unturboL := turboKey(hotkey.KeyL, "right", act)
 	//
 	unturboY := turboKey(hotkey.KeyY, "home", act)
 	unturboO := turboKey(hotkey.KeyO, "end", act)
@@ -201,10 +237,13 @@ func clxedit(act func(),
 	return func() {
 		unturboT()
 		unturboG()
-		unturboH()
-		unturboJ()
-		unturboK()
-		unturboL()
+		for _, unreg := range unregs {
+			unreg()
+		}
+		// unturboH()
+		// unturboJ()
+		// unturboK()
+		// unturboL()
 		unturboY()
 		unturboO()
 		unturboU()
@@ -246,39 +285,39 @@ func turboTap(i hotkey.Key, tap func(k int, taps int), act func()) func() {
 	}
 }
 
-func turboMove(i hotkey.Key, move func(k int, distance int), act func()) func() {
-	t := int64(0)
-	unreg := modsreg(i,
-		func(kk int, k int) {
-			if t != 0 {
-				return
-			}
-			t = time.Now().UnixNano() / int64(time.Millisecond)
-			act()
-			go func() {
-				tracking := 0
-				for t != 0 {
-					ct := time.Now().UnixNano() / int64(time.Millisecond)
-					dt := (ct - t)
-					P := 0.2
-					B := 1.1
-					E := 0.1
-					distance := math.Max(0.0, math.Min(
-						P*(math.Pow(B, 1+E*float64(dt))),
-						2147483647.0))
-					diff := int(distance) - tracking
-					tracking += diff
-					move(k, diff)
-					time.Sleep(time.Millisecond * time.Duration(1))
-				}
-			}()
-		},
-		func() { t = 0 })
-	return func() {
-		t = 0
-		unreg()
-	}
-}
+// func turboMove(i hotkey.Key, move func(k int, distance int), act func()) func() {
+// 	t := int64(0)
+// 	unreg := modsreg(i,
+// 		func(kk int, k int) {
+// 			if t != 0 {
+// 				return
+// 			}
+// 			t = time.Now().UnixNano() / int64(time.Millisecond)
+// 			act()
+// 			go func() {
+// 				tracking := 0
+// 				for t != 0 {
+// 					ct := time.Now().UnixNano() / int64(time.Millisecond)
+// 					dt := (ct - t)
+// 					P := 0.2
+// 					B := 1.1
+// 					E := 0.1
+// 					distance := math.Max(0.0, math.Min(
+// 						P*(math.Pow(B, 1+E*float64(dt))),
+// 						2147483647.0))
+// 					diff := int(distance) - tracking
+// 					tracking += diff
+// 					move(k, diff)
+// 					time.Sleep(time.Millisecond * time.Duration(1))
+// 				}
+// 			}()
+// 		},
+// 		func() { t = 0 })
+// 	return func() {
+// 		t = 0
+// 		unreg()
+// 	}
+// }
 
 /*
 	enum {
