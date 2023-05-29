@@ -1,16 +1,28 @@
 {
   "name": "capslockx",
-  "version": "1.30.5",
+  "version": "1.31.0",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
-  "scripts": {
-    "start": "CapsLockX.exe",
-    "build": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-    "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
-    "prepare": "husky install",
-    "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
-    "release": "pnpm upgrade && standard-version --commit-all && git push --follow-tag --all",
-    "build-tauri": "cd DevTools/CLXConfig.js && npm run build"
+  "keywords": [
+    "CapsLockX"
+  ],
+  "homepage": "https://github.com/snolab/CapsLockX#readme",
+  "bugs": {
+    "url": "https://github.com/snolab/CapsLockX/issues"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snolab/CapsLockX.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "author": "snomiao@gmail.com",
+  "main": "DevTools/CapsLockX.mjs",
+  "bin": {
+    "capslockx": "CapsLockX.exe"
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "type": "module",
   "files": [
     "Core",
     "Data",
@@ -22,55 +34,58 @@
     "*.txt",
     "*.md"
   ],
+  "workspaces": [
+    "DevTools/CLXConfig.js"
+  ],
+  "scripts": {
+    "build": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
+    "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
+    "prepare": "husky install",
+    "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
+    "release": "pnpm upgrade && standard-version --commit-all && git push --follow-tag --all",
+    "start": "CapsLockX.exe",
+    "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST"
+  },
+  "lint-staged": {
+    "*.{js,ts}": "eslint --cache --fix",
+    "BAK_*.{css,md,js,ts,jsx,tsx}": "prettier --write",
+    "*.ahk": []
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.7",
+    "@types/pinyin": "^2.10.0",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.41.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-standard-with-typescript": "^34.0.1",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-react": "^7.32.2",
+    "husky": "^8.0.3",
+    "inquirer": "^9.2.6",
+    "keysender": "^2.3.0",
+    "lint-staged": "^13.2.2",
+    "lodash-es": "^4.17.21",
+    "openai": "^3.2.1",
+    "pinyin": "^2.11.2",
+    "prettier": "^2.8.8",
+    "prettier-plugin-organize-imports": "^3.2.2",
+    "prettier-plugin-packagejson": "2.3.0",
+    "prettier-plugin-tsconfig": "^0.0.1",
+    "rambda": "^7.5.0",
+    "sno-utils": "^0.3.16",
+    "standard-version": "^9.5.0",
+    "tsx": "^3.12.7",
+    "typescript": "^4.9.5"
+  },
   "standard-version": {
     "scripts": {
       "precommit": "node DevTools/versioning.node.mjs && git add ."
     }
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/snolab/CapsLockX.git"
-  },
-  "author": "snomiao@gmail.com",
-  "license": "GPL-3.0-or-later",
-  "bugs": {
-    "url": "https://github.com/snolab/CapsLockX/issues"
-  },
-  "homepage": "https://github.com/snolab/CapsLockX#readme",
-  "bin": {
-    "capslockx": "CapsLockX.exe"
-  },
-  "main": "DevTools/CapsLockX.mjs",
-  "devDependencies": {
-    "@types/lodash-es": "^4.17.7",
-    "@types/pinyin": "^2.10.0",
-    "eslint": "^8.38.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.27.5",
-    "husky": "^8.0.3",
-    "lint-staged": "^13.2.1",
-    "lodash-es": "^4.17.21",
-    "pinyin": "^2.11.2",
-    "prettier": "^2.8.7",
-    "prettier-plugin-organize-imports": "^3.2.2",
-    "prettier-plugin-packagejson": "2.3.0",
-    "prettier-plugin-tsconfig": "^0.0.1",
-    "sno-utils": "^0.3.16",
-    "standard-version": "^9.5.0",
-    "typescript": "^4.9.5"
-  },
-  "workspaces": [
-    "DevTools/CLXConfig.js"
-  ],
-  "lint-staged": {
-    "*.{js,ts}": "eslint --cache --fix",
-    "*.{css,md,js,ts}": "prettier --write",
-    "*.ahk": []
-  },
-  "directories": {
-    "doc": "docs"
-  },
-  "keywords": [
-    "CapsLockX"
-  ]
+  "dependencies": {
+    "@types/inquirer": "^9.0.3",
+    "@types/node": "^20.2.5",
+    "enquirer": "^2.3.6",
+    "glob": "^10.2.6"
+  }
 }

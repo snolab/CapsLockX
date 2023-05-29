@@ -97,14 +97,14 @@ EvalJavaScriptByNodeServer(code){
         (
             const port = %port%;
             const _eval = async (code) => {
-            const __sno_import = async (m) => {
+            const __sno_import = async (m) =>
                 try {
-                return await import(m);
+                    return await import(m);
                 } catch (e) {
-                process.chdir(process.env.TEMP);
-                (await import("child_process")).execSync("npm init -y && npm i -D " + m);
-                return await import(m);
-                }
+                    process.chdir(process.env.TEMP);
+                    (await import("child_process")).execSync("npm init -y && npm i -D " + m);
+                    return await import(m);
+                };
             };
             const cc = code
                 .replace(/#([a-zA-Z0-9_]+)/, (_, $1) => '(await import("' + $1 + '"))')

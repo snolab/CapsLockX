@@ -28,6 +28,7 @@ func mainThread() {
 	)
 	arrowPushX, arrowPushY := pusher(
 		func(dx int, dy int) {
+
 			mods := modsDecode(0)
 
 			tap := func(o string, t int) {
@@ -72,7 +73,7 @@ func mainThread() {
 	// ()
 	for {
 		escaped := false
-		unspacex = spacex(func() {
+		unspacex = spacex(func() { 
 			unspacex()
 			robotgo.KeyTap("space")
 			escaped = true

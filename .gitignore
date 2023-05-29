@@ -38,3 +38,4 @@ dist/cli.min.mjs
 dist/cli.min.mjs.map
 dist/cli.mjs
 dist/cli.mjs.map
+.env
