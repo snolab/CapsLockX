@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.30.5</version>
+    <version>1.31.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,13 +65,27 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.30.5](https://github.com/snolab/CapsLockX/compare/v1.30.4...v1.30.5) (2023-04-16)
+## [1.31.0](https://github.com/snolab/CapsLockX/compare/v1.30.5...v1.31.0) (2023-05-29)
+
+
+### Features
+
+* **mac:** go ([0d4259e](https://github.com/snolab/CapsLockX/commit/0d4259ea976a84e118e7533b79827042e40b0f02))
 
 
 ### Bug Fixes
 
-* **AccModel:** aw ([e7a376b](https://github.com/snolab/CapsLockX/commit/e7a376b9fee8e95e01d40b3f53f77ebc4220c2bd))
-* **capslockx:** cli ([9fd4500](https://github.com/snolab/CapsLockX/commit/9fd4500997ef879e5331c3a6687767d60f3e3809))
+* **docs:** 2023-05-12 ([1808642](https://github.com/snolab/CapsLockX/commit/180864279b2069f3b86ab3a74070136710f25b9a))
+* **docs:** yu ([2126fbe](https://github.com/snolab/CapsLockX/commit/2126fbe0262598e5fd4bc9156666f6f135d35e2a))
+* **go:** main ([7931959](https://github.com/snolab/CapsLockX/commit/7931959f1b28267cd7eb6b78bdcc092794a4eb2a))
+* **Modules:** date ([cf36b5e](https://github.com/snolab/CapsLockX/commit/cf36b5e268ac8ab1e2a9b746dc88ff920f9b5a61))
+
+### [1.30.5](https://github.com/snolab/CapsLockX/compare/v1.30.4...v1.30.5) (2023-04-16)
+
+### Bug Fixes
+
+- **AccModel:** aw ([e7a376b](https://github.com/snolab/CapsLockX/commit/e7a376b9fee8e95e01d40b3f53f77ebc4220c2bd))
+- **capslockx:** cli ([9fd4500](https://github.com/snolab/CapsLockX/commit/9fd4500997ef879e5331c3a6687767d60f3e3809))
 
 ### [1.30.4](https://github.com/snolab/CapsLockX/compare/v1.30.3...v1.30.4) (2023-04-16)
 
@@ -104,21 +118,7 @@ All notable changes to this project will be documented in this file. See [standa
 - **Core:** fix workdir ([2f6b9ee](https://github.com/snolab/CapsLockX/commit/2f6b9ee163d79c985d8cf58168d9796c81e89170))
 - **Modules:** element ([442ef4c](https://github.com/snolab/CapsLockX/commit/442ef4c3518fc24342711d3ad83a377fb38b901d))
 - **Modules:** figma ([50cf711](https://github.com/snolab/CapsLockX/commit/50cf711af5b552228ae4c4dc218fb96cc73a702f))
-- **Modules:** figma inbrowser ([131d276](https://github.com/snolab/CapsLockX/commit/131d27689503e43938e1c1deda9ecccff20612f2))
-- **Modules:** japanese style password (like .... incantations? ([78f125e](https://github.com/snolab/CapsLockX/commit/78f125e0954a33736e5b9668fe8bddf062bba89a))
-- **Modules:** remove figma msgbox ([fc9bbb8](https://github.com/snolab/CapsLockX/commit/fc9bbb8f74add6cb971ad94ebf658df7a0e0806a))
-
-### [1.30.1](https://github.com/snolab/CapsLockX/compare/v1.30.0...v1.30.1) (2023-01-04)
-
-### Bug Fixes
-
-- **Modules:** DPW, QPW, UUID ([f665811](https://github.com/snolab/CapsLockX/commit/f6658117576e71b179ec81bae8b1f2c5cd733963))
-
-## [1.30.0](https://github.com/snolab/CapsLockX/compare/v1.29.1...v1.30.0) (2022-12-28)
-
-### Features
-
-- **capslockx:** branches and file renames ([456e384](https://github.com/snolab/CapsLockX/commit/456e384abfadcd96c9dc030e4d1bd857a8a09cbc))]]></releaseNotes>
+- **Modules:** figma inbrowser ([131d276](https://github.com/snolab/CapsLockX/commit/131d27689503e43938e1c1deda9ecccff20612f2))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
