@@ -154,22 +154,28 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0)
         }
         ; 只显示Alt+TAB里有的窗口
         if (!(style & WS_EX_APPWINDOW)) {
-            continue ; ; 跳 过弹出窗口
+            Continue ; ; 跳 过弹出窗口
         }
         ; 尝试跳过隐藏窗口
         if (!(style & WS_VISIBLE)) {
-            continue
+            Continue
         }
         ; 跳过不在当前虚拟桌面的窗口
         if (!IsWindowOnCurrentVirtualDesktop(hWnd)) {
-            continue
+            Continue
         }
         ; 排除不归属于当前参数显示器的窗口
         if (!!MonitorIndex) {
             this_monitor := GetMonitorIndexFromWindow(hWnd)
             if (MonitorIndex != this_monitor) {
-                continue
+                Continue
             }
+        }
+        ; 跳过置頂窗口
+        WinGet, ExStyle, ExStyle, ahk_id %hWnd%
+        if (ExStyle & 0x8) {
+            ; 0x8 is WS_EX_TOPMOST
+            Continue
         }
         WinGet, this_exe, ProcessName, ahk_id %hWnd%
         windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -203,7 +209,7 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
         ;     Continue
         ; 只显示Alt+TAB里有的窗口
         if (!(style & WS_EX_APPWINDOW)) {
-            continue ; ; 跳 过弹出窗口
+            Continue ; ; 跳 过弹出窗口
         }
         ; 尝试跳过隐藏窗口
         GWL_STYLE := -16
@@ -211,31 +217,31 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
         ; WS_STYLE := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hWnd, "Int", GWL_STYLE, "PTR")
         WS_VISIBLE := 0x10000000
         if (!(style & WS_VISIBLE)) {
-            continue
+            Continue
         }
         ; 跳过不在当前虚拟桌面的窗口
         if (!IsWindowOnCurrentVirtualDesktop(hWnd)) {
-            continue
+            Continue
         }
         ; 排除不归属于当前参数显示器的窗口
         if (!!MonitorIndex) {
             this_monitor := GetMonitorIndexFromWindow(hWnd)
             if (MonitorIndex != this_monitor) {
-                continue
+                Continue
             }
         }
         ; 尝试跳过隐藏窗口
         if ( !DllCall("IsWindowVisible", "Ptr", hWnd, "PTR") ) {
-            continue
+            Continue
         }
         ; 跳过最大化窗口
         WinGet, minmax, minmax, ahk_id %hWnd%
         if (minmax == 1 && !(arrangeFlags & ARRANGE_MAXWINDOW)) {
-            continue
+            Continue
         }
         ; 跳过最小化的窗口
         if (minmax == -1 && !(arrangeFlags & ARRANGE_MINWINDOW)) {
-            continue
+            Continue
         }
         WinGetTitle, this_title, ahk_id %hWnd%
         ; 排除空标题窗口
@@ -247,9 +253,15 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
         if ( this_class == "ApplicationFrameWindow") {
             Continue
         }
-
+        ; 跳过置頂窗口
+        WinGet, ExStyle, ExStyle, ahk_id %hWnd%
+        if (ExStyle & 0x8) {
+            ; 0x8 is WS_EX_TOPMOST
+            Continue
+        }
         WinGet, this_exe, ProcessName, ahk_id %hWnd%
         windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        ; windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
     Sort windowsMatches, R
@@ -285,7 +297,7 @@ WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
         if (!hWnd) {
-            continue
+            Continue
         }
         WinGetPos, X, Y, W, H, ahk_id %hWnd%
         CX := X + W / 2
@@ -422,6 +434,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             ; 右下角也不要出界，下边留出1px让wallpaper engine 的bgm放出来
             w := min(x + w, AreaX + AreaW) - x
             h := min(y + h, AreaY + AreaH - 1) - y
+
 
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
@@ -599,9 +612,9 @@ x:: Send ^w ; 关闭标签
 +x:: 关闭窗口并切到下一窗口()
 ^!x:: 杀死窗口并切到下一窗口()
 c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
-; ^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
+^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
 +c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
-; ^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
+^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
 +v:: 当前窗口置顶透明切换()
 v:: 当前窗口临时透明()
 v Up:: 当前窗口临时透明取消()
@@ -609,8 +622,9 @@ b:: 任务栏任务切换()
 
 当前窗口置顶透明切换()
 {
+    ; WinSet, Alwaysontop, Toggle, A
+    WinSet, Alwaysontop, On, A
     WinSet, Transparent, 200, A
-    WinSet, Alwaysontop, Toggle, A
 }
 当前窗口临时透明()
 {
@@ -713,6 +727,7 @@ CLX_MoveCurrentWindowTo(x)
 ~$<!<+LCtrl Up:: CtrlShiftAlt弹起()
 ~$<^<+LAlt Up:: CtrlShiftAlt弹起()
 ~$<!<^LShift Up:: CtrlShiftAlt弹起()
+
 CtrlShiftAlt弹起() {
     if (!(A_PriorKey == "LCtrl" || A_PriorKey == "LAlt" || A_PriorKey == "LShift")) {
         Return

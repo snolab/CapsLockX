@@ -1,6 +1,6 @@
 import clipboard from "clipboardy";
 import "dotenv/config";
-import { readFile, watch } from "fs/promises";
+import { readFile, watch, writeFile } from "fs/promises";
 import { Configuration, OpenAIApi } from "openai";
 import { Readable } from "stream";
 import { TextDecoderStream, TransformStream, WritableStream } from "stream/web";
@@ -29,15 +29,24 @@ If you understand, reply yes.
 
 const anyToChineseTranslatorPrompt = `
 You are a Chinese translator, you are translating any language article to Chinese.
-Please translate this article to Chinese:
+Please give me Chinese transcript of every message sent to you,
+If you understand, reply yes.
+`;
+
+const anyToJapaneseTranslatorPrompt = `
+You are a Japanese translator, you are translating any language article to Japanese.
+Please give me Japanese transcript of every message sent to you,
+If you understand, reply yes.
 `;
 // prompt5.js
 // enquirer
 
 const clipFile = "./DevTools/clipboard.log";
+const clipOutFile = "./DevTools/clipboard-gpt.log";
 
 const indicatorMapping = {
-  "--translate": anyToChineseTranslatorPrompt,
+  "--jp": anyToJapaneseTranslatorPrompt,
+  "--zh": anyToChineseTranslatorPrompt,
   "--chat": "",
   "--code": codeCompletorIndicator,
 };
@@ -149,5 +158,7 @@ async function completion(indicator: string, content: any) {
   );
   // const respond = (r.data.choices.map(e => e.message.content).join('\n'))
   // console.log(respond)
+  // await clipboard.write([await clipboard.read(), respond].join("\n\n\n"));
+  await writeFile(clipOutFile, respond);
   await clipboard.write([await clipboard.read(), respond].join("\n\n\n"));
 }
