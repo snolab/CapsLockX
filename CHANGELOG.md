@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.32.0](https://github.com/snolab/CapsLockX/compare/v1.31.0...v1.32.0) (2023-06-05)
+
+
+### Features
+
+* **window:** skip topmost win while arrange ([f4f2879](https://github.com/snolab/CapsLockX/commit/f4f2879f4f5f2047d0dc2c56e3ed89c4baa60837))
+
+
+### Bug Fixes
+
+* **go:** push ([38d3145](https://github.com/snolab/CapsLockX/commit/38d3145f3fdd6f41c8467ac6ceb0848f2d7ccb19))
+
 ## [1.31.0](https://github.com/snolab/CapsLockX/compare/v1.30.5...v1.31.0) (2023-05-29)
 
 
