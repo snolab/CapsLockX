@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.31.0</version>
+    <version>1.32.0</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,6 +65,18 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.32.0](https://github.com/snolab/CapsLockX/compare/v1.31.0...v1.32.0) (2023-06-05)
+
+
+### Features
+
+* **window:** skip topmost win while arrange ([f4f2879](https://github.com/snolab/CapsLockX/commit/f4f2879f4f5f2047d0dc2c56e3ed89c4baa60837))
+
+
+### Bug Fixes
+
+* **go:** push ([38d3145](https://github.com/snolab/CapsLockX/commit/38d3145f3fdd6f41c8467ac6ceb0848f2d7ccb19))
+
 ## [1.31.0](https://github.com/snolab/CapsLockX/compare/v1.30.5...v1.31.0) (2023-05-29)
 
 
@@ -115,10 +127,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 - **capslockx:** workdir ([b2a590e](https://github.com/snolab/CapsLockX/commit/b2a590e0ca877b42058c0734944fef213b6c6a67))
-- **Core:** fix workdir ([2f6b9ee](https://github.com/snolab/CapsLockX/commit/2f6b9ee163d79c985d8cf58168d9796c81e89170))
-- **Modules:** element ([442ef4c](https://github.com/snolab/CapsLockX/commit/442ef4c3518fc24342711d3ad83a377fb38b901d))
-- **Modules:** figma ([50cf711](https://github.com/snolab/CapsLockX/commit/50cf711af5b552228ae4c4dc218fb96cc73a702f))
-- **Modules:** figma inbrowser ([131d276](https://github.com/snolab/CapsLockX/commit/131d27689503e43938e1c1deda9ecccff20612f2))]]></releaseNotes>
+- **Core:** fix workdir ([2f6b9ee](https://github.com/snolab/CapsLockX/commit/2f6b9ee163d79c985d8cf58168d9796c81e89170))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
