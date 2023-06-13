@@ -93,15 +93,14 @@ async function onClipboardReceived() {
     null;
   const [params, ...contents] = content
     .replace(/\r\n/g, "\n")
-    .split("\n\n---\n\n");
+    .split("\n---\n\n");
   const prompt = indicatorMapping[params.trim()] ?? params.trim();
   const question = contents.join("\n\n---\n\n");
   console.log("Got prompt: \n", prompt);
   console.log("Got question: \n", question);
-
-  await completion(prompt, content);
+  await completion(prompt, question);
 }
-
+//
 async function completion(indicator: string, content: any) {
   const r = await ai.createChatCompletion(
     {
@@ -160,5 +159,6 @@ async function completion(indicator: string, content: any) {
   // console.log(respond)
   // await clipboard.write([await clipboard.read(), respond].join("\n\n\n"));
   await writeFile(clipOutFile, respond);
-  await clipboard.write([await clipboard.read(), respond].join("\n\n\n"));
+  await clipboard.write(respond);
+  console.log("✅ clipboard written");
 }
