@@ -1,7 +1,8 @@
 import clipboard from "clipboardy";
 import "dotenv/config";
-import { readFile, watch } from "fs/promises";
+import { readFile } from "fs/promises";
 import { Configuration, OpenAIApi } from "openai";
+import { createInterface } from "readline/promises";
 import { Readable } from "stream";
 import { TextDecoderStream, TransformStream, WritableStream } from "stream/web";
 
@@ -29,6 +30,24 @@ ${input}
 ${"```"}
 
 And the Optimized typescript code is:
+
+${"```typescript"}
+`;
+const reactTesterPrompt = (input = "") => `
+You are a typescript-react engineer.
+
+Your skill stack included:
+- Typescript ESNext standard, Functional programming, TailwindCSS.
+
+My react component:
+
+${"```tsx"}
+${input}
+${"```"}
+
+Please write a unit test for the component above, using vitest, @testing-library/react.
+
+Your answer should be pure typescript code, and the test code should be:
 
 ${"```typescript"}
 `;
@@ -72,16 +91,17 @@ const clipOutFile = "./DevTools/clipboard-gpt.log";
 const indicatorMapping = {
   "--en": anyToEnglishTranslatorPrompt,
   "--jp": anyToJapaneseTranslatorPrompt,
+  "--react-test": reactTesterPrompt,
   "--zh": anyToChineseTranslatorPrompt,
   "--chat": (e = "") => e,
   "--code": codeCompletorPrompt,
 };
 async function main() {
-  await onClipboardReceived();
-  for await (const event of watch(clipFile)) {
-    await onClipboardReceived();
-    await new Promise((r) => setTimeout(r, 1000));
-  }
+  await scanClipboardFile();
+  // for await (const event of watch(clipFile)) {
+  //   await onClipboardReceived();
+  //   await new Promise((r) => setTimeout(r, 1000));
+  // }
 
   // const { type } = await enquirer.prompt<{ type: string }>([
   //   {
@@ -110,7 +130,7 @@ async function main() {
 
 main();
 
-async function onClipboardReceived() {
+async function scanClipboardFile() {
   console.clear();
 
   const content =
@@ -126,30 +146,26 @@ async function onClipboardReceived() {
 
   // todo: implement appendToClipboard(token) here
   let cp = "";
-  async function appendToClipboard(token: string) {
+  async function appendToken(token: string) {
     cp += token;
-    await clipboard.write(cp).catch(() => null);
+    process.stdout.write(token);
+    // await clipboard.write(cp).catch(() => null);
   }
 
-  (await completion2(question))
-    .pipeTo(
-      new WritableStream({
-        start: async () => {
-          console.clear();
-          await appendToClipboard("");
-        },
-        write: async (token) => {
-          process.stdout.write(token);
-          await appendToClipboard(token);
-        },
-        close: async () => {
-          process.stdout.write("\n");
-          console.log("✅ clipboard written");
-          await appendToClipboard("");
-        },
-      }),
-    )
-    .catch((err) => console.error(err));
+  console.clear();
+  await (
+    await completion2(question)
+  ).pipeTo(new WritableStream({ write: (token) => appendToken(token) }));
+  console.log("✅ clipboard written");
+  process.stdout.write("\n");
+
+  await clipboard.write(cp).catch(() => null);
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  await rl.question("Press any key to copy and exit...");
+  await clipboard.write(cp).catch(() => null);
 }
 // async function onClipboardReceived() {
 //   console.clear();
@@ -161,7 +177,7 @@ async function onClipboardReceived() {
 //   const [params, ...contents] = content
 //     .replace(/\r\n/g, "\n")
 //     .split("\n---\n\n");
-//   const prompt = indicatorMapping[params.trim()]?.(contents) ?? params.trim();
+//   const prompt = indicatorMapping[params.trim()]?.(contents) ?? params.trim();j
 //   const question = contents.join("\n\n---\n\n");
 //   console.log("Got prompt: \n", prompt);
 //   console.log("Got question: \n", question);
