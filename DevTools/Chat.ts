@@ -45,11 +45,14 @@ ${"```tsx"}
 ${input}
 ${"```"}
 
-Please write a unit test for the component above, using vitest, @testing-library/react.
+Please write a unit test for the component above, import everything you need from vitest, @testing-library/react, ...and so on.
 
-Your answer should be pure typescript code, and the test code should be:
+Your answer should be pure typescript code, and the specification code should be:
 
 ${"```typescript"}
+import { it, expect, describe, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+// go on...
 `;
 
 const anyToChineseTranslatorPrompt = (input = "") => `
