@@ -58,7 +58,7 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
     content := setValue
-    
+
     ConfigLock()
     ; 不对配置自动重新排序
     if (comment) {
@@ -82,7 +82,7 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
     IniRead, content, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
-    
+
     ConfigLock(field varName)
     ; 对配置自动重新排序
     if (comment) {
@@ -97,24 +97,24 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
 
 清洗为_UTF16_WITH_BOM_型编码(path){
     ConfigLock("UTF16_WITH_BOM 文件编码清洗：" path)
-    
+
     FileEncoding, UTF-8
     FileRead content, %path%
     FileDelete %path%
     FileAppend %content%, %path%, UTF-16
     FileRead content, %path%
-    
+
     ConfigUnlock()
 }
 
 清洗为_UTF8_WITH_BOM_型编码(path){
     ConfigLock("UTF8_WITH_BOM 文件编码清洗：" path)
-    
+
     FileEncoding UTF-8
     FileRead content, %path%
     FileDelete %path%
     FileAppend %content%, %path%, UTF-8
-    
+
     ConfigUnlock()
 }
 
@@ -134,7 +134,7 @@ ConfigLock(名义:="")
         Sleep, 1000
     }
     CapsLockX_DontReload := 1
-    
+
     FileAppend %名义%, % CapsLockX_配置路径 ".lock"
     return True
 }
