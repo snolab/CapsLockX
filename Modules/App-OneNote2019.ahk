@@ -101,8 +101,8 @@ OneNote快速笔记窗口启动(){
 }
 OneNote2019主页启动(){
     OneNote快速笔记窗口启动()
-    SendEvent !{Home}^{Home}!{Enter}{Left}
-    ; SendEvent ^{End}!{Enter}
+    ; SendEvent !{Home}^{Home}!{Enter}{Left}
+    SendEvent !{Home}^{End}!{Enter}
     Return
 }
 OneNote2019搜索启动() {
@@ -563,4 +563,3 @@ OneNote剪贴板收集(){
     WinActivate, ahk_id %current%
     BlockInput, off
 }
-
