@@ -97,21 +97,21 @@ EvalJavaScriptByNodeServer(code){
         (
             const port = %port%;
             const _eval = async (code) => {
-            const __sno_import = async (m) =>
-                try {
-                    return await import(m);
-                } catch (e) {
-                    process.chdir(process.env.TEMP);
-                    (await import("child_process")).execSync("npm init -y && npm i -D " + m);
-                    return await import(m);
+                const __sno_import = async (m) => {
+                    try {
+                        return await import(m);
+                    } catch (e) {
+                        process.chdir(process.env.TEMP);
+                        (await import("child_process")).execSync("npm init -y && npm i -D " + m);
+                        return await import(m);
+                    };
                 };
-            };
-            const cc = code
-                .replace(/#([a-zA-Z0-9_]+)/, (_, $1) => '(await import("' + $1 + '"))')
-                .replace(/import/, () => "(" + String(__sno_import) + ")")
-                .replace(/^[\s\S]*$/, (_) => "(async()=>{return await (\n\n" + _ + "\n\n)})()");
-            console.log({cc});
-            return await eval(cc);
+                const cc = code
+                    .replace(/#([a-zA-Z0-9_]+)/, (_, $1) => '(await import("' + $1 + '"))')
+                    .replace(/import/, () => "(" + String(__sno_import) + ")")
+                    .replace(/^[\s\S]*$/, (_) => "(async()=>{return await (\n\n" + _ + "\n\n)})()");
+                console.log({cc});
+                return await eval(cc);
             };
             (await import("http"))
             .createServer(async (req, res) => {
