@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.32.0</version>
+    <version>1.32.1</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,6 +65,23 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.1](https://github.com/snolab/CapsLockX/compare/v1.32.0...v1.32.1) (2023-08-16)
+
+
+### Bug Fixes
+
+* **capslockx:** chat ([576ac79](https://github.com/snolab/CapsLockX/commit/576ac799a0d697ed78b0e753af195b7a7c310d69))
+* **capslockx:** clean log ([2521c02](https://github.com/snolab/CapsLockX/commit/2521c02e08fc501d727381d752b5491c41d5408a))
+* **capslockx:** home ([04fd255](https://github.com/snolab/CapsLockX/commit/04fd25567338bbc1dfc99bfd25ef65002a498f3a))
+* **capslockx:** log ([6dbb118](https://github.com/snolab/CapsLockX/commit/6dbb1182a3f4777199118e2bce6d27062e874d9a))
+* **capslockx:** test ([59c8b52](https://github.com/snolab/CapsLockX/commit/59c8b52fe36f2d31c791a640f84b1130906aa7c2))
+* **chats:** ref ([9209c63](https://github.com/snolab/CapsLockX/commit/9209c635362a3dd15a4c34f7e3ae75baa38288ce))
+* **clx:** docs init ([33d467e](https://github.com/snolab/CapsLockX/commit/33d467ecb257a57fe463b147f64f3d91ce847e89))
+* **Core:** br ([bff06d5](https://github.com/snolab/CapsLockX/commit/bff06d5073d69eb087a3f00d3da72990c7d7b60c))
+* **DevTools:** reacttester ([f7d030b](https://github.com/snolab/CapsLockX/commit/f7d030b6c520279aa833253f0577c6eaa65672f7))
+* **Modules:** node ([591a612](https://github.com/snolab/CapsLockX/commit/591a612ebb60efc9c78836c185133cc8d6fb8421))
+* **Modules:** xunfei ([d2dfc10](https://github.com/snolab/CapsLockX/commit/d2dfc10ad221bb86011aed0c1216c5f220df5170))
+
 ## [1.32.0](https://github.com/snolab/CapsLockX/compare/v1.31.0...v1.32.0) (2023-06-05)
 
 
@@ -108,26 +125,7 @@ All notable changes to this project will be documented in this file. See [standa
 - **capslockx:** tabnpm ([182ef61](https://github.com/snolab/CapsLockX/commit/182ef61c7eda45d30d4e87f5b08de4fbb42a4180))
 - **docs:** nodeeval rename ([816bc4f](https://github.com/snolab/CapsLockX/commit/816bc4f83c6d97e665abc0647ccec3be2855f57b))
 - ignores ([48c0f23](https://github.com/snolab/CapsLockX/commit/48c0f23985355e22202225294f4590c1fdfdb1f6))
-- **Modules:** clx+np as tab ([85ac58b](https://github.com/snolab/CapsLockX/commit/85ac58b4d4cbc8203fda6cd795aafd6c203d1507))
-- **Modules:** format ([5d3a508](https://github.com/snolab/CapsLockX/commit/5d3a508a473427280b4656264a5cd0d8491ca4f6))
-- **nodeeval:** module ([f74e614](https://github.com/snolab/CapsLockX/commit/f74e6149d53b5d16510b1dd507f06025b1678487))
-- **Tools:** rename full all screens ([b3a6ff5](https://github.com/snolab/CapsLockX/commit/b3a6ff57b98cb54bc312a4d87b948b277b61e969))
-- **workflows:** comment ([a68325e](https://github.com/snolab/CapsLockX/commit/a68325e52201d692855723d411847833929d28f2))
-- **workflows:** wf ([c5e6088](https://github.com/snolab/CapsLockX/commit/c5e60881e66688fd073cf9583af241c9c9e37f06))
-
-### [1.30.3](https://github.com/snolab/CapsLockX/compare/v1.30.2...v1.30.3) (2023-01-07)
-
-### Bug Fixes
-
-- **Modules:** tab enhanced by [] ([2066796](https://github.com/snolab/CapsLockX/commit/20667963b0a18ef1bbe716d8c769a6edbcd3f944))
-- **Modules:** tab enhanced by [] ([f3bff2e](https://github.com/snolab/CapsLockX/commit/f3bff2e719735c3e0c26483fbe1111bb3ce50e9c))
-
-### [1.30.2](https://github.com/snolab/CapsLockX/compare/v1.30.1...v1.30.2) (2023-01-05)
-
-### Bug Fixes
-
-- **capslockx:** workdir ([b2a590e](https://github.com/snolab/CapsLockX/commit/b2a590e0ca877b42058c0734944fef213b6c6a67))
-- **Core:** fix workdir ([2f6b9ee](https://github.com/snolab/CapsLockX/commit/2f6b9ee163d79c985d8cf58168d9796c81e89170))]]></releaseNotes>
+- **Modules:** clx+np as tab ([85ac58b](https://github.com/snolab/CapsLockX/commit/85ac58b4d4cbc8203fda6cd795aafd6c203d1507))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
