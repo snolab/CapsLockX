@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.1](https://github.com/snolab/CapsLockX/compare/v1.32.0...v1.32.1) (2023-08-16)
+
+
+### Bug Fixes
+
+* **capslockx:** chat ([576ac79](https://github.com/snolab/CapsLockX/commit/576ac799a0d697ed78b0e753af195b7a7c310d69))
+* **capslockx:** clean log ([2521c02](https://github.com/snolab/CapsLockX/commit/2521c02e08fc501d727381d752b5491c41d5408a))
+* **capslockx:** home ([04fd255](https://github.com/snolab/CapsLockX/commit/04fd25567338bbc1dfc99bfd25ef65002a498f3a))
+* **capslockx:** log ([6dbb118](https://github.com/snolab/CapsLockX/commit/6dbb1182a3f4777199118e2bce6d27062e874d9a))
+* **capslockx:** test ([59c8b52](https://github.com/snolab/CapsLockX/commit/59c8b52fe36f2d31c791a640f84b1130906aa7c2))
+* **chats:** ref ([9209c63](https://github.com/snolab/CapsLockX/commit/9209c635362a3dd15a4c34f7e3ae75baa38288ce))
+* **clx:** docs init ([33d467e](https://github.com/snolab/CapsLockX/commit/33d467ecb257a57fe463b147f64f3d91ce847e89))
+* **Core:** br ([bff06d5](https://github.com/snolab/CapsLockX/commit/bff06d5073d69eb087a3f00d3da72990c7d7b60c))
+* **DevTools:** reacttester ([f7d030b](https://github.com/snolab/CapsLockX/commit/f7d030b6c520279aa833253f0577c6eaa65672f7))
+* **Modules:** node ([591a612](https://github.com/snolab/CapsLockX/commit/591a612ebb60efc9c78836c185133cc8d6fb8421))
+* **Modules:** xunfei ([d2dfc10](https://github.com/snolab/CapsLockX/commit/d2dfc10ad221bb86011aed0c1216c5f220df5170))
+
 ## [1.32.0](https://github.com/snolab/CapsLockX/compare/v1.31.0...v1.32.0) (2023-06-05)
 
 
