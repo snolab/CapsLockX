@@ -84,7 +84,7 @@ doubleSectionPassword()
     QuickTextInput(section1 "-" section2)
 }
 
-#if
+#if#DD#
 
 :*?:#D#:: ; 日期输入：如 2022-02-17
 QuickTextInput(ISODateStringGenerate())
