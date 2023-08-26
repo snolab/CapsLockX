@@ -102,7 +102,7 @@ QuickTextInput(GenPassword("0123456789abcdef", 16))
 return
 
 :*?:#DPW#:: ; 随机输入2段密码如：ZG1Y9XY-HCSWT71
-QuickTextInput(GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 7) "-" GenPassword("123456789ABCDEFGHJKLMNPQRSTUVWXYZ", 7))
+doubleSectionPassword()
 return
 
 :*?:#QPW#:: ; 随机输入4段密码如：4428-UW4R-58YS-ALLR
@@ -128,3 +128,11 @@ return
 :*?:#JPW#:: ; 随机输入日本語発音密码如：
 QuickTextInput( JapaneseRomaji7Char() "-" JapaneseRomaji7Char() )
 return
+
+doubleSectionPassword(){
+    CharsFirst:="123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+    CharsRest:="123456789abcdefghijkmnopqrstuvwxyz"
+    section1 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
+    section2 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
+    QuickTextInput(section1 "-" section2)
+}
