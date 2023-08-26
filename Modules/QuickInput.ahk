@@ -43,20 +43,22 @@ DateTimeStringGenerate()
     FormatTime, TimeString, , yyyy-MM-dd HH:mm:ss
     return TimeString
 }
-GenRandomHex(Length){
-	; 此处 `` 为转义
+GenRandomHex(Length)
+{
+    ; 此处 `` 为转义
     Chars := "0123456789abcdef"
     Min := 1
     Max := StrLen(chars)
 
-	randHex := ""
+    randHex := ""
     Loop %Length% {
-	    Random StartPos, Min, Max
-	    randHex := randHex SubStr(Chars, StartPos, 1)
+        Random StartPos, Min, Max
+        randHex := randHex SubStr(Chars, StartPos, 1)
     }
     Return randHex
 }
-GenRandomUUID(){
+GenRandomUUID()
+{
     Return GenRandomHex(8) "-" GenRandomHex(4) "-" GenRandomHex(4) "-" GenRandomHex(4) "-" GenRandomHex(12)
 }
 QuickTextInput(str)
@@ -64,29 +66,40 @@ QuickTextInput(str)
     SendInput {Text}%str%
 }
 
-JapaneseRomajiChar(){
+JapaneseRomajiChar()
+{
     return GenPassword("xktnmwhrypbdsfg", 1)GenPassword("aeiou", 1)
 }
-JapaneseRomaji7Char(){
+JapaneseRomaji7Char()
+{
     return JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()JapaneseRomajiChar()
+}
+
+doubleSectionPassword()
+{
+    CharsFirst:="123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+    CharsRest:="123456789abcdefghijkmnopqrstuvwxyz"
+    section1 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
+    section2 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
+    QuickTextInput(section1 "-" section2)
 }
 
 #if
 
-:*?:#D#:: ; 日期输入：如 (20220217)
+:*?:#D#:: ; 日期输入：如 2022-02-17
 QuickTextInput(ISODateStringGenerate())
 return
 
-:*?:#F#:: ; 日期输入：如 2022-02-17
+:*?:#T#:: ; 日期时间输入：2022-02-17 22:07:33
+QuickTextInput(DateTimeStringGenerate())
+return
+
+:*?:#DD#:: ; 带括号日期输入：如 (20220217)
 QuickTextInput(SNODateStringGenerate())
 return
 
-:*?:#T#:: ; 时间输入：(20220217.220717)
+:*?:#TT#:: ; 带括号时间输入：(20220217.220717)
 QuickTextInput(TimeStringGenerate())
-return
-
-:*?:#DT#:: ; 日期时间输入：2022-02-17 22:07:33
-QuickTextInput(DateTimeStringGenerate())
 return
 
 :*?:#NPW#:: ; 随机输入数字密码如： 7500331260229289
@@ -128,11 +141,3 @@ return
 :*?:#JPW#:: ; 随机输入日本語発音密码如：
 QuickTextInput( JapaneseRomaji7Char() "-" JapaneseRomaji7Char() )
 return
-
-doubleSectionPassword(){
-    CharsFirst:="123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-    CharsRest:="123456789abcdefghijkmnopqrstuvwxyz"
-    section1 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
-    section2 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
-    QuickTextInput(section1 "-" section2)
-}
