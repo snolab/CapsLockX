@@ -80,11 +80,11 @@ doubleSectionPassword()
     CharsFirst:="123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
     CharsRest:="123456789abcdefghijkmnopqrstuvwxyz"
     section1 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
-    section2 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
+    section2 := GenPassword(CharsRest, 7)
     QuickTextInput(section1 "-" section2)
 }
 
-#if#DD#
+#if
 
 :*?:#D#:: ; 日期输入：如 2022-02-17
 QuickTextInput(ISODateStringGenerate())
@@ -106,15 +106,15 @@ return
 QuickTextInput(GenPassword("0123456789", 16))
 return
 
-:*?:#HEX#:: ; 随机输入数字字母密码如：
+:*?:#HEX#:: ; 随机输入数字字母密码如： 7618DB5EAC135893
 QuickTextInput(GenPassword("0123456789ABCDEF", 16))
 return
 
-:*?:#HEXL#:: ; 随机输入小写16进制如：
+:*?:#HEXL#:: ; 随机输入小写16进制如： 31a0c5dcc46f0ff6
 QuickTextInput(GenPassword("0123456789abcdef", 16))
 return
 
-:*?:#DPW#:: ; 随机输入2段密码如：ZG1Y9XY-HCSWT71
+:*?:#DPW#:: ; 随机输入2段式密码如： Zg1y9xy-hcswt71
 doubleSectionPassword()
 return
 
