@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.32.1",
+  "version": "1.32.2",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "keywords": [
     "CapsLockX"
@@ -55,11 +55,11 @@
     "@types/lodash-es": "^4.17.8",
     "@types/pinyin": "^2.10.0",
     "dotenv": "^16.3.1",
-    "eslint": "^8.47.0",
+    "eslint": "^8.48.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-standard-with-typescript": "^34.0.1",
-    "eslint-plugin-import": "^2.28.0",
-    "eslint-plugin-react": "^7.33.1",
+    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-react": "^7.33.2",
     "husky": "^8.0.3",
     "inquirer": "^9.2.10",
     "keysender": "^2.3.0",
@@ -84,7 +84,7 @@
   },
   "dependencies": {
     "@types/inquirer": "^9.0.3",
-    "@types/node": "^20.5.0",
+    "@types/node": "^20.5.6",
     "enquirer": "^2.4.1",
     "glob": "^10.3.3"
   }
