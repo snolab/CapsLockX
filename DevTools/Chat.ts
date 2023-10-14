@@ -7,7 +7,8 @@ import { Readable } from "stream";
 import { TextDecoderStream, TransformStream, WritableStream } from "stream/web";
 
 const apiKey = process.env.OPENAI_API_KEY;
-const ai = new OpenAIApi(new Configuration({ apiKey }));
+const base = process.env.OPENAI_BASE ?? undefined;
+const ai = new OpenAIApi(new Configuration({ apiKey }),base);
 let ac = new AbortController();
 console.log("chat loaded");
 
