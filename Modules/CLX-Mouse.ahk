@@ -459,6 +459,10 @@ CapsLockX_鼠标右键弹起(){
 ; *+r:: 滚轮模拟.左按("r")
 ; *+f:: 滚轮模拟.右按("f")
 
+; hold right shift key to simulate horizonal scrolling
+*>+r:: 滚轮模拟.左按("r")
+*>+f:: 滚轮模拟.右按("f")
+
 *r::
     ScrollModeExit()
     滚轮模拟.上按("r")
