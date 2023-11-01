@@ -35,8 +35,8 @@ global CapsLockX_HJKL_Scroll := CapsLockX_Config("TMouse", "CapsLockX_HJKL_Scrol
 CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
 global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
-global 滚轮模拟 := new AccModel2D(Func("滚轮模拟"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
-global 拖拽模拟 := new AccModel2D(Func("拖拽模拟"), 0.1, TMouse_DPIRatio * 120 * 16 * TMouse_WheelSpeedRatio)
+global ScrollSimulator := new AccModel2D(Func("ScrollSimulator"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
+global DragSimulator := new AccModel2D(Func("DragSimulator"), 0.1, TMouse_DPIRatio * 120 * 16 * TMouse_WheelSpeedRatio)
 global ZoomSimu := new AccModel2D(Func("ZoomSimu"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
 global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
@@ -194,7 +194,7 @@ ScrollModeEnter()
     if (CapsLockX_HJKL_Scroll != 1) {
         CapsLockX_HJKL_Scroll := 1
         ToolTip 鼠标模拟 已切换到 IJKL 滚轮模式，再次按 CapsLockX+AD 可取消
-        SetTimer 鼠标模拟_ToolTipRemove, -3000
+        SetTimer ScrollSimulator_ToolTipRemove, -3000
     }
 }
 ScrollModeExit()
@@ -203,7 +203,7 @@ ScrollModeExit()
     if (CapsLockX_HJKL_Scroll != 0) {
         CapsLockX_HJKL_Scroll := 0
         ToolTip 鼠标模拟 已切换到 IJKL 光標模式
-        SetTimer 鼠标模拟_ToolTipRemove, -3000
+        SetTimer ScrollSimulator_ToolTipRemove, -3000
     }
 }
 
@@ -269,9 +269,9 @@ ScrollModeExit()
     msg .= "CapsLockX + Ctrl + Alt + Shift + RF 调整横向自动滚轮`n"
     鼠标模拟_ToolTip(msg)
 }
-滚轮模拟(dx, dy, 状态){
+ScrollSimulator(dx, dy, 状态){
     if (!CapsLockXMode) {
-        return 滚轮模拟.止动()
+        return ScrollSimulator.止动()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
         ScrollModeExit()
@@ -292,9 +292,9 @@ ScrollModeExit()
     }
     ScrollMouse(dx, dy)
 }
-拖拽模拟(dx, dy, 状态){
+DragSimulator(dx, dy, 状态){
     if (!CapsLockXMode) {
-        return 拖拽模拟.止动()
+        return DragSimulator.止动()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
         ScrollModeExit()
@@ -360,7 +360,7 @@ PostMessageForScroll(msg, zDelta)
     ; tooltip % x " " y "`n" ControlClass1  "`n"  ControlClass2 "`n" ControlClass3 "`n" wid
 }
 
-CapsLockX_鼠标左键按下(wait){
+CapsLockX_LMouseButtonDown(wait){
     ScrollModeExit()
     global CapsLockX_鼠标左键等待
     if (CapsLockX_鼠标左键等待) {
@@ -369,53 +369,53 @@ CapsLockX_鼠标左键按下(wait){
     CapsLockX_鼠标左键等待 := wait
     SendEvent {Blind}{LButton Down}
     KeyWait %wait%
-    ; Hotkey, %wait% Up, CapsLockX_鼠标左键弹起
+    ; Hotkey, %wait% Up, CapsLockX_LMouseButtonUp
 }
-CapsLockX_鼠标左键弹起(){
+CapsLockX_LMouseButtonUp(){
     global CapsLockX_鼠标左键等待
     SendEvent {Blind}{LButton Up}
     CapsLockX_鼠标左键等待 := ""
 
 }
-CapsLockX_鼠标右键按下(wait){
+CapsLockX_RMouseButtonDown(wait){
     ScrollModeExit()
-    global CapsLockX_鼠标右键等待
-    if (CapsLockX_鼠标右键等待) {
+    global CapsLockX_RMouseButtonWait
+    if (CapsLockX_RMouseButtonWait) {
         return
     }
-    CapsLockX_鼠标右键等待 := wait
+    CapsLockX_RMouseButtonWait := wait
     SendEvent {Blind}{RButton Down}
     KeyWait %wait%
-    ; Hotkey, %wait% Up, CapsLockX_鼠标右键弹起
+    ; Hotkey, %wait% Up, CapsLockX_RMouseButtonUp
 }
-CapsLockX_鼠标右键弹起(){
-    global CapsLockX_鼠标右键等待
+CapsLockX_RMouseButtonUp(){
+    global CapsLockX_RMouseButtonWait
     SendEvent {Blind}{RButton Up}
-    CapsLockX_鼠标右键等待 := ""
+    CapsLockX_RMouseButtonWait := ""
 }
 鼠标模拟_ToolTip(tips){
     ToolTip %tips%
-    SetTimer 鼠标模拟_ToolTipRemove, -3000
+    SetTimer ScrollSimulator_ToolTipRemove, -3000
 }
-鼠标模拟_ToolTipRemove(){
+ScrollSimulator_ToolTipRemove(){
     ToolTip
 }
 
 #if CapsLockXMode && !CapsLockX_MouseButtonSwitched
 
 ; 鼠标按键处理
-*e:: CapsLockX_鼠标左键按下("e")
-*q:: CapsLockX_鼠标右键按下("q")
-*e Up::CapsLockX_鼠标左键弹起()
-*q Up:: CapsLockX_鼠标右键弹起()
+*e:: CapsLockX_LMouseButtonDown("e")
+*q:: CapsLockX_RMouseButtonDown("q")
+*e Up::CapsLockX_LMouseButtonUp()k
+*q Up:: CapsLockX_RMouseButtonUp()
 
 #if CapsLockXMode && CapsLockX_MouseButtonSwitched
 
 ; 鼠标按键处理
-*e:: CapsLockX_鼠标右键按下("e")
-*q:: CapsLockX_鼠标左键按下("q")
-*e Up::CapsLockX_鼠标右键弹起()
-*q Up:: CapsLockX_鼠标左键弹起()
+*e:: CapsLockX_RMouseButtonDown("e")
+*q:: CapsLockX_LMouseButtonDown("q")
+*e Up::CapsLockX_RMouseButtonUp()
+*q Up:: CapsLockX_LMouseButtonUp()
 
 #if CapsLockXMode
 
@@ -428,21 +428,21 @@ CapsLockX_鼠标右键弹起(){
 #if CapsLockXMode && CapsLockX_HJKL_Scroll
 
 ; 滚轮运动处理
-; *a:: 滚轮模拟.左按("a")
-; *d:: 滚轮模拟.右按("d")
-; *w:: 滚轮模拟.上按("w")
-; *s:: 滚轮模拟.下按("s")
+; *a:: ScrollSimulator.左按("a")
+; *d:: ScrollSimulator.右按("d")
+; *w:: ScrollSimulator.上按("w")
+; *s:: ScrollSimulator.下按("s")
 
 ; 滚轮运动处理
-; *j:: 滚轮模拟.左按("j")
-; *l:: 滚轮模拟.右按("l")
-; *i:: 滚轮模拟.上按("i")
-; *k:: 滚轮模拟.下按("k")
+; *j:: ScrollSimulator.左按("j")
+; *l:: ScrollSimulator.右按("l")
+; *i:: ScrollSimulator.上按("i")
+; *k:: ScrollSimulator.下按("k")
 
-*h:: 拖拽模拟.左按("h")
-*l:: 拖拽模拟.右按("l")
-*k:: 拖拽模拟.上按("k")
-*j:: 拖拽模拟.下按("j")
+*h:: DragSimulator.左按("h")
+*l:: DragSimulator.右按("l")
+*k:: DragSimulator.上按("k")
+*j:: DragSimulator.下按("j")
 
 *r:: ZoomSimu.上按("r")
 *f:: ZoomSimu.下按("f")
@@ -456,18 +456,18 @@ CapsLockX_鼠标右键弹起(){
 ; *^!]:: 滚轮自动控制.右按("]")
 ; *^!r:: 滚轮自动控制.上按("r")
 ; *^!f:: 滚轮自动控制.下按("f")
-; *+r:: 滚轮模拟.左按("r")
-; *+f:: 滚轮模拟.右按("f")
+; *+r:: ScrollSimulator.左按("r")
+; *+f:: ScrollSimulator.右按("f")
 
 ; hold right shift key to simulate horizonal scrolling
-*>+r:: 滚轮模拟.左按("r")
-*>+f:: 滚轮模拟.右按("f")
+*>+r:: ScrollSimulator.左按("r")
+*>+f:: ScrollSimulator.右按("f")
 
 *r::
     ScrollModeExit()
-    滚轮模拟.上按("r")
+    ScrollSimulator.上按("r")
 return
 *f::
     ScrollModeExit()
-    滚轮模拟.下按("f")
+    ScrollSimulator.下按("f")
 return
