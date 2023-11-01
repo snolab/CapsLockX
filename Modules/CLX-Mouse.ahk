@@ -36,7 +36,7 @@ CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.m
 ; global debug_fps := new FPS_Debugger()
 global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
 global ScrollSimulator := new AccModel2D(Func("ScrollSimulator"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
-global DragSimulator := new AccModel2D(Func("DragSimulator"), 0.1, TMouse_DPIRatio * 120 * 16 * TMouse_WheelSpeedRatio)
+global DragSimulator := new AccModel2D(Func("DragSimulator"), 0.1, TMouse_DPIRatidweo * 120 * 16 * TMouse_WheelSpeedRatio)
 global ZoomSimu := new AccModel2D(Func("ZoomSimu"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
 global 滚轮自动控制 := new AccModel2D(Func("滚轮自动控制"), 0.1, 10)
 global 滚轮自动 := new AccModel2D(Func("滚轮自动"), 0, 1)
