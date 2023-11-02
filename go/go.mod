@@ -3,13 +3,13 @@ module capslockx/clx
 go 1.19
 
 require (
+	github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af
 	github.com/go-vgo/robotgo v0.100.10
 	golang.design/x/hotkey v0.4.0
 )
 
 require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/otiai10/gosseract v2.2.1+incompatible // indirect
@@ -24,6 +24,6 @@ require (
 	github.com/vcaesar/keycode v0.10.0 // indirect
 	github.com/vcaesar/tt v0.20.0 // indirect
 	golang.design/x/mainthread v0.3.0 // indirect
-	golang.org/x/image v0.0.0-20211028202545-6944b10bf410 // indirect
-	golang.org/x/sys v0.0.0-20211123173158-ef496fb156ab // indirect
+	golang.org/x/image v0.10.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 )
