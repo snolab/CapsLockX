@@ -186,7 +186,7 @@ async function scanClipboardFile() {
 //   await completion(prompt, question);
 // }
 //
-const completion2 = async (content = "") => {
+async function completion2(content = "") {
   ac?.abort?.();
   ac = new AbortController();
   const signal = ac.signal;
@@ -209,74 +209,4 @@ const completion2 = async (content = "") => {
       }
     },
   });
-  // .pipeThrough(new TextDecoderStream())
-  // .pipeThrough(
-  //   new TransformStream({
-  //     transform(chunk, controller) {
-  //       [...chunk.matchAll(/^ ({.*)/gm)]
-  //         .map((m) => m?.[1] ?? "{}")
-  //         .flatMap((e) => JSON.parse(e)?.choices ?? [])
-  //         .map((c) => c.delta?.content ?? "")
-  //         .map((token) => controller.enqueue(token));
-  //     },
-  //   }),
-  // );
-};
-// async function completion(indicator: string, content: any) {
-//   const r = await ai.createChatCompletion(
-//     {
-//       model: "gpt-4",
-//       messages: indicator
-//         ? [
-//             // { role: "system", content: 'You are ai assistant that helps' },
-//             {
-//               role: "user",
-//               content: indicator,
-//             },
-//             { role: "assistant", content: "yes" },
-//             { role: "user", content },
-//           ]
-//         : [{ role: "user", content }],
-//       stream: true,
-//     },
-//     {
-//       responseType: "stream",
-//     },
-//   );
-
-//   let resp = "";
-//   await Readable.toWeb(r.data as Readable)
-//     .pipeThrough(new TextDecoderStream())
-//     .pipeThrough(
-//       new TransformStream({
-//         transform(chunk, controller) {
-//           [...chunk.matchAll(/^data: ({.*)/gm)]
-//             .map((m) => m?.[1] ?? "{}")
-//             .flatMap((e) => JSON.parse(e)?.choices ?? [])
-//             .map((c) => c.delta?.content ?? "")
-//             .map((token) => controller.enqueue(token));
-//         },
-//       }),
-//     )
-//     .pipeTo(
-//       new WritableStream({
-//         start: () => {
-//           console.clear();
-//         },
-//         write: (chunk) => {
-//           process.stdout.write(chunk);
-//           resp += chunk;
-//         },
-//         close: () => {
-//           process.stdout.write("\n");
-//         },
-//       }),
-//     );
-//   const respond = resp.replace(
-//     /^```(?:typescript)?([\s\S]*)```$/,
-//     (_, $1) => $1,
-//   );
-//   await writeFile(clipOutFile, respond);
-//   await clipboard.write(respond);
-//   console.log("✅ clipboard written");
-// }
+}
