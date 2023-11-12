@@ -1,17 +1,15 @@
 import clipboard from "clipboardy";
 import "dotenv/config";
 import { readFile } from "fs/promises";
-import { Configuration, OpenAIApi } from "openai";
+import OpenAI from "openai";
 import { createInterface } from "readline/promises";
-import { Readable } from "stream";
-import { TextDecoderStream, TransformStream, WritableStream } from "stream/web";
+// import { WritableStream } from "stream/web";
 
 const apiKey = process.env.OPENAI_API_KEY;
 const base = process.env.OPENAI_BASE ?? undefined;
-const ai = new OpenAIApi(new Configuration({ apiKey }),base);
+const ai = new OpenAI({ apiKey, baseURL: base });
 let ac = new AbortController();
 console.log("chat loaded");
-
 const context = `
 // Context
 `;
@@ -192,7 +190,7 @@ const completion2 = async (content = "") => {
   ac?.abort?.();
   ac = new AbortController();
   const signal = ac.signal;
-  const r = await ai.createChatCompletion(
+  const r = await ai.chat.completions.create(
     {
       model: "gpt-4",
       messages: [
@@ -201,21 +199,28 @@ const completion2 = async (content = "") => {
       ],
       stream: true,
     },
-    { responseType: "stream", signal },
+    { signal },
   );
-  return Readable.toWeb(r.data as Readable)
-    .pipeThrough(new TextDecoderStream())
-    .pipeThrough(
-      new TransformStream({
-        transform(chunk, controller) {
-          [...chunk.matchAll(/^data: ({.*)/gm)]
-            .map((m) => m?.[1] ?? "{}")
-            .flatMap((e) => JSON.parse(e)?.choices ?? [])
-            .map((c) => c.delta?.content ?? "")
-            .map((token) => controller.enqueue(token));
-        },
-      }),
-    );
+
+  return new ReadableStream({
+    async start(controller) {
+      for await (const chunk of r) {
+        controller.enqueue(chunk.choices[0]?.delta?.content || "");
+      }
+    },
+  });
+  // .pipeThrough(new TextDecoderStream())
+  // .pipeThrough(
+  //   new TransformStream({
+  //     transform(chunk, controller) {
+  //       [...chunk.matchAll(/^ ({.*)/gm)]
+  //         .map((m) => m?.[1] ?? "{}")
+  //         .flatMap((e) => JSON.parse(e)?.choices ?? [])
+  //         .map((c) => c.delta?.content ?? "")
+  //         .map((token) => controller.enqueue(token));
+  //     },
+  //   }),
+  // );
 };
 // async function completion(indicator: string, content: any) {
 //   const r = await ai.createChatCompletion(
