@@ -65,7 +65,7 @@
     "keysender": "^2.3.0",
     "lint-staged": "^13.3.0",
     "lodash-es": "^4.17.21",
-    "openai": "^3.3.0",
+    "openai": "^4.17.4",
     "pinyin": "^2.11.2",
     "prettier": "^2.8.8",
     "prettier-plugin-organize-imports": "^3.2.3",
