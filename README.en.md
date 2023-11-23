@@ -41,28 +41,26 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to e
 
 ## Tutorial 📖
 
-### 简易入门教程（读完这一小节，便算是入门了 CapsLockX 的使用 ）
+### Simple Entry Tutorial (After reading this section, you would have understood how to use CapsLockX)
 
-CapsLockX 有四大核心功能： **窗口管理**，**鼠标模拟**、**方向键模拟**、应用内热键，本入门教程将带你学会前 3 大核心功能。
+CapsLockX has four core functions: **window management**, **mouse simulation**, **arrow key simulation**, and hotkeys within applications. This beginner's tutorial will teach you the first three core functions.
 
-首先获取 CapsLockX ：下载这个压缩包： [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+First, get CapsLockX: Download this compressed file: [Download JSDelivrCDN-Publishing Program Package.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
 
-解压之后，打开 CapsLockX 文件夹内的 `CapsLockX.exe`，过掉简单的新手教程，然后按照以下左右手功能区的依次试用来了解 CapsLockX 的功能。
+After decompressing, open the `CapsLockX.exe` in the CapsLockX folder, skip the simple beginner's tutorial, and then follow the hands-on trial of the left and right functional areas below to understand the functions of CapsLockX.
 
-CapsLockX 启动之后，并**不会影响**你键盘其它按键的功能，以下的功能只有在你按出 `CapsLockX + 组合键` 时才会触发。
+After CapsLockX starts, it will **not affect** the functions of other keys on your keyboard. The following features will only be triggered when you press `CapsLockX + combination key`.
 
-左手功能区：
+Left hand functional area:
 
-- 窗口管理：`CapsLockX + 1234567890` 切换到第 `n` 个虚拟桌面，`CapsLockX + ZXCV` 窗口操作（窗口切换、窗口关闭，窗口排列，透明置顶）。
-- 鼠标模拟功能：按 `CapsLockX + WASD` 鼠标移动（像玩游戏的时候操作人物移动一样简单），按 `CapsLockX + QE` 鼠标左右键点击，`CapsLockX + RF` 滚轮上下滑动。
+- Window Management: `CapsLockX + 1234567890` switches to the `n`th virtual desktop, `CapsLockX + ZXCV` for window operations (window switch, close window, arrange windows, transparent top).
+- Mouse Simulation function: Press `CapsLockX + WASD` to move the mouse (it's as simple as moving characters in a game), press `CapsLockX + QE` for left and right mouse clicks, `CapsLockX + RF` for wheel scrolling up and down.
 
-右手功能区：
+Right hand functional area:
 
-- 方向键模拟：打开任意一个编辑 `HJKL` 光标移动，`YOUI` 页面移动
+- Arrow key simulation: Open any editor `HJKL` for cursor movement, `YOUI` for page movement.
 
-上手之后，如果想了解更多功能，则可参考下方速查手册。
-
----
+After getting started, if you want to know more functions, you can refer to the quick reference manual below.
 
 ## 进阶参考手册
 
