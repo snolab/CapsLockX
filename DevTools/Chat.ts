@@ -3,7 +3,7 @@ import "dotenv/config";
 import { readFile } from "fs/promises";
 import OpenAI from "openai";
 import { createInterface } from "readline/promises";
-// import { WritableStream } from "stream/web";
+import { ReadableStream, WritableStream } from "stream/web";
 
 const apiKey = process.env.OPENAI_API_KEY;
 const base = process.env.OPENAI_BASE ?? undefined;
@@ -98,6 +98,8 @@ const indicatorMapping = {
   "--chat": (e = "") => e,
   "--code": codeCompletorPrompt,
 };
+main();
+
 async function main() {
   await scanClipboardFile();
   // for await (const event of watch(clipFile)) {
@@ -130,8 +132,6 @@ async function main() {
   // console.log('clipboard appended')
 }
 
-main();
-
 async function scanClipboardFile() {
   console.clear();
 
@@ -149,6 +149,7 @@ async function scanClipboardFile() {
   // todo: implement appendToClipboard(token) here
   let cp = "";
   async function appendToken(token: string) {
+    if(!token )  return;
     cp += token;
     process.stdout.write(token);
     // await clipboard.write(cp).catch(() => null);
@@ -156,8 +157,9 @@ async function scanClipboardFile() {
 
   console.clear();
   await (
-    await completion2(question)
+    await completion(question)
   ).pipeTo(new WritableStream({ write: (token) => appendToken(token) }));
+
   console.log("✅ clipboard written");
   process.stdout.write("\n");
 
@@ -186,7 +188,7 @@ async function scanClipboardFile() {
 //   await completion(prompt, question);
 // }
 //
-async function completion2(content = "") {
+async function completion(content = "") {
   ac?.abort?.();
   ac = new AbortController();
   const signal = ac.signal;

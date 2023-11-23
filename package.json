@@ -34,9 +34,6 @@
     "*.txt",
     "*.md"
   ],
-  "workspaces": [
-    "DevTools/CLXConfig.js"
-  ],
   "scripts": {
     "build": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
@@ -75,17 +72,15 @@
     "sno-utils": "^0.3.16",
     "standard-version": "^9.5.0",
     "tsx": "^3.12.7",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "@types/inquirer": "^9.0.3",
+    "@types/node": "^20.5.6",
+    "enquirer": "^2.4.1",
+    "glob": "^10.3.3"
   },
   "standard-version": {
     "scripts": {
       "precommit": "node DevTools/versioning.node.mjs && git add ."
     }
-  },
-  "dependencies": {
-    "@types/inquirer": "^9.0.3",
-    "@types/node": "^20.5.6",
-    "enquirer": "^2.4.1",
-    "glob": "^10.3.3"
   }
 }

@@ -69,9 +69,8 @@ CapsLockX_FolderChanged(Folder, Changes)
         }
         MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否重载？
         IfMsgBox Yes
-        reload
+            Reload
         ; CapsLockX_Reload()
-
     }
 }
 
