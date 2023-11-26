@@ -48,10 +48,14 @@ Return
     If (FileExist(iFlyPath "\iFlyVoice.exe")){
         Run "%iFlyPath%\iFlyVoice.exe"
     }else{
-        MsgBox, 4, , 你似乎还没有安装讯飞语音输入法，是否现在下载安装包并【手动安装】到默认目录？
+        MsgBox, 4, , 你似乎还没有安装讯飞语音输入法，是否现在下载安装包并【手动安装】到默认目录？ - [讯飞输入法官网 - 更好用的手机输入法，提供专业输入法定制解决方案！]( https://srf.xunfei.cn/#/ )
         IfMsgBox, NO, Return
-        UrlDownloadToFile https://download.voicecloud.cn/200ime/iFlyIME_Setup_2.1.1708.exe, %TEMP%/iFlyIME_Setup_2.1.1708.exe
-        Run %TEMP%/iFlyIME_Setup_2.1.1708.exe
+        ; Run https://download.voicecloud.cn/200ime/iFlyIME_Setup_2.1.1708.exe
+        run https://srf.xunfei.cn/#/
+        ; - [讯飞输入法官网 - 更好用的手机输入法，提供专业输入法定制解决方案！]( https://srf.xunfei.cn/#/ )
+        ; run https://download.voicecloud.cn/200ime/iFlyIME_Setup_3.0.1734.exe
+        ; UrlDownloadToFile https://download.voicecloud.cn/200ime/iFlyIME_Setup_2.1.1708.exe, %TEMP%/iFlyIME_Setup_2.1.1708.exe
+        ; Run %TEMP%/iFlyIME_Setup_2.1.1708.exe
     }
 }
 
