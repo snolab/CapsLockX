@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.4](https://github.com/snolab/CapsLockX/compare/v1.32.3...v1.32.4) (2023-11-26)
+
+
+### Bug Fixes
+
+* **Modules:** ifly update ([3b37021](https://github.com/snolab/CapsLockX/commit/3b370218a8b5c295d441797d671bada933e3c52b))
+
 ### [1.32.3](https://github.com/snolab/CapsLockX/compare/v1.32.2...v1.32.3) (2023-11-23)
 
 

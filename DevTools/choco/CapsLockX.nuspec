@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.32.3</version>
+    <version>1.32.4</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,6 +65,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.4](https://github.com/snolab/CapsLockX/compare/v1.32.3...v1.32.4) (2023-11-26)
+
+
+### Bug Fixes
+
+* **Modules:** ifly update ([3b37021](https://github.com/snolab/CapsLockX/commit/3b370218a8b5c295d441797d671bada933e3c52b))
+
 ### [1.32.3](https://github.com/snolab/CapsLockX/compare/v1.32.2...v1.32.3) (2023-11-23)
 
 
@@ -112,13 +119,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 
 ### Features
-
-* **window:** skip topmost win while arrange ([f4f2879](https://github.com/snolab/CapsLockX/commit/f4f2879f4f5f2047d0dc2c56e3ed89c4baa60837))
-
-
-### Bug Fixes
-
-* **go:** push ([38d3145](https://github.com/snolab/CapsLockX/commit/38d3145f3fdd6f41c8467ac6ceb0848f2d7ccb19))
 ]]></releaseNotes>
     
     <dependencies></dependencies>

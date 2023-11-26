@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.32.3",
+  "version": "1.32.4",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "keywords": [
     "CapsLockX"
@@ -51,7 +51,7 @@
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^20.9.4",
+    "@types/node": "^20.10.0",
     "@types/pinyin": "^2.10.2",
     "dotenv": "^16.3.1",
     "enquirer": "^2.4.1",
