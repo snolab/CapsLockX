@@ -660,7 +660,7 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
 
 ### 隐私与安全性 🔒 Privacy
 
-考虑到任何能够获取到管理员权限的软件对于用户的操作系统都是相当危险的，故 CapsLockX 必须采用开源的方式以使社区可以自由且随意地检查 CapsLockX 中可能涉及到的任何部分的代码，以保证所有用户的操作系统安全性不因本软件而受损害。
+考虑到任何能够获取到管理员权限的软件对于用户的操作系统都是相当危险的，故 CapsLockX 必须而且正在采用开源的方式以使社区可以自由且随意地检查 CapsLockX 中可能涉及到的任何部分的代码，以保证所有用户的操作系统安全性不因本软件而受损害。
 
 ## 支持 ⭐️ Supports
 
@@ -676,7 +676,7 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
    - 爱发电 ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - 支付宝捐助账号： [snomiao@gmail.com （点击查看二维码）](./支付宝捐助.png)
-   - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address0xdc2eece11a9e09c8db921989e54b30375446e49e)
+   - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 [发展路线](#发展路线-roadmap)
 
