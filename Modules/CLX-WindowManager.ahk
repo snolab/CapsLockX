@@ -618,7 +618,7 @@ c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
 +v:: 当前窗口置顶透明切换()
 v:: 当前窗口临时透明()
 v Up:: 当前窗口临时透明取消()
-b:: 任务栏任务切换()
+; b::  任务栏任务切换() ; it's recommend to use win+t key
 
 当前窗口置顶透明切换()
 {
@@ -898,7 +898,7 @@ ShellMessage( wParam, lParam )
 {
     鼠标位置记忆尝试()
     WinGet, hWnd, id, A
-    SendEvent !{Esc}
+    SendEvent +!{Esc}
     WinWaitNotActive ahk_id %hWnd%, , 1
     if (ErrorLevel) {
         return
@@ -909,7 +909,7 @@ ShellMessage( wParam, lParam )
 {
     鼠标位置记忆尝试()
     WinGet, hWnd, id, A
-    SendEvent +!{Esc}
+    SendEvent !{Esc}
     WinWaitNotActive ahk_id %hWnd%, , 1
     if (ErrorLevel) {
         return
