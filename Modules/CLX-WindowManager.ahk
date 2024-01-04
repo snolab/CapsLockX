@@ -35,7 +35,7 @@ global ARRANGE_Z_ORDERING := 0x20
 
 global lastFlashWinIDs := []
 global 最迟闪动窗口 := {}
-global 窗口鼠标位置表表 := {}
+; global 窗口鼠标位置表表 := {}
 global T窗口增强_鼠标位置记忆 := CapsLockX_Config("窗口增强", "鼠标位置记忆尝试", 1, "在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置")
 
 闪动窗口记录器初始化()
@@ -852,7 +852,7 @@ ShellMessage( wParam, lParam )
     CoordMode, Mouse, Window
     MouseGetPos, X, Y, hWnd, hWndCtrl
     CoordMode, Mouse, Screen
-    窗口鼠标位置表表[hWnd] := {X: X, Y: Y, hWnd: hWnd, hWndCtrl: hWndCtrl}
+    ; 窗口鼠标位置表表[hWnd] := {X: X, Y: Y, hWnd: hWnd, hWndCtrl: hWndCtrl}
 }
 鼠标位置还原尝试(hWnd:=0)
 {
@@ -861,21 +861,21 @@ ShellMessage( wParam, lParam )
     }
     if (!hWnd)
         WinGet, hWnd, id, A
-    hWndRecorded := 窗口鼠标位置表表[hWnd].hWnd
+    ; hWndRecorded := 窗口鼠标位置表表[hWnd].hWnd
     if (hWndRecorded) {
-        X := 窗口鼠标位置表表[hWnd].X, Y := 窗口鼠标位置表表[hWnd].Y
+        ; ; X := 窗口鼠标位置表表[hWnd].X, Y := 窗口鼠标位置表表[hWnd].Y
         ; 相对窗口坐标还原鼠标
         WinActivate, ahk_id %hWnd%
         WinGetPos, wX, wY, wW, wH, ahk_id %hWnd%
         X := wX + X, Y := wY + Y
         CoordMode, Mouse, Screen
-        MouseMove, %X%, %Y%, 0
+        MouseMove % X, Y, 0
     } else {
         WinActivate, ahk_id %hWnd%
         WinGetPos, wX, wY, wW, wH, ahk_id %hWnd%
         X := wX+wW/2, Y := wY+wH/2
         CoordMode, Mouse, Screen
-        MouseMove, %X%, %Y%, 0
+        MouseMove % X , Y,  0
     }
 }
 最近1分钟内闪动窗口激活()

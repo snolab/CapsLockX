@@ -29,12 +29,12 @@ Return
     global SnoChordTypingAllowRewrite := 0
     global SnoChordTypingAppendSpace := 0
     global SnoChordTypingStageList := []
-    
+
     ; 变量
     global SnoChordTypingPressedKeySet := {}
     global SnoChordTypingTypedKeys := ""
     global SnoChordTypingLastKeyDownTick := 0
-    
+
     ; 读入配置
     ConfigPath := CapsLockX_配置目录 "/雪星并击配置.ini"
     IniRead, SnoChordTypingChordIntervalThreshold, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold, %SnoChordTypingChordIntervalThreshold%
@@ -46,7 +46,7 @@ Return
     IniRead, SnoChordTypingAppendSpace, %ConfigPath%, Common, SnoChordTypingAppendSpace, %SnoChordTypingAppendSpace%
     IniWrite, %SnoChordTypingAppendSpace%, %ConfigPath%, Common, SnoChordTypingAppendSpace
     ; MsgBox, , , SnoChordTypingAllowRewriteString: %SnoChordTypingAllowRewriteString%
-    
+
     ; 默认键位数据
     RuleStage1 :="
     (
@@ -64,7 +64,7 @@ Return
     =| sa => ; | da => l | ds => k | fs => j | fd => h |
     =| zx => / | zc => . | xc =>, | xv => m | cv => n |
     =| xz => / | cz => . | cx =>, | vx => m | vc => n |
-    
+
     )"
     RuleStage2 := "
     (
@@ -82,7 +82,7 @@ Return
     =| kj => g | lj => f | lk => d | k; => s | l; => a |
     =| m, => b | m. => v |, . => c | /, => x | /. => z |
     =|, m => b | .m => v | ., => c |, / => x | ./ => z |
-    
+
     )"
     RuleStage3 := "
     (
@@ -91,7 +91,7 @@ Return
     =| _- => - | _= => = | _[ => [ | _] => ] | _\ => \ |
     =| _' => ' | __ => _ |
     )"
-    
+
     ; 编译键位数据
     StageIndex := 1
     while (1) {
@@ -101,21 +101,21 @@ Return
             Break
         RuleStage%StageIndex% := RuleStage
         ; MsgBox, , , RuleStage: %RuleStage%
-        
+
         objRule := {}
         FoundPos := 0
         while (FoundPos := RegExMatch(RuleStage, "O)\s_*?(\S+)\s*?=>\s*?(\S+)\s", SubPat, FoundPos+1)) {
             MapFrom := "" SubPat.Value(1)
             MapTo := SubPat.Value(2) ""
-            
+
             ; MsgBox, , , % SubPat.Value(1) "=" SubPat.Value(2)
-            
+
             MapFrom := StrReplace(MapFrom, "_", " ")
             MapTo := StrReplace(MapTo, "_", " ")
-            
+
             objRule[MapFrom] := MapTo
         }
-        
+
         objKeys := {}
         lsKey := []
         RightHandKeysSet := []
@@ -142,7 +142,7 @@ Return
     IniWrite, %RuleStage1%, %ConfigPath%, RuleStage1
     IniWrite, %RuleStage2%, %ConfigPath%, RuleStage2
     IniWrite, %RuleStage3%, %ConfigPath%, RuleStage3
-    
+
     ; 挂载并击热键
     Hotkey, if, !CapsLockXMode
     for _, Stage in SnoChordTypingStageList {
@@ -159,8 +159,8 @@ Return
             Hotkey, ~$*%KeyName% Up, SnoChordKeyUp
         }
     }
-    Hotkey, if, 
-    
+    Hotkey, if,
+
 }
 
 snochorded_output_recored_keys()
@@ -200,7 +200,7 @@ SnoChordKeyDown()
     ThisKey := StrReplace(ThisKey, "$")
     ThisKey := StrReplace(ThisKey, "+")
     ThisKey := StrReplace(ThisKey, "Space", " ")
-    
+
     if ( SnoChordTypingLastKeyDownTick == 0
         || NowTick - SnoChordTypingLastKeyDownTick <= SnoChordTypingChordIntervalThreshold){
         if (SubStr(A_ThisHotkey, 1, 1)=="~") {
@@ -209,7 +209,7 @@ SnoChordKeyDown()
     } else {
         snochorded_output_recored_keys()
     }
-    
+
     for StageIndex, Stage in SnoChordTypingStageList {
         if (Stage["objKeys"].HasKey(ThisKey)) {
             Stage["Pressed"] .= ThisKey

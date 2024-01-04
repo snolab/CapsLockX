@@ -39,12 +39,12 @@ CapsLockX_ConfigWindow(){
     Gui, Add, Text, , CLX脚本交流群： QQ群 100949388， https://t.me/capslockx
     Gui, Add, Text, , 版本: CapsLockX %CapsLockX_VersionName%
     Gui, Add, Text, , 作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )
+    Gui, Add, Button, Default w80, 确认
     Gui, Add, Button, w80, 打开BUG反馈与建议页面 ; warn : hard to translate as its variable name
     Gui, Add, Button, w80, 打开官方文档
     Gui, Add, Button, w80, 添加开机自动启动
     Gui, Add, Button, w80, 配置文件编辑
     Gui, Add, Button, w80, 重新載入
-    Gui, Add, Button, Default w80, 确认
 
     global T_TomatoLife
     if (T_TomatoLife) {

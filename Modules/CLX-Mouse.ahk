@@ -62,6 +62,40 @@ global GID_PRESSANDTAP:=7
 
 Return
 
+#if CapsLockXMode && !CapsLockX_MouseButtonSwitched
+
+; 鼠标按键处理
+*e:: CapsLockX_LMouseButtonDown("e")
+*q:: CapsLockX_RMouseButtonDown("q")
+*e Up::CapsLockX_LMouseButtonUp()k
+*q Up:: CapsLockX_RMouseButtonUp()
+
+#if CapsLockXMode && CapsLockX_MouseButtonSwitched
+
+; 鼠标按键处理
+*e:: CapsLockX_RMouseButtonDown("e")
+*q:: CapsLockX_LMouseButtonDown("q")
+*e Up::CapsLockX_RMouseButtonUp()
+*q Up:: CapsLockX_LMouseButtonUp()
+
+#if CapsLockXMode
+
+; 鼠标运动处理
+*a:: 鼠标模拟.左按("a")
+*d:: 鼠标模拟.右按("d")
+*w:: 鼠标模拟.上按("w")
+*s:: 鼠标模拟.下按("s")
+
+#if CapsLockXMode
+
+; hold right shift key to simulate horizonal scrolling
+*>+r:: ScrollSimulator.左按("r")
+*>+f:: ScrollSimulator.右按("f")
+*r:: ScrollSimulator.上按("r")
+*f:: ScrollSimulator.下按("f")
+
+#if
+
 CursorHandleGet()
 {
     VarSetCapacity(PCURSORINFO, 20, 0) ;为鼠标信息 结构 设置出20字节空间
@@ -179,33 +213,6 @@ SendInput_MouseMove(x, y)
     SendInput_MouseMove(dx, dy)
 
 }
-ScrollModeToggle()
-{
-    global CapsLockX_HJKL_Scroll
-    if (CapsLockX_HJKL_Scroll != 1) {
-        ScrollModeEnter()
-    } else {
-        ScrollModeExit()
-    }
-}
-ScrollModeEnter()
-{
-    global CapsLockX_HJKL_Scroll
-    if (CapsLockX_HJKL_Scroll != 1) {
-        CapsLockX_HJKL_Scroll := 1
-        ToolTip 鼠标模拟 已切换到 IJKL 滚轮模式，再次按 CapsLockX+AD 可取消
-        SetTimer ScrollSimulator_ToolTipRemove, -3000
-    }
-}
-ScrollModeExit()
-{
-    global CapsLockX_HJKL_Scroll
-    if (CapsLockX_HJKL_Scroll != 0) {
-        CapsLockX_HJKL_Scroll := 0
-        ToolTip 鼠标模拟 已切换到 IJKL 光標模式
-        SetTimer ScrollSimulator_ToolTipRemove, -3000
-    }
-}
 
 ; void 鼠标模拟
 鼠标模拟(dx, dy, 状态){
@@ -214,12 +221,12 @@ ScrollModeExit()
         return
     }
     if (状态 == "横中键") {
-        ScrollModeToggle()
+        ; TODO: better ScrollModeToggle()
         鼠标模拟.止动()
         return
     }
     if (状态 == "纵中键") {
-        ScrollModeToggle()
+        ; TODO: better ScrollModeToggle()
         鼠标模拟.止动()
         return
     }
@@ -274,7 +281,6 @@ ScrollSimulator(dx, dy, 状态){
         return ScrollSimulator.止动()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
-        ScrollModeExit()
 
         SendEvent {Blind}{MButton Down}
         KeyWait r
@@ -297,7 +303,6 @@ DragSimulator(dx, dy, 状态){
         return DragSimulator.止动()
     }
     if ( 状态 == "横中键" || 状态 == "纵中键") {
-        ScrollModeExit()
         SendEvent {Blind}{MButton Down}
         KeyWait r
         KeyWait f
@@ -361,7 +366,6 @@ PostMessageForScroll(msg, zDelta)
 }
 
 CapsLockX_LMouseButtonDown(wait){
-    ScrollModeExit()
     global CapsLockX_鼠标左键等待
     if (CapsLockX_鼠标左键等待) {
         return
@@ -378,7 +382,6 @@ CapsLockX_LMouseButtonUp(){
 
 }
 CapsLockX_RMouseButtonDown(wait){
-    ScrollModeExit()
     global CapsLockX_RMouseButtonWait
     if (CapsLockX_RMouseButtonWait) {
         return
@@ -400,74 +403,3 @@ CapsLockX_RMouseButtonUp(){
 ScrollSimulator_ToolTipRemove(){
     ToolTip
 }
-
-#if CapsLockXMode && !CapsLockX_MouseButtonSwitched
-
-; 鼠标按键处理
-*e:: CapsLockX_LMouseButtonDown("e")
-*q:: CapsLockX_RMouseButtonDown("q")
-*e Up::CapsLockX_LMouseButtonUp()k
-*q Up:: CapsLockX_RMouseButtonUp()
-
-#if CapsLockXMode && CapsLockX_MouseButtonSwitched
-
-; 鼠标按键处理
-*e:: CapsLockX_RMouseButtonDown("e")
-*q:: CapsLockX_LMouseButtonDown("q")
-*e Up::CapsLockX_RMouseButtonUp()
-*q Up:: CapsLockX_LMouseButtonUp()
-
-#if CapsLockXMode
-
-; 鼠标运动处理
-*a:: 鼠标模拟.左按("a")
-*d:: 鼠标模拟.右按("d")
-*w:: 鼠标模拟.上按("w")
-*s:: 鼠标模拟.下按("s")
-
-#if CapsLockXMode && CapsLockX_HJKL_Scroll
-
-; 滚轮运动处理
-; *a:: ScrollSimulator.左按("a")
-; *d:: ScrollSimulator.右按("d")
-; *w:: ScrollSimulator.上按("w")
-; *s:: ScrollSimulator.下按("s")
-
-; 滚轮运动处理
-; *j:: ScrollSimulator.左按("j")
-; *l:: ScrollSimulator.右按("l")
-; *i:: ScrollSimulator.上按("i")
-; *k:: ScrollSimulator.下按("k")
-
-*h:: DragSimulator.左按("h")
-*l:: DragSimulator.右按("l")
-*k:: DragSimulator.上按("k")
-*j:: DragSimulator.下按("j")
-
-*r:: ZoomSimu.上按("r")
-*f:: ZoomSimu.下按("f")
-
-#if CapsLockXMode && !CapsLockX_HJKL_Scroll
-
-; 滚轮运动处理
-; *+^!r:: 滚轮自动控制.左按("r")
-; *+^!f:: 滚轮自动控制.右按("f")
-; *^![:: 滚轮自动控制.左按("[")
-; *^!]:: 滚轮自动控制.右按("]")
-; *^!r:: 滚轮自动控制.上按("r")
-; *^!f:: 滚轮自动控制.下按("f")
-; *+r:: ScrollSimulator.左按("r")
-; *+f:: ScrollSimulator.右按("f")
-
-; hold right shift key to simulate horizonal scrolling
-*>+r:: ScrollSimulator.左按("r")
-*>+f:: ScrollSimulator.右按("f")
-
-*r::
-    ScrollModeExit()
-    ScrollSimulator.上按("r")
-return
-*f::
-    ScrollModeExit()
-    ScrollSimulator.下按("f")
-return
