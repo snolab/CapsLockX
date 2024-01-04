@@ -208,9 +208,9 @@ CapsLockX_Avaliable()
     loop, Parse, T_IgnoresByLines, `n, `r
     {
         content := Trim(RegExReplace(A_LoopField, "^#.*", ""))
-        if(content) {
+        if (content) {
             ; flag_IgnoreWindow := flag_IgnoreWindow || WinActive(content)
-            If(WinActive(content)) {
+            if (WinActive(content)) {
                 ToolTip, ignored by %content%
                 return false
             }

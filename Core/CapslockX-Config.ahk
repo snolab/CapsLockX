@@ -53,6 +53,15 @@ global T_SwitchSoundOff := CapsLockX_Config("Advanced", "T_SwitchSoundOff", "./D
 global T_SwitchTrayIconOff := CapsLockX_Config("Advanced", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认为 " "./Data/XIconWhite.ico")
 global T_SwitchTrayIconOn := CapsLockX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认为 " "./Data/XIconBlue.ico")
 
+IniSave(content, path, field, varName, defaultValue := "")
+{
+    IniRead, origin, %path%, %field%, %varName%, %defaultValue%
+    if (content = origin) {
+        return content ; already saved
+    }
+    IniWrite, %content%, %path%, %field%, %varName%
+    return content
+}
 CapsLockX_ConfigSet(field, varName, setValue, comment := "")
 {
     global CapsLockX_ConfigChangedTickCount
@@ -63,10 +72,12 @@ CapsLockX_ConfigSet(field, varName, setValue, comment := "")
     ; 不对配置自动重新排序
     if (comment) {
         ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
-        IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
+        ; IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
+        IniSave( comment, CapsLockX_配置路径, field, varName . "#注释" )
     }
     ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%
-    IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
+    ; IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
+    IniSave( content, CapsLockX_配置路径, field, varName)
     ConfigUnlock()
     return content
 }
@@ -82,34 +93,65 @@ CapsLockX_Config(field, varName, defaultValue, comment := "")
     global CapsLockX_ConfigChangedTickCount
     CapsLockX_ConfigChangedTickCount := A_TickCount
     IniRead, content, %CapsLockX_配置路径%, %field%, %varName%, %defaultValue%
-
-    ConfigLock(field varName)
+    CapsLockX_ConfigSet(field, varName, content, comment)
     ; 对配置自动重新排序
-    if (comment) {
-        IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
-        IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
-    }
-    IniDelete, %CapsLockX_配置路径%, %field%, %varName%
-    IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
-    ConfigUnlock()
+    ; ConfigLock(field varName)
+    ; if (comment) {
+    ;     IniDelete, %CapsLockX_配置路径%, %field%, %varName%#注释
+    ;     IniWrite, %comment%, %CapsLockX_配置路径%, %field%, %varName%#注释
+    ; }
+    ; IniDelete, %CapsLockX_配置路径%, %field%, %varName%
+    ; IniWrite, %content%, %CapsLockX_配置路径%, %field%, %varName%
+    ; ConfigUnlock()
     return content
 }
 
 清洗为_UTF16_WITH_BOM_型编码(path){
     ConfigLock("UTF16_WITH_BOM 文件编码清洗：" path)
-
+    if (FileGetFormat(path) === "UTF-16 LE") {
+        ConfigUnlock()
+        return
+    }
     FileEncoding, UTF-8
     FileRead content, %path%
     FileDelete %path%
     FileAppend %content%, %path%, UTF-16
     FileRead content, %path%
-
     ConfigUnlock()
+}
+
+FileGetFormat(file)
+{
+    ; https://www.autohotkey.com/board/topic/95986-filegetencoding-filegetformat/
+    ; There is no way to determine the file Encoding 100% sure, even if a file contains BOM.
+    ; The result of this functions is simply a best guess assuming UTF-8 more common when BOM is missing.
+    Static BOM:={      254_255: "UTF-16 BE", 255_254: "UTF-16 LE", 239_187_191: "UTF-8"
+    , 0_0_254_255: "UTF-32 BE", 255_254_0_0: "UTF-32 LE", 43_47_118_43: "UTF-7"
+    , 43_47_118_47: "UTF-7", 43_47_118_56: "UTF-7", 43_47_118_57: "UTF-7"
+    , 221_115_102_115: "UTF-EBCDIC", 132_49_149_51: "GB 18030"}
+    f := FileOpen(file, "rw"), f.Pos := 0
+    BOM4 := (BOM3 := (BOM2 := f.ReadUChar() "_" f.ReadUChar()) "_" f.ReadUChar()) "_" f.ReadUChar(), f.Close()
+    FileRead, f, *c %file%
+    if (BOM.HasKey(BOM4)) {
+        Return BOM[BOM4]
+    }
+    if (BOM.HasKey(BOM3)) {
+        Return BOM[BOM3]
+    }
+    if (BOM.HasKey(BOM2)) {
+        Return BOM[BOM2]
+    }
+    FileRead, f, *P65001 %file%
+    FileGetSize, size, %file%
+    Return StrLen(f) = size ? "ANSI" : "UTF-8 no BOM"
 }
 
 清洗为_UTF8_WITH_BOM_型编码(path){
     ConfigLock("UTF8_WITH_BOM 文件编码清洗：" path)
-
+    if (FileGetFormat(path) === "UTF-8") {
+        ConfigUnlock()
+        return
+    }
     FileEncoding UTF-8
     FileRead content, %path%
     FileDelete %path%
