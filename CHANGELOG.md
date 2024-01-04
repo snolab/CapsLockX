@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.5](https://github.com/snolab/CapsLockX/compare/v1.32.4...v1.32.5) (2024-01-04)
+
+
+### Bug Fixes
+
+* anki control update ([6e67e85](https://github.com/snolab/CapsLockX/commit/6e67e852ca52009e09b96cb3e8f01d58a47e70f3))
+* **capslockx:** brainstorm ([eb3cf50](https://github.com/snolab/CapsLockX/commit/eb3cf50c341f1e66a9a4504a372bd7e2f58864d1))
+* **capslockx:** readme ([5ae1b1c](https://github.com/snolab/CapsLockX/commit/5ae1b1cb30b53fd03e05b2f0d2ad6eb63e4ceee9))
+* **Core:** reduce file changes ([e9d6140](https://github.com/snolab/CapsLockX/commit/e9d6140b1f65ea56eaa3775664def85059bf9cdb))
+* **docs:** contri ([76ff39b](https://github.com/snolab/CapsLockX/commit/76ff39b01ec1c47f871a4ea813928e5f0301090e))
+* **docs:** donate update ([c1d1e49](https://github.com/snolab/CapsLockX/commit/c1d1e49a9e98ecf855fbc7b515366eb1a3c9d590))
+* **Modules:** brainstorm ([3153210](https://github.com/snolab/CapsLockX/commit/31532108172b1b37bc67feddbaec1d86b56fbe19))
+* remove chat.ts ([32bbed4](https://github.com/snolab/CapsLockX/commit/32bbed46186fc598e931fbe01a67d4c9a9f03ef4))
+* settings reload ([1e2c347](https://github.com/snolab/CapsLockX/commit/1e2c347babd8f69f6fab8f53737af56804bfda8e))
+* Update CLX-WindowManager hotkeys and comments ([631c0f5](https://github.com/snolab/CapsLockX/commit/631c0f55e72a698494e52802bd3244fac07d37b8))
+
 ### [1.32.4](https://github.com/snolab/CapsLockX/compare/v1.32.3...v1.32.4) (2023-11-26)
 
 
