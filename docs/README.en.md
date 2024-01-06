@@ -62,32 +62,32 @@ Right hand functional area:
 
 After getting started, if you want to know more functions, you can refer to the quick reference manual below.
 
-## 进阶参考手册
+## Advanced Reference Manual
 
-### 安装与使用 🛠
+### Installation and Use 🛠
 
-#### 绿色便携程序包（新手适用，稳定版） 📦
+#### Portable Green Software Package (Suitable for Beginners, Stable Version) 📦
 
-源码打包就是软件本体，无需编译，纯绿色便携软件解压即用。源码 + 程序包，推荐第一个（最快）。
+The source code package is the software itself, which requires no compilation, purely green and portable, and is ready to use upon extraction. We recommend the first (fastest) source code + program package.
 
-1. [下载 JSDelivrCDN-发布程序包.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
-1. [备选下载 CloudFlareCDN-发布程序包.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
-1. [备选下载 GitHub-发布程序包.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
-1. [备选下载 GitHub-仓库程序包.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
-1. [备选下载 BitBucket-仓库程序包.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
-1. [备选下载 中国大陆用户-Gitee-仓库程序包.zip （需登录）](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
+1. [Download JSDelivrCDN-Published Program Package.zip](https://cdn.jsdelivr.net/gh/snolab/CapsLockX@gh-pages/CapsLockX-latest.zip)
+2. [Alternative Download CloudFlareCDN-Published Program Package.zip](https://capslockx.snomiao.com/CapsLockX-latest.zip)
+3. [Alternative Download from GitHub-Published Program Package.zip](https://github.com/snolab/CapsLockX/raw/gh-pages/CapsLockX-latest.zip)
+4. [Alternative Download GitHub-Repository Program Package.zip](https://github.com/snolab/CapsLockX/archive/master.zip)
+5. [Alternative Download BitBucket-Repository Program Package.zip](https://bitbucket.org/snomiao/capslockx/get/master.zip)
+6. [Alternative Download for Mainland China Users-Gitee-Repository Program Package.zip (Login Required)](https://gitee.com/snomiao/CapslockX/repository/archive/master.zip)
 
-解压后使用即可，启动与自启动的方法： 双击 `CapsLockX.exe` 即可启动脚本，如需添加启动项，请在开始菜单 - 运行输入 shell:startup 然后给本程序创建快捷方式，扔进去就可以了。
+After extraction, it's ready to use. To start and set up autostart: double-click `CapsLockX.exe` to start the script. If you want to add it to startup items, enter shell:startup in the Start menu - Run, then create a shortcut for this program and drop it there.
 
-#### 命令行方式安装（进阶用户推荐，可自动更新）🖥️
+#### Command Line Installation (Recommended for Advanced Users, Supports Auto Update) 🖥️
 
-以下几种任选其一，其它地区用户推荐第 2 个
+Choose any of the following, the 2nd option is recommended for users in other regions
 
-1. `npx capslockx`, -- NPX 直接运行，可以一直运行最新版，推荐（需要安装 NodeJS ）
-2. `choco update capslockx && capslockx` -- [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) 安装可使用 cup 自动更新，推荐
-3. `npm i -g capslockx && npx capslockx` -- npm 全局安装
-4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- 大陆源码包（绿色软件包）解压使用，中国大陆地区用户推荐
-5. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe` -- github 源码包（绿色软件包）解压使用
+1. `npx capslockx`, -- Run directly with NPX to always have the latest version, recommended (NodeJS installation required).
+2. `choco update capslockx && capslockx` -- Install with [Chocolatey](https://community.chocolatey.org/packages/CapsLockX/) and use `cup` for auto-updates, recommended.
+3. `npm i -g capslockx && npx capslockx` -- npm global install.
+4. `git clone https://gitee.com/snomiao/CapslockX && .\CapsLockX\CapsLockX.exe` -- Mainland source code package (green software package) extracted for use, recommended for users in mainland China.
+5. `git clone https://github.com/snolab/CapsLockX && .\CapsLockX\CapsLockX.exe` -- GitHub source code package (green software package) extracted for use.
 6. `winget capslockx` -- TODO
 7. `scoop capslockx` -- TODO
 
