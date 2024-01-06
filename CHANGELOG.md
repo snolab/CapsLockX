@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.33.1](https://github.com/snolab/CapsLockX/compare/v1.33.0...v1.33.1) (2024-01-06)
+
+
+### Bug Fixes
+
+* **capslockx:** remove keysender ([0988dfe](https://github.com/snolab/CapsLockX/commit/0988dfe679361fe83ec31fba752fbff1c368d073))
+
 ## [1.33.0](https://github.com/snolab/CapsLockX/compare/v1.32.5...v1.33.0) (2024-01-06)
 
 

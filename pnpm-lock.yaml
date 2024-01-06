@@ -47,9 +47,6 @@ devDependencies:
   inquirer:
     specifier: ^9.2.12
     version: 9.2.12
-  keysender:
-    specifier: ^2.3.0
-    version: 2.3.0
   lint-staged:
     specifier: ^13.3.0
     version: 13.3.0(enquirer@2.4.1)
@@ -2861,13 +2858,6 @@ packages:
     resolution: {integrity: sha512-x0yf9PL/nx9Nw9oLL8ZVErFAk85/lslwEP7Vz7s5SI1ODXZIgit3C5qyWjw4DxOuO/3Hb4866SQh28a1V1d+WA==}
     dev: true
 
-  /keysender@2.3.0:
-    resolution: {integrity: sha512-PoQOdynoiRUGydBPpUixBPg/FViNRrAVfLsVTa3G1eNVjdl8z/5uQ3SThQkW544Iw95BoGKbzozZvNSNg5yovw==}
-    requiresBuild: true
-    dependencies:
-      node-addon-api: 5.1.0
-    dev: true
-
   /keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
     dependencies:
@@ -3216,10 +3206,6 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
-
-  /node-addon-api@5.1.0:
-    resolution: {integrity: sha512-eh0GgfEkpnoWDq+VY8OyvYhFEzBk6jIYbRKdIlyTiAXIVJ8PyBaKb0rp7oDtoddbdoHWhq8wwr+XZ81F1rpNdA==}
-    dev: true
 
   /node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
