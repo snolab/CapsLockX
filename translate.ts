@@ -1,0 +1,2 @@
+import OpenAI from 'openai'
+new OpenAI().chat.completions.create({stream: true, model: "gpt-4-1106-preview",messages: [{role: 'user', content: '' }, {role: 'user', content: 'Translate into English:' }]})

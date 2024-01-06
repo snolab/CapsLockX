@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.33.0](https://github.com/snolab/CapsLockX/compare/v1.32.5...v1.33.0) (2024-01-06)
+
+
+### Features
+
+* **Modules:** Brainstorm ([b5320bf](https://github.com/snolab/CapsLockX/commit/b5320bfd7fed5e12e25e5d59962e953ed3b54f61))
+
+
+### Bug Fixes
+
+* **capslockx:** pnpm publish ([6631cc9](https://github.com/snolab/CapsLockX/commit/6631cc9019e7633fe6ede8fde292cfcdf1bf88a1))
+
 ### [1.32.5](https://github.com/snolab/CapsLockX/compare/v1.32.4...v1.32.5) (2024-01-04)
 
 
