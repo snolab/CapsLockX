@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.33.2](https://github.com/snolab/CapsLockX/compare/v1.33.1...v1.33.2) (2024-01-06)
+
+
+### Bug Fixes
+
+* **workflows:** v4 checkout ([57ca621](https://github.com/snolab/CapsLockX/commit/57ca6211eace4731c469d5bd5a249c22f342e1f6))
+
 ### [1.33.1](https://github.com/snolab/CapsLockX/compare/v1.33.0...v1.33.1) (2024-01-06)
 
 

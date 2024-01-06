@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.33.1</version>
+    <version>1.33.2</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
@@ -65,6 +65,13 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.33.2](https://github.com/snolab/CapsLockX/compare/v1.33.1...v1.33.2) (2024-01-06)
+
+
+### Bug Fixes
+
+* **workflows:** v4 checkout ([57ca621](https://github.com/snolab/CapsLockX/commit/57ca6211eace4731c469d5bd5a249c22f342e1f6))
+
 ### [1.33.1](https://github.com/snolab/CapsLockX/compare/v1.33.0...v1.33.1) (2024-01-06)
 
 
@@ -120,14 +127,7 @@ All notable changes to this project will be documented in this file. See [standa
 * **DevTools:** update openai ([8819b8f](https://github.com/snolab/CapsLockX/commit/8819b8f09782b37f1c0a703dc51dd8429dc2c59c))
 * **docs:** en ([26cc65e](https://github.com/snolab/CapsLockX/commit/26cc65eb9b77685e80e294f13caaa8614a9a8a72))
 * **Modules:** en ([37b4711](https://github.com/snolab/CapsLockX/commit/37b4711f7de47291bb6334b2c7988f9362da364e))
-* **Modules:** en ([30e4101](https://github.com/snolab/CapsLockX/commit/30e410130428e06a6996a5eb14ddd04aa8c849a7))
-* **workflows:** choco install ([266cabc](https://github.com/snolab/CapsLockX/commit/266cabc67214e021660860b3dbf11b881a5031b5))
-
-### [1.32.2](https://github.com/snolab/CapsLockX/compare/v1.32.1...v1.32.2) (2023-08-26)
-
-
-### Bug Fixes
-]]></releaseNotes>
+* **Modules:** en ([30e4101](https://github.com/snolab/CapsLockX/commit/30e410130428e06a6996a5eb14ddd04aa8c849a7))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
