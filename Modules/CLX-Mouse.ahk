@@ -334,6 +334,7 @@ ZoomSimu(dx, dy, action)
 PostMessageForScroll(msg, zDelta)
 {
     ; 目前还不支持 UWP which should use WM_TOUCH
+    ; Currently, UWP does not support this; you should use WM_TOUCH instead.
     CoordMode, Mouse, Screen
     MouseGetPos, x, y, wid, fcontrol
     wParam := zDelta << 16 ;zDelta
