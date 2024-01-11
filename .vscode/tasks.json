@@ -7,9 +7,6 @@
       "problemMatcher": [],
       "label": "npm: start",
       "detail": "CapsLockX.exe",
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
     },
     {
       "type": "npm",
