@@ -126,6 +126,7 @@ if(T_XKeyAsRAlt)
 SetWorkingDir, %A_ScriptDir%\..\
 
 #Include Core\CapsLockX-i18n.ahk
+; todo: move this generated file into user folder
 #Include Core\CapsLockX-ModulesRunner.ahk
 CapsLockX_Loaded()
 #Include Core\CapsLockX-ModulesFunctions.ahk

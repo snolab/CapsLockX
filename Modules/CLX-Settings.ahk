@@ -28,26 +28,27 @@ ExitCapsLockX()
 ; 修改配置
 #if CapsLockXMode
 
-; ,:: 配置文件编辑()
-,:: CapsLockX_ConfigWindow()
+;, :: 配置文件编辑()
+, :: CapsLockX_ConfigWindow()
 
-CapsLockX_ConfigWindow(){
+CapsLockX_ConfigWindow()
+{
     Gui, Destroy
     ; TODO update this to web view
-    Gui, Add, Text, , 你可以按 "CapsLockX + ," 打开此窗口
-    Gui, Add, Text, , 当前 CapsLockX_配置目录：%CapsLockX_配置目录%
-    Gui, Add, Text, , CLX脚本交流群： QQ群 100949388， https://t.me/capslockx
-    Gui, Add, Text, , 版本: CapsLockX %CapsLockX_VersionName%
-    Gui, Add, Text, , 作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )
-    Gui, Add, Button, Default w80, 确认
-    Gui, Add, Button, w80, 打开BUG反馈与建议页面 ; warn : hard to translate as its variable name
-    Gui, Add, Button, w80, 打开官方文档
-    Gui, Add, Button, w80, 添加开机自动启动
-    Gui, Add, Button, w80, 配置文件编辑
-    Gui, Add, Button, w80, 重新載入
+    Gui, Add, Text, , % t("你可以按 'CapsLockX +, ' 打开此窗口")
+    Gui, Add, Text, , % t("当前 CapsLockX_配置目录：%CapsLockX_配置目录%")
+    Gui, Add, Text, , % t("CLX脚本交流群： QQ群 100949388， https://t.me/capslockx")
+    Gui, Add, Text, , % t("版本: CapsLockX %CapsLockX_VersionName%")
+    Gui, Add, Text, , % t("作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )")
+    Gui, Add, Button, Default w80 gButton确认, 确认
+    Gui, Add, Button, w80 gButton打开BUG反馈与建议页面, % "打开BUG反馈与建议页面" ; warn : hard to translate as its variable name
+    Gui, Add, Button, w80 gButton打开官方文档, % "打开官方文档"
+    Gui, Add, Button, w80 gButton添加开机自动启动, % "添加开机自动启动"
+    Gui, Add, Button, w80 gButton配置文件编辑, % "配置文件编辑"
+    Gui, Add, Button, w80 gButton重新載入, % "重新載入"
 
     global T_TomatoLife
-    if (T_TomatoLife) {
+        if (T_TomatoLife) {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife Checked, 启用番茄时钟，每25分钟休息5分钟·。
     } else {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife, 启用番茄时钟，每25分钟休息5分钟·。
@@ -97,7 +98,7 @@ Button重新載入:
 return
 CapsLockX_ConfigureUpdate:
     global T_TomatoLife
-    global T_XKeyAsCapsLock
+        global T_XKeyAsCapsLock
     global T_XKeyAsSpace
     global T_AskRunAsAdmin
     global CLX_CONFIG_ONSTARTUP
