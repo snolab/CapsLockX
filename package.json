@@ -41,6 +41,9 @@
     "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
     "release": "pnpm upgrade && standard-version --commit-all && git push --follow-tag --all",
     "start": "CapsLockX.exe",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST"
   },
   "lint-staged": {
@@ -52,7 +55,6 @@
     "@types/inquirer": "^9.0.7",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^20.10.6",
-    "@types/pinyin": "^2.10.2",
     "dotenv": "^16.3.1",
     "enquirer": "^2.4.1",
     "eslint": "^8.56.0",
@@ -65,8 +67,8 @@
     "inquirer": "^9.2.12",
     "lint-staged": "^13.3.0",
     "lodash-es": "^4.17.21",
-    "openai": "^4.24.1",
-    "pinyin": "^2.11.2",
+    "openai": "^4.24.3",
+    "p-map": "^7.0.1",
     "prettier": "^2.8.8",
     "prettier-plugin-organize-imports": "^3.2.4",
     "prettier-plugin-packagejson": "2.3.0",
@@ -75,11 +77,15 @@
     "sno-utils": "^0.3.16",
     "standard-version": "^9.5.0",
     "tsx": "^3.14.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "yaml": "^2.3.4"
   },
   "standard-version": {
     "scripts": {
       "precommit": "node DevTools/versioning.node.mjs && git add ."
     }
+  },
+  "dependencies": {
+    "vitepress": "^1.0.0-rc.36"
   }
 }
