@@ -6,7 +6,7 @@ import { stringify } from 'yaml'
 import pMap from 'p-map'
 
 if (import.meta.main) {
-  await translateReadme('English', './docs/README.md', './docs/README.en.md');
+  await translateReadme('English', './docs/README.zh.md', './docs/README.en.md');
 }
 
 async function translateReadme(lang: string, infile: string, outfile: string) {
