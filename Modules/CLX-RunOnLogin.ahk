@@ -14,6 +14,7 @@ CapsLockX_MakeStartup()
     content = cd "%A_WorkingDir%" && start "" CapsLockX.exe
     startCMDPath := APPDATA "\Microsoft\Windows\Start Menu\Programs\Startup\capslockx-startup.cmd"
     FileDelete, %startCMDPath%
+    FileAppend, echo off, %startCMDPath%
     FileAppend, %content%, %startCMDPath%
     cmdView := "explorer /select, " """" startCMDPath """"
     run % cmdView
