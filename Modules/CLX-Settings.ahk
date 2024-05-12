@@ -39,10 +39,9 @@ CLX_ConfigWindow()
     Gui, Add, Text, , % t("当前 CLX_ConfigDir：") . CLX_ConfigDir
     Gui, Add, Text, , % t("CLX脚本交流群： QQ群 100949388 、 Telegram 群 https://t.me/capslockx 、微信群: 添加 @snomiao 拉你")
     Gui, Add, Text, , % t("CapsLockX 版本:  ") . CLX_VersionName
-    Gui, Add, Text, , % t("Current Language") . ": " .  CLX_Lang
     Gui, Add, Text, , % t("作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )")
     Gui, Add, Button, Default w120 gButton确认, % t("确定")
-    Gui, Add, Button, w120 gButtonLanguageSwitch, % t("切换語言")
+    Gui, Add, Button, w120 gButtonLanguageSwitch, % t("切换語言") . "`n" . t("Current Language") . ": " .  CLX_Lang
     Gui, Add, Button, w120 gButton打开BUG反馈与建议页面, % t("打开BUG反馈与建议页面")
     Gui, Add, Button, w120 gButton打开官方文档, % t("打开官方文档")
     Gui, Add, Button, w120 gButton添加开机自动启动, % t("添加开机自动启动")
@@ -110,11 +109,11 @@ CLX_ConfigureUpdate:
     reloadFlag := reloadFlag || ( CLX_ConfigGet("Core", "T_XKeyAsSpace", T_XKeyAsSpace) != T_XKeyAsSpace )
     reloadFlagAdmin := 0
     reloadFlagAdmin := reloadFlagAdmin || ( CLX_ConfigGet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin) != T_AskRunAsAdmin )
-    CLX_ConfigSet("TomatoLife", "Enable", T_TomatoLife, "使用番茄时钟（默认禁用，改为 1 开启）")
-    CLX_ConfigSet("Core", "T_XKeyAsCapsLock", T_XKeyAsCapsLock, "使用 Space 作为引导键（默认启用，用户启用）")
-    CLX_ConfigSet("Core", "T_XKeyAsSpace", T_XKeyAsSpace, "使用 CapsLock 作为引导键（默认启用，用户启用）")
-    CLX_ConfigSet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin, "请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）")
-    CLX_ConfigSet("Core", "CLX_CONFIG_ONSTARTUP", CLX_CONFIG_ONSTARTUP, "启动时显示配置窗口")
+    CLX_ConfigSet("TomatoLife", "Enable", T_TomatoLife, t("使用番茄时钟（默认禁用，改为 1 开启）"))
+    CLX_ConfigSet("Core", "T_XKeyAsCapsLock", T_XKeyAsCapsLock, t("使用 Space 作为引导键（默认启用，用户启用）"))
+    CLX_ConfigSet("Core", "T_XKeyAsSpace", T_XKeyAsSpace, t("使用 CapsLock 作为引导键（默认启用，用户启用）"))
+    CLX_ConfigSet("Core", "T_AskRunAsAdmin", T_AskRunAsAdmin, t("请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）"))
+    CLX_ConfigSet("Core", "CLX_CONFIG_ONSTARTUP", CLX_CONFIG_ONSTARTUP, t("启动时显示配置窗口"))
     if (reloadFlag) {
         reload
     }
@@ -128,16 +127,23 @@ Button确认:
     gui, destroy
 return
 ButtonLanguageSwitch:
-    InputBox, targetLang, % t("Change Language of CapsLockX"), % t("Please input target Language: "),,,,,,,,% CLX_Lang
-    ; InputBox, OutputVar [, Title, Prompt, HIDE, Width, Height, X, Y, Locale, Timeout, Default
-    ; targetLang
-    i18n_changeLanguage(targetLang)
-    Reload
+    CLX_LanguageSwitch()
 return
 Button配置文件编辑:
     CLX_ConfigureEdit()
 Return
 
+CLX_LanguageSwitch(){
+    ; msg := t("输入你使用的语言，支持所有语言，比如：zh,ja,en,fr,es,ar...")
+    msg := t("Enter the language you are using, for example: zh,ja,en,fr,es,ar...")
+    InputBox, targetLang, % t("Change Language of CapsLockX"), % msg ,,,,,,,,% CLX_Lang
+    ; InputBox, OutputVar [, Title, Prompt, HIDE, Width, Height, X, Y, Locale, Timeout, Default
+    ; targetLang
+    if (targetLang){
+        i18n_changeLanguage(targetLang)
+        Reload
+    }
+}
 CLX_首次使用教学(){
     ; TODO
 }

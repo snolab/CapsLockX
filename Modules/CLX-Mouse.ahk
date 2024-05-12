@@ -13,28 +13,28 @@
 #Include, Modules/AccModel/AccModel.ahk
 
 if (!CapsLockX) {
-    MsgBox, % "本模块只为 CapsLockX 工作"
+    MsgBox, % "本模块只在 CapsLockX 下工作 / This module is only for CapsLockX"
     ExitApp
 }
 
-global TMouse_Disabled := CLX_Config("TMouse", "Disabled", 0, "禁用模拟鼠标模块")
-global TMouse_SendInput := CLX_Config("TMouse", "SendInput", 1, "使用 SendInput 方法提高模拟鼠标点击、移动性能")
-global TMouse_SendInputAPI := CLX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")
-global TMouse_SendInputScroll := CLX_Config("TMouse", "TMouse_SendInputScroll", 0, "使用 Windows API 强势提升模拟鼠标滚轮性能（目前有bug不建议启用）")
+global TMouse_Disabled := CLX_Config("TMouse", "Disabled", 0, t("禁用模拟鼠标模块"))
+global TMouse_SendInput := CLX_Config("TMouse", "SendInput", 1,t( "使用 SendInput 方法提高模拟鼠标点击、移动性能"))
+global TMouse_SendInputAPI := CLX_Config("TMouse", "SendInputAPI", 1,t( "使用 Windows API 强势提升模拟鼠标移动性能"))
+global TMouse_SendInputScroll := CLX_Config("TMouse", "TMouse_SendInputScroll", 0,t( "使用 Windows API 强势提升模拟鼠标滚轮性能（目前有bug不建议启用）"))
 
-global TMouse_StickyCursor := CLX_Config("TMouse", "StickyCursor", 1, "启用自动粘附各种按钮，编辑框")
-global TMouse_StopAtScreenEdge := CLX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
+global TMouse_StickyCursor := CLX_Config("TMouse", "StickyCursor", 1,t( "启用自动粘附各种按钮，编辑框"))
+global TMouse_StopAtScreenEdge := CLX_Config("TMouse", "StopAtScreenEdge", 1,t( "撞上屏幕边界后停止加速"))
 
 ; 根据屏幕 DPI 比率，自动计算，得出，如果数值不对，才需要纠正
-global TMouse_UseDPIRatio := CLX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
-global TMouse_MouseSpeedRatio := CLX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global TMouse_WheelSpeedRatio := CLX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_UseDPIRatio := CLX_Config("TMouse", "UseDPIRatio", 1,t( "是否根据屏幕 DPI 比率缩放鼠标速度"))
+global TMouse_MouseSpeedRatio := CLX_Config("TMouse", "MouseSpeedRatio", 1,t( "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类"))
+global TMouse_WheelSpeedRatio := CLX_Config("TMouse", "WheelSpeedRatio", 1,t( "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类"))
 global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
-global CLX_HJKL_Scroll := CLX_Config("TMouse", "CLX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
+global CLX_HJKL_Scroll := CLX_Config("TMouse", "CLX_HJKL_Scroll", 0,t( "使用IJKL滚轮移动滚轮，比RF多一个横轴。"))
 
 CLX_AppendHelp( CLX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
-global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
+global mouseSimulator := new AccModel2D(Func("mouseSimulator"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
 global ScrollSimulator := new AccModel2D(Func("ScrollSimulator"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
 global DragSimulator := new AccModel2D(Func("DragSimulator"), 0.1, TMouse_DPIRatidweo * 120 * 16 * TMouse_WheelSpeedRatio)
 global ZoomSimu := new AccModel2D(Func("ZoomSimu"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
@@ -81,10 +81,10 @@ Return
 #if CapsLockXMode
 
 ; 鼠标运动处理
-*a:: 鼠标模拟.左按("a")
-*d:: 鼠标模拟.右按("d")
-*w:: 鼠标模拟.上按("w")
-*s:: 鼠标模拟.下按("s")
+*a:: mouseSimulator.左按("a")
+*d:: mouseSimulator.右按("d")
+*w:: mouseSimulator.上按("w")
+*s:: mouseSimulator.下按("s")
 
 #if CapsLockXMode
 
@@ -214,20 +214,20 @@ SendInput_MouseMove(x, y)
 
 }
 
-; void 鼠标模拟
-鼠标模拟(dx, dy, 状态){
+; void mouseSimulator
+mouseSimulator(dx, dy, 状态){
     if (!CapsLockXMode) {
-        鼠标模拟.止动()
+        mouseSimulator.止动()
         return
     }
     if (状态 == "横中键") {
         ; TODO: better ScrollModeToggle()
-        鼠标模拟.止动()
+        mouseSimulator.止动()
         return
     }
     if (状态 == "纵中键") {
         ; TODO: better ScrollModeToggle()
-        鼠标模拟.止动()
+        mouseSimulator.止动()
         return
     }
     if (状态 != "移动") {
@@ -249,13 +249,13 @@ SendInput_MouseMove(x, y)
     ; TODO: 撞到屏幕边角就停下来
     ; if(TMouse_StopAtScreenEdge )
     ; MouseGetPos, xb, yb
-    ; 鼠标模拟.横速 *= dx && xa == xb ? 0 : 1
-    ; 鼠标模拟.纵速 *= dy && ya == yb ? 0 : 1
+    ; mouseSimulator.横速 *= dx && xa == xb ? 0 : 1
+    ; mouseSimulator.纵速 *= dy && ya == yb ? 0 : 1
 
     ; 在各种按钮上减速，进出按钮时减速80%
     if (TMouse_StickyCursor && CursorShapeChangedQ()) {
-        鼠标模拟.横速 *= 0.2
-        鼠标模拟.纵速 *= 0.2
+        mouseSimulator.横速 *= 0.2
+        mouseSimulator.纵速 *= 0.2
     }
 }
 

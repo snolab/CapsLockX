@@ -1,8 +1,9 @@
 ﻿#SingleInstance, Force
 
 global brainstorming := false
-global brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com", "Brainstorm 官方網址") ;
-global brainstormApiKey := CLX_Config("BrainStorm", "Key", "FREE", "CLX BrainStorm 的功能激活碼，填FREE使用免費版本") ;
+global brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
+global brainstormApiKey := CLX_Config("BrainStorm", "Key", "FREE", t("CLX BrainStorm 的功能激活碼，填FREE使用免費版本"))
+global brainstormLastQuestion := CLX_Config("BrainStorm", "LastQuestion", "", t("Brainstorm 上次提问"))
 
 return
 
@@ -42,11 +43,11 @@ stop_brainstorm()
 brainstorm_set_key()
 {
     msg := t("訪問官方網站来取得激活碼，在此輸入，或者填 FREE 使用免費版，網址如下：")
-    InputBox, key, % "激活碼輸入", % msg "`n" brainstorm_origin
+    InputBox, key, % t("激活碼輸入"), % msg "`n" brainstorm_origin
     if (ErrorLevel == 1) {
         Return
     }
-    CLX_ConfigSet("BrainStorm", "Key", key, "CLX BrainStorm 的功能激活碼")
+    CLX_ConfigSet("BrainStorm", "Key", key)
 }
 brainstorm_copy()
 {
@@ -63,15 +64,17 @@ brainstorm()
     content:=brainstorm_copy()
 
     prompt := ""
-    prompt .= t("例1： Translate to english：")  . "`n"
-    prompt .= t("例2： 解釈这句話：")  . "`n"
-    prompt .= t("例3： 总结5点：")  . "`n"
+    prompt .= t("例1： 'Translate to english：'")  . "`n"
+    prompt .= t("例2： '解釈这句話：'")  . "`n"
+    prompt .= t("例3： '总结5点：'")  . "`n"
     prompt .= "--- " . t("以下为提問内容") . " ---`n" . content
-    InputBox, cmd, 请輸入文本指令, %prompt%, , 500, 600
+    InputBox, cmd,  % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
+
     ; if escape
     if (ErrorLevel == 1) {
         Return
     }
+    CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
     global brainstorming := true
@@ -100,18 +103,18 @@ BS_questionPost_onReadyStateChange(xhr)
         return
     if (xhr.status != 200) {
         if (xhr.status == 403) {
-            MsgBox, % xhr.responseText " 请检查激活码是否正确"
+            MsgBox, % xhr.responseText . " " . t("请检查激活码是否正确")
             brainstorm_set_key()
         }
         if (xhr.status == 429) {
-            MsgBox, % xhr.responseText " 请等待一段时间后再试"
+            MsgBox, % xhr.responseText . " " .  t("请等待一段时间后再试")
         }
-        MsgBox, % xhr.responseText " Unknown Error"
+        MsgBox, % xhr.responseText . " " . t("Unknown Error")
         return
     }
     global questionId := xhr.responseText
     if (!questionId) {
-        MsgBox, fail to ask ai
+        MsgBox, t("Fail to ask ai")
         return
     }
     ; tooltip askAiSucc with question %questionId%

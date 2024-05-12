@@ -10,7 +10,7 @@
 
 if !CapsLockX
     ExitApp
-global WinKeySimulate := CLX_Config("LKF", "WinKeySimulate", 1, "右手 \][ 模拟Windows键和 Alt + Tab， 具体用法参见LaptopKeyboardFix 模块说明，默认启用")
+global WinKeySimulate := CLX_Config("LKF", "WinKeySimulate", 1, t("右手 \][ 模拟Windows键和 Alt + Tab， 具体用法参见LaptopKeyboardFix 模块说明，默认启用"))
 global FLAG_SWAP_ESC_STROKE := false
 CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 

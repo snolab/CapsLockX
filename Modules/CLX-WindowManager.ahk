@@ -36,7 +36,7 @@ global ARRANGE_Z_ORDERING := 0x20
 global lastFlashWinIDs := []
 global 最迟闪动窗口 := {}
 ; global 窗口鼠标位置表表 := {}
-global T窗口增强_鼠标位置记忆 := CLX_Config("窗口增强", "鼠标位置记忆尝试", 1, "在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置")
+global T窗口增强_鼠标位置记忆 := CLX_Config("WindowsManageEnhance", "RemenberMousePos", 1, t("在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置"))
 
 闪动窗口记录器初始化()
 

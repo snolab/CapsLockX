@@ -37,11 +37,11 @@ CLX_FolderModified(Folder, Changes) {
     if (!Reload_DeveloperAsYouInstallMeByGitClone) {
         return
     }
-    MsgBox, 4, % t("CapsLockX 重载模块"), 检测到配置更改，是否软重载？
+    MsgBox, 4, % t("CapsLockX 重载模块"), % t("检测到配置更改，是否软重载？")
     IfMsgBox Yes
     ; MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
     ; IfMsgBox Yes
-    TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动软重载。
+    TrayTip, % t("CapsLockX 重载模块"), % t("检测到配置更改，正在自动软重载。")
     sleep 200
     reload
 }
@@ -58,7 +58,7 @@ CLX_FolderChanged(Folder, Changes)
     global T_AutoReloadOnConfigsChange := CLX_Config("Advanced", "T_AutoReloadOnConfigsChange", 0, "用户配置修改保存时自动重载")
 
     if (T_AutoReloadOnConfigsChange) {
-        TrayTip, CapsLockX 重载模块, 检测到配置更改，正在自动重载。
+        TrayTip, % t("CapsLockX 重载模块"), % t("检测到配置更改，正在自动重载。")
         sleep 200
         ; CLX_Reload()
         reload
@@ -67,7 +67,7 @@ CLX_FolderChanged(Folder, Changes)
         if (!Reload_DeveloperAsYouInstallMeByGitClone) {
             return
         }
-        MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否重载？
+        MsgBox, 4, % t("CapsLockX 重载模块"), % t("检测到配置更改，是否重载？")
         IfMsgBox Yes
             Reload
         ; CLX_Reload()

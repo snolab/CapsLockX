@@ -7,10 +7,10 @@
 ; 版本：v2021.03.26
 ; ========== CapsLockX ==========
 
-global T_TomatoLife := CLX_Config("TomatoLife", "Enable", 0, "使用番茄时钟（默认禁用，改为 1 开启）")
-global T_TomatoLife_NoticeOnLaunch := CLX_Config("TomatoLife", "NoticeOnLaunch", 1, "启动时报告番茄状态")
-global T_TomatoLife_UseTomatoLifeSound := CLX_Config("TomatoLife", "UseTomatoLifeSound", 1, "使用番茄报时（00分和30分播放工作铃声，每小时的25分和55分播放休息铃声）（需要先开启番茄时钟）")
-global T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop := CLX_Config("TomatoLife", "UseTomatoLifeSwitchVirtualDesktop", 1, "使用番茄报时时，自动切换桌面（休息为桌面1，工作为桌面2）")
+global T_TomatoLife := CLX_Config("TomatoLife", "Enable", 0, t("使用番茄时钟（默认禁用，改为 1 开启）"))
+global T_TomatoLife_NoticeOnLaunch := CLX_Config("TomatoLife", "NoticeOnLaunch", 1, t("启动时报告番茄状态"))
+global T_TomatoLife_UseTomatoLifeSound := CLX_Config("TomatoLife", "UseTomatoLifeSound", 1, t("使用番茄报时（00分和30分播放工作铃声，每小时的25分和55分播放休息铃声）（需要先开启番茄时钟）"))
+global T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop := CLX_Config("TomatoLife", "UseTomatoLifeSwitchVirtualDesktop", 1, t("使用番茄报时时，自动切换桌面（休息为桌面1，工作为桌面2）"))
 
 if (T_TomatoLife) {
     高精度时间配置()
@@ -26,7 +26,7 @@ Return
     ; IfMsgBox, Cancel
     ; return
 
-    global T_TomatoLife_UsingHighPerformanceTime := CLX_Config("TomatoLife", "T_UsingHighPerformanceTime", "0", "已经配置过高精度时间的Flag")
+    global T_TomatoLife_UsingHighPerformanceTime := CLX_Config("TomatoLife", "T_UsingHighPerformanceTime", "0", t("已经配置过高精度时间的Flag"))
     if (T_TomatoLife_UsingHighPerformanceTime)
         return
     ToolTip, 番茄时钟开启，正在为您配置系统高精度时间
@@ -84,7 +84,7 @@ Return
 
     ; 状态动作
     if ("工作时间" == 番茄状态) {
-        TrayTip 番茄时钟：%番茄状态%, 工作时间到啦！
+        TrayTip % t("番茄时钟：") . %番茄状态%, % t("工作时间到啦！")
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
         ; sleep 10000 ; 暂缓10秒切工作桌面
         if (T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop && !tomatoLaunchFlag) {
@@ -92,7 +92,7 @@ Return
         }
     }
     if ("休息时间" == 番茄状态) {
-        TrayTip 番茄时钟：%番茄状态%, 起来运动一下收拾收拾东西！
+        TrayTip % t("番茄时钟：") . %番茄状态%, % t("起来运动一下收拾收拾东西！")
         SoundPlay % "Data/NoteG_C.mp3" ; 降调
         sleep 10000 ; 暂缓10秒切休息桌面
         if(T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop && !tomatoLaunchFlag) {

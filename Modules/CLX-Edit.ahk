@@ -17,11 +17,11 @@ if (!CapsLockX) {
     ExitApp
 }
 
-global CLX_HJKL_Scroll := CLX_Config("TMouse", "CLX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
-global 编辑增强_SpeedRatioX := CLX_Config("EditEnhance", "SpeedRatioX", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global 编辑增强_SpeedRatioY := CLX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global 编辑增强_PageSpeed := CLX_Config("EditEnhance", "PageSpeed", 1, "翻页速率")
-global 编辑增强_TabSpeed := CLX_Config("EditEnhance", "TabSpeed", 1, "Tab速率")
+global CLX_HJKL_Scroll := CLX_Config("TMouse", "CLX_HJKL_Scroll", 0, t("使用IJKL滚轮移动滚轮，比RF多一个横轴。"))
+global 编辑增强_SpeedRatioX := CLX_Config("EditEnhance", "SpeedRatioX", 1, t("HJKL光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类"))
+global 编辑增强_SpeedRatioY := CLX_Config("EditEnhance", "SpeedRatioY", 1, t("HJKL光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类"))
+global 编辑增强_PageSpeed := CLX_Config("EditEnhance", "PageSpeed", 1, t("U:PageDown I:PageUP 翻页速率"))
+global 编辑增强_TabSpeed := CLX_Config("EditEnhance", "TabSpeed", 1, t("Tab速率"))
 global 方向键模拟 := new AccModel2D(Func("方向键模拟"), 0.1, 编辑增强_SpeedRatioX * 15, 编辑增强_SpeedRatioY * 15)
 global 翻页键模拟 := new AccModel2D(Func("翻页键模拟"), 0.1, 20 * 编辑增强_PageSpeed)
 global Tab键模拟 := new AccModel2D(Func("Tab键模拟"), 0.1, 15 * 编辑增强_TabSpeed)

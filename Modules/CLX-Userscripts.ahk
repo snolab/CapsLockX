@@ -14,7 +14,7 @@ if (!CapsLockX) {
 }
 ; Func("CLX_AppendHelp").Call(Func("CLX_LoadHelpFrom").Call(CLX_THIS_MODULE_HELP_FILE_PATH))
 
-global 快速窗口热键编辑用户模块目录 := CLX_ConfigDir "/"
+global 快速窗口热键编辑用户模块目录 := CLX_ConfigDir . "\"
 global 快速窗口热键编辑初始内容 := "
 (
 ; ========== CapsLockX ==========
@@ -54,12 +54,12 @@ UserModuleEdit(dir, filename := "")
     WinGet, 进程名, ProcessName, ahk_id %hWnd%
 
     filename := filename || "/应用-" 进程名 ".user.ahk"
-    path := dir "/" filename
+    path := dir . "/" . filename
 
     WinGetTitle, title, ahk_id %hWnd%
     match = %title% ahk_class %窗口类名% ahk_exe %进程名%
 
-    MsgBox 开始编辑用户脚本： %path%
+    MsgBox % t("开始编辑用户脚本：") . %path%
     if (!FileExist(path)) {
         FileAppend, %快速窗口热键编辑初始内容%, %path%
     }

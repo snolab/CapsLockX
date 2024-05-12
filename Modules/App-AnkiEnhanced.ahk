@@ -14,24 +14,24 @@
 
 ;^!F12:: ExitApp
 
-Global Anki增强_Lock := 0
+Global AnkiEnhance_Lock := 0
 
 #WinActivateForce
 Return
 
 AnkiEnlock(key, to)
 {
-    if (Anki增强_Lock) {
+    if (AnkiEnhance_Lock) {
         Send {%key% up}r
         Return
     }
-    Anki增强_Lock := 1
+    AnkiEnhance_Lock := 1
     Send %to%
     KeyWait, %key%, T60 ; wait for 60 seconds
 }
 AnkiUnlock(x)
 {
-    Anki增强_Lock := 0
+    AnkiEnhance_Lock := 0
     Send %x%
 }
 
@@ -102,7 +102,7 @@ $Left up:: AnkiUnlock("{space}")
 $Down up:: AnkiUnlock("{space}")
 $Right up:: AnkiUnlock("{space}")
 
-; 快速从剪贴板导入卡片列表
+; 快速从ClipboardImported卡片列表
 $!i:: AnkiImport()
 AnkiImport()
 {
@@ -118,7 +118,7 @@ AnkiImport()
     Send ^+i
 
     ; 获取到文本后保存到临时文件……
-    FileName = %APPDATA%\Anki2\剪贴板导入.txt
+    FileName = %APPDATA%\Anki2\ClipboardImported.txt
     file := FileOpen(FileName, "w", "UTF-8")
     if !IsObject(file) {
         MsgBox Can't open "%FileName%" for writing.
@@ -158,7 +158,7 @@ CaptureScreenNoteAdd()
     ClipWait, 10, 1
     WinShow ahk_id %addWindow%
     if ErrorLevel {
-        TrayTip, CapsLockX, 没有获取到剪贴板的内容
+        TrayTip, CapsLockX, % t("没有获取到剪贴板的内容")
         Return False
     }
     while !WinActive("ahk_id" addWindow) && WinExist("ahk_id" addWindow)
@@ -179,7 +179,7 @@ $!c::
     ClipWait, 10, 1
     if ErrorLevel
     {
-        TrayTip, CapsLockX, 没有获取到剪贴板的内容
+        TrayTip, CapsLockX, % t("没有获取到剪贴板的内容")
     Return
 }
 Send ^v
