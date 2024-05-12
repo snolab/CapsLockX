@@ -130,7 +130,7 @@ EvalJavaScriptByNodeServer(code){
                         (res) =>
                         (res?.toString !== {}.toString && String(res)) ||
                         JSON.stringify(res))
-                    .catch((e) => (console.error("错误", e), e.toString()))
+                    .catch((e) => (console.error("Error", e), e.toString()))
                     .then((s) => (res.end(s), console.log("入：", code, "\n出：", s)));
                 });
             })
@@ -180,8 +180,8 @@ EvalJavaScriptByNodeStdIO(code){
     realcode .= "}" "`n"
     ; 写入纯 UTF8 脚本文件
     FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
-    if (!FileExist(inputScriptPath)){
-        TrayTip 错误, % inputScriptPath "执行失败，未能写入脚本文件"
+    if (!FileExist(inputScriptPath)) {
+        TrayTip % t("错误"), % inputScriptPath t("执行失败，未能写入脚本文件")
         Return "err"
     }
     ; 执行 node 的指令
