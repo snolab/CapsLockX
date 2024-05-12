@@ -73,10 +73,10 @@ return
 ;     MsgBox % stat
 ; }
 #if
-    
+
 ^!Home::
-    CapsLockX_Paused := 0
-    if(CapsLockX_Paused) {
+    CLX_Paused := 0
+    if(CLX_Paused) {
         TrayTip, 暂停, CapsLockX 已暂停
     } else {
         TrayTip, 暂停, CapsLockX 已恢复
@@ -84,8 +84,8 @@ return
 Return
 
 ^!End::
-    CapsLockX_Paused := 1
-    if(CapsLockX_Paused) {
+    CLX_Paused := 1
+    if(CLX_Paused) {
         TrayTip, 暂停, CapsLockX 已暂停
     } else {
         TrayTip, 暂停, CapsLockX 已恢复

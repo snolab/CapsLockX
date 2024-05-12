@@ -682,7 +682,7 @@ Star Chart ⭐️
 Related Communities:
 
 - [CapsLockX's issues (can be used as a forum)](https://github.com/snolab/CapsLockX/issues) ✉️
-- CapsLockX User Telegram Group: [t.me/CapsLockX_users](https://t.me/CapsLockX_users)📱
+- CapsLockX User Telegram Group: [t.me/CLX_users](https://t.me/CLX_users)📱
 - CapsLockX User QQ Group 🐧: [100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ Group 🐧: 271105729
 - AHK Advanced QQ Group 🐧: 717947647

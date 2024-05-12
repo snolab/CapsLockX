@@ -680,7 +680,7 @@ Ctrl + Alt + 同上，但一般为全局热键
 相关社群：
 
 - [CapsLockX 的 issues （可作论坛使用）](https://github.com/snolab/CapsLockX/issues) ✉️
-- CapsLockX 用户电报群：[t.me/CapsLockX_users](https://t.me/CapsLockX_users)📱
+- CapsLockX 用户电报群：[t.me/CLX_users](https://t.me/CLX_users)📱
 - CapsLockX 用户 QQ 群 🐧：[100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ 群 🐧： 271105729
 - AHK 高级 QQ 群 🐧： 717947647

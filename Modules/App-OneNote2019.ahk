@@ -269,7 +269,7 @@ OneNote2019创建链接窗口内(){
     return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
 }
 
-; /:: CapsLockX_ShowHelp OneNote2019创建链接窗口
+; /:: CLX_ShowHelp OneNote2019创建链接窗口
 
 ; 复制链接笔记页面的搜索结果
 !+s:: 笔记条目搜索结果复制整理向页面粘贴条数()

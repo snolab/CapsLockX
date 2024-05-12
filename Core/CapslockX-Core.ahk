@@ -33,13 +33,13 @@ SetTitleMatchMode RegEx
 global CapsLockX := 1 ; 模块运行标识符
 global CapsLockXMode := 0
 global ModuleState := 0
-global CapsLockX_FnActed := 0
+global CLX_FnActed := 0
 global CM_NORMAL := 0 ; 普通模式（键盘的正常状态）
 global CM_FN := 1 ; 组合键 CapsLockX 模式（或称组合键模式
 global CM_CapsLockX := 2 ; CapsLockX 模式，通过长按CLX键进入
 ; global CM_FNX := 3 ; FnX 模式并不存在
 global CapsLockPressTimestamp := 0
-global CapsLockX_上次触发键 := ""
+global CLX_上次触发键 := ""
 
 ; value func
 CapsLockX()
@@ -69,66 +69,66 @@ UpdateCapsLockXLight()
 
 global T_IgnoresByLines
 defaultIgnoreFilePath := "./Data/CapsLockX.defaults.ignore.txt"
-userIgnoreFilePath := CapsLockX_配置目录 "/CapsLockX.user.ignore.txt"
+userIgnoreFilePath := CLX_ConfigDir "/CapsLockX.user.ignore.txt"
 FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 if (!T_IgnoresByLinesUser) {
     FileCopy, %defaultIgnoreFilePath%, %userIgnoreFilePath%
     FileRead, T_IgnoresByLines, %userIgnoreFilePath%
 }
 
-global CapsLockX_Paused := 0
+global CLX_Paused := 0
 
-#if CapsLockX_Avaliable()
+#if CLX_Avaliable()
 
-#if CapsLockX_NotAvaliable()
+#if CLX_NotAvaliable()
 
 #If
 
-Hotkey, If, CapsLockX_Avaliable()
+Hotkey, If, CLX_Avaliable()
 
 if(T_XKeyAsCapsLock)
-    Hotkey *CapsLock, CapsLockX_Dn
+    Hotkey *CapsLock, CLX_Dn
 if(T_XKeyAsSpace)
-    Hotkey *Space, CapsLockX_Dn
+    Hotkey *Space, CLX_Dn
 if(T_XKeyAsInsert)
-    Hotkey *Insert, CapsLockX_Dn
+    Hotkey *Insert, CLX_Dn
 if(T_XKeyAsScrollLock)
-    Hotkey *ScrollLock, CapsLockX_Dn
+    Hotkey *ScrollLock, CLX_Dn
 if(T_XKeyAsRAlt)
-    Hotkey *RAlt, CapsLockX_Dn
+    Hotkey *RAlt, CLX_Dn
 
-Hotkey, If, CapsLockX_NotAvaliable()
+Hotkey, If, CLX_NotAvaliable()
 
 if(T_XKeyAsCapsLock)
-    Hotkey CapsLock, CapsLockX_NotAvaliable
+    Hotkey CapsLock, CLX_NotAvaliable
 if(T_XKeyAsSpace)
-    Hotkey Space, CapsLockX_NotAvaliable
+    Hotkey Space, CLX_NotAvaliable
 if(T_XKeyAsInsert)
-    Hotkey Insert, CapsLockX_NotAvaliable
+    Hotkey Insert, CLX_NotAvaliable
 if(T_XKeyAsScrollLock)
-    Hotkey ScrollLock, CapsLockX_NotAvaliable
+    Hotkey ScrollLock, CLX_NotAvaliable
 if(T_XKeyAsRAlt)
-    Hotkey RAlt, CapsLockX_NotAvaliable
+    Hotkey RAlt, CLX_NotAvaliable
 
 Hotkey, If
 
 if(T_XKeyAsCapsLock)
-    Hotkey *CapsLock Up, CapsLockX_Up
+    Hotkey *CapsLock Up, CLX_Up
 if(T_XKeyAsSpace)
-    Hotkey *Space Up, CapsLockX_Up
+    Hotkey *Space Up, CLX_Up
 if(T_XKeyAsInsert)
-    Hotkey *Insert Up, CapsLockX_Up
+    Hotkey *Insert Up, CLX_Up
 if(T_XKeyAsScrollLock)
-    Hotkey *ScrollLock Up, CapsLockX_Up
+    Hotkey *ScrollLock Up, CLX_Up
 if(T_XKeyAsRAlt)
-    Hotkey *RAlt Up, CapsLockX_Up
+    Hotkey *RAlt Up, CLX_Up
 
 SetWorkingDir, %A_ScriptDir%\..\
 
 #Include Core\CapsLockX-i18n.ahk
 ; todo: move this generated file into user folder
 #Include Core\CapsLockX-ModulesRunner.ahk
-CapsLockX_Loaded()
+CLX_Loaded()
 #Include Core\CapsLockX-ModulesFunctions.ahk
 
 SetWorkingDir, %A_ScriptDir%\..\
@@ -198,11 +198,11 @@ CapsLockXTurnOn()
     re := UpdateCapsLockXLight()
     Return re
 }
-CapsLockX_NotAvaliable()
+CLX_NotAvaliable()
 {
-    return !CapsLockX_Avaliable()
+    return !CLX_Avaliable()
 }
-CapsLockX_Avaliable()
+CLX_Avaliable()
 {
     return 1
     flag_IgnoreWindow := 0
@@ -217,19 +217,19 @@ CapsLockX_Avaliable()
             }
         }
     }
-    return !CapsLockX_Paused
+    return !CLX_Paused
 }
-CapsLockX_Loaded()
+CLX_Loaded()
 {
     ; 使用退出键退出其它实例
     SendInput ^!+\
 
-    TrayTip CapsLockX %CapsLockX_VersionName%, 加载成功
-    Menu, Tray, Tip, CapsLockX %CapsLockX_VersionName%
+    TrayTip CapsLockX %CLX_VersionName%, % t("加载成功")
+    Menu, Tray, Tip, CapsLockX %CLX_VersionName%
 }
-CapsLockX_Reload()
+CLX_Reload()
 {
-    ToolTip, CapsLockX 重载中
+    ToolTip, % t("CapsLockX 重载中")
     static times := 0
     times += 1
     if (times == 1 && false) {
@@ -246,23 +246,22 @@ CapsLockX_Reload()
     }
 }
 
-CapsLockX_ModeExit()
+CLX_ModeExit()
 {
     ; TrayTip CapsLockX, 退出CLX模式
     ; ToolTip 退出CLX模式
     ; SetTimer CLX_HideToolTips, -1000
     CapsLockXMode &= ~CM_CapsLockX
 }
-CapsLockX_ModeEnter()
+CLX_ModeEnter()
 {
     ; ToolTip 进入CLX模式
     ; SetTimer CLX_HideToolTips, -1000
     CapsLockXMode |= CM_CapsLockX
 }
 
-CapsLockX_Dn()
+CLX_Dn()
 {
-    ;
     /*
     组合键细节：
     模式：
@@ -278,7 +277,7 @@ CapsLockX_Dn()
 
     */
     ; 按住其它键的时候 不触发 CapsLockX 避免影响打字
-    CapsLockX_上次触发键 := 触发键 := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
+    CLX_上次触发键 := 触发键 := RegExReplace(A_ThisHotkey, "[\$\*\!\^\+\#\s]")
     其它键按住 := 触发键 && 触发键 != A_PriorKey && GetKeyState(A_PriorKey, "P")
     WheelQ := InStr("WheelDown|WheelUp", A_PriorKey)
     SpaceQ := 触发键 == "Space"
@@ -288,7 +287,7 @@ CapsLockX_Dn()
 
     CLX_AND_SPACE_Q := (A_PriorKey == "CapsLock" && 触发键 == "Space") || (触发键 == "CapsLock" && A_PriorKey == "Space" )
     if (CLX_AND_SPACE_Q && A_TimeSincePriorHotkey < 250) {
-        ; CapsLockX_ModeEnter()
+        ; CLX_ModeEnter()
         CapsLockXMode |= CM_CapsLockX
         UpdateCapsLockXLight()
         KeyWait %触发键%
@@ -298,7 +297,7 @@ CapsLockX_Dn()
     ; tooltip % ModifierQ "a" ModifierEnableQ "a" WheelQ "a"  其它键按住
     BypassCapsLockX := !ModifierEnableQ && !WheelQ && 其它键按住
     if (BypassCapsLockX) {
-        CapsLockX_上次触发键 := ""
+        CLX_上次触发键 := ""
         ; ToolTip, % first5char "_" 触发键
         Send {Blind}{%触发键% Down}
         KeyWait %触发键%
@@ -311,16 +310,16 @@ CapsLockX_Dn()
     }
     ; 进入 Fn 模式
     ; if (CapsLockXMode & CM_CapsLockX) {
-    ;     CapsLockX_ModeExit()
+    ;     CLX_ModeExit()
     ;     KeyWait, %waitKey% ; wait to prevent flashing the quit and enter message
     ; }
-    ; CapsLockX_ModeExit()
+    ; CLX_ModeExit()
 
     CapsLockXMode |= CM_FN
     CapsLockXMode &= ~CM_CapsLockX
 
     ; ToolTip clxmode
-    if (A_PriorKey == CapsLockX_上次触发键) {
+    if (A_PriorKey == CLX_上次触发键) {
         if (A_PriorKey == "Space") {
             ; 长按空格时保持原功能
             ; TODO: read system repeat interval
@@ -330,19 +329,19 @@ CapsLockX_Dn()
         } else {
             if ( A_TickCount - CapsLockPressTimestamp > 1000) {
                 ; (20210817)长按（空格除外）
-                waitKey := CapsLockX_上次触发键
+                waitKey := CLX_上次触发键
                 ; 取消长按CLX进入CLX锁定模式
-                ; CapsLockX_ModeEnter()
+                ; CLX_ModeEnter()
                 ; 尝试增加长按显示热键提示
-                ; Func("CapsLockX_LongPressDown").Call()
+                ; Func("CLX_LongPressDown").Call()
                 KeyWait, %waitKey% ; wait to prevent flashing the quit and enter message
-                ; Func("CapsLockX_LongPressUp").Call()
+                ; Func("CLX_LongPressUp").Call()
             }
         }
     }
     UpdateCapsLockXLight()
 }
-CapsLockX_Up()
+CLX_Up()
 {
     CapsLockPressTimestamp := 0
 
@@ -350,12 +349,12 @@ CapsLockX_Up()
     CapsLockXMode &= ~CM_FN
 
     ; CLX单击弹起时
-    if (A_PriorKey == CapsLockX_上次触发键) {
+    if (A_PriorKey == CLX_上次触发键) {
         if (CapsLockXMode & CM_CapsLockX) {
-            ; CapsLockX_ModeExit()
+            ; CLX_ModeExit()
         } else {
             ; 单击 CapsLockX
-            if (CapsLockX_上次触发键 == "CapsLock") {
+            if (CLX_上次触发键 == "CapsLock") {
                 ; 切换 CapsLock 状态（原功能）
                 if (GetKeyState("CapsLock", "T")) {
                     SetCapsLockState, Off
@@ -364,14 +363,14 @@ CapsLockX_Up()
                 }
             }
             ; 单击 空格键
-            if (CapsLockX_上次触发键 == "Space") {
+            if (CLX_上次触发键 == "Space") {
                 ; 原功能（按空格键）
                 Send {Blind}{Space}
             }
         }
     }
     UpdateCapsLockXLight()
-    CapsLockX_上次触发键 := ""
+    CLX_上次触发键 := ""
 }
 RunAsSameUser(CMD, WorkingDir)
 {
@@ -383,23 +382,23 @@ RunAsLimitiedUser(CMD, WorkingDir)
     ; ref: [Run as normal user (not as admin) when user is admin - Ask for Help - AutoHotkey Community]( https://autohotkey.com/board/topic/79136-run-as-normal-user-not-as-admin-when-user-is-admin/ )
     ;
     ; TEST DEMO
-    ; schtasks /Create /tn CapsLockX_RunAsLimitedUser /sc ONCE /tr "cmd /k cd \"C:\\users\\snomi\\\" && notepad \".\\tmp.txt\"" /F /ST 00:00
-    ; schtasks /Run /tn CapsLockX_RunAsLimitedUser
-    ; schtasks /Delete /tn CapsLockX_RunAsLimitedUser /F
+    ; schtasks /Create /tn CLX_RunAsLimitedUser /sc ONCE /tr "cmd /k cd \"C:\\users\\snomi\\\" && notepad \".\\tmp.txt\"" /F /ST 00:00
+    ; schtasks /Run /tn CLX_RunAsLimitedUser
+    ; schtasks /Delete /tn CLX_RunAsLimitedUser /F
     ;
     ; Safe_WorkingDir := RegExReplace("C:\users\snomi\", "\\", "\\")
     ; Safe_CMD := RegExReplace(RegExReplace("notepad "".\temp.txt""", "\\", "\\"), "\""", "\""")
     Safe_WorkingDir := RegExReplace(WorkingDir, "\\", "\\")
     Safe_CMD := RegExReplace(RegExReplace(CMD, "\\", "\\"), "\""", "\""")
-    RunWait cmd /c schtasks /Create /tn CapsLockX_RunAsLimitedUser /F /sc ONCE /ST 00:00 /tr "cmd /c cd \"%Safe_WorkingDir% && %Safe_CMD%\", , Hide
-    RunWait cmd /c schtasks /Run /tn CapsLockX_RunAsLimitedUser, , Hide
-    RunWait cmd /c schtasks /Delete /tn CapsLockX_RunAsLimitedUser /F, , Hide
+    RunWait cmd /c schtasks /Create /tn CLX_RunAsLimitedUser /F /sc ONCE /ST 00:00 /tr "cmd /c cd \"%Safe_WorkingDir% && %Safe_CMD%\", , Hide
+    RunWait cmd /c schtasks /Run /tn CLX_RunAsLimitedUser, , Hide
+    RunWait cmd /c schtasks /Delete /tn CLX_RunAsLimitedUser /F, , Hide
 }
 ; 接下来是流程控制
 #if
 
-; CapsLockX 模式切换处理
-CapsLockX_NotAvaliable:
+; CapsLockX Mode switching processing
+CLX_NotAvaliable:
     TrayTip, CapsLockX, NotAvaliable
 Return
 

@@ -42,11 +42,11 @@ SceneTips()
         ToolTip %msg%
     }
 }
-CapsLockX_LongPressDown()
+CLX_LongPressDown()
 {
     SceneTips()
 }
-CapsLockX_LongPressUp()
+CLX_LongPressUp()
 {
     SceneTipsRemove()
 }

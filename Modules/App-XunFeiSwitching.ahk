@@ -7,8 +7,8 @@
 ; 2021-04-15 更新 @telppa：[修改了一下语音识别模块的代码。・Issue #14・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/14 )
 ;
 
-global T_EnableXunFeiSwitching := CapsLockX_Config("App", "T_EnableXunFeiSwitching", 1, "使用 Win+H 快速启动讯飞语音悬浮窗（默认启用）")
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+global T_EnableXunFeiSwitching := CLX_Config("App", "T_EnableXunFeiSwitching", 1, "使用 Win+H 快速启动讯飞语音悬浮窗（默认启用）")
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 

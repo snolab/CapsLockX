@@ -17,22 +17,22 @@ if (!CapsLockX) {
     ExitApp
 }
 
-global TMouse_Disabled := CapsLockX_Config("TMouse", "Disabled", 0, "禁用模拟鼠标模块")
-global TMouse_SendInput := CapsLockX_Config("TMouse", "SendInput", 1, "使用 SendInput 方法提高模拟鼠标点击、移动性能")
-global TMouse_SendInputAPI := CapsLockX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")
-global TMouse_SendInputScroll := CapsLockX_Config("TMouse", "TMouse_SendInputScroll", 0, "使用 Windows API 强势提升模拟鼠标滚轮性能（目前有bug不建议启用）")
+global TMouse_Disabled := CLX_Config("TMouse", "Disabled", 0, "禁用模拟鼠标模块")
+global TMouse_SendInput := CLX_Config("TMouse", "SendInput", 1, "使用 SendInput 方法提高模拟鼠标点击、移动性能")
+global TMouse_SendInputAPI := CLX_Config("TMouse", "SendInputAPI", 1, "使用 Windows API 强势提升模拟鼠标移动性能")
+global TMouse_SendInputScroll := CLX_Config("TMouse", "TMouse_SendInputScroll", 0, "使用 Windows API 强势提升模拟鼠标滚轮性能（目前有bug不建议启用）")
 
-global TMouse_StickyCursor := CapsLockX_Config("TMouse", "StickyCursor", 1, "启用自动粘附各种按钮，编辑框")
-global TMouse_StopAtScreenEdge := CapsLockX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
+global TMouse_StickyCursor := CLX_Config("TMouse", "StickyCursor", 1, "启用自动粘附各种按钮，编辑框")
+global TMouse_StopAtScreenEdge := CLX_Config("TMouse", "StopAtScreenEdge", 1, "撞上屏幕边界后停止加速")
 
 ; 根据屏幕 DPI 比率，自动计算，得出，如果数值不对，才需要纠正
-global TMouse_UseDPIRatio := CapsLockX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
-global TMouse_MouseSpeedRatio := CapsLockX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
-global TMouse_WheelSpeedRatio := CapsLockX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_UseDPIRatio := CLX_Config("TMouse", "UseDPIRatio", 1, "是否根据屏幕 DPI 比率缩放鼠标速度")
+global TMouse_MouseSpeedRatio := CLX_Config("TMouse", "MouseSpeedRatio", 1, "鼠标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
+global TMouse_WheelSpeedRatio := CLX_Config("TMouse", "WheelSpeedRatio", 1, "滚轮加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global TMouse_DPIRatio := TMouse_UseDPIRatio ? A_ScreenDPI / 96 : 1
-global CapsLockX_HJKL_Scroll := CapsLockX_Config("TMouse", "CapsLockX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
+global CLX_HJKL_Scroll := CLX_Config("TMouse", "CLX_HJKL_Scroll", 0, "使用IJKL滚轮移动滚轮，比RF多一个横轴。")
 
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
+CLX_AppendHelp( CLX_LoadHelpFrom("Modules/01.1-插件-鼠标模拟.md" ))
 ; global debug_fps := new FPS_Debugger()
 global 鼠标模拟 := new AccModel2D(Func("鼠标模拟"), 0.1, TMouse_DPIRatio * 120 * 2 * TMouse_MouseSpeedRatio)
 global ScrollSimulator := new AccModel2D(Func("ScrollSimulator"), 0.1, TMouse_DPIRatio * 120 * 4 * TMouse_WheelSpeedRatio)
@@ -62,21 +62,21 @@ global GID_PRESSANDTAP:=7
 
 Return
 
-#if CapsLockXMode && !CapsLockX_MouseButtonSwitched
+#if CapsLockXMode && !CLX_MouseButtonSwitched
 
 ; 鼠标按键处理
-*e:: CapsLockX_LMouseButtonDown("e")
-*q:: CapsLockX_RMouseButtonDown("q")
-*e Up::CapsLockX_LMouseButtonUp()k
-*q Up:: CapsLockX_RMouseButtonUp()
+*e:: CLX_LMouseButtonDown("e")
+*q:: CLX_RMouseButtonDown("q")
+*e Up::CLX_LMouseButtonUp()k
+*q Up:: CLX_RMouseButtonUp()
 
-#if CapsLockXMode && CapsLockX_MouseButtonSwitched
+#if CapsLockXMode && CLX_MouseButtonSwitched
 
 ; 鼠标按键处理
-*e:: CapsLockX_RMouseButtonDown("e")
-*q:: CapsLockX_LMouseButtonDown("q")
-*e Up::CapsLockX_RMouseButtonUp()
-*q Up:: CapsLockX_LMouseButtonUp()
+*e:: CLX_RMouseButtonDown("e")
+*q:: CLX_LMouseButtonDown("q")
+*e Up::CLX_RMouseButtonUp()
+*q Up:: CLX_LMouseButtonUp()
 
 #if CapsLockXMode
 
@@ -366,36 +366,36 @@ PostMessageForScroll(msg, zDelta)
     ; tooltip % x " " y "`n" ControlClass1  "`n"  ControlClass2 "`n" ControlClass3 "`n" wid
 }
 
-CapsLockX_LMouseButtonDown(wait){
-    global CapsLockX_鼠标左键等待
-    if (CapsLockX_鼠标左键等待) {
+CLX_LMouseButtonDown(wait){
+    global CLX_鼠标左键等待
+    if (CLX_鼠标左键等待) {
         return
     }
-    CapsLockX_鼠标左键等待 := wait
+    CLX_鼠标左键等待 := wait
     SendEvent {Blind}{LButton Down}
     KeyWait %wait%
-    ; Hotkey, %wait% Up, CapsLockX_LMouseButtonUp
+    ; Hotkey, %wait% Up, CLX_LMouseButtonUp
 }
-CapsLockX_LMouseButtonUp(){
-    global CapsLockX_鼠标左键等待
+CLX_LMouseButtonUp(){
+    global CLX_鼠标左键等待
     SendEvent {Blind}{LButton Up}
-    CapsLockX_鼠标左键等待 := ""
+    CLX_鼠标左键等待 := ""
 
 }
-CapsLockX_RMouseButtonDown(wait){
-    global CapsLockX_RMouseButtonWait
-    if (CapsLockX_RMouseButtonWait) {
+CLX_RMouseButtonDown(wait){
+    global CLX_RMouseButtonWait
+    if (CLX_RMouseButtonWait) {
         return
     }
-    CapsLockX_RMouseButtonWait := wait
+    CLX_RMouseButtonWait := wait
     SendEvent {Blind}{RButton Down}
     KeyWait %wait%
-    ; Hotkey, %wait% Up, CapsLockX_RMouseButtonUp
+    ; Hotkey, %wait% Up, CLX_RMouseButtonUp
 }
-CapsLockX_RMouseButtonUp(){
-    global CapsLockX_RMouseButtonWait
+CLX_RMouseButtonUp(){
+    global CLX_RMouseButtonWait
     SendEvent {Blind}{RButton Up}
-    CapsLockX_RMouseButtonWait := ""
+    CLX_RMouseButtonWait := ""
 }
 鼠标模拟_ToolTip(tips){
     ToolTip %tips%

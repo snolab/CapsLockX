@@ -9,7 +9,7 @@
 
 ; 2021-04-15 更新 @telppa：[修改了一下语音识别模块的代码。・Issue #14・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/14 )
 ;
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 

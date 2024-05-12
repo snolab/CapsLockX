@@ -30,16 +30,16 @@ if (!CapsLockX) {
     ExitApp
 }
 
-global VirtualDesktopPinPattern1 := CapsLockX_Config("VirtualDesktopPinPattern", "p1", "#Desktop1", "Pin matched window to desktop 1")
-global VirtualDesktopPinPattern2 := CapsLockX_Config("VirtualDesktopPinPattern", "p2", "#Desktop2", "Pin matched window to desktop 2")
-global VirtualDesktopPinPattern3 := CapsLockX_Config("VirtualDesktopPinPattern", "p3", "#Desktop3", "Pin matched window to desktop 3")
-global VirtualDesktopPinPattern4 := CapsLockX_Config("VirtualDesktopPinPattern", "p4", "#Desktop4", "Pin matched window to desktop 4")
-global VirtualDesktopPinPattern5 := CapsLockX_Config("VirtualDesktopPinPattern", "p5", "#Desktop5", "Pin matched window to desktop 5")
-global VirtualDesktopPinPattern6 := CapsLockX_Config("VirtualDesktopPinPattern", "p6", "#Desktop6", "Pin matched window to desktop 6")
-global VirtualDesktopPinPattern7 := CapsLockX_Config("VirtualDesktopPinPattern", "p7", "#Desktop7", "Pin matched window to desktop 7")
-global VirtualDesktopPinPattern8 := CapsLockX_Config("VirtualDesktopPinPattern", "p8", "#Desktop8", "Pin matched window to desktop 8")
-global VirtualDesktopPinPattern9 := CapsLockX_Config("VirtualDesktopPinPattern", "p9", "#Desktop9", "Pin matched window to desktop 9")
-global VirtualDesktopPinPattern0 := CapsLockX_Config("VirtualDesktopPinPattern", "p0", "#Desktop0", "Pin matched window to desktop 0")
+global VirtualDesktopPinPattern1 := CLX_Config("VirtualDesktopPinPattern", "p1", "#Desktop1", "Pin matched window to desktop 1")
+global VirtualDesktopPinPattern2 := CLX_Config("VirtualDesktopPinPattern", "p2", "#Desktop2", "Pin matched window to desktop 2")
+global VirtualDesktopPinPattern3 := CLX_Config("VirtualDesktopPinPattern", "p3", "#Desktop3", "Pin matched window to desktop 3")
+global VirtualDesktopPinPattern4 := CLX_Config("VirtualDesktopPinPattern", "p4", "#Desktop4", "Pin matched window to desktop 4")
+global VirtualDesktopPinPattern5 := CLX_Config("VirtualDesktopPinPattern", "p5", "#Desktop5", "Pin matched window to desktop 5")
+global VirtualDesktopPinPattern6 := CLX_Config("VirtualDesktopPinPattern", "p6", "#Desktop6", "Pin matched window to desktop 6")
+global VirtualDesktopPinPattern7 := CLX_Config("VirtualDesktopPinPattern", "p7", "#Desktop7", "Pin matched window to desktop 7")
+global VirtualDesktopPinPattern8 := CLX_Config("VirtualDesktopPinPattern", "p8", "#Desktop8", "Pin matched window to desktop 8")
+global VirtualDesktopPinPattern9 := CLX_Config("VirtualDesktopPinPattern", "p9", "#Desktop9", "Pin matched window to desktop 9")
+global VirtualDesktopPinPattern0 := CLX_Config("VirtualDesktopPinPattern", "p0", "#Desktop0", "Pin matched window to desktop 0")
 
 
 Return
@@ -57,7 +57,7 @@ Return
 +]:: MoveActiveWindowWithAction("^#{Right}")
 
 #if CapsLockXMode
-    
+
 ; Add or delete desktop
 !Backspace:: SendEvent ^#{F4}
 !+Backspace:: SendEvent ^#d
@@ -226,7 +226,7 @@ MoveActiveWindowToDesktop(idx)
 MoveAllVisibleWindowToDesktop(idx)
 {
     listOfWindow := WindowsListOfMonitorFast(arrangeFlags | ARRANGE_MAXWINDOW | ARRANGE_MINWINDOW)
-    
+
     loop Parse, listOfWindow, `n
     {
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
@@ -242,7 +242,7 @@ MoveAllVisibleWindowToDesktop(idx)
         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
         if(!hWnd)
             continue
-        
+
         DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_SHOWNOACTIVATE := 0x4) )
     }
 }
@@ -302,7 +302,7 @@ SwitchToDesktopByHotkey(idx)
         SendEvent ^#{Left}
     }
     lastIdx := idx
-    
+
     return idx
 }
 
@@ -400,7 +400,7 @@ WindowsListInAllVirtualDesktop()
     WS_EX_NOACTIVATE := 0x08000000
     WS_POPUP := 0x80000000
     DetectHiddenWindows, Off
-    WinGet, id, List, , , 
+    WinGet, id, List, , ,
     loop %id% {
         hWnd := id%A_Index%
         filter := !WindowsListOfMonitorInAllVirtualDesktopFilter(hWnd)

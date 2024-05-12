@@ -11,7 +11,7 @@ if (!CapsLockX){
     ExitApp
 }
 
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 
@@ -61,7 +61,7 @@ EvalJavaScriptByBrowser_TODO(code){
 EvalJavaScriptByNodeServer(code){
     static PassTutorial := ""
     if(!PassTutorial)
-        PassTutorial := CapsLockX_Config("EvalJS", "PassTutorial", 0, "忽略使用提示")
+        PassTutorial := CLX_Config("EvalJS", "PassTutorial", 0, "忽略使用提示")
     /*
     sno.md5("asdf")=
     */
@@ -73,11 +73,11 @@ EvalJavaScriptByNodeServer(code){
     ;     让我们来试试输入：
     ;     sno.md5("asdf")
     ;     )
-    ;     CapsLockX_ConfigSet("EvalJS", "PassTutorial", 1)
+    ;     CLX_ConfigSet("EvalJS", "PassTutorial", 1)
     ; }
     static port := ""
     if(!port)
-        port := CapsLockX_Config("EvalJS", "Port", 29503, "EvalJS 服务端口")
+        port := CLX_Config("EvalJS", "Port", 29503, "EvalJS 服务端口")
     static nodePID := 0
     static EvalNodeJS_PIDFile := A_Temp "/EvalNodeJS.pid"
     ; pid 文件读取尝试

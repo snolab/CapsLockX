@@ -9,7 +9,7 @@
 
 return
 
-CapsLockX_MakeStartup()
+CLX_MakeStartup()
 {
     content = cd "%A_WorkingDir%" && start "" CapsLockX.exe
     startCMDPath := APPDATA "\Microsoft\Windows\Start Menu\Programs\Startup\capslockx-startup.cmd"

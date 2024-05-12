@@ -13,7 +13,7 @@
 FileEncoding, UTF-8
 
 ; 開關 默认关
-global SnoChordTypingEnable := CapsLockX_Config("Plugins", "EnableSnoChordTyping", 0, "启用雪星并击（实验中），")
+global SnoChordTypingEnable := CLX_Config("Plugins", "EnableSnoChordTyping", 0, "启用雪星并击（实验中），")
 if (!T_SnoChordTypingEnable)
     Return
 
@@ -36,7 +36,7 @@ Return
     global SnoChordTypingLastKeyDownTick := 0
 
     ; 读入配置
-    ConfigPath := CapsLockX_配置目录 "/雪星并击配置.ini"
+    ConfigPath := CLX_ConfigDir "/雪星并击配置.ini"
     IniRead, SnoChordTypingChordIntervalThreshold, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold, %SnoChordTypingChordIntervalThreshold%
     IniWrite, %SnoChordTypingChordIntervalThreshold%, %ConfigPath%, Common, SnoChordTypingChordIntervalThreshold
     IniRead, SnoChordTypingAllowRewriteString, %ConfigPath%, Common, SnoChordTypingAllowRewriteString, %SnoChordTypingAllowRewriteString%
