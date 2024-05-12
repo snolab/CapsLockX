@@ -4,8 +4,8 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. It allows you t
 
 Docs in Languages:
 **[English Docs (ChatGPT Translated)](https://capslockx.snomiao.com/)**
-**[简体中文 Docs (ChatGPT Translated)](./README.zh-hans.md)**
-**[ Docs (ChatGPT Translated)](./README.zh-hans.md)**
+**[简体中文 説明](./README.zh-hans.md)**
+**[English Docs (ChatGPT Translated)](./README.zh-hans.md)**
 
 **[See Any Language Docs (Google Translated)](https://capslockx.snomiao.com/)**
 
