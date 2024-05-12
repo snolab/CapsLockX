@@ -81,7 +81,7 @@ i18n_translated(lang, key)
         return translated
     }
 
-    question := key . "`n`nTranslate to " . lang
+    question := key . "`n`nTry translate to " . lang
 
     global brainstorm_origin
     if (!brainstorm_origin) {
