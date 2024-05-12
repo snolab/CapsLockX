@@ -1,10 +1,9 @@
-; - [Language Codes \| AutoHotkey v1]( https://www.autohotkey.com/docs/v1/misc/Languages.htm )
 
 global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
 global CLX_i18nConfigPath := "Core/lang.ini"
 清洗为_UTF16_WITH_BOM_型编码(CLX_i18nConfigPath)
 
-; Hans
+; - [Language Codes \| AutoHotkey v1]( https://www.autohotkey.com/docs/v1/misc/Languages.htm )
 LCID_7804 := "Chinese"  ; zh
 LCID_0004 := "Chinese (Simplified)" ; zh-Hans
 LCID_0804 := "Chinese (Simplified, China)" ; zh-CN
