@@ -64,9 +64,9 @@ brainstorm()
     content:=brainstorm_copy()
 
     prompt := ""
-    prompt .= t("例1： 'Translate to english：'")  . "`n"
-    prompt .= t("例2： '解釈这句話：'")  . "`n"
-    prompt .= t("例3： '总结5点：'")  . "`n"
+    prompt .= t("'例1：Translate to english：'")  . "`n"
+    prompt .= t("'例2：解釈这句話：'")  . "`n"
+    prompt .= t("'例3：总结5点：'")  . "`n"
     prompt .= "--- " . t("以下为提問内容") . " ---`n" . content
     InputBox, cmd,  % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
 

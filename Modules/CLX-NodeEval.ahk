@@ -89,7 +89,7 @@ EvalJavaScriptByNodeServer(code){
         nodePID := 0
     ; 不存在则尝试启动
     if(!nodePID){
-        TrayTip, EvalJS 模块, 正在启动 NodeJS 筆記服務...
+        TrayTip, % t("EvalJS 模块"), % t("正在启动 NodeJS 筆記服務...")
         EnvGet, USERPROFILE, USERPROFILE
         escaped_USERPROFILE := RegExReplace(USERPROFILE, "\\", "\\")
         ; 生成服务端代码
@@ -143,7 +143,7 @@ EvalJavaScriptByNodeServer(code){
         Run, node --inspect "%serverScriptPath%", %USERPROFILE%, Hide, nodePID
         FileDelete, %EvalNodeJS_PIDFile%
         FileAppend, %nodePID%, %EvalNodeJS_PIDFile%, UTF-8-Raw
-        TrayTip, EvalJS 模块, NodeJS 服务已启动。
+        TrayTip, % t("EvalJS 模块"), % t("NodeJS 服务已启动。")
     }
     ; 若没有代码需要执行则将进程退出
     if(!code){
@@ -198,7 +198,7 @@ EvalJavaScriptByNodeStdIO(code){
         stderr := exec.stderr.readall()
         stdout := exec.stdout.readall()
         out := stdout
-        if(stderr){
+        if (stderr) {
             TrayTip Error, % stderr
         }
         ; msgbox % out

@@ -2,7 +2,6 @@
 
 global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
 global CLX_i18nConfigPath := "Core/lang.ini"
-
 清洗为_UTF16_WITH_BOM_型编码(CLX_i18nConfigPath)
 
 ; Hans
@@ -69,13 +68,14 @@ t(s)
     return i18n_translated(lang, key)
 }
 
-i18n_translated(lang, key){
+i18n_translated(lang, key)
+{
     ; user translation
-    translated := CLX_ConfigGet("lang-" . lang, key, "")
-    if (translated) {
-        return translated
-    }
-    ; system
+    ; translated := CLX_ConfigGet("lang-" . lang, key, "")
+    ; if (translated) {
+    ;     return translated
+    ; }
+    ; system translation
     translated := CLX_i18n_ConfigGet("lang-" . lang, key, "")
     if (translated) {
         return translated
@@ -84,7 +84,7 @@ i18n_translated(lang, key){
     question := key . "`n`nTranslate to " . lang
 
     global brainstorm_origin
-    if (!brainstorm_origin){
+    if (!brainstorm_origin) {
         brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
     }
     endpoint := brainstorm_origin . "/ai/chat?ret=text"
@@ -95,7 +95,8 @@ i18n_translated(lang, key){
     xhr.Send(question)
     return "…[" . key . "]"
 }
-brainstorm_translatePostResult(lang, key, xhr){
+brainstorm_translatePostResult(lang, key, xhr)
+{
     if (xhr.readyState != 4)
         return
     if (xhr.status != 200) {
@@ -111,8 +112,8 @@ brainstorm_translatePostResult(lang, key, xhr){
         return
     }
     TrayTip, % "CapsLockX i18n [" . lang . "]", % key "=>" transcript,
-
-    CLX_ConfigSet("lang-" lang, key, transcript)
+    CLX_i18n_ConfigSet("lang-" . lang, key, transcript)
+    ; CLX_ConfigSet("lang-" . lang, key, transcript)
 }
 
 i18n_changeLanguage(lang := "auto")
@@ -127,10 +128,29 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
 {
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
-    global CLX_i18nConfigPath
-    IniRead, content, %CLX_i18nConfigPath%, %field%, %varName%, %defaultValue%
+    ; user locales
+    global CLX_ConfigDir
+    IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, %varName%, %defaultValue%
     if (content == "ERROR") {
-        return ""
+        content := ""
     }
-    return content
+    if (content) {
+        return content
+    }
+    ; clx pre-installed locales
+    IniRead, content, % CLX_i18nConfigPath, %field%, %varName%, %defaultValue%
+    if (content == "ERROR") {
+        content := ""
+    }
+    if (content) {
+        return content
+    }
+}
+CLX_i18n_ConfigSet(field, varName, value)
+{
+    global CLX_ConfigChangedTickCount
+    CLX_ConfigChangedTickCount := A_TickCount
+    global CLX_ConfigDir
+    IniSave(value, CLX_ConfigDir . "/" . field . ".ini", field, varName)
+    ; 清洗为_UTF16_WITH_BOM_型编码(CLX_ConfigDir)
 }

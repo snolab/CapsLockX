@@ -887,7 +887,7 @@ ShellMessage( wParam, lParam )
         鼠标位置记忆尝试()
         WinActivate, ahk_id %hWnd%
         WinGetTitle, this_title, ahk_id %hWnd%
-        TrayTip, 最近1分钟内闪动窗口激活, %this_title%
+        TrayTip, % t("最近1分钟内闪动窗口激活"), %this_title%
         最迟闪动窗口 := {}
         鼠标位置还原尝试()
     } else {

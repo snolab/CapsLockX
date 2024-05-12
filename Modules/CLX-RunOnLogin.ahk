@@ -18,5 +18,5 @@ CLX_MakeStartup()
     FileAppend, %content%, %startCMDPath%
     cmdView := "explorer /select, " """" startCMDPath """"
     run % cmdView
-    TrayTip 已在Startup文件夹添加CLX的开机自启动，请确认。
+    TrayTip % t("已在Startup文件夹添加CLX的开机自启动，请确认。")
 }

@@ -207,7 +207,7 @@ OneNote2019搜索启动() {
     wc.SetHTML(links_html)
     SendEvent {Escape}
 
-    TrayTip, %k% 条笔记链接已复制, %links%, 1
+    TrayTip, % k . t("条笔记链接已复制"), %links%, 1
     return k
 }
 
@@ -548,7 +548,7 @@ OneNote剪贴板收集(){
     ; ; 通常在弹起时触发
     ClipWait, 2, 1 ; 2 secons
     if(ErrorLevel) {
-        TrayTip, error, 复制失败
+        TrayTip, error, % t("复制失败")
         Return
     }
     WinGet, current, ID, A

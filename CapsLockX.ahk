@@ -245,14 +245,14 @@ Return
     全部帮助 := Trim(全部帮助, " `t`n")
 
     ; 生成 README 替换代码
-    NeedleRegEx := "m)(\s*)(<!-- 开始：抽取模块帮助 -->)([\s\S]*)\r?\n(\s*)(\r?\n<!-- 结束：抽取模块帮助 -->)"
+    NeedleRegEx := "m)(\s*)(<!-- MODULE_HELP_BEGIN -->)([\s\S]*)\r?\n(\s*)(\r?\n<!-- MODULE_HELP_END -->)"
     Replacement := "$1$2`n" 全部帮助 "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
 
     ; 检查 README 替换情况
     if (!Replaces) {
         Run https://capslockx.snomiao.com/
-        MsgBox % "加载模块帮助遇到错误。`n已为你打开 CapsLockX 主页，请手动更新 CapsLockX"
+        MsgBox % t("加载模块帮助遇到错误。") . "`n" . t("已为你打开 CapsLockX 主页，请手动更新 CapsLockX")
         MsgBox % targetREADME
         Return sourceREADME
     }
