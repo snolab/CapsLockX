@@ -1,6 +1,9 @@
 ; - [Language Codes \| AutoHotkey v1]( https://www.autohotkey.com/docs/v1/misc/Languages.htm )
 
 global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
+global CLX_i18nConfigPath := "Core/lang.ini"
+
+清洗为_UTF16_WITH_BOM_型编码(CLX_i18nConfigPath)
 
 ; Hans
 LCID_7804 := "Chinese"  ; zh
@@ -25,8 +28,13 @@ t(s)
 
     ; for dev, autotranslate
     ; run node "prompts/translate-en.md"
-    lang := "en"
-    if ( CLX_Lang == "auto" ) {
+
+    lang := CLX_Lang
+    if (!lang) {
+        lang:="auto"
+    }
+    if ( lang == "auto" ) {
+        lang := "en"
         if (A_Language == "7804") {
             lang := "zh"
         }
@@ -58,25 +66,34 @@ t(s)
             lang := "ja"
         }
     }
-    clx_i18n_TranslateByAsync(lang, key)
-    return CLX_ConfigGet("lang-" lang, key, key)
+    return i18n_translated(lang, key)
 }
-clx_i18n_TranslateByAsync(lang, key){
-    translated := CLX_ConfigGet("lang-" lang, key, "")
+
+i18n_translated(lang, key){
+    ; user translation
+    translated := CLX_ConfigGet("lang-" . lang, key, "")
     if (translated) {
-        return
+        return translated
     }
+    ; system
+    translated := CLX_i18n_ConfigGet("lang-" . lang, key, "")
+    if (translated) {
+        return translated
+    }
+
     question := key . "`n`nTranslate to " . lang
 
-    ; TrayTip, % "CapsLockX i18n [" . lang "]", % key "-->" lang,
-
     global brainstorm_origin
-    endpoint := brainstorm_origin "/ai/chat?ret=text"
+    if (!brainstorm_origin){
+        brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
+    }
+    endpoint := brainstorm_origin . "/ai/chat?ret=text"
     xhr := ComObjCreate("Msxml2.XMLHTTP")
     xhr.Open("POST", endpoint)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
     xhr.onreadystatechange := Func("brainstorm_translatePostResult").Bind(lang, key, xhr)
     xhr.Send(question)
+    return "…[" . key . "]"
 }
 brainstorm_translatePostResult(lang, key, xhr){
     if (xhr.readyState != 4)
@@ -101,5 +118,19 @@ brainstorm_translatePostResult(lang, key, xhr){
 i18n_changeLanguage(lang := "auto")
 {
     CLX_Lang := lang
+    if (!lang) {
+        lang:="auto"
+    }
     CLX_ConfigSet("Core", "Language", lang)
+}
+CLX_i18n_ConfigGet(field, varName, defaultValue)
+{
+    global CLX_ConfigChangedTickCount
+    CLX_ConfigChangedTickCount := A_TickCount
+    global CLX_i18nConfigPath
+    IniRead, content, %CLX_i18nConfigPath%, %field%, %varName%, %defaultValue%
+    if (content == "ERROR") {
+        return ""
+    }
+    return content
 }

@@ -1,9 +1,9 @@
 ﻿; 保存为 save with UTF8 with DOM
 
 ; 用户创建目录
-ConfigDir_Portable   := "./User"
+ConfigDir_Portable    := "./User"
 ConfigDir_UserProfile := USERPROFILE . "/.CapsLockX"
-ConfigDir_AppData  := APPDATA . "/CapsLockX"
+ConfigDir_AppData     := APPDATA . "/CapsLockX"
 
 ; 默认值
 LaunchConfigDir := ConfigDir_AppData
@@ -34,6 +34,7 @@ CLX_ConfigChangedTickCount := A_TickCount
 ; msgbox 清洗为_UTF16_WITH_BOM_型编码2
 
 CLX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
+
 ; 基本设定
 ; [Core]
 global T_XKeyAsSpace := CLX_Config("Core", "T_XKeyAsSpace", 1, ("使用 Space 作为引导键（默认启用，游戏玩家可在 .user.ignore.txt 里配置忽略游戏窗口）"))
@@ -73,7 +74,7 @@ CLX_ConfigSet(field, varName, setValue, comment := "")
     if (comment) {
         ; IniDelete, %CLX_ConfigPath%, %field%, %varName%#注释
         ; IniWrite, %comment%, %CLX_ConfigPath%, %field%, %varName%#注释
-        IniSave( comment, CLX_ConfigPath, field, varName . "#注释" )
+        IniSave( comment, CLX_ConfigPath, field, varName . "#" )
     }
     ; IniDelete, %CLX_ConfigPath%, %field%, %varName%
     ; IniWrite, %content%, %CLX_ConfigPath%, %field%, %varName%
