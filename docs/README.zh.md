@@ -2,10 +2,12 @@
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. Allows you to easily operate the computer efficiently like a hacker in a movie without leaving the keyboard with both hands . There are a lot of functions that you can understand at a touch and are super easy to use: editing enhancement, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and other super multi-functions are waiting for you to personally define.
 
-**[See English Docs (Google Translated)](https://capslockx.snomiao.com/)**
+其他语言：
+**[English README](./README.md)**
 
-<!-- zh-hans >
----
+**[See Any Language Docs (Google Translated)](https://capslockx.snomiao.com/)**
+
+## <!-- zh-hans >
 
 CapsLockX 是一款基于 AutoHotkey 的模块化热键脚本引擎。 让你可以轻轻松松像电影里的**黑客**一样，双手不离开键盘，**高效率**地操作电脑。这里有超多一摸就懂超好上手的功能：编辑增强、虚拟桌面与窗口管理、鼠标模拟、应用内热键增强、JS 数学表达式计算、等超多功能等你来亲自定义。主仓库地址 🏠：[https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
 
@@ -643,14 +645,14 @@ Ctrl + Alt + 同上，但一般为全局热键
 | 内存占用         | ✅ 约 2~3M                                       |                                                     |                                                     |                                                 |
 | 模块化           | ✅                                               | 🈚 无                                               | 🈚 无                                               | 🈚 无                                           |
 | 系统             | Win                                              | Mac（主），Win（次）                                | Win                                                 | Win, [Mac](https://capslox.com/)                |
-| 支持语言         | 中文                                             | 中文 - English                                      | 中文                                                | 中文 - English                                  |
+| 支持的语言       | 英语 / 中文 / 任何语言（由 ChatGPT 提供）        | 中文 / 英语                                         | 中文                                                | 中文 / 英语                                     |
 
 #### CapsLockX 地址 🔗 Project Urls
 
 以下几个仓库同步更新：
 
 - GitHub: [https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
-- Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)
+- Gitee: [https://gitee.com/snomiao/CapslockX](https://gitee.com/snomiao/CapslockX)k
 - Bitbucket: [https://bitbucket.org/snomiao/capslockx](https://bitbucket.org/snomiao/capslockx)
 - Gitlab: [https://gitlab.com/snomiao/CapsLockX/](https://gitlab.com/snomiao/CapsLockX/)
 
@@ -727,12 +729,12 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
 ### 相关话题 - Related Topics
 
 - [秦金伟](http://rsytes.coding-pages.com/)
-  - [2020-02-23 当键盘模拟鼠标 - qwertc]( https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247483745&idx=1&sn=16f16c1fa02e1ef386a83f3023fb109d&chksm=e8c54b93dfb2c285e49fa8045d2380b20810768e3be043f364be146a598faf5f363bbb2623e7&scene=21#wechat_redirect )
-  - [2020-10-26 键盘模拟鼠标2 - qwertc]( https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247484272&idx=1&sn=0ed1ff91bee008fc5c01dc0fe20e53ba&chksm=e8c54982dfb2c09493c88a0f7847ffb0b508598e0756ddd7e8ad94d1f31f65490388d6cff7a4&scene=21#wechat_redirect )
+  - [2020-02-23 当键盘模拟鼠标 - qwertc](https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247483745&idx=1&sn=16f16c1fa02e1ef386a83f3023fb109d&chksm=e8c54b93dfb2c285e49fa8045d2380b20810768e3be043f364be146a598faf5f363bbb2623e7&scene=21#wechat_redirect)
+  - [2020-10-26 键盘模拟鼠标 2 - qwertc](https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247484272&idx=1&sn=0ed1ff91bee008fc5c01dc0fe20e53ba&chksm=e8c54982dfb2c09493c88a0f7847ffb0b508598e0756ddd7e8ad94d1f31f65490388d6cff7a4&scene=21#wechat_redirect)
   - [2021-03-11 capslockX-治愈鼠标手 - qwertc](https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247484478&idx=1&sn=1518d7ec4dc08c1a72c08fcaff98550e&chksm=e8c54eccdfb2c7daed0ad9b8c03395e4211e029199374f4bc0dbdc9a8403c2dae86b740c95c5&scene=21#wechat_redirect)
-  - 2021年11月，键盘模拟鼠标3
-  - [2022-08-21 t0820 复制后匹配-siyuan-clx-截图 - qwertc]( https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247485441&idx=1&sn=848d5e6f3fb7c1e7b14100615ca7d0db&chksm=e8c542f3dfb2cbe5770fe19bb8b5c81935e52a4a686154e69104bc403ab6ce960d1b6ae429a9&scene=21#wechat_redirect )
-  - [2024-01-06 t0106 OpenAI加持的CapslockX - qwertc]( https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247485707&idx=1&sn=d40eea9f0b5bb81e3387ec592def4ed0&chksm=e8c543f9dfb2caef90939e2fafcb324fd757949c79399c55adfbab0940e70efd753fb6bf3837&token=1464360155&lang=zh_CN#rd)
+  - 2021 年 11 月，键盘模拟鼠标 3
+  - [2022-08-21 t0820 复制后匹配-siyuan-clx-截图 - qwertc](https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247485441&idx=1&sn=848d5e6f3fb7c1e7b14100615ca7d0db&chksm=e8c542f3dfb2cbe5770fe19bb8b5c81935e52a4a686154e69104bc403ab6ce960d1b6ae429a9&scene=21#wechat_redirect)
+  - [2024-01-06 t0106 OpenAI 加持的 CapslockX - qwertc](https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247485707&idx=1&sn=d40eea9f0b5bb81e3387ec592def4ed0&chksm=e8c543f9dfb2caef90939e2fafcb324fd757949c79399c55adfbab0940e70efd753fb6bf3837&token=1464360155&lang=zh_CN#rd)
 - [有没有办法将 Chrome OS 中的快捷键实现到 Windows 10 中 - V2EX](https://www.v2ex.com/t/778967)
 - [推荐一下我的键位映射工具 MyKeymap - V2EX](https://v2ex.com/t/844432)
 - [有多少人会把键盘上的 CapsLock 和 Backspace 对调？ - V2EX](https://www.v2ex.com/t/855901)
