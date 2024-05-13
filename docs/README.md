@@ -550,6 +550,7 @@ Related Communities:
 - CapsLockX User QQ Group 🐧: [100949388](https://jq.qq.com/?_wv=1027&k=56lsK8ko)
 - QZ/VimD/TC/AHK QQ Group 🐧: 271105729
 - AHK Advanced QQ Group 🐧: 717947647
+- The Little Red Dot mechanical keyboard group 🐧: 199606725
 
 For questions related to CapsLockX, you can directly join the group [@雪星](tencent://message?uin=997596439) or ask privately.
 

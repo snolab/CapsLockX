@@ -18,7 +18,7 @@ LCID_0011 := "Japanese"  ; ja
 LCID_0411 := "Japanese (Japan)"  ; ja-JP
 
 ; TODO: converts
-t(s, lang = "")
+t(s, lang := "")
 {
     global CLX_Lang
 
@@ -28,11 +28,11 @@ t(s, lang = "")
 
     ; for dev, autotranslate
     ; run node "prompts/translate-en.md"
-    if (!lang) {
+    if (lang == ""){
         lang := CLX_Lang
-    }
+    } 
     if (!lang) {
-        lang:="auto"
+        lang := "auto"
     }
     if ( lang == "auto" ) {
         lang := "en"
