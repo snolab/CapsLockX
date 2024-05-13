@@ -26,14 +26,20 @@ Return
         ; WinSet, TransColor, 0xffffff 150, ahk_id %iFlyWnd%
         ; WinSet, Transparent, 200, ahk_id %iFlyWnd%
         ; w357 h177
-        ControlClick, x175 y80, ahk_id %iFlyWnd%
+        WinGetPos, X, Y, Width, Height, ahk_id %iFlyWnd%
+        CLICK_X := Width / 2
+        CLICK_Y := Height / 2
+        ControlClick, x%CLICK_X% y%CLICK_Y%, ahk_id %iFlyWnd%
         return
     }
 
     ; v2
     iFlyWnd := WinExist("ahk_class UIIFlyVoiceFrame ahk_exe iFlyVoice.exe" )
     If (iFlyWnd){
-        ; WinGet, Transparent, Transparent
+        WinGetPos, X, Y, Width, Height, ahk_id %iFlyWnd%
+        CLICK_X := Width / 2
+        CLICK_Y := Height / 2
+        ; WinGet, Transparent, TransparentMhm
         ; WinSet, TransColor, Off, ahk_id %iFlyWnd%
         ; WinSet, TransColor, 0xffffff 150, ahk_id %iFlyWnd%
         ; WinSet, Transparent, 200, ahk_id %iFlyWnd%
