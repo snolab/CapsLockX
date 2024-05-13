@@ -18,12 +18,12 @@ if (A_IsAdmin) {
 SetWorkingDir, %A_ScriptDir%
 
 #Include %A_ScriptDir%/Core/CapsLockX-Config.ahk
-
 #Include %A_ScriptDir%/Core/CapsLockX-RunSilent.ahk
+#Include %A_ScriptDir%/Core/CapsLockX-i18n.ahk
 
-global CLX_模块路径 := "./Modules"
+global CLX_ModuleDir := "./Modules"
 ; global CLX_用户模块路径 := CLX_ConfigDir "/Modules"
-global CLX_核心路径 := "./Core"
+global CLX_CoreDir := "./Core"
 ; 版本
 global CLX_Version
 FileRead, CLX_Version, ./Core/version.txt
@@ -35,21 +35,22 @@ global 显示加载提示 := 1
 global loadingTips := ""
 
 ; 对 核心模块 进行 编码清洗
-清洗为_UTF8_WITH_BOM_型编码(CLX_核心路径 "/CapsLockX-Config.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_核心路径 "/CapsLockX-Core.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_核心路径 "/CapsLockX-RunSilent.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_核心路径 "/CapsLockX-Update.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-Config.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-Core.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-RunSilent.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-Update.ahk")
+清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-i18n.ahk")
 
 ; 复制用户模块
 ; TODO FIX：如果CLX已经开了的话，这一步会触发重启，这可能会导致一些文件冲突的BUG……
-FileDelete, %CLX_模块路径%/*.user.ahk
-FileDelete, %CLX_模块路径%/*.user.md
-FileCopy %CLX_ConfigDir%/*.user.ahk, %CLX_模块路径%/, 1
-FileCopy %CLX_ConfigDir%/*.user.md, %CLX_模块路径%/, 1
+FileDelete, %CLX_ModuleDir%/*.user.ahk
+FileDelete, %CLX_ModuleDir%/*.user.md
+FileCopy %CLX_ConfigDir%/*.user.ahk, %CLX_ModuleDir%/, 1
+FileCopy %CLX_ConfigDir%/*.user.md, %CLX_ModuleDir%/, 1
 
 ; 模块加载器路径
-global CLX_ModulesRunner := CLX_核心路径 "/CapsLockX-ModulesRunner.ahk"
-global CLX_ModulesFunctions := CLX_核心路径 "/CapsLockX-ModulesFunctions.ahk"
+global CLX_ModulesRunner := "Core\CapsLockX-ModulesRunner.ahk"
+global CLX_ModulesFunctions := "Core\CapsLockX-ModulesFunctions.ahk"
 ; LoadModules(CLX_ModulesRunner, CLX_ModulesFunctions)
 
 ; 判断安装方式
@@ -92,11 +93,11 @@ Return
     }
     ; 如果不一样，就再编译一次，并且显示加载提示
     显示加载提示 := 1
-    加载提示追加("模块帮助有变更")
+    加载提示追加(t("模块帮助有变更"))
     ; 然后进行稳定性检查
     source := 模块编译和帮助README更新(target)
     if (target != source) {
-        MsgBox % "如果你看到了这个，请联系雪星（QQ:997596439），这里肯定有 BUG……(20200228)"
+        MsgBox % t("警告：模块帮助未能稳定更新，如果你看到了这个消息，请联系雪星（QQ:997596439, 邮箱： snomiao@gmail.com）")
     }
     ; 输出到 docs/readme.md （用于 github-pages ）
     ; docs_target := 模块编译和帮助README更新(source, 1)
@@ -126,13 +127,13 @@ Return
 }
 加载提示显示(){
     ToolTip % loadingTips
-    sleep 2000
+    sleep 1000
 }
-模块编译和帮助README更新(sourceREADME, docs=""){
+模块编译和帮助README更新(sourceREADME, lang="en"){
     FileEncoding UTF-8-Raw
     ; 列出模块文件
     ModuleFiles := ""
-    loop, Files, %CLX_模块路径%\*.ahk
+    loop, Files, %CLX_ModuleDir%\*.ahk
     {
         ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
         ModuleFiles .= A_LoopFileName "`n"
@@ -159,50 +160,50 @@ Return
         模块帮助内容 := ""
         模块帮助文件 := ""
         if (!模块帮助内容) {
-            模块帮助文件 := CLX_模块路径 "/" 模块名称 ".md"
+            模块帮助文件 := CLX_ModuleDir "/" 模块名称 ".md"
             if (FileExist(模块帮助文件)) {
                 FileRead, 模块帮助内容, %模块帮助文件%
             }
         }
         if (!模块帮助内容) {
-            模块帮助文件 := CLX_模块路径 "/" 模块文件名称 ".md"
+            模块帮助文件 := CLX_ModuleDir "/" 模块文件名称 ".md"
             if (FileExist(模块帮助文件)) {
                 FileRead, 模块帮助内容, %模块帮助文件%
             }
         }
 
         ; 加载模块描述
-        FileRead, 模块文件内容, % CLX_模块路径 "/" 模块文件
-        matchPos := RegExMatch(模块文件内容, "mi)^; 描述：(.*)", 模块描述)
+        FileRead, 模块文件内容, % CLX_ModuleDir "/" 模块文件
         T%模块名称%_Disabled := CLX_Config("ModuleDisable", "T" 模块名称 "_Disabled", 0, "是否禁用模块：" 模块名称 (模块描述1 ? " - " 模块描述1 : "") )
 
         if (模块帮助内容) {
             模块帮助内容 := Trim(模块帮助内容, " `t`n")
-            加载提示追加("加载模块帮助：" + i + "-" + 模块名称)
+            加载提示追加(t("加载模块帮助：") . i . "-" . 模块名称)
 
-            全部帮助 .= "<!-- 模块文件名：" Match[1] Match[2] ".ahk" "-->" "`n`n"
+            全部帮助 .= "<!-- MODULE_FILE: " Match[1] Match[2] ".ahk" "-->" "`n`n"
             ; 替换标题层级
             模块帮助内容 := RegExReplace(模块帮助内容, "m)^#", "###")
 
             ; 替换资源链接的相对目录（图片gif等）
-            FileCopy, %CLX_模块路径%\*.gif, .\docs\media\, 1
-            FileCopy, %CLX_模块路径%\*.png, .\docs\media\, 1
+            FileCopy, %CLX_ModuleDir%\*.gif, .\docs\media\, 1
+            FileCopy, %CLX_ModuleDir%\*.png, .\docs\media\, 1
             模块帮助内容 := RegExReplace(模块帮助内容, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1](./media/$2)")
             ; 没有标题的，给自动加标题
             if (!RegExMatch(模块帮助内容, "^#")) {
                 if (T%模块名称%_Disabled) {
-                    全部帮助 .= "### " 模块名称 "模块（禁用）" "`n"
+                    模块帮助内容 .= "### " 模块名称 "模块（禁用）" "`n"
                 } else {
-                    全部帮助 .= "### " 模块名称 "模块" "`n"
+                    模块帮助内容 .= "### " 模块名称 "模块" "`n"
                 }
             }
-            全部帮助 .= 模块帮助内容 "`n`n"
+
+            全部帮助 .= t(模块帮助内容, lang) "`n`n"
         }
         if (T%模块名称%_Disabled) {
-            加载提示追加("跳过模块：" i " " 模块名称)
+            加载提示追加(t("跳过模块：") . i . " " . 模块名称)
         } else {
             ; 这里引入模块代码
-            清洗为_UTF8_WITH_BOM_型编码(CLX_模块路径 "/" 模块文件)
+            清洗为_UTF8_WITH_BOM_型编码(CLX_ModuleDir "/" 模块文件)
             ; 导入模块
             模块初始化代码 .= "GoSub CLX_ModuleSetup_" i "`n"
             模块导入代码 .= "`n" "#If" "`n" "`n"
@@ -212,17 +213,17 @@ Return
             } else {
                 模块导入代码 .= " " " " " " " " "CLX_THIS_MODULE_HELP_FILE_PATH := """"" "`n"
             }
-            模块导入代码 .= " " " " " " " " "#Include " CLX_模块路径 "/" 模块文件 "`n"
+            模块导入代码 .= " " " " " " " " "#Include " CLX_ModuleDir "/" 模块文件 "`n"
             模块导入代码 .= "Return" "`n"
-            加载提示追加("运行模块：" i " " 模块名称)
+            加载提示追加(t("运行模块：") . i . " " . 模块名称)
         }
     }
     加载提示显示()
 
     ; 拼接模块加载器代码
-    常量语句 .= "; 请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)" "`n"
-    常量语句 .= "global CLX_模块路径 := " """" CLX_模块路径 """" "`n"
-    常量语句 .= "global CLX_核心路径 := " """" CLX_核心路径 """" "`n"
+    常量语句 .= "; " . t("请勿直接编辑本文件，以下内容由核心加载器自动生成。雪星/(20210318)") . "`n"
+    常量语句 .= "global CLX_ModuleDir := " """" CLX_ModuleDir """" "`n"
+    常量语句 .= "global CLX_CoreDir := " """" CLX_CoreDir """" "`n"
     常量语句 .= "global CLX_Version := " """" CLX_Version """" "`n"
     常量语句 .= "global CLX_VersionName := " """" CLX_VersionName """" "`n"
 
@@ -234,8 +235,9 @@ Return
     FileAppend %模块运行器%, %CLX_ModulesRunner%
     if (!FileExist(CLX_ModulesRunner)) {
         msg =
-        msg .= "Unable to write ModulesRunner.ahk, if you are install with chocolatey, run me as admin at the first time please.`n"
-        msg .= "注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。"
+        msg .= t("Unable to write ModulesRunner.ahk, if you are install with chocolatey, run me as admin at the first time please.")
+        msg .= "`n"
+        msg .= t("注意：未能写入模块运行器，如果使用 chocolatey 首次安装后，请以管理员权限运行。")
         msgbox %msg%
     }
     FileDelete %CLX_ModulesFunctions%
@@ -260,8 +262,8 @@ Return
     Return targetREADME
 }
 CapsLockX启动(){
-    CoreAHK := CLX_核心路径 "\CapsLockX-Core.ahk"
-    UpdatorAHK := CLX_核心路径 "\CapsLockX-Update.ahk"
+    CoreAHK := CLX_CoreDir "\CapsLockX-Core.ahk"
+    UpdatorAHK := CLX_CoreDir "\CapsLockX-Update.ahk"
     ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再使用 Temp 里的 AHK 来运行本核心。
     AHK_EXE_ROOT_PATH := "CapsLockX.exe"
     AHK_EXE_CORE_PATH := "./Core/CapsLockX.exe"
@@ -286,12 +288,12 @@ CapsLockX启动(){
         RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
     }
     if (ErrorLevel) {
-        MsgBox, 4, CapsLockX 错误, CapsLockX 异常退出，是否重载？
+        MsgBox, 4, % t("CapsLockX 错误"), % t("CapsLockX 异常退出，是否重载？")
         IfMsgBox No
         return
         Reload
     } else {
-        TrayTip, CapsLockX 退出, CapsLockX 已退出。
+        TrayTip, % t("CapsLockX 退出"), % t("CapsLockX 已退出。")
         Sleep, 1000
     }
     ExitApp

@@ -1,6 +1,8 @@
-
+﻿
 global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
 global CLX_i18nConfigPath := "Core/lang.ini"
+global CLX_i18n_newTranslated := "Core/lang.ini"
+
 清洗为_UTF16_WITH_BOM_型编码(CLX_i18nConfigPath)
 
 ; - [Language Codes \| AutoHotkey v1]( https://www.autohotkey.com/docs/v1/misc/Languages.htm )
@@ -16,7 +18,7 @@ LCID_0011 := "Japanese"  ; ja
 LCID_0411 := "Japanese (Japan)"  ; ja-JP
 
 ; TODO: converts
-t(s)
+t(s, lang = "")
 {
     global CLX_Lang
 
@@ -26,8 +28,9 @@ t(s)
 
     ; for dev, autotranslate
     ; run node "prompts/translate-en.md"
-
-    lang := CLX_Lang
+    if (!lang) {
+        lang := CLX_Lang
+    }
     if (!lang) {
         lang:="auto"
     }
@@ -125,31 +128,49 @@ i18n_changeLanguage(lang := "auto")
 }
 CLX_i18n_ConfigGet(field, varName, defaultValue)
 {
+    encodedKey := CLX_i18n_ConfigEnocde(varName)
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
     ; user locales
     global CLX_ConfigDir
-    IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, %varName%, %defaultValue%
+    IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
     if (content == "ERROR") {
         content := ""
     }
     if (content) {
-        return content
+        return CLX_i18n_ConfigDecode(content)
     }
     ; clx pre-installed locales
-    IniRead, content, % CLX_i18nConfigPath, %field%, %varName%, %defaultValue%
+    IniRead, content, % CLX_i18nConfigPath, %field%, % encodedKey, %defaultValue%
     if (content == "ERROR") {
         content := ""
     }
     if (content) {
-        return content
+        return CLX_i18n_ConfigDecode(content)
     }
 }
 CLX_i18n_ConfigSet(field, varName, value)
 {
+    encodedKey := CLX_i18n_ConfigEnocde(varName)
+    encodedValue := CLX_i18n_ConfigEnocde(value)
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
     global CLX_ConfigDir
-    IniSave(value, CLX_ConfigDir . "/" . field . ".ini", field, varName)
+    IniSave(encodedValue, CLX_ConfigDir . "/" . field . ".ini", field, encodedKey)
+
     ; 清洗为_UTF16_WITH_BOM_型编码(CLX_ConfigDir)
+}
+CLX_i18n_ConfigEnocde(str){
+    str := RegExReplace(str, "\\", "\\")
+    str := RegExReplace(str, "`r", "\r")
+    str := RegExReplace(str, "`n", "\n")
+    str := RegExReplace(str, "=", "\e")
+    return str
+}
+CLX_i18n_ConfigDecode(str){
+    str := RegExReplace(str, "\\e", "=")
+    str := RegExReplace(str, "\\n", "`n")
+    str := RegExReplace(str, "\\r", "`r")
+    str := RegExReplace(str, "\\\\", "\")
+    return str
 }

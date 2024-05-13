@@ -13,7 +13,7 @@
 FileEncoding, UTF-8
 
 ; 開關 默认关
-global SnoChordTypingEnable := CLX_Config("Plugins", "EnableSnoChordTyping", 0, "启用雪星并击（实验中），")
+global SnoChordTypingEnable := CLX_Config("SnoChordTyping", "EnableSnoChordTyping", 0, t("启用雪星并击（实验中），使用单手操作整个主键区"))
 if (!T_SnoChordTypingEnable)
     Return
 

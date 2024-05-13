@@ -1,9 +1,9 @@
 ﻿; 保存为 save with UTF8 with DOM
 
 ; 用户创建目录
-ConfigDir_Portable    := "./User"
-ConfigDir_UserProfile := USERPROFILE . "/.CapsLockX"
-ConfigDir_AppData     := APPDATA . "/CapsLockX"
+ConfigDir_Portable    := ".\User"
+ConfigDir_UserProfile := USERPROFILE . "\.CapsLockX"
+ConfigDir_AppData     := APPDATA . "\CapsLockX"
 
 ; 默认值
 LaunchConfigDir := ConfigDir_AppData
