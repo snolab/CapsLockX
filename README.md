@@ -6,8 +6,7 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. It allows you t
 
 Docs in Languages:
 **[English Docs (ChatGPT Translated)](https://capslockx.snomiao.com/)**
-**[简体中文 説明](./docs/README.zh-hans.md)**
-**[English Docs (ChatGPT Translated)](./docs/README.zh-hans.md)**
+**[简体中文 説明](./docs/README.zh.md)**
 
 **[See Any Language Docs (Google Translated)](https://capslockx.snomiao.com/)**
 
@@ -513,7 +512,7 @@ Updated (20200627) The information may become outdated over time
 | Memory Usage                    | ✅ About 2~3M                                    |                                                     |                                                     |                                                 |
 | Modularization                  | ✅                                               | 🈚 None                                             | 🈚 None                                             | 🈚 None                                         |
 | System                          | Win                                              | Mac (main), Win (secondary)                         | Win                                                 | Win, [Mac](https://capslox.com/)                |
-| Supported Languages             | Chinese                                          | Chinese - English                                   | Chinese                                             | Chinese - English                               |
+| Supported Languages             | English / Chinese / Any Language (by ChatGPT)    | Chinese / English                                   | Chinese                                             | Chinese / English                               |
 
 #### CapsLockX Address 🔗 Project Urls
 

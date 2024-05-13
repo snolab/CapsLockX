@@ -224,11 +224,11 @@ If you want to learn how to develop plugins for CapsLockX, please:
 
 ## The functions of this module are as follows
 
-| Applies to | Key Combination       | Function                           |
-| ---------- | --------------------- | ---------------------------------- |
-| Global     | CapsLockX + /         | Temporarily displays hotkey tips   |
-| Global     | CapsLockX + Alt + /   | 🔗 Opens CapsLockX's full doc page |
-| Global     | CapsLockX + Shift + / | 🕷 Submit bugs, suggestions, etc.   |
+| Applies to | Key Combination      | Function                           |
+| ---------- | -------------------- | ---------------------------------- |
+| Global     | CapsLockX + /        | Temporarily displays hotkey tips   |
+| Global     | CapsLockX + Alt + /  | 🔗 Opens CapsLockX's full doc page |
+| Global     | CapsLockX + Shift + /| 🕷 Submit bugs, suggestions, etc.  |
 
 <!-- MODULE_FILE: App-AnkiEnhanced.ahk-->
 
@@ -245,10 +245,9 @@ Anki Operations Enhancement
 
 ## Description
 
-| Mode                    | Anki Enhancement Module | Description                     |
-| ----------------------- | :---------------------: | ------------------------------- |
-| In Anki-Study Interface |      `w or k or ↑`      | Press=Undo, Release=Show answer |
-
+| Mode                  | Anki Enhancement Module | Description                                                 |
+| --------------------- | :---------------------: | ----------------------------------------------------------- |
+| In Anki-Study Interface   |  `w or k or ↑`   | Press=Undo, Release=Show answer                             |
 | In Anki-St
 
 <!-- MODULE_FILE: App-OneNote2019.ahk-->
@@ -270,8 +269,8 @@ Simplify keyboard operation for OneNote 2016 - 2019, conveniently using keyboard
 
 #### Usage
 
-| Application |   Shortcut    | Function Description             |
-| ----------- | :-----------: | -------------------------------- |
+| Application |   Shortcut   | Function Description         |
+| ----------- | :----------: | ---------------------------- |
 | Global      | Win + Alt + H | Launch/Switch Xunfei Voice Input |
 
 #### Note
@@ -290,11 +289,11 @@ At any time, in any input box, press `CLX+b` to start using AI-assisted input.
 
 #### Key Layout (Under Development)
 
-| Key Description | Function                                                                                             | Note |
-| --------------- | ---------------------------------------------------------------------------------------------------- | ---- |
-| CLX + b         | Automatically copies the current selection, input commands, and lets AI assist your input            |      |
+| Key Description | Function                                               | Note |
+| --------------- | ------------------------------------------------------ | ---- |
+| CLX + b         | Automatically copies the current selection, input commands, and lets AI assist your input |      |
 | CLX + Alt + b   | Activate the activation code (currently free plan only, may include enhanced features in the future) |      |
-| CLX + Shift + b | Check usage quota                                                                                    |      |
+| CLX + Shift + b | Check usage quota                                      |      |
 
 #### Protips:
 
@@ -318,13 +317,13 @@ Is there anything better in this world than moving the cursor with HJKL in Vim m
 This is a must-have!
 Introducing accelerated HJKL for a smooth editing experience! Ever thought about making your cursor drift like a car in a gutter? Install this!
 
-| Scope         | Edit module           | Description                          |
-| ------------- | --------------------- | ------------------------------------ |
+| Scope      | Edit module             | Description                       |
+|------------|-------------------------|-----------------------------------|
 | Global(Basic) | `CapsLockX + h j k l` | Arrow keys for up, down, left, right |
-| Global(Basic) | `CapsLockX + y o`     | Home, End                            |
-| Global(Basic) | `CapsLockX + u i`     | PageUp, PageDown                     |
-| Global(Basic) | `CapsLockX + [ ]`     | Shift+Tab and Tab                    |
-| Global(Basic) | `CapsLockX +          |
+| Global(Basic) | `CapsLockX + y o`     | Home, End                         |
+| Global(Basic) | `CapsLockX + u i`     | PageUp, PageDown                  |
+| Global(Basic) | `CapsLockX + [ ]`     | Shift+Tab and Tab                 |
+| Global(Basic) | `CapsLockX +
 
 <!-- MODULE_FILE: CLX-LaptopKeyboardFix.ahk-->
 
@@ -336,30 +335,30 @@ A cure for all kinds of broken laptop keyboards
 2. Missing a Pause key? Win + Alt + P also opens system settings information.
 3. To be added
 
-| Mode                         | Key Combination                                                     | Function                                              |
-| ---------------------------- | :------------------------------------------------------------------ | ----------------------------------------------------- |
-| Global                       | Win + Alt + P                                                       | Equivalent to Win + Pause, customized for notebooks   |
-| Global                       | Tap right Ctrl                                                      | Will tap the Menu to pop up the context menu          |
-| Global                       | Hold right Menu                                                     | Acts as holding Ctrl, can be combined with other keys |
-| Win key simulation activated | Hold ] and press [                                                  | Equivalent to pressing the Win key                    |
+| Mode                | Key Combination                    | Function                                    |
+| ------------------- | :-------------------------------- | ------------------------------------------- |
+| Global              | Win + Alt + P                     | Equivalent to Win + Pause, customized for notebooks |
+| Global              | Tap right Ctrl                    | Will tap the Menu to pop up the context menu        |
+| Global              | Hold right Menu                   | Acts as holding Ctrl, can be combined with other keys |
+| Win key simulation activated | Hold ] and press [                  | Equivalent to pressing the Win key               |
 | Win key simulation activated | RAlt + \| is equivalent to pressing Alt + Tab but on the right hand |
 
 <!-- MODULE_FILE: CLX-MediaKeys.ahk-->
 
 ### Media Key Module
 
-| Applies to | Media Key Module  | Description                                            |
-| ---------- | ----------------- | ------------------------------------------------------ |
-| Global     | `CapsLockX + F1`  | Open: My Computer                                      |
-| Global     | `CapsLockX + F2`  | Open: Calculator                                       |
-| Global     | `CapsLockX + F3`  | Open: Browser Homepage                                 |
-| Global     | `CapsLockX + F4`  | Open: Media Library (defaults to Windows Media Player) |
-| Global     | `CapsLockX + F5`  | Play: Pause/Play                                       |
-| Global     | `CapsLockX + F6`  | Play: Previous Track                                   |
-| Global     | `CapsLockX + F7`  | Play: Next Track                                       |
-| Global     | `CapsLockX + F8`  | Play: Stop                                             |
-| Global     | `CapsLockX + F9`  | Volume Up                                              |
-| Global     | `CapsLockX + F10` | Volume Down                                            |
+| Applies to | Media Key Module      | Description                                  |
+|------------|-----------------------|----------------------------------------------|
+| Global     | `CapsLockX + F1`      | Open: My Computer                            |
+| Global     | `CapsLockX + F2`      | Open: Calculator                             |
+| Global     | `CapsLockX + F3`      | Open: Browser Homepage                       |
+| Global     | `CapsLockX + F4`      | Open: Media Library (defaults to Windows Media Player) |
+| Global     | `CapsLockX + F5`      | Play: Pause/Play                             |
+| Global     | `CapsLockX + F6`      | Play: Previous Track                         |
+| Global     | `CapsLockX + F7`      | Play: Next Track                             |
+| Global     | `CapsLockX + F8`      | Play: Stop                                   |
+| Global     | `CapsLockX + F9`      | Volume Up                                    |
+| Global     | `CapsLockX + F10`     | Volume Down
 
 <!-- MODULE_FILE: CLX-Mouse.ahk-->
 
@@ -382,10 +381,10 @@ A cure for all kinds of broken laptop keyboards
 
 ### JavaScript Calculation (NodeJS installation recommended)
 
-| Applies to | Key Combination | Effect                                                      |
-| ---------- | --------------- | ----------------------------------------------------------- |
-| Global     | `CapsLockX + -` | Calculate the selected JavaScript expression and replace it |
-| Global     | `CapsLockX + =` | Calculate the selected JavaScript expression and replace it |
+| Applies to | Key Combination       | Effect                                         |
+| ---------- | --------------------- | ---------------------------------------------- |
+| Global     | `CapsLockX + -`       | Calculate the selected JavaScript expression and replace it |
+| Global     | `CapsLockX + =`       | Calculate the selected JavaScript expression and replace it |
 
 <!-- MODULE_FILE: CLX-WindowManager.ahk-->
 
@@ -407,15 +406,15 @@ Make good use of the Win 10's built-in 10 virtual desktops with a luxury configu
 
 ### Shortcut Input
 
-| Mode   | Shortcut Input | Description                                                       |
-| ------ | -------------- | ----------------------------------------------------------------- |
-| Global | `#D#`          | Date input: e.g., `(20220217)`                                    |
-| Global | `#T#`          | Time input: e.g., `(20220217.220717)`                             |
-| Global | `#DT#`         | Date and time input: `2022-02-17 22:07:33`                        |
-| Global | `#NPW#`        | Random numeric password, e.g.: `7500331260229289`                 |
-| Global | `#PW#`         | Random alphanumeric password, e.g.: `yyCTCNYodECTLr2h`            |
-| Global | `#WPW#`        | Random alphanumeric password, e.g.: `FtD5BB1m5H98eY7Y`            |
-| Global | `#SPW#`        | Random alphanumeric and symbol password, e.g.: `/})y+xK]z~>XKQ+p` |
+| Mode | Shortcut Input | Description                                      |
+| ---- | -------------- | ------------------------------------------------ |
+| Global | `#D#`    | Date input: e.g., `(20220217)`                    |
+| Global | `#T#`    | Time input: e.g., `(20220217.220717)`             |
+| Global | `#DT#`   | Date and time input: `2022-02-17 22:07:33`        |
+| Global | `#NPW#`  | Random numeric password, e.g.: `7500331260229289` |
+| Global | `#PW#`   | Random alphanumeric password, e.g.: `yyCTCNYodECTLr2h` |
+| Global | `#WPW#`  | Random alphanumeric password, e.g.: `FtD5BB1m5H98eY7Y` |
+| Global | `#SPW#`  | Random alphanumeric and symbol password, e.g.: `/})y+xK]z~>XKQ+p` |
 
 <!-- MODULE_FILE: TomatoLife.ahk-->
 
@@ -514,7 +513,6 @@ Updated (20200627) The information may become outdated over time
 | Supported Languages             | English / Chinese / Any Language (by ChatGPT)    | Chinese / English                                   | Chinese                                             | Chinese / English                               |
 
 #### CapsLockX Address 🔗 Project Urls
-
 
 The following repositories are updated synchronously:
 
