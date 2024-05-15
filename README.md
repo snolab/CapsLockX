@@ -1,5 +1,3 @@
-<!-- THIS FILE IS GENERATED PLEASE MODIFY DOCS/README -->
-
 # CapsLockX - 💻 Get Hacker's Keyboard. Operate your computer like a **hacker**
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. It allows you to operate your computer efficiently like a hacker in a movie without ever taking your hands off the keyboard. It comes packed with functions that are intuitive and easy to use: enhanced editing, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and many more multifunctional features are there for you to personally customize.
@@ -156,7 +154,7 @@ Moreover, if a user needs to clean up or close multiple windows, they simply pre
 
 In CLX, these features greatly improve the usability of Alt+Tab.
 
-#### TODO-Docs
+## TODO-Docs
 
 <details>
 <summary>Click to expand TODO-docs</summary>
@@ -188,19 +186,13 @@ Two system-level solutions: Left-right top-bottom split screen, floating windows
 
 TODO Discussion on ThinkPad and Mac arrow keys, inspiration from VIM,
 
-#### The Concept of Chording
+### Human Perception of Speed
 
-TODO Various types of chording
-
-TODO Calculation of information quantity increase with chording
+TODO: World perception of exponential growth, focus, auditory, visual, tactile, VS conventional linear operations
 
 ### Troubles with the Graphical User Interface
 
 TODO: Document: Introduction to mouse simulation function, movement in RPG games
-
-### Human Perception of Speed
-
-TODO: World perception of exponential growth, focus, auditory, visual, tactile, VS conventional linear operations
 
 ### Shortcut Deficiencies in Software
 
@@ -210,7 +202,14 @@ TODO: Application enhancement module introduction
 
 TODO: FN key, arrow keys, editing operations, 61-key layout vs 87-key layout,
 
+#### The Concept of Chording
+
+TODO Various types of chording
+TODO Calculation of information quantity increase with chording
+
 </details>
+
+## Module Helps
 
 <!-- The stuff below is automatically extracted from various modules. To make changes, please operate within the corresponding module.md files, as any changes made here will be overwritten. -->
 <!-- MODULE_HELP_BEGIN -->
@@ -487,6 +486,8 @@ Ctrl + Alt + same as above, but generally for global hotkeys.
 
 The Shift key is used to slightly change the meaning of the above functions (such as reverse operations like Shift+Alt+Tab, or extended function range like Shift+Arrow keys to adjust the selection, etc.)
 
+## Compares
+
 ### CapsLockX vs. Similar Projects Function Comparison ⚔ Feat Compare Matrix
 
 Updated (20200627) The information may become outdated over time
@@ -514,7 +515,7 @@ Updated (20200627) The information may become outdated over time
 | System                          | Win                                              | Mac (main), Win (secondary)                         | Win                                                 | Win, [Mac](https://capslox.com/)                |
 | Supported Languages             | English / Chinese / Any Language (by ChatGPT)    | Chinese / English                                   | Chinese                                             | Chinese / English                               |
 
-#### CapsLockX Address 🔗 Project Urls
+### CapsLockX Address 🔗 Project Urls
 
 The following repositories are updated synchronously:
 
@@ -532,7 +533,7 @@ Star Chart ⭐️
 
 - [![Stargazers over time](https://starchart.cc/snolab/CapsLockX.svg)](https://starchart.cc/snolab/CapsLockX)
 
-#### Similar Project Addresses 🔗 Similar Projects
+### Similar Project Addresses 🔗 Similar Projects
 
 - [Star Historys](https://star-history.t9t.io/#snolab/CapsLockX&wo52616111/capslock-plus&coralsw/CapsEz&Vonng/CapsLock)
 - Source: [Vonng/CapsLock: Make CapsLock Great Again!](https://github.com/Vonng/CapsLock)
@@ -571,9 +572,10 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
 5. Code PR submissions are welcome, even just to correct a typo ～
 6. Welcome to create works about this software, such as recording tutorial videos to post on Youtube or Bilibili, Xue Xing will like your video.
 7. 💰 Welcome to donate to the development of CapsLockX, each donation will be recorded in the list below:
-   - Love Send Electric ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
+   - Aifadian ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - Alipay donation account： [snomiao@gmail.com （click to view QR code）](./docs/支付宝捐助.png)
+   - Wise donation account： [snomiao@gmail.com](https://wise.com/pay/r/vPlWg3Mh4zhabUk)
    - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 - [Development Roadmap](#发展路线-roadmap)
@@ -594,7 +596,7 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
 - Thanks to @He Xuren for helping with the dissemination: [CapsLockX – Operate the computer like a hacker! 【Xue Xing】 – AutoAHK](https://www.autoahk.com/archives/34996)
 - Thank you to those who asked questions in the issues and in the group and helped to improve CapsLockX.
 
-### Related Topics - Related Topics
+### Related Topics for References
 
 - [秦金伟](http://rsytes.coding-pages.com/)
   - [2020-02-23 当键盘模拟鼠标 - qwertc]( https://mp.weixin.qq.com/s?__biz=MzIzNzczOTkzMw==&mid=2247483745&idx=1&sn=16f16c1fa02e1ef386a83f3023fb109d&chksm=e8c54b93dfb2c285e49fa8045d2380b20810768e3be043f364be146a598faf5f363bbb2623e7&scene=21#wechat_redirect )
@@ -624,6 +626,7 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
   - [QZ——Arrary – AutoAHK]( https://www.autoahk.com/archives/4133 )
   - [CapsLockX - 像黑客一样操作电脑！ - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=28&t=88593)
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora](https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI)
+- [simple internationalization function - Scripts and Functions - AutoHotkey Community]( https://www.autohotkey.com/board/topic/50131-simple-internationalization-function/ )
 
 ## Footer Catalog - Table of Contents
 

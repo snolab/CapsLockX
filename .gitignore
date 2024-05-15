@@ -43,3 +43,5 @@ dist/cli.mjs.map
 # logs
 *.log
 docs/.vitepress
+
+bun.lockb
