@@ -12,9 +12,9 @@ if (!CapsLockX) {
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
-; Func("CapsLockX_AppendHelp").Call(Func("CapsLockX_LoadHelpFrom").Call(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+; Func("CLX_AppendHelp").Call(Func("CLX_LoadHelpFrom").Call(CLX_THIS_MODULE_HELP_FILE_PATH))
 
-global 快速窗口热键编辑用户模块目录 := CapsLockX_配置目录 "/"
+global 快速窗口热键编辑用户模块目录 := CLX_ConfigDir . "\"
 global 快速窗口热键编辑初始内容 := "
 (
 ; ========== CapsLockX ==========
@@ -46,27 +46,27 @@ Return
 
 UserModuleEdit(dir, filename := "")
 {
-    global CapsLockX_DontReload
-    CapsLockX_DontReload := 1
+    global CLX_DontReload
+    CLX_DontReload := 1
 
     WinGet, hWnd, ID, A
     WinGetClass, 窗口类名, ahk_id %hWnd%
     WinGet, 进程名, ProcessName, ahk_id %hWnd%
 
     filename := filename || "/应用-" 进程名 ".user.ahk"
-    path := dir "/" filename
+    path := dir . "/" . filename
 
     WinGetTitle, title, ahk_id %hWnd%
     match = %title% ahk_class %窗口类名% ahk_exe %进程名%
 
-    MsgBox 开始编辑用户脚本： %path%
+    MsgBox % t("开始编辑用户脚本：") . %path%
     if (!FileExist(path)) {
         FileAppend, %快速窗口热键编辑初始内容%, %path%
     }
     填充内容 := "`n" "`n" "; #if WinActive(""" match """)" "`n" "`n" "; !d`:`: TrayTip, CapsLockX, 在当前窗口按下了Alt+d" "`n"
     FileAppend, %填充内容%, %path%
 
-    CapsLockX_DontReload := 0
+    CLX_DontReload := 0
 
     ; clipboard := 填充内容
     Run code.cmd "%path%" || notepad "%path%"
@@ -79,6 +79,6 @@ UserModuleEdit(dir, filename := "")
 }
 
 ; 自定义脚本创建
-!,:: UserModuleEdit(快速窗口热键编辑用户模块目录, "CapsLockX_用户脚本.user.ahk")
+!,:: UserModuleEdit(快速窗口热键编辑用户模块目录, "CLX_用户脚本.user.ahk")
 +!,:: UserModuleEdit(快速窗口热键编辑用户模块目录, "使用进程名AHK")
 

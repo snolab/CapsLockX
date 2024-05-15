@@ -1,8 +1,8 @@
 ﻿if (!CapsLockX) {
-    MsgBox, % "本模块只在 CapsLockX 下工作"
+    MsgBox, % "本模块只在 CapsLockX 下工作 / This module is only for CapsLockX"
     ExitApp
 }
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 Return
 
 #if !!(CapsLockXMode & CM_FN) || !!(CapsLockXMode & CM_CapsLockX)

@@ -9,14 +9,14 @@
 
 return
 
-CapsLockX_MakeStartup()
+CLX_MakeStartup()
 {
     content = cd "%A_WorkingDir%" && start "" CapsLockX.exe
     startCMDPath := APPDATA "\Microsoft\Windows\Start Menu\Programs\Startup\capslockx-startup.cmd"
     FileDelete, %startCMDPath%
-    FileAppend, echo off, %startCMDPath%
+    FileAppend, echo off`r`n, %startCMDPath%
     FileAppend, %content%, %startCMDPath%
     cmdView := "explorer /select, " """" startCMDPath """"
     run % cmdView
-    TrayTip 已在Startup文件夹添加CLX的开机自启动，请确认。
+    TrayTip % t("已在Startup文件夹添加CLX的开机自启动，请确认。")
 }

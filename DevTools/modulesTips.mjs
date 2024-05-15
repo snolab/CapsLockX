@@ -1,7 +1,5 @@
 import fs from "fs";
 import "sno-utils";
-import _ from "lodash-es";
-import pinyin from "pinyin";
 import { 表键筛 } from "sno-utils";
 const 全部提取 = (s, p) => {
   return (s.match(RegExp(p, p.flags)) || []).map((e) => {

@@ -8,7 +8,7 @@
 ; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 

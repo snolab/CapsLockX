@@ -10,9 +10,9 @@
 
 if !CapsLockX
     ExitApp
-global WinKeySimulate := CapsLockX_Config("LKF", "WinKeySimulate", 1, "右手 \][ 模拟Windows键和 Alt + Tab， 具体用法参见LaptopKeyboardFix 模块说明，默认启用")
+global WinKeySimulate := CLX_Config("LKF", "WinKeySimulate", 1, t("右手 \][ 模拟Windows键和 Alt + Tab， 具体用法参见LaptopKeyboardFix 模块说明，默认启用"))
 global FLAG_SWAP_ESC_STROKE := false
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 ; 专治 Surface 的残破键盘，合并右Ctrl与Menu键！
@@ -55,8 +55,8 @@ Return
 ; 对于没有Esc或没有 Stroke 键的键
 #if CapsLockXMode & CM_FN
 
-`::   FLAG_SWAP_ESC_STROKE := CapsLockX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
-Esc:: FLAG_SWAP_ESC_STROKE := CapsLockX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
+`::   FLAG_SWAP_ESC_STROKE := CLX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
+Esc:: FLAG_SWAP_ESC_STROKE := CLX_ConfigSet("CLX_LKF", "FLAG_SWAP_ESC_STROKE", !FLAG_SWAP_ESC_STROKE, "交换ESC和~键，你可以按CLX+Esc来切换这个选项")
 
 #if (FLAG_SWAP_ESC_STROKE && !CapsLockXMode) || (!FLAG_SWAP_ESC_STROKE && CapsLockXMode)
 

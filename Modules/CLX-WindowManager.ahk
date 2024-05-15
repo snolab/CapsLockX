@@ -16,7 +16,7 @@ if (!CapsLockX) {
     ExitApp
 }
 
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 ; setup done
 ; flags
@@ -36,7 +36,7 @@ global ARRANGE_Z_ORDERING := 0x20
 global lastFlashWinIDs := []
 global 最迟闪动窗口 := {}
 ; global 窗口鼠标位置表表 := {}
-global T窗口增强_鼠标位置记忆 := CapsLockX_Config("窗口增强", "鼠标位置记忆尝试", 1, "在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置")
+global T窗口增强_鼠标位置记忆 := CLX_Config("WindowsManageEnhance", "RemenberMousePos", 1, t("在CLX+Z窗口切换时记住还原鼠标在每个窗口中的位置"))
 
 闪动窗口记录器初始化()
 
@@ -887,7 +887,7 @@ ShellMessage( wParam, lParam )
         鼠标位置记忆尝试()
         WinActivate, ahk_id %hWnd%
         WinGetTitle, this_title, ahk_id %hWnd%
-        TrayTip, 最近1分钟内闪动窗口激活, %this_title%
+        TrayTip, % t("最近1分钟内闪动窗口激活"), %this_title%
         最迟闪动窗口 := {}
         鼠标位置还原尝试()
     } else {

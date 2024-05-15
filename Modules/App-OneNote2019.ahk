@@ -93,7 +93,7 @@ OneNote快速笔记窗口启动(){
     if (ErrorLevel) {
         WinWait %OneNote窗口匹配串%, , 5 ; wait seconds
         if (ErrorLevel) {
-            TrayTip, 错误, 未找到OneNote窗口
+            TrayTip, % t("错误"), % t("未找到OneNote窗口")
             return
         }
         WinActivate %OneNote窗口匹配串%
@@ -121,7 +121,7 @@ OneNote2019搜索启动() {
     ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
     WinWaitActive %OneNote窗口匹配串%, , 5 ; wait for 5 seconds
     if(ErrorLevel) {
-        TrayTip, 错误, 未找到OneNote窗口
+        TrayTip, % t("错误"), % t("未找到OneNote窗口")
         return
     }
     if (条数 >= 1) {
@@ -134,7 +134,7 @@ OneNote2019搜索启动() {
 笔记条目搜索结果复制整理条数(){
     WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
     if(ErrorLevel) {
-        TrayTip, 错误, 搜索结果窗口不正确
+        TrayTip, % t("错误"), % t("搜索结果窗口不正确")
         return 0
     }
     ; 标题 ClassNN:	RICHEDIT60W3
@@ -207,7 +207,7 @@ OneNote2019搜索启动() {
     wc.SetHTML(links_html)
     SendEvent {Escape}
 
-    TrayTip, %k% 条笔记链接已复制, %links%, 1
+    TrayTip, % k . t("条笔记链接已复制"), %links%, 1
     return k
 }
 
@@ -269,7 +269,7 @@ OneNote2019创建链接窗口内(){
     return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
 }
 
-; /:: CapsLockX_ShowHelp OneNote2019创建链接窗口
+; /:: CLX_ShowHelp OneNote2019创建链接窗口
 
 ; 复制链接笔记页面的搜索结果
 !+s:: 笔记条目搜索结果复制整理向页面粘贴条数()
@@ -455,10 +455,10 @@ OneNote2019_ToggleTODO(){
     SendEvent ^a^c
     ClipWait, 1
     if(ErrorLevel) {
-        TrayTip, 错误, OneNote 内容未能复制成功，5秒内按 Ctrl + C 可手动复制并尝试继续流程
+        TrayTip, % t("错误"), % t("OneNote 内容未能复制成功，5秒内按 Ctrl + C 可手动复制并尝试继续流程")
         ClipWait, 5
         if(ErrorLevel) {
-            TrayTip, 错误, OneNote 内容未能复制成功
+            TrayTip, % t("错误"), % t("OneNote 内容未能复制成功")
             return
         }
     }
@@ -470,13 +470,13 @@ OneNote2019_ToggleTODO(){
     KeyWait, Alt, D T60 ; wait for 60 seconds
     if(ErrorLevel) {
         ToolTip
-        TrayTip, 错误, 超时未按下Alt键
+        TrayTip, % t("错误"), % t("超时未按下Alt键")
         return
     }
     KeyWait, Alt, T60 ; wait for 60 seconds
     if(ErrorLevel) {
         ToolTip
-        TrayTip, 错误, 超时未放开Alt键
+        TrayTip, % t("错误"), % t("超时未放开Alt键")
         return
     }
     ToolTip
@@ -548,7 +548,7 @@ OneNote剪贴板收集(){
     ; ; 通常在弹起时触发
     ClipWait, 2, 1 ; 2 secons
     if(ErrorLevel) {
-        TrayTip, error, 复制失败
+        TrayTip, error, % t("复制失败")
         Return
     }
     WinGet, current, ID, A

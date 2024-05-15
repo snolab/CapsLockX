@@ -11,7 +11,7 @@ if (!CapsLockX){
     ExitApp
 }
 
-CapsLockX_AppendHelp( CapsLockX_LoadHelpFrom(CapsLockX_THIS_MODULE_HELP_FILE_PATH))
+CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 
 Return
 
@@ -61,7 +61,7 @@ EvalJavaScriptByBrowser_TODO(code){
 EvalJavaScriptByNodeServer(code){
     static PassTutorial := ""
     if(!PassTutorial)
-        PassTutorial := CapsLockX_Config("EvalJS", "PassTutorial", 0, "忽略使用提示")
+        PassTutorial := CLX_Config("EvalJS", "PassTutorial", 0, "忽略使用提示")
     /*
     sno.md5("asdf")=
     */
@@ -73,11 +73,11 @@ EvalJavaScriptByNodeServer(code){
     ;     让我们来试试输入：
     ;     sno.md5("asdf")
     ;     )
-    ;     CapsLockX_ConfigSet("EvalJS", "PassTutorial", 1)
+    ;     CLX_ConfigSet("EvalJS", "PassTutorial", 1)
     ; }
     static port := ""
     if(!port)
-        port := CapsLockX_Config("EvalJS", "Port", 29503, "EvalJS 服务端口")
+        port := CLX_Config("EvalJS", "Port", 29503, "EvalJS 服务端口")
     static nodePID := 0
     static EvalNodeJS_PIDFile := A_Temp "/EvalNodeJS.pid"
     ; pid 文件读取尝试
@@ -89,7 +89,7 @@ EvalJavaScriptByNodeServer(code){
         nodePID := 0
     ; 不存在则尝试启动
     if(!nodePID){
-        TrayTip, EvalJS 模块, 正在启动 NodeJS 筆記服務...
+        TrayTip, % t("EvalJS 模块"), % t("正在启动 NodeJS 筆記服務...")
         EnvGet, USERPROFILE, USERPROFILE
         escaped_USERPROFILE := RegExReplace(USERPROFILE, "\\", "\\")
         ; 生成服务端代码
@@ -130,7 +130,7 @@ EvalJavaScriptByNodeServer(code){
                         (res) =>
                         (res?.toString !== {}.toString && String(res)) ||
                         JSON.stringify(res))
-                    .catch((e) => (console.error("错误", e), e.toString()))
+                    .catch((e) => (console.error("Error", e), e.toString()))
                     .then((s) => (res.end(s), console.log("入：", code, "\n出：", s)));
                 });
             })
@@ -143,7 +143,7 @@ EvalJavaScriptByNodeServer(code){
         Run, node --inspect "%serverScriptPath%", %USERPROFILE%, Hide, nodePID
         FileDelete, %EvalNodeJS_PIDFile%
         FileAppend, %nodePID%, %EvalNodeJS_PIDFile%, UTF-8-Raw
-        TrayTip, EvalJS 模块, NodeJS 服务已启动。
+        TrayTip, % t("EvalJS 模块"), % t("NodeJS 服务已启动。")
     }
     ; 若没有代码需要执行则将进程退出
     if(!code){
@@ -180,8 +180,8 @@ EvalJavaScriptByNodeStdIO(code){
     realcode .= "}" "`n"
     ; 写入纯 UTF8 脚本文件
     FileAppend %realcode%, %inputScriptPath%, UTF-8-RAW
-    if (!FileExist(inputScriptPath)){
-        TrayTip 错误, % inputScriptPath "执行失败，未能写入脚本文件"
+    if (!FileExist(inputScriptPath)) {
+        TrayTip % t("错误"), % inputScriptPath t("执行失败，未能写入脚本文件")
         Return "err"
     }
     ; 执行 node 的指令
@@ -198,7 +198,7 @@ EvalJavaScriptByNodeStdIO(code){
         stderr := exec.stderr.readall()
         stdout := exec.stdout.readall()
         out := stdout
-        if(stderr){
+        if (stderr) {
             TrayTip Error, % stderr
         }
         ; msgbox % out
