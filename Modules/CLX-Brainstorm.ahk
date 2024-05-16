@@ -4,6 +4,7 @@ global brainstorming := false
 global brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
 global brainstormApiKey := CLX_Config("BrainStorm", "Key", "FREE", t("CLX BrainStorm 的功能激活碼，填FREE使用免費版本"))
 global brainstormLastQuestion := CLX_Config("BrainStorm", "LastQuestion", "", t("Brainstorm 上次提问"))
+global brainstormStagedAnswer := ""
 
 return
 
@@ -61,6 +62,13 @@ brainstorm_copy()
 }
 brainstorm()
 {
+    ; heat up
+    global brainstorm_origin
+    endpoint := brainstorm_origin "/ai/chat?ret=polling"
+    xhrHeatUp := ComObjCreate("Msxml2.XMLHTTP")
+    xhrHeatUp.Open("PUT", endpoint)
+    xhrHeatUp.Send()
+
     content:=brainstorm_copy()
 
     prompt := ""
@@ -80,17 +88,20 @@ brainstorm()
     global brainstorming := true
     brainstorm_questionPost(msg)
 }
+
 brainstorm_questionPost(question)
 {
-    global brainstorming
-    if (!brainstorming) {
-        return
-    }
     global brainstorm_origin
     endpoint := brainstorm_origin "/ai/chat?ret=polling"
     xhr := ComObjCreate("Msxml2.XMLHTTP")
     xhr.Open("POST", endpoint)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
+
+    global brainstorming
+    if (!brainstorming) {
+        xhr.Close()
+        return
+    }
     xhr.onreadystatechange := Func("BS_questionPost_onReadyStateChange").Bind(xhr)
     xhr.Send(question)
 }
@@ -117,7 +128,13 @@ BS_questionPost_onReadyStateChange(xhr)
         MsgBox, t("Fail to ask ai")
         return
     }
+
+    ToolTip, % t("Asking AI")
     ; tooltip askAiSucc with question %questionId%
+
+
+    global brainstormStagedAnswer
+    brainstormStagedAnswer := ""
     tokenAppend(questionId)
 }
 tokenAppend(questionId)
@@ -148,13 +165,25 @@ tokenAppend_onReadyStateChange(xhra)
         ; Clipboard:=brainstorm_response
         return
     }
+
     token := xhra.responseText
+    if (!token){
+        ; HEART BEAT，continue
+        tokenAppend(questionId)
+
+        return
+    }
     ; brainstorm_response .= token
     ; ToolTip response %brainstorm_response%%brainstorm_response%
+    global brainstormStagedAnswer
+    brainstormStagedAnswer .= token
 
-    SetKeyDelay, 0, 0
-    SendEvent {text}%token%
+    ToolTip, % brainstormStagedAnswer
 
+    Clipboard := brainstormStagedAnswer
+
+    ; SetKeyDelay, 0, 0
+    ; SendEvent {text}%token%
     tokenAppend(questionId)
 }
 
