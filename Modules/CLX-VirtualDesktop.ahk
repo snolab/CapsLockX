@@ -32,6 +32,7 @@ if (!CapsLockX) {
     ExitApp
 }
 
+; @deprecated start, will remove in future version
 global VirtualDesktopPinPattern1 := CLX_Config("VirtualDesktopPinPattern", "p1", "#Desktop1", "Pin matched window to desktop 1")
 global VirtualDesktopPinPattern2 := CLX_Config("VirtualDesktopPinPattern", "p2", "#Desktop2", "Pin matched window to desktop 2")
 global VirtualDesktopPinPattern3 := CLX_Config("VirtualDesktopPinPattern", "p3", "#Desktop3", "Pin matched window to desktop 3")
@@ -42,6 +43,7 @@ global VirtualDesktopPinPattern7 := CLX_Config("VirtualDesktopPinPattern", "p7",
 global VirtualDesktopPinPattern8 := CLX_Config("VirtualDesktopPinPattern", "p8", "#Desktop8", "Pin matched window to desktop 8")
 global VirtualDesktopPinPattern9 := CLX_Config("VirtualDesktopPinPattern", "p9", "#Desktop9", "Pin matched window to desktop 9")
 global VirtualDesktopPinPattern0 := CLX_Config("VirtualDesktopPinPattern", "p0", "#Desktop0", "Pin matched window to desktop 0")
+; @deprecated end
 
 
 Return
@@ -347,7 +349,7 @@ SwitchToDesktopByInternalAPI(idx)
     _:= win11 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win11)
     _:= win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
     
-    ToolTip win %win12% %win11% %win10%
+    ; ToolTip win %win12% %win11% %win10%
 
     ObjRelease(IServiceProvider)
     if (IVirtualDesktopManagerInternal) {
@@ -371,7 +373,7 @@ SwitchToDesktopByInternalAPI(idx)
             _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", DesktopCount)
             _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
 
-            TrayTip, CapsLockX, % t("切换到桌面: ") . idx . "/" . DesktopCount
+            ; TrayTip, CapsLockX, % t("切换到桌面: ") . idx . "/" . DesktopCount
             ; if idx-th desktop doesn't exists then create a new desktop
             if (idx > DesktopCount) {
                 diff := idx - DesktopCount
@@ -392,7 +394,7 @@ SwitchToDesktopByInternalAPI(idx)
             _ := win10 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win10)
             DllCall(GetDesktopAt, "Ptr", pDesktopIObjectArray, "UInt", idx - 1, "Ptr", &IID_IVirtualDesktop, "Ptr*", VirtualDesktop)
             ObjRelease(pDesktopIObjectArray)
-            ToolTip, % "clx" . VirtualDesktop
+            ; ToolTip, % "clx" . VirtualDesktop
             if (VirtualDesktop) {
                 _ := win12 && DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", VirtualDesktop)
                 _ := win11 && DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr", VirtualDesktop)
