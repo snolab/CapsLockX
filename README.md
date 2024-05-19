@@ -215,384 +215,57 @@ TODO Calculation of information quantity increase with chording
 <!-- MODULE_HELP_BEGIN -->
 <!-- MODULE_FILE: @Help.ahk-->
 
-…[### 帮助模块
 
-如果你想学习如何开发 CapsLockX 的插件，请：
-
-1. 打开 `Modules/@Help.ahk` ， 你可以了解到 CapsLockX 插件的基本格式
-2. 将它复制一份，命名为你自己的插件名称
-3. 将它本来的功能改成你自己需要的功能，插件的开发就完成啦！
-
-#### 本模块功能见下
-
-| 作用于 | 按键                  | 功能                             |
-| ------ | --------------------- | -------------------------------- |
-| 全局   | CapsLockX + /         | 临时显示热键提示                 |
-| 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
-]
 
 <!-- MODULE_FILE: App-AnkiEnhanced.ahk-->
 
-…[### Anki 增强模块
 
-Anki 操作增强
-
-#### 常用功能/特性
-
-1. 使用 WASD 或 HJKL 来快速连续地（并且可以撤销）切换记忆卡片
-2. 在 Excel 制作一个单词列表，共 2 列， 全选复制，然后在 Anki 中按 Alt + i 来快速导入单词列表。
-3. 简化 4 个选项为 3 个方向键，左易，下中，右难，上撤销。
-4. 可配合手柄使用，使用 XPadder 配置手柄摇杆映射到方向键即可。效果请见 bilibili [中二雪星怎背词 - 手柄怎么可以不用来背单词！](https://www.bilibili.com/video/av8456838/)
-
-#### 说明
-
-| 模式                 | Anki 增强模块  | 说明                                                        |
-| -------------------- | :------------: | ----------------------------------------------------------- |
-| 在 Anki-学习界面     | `w 或 k 或 ↑`  | 按下=撤销，松开显示答案                                     |
-| 在 Anki-学习界面     | `a 或 h 或 ←`  | 按下=顺利，松开显示答案                                     |
-| 在 Anki-学习界面     | `s 或 j 或 ↓`  | 按下=一般，松开显示答案                                     |
-| 在 Anki-学习界面     | `d 或 l 或 →`  | 按下=生疏，松开显示答案                                     |
-| 在 Anki-学习界面     |      `q`       | 返回上个界面                                                |
-| 在 Anki-学习界面     |      `c`       | 添加新卡片                                                  |
-| 在 Anki-学习界面     | `1 或 NumPad1` | 困难（原键位）                                              |
-| 在 Anki-学习界面     | `2 或 NumPad2` | 生疏（原键位）                                              |
-| 在 Anki-学习界面     | `3 或 NumPad3` | 一般（原键位）                                              |
-| 在 Anki-学习界面     | `4 或 NumPad4` | 顺利（原键位）                                              |
-| 在 Anki-学习界面     | `5 或 NumPad5` | 撤销                                                        |
-| 在 Anki-学习界面     | `6 或 NumPad6` | 暂停卡片                                                    |
-| 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
-| 在 Anki-添加卡片界面 |   `Alt + s`    | 按下 添加 按钮                                              |
-]
 
 <!-- MODULE_FILE: App-OneNote2019.ahk-->
 
-…[### OneNote 2016 - 2019 增强
 
-朴素地增强 OneNote 2016 - 2019 的键盘操作，便捷地使用键盘来：换笔，制作链接，整理页面，调整视图……
-
-#### 雪星喵常用功能
-
-1. 做日志的时候，先在笔记页面 `Alt + T` 给笔记标题添加日期标签（用于将来搜索），然后全局 `Win + Shift + N` 在 OneNote 搜索带有 今日标签 的所有笔记，用来方便地检索你今日的：恋爱日记、训练日志、每日书单、项目日报……总之在 OneNote 写日记就很方便了，一按就出来，不用找 XD
-2. 选一个词按 `Alt + K` ，会把所有相关的页面链接列到这个词的下方，用来做索引目录，把你的 OneNote 织成一张网。
-3. 新建一个笔记，改名叫 `我的剪贴板`，然后在复制文本、图片的时候，CLX 会帮你自动追加到这个笔记，用于方便地收集资料或摘抄文章。
-4. Alt + 1234567 层级折叠，轻松地在不同抽象层次的思考上切换。
-
-#### 按键分布设计（开发中）
-
-| 按键描述                | 作用                    | 备注       |
-| ----------------------- | ----------------------- | ---------- |
-| `所有 OneNote 自带热键` | 原功能                  |            |
-| `按一下 Alt 再按别的`   | 触发 OneNote 原菜单功能 |            |
-| `Alt + 1234567`         | 大纲折叠展开到 1-7 层级 |            |
-| `Alt + qwe asd r`       | 工具、换笔、视图        |            |
-| `Alt + f`               | 查找标签                |            |
-| `Alt + -=`              | 公式相关                |            |
-| `Alt + m`               | 移动笔记、分区          |            |
-| `Alt + hjkl`            | 各种链接功能            |            |
-| `Alt + zxcv`            | 高级复制粘贴            | 细节开发中 |
-| `Alt + /`               | 热键帮助、提示          | 开发中     |
-| `F2 F3`                 | 重命名、查找笔记        |            |
-
-#### 详细按键表 / CheatSheet
-
-| 作用于                   | 格式热键                     | 功能                                                                      |
-| ------------------------ | ---------------------------- | ------------------------------------------------------------------------- |
-| 全局                     | `Win + Alt + N`              | 打开快速笔记第一页（弥补 OneNote 原本没有像 Notion 一样的首页概念的不足） |
-| 全局                     | `Win + Shift + N`            | 打开 OneNote 并精确搜索今日标签                                           |
-| OneNote2019              | `Alt + 1234567`              | 大纲：大纲折叠展开到那层（强烈推荐，超好用）                              |
-| OneNote2019              | `F2`                         | 整理：重命名笔记                                                          |
-| OneNote2019              | `Shift + F2`                 | 整理：重命名分区                                                          |
-| OneNote2019              | `Alt + m`                    | 整理：移动笔记                                                            |
-| OneNote2019              | `Alt + Shift + m`            | 整理：移动分区                                                            |
-| OneNote2019              | `Ctrl + n`                   | 整理：新建笔记                                                            |
-| OneNote2019              | `Ctrl + Alt + n`             | 整理：在当前笔记下方新建笔记                                              |
-| OneNote2019              | `Alt + Delete`               | 整理：快速删除当前页面                                                    |
-| OneNote2019              | `Ctrl + s`                   | 整理：立即同步此笔记本                                                    |
-| OneNote2019              | `Ctrl + w`                   | 整理：关闭窗口                                                            |
-| OneNote2019              | `Shift + Delete`             | 编辑：快速删除当前行                                                      |
-| OneNote2019              | `Alt + -`                    | 编辑：自动 2 维化公式                                                     |
-| OneNote2019              | `Alt + k`                    | 编辑：⭐🔗 展开当前关键词的相关页面链接（快速关键词一对多链接）           |
-| OneNote2019              | `Alt + n`                    | 样式：切换页面为无色背景                                                  |
-| OneNote2019              | `Alt + v`                    | 样式：改变文字背景色                                                      |
-| OneNote2019              | `Alt + q`                    | 工具：拖动                                                                |
-| OneNote2019              | `Alt + w`                    | 工具：套锁                                                                |
-| OneNote2019              | `Alt + e`                    | 工具：橡皮                                                                |
-| OneNote2019              | `Alt + s`                    | 工具：输入                                                                |
-| OneNote2019              | `Alt + a`                    | 工具：换到第 2 支笔                                                       |
-| OneNote2019              | `Alt + d`                    | 工具：打开换笔盘（然后可可方向键选笔 （目前全屏无效）                     |
-| OneNote2019              | `Alt + d -> 1234567`         | 工具：打开换笔盘（然后选第 1 行第 x 支笔） （目前全屏无效）               |
-| OneNote2019              | `Alt + d -> Shift + 1234567` | 工具：打开换笔盘（然后选第 2 行第 x 支笔） （目前全屏无效）               |
-| OneNote2019              | `Alt + r`                    | 视图：缩放到原始大小                                                      |
-| OneNote2019              | `Alt + y`                    | 视图：缩放到页面宽度                                                      |
-| OneNote2019              | `^!+- 或 ^!+=`               | 视图：缩小页面 或 放大页面                                                |
-| OneNote2019              | `Alt + f`                    | 视图：搜索标记                                                            |
-| OneNote2019              | `Alt + t`                    | 编辑：给笔记增加日期标签，例如： (20220717)                               |
-| OneNote2019              | `Ctrl + Shift + c`           | 编辑：复制（纯文本）                                                      |
-| OneNote2019              | `Ctrl + Shift + v`           | 编辑：粘贴（纯文本）                                                      |
-| OneNote2019 创建链接窗口 | `Alt + s`                    | 编辑：复制当前所有搜索结果页面的链接                                      |
-| OneNote2019 创建链接窗口 | `Alt + Shift + s`            | 编辑：复制当前所有搜索结果页面的链接并粘贴                                |
-| OneNote2019 剪贴板笔记   | `Ctrl + C`                   | 编辑：⭐ 追加复制的内容到名称中含有 "Clipboard" 或 "剪贴板" 的笔记        |
-]
 
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
 
-…[### 讯飞输入法悬浮窗插件
 
-#### 用法
-
-| 作用于 |  按键   | 功能说明              |
-| ------ | :-----: | --------------------- |
-| 全局   | Win + Alt + H | 启动/切换讯飞语音输入 |
-
-#### 注
-
-1. 若没有安装讯飞语音则会自动询问是否引导下载安装
-
-#### 效果如下图
-
-![App-讯飞语音输入法悬浮窗演示.gif](./docs/media/App-讯飞语音输入法悬浮窗演示.gif)]
 
 <!-- MODULE_FILE: CLX-Brainstorm.ahk-->
 
-…[### CLX - Brainstorm 大脳风暴
 
-任何時間，任何輸入框，按下 `CLX+b` 鍵，開始使用 AI 輔助輸入。
-
-#### 按键分布（开发中）
-
-| 按键描述        | 作用                                                 | 备注 |
-| --------------- | ---------------------------------------------------- | ---- |
-| CLX + b         | 自動複製当前选中内容，輸入指令，让 AI 辅助你的輸入   |      |
-| CLX + Alt + b   | 配置激活碼（目前只有免費方案，将来可能加入功能増強） |      |
-| CLX + Shift + b | 査看使用額度                                         |      |
-
-#### Protips:
-
-##### 随時整理会議記録
-
-1. 任何輸入框内，使用 Win+H 來調出語音輸入，然後說出你想要的文字，不用在意語音輸入的準確度，只要說出大概的意思就可以了，
-2. 然後全選按下 `CLX+b`，輸入 `列出要点和待辦事項`，就可以看到 AI 自動幫你整理出來的要點和待辦事項。
-
-##### 随時翻訳任何語言到任何語言
-
-1. 任何輸入框内，选中你想要翻譯的文字
-2. 然後全選按下 `CLX+b`，`to chinese:` AI 自動幫你輸入成中文。
-]
 
 <!-- MODULE_FILE: CLX-Edit.ahk-->
 
-…[### 编辑增强插件（ TG YUIO HJKL ） 🌟
 
-这个世界上还有比 Vim 模式的 HJKL 移动光标更棒的东西吗？
-这个必须有！
-那就是带加速度的 HJKL 流畅编辑体验！想不想试试让你的光标来一次排水沟过弯的高端操作？装它！
-
-![EditorCursorMovement.gif](./docs/media/EditorCursorMovement.gif)
-
-| 作用域     | Edit 模块             | 说明                             |
-| ---------- | --------------------- | -------------------------------- |
-| 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
-| 全局(基本) | `CapsLockX + y o`     | Home End                         |
-| 全局(基本) | `CapsLockX + u i`     | PageUp PageDown                  |
-| 全局(基本) | `CapsLockX + [ ]`     | Shift+Tab 和 Tab                 |
-| 全局(基本) | `CapsLockX + g`       | 回车                             |
-| 全局(进阶) | `CapsLockX + t`       | Delete                           |
-| 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
-| 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
-| 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
-]
 
 <!-- MODULE_FILE: CLX-LaptopKeyboardFix.ahk-->
 
-…[### Surface 笔记本扩充功能键
 
-专治各种笔记本残破键盘
-
-1. 没有右 Ctrl 键？合并 Menu 与 右 Ctrl 键，Menu 当 Ctrl 用 或者 Ctrl 当 Menu 用都可以
-2. 没有 Pause 键？Win + Alt + P 也能打开系统设定信息。
-3. 待补充
-
-| 模式             | 按键                                  | 功能                               |
-| ---------------- | :------------------------------------ | ---------------------------------- |
-| 全局             | Win + Alt + P                         | 相当于 Win + Pause，专为笔记本定制 |
-| 全局             | 右 Ctrl 按一下                        | 会按一下 Menu 弹出菜单             |
-| 全局             | 按住右 Menu                           | 会按住 Ctrl，此时可以与其它键组合  |
-| Win 键模拟启用后 | ] 按住同时，[ 按下                    | 相当于按 Win 键                    |
-| Win 键模拟启用后 | RAlt+\| 相当于按 Alt+Tab 只不过在右手 |
-]
 
 <!-- MODULE_FILE: CLX-MediaKeys.ahk-->
 
-…[### 媒体键模块
 
-| 作用于 | 媒体键模块        | 说明                                        |
-| ------ | ----------------- | ------------------------------------------- |
-| 全局   | `CapsLockX + F1`  | 打开：我的电脑                              |
-| 全局   | `CapsLockX + F2`  | 打开：计算器                                |
-| 全局   | `CapsLockX + F3`  | 打开：浏览器主页                            |
-| 全局   | `CapsLockX + F4`  | 打开：媒体库（默认是 Windows Media Player） |
-| 全局   | `CapsLockX + F5`  | 播放：暂停/播放                             |
-| 全局   | `CapsLockX + F6`  | 播放：上一首                                |
-| 全局   | `CapsLockX + F7`  | 播放：下一首                                |
-| 全局   | `CapsLockX + F8`  | 播放：停止                                  |
-| 全局   | `CapsLockX + F9`  | 音量加                                      |
-| 全局   | `CapsLockX + F10` | 音量减                                      |
-| 全局   | `CapsLockX + F11` | 静音                                        |
-]
 
 <!-- MODULE_FILE: CLX-Mouse.ahk-->
 
-…[### 模拟鼠标插件（ WASD QERF ）
 
-> 一直以来，我总是以键盘控自居，应该是在从前做模型的时候伤到了手指关节开始，成为键盘重度用户的。各种键盘加速工具，主动去记住各种快捷键，力求少用鼠标，甚至去学习了 vim 和 emacs。但是，很多时候，鼠标是无可替代的，尤其是在图形界面大行其道时候。
-
-—— 以上是来自 [SimClick 模拟点击](https://github.com/rywiki/simclick) 作者的一段话，这是一款以网格细分方式模拟鼠标的作品，可以与本项目互补
-
-—— 由 [秦金伟](http://rsytes.coding-pages.com/) 推荐
-
-#### 功能
-
-- 本模块使用按键区：CapsLockX + QWER ASDF
-- 非常舒适地使用 WASD QE RF 来模拟【完整的】鼠标功能，相信我，试过这种手感之后，你会喜欢上它的。
-- 指针移动时会自动黏附各种按钮、超链接。滚轮的指数级增长的加速度滚动机制使你再也不惧怕超级长的文章和网页。
-- 效果如图：
-  ![CLX-Mouse.gif](./docs/media/CLX-Mouse.gif)
-
-#### 使用方法如下
-
-| 作用于 | 按键                                  | 说明                                     |
-| ------ | ------------------------------------- | ---------------------------------------- |
-| 全局   | `CapsLockX + w a s d`                 | 鼠标移动（上下左右）                     |
-| 全局   | `CapsLockX + ad`                      | 将 HJKL 键切换到滚轮模式（上下左右滚动） |
-| 全局   | `CapsLockX + r f`                     | 垂直滚轮（上下）                         |
-| 全局   | `CapsLockX + Shift + r f`             | 水平滚轮（左右）                         |
-| 全局   | `CapsLockX + Ctrl + Alt + r f`        | 垂直滚轮自动滚动（上 下）                |
-| 全局   | `CapsLockX + Ctrl + Alt + Shift+ r f` | 水平滚轮自动滚动（左 右）                |
-| 全局   | `CapsLockX + rf`                      | rf 同时按相当于鼠标中键                  |
-| 全局   | `CapsLockX + e`                       | 鼠标左键                                 |
-| 全局   | `CapsLockX + q`                       | 鼠标右键                                 |
-
-#### 操作细节
-
-快速连按 AD 步进
-]
 
 <!-- MODULE_FILE: CLX-NodeEval.ahk-->
 
-…[### JavaScript 计算 (建议安装 NodeJS )
 
-| 作用于 | 按键            | 效果                                   |
-| ------ | --------------- | -------------------------------------- |
-| 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
-| 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
-]
 
 <!-- MODULE_FILE: CLX-WindowManager.ahk-->
 
-…[### 窗口增强插件 (CLX + 1234567890 ZXCV)
 
-#### 功能简述
-
-用好 Win 10 自带的 10 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、（注：任务栏和 AltTab 相关功能暂不兼容 Win11，窗口排列功能正常。）
-
-1. 窗口切换：`CapsLockX + [Shift] + Z`
-2. 窗口关闭：`CapsLockX + [Shift] + X`
-3. 窗口排列：`CapsLockX + [Shift] + C`
-4. 窗口置顶：`CapsLockX + [Shift] + V`
-5. 左手窗口管理：在 `Alt + Tab` 的界面，用 `WASD` 切换窗口，`X` 关掉窗口。
-6. 高效使用虚拟桌面：`CapsLockX + 0123456789` 切换、增减虚拟桌面，加上 `Shift` 键可以转移当前窗口
-7. 虚拟机与远程桌面快速脱离：双击左边 `Shift + Ctrl + Alt`。
-
-#### 效果图
-
-- Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./docs/media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
-- CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
-  ![02-插件-窗口增强_一键排列窗口.gif](./docs/media/02-插件-窗口增强_一键排列窗口.gif)
-
-#### 使用方法如下 ( Alt+Tab 与 CapsLockX )
-
-| 作用域       | 窗口增强模块                          | 说明                                       |
-| ------------ | ------------------------------------- | ------------------------------------------ |
-| Alt+Tab 界面 | `Q E`                                 | 左右切换多桌面                             |
-| Alt+Tab 界面 | `W A S D`                             | 上下左右切换窗口选择                       |
-| Alt+Tab 界面 | `X C`                                 | 关闭选择的窗口（目前 X 和 C 没有区别）     |
-| Win+Tab 视图 | `Alt + W A S D`                       | 切换窗口选择                               |
-| 全局         | `Win + [Shift] + B`                   | 定位到托盘任务(windows 系統自帯熱鍵)       |
-| 全局         | `Win + [Shift] + T`                   | 定位到任務栏任务(windows 系統自帯熱鍵)     |
-| 全局         | `Win + Shift + hjkl`                  | 在窗口之间按方向切换焦点                   |
-| 任务栏       | `Ctrl + W 或 Delete`                  | 在托盘图标或任务栏任务上，选择退出按钮     |
-| 全局         | `CapsLockX + 1 2 ... 9 0`             | 切换到第 1 .. 12 个桌面                    |
-| 全局         | `CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
-| 全局         | `CapsLockX + Alt + Backspace`         | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局         | `CapsLockX + C`                       | 快速排列当前桌面的窗口                     |
-| 全局         | `CapsLockX + Ctrl + C`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Shift + C`               | 快速堆叠当前桌面的窗口                     |
-| 全局         | `CapsLockX + Shift + Ctrl + C`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Z`                       | 循环切到最近使用的窗口                     |
-| 全局         | `CapsLockX + Shift + Z`               | 循环切到最不近使用的窗口                   |
-| 全局         | `CapsLockX + X`                       | 关掉当前标签页 Ctrl+W                      |
-| 全局         | `CapsLockX + Shift + X`               | 关掉当前窗口 Alt+F4                        |
-| 全局         | `CapsLockX + V`                       | 让窗口透明                                 |
-| 全局         | `CapsLockX + Shift + V`               | 让窗口保持透明（并置顶）                   |
-| 任意窗口     | `双击左边 Shift+Ctrl+Alt`             | 后置当前窗口， \* 见下方注                 |
-
-\*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
-例如 mstsc.exe、TeamViewer、VirtualBox、HyperV、VMWare 等远程桌面或虚拟机程序，配合 CapsLockX + Shift + V 透明置顶功能，让你在 Windows 的界面上同时使用 Linux 界面或 MacOS 界面再也不是难题。
-
-此处借用 [@yangbin9317 的评论](https://v2ex.com/t/772052#r_10458792)
-
-> 以 CapsLock 为抓手,打通底层逻辑,拉齐 Windows 和 Linux WM,解决了 Windows 难用的痛点
-
-(20220313) 对于两端都是 Windows 的情况，也可以考虑使用 [RemoteApp Tool - Kim Knight](http://www.kimknight.net/remoteapptool) 来代替远程桌面。
-]
 
 <!-- MODULE_FILE: QuickInput.ahk-->
 
-…[### 快捷输入
 
-| 模式 | 快捷输入 | 说明                                            |
-| ---- | -------- | ----------------------------------------------- |
-| 全局 | `#D#`    | 日期输入：`(20220217)`                          |
-| 全局 | `#T#`    | 时间输入：`(20220217.220717)`                   |
-| 全局 | `#DT#`   | 日期时间输入：`2022-02-17 22:07:33`             |
-| 全局 | `#NPW#`  | 随机输入数字密码如： `7500331260229289`         |
-| 全局 | `#PW#`   | 随机输入数字字母密码如： `yyCTCNYodECTLr2h`     |
-| 全局 | `#WPW#`  | 随机输入数字字母密码如： `FtD5BB1m5H98eY7Y`     |
-| 全局 | `#SPW#`  | 随机输入数字字母符号密码如： `/})y+xK]z~>XKQ+p` |
-]
 
 <!-- MODULE_FILE: TomatoLife.ahk-->
 
-…[### 番茄时钟
 
-25 分钟固定循环休息提醒。
-
-使用 `CapsLockX + ,` 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
-
-- 使用番茄报时（00 分和 30 分播放工作铃声，每小时的 25 分和 55 分播放休息铃声）（需要先开启定时任务）
-
-  ```ini
-  UseTomatoLife=1
-  ```
-
-- 使用番茄报时时，自动切换桌面（使用番茄报时时，自动切换桌面（休息桌面为 1，工作桌面为 2）
-
-  ```ini
-  UseTomatoLifeSwitchVirtualDesktop=1
-  ```
-
-注：如果只需要声音而不需要自动切换桌面的话，也可试试这款 Chrome 插件 [Tomato Life - Chrome 网上应用店](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
-
-注注: 本插件已经分离出一个独立项目，如果你喜欢番茄工作法的话可以参见雪星的 tomato-life 项目： [snomiao/tomato-life](https://github.com/snomiao/tomato-life)
-]
 
 <!-- MODULE_FILE: TurnOffScreenWhenLock.ahk-->
-
-### Auto Screen Off on Lock
-
-When locking the screen with Win + L, the screen turns off immediately. This is suitable for automatically turning off the computer screen when getting ready for sleep, to prevent it from being glaring during the night.
 
 <!-- MODULE_HELP_END -->
 
