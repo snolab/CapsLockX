@@ -215,8 +215,6 @@ TODO Calculation of information quantity increase with chording
 <!-- MODULE_HELP_BEGIN -->
 <!-- MODULE_FILE: @Help.ahk-->
 
-
-
 <!-- MODULE_FILE: App-AnkiEnhanced.ahk-->
 
 

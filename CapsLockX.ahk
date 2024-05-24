@@ -89,6 +89,7 @@ Return
     显示加载提示 := 0
     target := 模块编译和帮助README更新(source)
     if (target == source) {
+        traytip MODULE_HELP_NOT_CHANGED
         return "NOT_CHANGED"
     }
     ; 如果不一样，就再编译一次，并且显示加载提示

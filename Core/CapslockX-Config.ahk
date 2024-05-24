@@ -49,7 +49,6 @@ global T_SwitchSound := CLX_Config("Advanced", "T_SwitchSound", 0, "进阶： �
 global T_SwitchSoundOn := CLX_Config("Advanced", "T_SwitchSoundOn", "./Data/NoteG.mp3", "CapsLockX 按下声音提示路径")
 global T_SwitchSoundOff := CLX_Config("Advanced", "T_SwitchSoundOff", "./Data/NoteC.mp3", "CapsLockX 弹起声音提示路径")
 ; 不同模式下的拖盘图标
-; global T_SwitchTrayIconDefault := CLX_Config("Core", "T_SwitchTrayIconDefault", "./Data/XIconWhite.ico", "CapsLockX默认托盘显示图标，默认" "./Data/XIconWhite.ico")
 global T_SwitchTrayIconOff := CLX_Config("Advanced", "T_SwitchTrayIconOff", "./Data/XIconWhite.ico", "CapsLockX弹起托盘显示图标，默认为 " "./Data/XIconWhite.ico")
 global T_SwitchTrayIconOn := CLX_Config("Advanced", "T_SwitchTrayIconOn", "./Data/XIconBlue.ico", "CapsLockX按下托盘显示图标，默认为 " "./Data/XIconBlue.ico")
 
