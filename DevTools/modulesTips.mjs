@@ -1,6 +1,5 @@
 import fs from "fs";
-import "sno-utils";
-import { 表键筛 } from "sno-utils";
+import { filter } from "rambda";
 const 全部提取 = (s, p) => {
   return (s.match(RegExp(p, p.flags)) || []).map((e) => {
     console.log(e);
@@ -13,8 +12,8 @@ const 表按键排序 = (表) =>
   Object.fromEntries(
     Object.entries(表).sort(
       ([fn0, hk0], [fn1, hk1]) =>
-        hk0.length - hk1.length || hk0.localeCompare(hk1)
-    )
+        hk0.length - hk1.length || hk0.localeCompare(hk1),
+    ),
   );
 
 // const 默认辅助键序列 = "#^+!".split('')
@@ -45,7 +44,7 @@ const 热键列提取 = (文件内容) => {
   // const 函数列 = 全部提取(文件内容, /^(\S+)\(\)\s*?{/);
   const 条件列 = 全部提取(
     文件内容,
-    /(?<=\n|^)(#if\w*)[ \t]*(.*)\s*([\s\S]*?)(?:$|(?=#if))/gi
+    /(?<=\n|^)(#if\w*)[ \t]*(.*)\s*([\s\S]*?)(?:$|(?=#if))/gi,
   );
   const 热键列 = 条件列.flatMap(([判断类型, 条件, code]) => {
     条件 = 条件.trim().replace(/;.*/, "");
@@ -67,7 +66,7 @@ const 热键列提取 = (文件内容) => {
         ...hkde
           .filter(([hk]) => !hk.match(/Up$/))
           .map(([hk, de]) => [de, hkp(hk)]),
-      ])
+      ]),
     );
     if (!Object.entries(指令热键表).length) {
       return [];
@@ -91,15 +90,15 @@ const 条件热键对表列 = (
       .map(async (文件名) => {
         const 文件内容 = await fs.promises.readFile(
           `${ModulesPath}/${文件名}`,
-          "utf8"
+          "utf8",
         );
         return 热键列提取(文件内容);
-      })
+      }),
   )
 ).flat();
 const 条件热键表 = 热键合并表(条件热键对表列);
-const 函数条件热键表 = 表键筛((键) => 键.match(/^\S+\(\)$/))(条件热键表);
-const 非函数条件热键表 = 表键筛((键) => !键.match(/^\S+\(\)$/))(条件热键表);
+const 函数条件热键表 = filter((键) => 键.match(/^\S+\(\)$/))(条件热键表);
+const 非函数条件热键表 = filter((键) => !键.match(/^\S+\(\)$/))(条件热键表);
 console.log(JSON.stringify(非函数条件热键表, null, 4));
 
 const QuickTipsUpdate = async (条件热键表) => {
@@ -141,7 +140,7 @@ const QuickTipsUpdate = async (条件热键表) => {
       .replace(/^\uFEFF/, "")
       .replace(
         /^QuickTips\(\)\s*?{[\s\S]*?^}/gim,
-        `QuickTips(){\n${QuickTips}\n}`
+        `QuickTips(){\n${QuickTips}\n}`,
       );
   // console.log(dst);
   await fs.promises.writeFile(QuickTipsAHK, dst);

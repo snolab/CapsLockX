@@ -72,8 +72,8 @@ CLX_ConfigSet(field, varName, setValue, comment := "")
     ConfigLock()
     ; 不对配置自动重新排序
     if (comment) {
-        ; IniDelete, %CLX_ConfigPath%, %field%, %varName%#注释
-        ; IniWrite, %comment%, %CLX_ConfigPath%, %field%, %varName%#注释
+        ; IniDelete, %CLX_ConfigPath%, %field%, %varName%#
+        ; IniWrite, %comment%, %CLX_ConfigPath%, %field%, %varName%#
         IniSave( comment, CLX_ConfigPath, field, varName . "#" )
     }
     ; IniDelete, %CLX_ConfigPath%, %field%, %varName%
@@ -102,8 +102,8 @@ CLX_Config(field, varName, defaultValue, comment := "")
     ; 对配置自动重新排序
     ; ConfigLock(field varName)
     ; if (comment) {
-    ;     IniDelete, %CLX_ConfigPath%, %field%, %varName%#注释
-    ;     IniWrite, %comment%, %CLX_ConfigPath%, %field%, %varName%#注释
+    ;     IniDelete, %CLX_ConfigPath%, %field%, %varName%#
+    ;     IniWrite, %comment%, %CLX_ConfigPath%, %field%, %varName%#
     ; }
     ; IniDelete, %CLX_ConfigPath%, %field%, %varName%
     ; IniWrite, %content%, %CLX_ConfigPath%, %field%, %varName%

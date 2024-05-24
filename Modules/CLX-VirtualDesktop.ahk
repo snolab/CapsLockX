@@ -25,11 +25,27 @@
 ; ref project when updated to win11:
 ; [MScholtes/VirtualDesktop: C# command line tool to manage virtual desktops in Windows 10]( https://github.com/MScholtes/VirtualDesktop )
 ;
+; 2024-05-19 - [VirtualDesktop/VirtualDesktop11.cs at master · MScholtes/VirtualDesktop]( https://github.com/MScholtes/VirtualDesktop/blob/master/VirtualDesktop11.cs )
+; 
+
+CLSID_ImmersiveShell := "{C2F03A33-21F5-47FA-B4BB-156362A2F239}"
+CLSID_IServiceProvider10 := "{6D5140C1-7436-11CE-8034-00AA006009FA}"
+CLSID_IVirtualDesktop_Win10 := "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}"
+CLSID_IVirtualDesktop_Win11 :="{536D3495-B208-4CC9-AE26-DE8111275BF8}"
+CLSID_IVirtualDesktop_Win12 :="{3F07F4BE-B107-441A-AF0F-39D82529072C}"
+CLSID_IVirtualDesktopManager := "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}"
+CLSID_IVirtualDesktopManagerInternal_Win10 := "{F31574D6-B682-4CDC-BD56-1827860ABEC6}"
+CLSID_IVirtualDesktopManagerInternal_Win11 := "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}"
+CLSID_IVirtualDesktopManagerInternal_Win12 := "{53F5CA0B-158F-4124-900C-057158060B27}"
+CLSID_VirtualDesktopManager := "{AA509086-5CA9-4C25-8F95-589D3C07B48A}"
+CLSID_VirtualDesktopManagerInternal := "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}"
+CLSID_VirtualDesktopPinnedApps := "{B5A399E7-1C87-46B8-88E9-FC5747B171BD}"
 
 if (!CapsLockX) {
     ExitApp
 }
 
+; @deprecated start, will remove in future version
 global VirtualDesktopPinPattern1 := CLX_Config("VirtualDesktopPinPattern", "p1", "#Desktop1", "Pin matched window to desktop 1")
 global VirtualDesktopPinPattern2 := CLX_Config("VirtualDesktopPinPattern", "p2", "#Desktop2", "Pin matched window to desktop 2")
 global VirtualDesktopPinPattern3 := CLX_Config("VirtualDesktopPinPattern", "p3", "#Desktop3", "Pin matched window to desktop 3")
@@ -40,7 +56,7 @@ global VirtualDesktopPinPattern7 := CLX_Config("VirtualDesktopPinPattern", "p7",
 global VirtualDesktopPinPattern8 := CLX_Config("VirtualDesktopPinPattern", "p8", "#Desktop8", "Pin matched window to desktop 8")
 global VirtualDesktopPinPattern9 := CLX_Config("VirtualDesktopPinPattern", "p9", "#Desktop9", "Pin matched window to desktop 9")
 global VirtualDesktopPinPattern0 := CLX_Config("VirtualDesktopPinPattern", "p0", "#Desktop0", "Pin matched window to desktop 0")
-
+; @deprecated end
 
 Return
 
@@ -251,7 +267,7 @@ SwitchToDesktop(idx)
     if (SwitchToDesktopByInternalAPI(idx)) {
         ; ok
     } else if (SwitchToDesktopByHotkey(idx)) {
-        Tooltip, WARN SwitchToDesktopByHotkey %idx%
+        ; Tooltip, WARN SwitchToDesktopByHotkey %idx%
     } else {
         Tooltip, WARN SwitchToDesktop FAILED
     }
@@ -318,33 +334,58 @@ IsWindowOnCurrentVirtualDesktop(hWnd)
     ObjRelease(IVirtualDesktopManager)
     Return %bool%
 }
+
 SwitchToDesktopByInternalAPI(idx)
 {
     succ := 0
-    IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
-    IVirtualDesktopManagerInternal_Win11 := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}")
-    IVirtualDesktopManagerInternal_Win10 := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
+    CLSID_ImmersiveShell := "{C2F03A33-21F5-47FA-B4BB-156362A2F239}"
+    CLSID_IServiceProvider10 := "{6D5140C1-7436-11CE-8034-00AA006009FA}"
+    CLSID_IVirtualDesktop_Win10 := "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}"
+    CLSID_IVirtualDesktop_Win11 :="{536D3495-B208-4CC9-AE26-DE8111275BF8}"
+    CLSID_IVirtualDesktop_Win12 :="{3F07F4BE-B107-441A-AF0F-39D82529072C}"
+    CLSID_IVirtualDesktopManager := "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}"
+    CLSID_IVirtualDesktopManagerInternal_Win10 := "{F31574D6-B682-4CDC-BD56-1827860ABEC6}"
+    CLSID_IVirtualDesktopManagerInternal_Win11 := "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}"
+    CLSID_IVirtualDesktopManagerInternal_Win12 := "{53F5CA0B-158F-4124-900C-057158060B27}"
+    CLSID_VirtualDesktopManager := "{AA509086-5CA9-4C25-8F95-589D3C07B48A}"
+    CLSID_VirtualDesktopManagerInternal := "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}"
+    CLSID_VirtualDesktopPinnedApps := "{B5A399E7-1C87-46B8-88E9-FC5747B171BD}"
+
+    IServiceProvider := ComObjCreate(CLSID_ImmersiveShell, CLSID_IServiceProvider10)
+    IVirtualDesktopManagerInternal_Win12 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win12)
+    IVirtualDesktopManagerInternal_Win11 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win11)
+    IVirtualDesktopManagerInternal_Win10 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win10)
+    win12 := !!IVirtualDesktopManagerInternal_Win12
     win11 := !!IVirtualDesktopManagerInternal_Win11
     win10 := !!IVirtualDesktopManagerInternal_Win10
-    IVirtualDesktopManagerInternal := !!IVirtualDesktopManagerInternal_Win11 ? IVirtualDesktopManagerInternal_Win11 : IVirtualDesktopManagerInternal_Win10
-    ; tooltip win %win11% %win10%
+    _:= win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
+    _:= win11 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win11)
+    _:= win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
+    
+    ; ToolTip win %win12% %win11% %win10%
+
     ObjRelease(IServiceProvider)
     if (IVirtualDesktopManagerInternal) {
         ; tooltip %idx%
         GetCount := vtable(IVirtualDesktopManagerInternal, 3)
         GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
         SwitchDesktop := vtable(IVirtualDesktopManagerInternal, 9)
+        
         ; TrayTip, , % IVirtualDesktopManagerInternal
         pDesktopIObjectArray := 0
-        _ := win10 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
+        _ := win12 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
         _ := win11 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr*", pDesktopIObjectArray)
-        ; Tooltip %pDesktopIObjectArray%
+        _ := win10 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
+        
+        ; Tooltip % pDesktopIObjectArray
         if (pDesktopIObjectArray) {
             GetDesktopCount := vtable(pDesktopIObjectArray, 3)
             GetDesktopAt := vtable(pDesktopIObjectArray, 4)
-            _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
+            _ := win12 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
             _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", DesktopCount)
-            ; tooltip 切换到桌面 %idx% / %DesktopCount%
+            _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
+
+            ; TrayTip, CapsLockX, % t("切换到桌面: ") . idx . "/" . DesktopCount
             ; if idx-th desktop doesn't exists then create a new desktop
             if (idx > DesktopCount) {
                 diff := idx - DesktopCount
@@ -360,13 +401,16 @@ SwitchToDesktopByInternalAPI(idx)
                     SendEvent ^#{F4}
                 }
             }
-            _ := win10 && GetGUIDFromString(IID_IVirtualDesktop, "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}")
-            _ := win11 && GetGUIDFromString(IID_IVirtualDesktop, "{536D3495-B208-4CC9-AE26-DE8111275BF8}")
+            _ := win12 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win12)
+            _ := win11 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win11)
+            _ := win10 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win10)
             DllCall(GetDesktopAt, "Ptr", pDesktopIObjectArray, "UInt", idx - 1, "Ptr", &IID_IVirtualDesktop, "Ptr*", VirtualDesktop)
             ObjRelease(pDesktopIObjectArray)
+            ; ToolTip, % "clx" . VirtualDesktop
             if (VirtualDesktop) {
-                _ := win10 && DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", VirtualDesktop)
+                _ := win12 && DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", VirtualDesktop)
                 _ := win11 && DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr", VirtualDesktop)
+                _ := win10 && DllCall(SwitchDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", VirtualDesktop)
                 ObjRelease(VirtualDesktop)
                 succ := idx
             }

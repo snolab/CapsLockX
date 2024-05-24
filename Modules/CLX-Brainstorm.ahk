@@ -64,12 +64,13 @@ brainstorm()
 {
     ; heat up
     global brainstorm_origin
-    endpoint := brainstorm_origin "/ai/chat?ret=polling"
+    endpoint := brainstorm_origin . "/ai/chat?ret=polling"
     xhrHeatUp := ComObjCreate("Msxml2.XMLHTTP")
     xhrHeatUp.Open("PUT", endpoint)
-    xhrHeatUp.Send()
-
-    content:=brainstorm_copy()
+    xhrHeatUp.onreadystatechange := Func("BS_heatUp_onReadyStateChange").Bind(xhr)
+    xhrHeatUp.Send("")
+    
+    content := brainstorm_copy()
 
     prompt := ""
     prompt .= t("'例1：Translate to english：'") . "`n"
@@ -85,19 +86,27 @@ brainstorm()
     CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
-    global brainstorming := true
+    ToolTip, % t("Going to Ask AI")
+
+    global brainstorming
+    brainstorming := true
     brainstorm_questionPost(msg)
     ToolTip, % t("Asking AI")
+}
+BS_heatUp_onReadyStateChange(xhr){
+    xhr.Close()
+    ToolTip, % t("Ready to Ask AI")
+
+    ; xhr heatup done
 }
 
 brainstorm_questionPost(question)
 {
     global brainstorm_origin
-    endpoint := brainstorm_origin "/ai/chat?ret=polling"
+    endpoint := brainstorm_origin . "/ai/chat?ret=polling"
     xhr := ComObjCreate("Msxml2.XMLHTTP")
     xhr.Open("POST", endpoint)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
-
     global brainstorming
     if (!brainstorming) {
         xhr.Close()
