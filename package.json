@@ -39,7 +39,7 @@
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
     "prepare": "husky install",
     "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
-    "release": "pnpm upgrade && standard-version --commit-all && git push --follow-tag --all",
+    "release": "bun upgrade && standard-version --commit-all && git push --follow-tag --all",
     "start": "CapsLockX.exe",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
