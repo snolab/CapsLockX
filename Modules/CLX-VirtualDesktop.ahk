@@ -359,7 +359,6 @@ SwitchToDesktopByInternalAPI(idx)
         SwitchDesktop := vtable(IVirtualDesktopManagerInternal, 9)
         
         ; TrayTip, , % IVirtualDesktopManagerInternal
-
         pDesktopIObjectArray := 0
         _ := win12 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
         _ := win11 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr*", pDesktopIObjectArray)
