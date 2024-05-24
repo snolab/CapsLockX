@@ -10,15 +10,15 @@ return
 
 #if CapsLockXMode
 
-; Brainstorm
+    ; Brainstorm
 
-b:: brainstorm()
-+b:: brainstorm_show()
-!b:: brainstorm_set_key()
+    b:: brainstorm()
+    +b:: brainstorm_show()
+    !b:: brainstorm_set_key()
 
 #if brainstorming
 
-esc:: stop_brainstorm()
+    esc:: stop_brainstorm()
 
 #if
 
@@ -72,11 +72,11 @@ brainstorm()
     content:=brainstorm_copy()
 
     prompt := ""
-    prompt .= t("'例1：Translate to english：'")  . "`n"
-    prompt .= t("'例2：解釈这句話：'")  . "`n"
-    prompt .= t("'例3：总结5点：'")  . "`n"
+    prompt .= t("'例1：Translate to english：'") . "`n"
+    prompt .= t("'例2：解釈这句話：'") . "`n"
+    prompt .= t("'例3：总结5点：'") . "`n"
     prompt .= "--- " . t("以下为提問内容") . " ---`n" . content
-    InputBox, cmd,  % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
+    InputBox, cmd, % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
 
     ; if escape
     if (ErrorLevel == 1) {
@@ -87,6 +87,7 @@ brainstorm()
 
     global brainstorming := true
     brainstorm_questionPost(msg)
+    ToolTip, % t("Asking AI")
 }
 
 brainstorm_questionPost(question)
@@ -118,20 +119,19 @@ BS_questionPost_onReadyStateChange(xhr)
             brainstorm_set_key()
         }
         if (xhr.status == 429) {
-            MsgBox, % xhr.responseText . " " .  t("请等待一段时间后再试")
+            MsgBox, % xhr.responseText . " " . t("请等待一段时间后再试")
         }
         MsgBox, % xhr.responseText . " " . t("Unknown Error")
         return
     }
     global questionId := xhr.responseText
     if (!questionId) {
-        MsgBox, t("Fail to ask ai")
+        MsgBox, % t("Fail to ask ai")
         return
     }
 
-    ToolTip, % t("Asking AI")
+    ToolTip, % t("Waiting Answer...")
     ; tooltip askAiSucc with question %questionId%
-
 
     global brainstormStagedAnswer
     brainstormStagedAnswer := ""

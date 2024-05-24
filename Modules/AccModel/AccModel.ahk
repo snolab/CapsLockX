@@ -89,6 +89,10 @@ class AccModel2D
         ; 简单粗暴倍数降速
         v *= Exp(-dt*20)
         v -= this._sign(v) * dt
+        ; if (a==0){
+        ;     v *= 0.5 ** (dt / (halflife / 1000));
+        ; }
+
         ; v *= 1 - this.衰减率
         ; 线性降速
         ; v -= !this.衰减率 ? 0 : v > 1 ? 1 : (v < -1 ? -1 : 0)
