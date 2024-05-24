@@ -144,7 +144,7 @@ Return
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
     ; 生成帮助
-    全部帮助 := ""
+    全部模块帮助 := ""
     i := 0
     loop, Parse, ModuleFiles, `n
     {
@@ -182,7 +182,7 @@ Return
             模块帮助内容 := Trim(模块帮助内容, " `t`n")
             加载提示追加(t("加载模块帮助：") . i . "-" . 模块名称)
 
-            全部帮助 .= "<!-- MODULE_FILE: " Match[1] Match[2] ".ahk" "-->" "`n`n"
+            全部模块帮助 .= "<!-- MODULE_FILE: " Match[1] Match[2] ".ahk" "-->" "`n`n"
 
             ; 替换资源链接的相对目录（图片gif等）
             FileCopy, % CLX_ModuleDir . "\*.gif", .\docs\media\, 1
@@ -193,19 +193,18 @@ Return
             模块帮助内容 := RegExReplace(模块帮助内容, "m)\[(.*)\]\(\s*?\.\/(.*?)\)", "[$1](./docs/media/$2)")
             ; 没有标题的，给自动加标题
             if (!RegExMatch(模块帮助内容, "^#")) {
-                if (T%模块名称%_Disabled) {
-                    模块帮助内容 .= "### " 模块名称 "模块（禁用）" "`n"
-                } else {
-                    模块帮助内容 .= "### " 模块名称 "模块" "`n"
-                }
+                ; if (T%模块名称%_Disabled) {
+                ;     模块帮助内容 .= "### " 模块名称 "模块（禁用）" "`n"
+                ; } else {
+                ;     模块帮助内容 .= "### " 模块名称 "模块" "`n"
+                ; }
+                模块帮助内容 .= "### " 模块名称 "模块" "`n"
             }
             ; translate to en
             模块帮助内容 := t(模块帮助内容, lang)
-
             ; 替换标题层级
-            模块帮助内容 := RegExReplace(模块帮助内容, "m)^#", "###")
-
-            全部帮助 .=  "`n`n"
+            模块帮助内容 := RegExReplace(模块帮助内容, "(?<=^|\n)#", "###")
+            全部模块帮助 .= 模块帮助内容 . "`n`n"
         }
         if (T%模块名称%_Disabled) {
             加载提示追加(t("跳过模块：") . i . " " . 模块名称)
@@ -252,12 +251,14 @@ Return
     FileAppend %模块加载器%, %CLX_ModulesFunctions%
 
     加载提示显示()
-    全部帮助 := Trim(全部帮助, " `t`n")
+    全部模块帮助 := Trim(全部模块帮助, " `t`n")
 
     ; 生成 README 替换代码
     NeedleRegEx := "m)(\s*)(<!-- MODULE_HELP_BEGIN -->)([\s\S]*)\r?\n(\s*)(\r?\n<!-- MODULE_HELP_END -->)"
-    Replacement := "$1$2`n" 全部帮助 "`n$4$5"
+    Replacement := "$1$2`n" 全部模块帮助 "`n$4$5"
     targetREADME := RegExReplace(sourceREADME, NeedleRegEx, Replacement, Replaces)
+
+    ; msgbox  % 全部模块帮助
 
     ; 检查 README 替换情况
     if (!Replaces) {
