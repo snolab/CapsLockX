@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.34.0](https://github.com/snolab/CapsLockX/compare/v1.33.2...v1.34.0) (2024-05-24)
+
+
+### Features
+
+* **CapsLockX:** virtual desktop for win11 ([75f2cde](https://github.com/snolab/CapsLockX/commit/75f2cdef5754af78f138ed009e829b255ef318a0))
+
+
+### Bug Fixes
+
+* **91-english-version:** en readme ([fa8862b](https://github.com/snolab/CapsLockX/commit/fa8862b0303efcb7e43e1e2222c9949a10874d8d))
+* **91-english-version:** stage ([36e8243](https://github.com/snolab/CapsLockX/commit/36e824380462bd396d2179da90a8f1e701316fc2))
+* **93-issue:** add vars ([7ea6450](https://github.com/snolab/CapsLockX/commit/7ea645097f435e423637025496f669c223a8440a))
+* **brainstorm:** heat up ([a04a0cf](https://github.com/snolab/CapsLockX/commit/a04a0cf795321921187953823903e1c928cbddc5))
+* **CapsLockX:** brainstorm logic ([b58d0fd](https://github.com/snolab/CapsLockX/commit/b58d0fd5288b092aec97a5fc97672f35212dae3c))
+* **capslockx:** cfg dir ([5bb72c1](https://github.com/snolab/CapsLockX/commit/5bb72c183499606d13ee31713464fba2dc2fd751))
+* **capslockx:** docsmouse ([e45b9c1](https://github.com/snolab/CapsLockX/commit/e45b9c113353f0b939705d7e578d28ac9a1cfcf2))
+* **capslockx:** en ([ba858c5](https://github.com/snolab/CapsLockX/commit/ba858c5571b954cae8339e423b24a2374a5df67d))
+* **CapsLockX:** en module help ([32ab8bd](https://github.com/snolab/CapsLockX/commit/32ab8bdab399a80258019942945b6ebf439ccbdf))
+* **CapsLockX:** format ([b37401d](https://github.com/snolab/CapsLockX/commit/b37401d0f1580e3a932eb51464a5c713a98e231c))
+* **capslockx:** i18n setup ([5ac5047](https://github.com/snolab/CapsLockX/commit/5ac5047bd4ad5c8205c402af8711aeb8c4611dd1))
+* **capslockx:** initial locales ([68b61e8](https://github.com/snolab/CapsLockX/commit/68b61e811404967b0bb58e377905e5f3094a42b9))
+* **capslockx:** initial-langs ([38335b9](https://github.com/snolab/CapsLockX/commit/38335b96f8c4adaaae78960ace27177915a607bb))
+* **capslockx:** lang codes ([bb79216](https://github.com/snolab/CapsLockX/commit/bb7921651d076324641fa2a980c7650f5c4fce58))
+* **capslockx:** not default start ([d538603](https://github.com/snolab/CapsLockX/commit/d538603c4f538902e1389638694964367bfb4d21))
+* **CapsLockX:** remove pnpm ([791262d](https://github.com/snolab/CapsLockX/commit/791262d65f2aa7ffe9696ec7533890e0b1a69e98))
+* **capslockx:** tr error ([c70b891](https://github.com/snolab/CapsLockX/commit/c70b8919ab38f4951b26263cef3b19175f618ea4))
+* **capslockx:** xflymsg ([6052549](https://github.com/snolab/CapsLockX/commit/605254966310d0c0f57138a54383ca39ff8760c7))
+* **ifly:** click pos ([ce71b54](https://github.com/snolab/CapsLockX/commit/ce71b549a2852f990d29e4022845cb9dda3a352c))
+* **main:** echo off in startup ([2f60891](https://github.com/snolab/CapsLockX/commit/2f6089149c1360aad5c03082163d5e920f0f9d92))
+* **main:** qinjinwei ([112d671](https://github.com/snolab/CapsLockX/commit/112d6712e97582e1dbc396cc614cfd4dfdfe5c19))
+* **main:** update readme ([ce5169a](https://github.com/snolab/CapsLockX/commit/ce5169aacba147d048048ae7244b72fe5874eaef))
+* **Modules:** example lang ([0ef49e2](https://github.com/snolab/CapsLockX/commit/0ef49e2600a66ef0baf34a144e5cca9e3d68a5ff))
+
 ### [1.33.2](https://github.com/snolab/CapsLockX/compare/v1.33.1...v1.33.2) (2024-01-06)
 
 
