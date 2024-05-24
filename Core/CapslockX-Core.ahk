@@ -171,7 +171,7 @@ UpdateCapsLockXLight()
             Func("UpdateCapsCursor").Call(NowLightState)
         }
     }
-    if (UpEdge ) {
+    if (UpEdge) {
         global T_SwitchTrayIconOn
         Menu, tray, icon, %T_SwitchTrayIconOn%
         if (T_SwitchSound && T_SwitchSoundOn) {
