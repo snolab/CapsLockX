@@ -587,6 +587,7 @@ FastResizeWindow(hWnd, x, y, w, h, Active := 0, zIndex := 0)
         , "UInt", SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
     }
 }
+
 CurrentWindowSetAsBackground()
 {
     ; 后置当前窗口
@@ -717,6 +718,7 @@ CLX_MoveCurrentWindowTo(x)
 !e:: Send ^#{Right} ; 向右切换多桌面
 
 #if
+
     CtrlShiftAlt按下() {
     FLAG_CtrlShiftAlt按下 := 1
 }
@@ -741,7 +743,7 @@ CtrlShiftAlt弹起() {
     FLAG_CtrlShiftAlt按下 := 0
 
     上次CtrlShiftAlt锁 := 1
-    ToolTip, % "双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）"
+    ToolTip, % t("双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）")
     SetTimer, 窗口增强_RemoveToolTip, -1024
     现在 := A_TickCount
     间隔 := 现在 - 上次CtrlShiftAlt时刻
