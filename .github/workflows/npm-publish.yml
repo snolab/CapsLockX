@@ -10,17 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # pnpm install
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8.10.2
+      - uses: oven-sh/setup-bun@v1
       - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          registry-url: https://registry.npmjs.org/
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      # npm publish
+      - run: bun install
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
