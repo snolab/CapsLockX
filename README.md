@@ -270,21 +270,21 @@ Enhance keyboard operations for OneNote 2016 - 2019, enabling convenient use of 
 
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
 
-### Xunfei Input Method Floating Widget
+### iFlytek Input Method Floating Window Plugin
 
 #### Usage
 
-| Applies to | Shortcut | Function Description |
-| --- | :-------: | --------------------- |
-| Global | Win + Alt + H | Start/Switch to Xunfei Voice Input |
+| Scope  |      Key       | Function Description       |
+| ------ | :------------: | -------------------------- |
+| Global | Win + Alt + H  | Launch/Switch iFlytek Voice Input |
 
 #### Note
 
-1. If Xunfei Voice Input is not installed, the user will be prompted to guide to download and install.
+1. If iFlytek Voice is not installed, it will automatically prompt to download and install.
 
-#### The effect is shown in the following image
+#### Effect as shown in the figure below
 
-![App-Xunfei Voice Input Method Floating Widget Demo.gif](./docs/media/App-Xunfei_Voice_Input_Method_Floating_Widget_Demo.gif)
+![App-iFlytek Voice Input Method Floating Window Demo.gif](./docs/media/App-iFlytek Voice Input Method Floating Window Demo.gif)
 
 <!-- MODULE_FILE: CLX-Brainstorm.ahk-->
 
