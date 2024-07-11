@@ -447,7 +447,11 @@ Additional Note: This plugin has been spun
 
 <!-- MODULE_FILE: TurnOffScreenWhenLock.ahk-->
 
-Lock the screen and turn off the monitor immediately when pressing Win + L, suitable for automatically turning off the computer screen when preparing to sleep, so it doesn't glare during the night...
+…[# 锁屏自动息屏
+
+按 Win + L 锁屏时，立即关闭屏幕，适用于准备睡觉的时候自动把电脑屏幕关掉，不让它在睡觉的时候刺眼……
+按 Win + Alt + L 立即关闭屏幕，适用于准备睡觉的时候把电脑屏幕关掉，不让它在睡觉的时候刺眼……
+]
 
 <!-- MODULE_HELP_END -->
 

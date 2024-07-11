@@ -104,8 +104,11 @@ brainstorm_translatePostResult(lang, key, xhr)
     if (xhr.status != 200) {
         if (xhr.status == 429) {
             MsgBox, % xhr.responseText " Please wait a moment then try again."
+        } else if (xhr.status == 500) {
+            ; ignore 500 error
+            return
         }
-        MsgBox, % xhr.responseText " Unknown Error"
+        MsgBox, % xhr.status . " " xhr.responseText . " " . ("未知错误 / Unknown Error")
         return
     }
     global transcript := xhr.responseText

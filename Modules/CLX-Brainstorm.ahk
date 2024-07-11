@@ -126,11 +126,13 @@ BS_questionPost_onReadyStateChange(xhr)
         if (xhr.status == 403) {
             MsgBox, % xhr.responseText . " " . t("请检查激活码是否正确")
             brainstorm_set_key()
-        }
-        if (xhr.status == 429) {
+        } else if (xhr.status == 429) {
             MsgBox, % xhr.responseText . " " . t("请等待一段时间后再试")
+        } else if (xhr.status == 500) {
+            ; ignore 500 error
+            return
         }
-        MsgBox, % xhr.responseText . " " . t("Unknown Error")
+        MsgBox, % xhr.status . " " xhr.responseText . " " . t("Unknown Error")
         return
     }
     global questionId := xhr.responseText
