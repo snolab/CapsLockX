@@ -265,15 +265,15 @@ Enhance keyboard operations for OneNote 2016 - 2019, conveniently use the keyboa
 
 #### Usage
 
-| Applied to | Key Combination | Description                      |
-| ---------- | :-------------: | -------------------------------- |
-| Global     |  Win + Alt + H  | Start/Switch iFlytek Voice Input |
+| Applies to | Shortcut | Function Description |
+| --- | :-------: | --------------------- |
+| Global | Win + Alt + H | Start/Switch to Xunfei Voice Input |
 
 #### Note
 
-1. If iFlytek Voice is not installed, it will automatically prompt to guide the download and installation.
+1. If Xunfei Voice Input is not installed, the user will be prompted to guide to download and install.
 
-#### The effect is as shown in the image below
+#### The effect is shown in the following image
 
 ![App-iFlytek Voice Input Method Floating Window Demo.gif](./docs/media/App-iFlytek Voice Input Method Floating Window Demo.gif)
 
@@ -425,9 +425,7 @@ Further note: This plugin has been separated into an independent project. If you
 
 <!-- MODULE_FILE: TurnOffScreenWhenLock.ahk-->
 
-### Auto Turn Off Screen on Lock
-
-When pressing Win + L to lock the screen, immediately turn off the screen. This is suitable for automatically turning off the computer screen when preparing to sleep, so it won't be glaring during sleep...
+Lock the screen and turn off the monitor immediately when pressing Win + L, suitable for automatically turning off the computer screen when preparing to sleep, so it doesn't glare during the night...
 
 <!-- MODULE_HELP_END -->
 
