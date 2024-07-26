@@ -43,7 +43,7 @@ CLX_FolderModified(Folder, Changes) {
     ; MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
     ; IfMsgBox Yes
     TrayTip, % t("CapsLockX 重载模块"), % t("检测到配置更改，正在自动软重载。")
-    sleep 200
+    ; sleep 200
     reload
 }
 CLX_FolderChanged(Folder, Changes)
