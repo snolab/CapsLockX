@@ -47,7 +47,10 @@ Return
 *+]:: Send {Blind}]
 *!]:: Send {Blind}]
 *^]:: Send {Blind}]
-] Up:: Send {Blind}]
+]:: Send {Blind}]
+; ] Up:: Send {Blind}]
+
+; known issue: press [ , then press ] , then release [ then release ], will emit only [, expected emit [].
 
 ; Alt+Tab 模拟
 ; RAlt & \:: Send {Blind}{Tab}

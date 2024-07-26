@@ -37,8 +37,9 @@ CLX_FolderModified(Folder, Changes) {
     if (!Reload_DeveloperAsYouInstallMeByGitClone) {
         return
     }
-    MsgBox, 4, % t("CapsLockX 重载模块"), % t("检测到配置更改，是否软重载？")
-    IfMsgBox Yes
+    ; MsgBox, 4, % t("CapsLockX 重载模块"), % t("检测到配置更改，是否软重载？")
+    ; IfMsgBox Yes
+    
     ; MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
     ; IfMsgBox Yes
     TrayTip, % t("CapsLockX 重载模块"), % t("检测到配置更改，正在自动软重载。")
