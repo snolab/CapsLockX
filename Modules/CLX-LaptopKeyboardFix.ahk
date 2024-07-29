@@ -50,7 +50,7 @@ Return
 ]:: Send {Blind}]
 ; ] Up:: Send {Blind}]
 
-; c: known issue: press [ , then press ] , then release [ then release ], will emit only [, expected emit [].
+; TODO: known issue: press [ , then press ] , then release [ then release ], will emit only [, expected emit [].
 
 ; Alt+Tab 模拟
 ; RAlt & \:: Send {Blind}{Tab}
