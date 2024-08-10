@@ -83,7 +83,9 @@ brainstorm()
     if (ErrorLevel == 1) {
         Return
     }
-    CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+    
+    global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
     ToolTip, % t("Going to Ask AI")
