@@ -4,7 +4,7 @@
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：[雪星并击 snochorded sno-chord-typing | snochorded]( https://snomiao.github.io/snochorded/ )
-; 版权：Copyright 2020-2022 snomiao@gmail.com
+; 版权：Copyright 2020-2024 snomiao@gmail.com
 ; 版本：v0.0.1
 ; ========== CapsLockX ==========
 
