@@ -2,19 +2,16 @@
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. It allows you to operate your computer efficiently like a hacker in a movie without ever taking your hands off the keyboard. It comes packed with functions that are intuitive and easy to use: enhanced editing, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and many more multifunctional features are there for you to personally customize.
 
+Here is a tiny online demo to show you the feeling how WASD Mouse + HJKL Keyboard works - [Try CapsLockX]( https://snomiao.github.io/capslockx.js/ )
+
 Docs in Languages:
 **[English Docs (ChatGPT Translated)](https://capslockx.snomiao.com/)**
 **[简体中文 説明](./docs/README.zh.md)**
-
 **[See Any Language Docs (Google Translated)](https://capslockx.snomiao.com/)**
 
 ---
 
-CapsLockX is a modular hotkey script engine based on AutoHotkey. It makes it so you can effortlessly operate your computer with high efficiency like a hacker from the movies, without taking your hands off the keyboard. There are a lot of easy-to-learn and very user-friendly functions available: editing enhancement, virtual desktop and window management, mouse simulation, application-specific hotkey enhancement, JS mathematical expression calculation, and many other features await your personal customization. Main repository address 🏠: [https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
-
----
-
-## Version Wall - Badges Wall 📛 Badges
+## Badges Wall 📛 Badges
 
 <!-- culture badges  -->
 
@@ -44,6 +41,26 @@ CapsLockX is a modular hotkey script engine based on AutoHotkey. It makes it so 
 <!-- [![Packages Test](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml/badge.svg)](https://github.com/snolab/CapsLockX/actions/workflows/package-test.yml) -->
 
 ---
+
+## Why?
+
+CapsLockX was created to address several common frustrations that many computer users face on a daily basis. Here are some of the main reasons why CapsLockX exists:
+
+1. **Efficient Window Management**: Modern computer usage often involves juggling multiple windows and virtual desktops, especially for professionals working on complex projects. CapsLockX provides intuitive hotkeys for managing virtual desktops and windows, making it easy to switch between tasks seamlessly without losing focus.
+
+2. **Enhanced Text Editing**: Moving between the typing area and the editing control area can be cumbersome, especially for heavy typists or programmers. CapsLockX introduces Vim-like keybinds and other enhancements that allow for efficient text navigation and editing directly from the keyboard.
+
+3. **Mouse Simulation**: Constantly switching between the keyboard and the mouse can disrupt workflow and lead to repetitive strain injuries (RSI). CapsLockX solves this by enabling comprehensive mouse emulation using the keyboard, allowing users to perform mouse actions with simple key combinations.
+
+4. **Streamlined Shortcut Management**: Different applications often have their own sets of shortcuts, which can be hard to remember or inefficiently placed. CapsLockX provides a unified way to enhance and customize hotkeys within various applications, allowing for a more cohesive and efficient working environment.
+
+5. **Mathematical Expression Calculation**: For users who frequently need to perform calculations, CapsLockX offers a way to quickly evaluate JavaScript mathematical expressions directly from the keyboard, streamlining workflows that involve frequent calculations.
+
+6. **Multifunctional Customization**: CapsLockX is modular and highly customizable, allowing users to tailor the hotkey scripts to their specific needs. Whether you need specific functions for coding, writing, designing, or managing tasks, CapsLockX can be adapted to meet those requirements.
+
+7. **Portable and Open Source**: CapsLockX is designed to be a portable tool that can be easily transferred and used across different systems. As an open-source project, it also provides transparency and community-driven improvements, ensuring that the software remains secure and continuously enhanced.
+
+In summary, CapsLockX aims to make computer interaction more efficient, ergonomic, and customized to individual workflows, helping users operate like a **hacker** in movies, quickly achieving their tasks without breaking concentration.
 
 ## Beginner's Quick Start Tutorial 📖 Tutorial
 
@@ -576,8 +593,9 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
 7. 💰 Welcome to donate to the development of CapsLockX, each donation will be recorded in the list below:
    - Aifadian ⚡️：[https://afdian.net/@snomiao](https://afdian.net/@snomiao)
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
-   - Alipay donation account： [snomiao@gmail.com （click to view QR code）](./docs/支付宝捐助.png)
-   - Wise donation account： [snomiao@gmail.com](https://wise.com/pay/r/vPlWg3Mh4zhabUk)
+   - Alipay donation [snomiao@gmail.com （click to view QR code）](./docs/支付宝捐助.png)
+   - Wise donation [snomiao@gmail.com](https://wise.com/pay/r/vPlWg3Mh4zhabUk)
+   - [CapsLockX - Open Collective]( https://opencollective.com/capslockx )
    - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 - [Development Roadmap](#发展路线-roadmap)
