@@ -118,11 +118,3 @@ CLX_番茄时钟定时任务:
     ; ToolTip, % 延时
     SetTimer CLX_番茄时钟定时任务, %延时%
 Return
-
-#If
-
-^!i::
-    ; 番茄状态 := 番茄状态计算()
-    ; MsgBox, 番茄状态：%番茄状态%
-    番茄报时(1)
-return

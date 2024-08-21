@@ -2,8 +2,8 @@ github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298/go.mod h1:D
 github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966/go.mod h1:Mid70uvE93zn9wgF92A/r5ixgnvX8Lh68fxp9KQBaI0=
 github.com/StackExchange/wmi v1.2.1 h1:VIkavFPXSjcnS+O8yTq7NI32k0R5Aj+v39y29VYDOSA=
 github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9SBzvHz7e8=
-github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af h1:PNE0xdyuLeOTujftqZs8DlhDoi+T54ONZhiGOxH5t2A=
-github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af/go.mod h1:oUO968BJnuljnB5tntrY3w3zDfI5/PqnQ+RuiZ8aFhk=
+github.com/andybrewer/mack v0.0.0-20240307193339-22e922cc18af h1:PNE0xdyuLeOTujftqZs8DlhDoi+T54ONZhiGOxH5t2A=
+github.com/andybrewer/mack v0.0.0-20240307193339-22e922cc18af/go.mod h1:oUO968BJnuljnB5tntrY3w3zDfI5/PqnQ+RuiZ8aFhk=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/go-ole/go-ole v1.2.5/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
 github.com/go-ole/go-ole v1.2.6 h1:/Fpf6oFPoeFik9ty7siob0G6Ke8QvQEuVcuChpwXzpY=

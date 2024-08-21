@@ -5,7 +5,7 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.06.27
-; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2024 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
 if !CapsLockX
@@ -47,7 +47,10 @@ Return
 *+]:: Send {Blind}]
 *!]:: Send {Blind}]
 *^]:: Send {Blind}]
-] Up:: Send {Blind}]
+]:: Send {Blind}]
+; ] Up:: Send {Blind}]
+
+; TODO: known issue: press [ , then press ] , then release [ then release ], will emit only [, expected emit [].
 
 ; Alt+Tab 模拟
 ; RAlt & \:: Send {Blind}{Tab}

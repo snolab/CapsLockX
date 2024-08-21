@@ -3,7 +3,7 @@
 ; 描述：rt
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
-; 版权：Copyright 2020-2022 snomiao@gmail.com
+; 版权：Copyright 2020-2024 snomiao@gmail.com
 ; 版本：2.1.1(20200606)
 ; ========== CapsLockX ==========
 

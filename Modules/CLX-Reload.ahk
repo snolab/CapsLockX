@@ -4,7 +4,7 @@
 ; 作者：snomiao (snomiao@gmail.com)
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2021.01.20
-; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2024 Snowstar Laboratory. All Rights Reserved.
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
 ; tooltip loaded
@@ -37,12 +37,13 @@ CLX_FolderModified(Folder, Changes) {
     if (!Reload_DeveloperAsYouInstallMeByGitClone) {
         return
     }
-    MsgBox, 4, % t("CapsLockX 重载模块"), % t("检测到配置更改，是否软重载？")
-    IfMsgBox Yes
+    ; MsgBox, 4, % t("CapsLockX 重载模块"), % t("检测到配置更改，是否软重载？")
+    ; IfMsgBox Yes
+    
     ; MsgBox, 4, CapsLockX 重载模块, 检测到配置更改，是否软重载？
     ; IfMsgBox Yes
     TrayTip, % t("CapsLockX 重载模块"), % t("检测到配置更改，正在自动软重载。")
-    sleep 200
+    ; sleep 200
     reload
 }
 CLX_FolderChanged(Folder, Changes)
