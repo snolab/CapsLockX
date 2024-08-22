@@ -59,7 +59,7 @@ UserModuleEdit(dir, filename := "")
     WinGetTitle, title, ahk_id %hWnd%
     match = %title% ahk_class %窗口类名% ahk_exe %进程名%
 
-    MsgBox % t("开始编辑用户脚本：") . %path%
+    MsgBox, % t("开始编辑用户脚本：") . path
     if (!FileExist(path)) {
         FileAppend, %快速窗口热键编辑初始内容%, %path%
     }

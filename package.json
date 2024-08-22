@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.34.2",
+  "version": "1.34.3",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "keywords": [
     "CapsLockX"
@@ -39,7 +39,7 @@
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
     "prepare": "husky install",
     "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
-    "release": "bun upgrade && standard-version --commit-all && git push --follow-tag --all",
+    "release": "standard-version --commit-all && git push --follow-tag --all",
     "start": "CapsLockX.exe",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",

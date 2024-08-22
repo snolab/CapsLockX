@@ -45,3 +45,4 @@ dist/cli.mjs.map
 docs/.vitepress
 
 bun.lockb
+.env*
