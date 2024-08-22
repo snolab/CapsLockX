@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.34.3](https://github.com/snolab/CapsLockX/compare/v1.34.2...v1.34.3) (2024-08-22)
+
+
+### Bug Fixes
+
+* **brainstorm:** remember lastquestion ([4aaf3d0](https://github.com/snolab/CapsLockX/commit/4aaf3d046b231c8057b68a76d81b1945ba346321))
+* **capslockx:** add todo ([3fd14ca](https://github.com/snolab/CapsLockX/commit/3fd14caba69b047d637bac455b125252c5a1c85b))
+* **CapsLockX:** supress brainstorm error, fix turno ([35d6de1](https://github.com/snolab/CapsLockX/commit/35d6de182125d1db4ae9dea5097b70650c4831f7))
+* **Modules:** remove sleep ([f8ea129](https://github.com/snolab/CapsLockX/commit/f8ea129f960fc13f50a6f655ee3d2195a19b2702))
+
 ### [1.34.2](https://github.com/snolab/CapsLockX/compare/v1.34.1...v1.34.2) (2024-05-29)
 
 ### [1.34.1](https://github.com/snolab/CapsLockX/compare/v1.34.0...v1.34.1) (2024-05-29)
