@@ -52,13 +52,13 @@ jobs:
     needs: chocolatey-push
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: CapsLockX.zip
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: CapsLockX.sha256
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: CapsLockX.nupkg
       # 压缩包和 sha256 一起扔附件
