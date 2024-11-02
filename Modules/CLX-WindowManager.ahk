@@ -347,12 +347,12 @@ ArrangeWindows(arrangeFlags = "0")
 {
     arrangeFlags += 0 ; string to number
     SysGet, MonitorCount, MonitorCount
-    ; 列出每个显示器内的窗口
+    ; "List the windows within each monitor." 列出每个显示器内的窗口
     loop %MonitorCount% {
         MonitorIndex := A_Index
         listOfWindow_%MonitorIndex% := WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex)
     }
-    ; 位置调整
+    ; 位置调整 Position Adjust
     loop %MonitorCount% {
         MonitorIndex := A_Index
         if (arrangeFlags & ARRANGE_STACKED) {
@@ -361,7 +361,7 @@ ArrangeWindows(arrangeFlags = "0")
             ArrangeWindowsSideBySide(listOfWindow_%MonitorIndex%, arrangeFlags | ARRANGE_MOVING, MonitorIndex)
         }
     }
-    ; Z_Order 调整
+    ; Z_Order Adjust Z_Order 调整 
     loop %MonitorCount% {
         MonitorIndex := A_Index
         if (arrangeFlags & ARRANGE_STACKED) {
@@ -473,11 +473,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     }
 }
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
-{
-
-    dx := 96
-    dy := 96
-
+{    
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; try parse work rect from monitor
@@ -493,11 +489,14 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
+    
+    dx := Min(48, AreaW / n - 4 * AreaX)
+    dy := Min(48, AreaH / n - 4 * AreaY)
 
     if (arrangeFlags & ARRANGE_MOVING) {
         k := 0
-        w := AreaW - 2 * dx - n * dx + dx
-        h := AreaH - 2 * dy - n * dy + dy
+        w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx))
+        h := Max(AreaH/2, (AreaH - 2 * dy - n * dy + dy))
         lasthWnd := -2
         loop, Parse, listOfWindow, `n
         {

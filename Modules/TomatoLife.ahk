@@ -8,7 +8,7 @@
 ; ========== CapsLockX ==========
 
 global T_TomatoLife := CLX_Config("TomatoLife", "Enable", 0, t("使用番茄时钟（默认禁用，改为 1 开启）"))
-global T_TomatoLife_NoticeOnLaunch := CLX_Config("TomatoLife", "NoticeOnLaunch", 1, t("启动时报告番茄状态"))
+global T_TomatoLife_NoticeOnLaunch := CLX_Config("TomatoLife", "NoticeOnLaunch", 0, t("启动时报告番茄状态"))
 global T_TomatoLife_UseTomatoLifeSound := CLX_Config("TomatoLife", "UseTomatoLifeSound", 1, t("使用番茄报时（00分和30分播放工作铃声，每小时的25分和55分播放休息铃声）（需要先开启番茄时钟）"))
 global T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop := CLX_Config("TomatoLife", "UseTomatoLifeSwitchVirtualDesktop", 1, t("使用番茄报时时，自动切换桌面（休息为桌面1，工作为桌面2）"))
 
@@ -92,6 +92,7 @@ Return
     ; MsgBox, 番茄：%番茄状态%
 
     ; 状态动作
+    SendEvent {Media_Play_Pause}
     if ("工作时间" == 番茄状态) {
         TrayTip % t("番茄时钟：") . %番茄状态%, % t("工作时间到啦！")
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
