@@ -285,6 +285,17 @@ Enhance keyboard operations for OneNote 2016 - 2019, enabling convenient use of 
 
 #### Keyboard Layout Design (
 
+<!-- MODULE_FILE: App-ScreenRotate.ahk-->
+
+### Screen Rotate
+
+Usage
+
+1. Open a window in OneNote 2016 with the title "Clipboard Collection".
+2. When you copy something using Ctrl + C, it will automatically be saved in OneNote.
+3. As shown in the image
+   ![Plugin - OneNote Clipboard Collector.gif](./docs/media/Plugin-OneNote Clipboard Collector.gif)
+
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
 
 ### iFlytek Input Method Floating Window Plugin

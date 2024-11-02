@@ -1,21 +1,20 @@
-﻿
-global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
+﻿global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
 global CLX_i18nConfigPath := "Core/lang.ini"
 global CLX_i18n_newTranslated := "Core/lang.ini"
 
 清洗为_UTF16_WITH_BOM_型编码(CLX_i18nConfigPath)
 
 ; - [Language Codes \| AutoHotkey v1]( https://www.autohotkey.com/docs/v1/misc/Languages.htm )
-LCID_7804 := "Chinese"  ; zh
+LCID_7804 := "Chinese" ; zh
 LCID_0004 := "Chinese (Simplified)" ; zh-Hans
 LCID_0804 := "Chinese (Simplified, China)" ; zh-CN
 LCID_1004 := "Chinese (Simplified, Singapore)" ; zh-SG
-LCID_7C04 := "Chinese (Traditional)"  ; zh-Hant
-LCID_0C04 := "Chinese (Traditional, Hong Kong SAR)"  ; zh-HK
-LCID_1404 := "Chinese (Traditional, Macao SAR)"  ; zh-MO
-LCID_0404 := "Chinese (Traditional, Taiwan)"  ; zh-TW
-LCID_0011 := "Japanese"  ; ja
-LCID_0411 := "Japanese (Japan)"  ; ja-JP
+LCID_7C04 := "Chinese (Traditional)" ; zh-Hant
+LCID_0C04 := "Chinese (Traditional, Hong Kong SAR)" ; zh-HK
+LCID_1404 := "Chinese (Traditional, Macao SAR)" ; zh-MO
+LCID_0404 := "Chinese (Traditional, Taiwan)" ; zh-TW
+LCID_0011 := "Japanese" ; ja
+LCID_0411 := "Japanese (Japan)" ; ja-JP
 
 ; TODO: converts
 t(s, lang := "")
@@ -30,7 +29,7 @@ t(s, lang := "")
     ; run node "prompts/translate-en.md"
     if (lang == ""){
         lang := CLX_Lang
-    } 
+    }
     if (!lang) {
         lang := "auto"
     }
@@ -83,7 +82,7 @@ i18n_translated(lang, key)
         return translated
     }
 
-    question := key . "`n`nTry translate to " . lang
+    question := "TASK: translate to " . lang . "，dont explain, just translate`n" . "ORIGIN TEXT: " . key
 
     global brainstorm_origin
     if (!brainstorm_origin) {

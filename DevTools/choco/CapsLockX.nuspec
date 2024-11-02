@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.34.3</version>
+    <version>1.34.4</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
     <copyright>Copyright (C) Snowstar Laboratory 2017-2024</copyright>
@@ -65,6 +65,15 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.34.4](https://github.com/snolab/CapsLockX/compare/v1.34.3...v1.34.4) (2024-11-02)
+
+
+### Bug Fixes
+
+* **Lib:** lib ([187f7bb](https://github.com/snolab/CapsLockX/commit/187f7bb2a80a6aaa2b53eb11d2d257fa6a9a4d6b))
+* **Modules:** brainstorm bug ([ea13c9c](https://github.com/snolab/CapsLockX/commit/ea13c9c9a60b20fd7c77cfb2825cae56e20bc145))
+* **Modules:** windowmanager ([61ca5e5](https://github.com/snolab/CapsLockX/commit/61ca5e5485907821fc4b285048aca66a1fb67d2c))
+
 ### [1.34.3](https://github.com/snolab/CapsLockX/compare/v1.34.2...v1.34.3) (2024-08-22)
 
 
@@ -108,11 +117,7 @@ All notable changes to this project will be documented in this file. See [standa
 * **capslockx:** i18n setup ([5ac5047](https://github.com/snolab/CapsLockX/commit/5ac5047bd4ad5c8205c402af8711aeb8c4611dd1))
 * **capslockx:** initial locales ([68b61e8](https://github.com/snolab/CapsLockX/commit/68b61e811404967b0bb58e377905e5f3094a42b9))
 * **capslockx:** initial-langs ([38335b9](https://github.com/snolab/CapsLockX/commit/38335b96f8c4adaaae78960ace27177915a607bb))
-* **capslockx:** lang codes ([bb79216](https://github.com/snolab/CapsLockX/commit/bb7921651d076324641fa2a980c7650f5c4fce58))
-* **capslockx:** not default start ([d538603](https://github.com/snolab/CapsLockX/commit/d538603c4f538902e1389638694964367bfb4d21))
-* **CapsLockX:** remove pnpm ([791262d](https://github.com/snolab/CapsLockX/commit/791262d65f2aa7ffe9696ec7533890e0b1a69e98))
-* **capslockx:** tr error ([c70b891](https://github.com/snolab/CapsLockX/commit/c70b8919ab38f4951b26263cef3b19175f618ea4))
-* **capslockx:** xflymsg ([6052549](https://github.com/snolab/CapsLockX/commit/605254966310d0c0f57138a54383ca39ff8760c7))]]></releaseNotes>
+* **capslockx:** lang codes ([bb79216](https://github.com/snolab/CapsLockX/commit/bb7921651d076324641fa2a980c7650f5c4fce58))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>
