@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.34.5](https://github.com/snolab/CapsLockX/compare/v1.34.4...v1.34.5) (2024-11-03)
+
+
+### Bug Fixes
+
+* **CapsLockX:** windowmanager in side monitor ([d0bfe2c](https://github.com/snolab/CapsLockX/commit/d0bfe2ca4bc8c09a91a41f98fe2e1e3a47f98917))
+
 ### [1.34.4](https://github.com/snolab/CapsLockX/compare/v1.34.3...v1.34.4) (2024-11-02)
 
 
