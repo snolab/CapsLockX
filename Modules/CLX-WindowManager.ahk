@@ -384,12 +384,12 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaH := A_ScreenHeight
     } else {
         SysGet, MonitorWorkArea, MonitorWorkArea, %MonitorIndex%
-        ; SysGet, Monitor, Monitor, %MonitorIndex%
         AreaX := MonitorWorkAreaLeft
         AreaY := MonitorWorkAreaTop
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
+    
     if (arrangeFlags & ARRANGE_MOVING) {
         ; AreaH /= 2
         ; TrayTip DEBUG Area, %AreaX% %AreaY% %AreaW% %AreaH%
@@ -434,7 +434,6 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             ; 右下角也不要出界，下边留出1px让wallpaper engine 的bgm放出来
             w := min(x + w, AreaX + AreaW) - x
             h := min(y + h, AreaY + AreaH - 1) - y
-
 
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
@@ -490,8 +489,8 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
     
-    dx := Min(48, AreaW / n - 4 * AreaX)
-    dy := Min(48, AreaH / n - 4 * AreaY)
+    dx := Min(48, AreaW / n)
+    dy := Min(48, AreaH / n)
 
     if (arrangeFlags & ARRANGE_MOVING) {
         k := 0
@@ -509,35 +508,35 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 
             x := AreaX + (n - k) * dx
             y := AreaY + (n - k) * dy
+            
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
             ; FastResizeWindow(hWnd, x, y, w, h)
             k+=1
         }
     }
-    if (arrangeFlags & ARRANGE_Z_ORDERING) {
-        WinActivate ahk_id %lasthWnd%
-        SWP_NOACTIVATE := 0x0010
-        SWP_ASYNCWINDOWPOS:= 0x4000
-        SWP_NOMOVE := 0x0002
-        SWP_NOSIZE := 0x0001
-        lasthWnd := -2
-        loop, Parse, listOfWindow, `n
-        {
-            hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-            ; WinActivate ahk_id %hWnd%
-            DllCall("SetWindowPos"
-            , "UInt", hWnd ; handle
-            , "UInt", lasthWnd ; z-index
-            , "Int", 0 ; x
-            , "Int", 0 ; y
-            , "Int", 0 ; width
-            , "Int", 0 ; height
-            , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
-            lasthWnd := hWnd
-        }
-
-    }
+    ; if (false && arrangeFlags & ARRANGE_Z_ORDERING) {
+    ;     WinActivate ahk_id %lasthWnd%
+    ;     SWP_NOACTIVATE := 0x0010
+    ;     SWP_ASYNCWINDOWPOS:= 0x4000
+    ;     SWP_NOMOVE := 0x0002
+    ;     SWP_NOSIZE := 0x0001
+    ;     lasthWnd := -2
+    ;     loop, Parse, listOfWindow, `n
+    ;     {
+    ;         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+    ;         ; WinActivate ahk_id %hWnd%
+    ;         DllCall("SetWindowPos"
+    ;         , "UInt", hWnd ; handle
+    ;         , "UInt", lasthWnd ; z-index
+    ;         , "Int", 0 ; x
+    ;         , "Int", 0 ; y
+    ;         , "Int", 0 ; width
+    ;         , "Int", 0 ; height
+    ;         , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
+    ;         lasthWnd := hWnd
+    ;     }
+    ; }
     ; loop, Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
