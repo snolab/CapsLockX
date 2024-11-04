@@ -1,0 +1,5 @@
+Please see functions-list.txt file.
+
+Guest3456 inspired me to create this file, to facilitate interested parties to  easier find the «Credits» section from within the referenced files ^_^.
+
+Inspiration source: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=6517&start=340#p317389

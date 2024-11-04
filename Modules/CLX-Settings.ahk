@@ -24,11 +24,15 @@ CLX_Exit()
 {
     ExitApp
 }
+
 ; 修改配置
+
 #if CapsLockXMode
 
-;, :: 配置文件编辑()
-,:: CLX_ConfigWindow()
+    ;, :: 配置文件编辑()
+    ,:: CLX_ConfigWindow()
+
+#if
 
 CLX_ConfigWindow()
 {
@@ -99,7 +103,7 @@ Button重新載入:
 return
 CLX_ConfigureUpdate:
     global T_TomatoLife
-        global T_XKeyAsCapsLock
+    global T_XKeyAsCapsLock
     global T_XKeyAsSpace
     global T_AskRunAsAdmin
     global CLX_CONFIG_ONSTARTUP

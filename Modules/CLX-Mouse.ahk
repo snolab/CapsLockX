@@ -6,7 +6,7 @@
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.06.27
-; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2024 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 
 ; will include once
@@ -157,6 +157,23 @@ PostMessage_ScrollMouse(dx, dy)
 ScrollMouse(dx, dy)
 {
     global TMouse_SendInputScroll
+    
+    ; prevent overflow
+    if (dx >= 16384) {
+        dx:=16384
+    }
+    if (dx <= -16384) {
+        dx:=-16384
+    }
+    if (dy >= 16384) {
+        dy:=16384
+    }
+    if (dy <= -16384) {
+        dy:=-16384
+    }
+    ; m:=SubStr("0000000000" . (dy), -10)
+    ; tooltip %m%
+    
     if (TMouse_SendInputScroll) {
         SendInput_ScrollMouse(dx, dy)
     } else {

@@ -4,7 +4,7 @@
 ; 作者：snomiao (snomiao@gmail.com)
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.07.04
-; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2024 Snowstar Laboratory. All Rights Reserved.
 ; LICENCE: GNU GPLv3
 ; ========== CapsLockX ==========
 ;

@@ -8,7 +8,7 @@
 ; ========== CapsLockX ==========
 
 global T_TomatoLife := CLX_Config("TomatoLife", "Enable", 0, t("使用番茄时钟（默认禁用，改为 1 开启）"))
-global T_TomatoLife_NoticeOnLaunch := CLX_Config("TomatoLife", "NoticeOnLaunch", 1, t("启动时报告番茄状态"))
+global T_TomatoLife_NoticeOnLaunch := CLX_Config("TomatoLife", "NoticeOnLaunch", 0, t("启动时报告番茄状态"))
 global T_TomatoLife_UseTomatoLifeSound := CLX_Config("TomatoLife", "UseTomatoLifeSound", 1, t("使用番茄报时（00分和30分播放工作铃声，每小时的25分和55分播放休息铃声）（需要先开启番茄时钟）"))
 global T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop := CLX_Config("TomatoLife", "UseTomatoLifeSwitchVirtualDesktop", 1, t("使用番茄报时时，自动切换桌面（休息为桌面1，工作为桌面2）"))
 
@@ -16,9 +16,12 @@ if (T_TomatoLife) {
     高精度时间配置()
     GoSub CLX_番茄时钟定时任务
     ; [有一个难以复现的 bug・Issue #17・snolab/CapsLockX]( https://github.com/snolab/CapsLockX/issues/17 )
+    ; 番茄报时()
 }
 
 Return
+
+^!i:: 番茄报时()
 
 高精度时间配置(){
     ; global T_TomatoLife := CLX_Config("TomatoLife", "", 0, "使用定时任务")
@@ -50,7 +53,8 @@ Return
     ; CapsLockX 暂停时，番茄状态也暂停
     if (CLX_Paused)
         Return
-    ; tooltip 检测睡眠标记文件以跳过报时
+ 
+    ; tooltip skip if sleep
     static SLEEPING_FLAG_CLEAN := 0
     if(!SLEEPING_FLAG_CLEAN) {
         ; 启动时重置标记文件
@@ -61,6 +65,11 @@ Return
         if (SLEEPING_FLAG) {
             Return
         }
+    }
+    ; skip if afk
+    isAfk := A_TimeIdlePhysical > 5 * 60 * 1000 ; 5min
+    if(isAfk){
+        Return
     }
     番茄状态 := 番茄状态计算()
     ; tooltip 边沿触发过滤器
@@ -80,22 +89,25 @@ Return
         Return
     }
     上次番茄状态 := 番茄状态
-    MsgBox, 番茄：%番茄状态%
+    ; MsgBox, 番茄：%番茄状态%
 
     ; 状态动作
+    SendEvent {Media_Play_Pause}
     if ("工作时间" == 番茄状态) {
         TrayTip % t("番茄时钟：") . %番茄状态%, % t("工作时间到啦！")
         SoundPlay % "Data/NoteC_G.mp3" ; 升调
-        ; sleep 10000 ; 暂缓10秒切工作桌面
-        if (T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop && !tomatoLaunchFlag) {
+        ; sleep 10000 ; 暂缓10秒切桌面
+        ; && !tomatoLaunchFlag
+        if (T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop) {
             Func("SwitchToDesktop").Call(2) ; 切到工作桌面（桌面2）
         }
     }
     if ("休息时间" == 番茄状态) {
         TrayTip % t("番茄时钟：") . %番茄状态%, % t("起来运动一下收拾收拾东西！")
         SoundPlay % "Data/NoteG_C.mp3" ; 降调
-        sleep 10000 ; 暂缓10秒切休息桌面
-        if(T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop && !tomatoLaunchFlag) {
+        ; sleep 10000 ; 暂缓10秒切桌面
+        ; && !tomatoLaunchFlag
+        if(T_TomatoLife_UseTomatoLifeSwitchVirtualDesktop) {
             Func("SwitchToDesktop").Call(1) ; 切到休息桌面（桌面1）
         }
     }
@@ -110,7 +122,7 @@ UnixTimeGet()
 }
 
 CLX_番茄时钟定时任务:
-    if (T_TomatoLife && T_TomatoLife_UseTomatoLife)
+    if (T_TomatoLife)
         番茄报时()
     ; 下次循环时间计算
     间隔 := 60000 ; 间隔为1分钟，精度到毫秒级

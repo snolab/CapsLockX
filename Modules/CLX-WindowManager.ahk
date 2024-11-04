@@ -4,7 +4,7 @@
 ; 作者：snomiao (snomiao@gmail.com)
 ; 支持：https://github.com/snomiao/CapsLockX
 ; 版本：v2020.07.04
-; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2024 Snowstar Laboratory. All Rights Reserved.
 ; 许可证 LICENCE: GNU GPLv3 ( https://www.gnu.org/licenses/gpl-3.0.html )
 ; ========== CapsLockX ==========
 ;
@@ -347,12 +347,12 @@ ArrangeWindows(arrangeFlags = "0")
 {
     arrangeFlags += 0 ; string to number
     SysGet, MonitorCount, MonitorCount
-    ; 列出每个显示器内的窗口
+    ; "List the windows within each monitor." 列出每个显示器内的窗口
     loop %MonitorCount% {
         MonitorIndex := A_Index
         listOfWindow_%MonitorIndex% := WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex)
     }
-    ; 位置调整
+    ; 位置调整 Position Adjust
     loop %MonitorCount% {
         MonitorIndex := A_Index
         if (arrangeFlags & ARRANGE_STACKED) {
@@ -361,7 +361,7 @@ ArrangeWindows(arrangeFlags = "0")
             ArrangeWindowsSideBySide(listOfWindow_%MonitorIndex%, arrangeFlags | ARRANGE_MOVING, MonitorIndex)
         }
     }
-    ; Z_Order 调整
+    ; Z_Order Adjust Z_Order 调整 
     loop %MonitorCount% {
         MonitorIndex := A_Index
         if (arrangeFlags & ARRANGE_STACKED) {
@@ -384,12 +384,12 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaH := A_ScreenHeight
     } else {
         SysGet, MonitorWorkArea, MonitorWorkArea, %MonitorIndex%
-        ; SysGet, Monitor, Monitor, %MonitorIndex%
         AreaX := MonitorWorkAreaLeft
         AreaY := MonitorWorkAreaTop
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
+    
     if (arrangeFlags & ARRANGE_MOVING) {
         ; AreaH /= 2
         ; TrayTip DEBUG Area, %AreaX% %AreaY% %AreaW% %AreaH%
@@ -435,7 +435,6 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             w := min(x + w, AreaX + AreaW) - x
             h := min(y + h, AreaY + AreaH - 1) - y
 
-
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
             k-=1
@@ -473,11 +472,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     }
 }
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
-{
-
-    dx := 96
-    dy := 96
-
+{    
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; try parse work rect from monitor
@@ -493,11 +488,14 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
+    
+    dx := Min(48, AreaW / n)
+    dy := Min(48, AreaH / n)
 
     if (arrangeFlags & ARRANGE_MOVING) {
         k := 0
-        w := AreaW - 2 * dx - n * dx + dx
-        h := AreaH - 2 * dy - n * dy + dy
+        w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx))
+        h := Max(AreaH/2, (AreaH - 2 * dy - n * dy + dy))
         lasthWnd := -2
         loop, Parse, listOfWindow, `n
         {
@@ -510,35 +508,35 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 
             x := AreaX + (n - k) * dx
             y := AreaY + (n - k) * dy
+            
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
             ; FastResizeWindow(hWnd, x, y, w, h)
             k+=1
         }
     }
-    if (arrangeFlags & ARRANGE_Z_ORDERING) {
-        WinActivate ahk_id %lasthWnd%
-        SWP_NOACTIVATE := 0x0010
-        SWP_ASYNCWINDOWPOS:= 0x4000
-        SWP_NOMOVE := 0x0002
-        SWP_NOSIZE := 0x0001
-        lasthWnd := -2
-        loop, Parse, listOfWindow, `n
-        {
-            hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-            ; WinActivate ahk_id %hWnd%
-            DllCall("SetWindowPos"
-            , "UInt", hWnd ; handle
-            , "UInt", lasthWnd ; z-index
-            , "Int", 0 ; x
-            , "Int", 0 ; y
-            , "Int", 0 ; width
-            , "Int", 0 ; height
-            , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
-            lasthWnd := hWnd
-        }
-
-    }
+    ; if (false && arrangeFlags & ARRANGE_Z_ORDERING) {
+    ;     WinActivate ahk_id %lasthWnd%
+    ;     SWP_NOACTIVATE := 0x0010
+    ;     SWP_ASYNCWINDOWPOS:= 0x4000
+    ;     SWP_NOMOVE := 0x0002
+    ;     SWP_NOSIZE := 0x0001
+    ;     lasthWnd := -2
+    ;     loop, Parse, listOfWindow, `n
+    ;     {
+    ;         hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+    ;         ; WinActivate ahk_id %hWnd%
+    ;         DllCall("SetWindowPos"
+    ;         , "UInt", hWnd ; handle
+    ;         , "UInt", lasthWnd ; z-index
+    ;         , "Int", 0 ; x
+    ;         , "Int", 0 ; y
+    ;         , "Int", 0 ; width
+    ;         , "Int", 0 ; height
+    ;         , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
+    ;         lasthWnd := hWnd
+    ;     }
+    ; }
     ; loop, Parse, listOfWindow, `n
     ; {
     ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
