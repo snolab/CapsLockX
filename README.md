@@ -280,12 +280,12 @@ Enhance keyboard operations for OneNote 2016 - 2019, conveniently use the keyboa
 
 ### Screen Rotate
 
-Usage
+Instructions
 
-1. Open a window in OneNote 2016 with the title "Clipboard Collection".
-2. When you copy something using Ctrl + C, it will automatically be saved in OneNote.
+1. Open a window in OneNote 2016 and title it "Clipboard Collection."
+2. When you copy something using Ctrl + C, it will automatically be recorded in OneNote.
 3. As shown in the image
-   ![Plugin - OneNote Clipboard Collector.gif](./docs/media/Plugin-OneNote Clipboard Collector.gif)
+   ![Plugin - OneNote Clipboard Collector.gif](./docs/media/插件-OneNote剪贴板收集器.gif)
 
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
 
