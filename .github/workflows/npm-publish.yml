@@ -17,5 +17,5 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: bun install
       - run: npm publish --provenance --access public
-        env:f
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
