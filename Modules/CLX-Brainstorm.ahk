@@ -33,6 +33,8 @@ return
 #if brainstorming
 
     esc:: stop_brainstorm()
+    `:: stop_brainstorm()
+
 
 #if
 

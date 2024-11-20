@@ -35,11 +35,11 @@ global 显示加载提示 := 1
 global loadingTips := ""
 
 ; 对 核心模块 进行 编码清洗
-清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-Config.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-Core.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-RunSilent.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-Update.ahk")
-清洗为_UTF8_WITH_BOM_型编码(CLX_CoreDir "/CapsLockX-i18n.ahk")
+CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(CLX_CoreDir "/CapsLockX-Config.ahk")
+CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(CLX_CoreDir "/CapsLockX-Core.ahk")
+CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(CLX_CoreDir "/CapsLockX-RunSilent.ahk")
+CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(CLX_CoreDir "/CapsLockX-Update.ahk")
+CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(CLX_CoreDir "/CapsLockX-i18n.ahk")
 
 ; 复制用户模块
 ; TODO FIX：如果CLX已经开了的话，这一步会触发重启，这可能会导致一些文件冲突的BUG……
@@ -210,7 +210,7 @@ Return
             加载提示追加(t("跳过模块：") . i . " " . 模块名称)
         } else {
             ; 这里引入模块代码
-            清洗为_UTF8_WITH_BOM_型编码(CLX_ModuleDir "/" 模块文件)
+            CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(CLX_ModuleDir "/" 模块文件)
             ; 导入模块
             模块初始化代码 .= "GoSub CLX_ModuleSetup_" i "`n"
             模块导入代码 .= "`n" "#If" "`n" "`n"

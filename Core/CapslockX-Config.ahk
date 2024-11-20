@@ -29,9 +29,9 @@ if (!CLX_ConfigPath) {
 ; 配置文件编码清洗
 global CLX_ConfigChangedTickCount
 CLX_ConfigChangedTickCount := A_TickCount
-; msgbox 清洗为_UTF16_WITH_BOM_型编码1
-清洗为_UTF16_WITH_BOM_型编码(CLX_ConfigPath)
-; msgbox 清洗为_UTF16_WITH_BOM_型编码2
+; msgbox CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING1
+CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigPath)
+; msgbox CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING2
 
 CLX_Config("_NOTICE_", "ENCODING_USING", "UTF16_LE", "")
 
@@ -110,7 +110,8 @@ CLX_Config(field, varName, defaultValue, comment := "")
     return content
 }
 
-清洗为_UTF16_WITH_BOM_型编码(path){
+; convert file to UTF16 (which is required by ReadINI in ahk)
+CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(path){
     ConfigLock("UTF16_WITH_BOM 文件编码清洗：" path)
     if (FileGetFormat(path) === "UTF-16 LE") {
         ConfigUnlock()
@@ -150,7 +151,7 @@ FileGetFormat(file)
     Return StrLen(f) = size ? "ANSI" : "UTF-8 no BOM"
 }
 
-清洗为_UTF8_WITH_BOM_型编码(path){
+CONVERT_FILE_TO_UTF8_WITH_BOM_ENCODING(path){
     ConfigLock("UTF8_WITH_BOM 文件编码清洗：" path)
     if (FileGetFormat(path) === "UTF-8") {
         ConfigUnlock()
@@ -164,14 +165,14 @@ FileGetFormat(file)
     ConfigUnlock()
 }
 
-ConfigLock(名义:="")
+ConfigLock(reason:="")
 {
     k:= 0
     while (FileExist(CLX_ConfigPath ".lock")) {
         k := k + 1
         if ( k > 10 ) {
-            FileRead 上次名义, % CLX_ConfigPath ".lock"
-            ; MsgBox, 程序退出, %名义% 配置写入失败，配置文件被意外锁定，上次锁定名义为 %上次名义%
+            FileRead lastReason, % CLX_ConfigPath ".lock"
+            ; MsgBox, 程序退出, %reason% 配置写入失败，配置文件被意外锁定，上次锁定名义为 %lastReason%
             ConfigUnlock()
             Reload
             ExitApp
@@ -181,7 +182,7 @@ ConfigLock(名义:="")
     }
     CLX_DontReload := 1
 
-    FileAppend %名义%, % CLX_ConfigPath ".lock"
+    FileAppend %reason%, % CLX_ConfigPath ".lock"
     return True
 }
 ConfigUnlock()

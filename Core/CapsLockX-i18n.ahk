@@ -2,7 +2,7 @@
 global CLX_i18nConfigPath := "Core/lang.ini"
 global CLX_i18n_newTranslated := "Core/lang.ini"
 
-清洗为_UTF16_WITH_BOM_型编码(CLX_i18nConfigPath)
+CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_i18nConfigPath)
 
 ; - [Language Codes \| AutoHotkey v1]( https://www.autohotkey.com/docs/v1/misc/Languages.htm )
 LCID_7804 := "Chinese" ; zh
@@ -82,21 +82,25 @@ i18n_translated(lang, key)
         return translated
     }
 
-    question := "TASK: translate to " . lang . "，dont explain, just translate`n" . "ORIGIN TEXT: " . key
+    question := ">>> ROLE: Act as translator, input text is between '>>> TEXT BEGIN' and '>>> TEXT END', output transcript, no explain" . "`n"
+    question .= ">>> TASK: translate to " . lang . "`n"
+    question .= ">>> TEXT BEGIN" . "`n"
+    question .= key . "`n"
+    question .= ">>> TEXT END" . "`n"
 
     global brainstorm_origin
     if (!brainstorm_origin) {
         brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
     }
-    endpoint := brainstorm_origin . "/ai/chat?ret=text"
+    endpoint := brainstorm_origin . "/ai/translator?ret=text"
     xhr := ComObjCreate("Msxml2.XMLHTTP")
     xhr.Open("POST", endpoint)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
-    xhr.onreadystatechange := Func("brainstorm_translatePostResult").Bind(lang, key, xhr)
+    xhr.onreadystatechange := Func("i18n_brainstorm_translatePostResult").Bind(lang, key, xhr)
     xhr.Send(question)
     return "…[" . key . "]"
 }
-brainstorm_translatePostResult(lang, key, xhr)
+i18n_brainstorm_translatePostResult(lang, key, xhr)
 {
     if (xhr.readyState != 4)
         return
@@ -107,7 +111,7 @@ brainstorm_translatePostResult(lang, key, xhr)
             ; ignore 500 error
             return
         }
-        MsgBox, % xhr.status . " " xhr.responseText . " " . ("未知错误 / Unknown Error")
+        MsgBox, % xhr.status . " " . xhr.responseText . " " . ("未知错误 / Unknown Error")
         return
     }
     global transcript := xhr.responseText
@@ -160,7 +164,7 @@ CLX_i18n_ConfigSet(field, varName, value)
     global CLX_ConfigDir
     IniSave(encodedValue, CLX_ConfigDir . "/" . field . ".ini", field, encodedKey)
 
-    ; 清洗为_UTF16_WITH_BOM_型编码(CLX_ConfigDir)
+    ; CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir)
 }
 CLX_i18n_ConfigEnocde(str){
     str := RegExReplace(str, "\\", "\\")
