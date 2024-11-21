@@ -15,8 +15,8 @@ OutputDir=userdocs:Inno Setup CapsLockX Output
 
 [Files]
 Source: "README.md"; DestDir: "{app}"; Flags: isreadme
-Source: "CapsLockX.exe"; DestDir: "{app}"
 Source: "CapsLockX.ahk"; DestDir: "{app}" 
+Source: "CapsLockX.exe"; DestDir: "{app}"
 Source: "Core\*"; DestDir: "{app}"
 Source: "Data\*"; DestDir: "{app}"
 Source: "docs\*"; DestDir: "{app}"
