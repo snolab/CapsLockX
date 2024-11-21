@@ -1,6 +1,6 @@
 ﻿#SingleInstance, Force
 ; #Requires AutoHotkey v1.1.33
-#Include Lib/AHK-GDIp-Library-Compilation/ahk-v1-1/Gdip_All.ahk ; https://github.com/marius-sucan/AHK-GDIp-Library-Compilation
+#Include ./Modules/Lib/AHK-GDIp-Library-Compilation/ahk-v1-1/Gdip_All.ahk ; https://github.com/marius-sucan/AHK-GDIp-Library-Compilation
 
 global brainstorming := false
 global brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
