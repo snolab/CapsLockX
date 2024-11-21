@@ -20,7 +20,6 @@ Source: "CapsLockX.ahk"; DestDir: "{app}"
 Source: "Core\*"; DestDir: "{app}"
 Source: "Data\*"; DestDir: "{app}"
 Source: "docs\*"; DestDir: "{app}"
-Source: "Lib\*"; DestDir: "{app}"
 Source: "Modules\*"; DestDir: "{app}"
 Source: "Tools\*"; DestDir: "{app}"
 
