@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.34.8](https://github.com/snolab/CapsLockX/compare/v1.34.7...v1.34.8) (2024-11-21)
+
+
+### Bug Fixes
+
+* **Lib:** dir ([28dafc2](https://github.com/snolab/CapsLockX/commit/28dafc2c0bf0cef866d28969588710f6b4b08be9))
+* **Lib:** dir ([d38cfbe](https://github.com/snolab/CapsLockX/commit/d38cfbe2b89d72e92d937087c5abbfe7674c087d))
+
+### [1.34.7](https://github.com/snolab/CapsLockX/compare/v1.34.6...v1.34.7) (2024-11-21)
+
+### [1.34.6](https://github.com/snolab/CapsLockX/compare/v1.34.5...v1.34.6) (2024-11-18)
+
 ### [1.34.5](https://github.com/snolab/CapsLockX/compare/v1.34.4...v1.34.5) (2024-11-03)
 
 
