@@ -9,7 +9,7 @@ global brainstormLastQuestion := CLX_Config("BrainStorm", "LastQuestion", "", t(
 global brainstormStagedAnswer := ""
 global brainstormClipType
 
-global brainstormFilePath := A_ScriptDir "\clipboard-image.jpg" ; Adjust as needed
+global brainstormFilePath := A_Temp "\capslockx-clipboard-image.jpg" ; Adjust as needed
 SplitPath brainstormFilePath,, dir, ext, fnBare
 old := dir "\" fnBare "-OLD" "." ext
 FileRecycle % old
