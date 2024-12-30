@@ -97,7 +97,8 @@ i18n_translated(lang, key)
     xhr.onreadystatechange := Func("i18n_brainstorm_translatePostResult").Bind(lang, key, xhr)
     xhr.Send(question)
 
-    return "…[" . key . "]"
+    return key
+    ; return "…[" . key . "]"
 }
 i18n_brainstorm_translatePostResult(lang, key, xhr)
 {
