@@ -96,6 +96,7 @@ i18n_translated(lang, key)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
     xhr.onreadystatechange := Func("i18n_brainstorm_translatePostResult").Bind(lang, key, xhr)
     xhr.Send(question)
+
     return "…[" . key . "]"
 }
 i18n_brainstorm_translatePostResult(lang, key, xhr)

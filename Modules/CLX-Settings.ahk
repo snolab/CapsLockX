@@ -138,7 +138,7 @@ Button配置文件编辑:
 Return
 
 CLX_LanguageSwitch(){
-    msg := t("'Choose your language'") . "`n" . t("For example: zh,ja,en,fr,es,ar...'")
+    msg := t("'Choose your language, default option is auto'") . "`n" . t("For example: zh,ja,en,fr,es,ar...'")
     InputBox, targetLang, % t("Change Language of CapsLockX"), % msg ,,,,,,,,% CLX_Lang
     ; InputBox, OutputVar [, Title, Prompt, HIDE, Width, Height, X, Y, Locale, Timeout, Default
     ; targetLang
