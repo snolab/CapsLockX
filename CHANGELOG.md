@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.34.11](https://github.com/snolab/CapsLockX/compare/v1.34.8...v1.34.11) (2024-12-30)
+
+
+### Bug Fixes
+
+* **brainstorm:** use temp dir ([14ce615](https://github.com/snolab/CapsLockX/commit/14ce615c03dace8ee4b19a91208b461c9cf25346))
+* **CapsLockX:** auto ([bbc07b0](https://github.com/snolab/CapsLockX/commit/bbc07b0b845aa43351e80656c44d9b7ae3b16c04))
+* **CapsLockX:** i18n optimize prompt ([bb8ff36](https://github.com/snolab/CapsLockX/commit/bb8ff36a29ef71790b4cf10408949a0ef03a75ef))
+* **CapsLockX:** ignore translation error ([4033e82](https://github.com/snolab/CapsLockX/commit/4033e8230a90c0124bf0fd0a84bf3d79778f6772))
+* **CapsLockX:** optimize i18n prompt ([7fc238b](https://github.com/snolab/CapsLockX/commit/7fc238ba690b5a15eb7183c6446da9bdc141c3c6))
+* **capslockx:** update link ([a535bcb](https://github.com/snolab/CapsLockX/commit/a535bcbb17459455ea2d54962cdc6565b81c2da7))
+* **capslockx:** versioning ([5881b05](https://github.com/snolab/CapsLockX/commit/5881b05e5a8e3a8c6d89b5c716ba299643cf9638))
+
+### [1.34.10](https://github.com/snolab/CapsLockX/compare/v1.34.8...v1.34.10) (2024-12-30)
+
+
+### Bug Fixes
+
+* **brainstorm:** use temp dir ([14ce615](https://github.com/snolab/CapsLockX/commit/14ce615c03dace8ee4b19a91208b461c9cf25346))
+* **CapsLockX:** auto ([bbc07b0](https://github.com/snolab/CapsLockX/commit/bbc07b0b845aa43351e80656c44d9b7ae3b16c04))
+* **CapsLockX:** i18n optimize prompt ([bb8ff36](https://github.com/snolab/CapsLockX/commit/bb8ff36a29ef71790b4cf10408949a0ef03a75ef))
+* **CapsLockX:** ignore translation error ([4033e82](https://github.com/snolab/CapsLockX/commit/4033e8230a90c0124bf0fd0a84bf3d79778f6772))
+* **CapsLockX:** optimize i18n prompt ([7fc238b](https://github.com/snolab/CapsLockX/commit/7fc238ba690b5a15eb7183c6446da9bdc141c3c6))
+* **capslockx:** update link ([a535bcb](https://github.com/snolab/CapsLockX/commit/a535bcbb17459455ea2d54962cdc6565b81c2da7))
+* **capslockx:** versioning ([5881b05](https://github.com/snolab/CapsLockX/commit/5881b05e5a8e3a8c6d89b5c716ba299643cf9638))
+
+### [1.34.9](https://github.com/snolab/CapsLockX/compare/v1.34.8...v1.34.9) (2024-12-30)
+
+
+### Bug Fixes
+
+* **brainstorm:** use temp dir ([14ce615](https://github.com/snolab/CapsLockX/commit/14ce615c03dace8ee4b19a91208b461c9cf25346))
+* **CapsLockX:** i18n optimize prompt ([bb8ff36](https://github.com/snolab/CapsLockX/commit/bb8ff36a29ef71790b4cf10408949a0ef03a75ef))
+* **CapsLockX:** ignore translation error ([4033e82](https://github.com/snolab/CapsLockX/commit/4033e8230a90c0124bf0fd0a84bf3d79778f6772))
+* **capslockx:** update link ([a535bcb](https://github.com/snolab/CapsLockX/commit/a535bcbb17459455ea2d54962cdc6565b81c2da7))
+* **capslockx:** versioning ([5881b05](https://github.com/snolab/CapsLockX/commit/5881b05e5a8e3a8c6d89b5c716ba299643cf9638))
+
 ### [1.34.8](https://github.com/snolab/CapsLockX/compare/v1.34.7...v1.34.8) (2024-11-21)
 
 
