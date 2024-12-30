@@ -82,11 +82,9 @@ i18n_translated(lang, key)
         return translated
     }
 
-    question := ">>> ROLE: Act as translator, input text is between '>>> TEXT BEGIN' and '>>> TEXT END', output transcript, no explain" . "`n"
-    question .= ">>> TASK: translate to " . lang . "`n"
-    question .= ">>> TEXT BEGIN" . "`n"
+    question := ">>> INPUT BEGIN"
     question .= key . "`n"
-    question .= ">>> TEXT END" . "`n"
+    question .= "<<< INPUT END, TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
 
     global brainstorm_origin
     if (!brainstorm_origin) {
