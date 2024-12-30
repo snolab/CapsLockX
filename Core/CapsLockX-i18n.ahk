@@ -82,7 +82,7 @@ i18n_translated(lang, key)
         return translated
     }
 
-    question := ">>> INPUT BEGIN"
+    question := ""
     question .= key . "`n"
     question .= "<<< INPUT END, TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
 
