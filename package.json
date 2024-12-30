@@ -14,7 +14,7 @@
     "url": "git+https://github.com/snolab/CapsLockX.git"
   },
   "license": "GPL-3.0-or-later",
-  "author": "snomiao@gmail.com",
+  "author": "snomiao <snomiao@gmail.com>",
   "main": "DevTools/CapsLockX.mjs",
   "bin": {
     "capslockx": "CapsLockX.exe"
