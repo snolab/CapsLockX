@@ -28,13 +28,12 @@ return
     !b:: brainstorm_prompt("no-prompt")
     +!b:: brainstorm_quick_capture("no-prompt")
     ^b:: brainstorm_show()
-    ; ^b:: brainstorm_set_key()
+; ^b:: brainstorm_set_key()
 
 #if brainstorming
 
     esc:: stop_brainstorm()
     `:: stop_brainstorm()
-
 
 #if
 
@@ -110,7 +109,7 @@ brainstorm_capture_window()
     ; Clipboard := originalClipboard
     return { question: content, imagePath: imagePath != "" ? imagePath : "" }
 }
-brainstorm_quick_capture(skip_prompt:=false)
+brainstorm_quick_capture(skip_prompt:=false,defaultPrompt:="")
 {
     ; heat up
     global brainstorm_origin
@@ -130,7 +129,11 @@ brainstorm_quick_capture(skip_prompt:=false)
         brainstormLastQuestion := ">>> this is screenshot, plz help user solve the problem (in the language of in screenshot)"
     }
     if(skip_prompt) {
-        cmd := brainstormLastQuestion
+        if(defaultPrompt != ""){
+            cmd := defaultPrompt
+        }else{
+            cmd := brainstormLastQuestion
+        }
     }else{
         prompt := ""
         prompt .= t("回邮件：选中一段邮件，输入 >> Reply this email") . "`n"
@@ -145,7 +148,10 @@ brainstorm_quick_capture(skip_prompt:=false)
     if (ErrorLevel == 1) {
         Return
     }
-    brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+    
+    if(!skip_prompt){
+        global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+    }
 
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
@@ -156,7 +162,7 @@ brainstorm_quick_capture(skip_prompt:=false)
     brainstorm_questionPost(msg, imagePath)
     ToolTip, % t("Asking AI")
 }
-brainstorm_prompt(skip_prompt=false)
+brainstorm_prompt(skip_prompt:=false, defaultPrompt:="")
 {
     ; heat up
     global brainstorm_origin
@@ -182,7 +188,11 @@ brainstorm_prompt(skip_prompt=false)
         brainstormLastQuestion := ">>>"
     }
     if(skip_prompt){
-        cmd := brainstormLastQuestion
+        if(defaultPrompt != ""){
+            cmd := defaultPrompt
+        }else{
+            cmd := brainstormLastQuestion
+        }
     }else{
         InputBox, cmd, % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
     }
@@ -192,7 +202,9 @@ brainstorm_prompt(skip_prompt=false)
         Return
     }
 
-    global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+    if(!skip_prompt){
+        global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+    }
 
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 

@@ -328,6 +328,31 @@ Activate AI-assisted input at any time, in any input field, by pressing `CLX+b`.
 
 1. In any input field, select the text
 
+<!-- MODULE_FILE: CLX-Brainstorm.ahk-->
+
+### CLX - Brainstorm
+
+Activate AI-assisted input at any time, in any input field, by pressing `CLX+b`.
+
+#### Key Map (In Development)
+
+| Key Description | Function                                          | Notes |
+|-----------------|---------------------------------------------------|-------|
+| CLX + b         | Copy the current selection, enter a command to let AI assist your typing |       |
+| CLX + Alt + b   | Configure activation code (currently only a free plan, additional functionalities may be introduced in the future) |       |
+| CLX + Shift + b | Check usage quota                                 |       |
+
+#### Protips:
+
+##### Organize meeting notes at any time
+
+1. Use Win+H inside any input field to bring up voice typing, then speak what you want to type. Don't worry about the accuracy of voice input; just get the gist of it across.
+2. Then select all and press `CLX+b`, type `list key points and tasks` to see the key points and tasks AI has organized for you.
+
+##### Translate any language to any language on the fly
+
+1. In any input field, select the text
+
 <!-- MODULE_FILE: CLX-Edit.ahk-->
 
 ### Editing Enhancement Plugin (TG YUIO HJKL) 🌟
