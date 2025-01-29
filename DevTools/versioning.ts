@@ -1,6 +1,8 @@
 import { readFile, writeFile } from "fs/promises";
 
-await versioning();
+if (import.meta.main) {
+  await versioning();
+}
 
 //
 async function versioning() {

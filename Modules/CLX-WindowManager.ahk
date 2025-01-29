@@ -688,6 +688,7 @@ CLX_MoveCurrentWindowTo(x)
     SendEvent !{Tab}
 }
 
+
 !1:: CLX_MoveCurrentWindowTo(1) ; 选中窗口移动到1号桌面
 !2:: CLX_MoveCurrentWindowTo(2) ; 选中窗口移动到2号桌面
 !3:: CLX_MoveCurrentWindowTo(3) ; 选中窗口移动到3号桌面
@@ -706,10 +707,20 @@ CLX_MoveCurrentWindowTo(x)
 !s:: Down ; 下
 !r:: Volume_Up ; 音量+
 !f:: Volume_Down ; 音量-
+!t:: Media_Stop
+!g:: Media_Play_Pause
 
 ; cx 关闭应用
-!c:: SendEvent {Blind}{Delete}{Right} ; 关闭应用
-!x:: SendEvent {Blind}{Delete}{Right} ; 关闭应用
+!c:: AltTabViewCloseWindow()
+!x:: AltTabViewCloseWindow()
+
+AltTabViewCloseWindow(){
+    if (WindowManager_Win11_Detect()){
+        SendEvent {Blind}{Delete}
+    }else{
+        SendEvent {Blind}{Delete}{Right} ; 关闭应用
+    }
+}
 
 ; 切换多桌面
 !q:: Send ^#{Left} ; 向左切换多桌面
@@ -937,4 +948,17 @@ ShellMessage( wParam, lParam )
         return
     }
     鼠标位置还原尝试()
+}
+
+WindowManager_Win11_Detect()
+{
+    IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
+    IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
+    ObjRelease(IServiceProvider)
+    if (IVirtualDesktopManagerInternal) {
+        ; win10
+        return false
+    }
+    ; it is Win11 maybe
+    return true
 }

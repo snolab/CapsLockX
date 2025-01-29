@@ -82,11 +82,9 @@ i18n_translated(lang, key)
         return translated
     }
 
-    question := ">>> ROLE: Act as translator, input text is between '>>> TEXT BEGIN' and '>>> TEXT END', output transcript, no explain" . "`n"
-    question .= ">>> TASK: translate to " . lang . "`n"
-    question .= ">>> TEXT BEGIN" . "`n"
+    question := ""
     question .= key . "`n"
-    question .= ">>> TEXT END" . "`n"
+    question .= "<<< INPUT END, TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
 
     global brainstorm_origin
     if (!brainstorm_origin) {
@@ -98,7 +96,9 @@ i18n_translated(lang, key)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
     xhr.onreadystatechange := Func("i18n_brainstorm_translatePostResult").Bind(lang, key, xhr)
     xhr.Send(question)
-    return "…[" . key . "]"
+
+    return key . "…"
+    ; return "…[" . key . "]"
 }
 i18n_brainstorm_translatePostResult(lang, key, xhr)
 {
@@ -111,12 +111,14 @@ i18n_brainstorm_translatePostResult(lang, key, xhr)
             ; ignore 500 error
             return
         }
-        MsgBox, % xhr.status . " " . xhr.responseText . " " . ("未知错误 / Unknown Error")
+        ; ignore translation error
+        ; MsgBox, % xhr.status . " " . xhr.responseText . " " . ("未知错误 / Unknown Error")
         return
     }
     global transcript := xhr.responseText
     if (!transcript) {
-        MsgBox, fail to ask ai
+        ; ignore translation error
+        ; MsgBox, fail to ask ai
         return
     }
     TrayTip, % "CapsLockX i18n [" . lang . "]", % key "=>" transcript,
