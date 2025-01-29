@@ -81,7 +81,7 @@
   },
   "standard-version": {
     "scripts": {
-      "precommit": "node DevTools/versioning.node.mjs && git add ."
+      "precommit": "bun DevTools/versioning.ts && git add ."
     }
   },
   "dependencies": {
