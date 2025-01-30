@@ -84,7 +84,7 @@ i18n_translated(lang, key)
 
     question := ""
     question .= key . "`n"
-    question .= "<<< INPUT END, TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
+    question .= ">>> ALL INPUT END, TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
 
     global brainstorm_origin
     if (!brainstorm_origin) {

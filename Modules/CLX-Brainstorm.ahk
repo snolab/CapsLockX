@@ -148,7 +148,7 @@ brainstorm_quick_capture(skip_prompt:=false,defaultPrompt:="")
     if (ErrorLevel == 1) {
         Return
     }
-    
+
     if(!skip_prompt){
         global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
     }
