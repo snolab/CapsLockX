@@ -148,7 +148,7 @@ brainstorm_quick_capture(skip_prompt:=false,defaultPrompt:="")
     if (ErrorLevel == 1) {
         Return
     }
-    
+
     if(!skip_prompt){
         global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
     }
@@ -251,8 +251,10 @@ BS_questionPost_onReadyStateChange(xhr)
     global brainstorming
     if (!brainstorming)
         return
-    if (xhr.readyState != 4)
+    if (xhr.readyState != 4){
+        ; ToolTip, % xhr.readyState
         return
+    }
     if (xhr.status != 200) {
         if (xhr.status == 403) {
             MsgBox, % xhr.responseText . " " . t("请检查激活码是否正确")
@@ -261,16 +263,17 @@ BS_questionPost_onReadyStateChange(xhr)
             MsgBox, % xhr.responseText . " " . t("请等待一段时间后再试")
         } else if (xhr.status == 500) {
             ; ignore 500 error
+
             return
         }
         ; ignore unknown error
-        ; MsgBox, % xhr.status . " " xhr.responseText . " " . t("Unknown Error")
+        Tooltip, % xhr.status . " " xhr.responseText . " " . t("Unknown Error")
         return
     }
     global questionId := xhr.responseText
     if (!questionId) {
         ; ignore error
-        ; MsgBox, % t("Fail to ask ai")
+        ToolTip, % t("Fail to ask ai")
         return
     }
 

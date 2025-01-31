@@ -15,7 +15,6 @@ LCID_1404 := "Chinese (Traditional, Macao SAR)" ; zh-MO
 LCID_0404 := "Chinese (Traditional, Taiwan)" ; zh-TW
 LCID_0011 := "Japanese" ; ja
 LCID_0411 := "Japanese (Japan)" ; ja-JP
-
 ; TODO: converts
 t(s, lang := "")
 {
@@ -83,8 +82,10 @@ i18n_translated(lang, key)
     }
 
     question := ""
+    question .= ">>> TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
+    question .= ">>> INPUT:"
     question .= key . "`n"
-    question .= "<<< INPUT END, TASK: translate to " . lang . ", no explains, output only transcript" . "`n"
+    question .= ">>> OUTPUT:"
 
     global brainstorm_origin
     if (!brainstorm_origin) {

@@ -34,6 +34,25 @@ CLX_Exit()
 
 #if
 
+
+
+LCIDToLocaleName(LCID, Flags := 0)
+{
+    reqBufSize := DllCall("LCIDToLocaleName", "UInt", LCID, "Ptr", 0, "UInt", 0, "UInt", Flags)
+    size := VarSetCapacity(out, reqBufSize)
+    DllCall("LCIDToLocaleName", "UInt", LCID, "Ptr", &out, "UInt", size, "UInt", Flags)
+    return StrGet(&out, "UTF-16")
+}
+
+GetLocaleInfo(LocaleName, LCType)
+{
+    reqBufSize := DllCall("GetLocaleInfoEx", "WStr", LocaleName, "UInt", LCType, "Ptr", 0, "UInt", 0)
+    size := VarSetCapacity(out, reqBufSize)
+    DllCall("GetLocaleInfoEx", "WStr", LocaleName, "UInt", LCType, "Ptr", &out, "UInt", size)
+    return StrGet(&out, "UTF-16")
+}
+
+
 CLX_ConfigWindow()
 {
     Gui, Destroy
@@ -51,7 +70,7 @@ CLX_ConfigWindow()
     Gui, Add, Button, w200 gButton添加开机自动启动, % t("添加开机自动启动")
     Gui, Add, Button, w200 gButton配置文件编辑, % t("配置文件编辑")
     Gui, Add, Button, w200 gButton重新載入, % t("重新載入CapsLockX")
-
+    
     global T_TomatoLife ;
     if (T_TomatoLife) {
         Gui, Add, CheckBox, gCLX_ConfigureUpdate vT_TomatoLife Checked, % t("启用番茄时钟，每25分钟休息5分钟·。")
@@ -87,6 +106,28 @@ CLX_ConfigWindow()
     }
     Gui, Show
 }
+
+ButtonLanguageSwitchWindow:
+    Gui, Show
+    Gui, Add, ListView, w500 r20, LCID|Display Name|Locale Name
+    LOCALE_ALLOW_NEUTRAL_NAMES := 0x08000000
+    LOCALE_SENGLISHDISPLAYNAME := 0x72
+    LOCALE_SLOCALIZEDDISPLAYNAME := 0x2
+    loop 0xFFFF
+    {
+        LCID := Format("{:04X}", A_Index)
+        if (LCID ~= "(04|08|0C|14|20|24|28|2C|30|34|38|3C|40|44|48|4C)00")
+            continue  ; Skip default and transient LCIDs.
+        LocaleName := LCIDToLocaleName(A_Index, LOCALE_ALLOW_NEUTRAL_NAMES)
+        if not LocaleName
+            continue  ; Skip unknown LCIDs.
+        DisplayName := GetLocaleInfo(LocaleName, LOCALE_SENGLISHDISPLAYNAME)
+        ; DisplayName := GetLocaleInfo(LocaleName, LOCALE_SLOCALIZEDDISPLAYNAME)
+        LV_Add(, LCID, DisplayName, LocaleName)
+        ; Clipboard .= LCID "`t" DisplayName "`t" LocaleName "`n"
+    }
+    LV_ModifyCol()  ; Auto-size each column to fit its contents.
+return
 
 Button添加开机自动启动:
     Func("CLX_MakeStartup").Call()
