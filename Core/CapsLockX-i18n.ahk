@@ -15,6 +15,15 @@ LCID_1404 := "Chinese (Traditional, Macao SAR)" ; zh-MO
 LCID_0404 := "Chinese (Traditional, Taiwan)" ; zh-TW
 LCID_0011 := "Japanese" ; ja
 LCID_0411 := "Japanese (Japan)" ; ja-JP
+
+GetKeyboardLanguage()
+{
+    if !KBLayout := DllCall("user32.dll\GetKeyboardLayout")
+        return false
+
+    return KBLayout & 0xFFFF
+}
+
 ; TODO: converts
 t(s, lang := "")
 {
@@ -34,34 +43,38 @@ t(s, lang := "")
     }
     if ( lang == "auto" ) {
         lang := "en"
-        if (A_Language == "7804") {
+        alang := GetKeyboardLanguage()
+        if (!alang) {
+            alang:= A_Language
+        }
+        if (alang == "7804") {
             lang := "zh"
         }
-        if (A_Language == "0004") {
+        if (alang == "0004") {
             lang := "zh"
         }
-        if (A_Language == "0804") {
+        if (alang == "0804") {
             lang := "zh"
         }
-        if (A_Language == "1004") {
+        if (alang == "1004") {
             lang := "zh"
         }
-        if (A_Language == "7C04") {
+        if (alang == "7C04") {
             lang := "zh"
         }
-        if (A_Language == "0C04") {
+        if (alang == "0C04") {
             lang := "zh"
         }
-        if (A_Language == "1404") {
+        if (alang == "1404") {
             lang := "zh"
         }
-        if (A_Language == "0404") {
+        if (alang == "0404") {
             lang := "zh"
         }
-        if (A_Language == "0011") {
+        if (alang == "0011") {
             lang := "ja"
         }
-        if (A_Language == "0411") {
+        if (alang == "0411") {
             lang := "ja"
         }
     }
