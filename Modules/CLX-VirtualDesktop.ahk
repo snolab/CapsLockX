@@ -340,13 +340,13 @@ SwitchToDesktopByInternalAPI(idx)
     succ := 0
     CLSID_ImmersiveShell := "{C2F03A33-21F5-47FA-B4BB-156362A2F239}"
     CLSID_IServiceProvider10 := "{6D5140C1-7436-11CE-8034-00AA006009FA}"
-    CLSID_IVirtualDesktop_Win10 := "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}"
-    CLSID_IVirtualDesktop_Win11 :="{536D3495-B208-4CC9-AE26-DE8111275BF8}"
     CLSID_IVirtualDesktop_Win12 :="{3F07F4BE-B107-441A-AF0F-39D82529072C}"
+    CLSID_IVirtualDesktop_Win11 :="{536D3495-B208-4CC9-AE26-DE8111275BF8}"
+    CLSID_IVirtualDesktop_Win10 := "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}"
     CLSID_IVirtualDesktopManager := "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}"
-    CLSID_IVirtualDesktopManagerInternal_Win10 := "{F31574D6-B682-4CDC-BD56-1827860ABEC6}"
-    CLSID_IVirtualDesktopManagerInternal_Win11 := "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}"
     CLSID_IVirtualDesktopManagerInternal_Win12 := "{53F5CA0B-158F-4124-900C-057158060B27}"
+    CLSID_IVirtualDesktopManagerInternal_Win11 := "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}"
+    CLSID_IVirtualDesktopManagerInternal_Win10 := "{F31574D6-B682-4CDC-BD56-1827860ABEC6}"
     CLSID_VirtualDesktopManager := "{AA509086-5CA9-4C25-8F95-589D3C07B48A}"
     CLSID_VirtualDesktopManagerInternal := "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}"
     CLSID_VirtualDesktopPinnedApps := "{B5A399E7-1C87-46B8-88E9-FC5747B171BD}"
@@ -360,8 +360,8 @@ SwitchToDesktopByInternalAPI(idx)
     win10 := !!IVirtualDesktopManagerInternal_Win10
     _:= win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
     _:= win11 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win11)
-    _:= win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
-    
+    _:= win10 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win10)
+    ; ToolTip, % "win12-" . win12 . "win11-" . win11 . "win10-" . win10 . ""
     ; ToolTip win %win12% %win11% %win10%
 
     ObjRelease(IServiceProvider)
