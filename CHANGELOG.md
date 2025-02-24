@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.34.12](https://github.com/snolab/CapsLockX/compare/v1.34.11...v1.34.12) (2025-02-24)
+
+
+### Bug Fixes
+
+* **brainstorm:** esc to stop streaming ([e22f61c](https://github.com/snolab/CapsLockX/commit/e22f61c8b494c96ed807b712768ed2b8a871a984))
+* **CapsLockX:** add types bun ([165e401](https://github.com/snolab/CapsLockX/commit/165e40182fb483f89e0ec215349da805a8c7cb51))
+* **CapsLockX:** misc ([d0c6d08](https://github.com/snolab/CapsLockX/commit/d0c6d08adada50e75cd0bcd98f33dc8318e836cf))
+* **CapsLockX:** npm upgrade ([165bdb6](https://github.com/snolab/CapsLockX/commit/165bdb6446ba407003a29e678b1bfdca732bb23a))
+* **CapsLockX:** prompt update ([e8b7178](https://github.com/snolab/CapsLockX/commit/e8b71784a7b2232eec2812e8c8acbfe2a64e31e1))
+* **capslockx:** ts ([ac0c03f](https://github.com/snolab/CapsLockX/commit/ac0c03f45082881df2d7ec5b7cb3608dd8c4a444))
+* **CapsLockX:** update author ([c45e13c](https://github.com/snolab/CapsLockX/commit/c45e13cfbdb0823ec5693bf96e34d59f989af02f))
+* **CapsLockX:** use key as default lang ([d58d9a6](https://github.com/snolab/CapsLockX/commit/d58d9a6074dd7cda9b517f895545240ca521115c))
+* **i18n:** get keyboard lang ([029e70b](https://github.com/snolab/CapsLockX/commit/029e70b64f68a66cb2ea5cbb65308a9180415315))
+* remove golang pkg ([12e8b1f](https://github.com/snolab/CapsLockX/commit/12e8b1fb3874453aa1508890a586d1b890249e8d))
+* **settings:** add ButtonLanguageSwitchWindow for ([0a5f8b6](https://github.com/snolab/CapsLockX/commit/0a5f8b6bac89b683082948952880fb0c4744baa9))
+* **virtual-desktop:** switch win10 bug ([8912a66](https://github.com/snolab/CapsLockX/commit/8912a664325f6df57371fa0773ca08aaf8a216b6))
+* **window-manager:** play-pause on alt-tab view ([856ddf6](https://github.com/snolab/CapsLockX/commit/856ddf672d54b1e7bbadc7a6bd2d7df3cd2c69ed))
+
 ### [1.34.11](https://github.com/snolab/CapsLockX/compare/v1.34.8...v1.34.11) (2024-12-30)
 
 
