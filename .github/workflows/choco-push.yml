@@ -30,17 +30,17 @@ jobs:
       # 测试
       - run: choco install CapsLockX -s .
       # 准备上传到releases
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: CapsLockX.zip
           path: ./CapsLockX.zip
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: CapsLockX.sha256
           path: ./CapsLockX.sha256
       # 上传 nupkg 用来给 chocolatey push
       - run: mv CapsLockX.*.nupkg CapsLockX.nupkg
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: CapsLockX.nupkg
           path: ./CapsLockX.nupkg
