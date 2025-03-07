@@ -1,6 +1,8 @@
 ﻿global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
+global CLX_i18nConfigDir := "Core/locales/"
 global CLX_i18nConfigPath := "Core/lang.ini"
-global CLX_i18n_newTranslated := "Core/lang.ini"
+global CLX_i18n_IsCLX_InstalledByGitClone := FileExist(A_WorkingDir "/.git")
+global CLX_i18n_newTranslatedSaveTo := "Core/lang.ini"
 
 CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_i18nConfigPath)
 
@@ -154,8 +156,19 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
     ; user locales
+    ; global CLX_ConfigDir
+    ; CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir . "/" . field . ".ini")
+    ; IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
+    ; if (content == "ERROR") {
+    ;     content := ""
+    ; }
+    ; if (content) {
+    ;     return CLX_i18n_ConfigDecode(content)
+    ; }
+    ; clx pre-installed locales v2
     global CLX_ConfigDir
-    IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
+    CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir . "/" . field . ".ini")
+    IniRead, content, % CLX_i18nConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
     if (content == "ERROR") {
         content := ""
     }
@@ -163,6 +176,7 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
         return CLX_i18n_ConfigDecode(content)
     }
     ; clx pre-installed locales
+    CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_i18nConfigPath)
     IniRead, content, % CLX_i18nConfigPath, %field%, % encodedKey, %defaultValue%
     if (content == "ERROR") {
         content := ""
@@ -171,6 +185,7 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
         return CLX_i18n_ConfigDecode(content)
     }
 }
+
 CLX_i18n_ConfigSet(field, varName, value)
 {
     encodedKey := CLX_i18n_ConfigEnocde(varName)
@@ -178,7 +193,15 @@ CLX_i18n_ConfigSet(field, varName, value)
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
     global CLX_ConfigDir
-    IniSave(encodedValue, CLX_ConfigDir . "/" . field . ".ini", field, encodedKey)
+    ; save to lang.ini if installed by source code (where has .git folder)
+    if (CLX_i18n_IsCLX_InstalledByGitClone){
+        ; v2
+        IniSave(encodedValue, CLX_i18nConfigDir . "/" . field . ".ini", field, encodedKey)
+        ; v1
+        ; IniSave(encodedValue, CLX_i18nConfigPath, field, encodedKey)
+    }else{
+        IniSave(encodedValue, CLX_ConfigDir . "/" . field . ".ini", field, encodedKey)
+    }
 
     ; CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir)
 }
