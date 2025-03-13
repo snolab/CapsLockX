@@ -32,7 +32,7 @@ EscapeDoubleQuotedForBatch(code){
     Return """" encodedCode """"
 }
 SafetyEvalJavascript(code){
-    static nodejsExists := !!FileExist("C:\Program Files\nodejs\node.exe")
+    static nodejsExists := !!FileExist("C:\Program Files\nodejs\node.exe") || !!FileExist("C:\nvm4w\nodejs\node.exe")
     if(nodejsExists)
         Return EvalJavaScriptByNodeServer(code)
     else{
@@ -171,7 +171,7 @@ EvalJavaScriptByNodeStdIO(code){
     realcode := ""
     realcode .= "const _require = require;{" "`n"
     realcode .= "const require=(m)=>{try{_require.resolve(m)}catch(e){_require('child_process').execSync('cd %USERPROFILE% && npm i -S '+m)};return _require(m)};" "`n"
-        realcode .= "const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;" "`n"
+    realcode .= "const 雪 = new Proxy({}, {get: (t, p)=>require(p)}), sno=雪;" "`n"
     realcode .= "const code = " EscapeQuoted(code) ";" "`n"
     realcode .= "(async () => await eval(code))() `n"
     realcode .= " .then(res => res?.toString !== ({}).toString && res?.toString() || JSON.stringify(res)) `n"
@@ -212,28 +212,28 @@ EvalJavaScriptByNodeStdIO(code){
 
 #If CapsLockXMode
 
-; 使用 JS 计算并替换所选内容
--::
-    Clipboard =
-    SendEvent ^c
-    ClipWait, 1, 1
-    code := Clipboard
-    codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
-    Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
-    SendEvent ^v
-return
+    ; 使用 JS 计算并替换所选内容
+    -::
+        Clipboard =
+        SendEvent ^c
+        ClipWait, 1, 1
+        code := Clipboard
+        codeWithoutEqualEnding := RegExReplace(code, "\s+$", "")
+        Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
+        SendEvent ^v
+    return
 
-; 使用 JS 计算并试图追加或替换所选内容
-=::
-    Clipboard =
-    SendEvent ^c
-    ClipWait, 1, 1
-    code := Clipboard
-    codeWithoutEqualEnding := RegExReplace(code, "=?\r?\n?(?:\*+\/)?\s*$", "")
-    Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
-    ; 如果输入代码最后是空的就把结果添加到后面
-    if (code != codeWithoutEqualEnding){
-        SendEvent {Right}
-    }
-    SendEvent ^v
-Return
+    ; 使用 JS 计算并试图追加或替换所选内容
+    =::
+        Clipboard =
+        SendEvent ^c
+        ClipWait, 1, 1
+        code := Clipboard
+        codeWithoutEqualEnding := RegExReplace(code, "=?\r?\n?(?:\*+\/)?\s*$", "")
+        Clipboard := SafetyEvalJavascript(codeWithoutEqualEnding)
+        ; 如果输入代码最后是空的就把结果添加到后面
+        if (code != codeWithoutEqualEnding){
+            SendEvent {Right}
+        }
+        SendEvent ^v
+    Return

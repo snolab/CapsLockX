@@ -296,26 +296,29 @@ Enhance keyboard operations for OneNote 2016 - 2019, conveniently use the keyboa
 
 <!-- MODULE_FILE: CLX-Brainstorm.ahk-->
 
-### CLX - Brainstorm
+### CLX - Brainstorm Cerebral Storm
 
-Use AI-assisted input at any time, in any input box, by pressing `CLX+b`.
+At any time, in any input box, press the `CLX+b` key to start using AI-assisted input.
 
-#### Key Bindings (Under Development)
+#### Key Distribution (Under Development)
 
-| Key Description  | Function                                            | Notes |
-| ---------------- | --------------------------------------------------- | ----- |
-| CLX + b          | Copy selected content automatically, get AI support |       |
-| CLX + Alt + b    | Configure activation code (Currently free plan)     |       |
-| CLX + Shift + b  | Check usage quota                                   |       |
+| Key Description  | Function                                                | Note |
+| ---------------- | ------------------------------------------------------- | ---- |
+| CLX + b          | Automatically copies the current selected content, input instructions, let AI assist your input |      |
+| CLX + Alt + b    | Configure activation code (currently only a free plan, may add enhanced features in the future) |      |
+| CLX + Shift + b  | View usage quota                                        |      |
 
 #### Protips:
 
-##### Organize Meeting Records Anytime
+##### Organize Meeting Notes Anytime
 
-1. Use Win+H to activate voice input inside any text box, and speak out what you want—it doesn’t have to be precise.
-2. Then select all and press `CLX+b`, type `List key points and tasks`, and AI will organize it for you.
+1. In any input box, use Win+H to bring up voice input, then speak the text you want, don't worry about the accuracy of the voice input, just say the general idea,
+2. Then select all and press `CLX+b`, input `list the key points and tasks`, and you will see AI automatically organizing the key points and tasks for you.
 
-##### Translate Any Language to Any Language
+##### Translate Any Language to Any Language Anytime
+
+1. In any input box, select the text you want to translate
+2. Then select all and press `CLX+b`, `to chinese:` AI automatically inputs into Chinese for you.
 
 <!-- MODULE_FILE: CLX-Edit.ahk-->
 
