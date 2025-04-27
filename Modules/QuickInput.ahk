@@ -81,7 +81,7 @@ doubleSectionPassword()
     CharsRest:="123456789abcdefghijkmnopqrstuvwxyz"
     section1 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
     section2 := GenPassword(CharsRest, 7)
-    QuickTextInput(section1 "-" section2)
+    QuickTextInput(section1 "_" section2)
 }
 
 #if
@@ -114,7 +114,7 @@ return
 QuickTextInput(GenPassword("0123456789abcdef", 16))
 return
 
-:*?:#DPW#:: ; 随机输入2段式密码如： Zg1y9xy-hcswt71
+:*?:#DPW#:: ; 随机输入2段式密码如： Zg1y9xy_hcswt71
 doubleSectionPassword()
 return
 

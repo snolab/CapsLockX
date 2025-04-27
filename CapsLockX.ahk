@@ -14,7 +14,6 @@ if (A_IsAdmin) {
 } else {
     #SingleInstance, Off  ; 普通用户无法替换管理员权限实例，故 Off，使用多开的方式修改配置文件触发管理员权限实例重载
 }
-#NoTrayIcon ; 隐藏托盘图标
 SetWorkingDir, %A_ScriptDir%
 
 #Include %A_ScriptDir%/Core/CapsLockX-Config.ahk
@@ -60,6 +59,7 @@ global GIT仓库安装也 := "true" == Trim(CLX_RunSilent("cmd /c git rev-parse 
 ;
 模块帮助向README编译()
 ; 隐藏 ToolTip
+#NoTrayIcon ; 隐藏托盘图标
 ToolTip
 
 ; 当 CI_TEST 启用时，仅测试编译效果，不启动核心
@@ -121,9 +121,9 @@ Return
 加载提示追加(msg, clear = 0){
     global 显示加载提示
     if(!显示加载提示) return
-    if (clear || loadingTips == "") {
-        loadingTips := "CapsLockX " CLX_Version "`n"
-    }
+        if (clear || loadingTips == "") {
+            loadingTips := "CapsLockX " CLX_Version "`n"
+        }
     loadingTips .= msg "`n"
 }
 加载提示显示(){
@@ -135,12 +135,23 @@ Return
     FileEncoding UTF-8-Raw
     ; 列出模块文件
     ModuleFiles := ""
+    ; read as module dir
+    loop, Files, %CLX_ModuleDir%\*, D
+    {
+        ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
+        ModuleFile := A_LoopFileName "/" A_LoopFileName ".ahk"
+        MsgBox, % CLX_ModuleDir "/" ModuleFile
+        if (FileExist(CLX_ModuleDir "/" ModuleFile)) {
+            ModuleFiles .= ModuleFile "`n"
+            ; MsgBox, ModuleFile %ModuleFile%
+        }
+    }
+    msgbox % "ModuleFiles" ModuleFiles
     loop, Files, %CLX_ModuleDir%\*.ahk
     {
         ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
         ModuleFiles .= A_LoopFileName "`n"
     }
-
     ModuleFiles := Trim(ModuleFiles, "`n")
     Sort ModuleFiles
     ; 生成帮助
@@ -152,12 +163,14 @@ Return
         ; 匹配模块名
         模块文件 := A_LoopField
         匹配结果 := false
-        匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)((?:.*[-])*)(.*?)(?:\.user)?\.ahk", Match)
-        匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)((?:.*[-])*)(.*?)(?:\.用户)?\.ahk", Match)
+        匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)(?:.*/)?((?:.*[-])*)(.*?)(?:\.user)?\.ahk", Match)
+        匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)(?:.*/)?((?:.*[-])*)(.*?)(?:\.用户)?\.ahk", Match)
         if (!匹配结果) {
+            ; msgbox % "模块文件" 模块文件
             Continue
         }
         模块文件名称 := Match[1] Match[2]
+        ; msgbox % "模块文件名称" 模块文件名称
         模块名称 := Match[2]
         模块帮助内容 := ""
         模块帮助文件 := ""
@@ -299,7 +312,7 @@ CapsLockX启动(){
     if (ErrorLevel) {
         MsgBox, 4, % t("CapsLockX 错误"), % t("CapsLockX 异常退出，是否重载？")
         IfMsgBox No
-        return
+            return
         Reload
     } else {
         TrayTip, % t("CapsLockX 退出"), % t("CapsLockX 已退出。")
