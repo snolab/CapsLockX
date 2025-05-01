@@ -21,7 +21,7 @@ if (T_TomatoLife) {
 
 Return
 
-^!i:: 番茄报时()
+; ^!i:: 番茄报时()
 
 高精度时间配置(){
     ; global T_TomatoLife := CLX_Config("TomatoLife", "", 0, "使用定时任务")
@@ -53,7 +53,7 @@ Return
     ; CapsLockX 暂停时，番茄状态也暂停
     if (CLX_Paused)
         Return
- 
+
     ; tooltip skip if sleep
     static SLEEPING_FLAG_CLEAN := 0
     if(!SLEEPING_FLAG_CLEAN) {
