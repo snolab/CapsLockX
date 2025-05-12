@@ -146,7 +146,7 @@ Return
             ; MsgBox, ModuleFile %ModuleFile%
         }
     }
-    msgbox % "ModuleFiles" ModuleFiles
+    ; Msgbox % "ModuleFiles" ModuleFiles
     loop, Files, %CLX_ModuleDir%\*.ahk
     {
         ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
@@ -166,11 +166,11 @@ Return
         匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)(?:.*/)?((?:.*[-])*)(.*?)(?:\.user)?\.ahk", Match)
         匹配结果 := 匹配结果 || RegExMatch(A_LoopField, "O)(?:.*/)?((?:.*[-])*)(.*?)(?:\.用户)?\.ahk", Match)
         if (!匹配结果) {
-            ; msgbox % "模块文件" 模块文件
+            ; Msgbox % "模块文件" 模块文件
             Continue
         }
         模块文件名称 := Match[1] Match[2]
-        ; msgbox % "模块文件名称" 模块文件名称
+        ; Msgbox % "模块文件名称" 模块文件名称
         模块名称 := Match[2]
         模块帮助内容 := ""
         模块帮助文件 := ""
