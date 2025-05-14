@@ -1,0 +1,16 @@
+# ref: https://learn.microsoft.com/en-us/windows/package-manager/package/manifest?tabs=minschema%2Cversion-example
+
+PackageIdentifier:  # Publisher.package format.
+PackageVersion:     # Version numbering format.
+PackageLocale:      # BCP 47 format (e.g. en-US)
+Publisher:          # The name of the publisher.
+PackageName:        # The name of the application.
+License:            # The license of the application.
+ShortDescription:   # The description of the application.
+Installers: 
+ - Architecture:    # Enumeration of supported architectures.
+   InstallerType:   # Enumeration of supported installer types (exe, msi, msix, inno, wix, nullsoft, appx).
+   InstallerUrl:    # Path to download installation file.
+   InstallerSha256: # SHA256 calculated from installer.
+ManifestType:       # The manifest file type
+ManifestVersion: 1.6.0
