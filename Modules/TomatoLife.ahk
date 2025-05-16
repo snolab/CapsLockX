@@ -21,7 +21,7 @@ if (T_TomatoLife) {
 
 Return
 
-^!i:: 番茄报时()
+; ^!i:: 番茄报时()
 
 高精度时间配置(){
     ; global T_TomatoLife := CLX_Config("TomatoLife", "", 0, "使用定时任务")
