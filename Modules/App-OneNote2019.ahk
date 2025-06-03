@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
-; 名称：OneNote 2016 增强
-; 版本：v2020.06.27
+; 名称：OneNote 2019 增强
+; 版本：v2025.06.02
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -94,24 +94,39 @@ OneNote快速笔记窗口启动(){
         WinWait %OneNote窗口匹配串%, , 5 ; wait seconds
         if (ErrorLevel) {
             TrayTip, % t("错误"), % t("未找到OneNote窗口")
-            return
+            return false
         }
         WinActivate %OneNote窗口匹配串%
     }
+    return true
 }
 OneNote2019主页启动(){
-    OneNote快速笔记窗口启动()
+    HomePageMathcer := ".*(HOME|TODO).* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    WinActivate %HomePageMathcer%
+    if (!WinActive(HomePageMathcer)) {
+        OneNote快速笔记窗口启动()
+    }
+
     ; SendEvent !{Home}^{Home}!{Enter}{Left}
     SendEvent !{Home}^{End}!{Enter}
     Return
 }
 OneNote2019搜索启动() {
-    OneNote快速笔记窗口启动()
-    SendEvent ^{PgUp}
+    FormatTime, TimeString, , yyyyMMdd
+    TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    WinActivate %TodayNoteMatcher%
+    if (!WinActive(TodayNoteMatcher)) {
+        OneNote快速笔记窗口启动()
+        ; SendEvent ^{PgUp}
+    }
     SendEvent ^e{Text}""
     SendEvent {Left}
     OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
     SendEvent +{Left 10}
+    Sleep, 200
+    SendEvent {Down}{Up 2}{End}+{Left}+{Home}+{Right} ; 定位到搜索框
+
+
     Return
 }
 
@@ -224,14 +239,14 @@ OneNote2019搜索启动() {
 ; 单独运行
 #if (!CapsLockX)
 
-^+!F12:: ExitApp ; 退出脚本
+    ^+!F12:: ExitApp ; 退出脚本
 
 ;
 #if OneNote2019搜索界面内()
 
-OneNote2019搜索界面内(){
-    return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
-}
+    OneNote2019搜索界面内(){
+        return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+    }
 ; $^f::
 ; $^e::
 ; enhanced_search(){
@@ -265,121 +280,121 @@ OneNote2019搜索界面内(){
 
 #if OneNote2019创建链接窗口内()
 
-OneNote2019创建链接窗口内(){
-    return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
-}
+    OneNote2019创建链接窗口内(){
+        return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
+    }
 
-; /:: CLX_ShowHelp OneNote2019创建链接窗口
+    ; /:: CLX_ShowHelp OneNote2019创建链接窗口
 
-; 复制链接笔记页面的搜索结果
-!+s:: 笔记条目搜索结果复制整理向页面粘贴条数()
-!s:: 笔记条目搜索结果复制整理条数()
+    ; 复制链接笔记页面的搜索结果
+    !+s:: 笔记条目搜索结果复制整理向页面粘贴条数()
+    !s:: 笔记条目搜索结果复制整理条数()
 
 #if OneNote2019笔记编辑窗口内()
 
-OneNote2019笔记编辑窗口内(){
-    return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
-}
+    OneNote2019笔记编辑窗口内(){
+        return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
+    }
 
-F3:: 精确查找笔记()
+    F3:: 精确查找笔记()
 
-!m:: SendEvent ^!m ; 移动笔记
-!+m:: SendEvent ^+g{AppsKey}m ; 移动分区
-!f:: altSend("hg") ; 搜索标记
-^+PgUp:: SendEvent ^+g{Up}{Enter} ; 上一个页面切换
-^+PgDn:: SendEvent ^+g{Down}{Enter} ; 下一个页面切换
-^s:: SendEvent +{F9} ; 同步此笔记本
-!n:: altSend("wpcn") ; 切换为无色背景
-+!n:: altSend("wre") ; 切换为无格子背景
-+Delete:: SendEvent {Escape}^a{Del} ; 快速删除当前行
-!Delete:: SendEvent ^+a{Delete} ; 快速删除当前页面
-!+Delete:: SendEvent ^+g{AppsKey}d ; 快速删除当前分区（并要求确认）
-^w:: altSend("{F4}") ; 快速关闭窗口
-^+l:: SendEvent !+{Down}!+{Up} ; 选中行
-^d:: SendEvent {Right}^{Left}^+{Right} ; 选中当前词（目前来说会带上词右边的空格）
-!q:: altSend("dh") ;换成手形Tools ; 拖动
-!w:: altSend("dl") ; 套锁
-!e:: altSend("dek") ; 橡皮
-!s:: altSend("dt") ; 输入
-!a:: altSend("dn") ; 增加空白
-!+r:: altSend("w1") ; 视图 - 缩放到1
-!r:: altSend("wi2") ; 视图 - 缩放到页面宽度
-!d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
-!k:: 将当前关键词搜索到的相关页面链接在下方展开()
-!t:: 把笔记时间显式填充到标题()
-!-:: 自动2维化公式()
-^+c:: 纯文本复制()
-^+v:: 纯文本粘贴()
-~Enter:: 链接安全警告自动确认()
-!+p:: 段落链接复制()
-!p:: 页面链接复制()
-F2:: SendEvent ^+t ; 重命名笔记
-+F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
-!F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
-+^Enter:: OneNote2019_ToggleTODO() ; 切换 OneNote TODO 前缀状态 (Beta)
+    !m:: SendEvent ^!m ; 移动笔记
+    !+m:: SendEvent ^+g{AppsKey}m ; 移动分区
+    !f:: altSend("hg") ; 搜索标记
+    ^+PgUp:: SendEvent ^+g{Up}{Enter} ; 上一个页面切换
+    ^+PgDn:: SendEvent ^+g{Down}{Enter} ; 下一个页面切换
+    ^s:: SendEvent +{F9} ; 同步此笔记本
+    !n:: altSend("wpcn") ; 切换为无色背景
+    +!n:: altSend("wre") ; 切换为无格子背景
+    +Delete:: SendEvent {Escape}^a{Del} ; 快速删除当前行
+    !Delete:: SendEvent ^+a{Delete} ; 快速删除当前页面
+    !+Delete:: SendEvent ^+g{AppsKey}d ; 快速删除当前分区（并要求确认）
+    ^w:: altSend("{F4}") ; 快速关闭窗口
+    ^+l:: SendEvent !+{Down}!+{Up} ; 选中行
+    ^d:: SendEvent {Right}^{Left}^+{Right} ; 选中当前词（目前来说会带上词右边的空格）
+    !q:: altSend("dh") ;换成手形Tools ; 拖动
+    !w:: altSend("dl") ; 套锁
+    !e:: altSend("dek") ; 橡皮
+    !s:: altSend("dt") ; 输入
+    !a:: altSend("dn") ; 增加空白
+    !+r:: altSend("w1") ; 视图 - 缩放到1
+    !r:: altSend("wi2") ; 视图 - 缩放到页面宽度
+    !d:: altSendEx("dp", "{Home}") ; 打开换笔盘，定位到第一支笔
+    !k:: 将当前关键词搜索到的相关页面链接在下方展开()
+    !t:: 把笔记时间显式填充到标题()
+    !-:: 自动2维化公式()
+    ^+c:: 纯文本复制()
+    ^+v:: 纯文本粘贴()
+    ~Enter:: 链接安全警告自动确认()
+    !+p:: 段落链接复制()
+    !p:: 页面链接复制()
+    F2:: SendEvent ^+t ; 重命名笔记
+    +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
+    !F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
+    +^Enter:: OneNote2019_ToggleTODO() ; 切换 OneNote TODO 前缀状态 (Beta)
 
-OneNote2019_ToggleTODO(){
-    ; request clipboard
-    backup:=ClipboardAll
-    Clipboard:=""
-    ; select current line 行は選る
-    Send {Home}^a{Home}+{End}^c
+    OneNote2019_ToggleTODO(){
+        ; request clipboard
+        backup:=ClipboardAll
+        Clipboard:=""
+        ; select current line 行は選る
+        Send {Home}^a{Home}+{End}^c
 
-    ; get clipboard
-    ClipWait, 2
-    if(ErrorLevel) {
+        ; get clipboard
+        ClipWait, 2
+        if(ErrorLevel) {
+            Clipboard := backup
+            return
+        }
+        s := clipboard
         Clipboard := backup
-        return
-    }
-    s := clipboard
-    Clipboard := backup
 
-    ; TURNING TODO STATES
+        ; TURNING TODO STATES
 
-    isTODO := !!RegExMatch(s, "^TODO")
-    if (isTODO ) {
-        so := RegExReplace(s, "^TODO ?", "DOING ")
+        isTODO := !!RegExMatch(s, "^TODO")
+        if (isTODO ) {
+            so := RegExReplace(s, "^TODO ?", "DOING ")
+            SendEvent, {Text}%so%
+            SendEvent, ^a{End}
+            return
+        }
+
+        isDOING := !!RegExMatch(s, "^DOING")
+        if (isDOING ) {
+            so := RegExReplace(s, "^DOING ?", "DONE ")
+            SendEvent, {Text}%so%
+            SendEvent, ^a{End}
+            return
+        }
+
+        isDONE := !!RegExMatch(s, "^DONE")
+        if (isDONE ) {
+            so := RegExReplace(s, "^DONE ?", "")
+            SendEvent, {Text}%so%
+            SendEvent, ^a{End}
+            return
+        }
+        ; is nothing
+        so := RegExReplace(s, "^ ?", "TODO ")
         SendEvent, {Text}%so%
         SendEvent, ^a{End}
         return
     }
 
-    isDOING := !!RegExMatch(s, "^DOING")
-    if (isDOING ) {
-        so := RegExReplace(s, "^DOING ?", "DONE ")
-        SendEvent, {Text}%so%
-        SendEvent, ^a{End}
-        return
-    }
-
-    isDONE := !!RegExMatch(s, "^DONE")
-    if (isDONE ) {
-        so := RegExReplace(s, "^DONE ?", "")
-        SendEvent, {Text}%so%
-        SendEvent, ^a{End}
-        return
-    }
-    ; is nothing
-    so := RegExReplace(s, "^ ?", "TODO ")
-    SendEvent, {Text}%so%
-    SendEvent, ^a{End}
-    return
-}
-
-把笔记时间显式填充到标题(){
-    backup := ClipboardAll
-    Clipboard:=""
-    ; copy date then focus to title
-    SetKeyDelay, 0, 0
-    SendEvent ^+t^{Down}^c{Left}^{Up}
-    ClipWait, 2
-    if(ErrorLevel) {
+    把笔记时间显式填充到标题(){
+        backup := ClipboardAll
+        Clipboard:=""
+        ; copy date then focus to title
+        SetKeyDelay, 0, 0
+        SendEvent ^+t^{Down}^c{Left}^{Up}
+        ClipWait, 2
+        if(ErrorLevel) {
+            Clipboard := backup
+            return
+        }
+        dateString := Trim(Clipboard, "`r`n")
         Clipboard := backup
-        return
-    }
-    dateString := Trim(Clipboard, "`r`n")
-    Clipboard := backup
-    calcCode =
+        calcCode =
     (
     '('
     + new Date(+new Date(
@@ -393,173 +408,172 @@ OneNote2019_ToggleTODO(){
     .replace(/-/g, '')
     + ')'
     )
-    result := Func("SafetyEvalJavascript").Call(calcCode)
-    SendEvent, {Text}%result%
-}
+        result := Func("SafetyEvalJavascript").Call(calcCode)
+        SendEvent, {Text}%result%
+    }
 
-; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
-链接安全警告自动确认(){
-    waitWindow := "ahk_class NUIDialog ahk_exe ONENOTE.EXE"
-    WinWaitActive %waitWindow%, , 1
-    if (!ErrorLevel)
-        SendEvent !y
-}
+    ; 按回车后1秒内，如果出现了安全警告窗口，则自动按 Yes
+    链接安全警告自动确认(){
+        waitWindow := "ahk_class NUIDialog ahk_exe ONENOTE.EXE"
+        WinWaitActive %waitWindow%, , 1
+        if (!ErrorLevel)
+            SendEvent !y
+    }
 
-; 自动2维化公式
-自动2维化公式(){
-    SendEvent !=
-    Sleep, 200
-    altSend("jp")
-}
+    ; 自动2维化公式
+    自动2维化公式(){
+        SendEvent !=
+        Sleep, 200
+        altSend("jp")
+    }
 
-; 纯文本复制
-纯文本复制(){
-    Clipboard =
-    SendEvent ^c
-    ClipWait, 1
-    Clipboard := Clipboard
-}
+    ; 纯文本复制
+    纯文本复制(){
+        Clipboard =
+        SendEvent ^c
+        ClipWait, 1
+        Clipboard := Clipboard
+    }
 
-; 纯文本粘贴
-纯文本粘贴(){
-    Clipboard := Clipboard
-    SendEvent ^v
-}
+    ; 纯文本粘贴
+    纯文本粘贴(){
+        Clipboard := Clipboard
+        SendEvent ^v
+    }
 
-; 复制段落链接（并清洗成 onenote 链接（段落链接的url不管用。。
-段落链接复制(){
-    Clipboard := ""
-    SendEvent {AppsKey}pp{Enter}
-    ClipWait, 1
-    if(ErrorLevel)
-        Return
-    Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
-}
+    ; 复制段落链接（并清洗成 onenote 链接（段落链接的url不管用。。
+    段落链接复制(){
+        Clipboard := ""
+        SendEvent {AppsKey}pp{Enter}
+        ClipWait, 1
+        if(ErrorLevel)
+            Return
+        Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
+    }
 
-; 复制页面链接（并清洗成 onenote 链接
-页面链接复制(){
-    Clipboard := ""
-    SendEvent ^+a{AppsKey}lp
-    ClipWait, 1
-    if (ErrorLevel)
-        Return
-    Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
-}
-精确查找笔记(){
-    SendEvent ^e{Text}""
-    SendEvent {Left}
-}
+    ; 复制页面链接（并清洗成 onenote 链接
+    页面链接复制(){
+        Clipboard := ""
+        SendEvent ^+a{AppsKey}lp
+        ClipWait, 1
+        if (ErrorLevel)
+            Return
+        Clipboard := Func("SafetyEvalJavascript").Call("``" Clipboard "``.match(/^(onenote:.*)$/mi)?.[0]||""""")
+    }
+    精确查找笔记(){
+        SendEvent ^e{Text}""
+        SendEvent {Left}
+    }
 
-将当前关键词搜索到的相关页面链接在下方展开(){
-    Clipboard := ""
-    SendEvent ^a^c
-    ClipWait, 1
-    if(ErrorLevel) {
-        TrayTip, % t("错误"), % t("OneNote 内容未能复制成功，5秒内按 Ctrl + C 可手动复制并尝试继续流程")
-        ClipWait, 5
+    将当前关键词搜索到的相关页面链接在下方展开(){
+        Clipboard := ""
+        SendEvent ^a^c
+        ClipWait, 1
         if(ErrorLevel) {
-            TrayTip, % t("错误"), % t("OneNote 内容未能复制成功")
+            TrayTip, % t("错误"), % t("OneNote 内容未能复制成功，5秒内按 Ctrl + C 可手动复制并尝试继续流程")
+            ClipWait, 5
+            if(ErrorLevel) {
+                TrayTip, % t("错误"), % t("OneNote 内容未能复制成功")
+                return
+            }
+        }
+        SendEvent {Right}{Enter}{Tab}^k
+        WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
+        ; 输入搜索内容
+        ControlSetText, RICHEDIT60W1, %Clipboard%, A
+        ToolTip, 放开Alt键继续
+        KeyWait, Alt, D T60 ; wait for 60 seconds
+        if(ErrorLevel) {
+            ToolTip
+            TrayTip, % t("错误"), % t("超时未按下Alt键")
             return
         }
-    }
-    SendEvent {Right}{Enter}{Tab}^k
-    WinWaitActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
-    ; 输入搜索内容
-    ControlSetText, RICHEDIT60W1, %Clipboard%, A
-    ToolTip, 放开Alt键继续
-    KeyWait, Alt, D T60 ; wait for 60 seconds
-    if(ErrorLevel) {
+        KeyWait, Alt, T60 ; wait for 60 seconds
+        if(ErrorLevel) {
+            ToolTip
+            TrayTip, % t("错误"), % t("超时未放开Alt键")
+            return
+        }
         ToolTip
-        TrayTip, % t("错误"), % t("超时未按下Alt键")
-        return
+        条数 := 笔记条目搜索结果复制整理向页面粘贴条数()
+        if(条数 == 1) {
+            SendEvent +{Tab}
+            SendEvent {Home}{Left}^a{Delete}
+        }
     }
-    KeyWait, Alt, T60 ; wait for 60 seconds
-    if(ErrorLevel) {
-        ToolTip
-        TrayTip, % t("错误"), % t("超时未放开Alt键")
-        return
+    OneNote2019NoteSplit()
+    {
+        SendEvent {Home}[[{End}]] ; 将内容做成单独链接
     }
-    ToolTip
-    条数 := 笔记条目搜索结果复制整理向页面粘贴条数()
-    if(条数 == 1) {
-        SendEvent +{Tab}
-        SendEvent {Home}{Left}^a{Delete}
-    }
-}
-OneNote2019NoteSplit()
-{
-    SendEvent {Home}[[{End}]] ; 将内容做成单独链接
-}
-$!+k:: OneNote2019NoteSplit()
-$!1:: SendEvent !+1 ; 大纲折叠展开到1
-$!2:: SendEvent !+2 ; 大纲折叠展开到2
-$!3:: SendEvent !+3 ; 大纲折叠展开到3
-$!4:: SendEvent !+4 ; 大纲折叠展开到4
-$!5:: SendEvent !+5 ; 大纲折叠展开到5
-$!6:: SendEvent !+6 ; 大纲折叠展开到6
-$!7:: SendEvent !+7 ; 大纲折叠展开到7
-$!`:: altSendEx("dp", "{Down 2}{Left}")      ; 自定义颜色
-$!+`:: altSend("dc")                         ; 自定义颜色
-$!v:: SendEvent !h!i                         ; 自定义颜色
-$![:: altSendEx("w", "{Down}{Tab 3}{Enter}") ; 调整缩放+
-$!]:: altSendEx("w", "{Down}{Tab 4}{Enter}") ; 调整缩放-
-$!\:: altSendEx("w", "{Down}{Tab 5}{Enter}") ; 调整缩放复原
+    $!+k:: OneNote2019NoteSplit()
+    $!1:: SendEvent !+1 ; 大纲折叠展开到1
+    $!2:: SendEvent !+2 ; 大纲折叠展开到2
+    $!3:: SendEvent !+3 ; 大纲折叠展开到3
+    $!4:: SendEvent !+4 ; 大纲折叠展开到4
+    $!5:: SendEvent !+5 ; 大纲折叠展开到5
+    $!6:: SendEvent !+6 ; 大纲折叠展开到6
+    $!7:: SendEvent !+7 ; 大纲折叠展开到7
+    $!`:: altSendEx("dp", "{Down 2}{Left}")      ; 自定义颜色
+    $!+`:: altSend("dc")                         ; 自定义颜色
+    $!v:: SendEvent !h!i                         ; 自定义颜色
+    $![:: altSendEx("w", "{Down}{Tab 3}{Enter}") ; 调整缩放+
+    $!]:: altSendEx("w", "{Down}{Tab 4}{Enter}") ; 调整缩放-
+    $!\:: altSendEx("w", "{Down}{Tab 5}{Enter}") ; 调整缩放复原
 
-; 调整字体
-$^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
-$^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
-$^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
-
+    ; 调整字体
+    $^[:: altSendEx("h", "{Down}{Tab 1}{Up 2}{Enter}")
+    $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
+    $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
 #if OneNote2019换笔界面()
 
-OneNote2019换笔界面(){
-    return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
-}
-$1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
-$2:: SendEvent {Right 1}{Enter}           ; 向第1行第2支笔切换
-$3:: SendEvent {Right 2}{Enter}           ; 向第1行第3支笔切换
-$4:: SendEvent {Right 3}{Enter}           ; 向第1行第4支笔切换
-$5:: SendEvent {Right 4}{Enter}           ; 向第1行第5支笔切换
-$6:: SendEvent {Right 5}{Enter}           ; 向第1行第6支笔切换
-$7:: SendEvent {Right 6}{Enter}           ; 向第1行第7支笔切换
-$+1:: SendEvent {Down 1}{Right 0}{Enter}  ; 向第2行第1支笔切换
-$+2:: SendEvent {Down 1}{Right 1}{Enter}  ; 向第2行第2支笔切换
-$+3:: SendEvent {Down 1}{Right 2}{Enter}  ; 向第2行第3支笔切换
-$+4:: SendEvent {Down 1}{Right 3}{Enter}  ; 向第2行第4支笔切换
-$+5:: SendEvent {Down 1}{Right 4}{Enter}  ; 向第2行第5支笔切换
-$+6:: SendEvent {Down 1}{Right 5}{Enter}  ; 向第2行第6支笔切换
-$+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
+    OneNote2019换笔界面(){
+        return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
+    }
+    $1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
+    $2:: SendEvent {Right 1}{Enter}           ; 向第1行第2支笔切换
+    $3:: SendEvent {Right 2}{Enter}           ; 向第1行第3支笔切换
+    $4:: SendEvent {Right 3}{Enter}           ; 向第1行第4支笔切换
+    $5:: SendEvent {Right 4}{Enter}           ; 向第1行第5支笔切换
+    $6:: SendEvent {Right 5}{Enter}           ; 向第1行第6支笔切换
+    $7:: SendEvent {Right 6}{Enter}           ; 向第1行第7支笔切换
+    $+1:: SendEvent {Down 1}{Right 0}{Enter}  ; 向第2行第1支笔切换
+    $+2:: SendEvent {Down 1}{Right 1}{Enter}  ; 向第2行第2支笔切换
+    $+3:: SendEvent {Down 1}{Right 2}{Enter}  ; 向第2行第3支笔切换
+    $+4:: SendEvent {Down 1}{Right 3}{Enter}  ; 向第2行第4支笔切换
+    $+5:: SendEvent {Down 1}{Right 4}{Enter}  ; 向第2行第5支笔切换
+    $+6:: SendEvent {Down 1}{Right 5}{Enter}  ; 向第2行第6支笔切换
+    $+7:: Send {Down 1}{Right 6}{Enter}       ; 向第2行第7支笔切换
 
 #if 名为剪贴板的OneNote窗口存在()
 
-名为剪贴板的OneNote窗口存在(){
-    return WinExist("剪贴板.*|Clipboard ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
-}
-
-^c:: OneNote剪贴板收集()
-
-OneNote剪贴板收集(){
-    Clipboard := ""
-    SendEvent, ^c
-    hwndOneNote := 名为剪贴板的OneNote窗口存在()
-    if (!hwndOneNote)
-        Return
-    ; ; 通常在弹起时触发
-    ClipWait, 2, 1 ; 2 secons
-    if(ErrorLevel) {
-        TrayTip, error, % t("复制失败")
-        Return
+    名为剪贴板的OneNote窗口存在(){
+        return WinExist("剪贴板.*|Clipboard ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
     }
-    WinGet, current, ID, A
-    BlockInput, on
-    WinActivate, ahk_id %hwndOneNote%
-    WinSet, AlwaysOnTop, On, ahk_id %hwndOneNote%
-    FormatTime, timeString, , (yyyyMMdd.HHmmss)
-    SendEvent, ^{End}^{Enter}
-    SendEvent, {text}%timeString%
-    SendEvent, {Tab}^v
-    Sleep 128
-    WinActivate, ahk_id %current%
-    BlockInput, off
-}
+
+    ^c:: OneNote剪贴板收集()
+
+    OneNote剪贴板收集(){
+        Clipboard := ""
+        SendEvent, ^c
+        hwndOneNote := 名为剪贴板的OneNote窗口存在()
+        if (!hwndOneNote)
+            Return
+        ; ; 通常在弹起时触发
+        ClipWait, 2, 1 ; 2 secons
+        if(ErrorLevel) {
+            TrayTip, error, % t("复制失败")
+            Return
+        }
+        WinGet, current, ID, A
+        BlockInput, on
+        WinActivate, ahk_id %hwndOneNote%
+        WinSet, AlwaysOnTop, On, ahk_id %hwndOneNote%
+        FormatTime, timeString, , (yyyyMMdd.HHmmss)
+        SendEvent, ^{End}^{Enter}
+        SendEvent, {text}%timeString%
+        SendEvent, {Tab}^v
+        Sleep 128
+        WinActivate, ahk_id %current%
+        BlockInput, off
+    }
