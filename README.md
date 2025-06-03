@@ -546,7 +546,7 @@ The core philosophy of CapsLockX is to simplify system operation logic, improve 
 6. [ ] Auto-sync of configuration (though throwing it in OneDrive is usually enough)
 7. [ ] A user-friendly options configuration UI (though changing ini isn't that hard)
 8. [ ] Execute external code (Python, Nodejs, external AHK, Bash, …) (although running a script isn't much trouble)
-
+9. [ ] Can be install with "irm https://get.capslockx.com | iex"
 If you have any ideas or suggestions, please propose them here:
 [Issues · snomiao/CapslockX](https://github.com/snolab/CapsLockX/issues)
 
