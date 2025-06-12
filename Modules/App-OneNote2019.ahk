@@ -129,6 +129,24 @@ OneNote2019搜索启动() {
 
     Return
 }
+OneNote2019日记启动() {
+    FormatTime, TimeString, , yyyyMMdd
+    TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    WinActivate %TodayNoteMatcher%
+    if (WinActive(TodayNoteMatcher)) {
+        return true
+    }
+    OneNote快速笔记窗口启动()
+    
+    SendEvent ^e{Text}""
+    SendEvent {Left}
+    OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
+    SendEvent +{Left 10}
+    Sleep, 200
+    SendEvent {Down}{Up 2}{End}+{Left}+{Home}+{Right} ; 定位到搜索框
+    
+    Return
+}
 
 笔记条目搜索结果复制整理向页面粘贴条数(){
     OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
@@ -226,13 +244,13 @@ OneNote2019搜索启动() {
     return k
 }
 
-; 注意win11下OneNote启动热键变成了Win+Alt+N，而Win+N的新功能为打开消息中心
+; 注意win11下OneNote快速笔记热键变成了Win+Alt+N，而Win+N的新功能为打开消息中心
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
 #!n:: OneNote2019主页启动()
 ; 打开 OneNote 并精确匹配查找搜索笔记j
-#+n:: OneNote2019搜索启动()
+#+n:: OneNote2019日记启动() ; OneNote2019搜索启动()
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
