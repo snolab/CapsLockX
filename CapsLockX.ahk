@@ -140,7 +140,7 @@ Return
     {
         ; Do not Recurse into subfolders. 子文件夹由模块自己去include去加载
         ModuleFile := A_LoopFileName "/" A_LoopFileName ".ahk"
-        MsgBox, % CLX_ModuleDir "/" ModuleFile
+        ; MsgBox, % CLX_ModuleDir "/" ModuleFile
         if (FileExist(CLX_ModuleDir "/" ModuleFile)) {
             ModuleFiles .= ModuleFile "`n"
             ; MsgBox, ModuleFile %ModuleFile%
