@@ -126,26 +126,53 @@ OneNote2019搜索启动() {
     Sleep, 200
     SendEvent {Down}{Up 2}{End}+{Left}+{Home}+{Right} ; 定位到搜索框
 
-
     Return
 }
 OneNote2019日记启动() {
     FormatTime, TimeString, , yyyyMMdd
     TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    OneNoteMatcher := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinActivate %TodayNoteMatcher%
     if (WinActive(TodayNoteMatcher)) {
         return true
     }
+    
+    ; deactivate if the OneNote window is active
+    if (WinActive(OneNoteMatcher)) {
+        ; activate the desktop to deactivate the OneNote window
+        WinActivate, ahk_class Shell_TrayWnd
+        WinWaitNotActive, %OneNoteMatcher%, , 5
+    }
+    
     OneNote快速笔记窗口启动()
+
+    WinWaitActive %OneNoteMatcher%, , 5
+    if (ErrorLevel) {
+        return false
+    }
+
+    ; switch to diary tab
+    SendEvent ^{Tab}!{End}
+
+    WinWaitActive, %TodayNoteMatcher%, , 8
+    if (ErrorLevel) {
+        ; if not today note, then create a new one
+        if (!WinActive(OneNoteMatcher)) {
+            return false
+        }
     
-    SendEvent ^e{Text}""
-    SendEvent {Left}
-    OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
-    SendEvent +{Left 10}
-    Sleep, 200
-    SendEvent {Down}{Up 2}{End}+{Left}+{Home}+{Right} ; 定位到搜索框
+        SendEvent ^n
+        Sleep, 300
+        把笔记时间显式填充到标题()
     
-    Return
+        WinWaitActive %TodayNoteMatcher%, , 5
+        if (ErrorLevel) {
+            ; fail to create new note
+            return false
+        }
+        return true
+    }
+    Return true
 }
 
 笔记条目搜索结果复制整理向页面粘贴条数(){
