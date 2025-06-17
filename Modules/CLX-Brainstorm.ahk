@@ -3,6 +3,7 @@
 #Include ./Modules/Lib/AHK-GDIp-Library-Compilation/ahk-v1-1/Gdip_All.ahk ; https://github.com/marius-sucan/AHK-GDIp-Library-Compilation
 
 global brainstorming := false
+global brainstormed := false
 global brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
 global brainstormApiKey := CLX_Config("BrainStorm", "Key", "FREE", t("CLX BrainStorm 的功能激活碼，填FREE使用免費版本"))
 global brainstormLastQuestion := CLX_Config("BrainStorm", "LastQuestion", "", t("Brainstorm 上次提问"))
@@ -28,15 +29,28 @@ return
     !b:: brainstorm_prompt("no-prompt")
     +!b:: brainstorm_quick_capture("no-prompt")
     ^b:: brainstorm_show()
-; ^b:: brainstorm_set_key()
+    ; ^b:: brainstorm_set_key()
+
+    m:: brainstorm_quick_capture("no-prompt")
 
 #if brainstorming
 
     esc:: stop_brainstorm()
     `:: stop_brainstorm()
 
+#if !brainstorming && brainstormed
+
+    esc:: stop_brainstormed()
+    `:: stop_brainstormed()
+
 #if
 
+brainstorm_Tooltip(Text){
+    global brainstormed
+    TOOLTIP_ID_BRAINSTORM := 20
+    ToolTip, % Text, , , TOOLTIP_ID_BRAINSTORM
+    brainstormed := true
+}
 brainstorm_show()
 {
     static BrainStormSite
@@ -55,6 +69,12 @@ stop_brainstorm()
     global brainstorming
     brainstorming := false
     ; traytip brainstorming stopped
+}
+stop_brainstormed()
+{
+    global brainstormed
+    brainstorm_Tooltip("")
+    brainstormed := false
 }
 brainstorm_set_key()
 {
@@ -109,7 +129,7 @@ brainstorm_capture_window()
     ; Clipboard := originalClipboard
     return { question: content, imagePath: imagePath != "" ? imagePath : "" }
 }
-brainstorm_quick_capture(skip_prompt:=false,defaultPrompt:="")
+brainstorm_quick_capture(skip_prompt:=false, defaultPrompt:="")
 {
     ; heat up
     global brainstorm_origin
@@ -155,13 +175,17 @@ brainstorm_quick_capture(skip_prompt:=false,defaultPrompt:="")
 
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
-    ToolTip, % t("Going to Ask AI")
+    brainstorm_Tooltip( t("Going to Ask AI"))
 
     global brainstorming
     brainstorming := true
     brainstorm_questionPost(msg, imagePath)
-    ToolTip, % t("Asking AI")
+    brainstorm_Tooltip( t("Asking AI"))
+    global brainstormed
+    brainstormed := true
+
 }
+
 brainstorm_prompt(skip_prompt:=false, defaultPrompt:="")
 {
     ; heat up
@@ -208,17 +232,21 @@ brainstorm_prompt(skip_prompt:=false, defaultPrompt:="")
 
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
-    ToolTip, % t("Going to Ask AI")
+    brainstorm_Tooltip( t("Going to Ask AI") )
+    global brainstormed
+    brainstormed := true
 
     global brainstorming
     brainstorming := true
     brainstorm_questionPost(msg, imagePath)
-    ToolTip, % t("Asking AI")
+    brainstorm_Tooltip( t("Asking AI") )
+
+    global brainstormed
+    brainstormed := true
 }
 BS_heatUp_onReadyStateChange(xhr){
     xhr.Close()
-    ToolTip, % t("Ready to Ask AI")
-
+    brainstorm_Tooltip( t("Ready to Ask AI") )
     ; xhr heatup done
 }
 
@@ -252,7 +280,7 @@ BS_questionPost_onReadyStateChange(xhr)
     if (!brainstorming)
         return
     if (xhr.readyState != 4){
-        ; ToolTip, % xhr.readyState
+        ; brainstorm_Tooltip(  "Ready " . xhr.readyState)
         return
     }
     if (xhr.status != 200) {
@@ -267,17 +295,19 @@ BS_questionPost_onReadyStateChange(xhr)
             return
         }
         ; ignore unknown error
-        Tooltip, % xhr.status . " " xhr.responseText . " " . t("Unknown Error")
+        ; brainstorm_Tooltip( xhr.status . " " xhr.responseText . " " . t("Unknown Error") )
         return
     }
     global questionId := xhr.responseText
     if (!questionId) {
         ; ignore error
-        ToolTip, % t("Fail to ask ai")
+        brainstorm_Tooltip( t("Fail to ask ai"))
         return
     }
 
-    ToolTip, % t("Waiting Answer...")
+    brainstorm_Tooltip( t("Waiting Answer...") )
+    global brainstormed
+    brainstormed := true
     ; tooltip askAiSucc with question %questionId%
 
     global brainstormStagedAnswer
@@ -298,9 +328,13 @@ tokenAppend(questionId)
 }
 tokenAppend_onReadyStateChange(xhra)
 {
+    global brainstormStagedAnswer
     global brainstorming
-    if (!brainstorming)
+    if (!brainstorming){
+        Clipboard := brainstormStagedAnswer
+        brainstorm_Tooltip( brainstormStagedAnswer . "`n`n" . t("Chat streaming stopped, Copied to Clipboard, Press [ESC] to hide.") )
         return
+    }
     global questionId
     ; global brainstorm_response
     if (xhra.readyState != 4) {
@@ -311,7 +345,9 @@ tokenAppend_onReadyStateChange(xhra)
         ; ToolTip
         ; TrayTip AI Response copied, %brainstorm_response%
         ; Clipboard:=brainstorm_response
-
+        brainstorming := false
+        Clipboard := brainstormStagedAnswer
+        brainstorm_Tooltip( brainstormStagedAnswer . "`n`n" . t("Copied to Clipboard, Press [ESC] to hide.") )
         return
     }
 
@@ -324,10 +360,9 @@ tokenAppend_onReadyStateChange(xhra)
     }
     ; brainstorm_response .= token
     ; ToolTip response %brainstorm_response%%brainstorm_response%
-    global brainstormStagedAnswer
     brainstormStagedAnswer .= token
 
-    ToolTip, % brainstormStagedAnswer . "`n`n" . t("Copied, Press [CLX+Space] to hide.")
+    brainstorm_Tooltip( brainstormStagedAnswer . "`n`n" . t("Press [ESC] to stop.") )
 
     Clipboard := brainstormStagedAnswer
 

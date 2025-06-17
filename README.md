@@ -2,7 +2,7 @@
 
 CapsLockX is a modular hotkey script engine based on AutoHotkey. It allows you to operate your computer efficiently like a hacker in a movie without ever taking your hands off the keyboard. It comes packed with functions that are intuitive and easy to use: enhanced editing, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and many more multifunctional features are there for you to personally customize.
 
-Here is a tiny online demo to show you the feeling how WASD Mouse + HJKL Keyboard works - [Try CapsLockX]( https://snomiao.github.io/capslockx.js/ )
+Here is a tiny online demo to show you the feeling how WASD Mouse + HJKL Keyboard works - [Try CapsLockX](https://snomiao.github.io/capslockx.js/)
 
 Docs in Languages:
 **[English Docs (ChatGPT Translated)](https://capslockx.snomiao.com/)**
@@ -236,45 +236,61 @@ TODO Calculation of information quantity increase with chording
 
 If you want to learn how to develop plugins for CapsLockX, please:
 
-1. Open `Modules/@Help.ahk`, where you can find the basic format of a CapsLockX plugin.
-2. Make a copy of it and rename it to your own plugin name.
-3. Change its original features to the features you need, and your plugin development is done!
+1. Open `Modules/@Help.ahk`, where you can learn about the basic format of a CapsLockX plugin
+2. Make a copy of it and name it as your own plugin
+3. Change its original functions to the ones you need, and your plugin development is complete!
 
-#### Below are the functions of this module
+#### Features of this module are as follows
 
-| Applies to | Hotkey                 | Function                        |
-| ---------- | ---------------------- | ------------------------------- |
-| Global     | CapsLockX + /          | Temporarily show hotkey tips    |
-| Global     | CapsLockX + Alt + /    | 🔗 Open the full documentation page for CapsLockX |
-| Global     | CapsLockX + Shift + /  | 🕷 Submit
+| Applied to | Key                | Function                                      |
+| ---------- | ------------------ | --------------------------------------------- |
+| Global     | CapsLockX + /      | Temporarily display hotkey hints              |
+| Global     | CapsLockX + Alt + /| 🔗 Open the complete CapsLockX documentation page |
+| Global     | CapsLockX + Shift + / | 🕷 Submit bugs, suggestions, etc.             |
 
 <!-- MODULE_FILE: App-AnkiEnhanced.ahk-->
 
-### Help Module
+### Anki Enhancement Module
 
-If you want to learn how to develop plugins for CapsLockX, please:
+Enhanced Anki Operations
 
-1. Open `Modules/@Help.ahk`, where you can find the basic format of a CapsLockX plugin.
-2. Make a copy of it and rename it to your own plugin name.
-3. Change its original features to the features you need, and your plugin development is done!
+#### Common Features
 
-#### Below are the functions of this module
+1. Use WASD or HJKL to quickly and continuously (and with the ability to undo) switch flashcards.
+2. Create a word list in Excel with 2 columns, select all and copy, then press Alt + i in Anki to quickly import the word list.
+3. Simplify the 4 options to 3 direction keys: left-easy, down-medium, right-hard, up-undo.
+4. Can be used with a game controller by configuring the joystick to map to direction keys using XPadder. For effects, see bilibili [Chuunibyou Xue Xing's Word Memorization with a Game Controller!](https://www.bilibili.com/video/av8456838/)
 
-| Applies to | Hotkey                 | Function                        |
-| ---------- | ---------------------- | ------------------------------- |
-| Global     | CapsLockX + /          | Temporarily show hotkey tips    |
-| Global     | CapsLockX + Alt + /    | 🔗 Open the full documentation page for CapsLockX |
-| Global     | CapsLockX + Shift + /  | 🕷 Submit
+#### Instructions
+
+| Mode                  | Anki Enhancement Module | Description                                                   |
+| --------------------- | :---------------------: | ------------------------------------------------------------ |
+| In Anki-Learning Interface | `w or k or ↑`
 
 <!-- MODULE_FILE: App-OneNote2019.ahk-->
 
-### Enhancements for OneNote 2016 - 2019
+### OneNote 2016 - 2019 Enhancement
 
-Enhance keyboard operations for OneNote 2016 - 2019, conveniently use the keyboard to: change pens, create links, organize pages, adjust views...
+Enhance keyboard operations for OneNote 2016 - 2019 simply, conveniently using the keyboard to: change pens, create links, organize pages, adjust views...
 
-#### Snowstar Cat's Frequently Used Functions
+#### Common Features by Snow Star
 
-1. When making a journal entry, first add a date tag to the note's title with `Alt + T` (for future search), then use `Win + Shift + N` globally to search for all notes with today's tag in OneNote, conveniently retrieving your today's: romance journal, training log, daily
+1. When logging, first add a date tag to the note title on the note page with `Alt + T` (for future search), then globally `Win + Shift + N` to search all notes with today's tag in OneNote, for easy retrieval of today's: love diary, training log, daily book list, project daily report... In short, writing diaries in OneNote is very convenient, just one press, no need to search XD
+2. Select a word and press `Alt + K`, which will list links to all related pages below this word, to make an index directory and weave your OneNote into a web.
+3. Create a new note and rename it "My Clipboard," then when copying text or images, CLX will automatically append it to this note for easy gathering of materials or excerpting articles.
+4. Alt + 1234567 level folding, easily switch between different levels of abstraction in thinking.
+
+#### Key Distribution Design (under development)
+
+| Key Description          | Function                    | Note       |
+| ------------------------ | ---------------------------- | ---------- |
+| `All OneNote Built-in Hotkeys` | Original function          |            |
+| `Press Alt then something else` | Trigger OneNote original menu function |            |
+| `Alt + 1234567`          | Outline folding to levels 1-7|            |
+| `Alt + qwe asd r`        | Tools, change pen, view      |            |
+| `Alt + f`                | Search tags                  |            |
+| `Alt + -=`               | Formula-related              |            |
+| `Alt + m`                |
 
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
 
@@ -282,172 +298,230 @@ Enhance keyboard operations for OneNote 2016 - 2019, conveniently use the keyboa
 
 #### Usage
 
-| Applied to | Key Combination | Description              |
-| ---------- | :-------------: | ------------------------ |
-| Global     | Win + Alt + H   | Start/Switch iFlytek Voice Input |
+| Applied To |     Key Combo     | Function Description    |
+| ---------- | :---------------: | ----------------------- |
+| Global     | Win + Alt + H     | Launch/Switch iFlytek Voice Input |
 
-#### Note
+#### Notes
 
-1. If iFlytek Voice is not installed, it will automatically prompt to guide the download and installation.
+1. If iFlytek Voice is not installed, it will automatically prompt whether to guide for download and installation.
 
-#### The effect is as shown in the image below
+#### Effect shown in the image below
 
-![App-iFlytek Voice Input Method Floating Window Demo.gif](./docs/media/App-iFlytek Voice Input Method Floating Window Demo.gif)
+![App-iFlytek Voice Input Method Floating Window Demo.gif](./docs/media/App-讯飞语音输入法悬浮窗演示.gif)
 
 <!-- MODULE_FILE: CLX-Brainstorm.ahk-->
 
 ### CLX - Brainstorm Cerebral Storm
 
-At any time, in any input box, press the `CLX+b` key to start using AI-assisted input.
+Anytime, in any input box, press `CLX+b` to start using AI-assisted input.
 
-#### Key Distribution (Under Development)
+#### Key Distribution (In Development)
 
-| Key Description  | Function                                                | Note |
-| ---------------- | ------------------------------------------------------- | ---- |
-| CLX + b          | Automatically copies the current selected content, input instructions, let AI assist your input |      |
-| CLX + Alt + b    | Configure activation code (currently only a free plan, may add enhanced features in the future) |      |
-| CLX + Shift + b  | View usage quota                                        |      |
+| Key Description  | Function                                              | Notes |
+| ---------------- | ----------------------------------------------------- | ----- |
+| CLX + b          | Automatically copies the currently selected content, enters commands, allowing AI to assist your input |       |
+| CLX + Alt + b    | Configure activation code (currently only a free plan, more features may be added in the future) |       |
+| CLX + Shift + b  | Check usage quota                                     |       |
 
 #### Protips:
 
 ##### Organize Meeting Notes Anytime
 
-1. In any input box, use Win+H to bring up voice input, then speak the text you want, don't worry about the accuracy of the voice input, just say the general idea,
-2. Then select all and press `CLX+b`, input `list the key points and tasks`, and you will see AI automatically organizing the key points and tasks for you.
+1. In any input box, use Win+H to bring up voice input, then say what you want to type. Don't worry about the accuracy of the voice input, just convey the general idea.
+2. Then select all, press `CLX+b`, and input `List key points and tasks`, and AI will automatically help you organize the key points and tasks.
 
 ##### Translate Any Language to Any Language Anytime
 
 1. In any input box, select the text you want to translate
-2. Then select all and press `CLX+b`, `to chinese:` AI automatically inputs into Chinese for you.
+2. Then select all, press `CLX+b`, and enter `to chinese:` and AI will automatically help you translate into Chinese.
+
+<!-- MODULE_FILE: CLX-Brainstorm.ahk-->
+
+### CLX - Brainstorm Cerebral Storm
+
+Anytime, in any input box, press `CLX+b` to start using AI-assisted input.
+
+#### Key Distribution (In Development)
+
+| Key Description  | Function                                              | Notes |
+| ---------------- | ----------------------------------------------------- | ----- |
+| CLX + b          | Automatically copies the currently selected content, enters commands, allowing AI to assist your input |       |
+| CLX + Alt + b    | Configure activation code (currently only a free plan, more features may be added in the future) |       |
+| CLX + Shift + b  | Check usage quota                                     |       |
+
+#### Protips:
+
+##### Organize Meeting Notes Anytime
+
+1. In any input box, use Win+H to bring up voice input, then say what you want to type. Don't worry about the accuracy of the voice input, just convey the general idea.
+2. Then select all, press `CLX+b`, and input `List key points and tasks`, and AI will automatically help you organize the key points and tasks.
+
+##### Translate Any Language to Any Language Anytime
+
+1. In any input box, select the text you want to translate
+2. Then select all, press `CLX+b`, and enter `to chinese:` and AI will automatically help you translate into Chinese.
 
 <!-- MODULE_FILE: CLX-Edit.ahk-->
 
-### Enhanced Editing Plugin (TG YUIO HJKL) 🌟
+### Edit Enhancement Plugin (TG YUIO HJKL) 🌟
 
-Is there anything better than Vim's HJKL for moving the cursor?
-Absolutely a must-have!
-That's the smooth editing experience with acceleration-powered HJKL! Ever wanted to try a high-end maneuver where your cursor drifts around a corner like it's channeling water? Install this!
+Is there anything better in this world than moving the cursor with Vim mode's HJKL? There must be! That's the acceleration-enhanced smooth editing experience with HJKL! Want to try making your cursor perform high-end moves around a gutter? Install it!
 
 ![EditorCursorMovement.gif](./docs/media/EditorCursorMovement.gif)
 
-| Scope         | Edit Module               | Description                        |
-| ------------- | ------------------------- | ---------------------------------- |
-| Global(Basic) | `CapsLockX + h j k l`     |
+| Scope       | Edit Module          | Description                      |
+| ----------- | --------------------- | -------------------------------- |
+| Global(Basic) | `CapsLockX + h j k l` | Arrow keys for up, down, left, right |
+| Global(Basic) | `CapsLockX + y o`     | Home End                         |
+| Global(Basic) | `CapsLockX + u i`     | PageUp PageDown                  |
+| Global(Basic) | `CapsLockX + [ ]`     | Shift+Tab and Tab                |
+| Global(Basic) | `CapsLockX + g`       | Enter                            |
+| Global(Advanced) | `CapsLockX + t`     | Delete                           |
+| Global(Advanced) | `CapsLockX + hl`    | Pressing hl together selects the current word |
+| Global(Advanced) | `CapsLockX + kj`    | Pressing kj together selects the current line |
+| Global(Advanced) | `CapsLockX + h + t` | Shift then Delete: can replace Backspace in most cases |
 
 <!-- MODULE_FILE: CLX-LaptopKeyboardFix.ahk-->
 
-### Surface Notebook Function Key Expansion
+### Surface Notebook Extended Function Keys
 
-A remedy for all kinds of broken notebook keyboards
+Specially designed for all types of broken laptop keyboards
 
-1. No right Ctrl key? Combine the Menu and Right Ctrl key – the Menu can act as Ctrl, or Ctrl can act as Menu.
-2. No Pause key? Win + Alt + P can also open the system settings info.
-3. To be added
+1. No right Ctrl key? Merge Menu and right Ctrl keys, use Menu as Ctrl or Ctrl as Menu.
+2. No Pause key? Win + Alt + P can also open the system settings information.
+3. To be supplemented
 
-| Mode                | Keys                                  | Function                                          |
-| ------------------- | :------------------------------------ | ------------------------------------------------- |
-| Global              | Win + Alt + P                         | Equivalent to Win + Pause, specially for laptops |
-| Global              | Tap Right Ctrl                        | It will tap the Menu key to pop up the menu      |
-| Global              | Hold Right Menu                       | Will hold Ctrl, allowing combinations with other keys |
-| Win Key Emulation   | Hold ], press [                       | Equivalent to pressing the Win key               |
-| Win Key Emulation   | RAlt + \| is equivalent to Alt+
+| Mode             | Key                                   | Function                           |
+| ---------------- | :------------------------------------ | ---------------------------------- |
+| Global           | Win + Alt + P                         | Equivalent to Win + Pause, customized for laptops |
+| Global           | Right Ctrl pressed once               | Will press Menu to pop up the menu |
+| Global           | Hold the right Menu                   | Will hold Ctrl, can be combined with other keys |
+| After enabling Win key simulation | Hold ] and press [         | Equivalent to pressing Win key     |
+| After enabling Win key simulation | RAlt+\| Equivalent to pressing Alt+Tab but on the right hand |
 
 <!-- MODULE_FILE: CLX-MediaKeys.ahk-->
 
-### Media Keys Module
-
-| Applies to | Media Keys Module      | Description                                   |
-|------------|------------------------|-----------------------------------------------|
-| Global     | `CapsLockX + F1`       | Open: My Computer                             |
-| Global     | `CapsLockX + F2`       | Open: Calculator                              |
-| Global     | `CapsLockX + F3`       | Open: Web Browser Homepage                    |
-| Global     | `CapsLockX + F4`       | Open: Media Library (defaults to Windows Media Player) |
-| Global     | `CapsLockX + F5`       | Playback: Play/Pause                          |
-| Global
+| Applied to | Media Key Module    | Description                                         |
+| ---------- | ------------------- | --------------------------------------------------- |
+| Global     | `CapsLockX + F1`    | Open: My Computer                                   |
+| Global     | `CapsLockX + F2`    | Open: Calculator                                    |
+| Global     | `CapsLockX + F3`    | Open: Browser Home Page                             |
+| Global     | `CapsLockX + F4`    | Open: Media Library (default is Windows Media Player) |
+| Global     | `CapsLockX + F5`    | Play: Pause/Play                                    |
+| Global     | `CapsLockX + F6`    | Play: Previous Track                                |
+| Global     | `CapsLockX + F7`    | Play: Next Track                                    |
+| Global     | `CapsLockX + F8`    | Play: Stop                                          |
+| Global     | `CapsLockX + F9`    | Volume Up                                           |
+| Global     | `CapsLockX + F10`   | Volume Down                                         |
+| Global     | `CapsLockX + F11`   | Mute                                                |
 
 <!-- MODULE_FILE: CLX-Mouse.ahk-->
 
-### Mouse Simulation Plugin (WASD QERF)
+### Simulate Mouse Plugin (WASD QERF)
 
-> I've always prided myself as a keyboard warrior, which probably started from the time I hurt my finger joints while modeling. I became a heavy user of the keyboard. Using various keyboard acceleration tools, actively memorizing various shortcut keys to minimize mouse usage, and even learning vim and emacs. However, there are many times when the mouse is irreplaceable, especially in the age of graphic interfaces.
+> I have always considered myself a keyboard enthusiast, probably starting from when I injured my finger joints while making models and became a heavy keyboard user. I actively remember various shortcut keys using all sorts of keyboard acceleration tools, striving to use the mouse less, even learning vim and emacs. However, many times the mouse is irreplaceable, especially when graphical interfaces prevail.
 
-—— The above is a passage from the author of [SimClick Simulated Click](https://github.com/rywiki/simclick), a work that simulates mouse clicks with a grid subdivision approach, and can complement this project.
+—— The above is a statement by the author of [SimClick simulation click](https://github.com/rywiki/simclick), a work that simulates the mouse through grid subdivision, and can complement this project
 
-—— Recommended by [Jinwei Qin](http://rsytes.coding-pages.com/)
+—— Recommended by [Qin Jinwei](http://rsytes.coding-pages.com/)
 
 #### Features
 
 - This module uses the key area: CapsLockX + QWER ASDF
-- Use
+- Use WASD QE RF to comfortably simulate a [complete] mouse function. Trust me, once you try this feel, you will love it.
+- The pointer will automatically snap to various buttons and hyperlinks while moving. The exponential growth acceleration scrolling mechanism of the wheel makes you no longer fear super long articles and web pages.
+- The effect is as shown in the picture:
+  ![CLX-Mouse.gif](./docs/media/CLX-Mouse.gif)
+
+#### Usage is as follows
+
+| Apply to | Key                                     | Description                               |
+| -------- | --------------------------------------- | ----------------------------------------- |
+| Global   | `CapsLockX + w a s d`                   | Mouse movement (up, down, left, right)    |
+| Global   | `CapsLockX + ad`                        | Switch HJKL keys to scroll wheel mode (up, down, left, right scroll) |
+| Global   | `CapsLockX + r f`                       | Vertical scroll wheel (up, down)          |
+| Global   | `CapsLockX + Shift + r f`               | Horizontal scroll wheel (left, right)     |
+| Global   | `CapsLockX + Ctrl + Alt +
 
 <!-- MODULE_FILE: CLX-NodeEval.ahk-->
 
-### JavaScript Calculation (NodeJS installation recommended)
-
-| Applies to | Shortcut Key      | Effect                                         |
-| ---------- | ----------------- | ---------------------------------------------- |
-| Global     | `CapsLockX + -`   | Calculate the selected JavaScript expression and replace it |
-| Global     | `CapsLockX + =`   | Calculate the selected JavaScript expression and replace it |
+| Applies to | Key              | Effect                                    |
+| ---------- | ---------------- | ------------------------------------------ |
+| Global     | `CapsLockX + -`  | Evaluate selected JavaScript expression and replace |
+| Global     | `CapsLockX + =`  | Evaluate selected JavaScript expression and replace |
 
 <!-- MODULE_FILE: CLX-WindowManager.ahk-->
 
 ### Window Enhancement Plugin (CLX + 1234567890 ZXCV)
 
-#### Feature Overview
+#### Brief Overview
 
-Make good use of Windows 10’s own 10 virtual desktops with premium setup, automatic window arrangement for multi-monitors, translucent window pinning on top. (Note: Taskbar and AltTab related functions are currently incompatible with Win11, but window arrangement features work fine.)
+Utilize the luxurious configuration of Win 10's 10 built-in virtual desktops, automatic window arrangement for multiple displays, semi-transparent topmost windows. (Note: Taskbar and AltTab related features are temporarily incompatible with Win11, window arrangement functions normally.)
 
-1. Window Switching: `CapsLockX + [Shift] + Z`
-2. Window Closing: `CapsLockX + [Shift] + X`
+1. Window Switch: `CapsLockX + [Shift] + Z`
+2. Window Close: `CapsLockX + [Shift] + X`
 3. Window Arrangement: `CapsLockX + [Shift] + C`
-4. Window Pinning: `CapsLockX + [Shift] + V`
-5. Left-Hand Window Management: `WASD` for window switching and `X` to close windows in the `Alt + Tab` interface.
-6. Efficient Virtual Desktop Usage: `CapsLockX + 0123456789`
+4. Window Topmost: `CapsLockX + [Shift] + V`
+5. Left-hand window management: Use `WASD` to switch windows, `X` to close windows in the `Alt + Tab` interface.
+6. Efficient use of virtual desktops: `CapsLockX + 0123456789` to switch, add or remove virtual desktops, use `Shift` to transfer the current window.
+7. Quick detach from virtual machine and remote desktop: double-click left `Shift + Ctrl + Alt`.
+
+#### Example Images
+
+- Alt + Tab enhanced window management
+  ![02-Plugin-WindowEnhancement_Alt+Tab+WASDWindowManagement.gif](./docs/media/02-Plugin-WindowEnhancement_Alt+Tab+WASDWindowManagement.gif)
+- CapsLockX + C one-click window arrangement (This GIF was recorded with an older version and appears laggy; the newest version has optimized the API and it's smooth.)
+  ![02-Plugin-WindowEnhancement_OneClickArrangeWindows.gif](./docs/media/02-Plugin-WindowEnhancement_OneClickArrangeWindows.gif)
+
+#### Usage (Alt+Tab and CapsLockX)
+
+| Scope        | Window Enhancement Module              | Description                                    |
+| ------------ | ------------------------------------- | --------------------------------------------- |
+| Alt
 
 <!-- MODULE_FILE: QuickInput.ahk-->
 
-### Quick Input
-
-| Mode | Shortcut Input | Description                                        |
-| ---- | -------------- | -------------------------------------------------- |
-| Global | `#D#`    | Date input: `(20220217)`                           |
-| Global | `#T#`    | Time input: `(20220217.220717)`                    |
-| Global | `#DT#`   | Date and time input: `2022-02-17 22:07:33`         |
-| Global | `#NPW#`  | Random input of numeric password like: `7500331260229288`  |
-| Global | `#PW#`   | Random input of alphanumeric password like: `yyCTCNYodECTLr2h` |
-| Global | `#WPW#`  | Random input of alphanumeric password like: `FtD5BB1m5H98eY7Y` |
-| Global | `#SPW
+| Mode  | Quick Input | Description                                         |
+| ----- | ----------- | --------------------------------------------------- |
+| Global| `#D#`       | Date input: `(20220217)`                            |
+| Global| `#T#`       | Time input: `(20220217.220717)`                     |
+| Global| `#DT#`      | Date and time input: `2022-02-17 22:07:33`          |
+| Global| `#NPW#`     | Random input of numeric password like: `7500331260229289` |
+| Global| `#PW#`      | Random input of alphanumeric password like: `yyCTCNYodECTLr2h` |
+| Global| `#WPW#`     | Random input of alphanumeric password like: `FtD5BB1m5H98eY7Y` |
+| Global| `#SPW#`     | Random input of alphanumeric-symbol password like: `/})y+xK]z~>XKQ+p` |
 
 <!-- MODULE_FILE: TomatoLife.ahk-->
 
 ### Pomodoro Timer
 
-A fixed 25-minute cycle for work with rest reminder.
+25-minute fixed cycle break reminder.
 
-Use `CapsLockX + ,` to open the configuration, then change EnableScheduleTasks=1 to enable this plugin.
+Use `CapsLockX + ,` to open the configuration, then modify EnableScheduleTasks=1 to enable this plugin.
 
-- Use pomodoro time announcement (Play a work bell sound at 00 and 30 minutes, and a rest bell sound at 25 and 55 minutes of every hour) (Scheduled tasks need to be enabled first)
+- Use the Pomodoro time announcement (plays a work ringtone at 00 and 30 minutes, and plays a break ringtone at 25 and 55 minutes) (scheduling tasks need to be enabled first)
 
   ```ini
   UseTomatoLife=1
   ```
 
-- When using pomodoro announcement, automatically switch desktops (During pomodoro announcement, the rest desktop is 1, and the work desktop is 2)
+- Automatically switch desktops when using the Pomodoro time announcement (rest desktop is 1, work desktop is 2)
 
   ```ini
   UseTomatoLifeSwitchVirtualDesktop=1
   ```
 
-Note: If you only need the sound notification without the desktop switching, you might want to try this Chrome extension [Tomato Life - Chrome Web Store](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
+Note: If you only need sound without automatic desktop switching, you can try this Chrome plugin [Tomato Life - Chrome Web Store](https://chrome.google.com/webstore/detail/25min-tomato-life/kkacpbmkhbljebmpcopjlgfgbgeokbhn)
 
-Further note: This plugin has been separated into an independent project. If you like the Pomodoro Technique, you can check out xuestar's tomato-life project here: [snom
+Note: This plugin has been separated into an independent project. If you like the Pomodoro Technique, you can refer to the snow star's tomato-life project: [snomiao/tomato-life](https://github.com/snomiao/tomato-life)
 
 <!-- MODULE_FILE: TurnOffScreenWhenLock.ahk-->
 
-### Auto Screen-Off on Lock
+### Auto Screen Off When Locked
 
-When pressing Win + L to lock the screen, the screen turns off immediately. This is useful for when you're about to go to sleep and don't want the computer screen to be too glaring...
-When pressing Win + Alt + L, the screen turns off immediately. This is useful for when you're about to go to sleep and want to turn off the computer screen to avoid it being too glaring...
+Press Win + L to lock the screen and immediately turn off the display, suitable for turning off the computer screen automatically when preparing to sleep, so it won't be glaring while sleeping…
+Press Win + Alt + L to immediately turn off the display, suitable for turning off the computer screen when preparing to sleep, so it won't be glaring while sleeping…
 
 <!-- MODULE_HELP_END -->
 
@@ -472,7 +546,7 @@ The core philosophy of CapsLockX is to simplify system operation logic, improve 
 6. [ ] Auto-sync of configuration (though throwing it in OneDrive is usually enough)
 7. [ ] A user-friendly options configuration UI (though changing ini isn't that hard)
 8. [ ] Execute external code (Python, Nodejs, external AHK, Bash, …) (although running a script isn't much trouble)
-
+9. [ ] Can be install with "irm https://get.capslockx.com | iex"
 If you have any ideas or suggestions, please propose them here:
 [Issues · snomiao/CapslockX](https://github.com/snolab/CapsLockX/issues)
 
@@ -578,7 +652,7 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
    - PAYPAL: [https://paypal.me/snomiao](https://paypal.me/snomiao)
    - Alipay donation [snomiao@gmail.com （click to view QR code）](./docs/支付宝捐助.png)
    - Wise donation [snomiao@gmail.com](https://wise.com/pay/r/vPlWg3Mh4zhabUk)
-   - [CapsLockX - Open Collective]( https://opencollective.com/capslockx )
+   - [CapsLockX - Open Collective](https://opencollective.com/capslockx)
    - ETH： [0xdc2eece11a9e09c8db921989e54b30375446e49e](https://etherscan.io/address/0xdc2eece11a9e09c8db921989e54b30375446e49e)
 
 - [Development Roadmap](#发展路线-roadmap)
@@ -629,7 +703,7 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
   - [QZ——Arrary – AutoAHK](https://www.autoahk.com/archives/4133)
   - [CapsLockX - 像黑客一样操作电脑！ - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?f=28&t=88593)
 - [(10) What are some good career alternatives for a computer programmer with RSI? - Quora](https://www.quora.com/Repetitive-Strain-Injury-RSI/What-are-some-good-career-alternatives-for-a-computer-programmer-with-RSI)
-- [simple internationalization function - Scripts and Functions - AutoHotkey Community]( https://www.autohotkey.com/board/topic/50131-simple-internationalization-function/ )
+- [simple internationalization function - Scripts and Functions - AutoHotkey Community](https://www.autohotkey.com/board/topic/50131-simple-internationalization-function/)
 
 ## Footer Catalog - Table of Contents
 

@@ -131,9 +131,9 @@ FileGetFormat(file)
     ; There is no way to determine the file Encoding 100% sure, even if a file contains BOM.
     ; The result of this functions is simply a best guess assuming UTF-8 more common when BOM is missing.
     Static BOM:={      254_255: "UTF-16 BE", 255_254: "UTF-16 LE", 239_187_191: "UTF-8"
-    , 0_0_254_255: "UTF-32 BE", 255_254_0_0: "UTF-32 LE", 43_47_118_43: "UTF-7"
-    , 43_47_118_47: "UTF-7", 43_47_118_56: "UTF-7", 43_47_118_57: "UTF-7"
-    , 221_115_102_115: "UTF-EBCDIC", 132_49_149_51: "GB 18030"}
+        , 0_0_254_255: "UTF-32 BE", 255_254_0_0: "UTF-32 LE", 43_47_118_43: "UTF-7"
+        , 43_47_118_47: "UTF-7", 43_47_118_56: "UTF-7", 43_47_118_57: "UTF-7"
+        , 221_115_102_115: "UTF-EBCDIC", 132_49_149_51: "GB 18030"}
     f := FileOpen(file, "rw"), f.Pos := 0
     BOM4 := (BOM3 := (BOM2 := f.ReadUChar() "_" f.ReadUChar()) "_" f.ReadUChar()) "_" f.ReadUChar(), f.Close()
     FileRead, f, *c %file%

@@ -1,6 +1,8 @@
 ﻿global CLX_Lang := CLX_Config("Core", "Language", "auto", "语言切换")
+global CLX_i18nConfigDir := "Core/locales/"
 global CLX_i18nConfigPath := "Core/lang.ini"
-global CLX_i18n_newTranslated := "Core/lang.ini"
+global CLX_i18n_IsCLX_InstalledByGitClone := FileExist(A_WorkingDir "/.git")
+global CLX_i18n_newTranslatedSaveTo := "Core/lang.ini"
 
 CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_i18nConfigPath)
 
@@ -15,6 +17,15 @@ LCID_1404 := "Chinese (Traditional, Macao SAR)" ; zh-MO
 LCID_0404 := "Chinese (Traditional, Taiwan)" ; zh-TW
 LCID_0011 := "Japanese" ; ja
 LCID_0411 := "Japanese (Japan)" ; ja-JP
+
+GetKeyboardLanguage()
+{
+    if !KBLayout := DllCall("user32.dll\GetKeyboardLayout")
+        return false
+
+    return KBLayout & 0xFFFF
+}
+
 ; TODO: converts
 t(s, lang := "")
 {
@@ -34,34 +45,38 @@ t(s, lang := "")
     }
     if ( lang == "auto" ) {
         lang := "en"
-        if (A_Language == "7804") {
+        alang := GetKeyboardLanguage()
+        if (!alang) {
+            alang:= A_Language
+        }
+        if (alang == "7804") {
             lang := "zh"
         }
-        if (A_Language == "0004") {
+        if (alang == "0004") {
             lang := "zh"
         }
-        if (A_Language == "0804") {
+        if (alang == "0804") {
             lang := "zh"
         }
-        if (A_Language == "1004") {
+        if (alang == "1004") {
             lang := "zh"
         }
-        if (A_Language == "7C04") {
+        if (alang == "7C04") {
             lang := "zh"
         }
-        if (A_Language == "0C04") {
+        if (alang == "0C04") {
             lang := "zh"
         }
-        if (A_Language == "1404") {
+        if (alang == "1404") {
             lang := "zh"
         }
-        if (A_Language == "0404") {
+        if (alang == "0404") {
             lang := "zh"
         }
-        if (A_Language == "0011") {
+        if (alang == "0011") {
             lang := "ja"
         }
-        if (A_Language == "0411") {
+        if (alang == "0411") {
             lang := "ja"
         }
     }
@@ -141,8 +156,19 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
     ; user locales
+    ; global CLX_ConfigDir
+    ; CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir . "/" . field . ".ini")
+    ; IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
+    ; if (content == "ERROR") {
+    ;     content := ""
+    ; }
+    ; if (content) {
+    ;     return CLX_i18n_ConfigDecode(content)
+    ; }
+    ; clx pre-installed locales v2
     global CLX_ConfigDir
-    IniRead, content, % CLX_ConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
+    CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir . "/" . field . ".ini")
+    IniRead, content, % CLX_i18nConfigDir . "/" . field . ".ini", %field%, % encodedKey, %defaultValue%
     if (content == "ERROR") {
         content := ""
     }
@@ -150,6 +176,7 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
         return CLX_i18n_ConfigDecode(content)
     }
     ; clx pre-installed locales
+    CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_i18nConfigPath)
     IniRead, content, % CLX_i18nConfigPath, %field%, % encodedKey, %defaultValue%
     if (content == "ERROR") {
         content := ""
@@ -158,6 +185,7 @@ CLX_i18n_ConfigGet(field, varName, defaultValue)
         return CLX_i18n_ConfigDecode(content)
     }
 }
+
 CLX_i18n_ConfigSet(field, varName, value)
 {
     encodedKey := CLX_i18n_ConfigEnocde(varName)
@@ -165,7 +193,15 @@ CLX_i18n_ConfigSet(field, varName, value)
     global CLX_ConfigChangedTickCount
     CLX_ConfigChangedTickCount := A_TickCount
     global CLX_ConfigDir
-    IniSave(encodedValue, CLX_ConfigDir . "/" . field . ".ini", field, encodedKey)
+    ; save to lang.ini if installed by source code (where has .git folder)
+    if (CLX_i18n_IsCLX_InstalledByGitClone){
+        ; v2
+        IniSave(encodedValue, CLX_i18nConfigDir . "/" . field . ".ini", field, encodedKey)
+        ; v1
+        ; IniSave(encodedValue, CLX_i18nConfigPath, field, encodedKey)
+    }else{
+        IniSave(encodedValue, CLX_ConfigDir . "/" . field . ".ini", field, encodedKey)
+    }
 
     ; CONVERT_FILE_TO_UTF16_WITH_BOM_ENCODING(CLX_ConfigDir)
 }
