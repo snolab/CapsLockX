@@ -489,13 +489,11 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
     
-    dx := Min(48, AreaW / n)
-    dy := Min(48, AreaH / n)
+    dx := Min(64, AreaW / n)
+    dy := Min(64, AreaH / n)
 
     if (arrangeFlags & ARRANGE_MOVING) {
         k := 0
-        w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx))
-        h := Max(AreaH/2, (AreaH - 2 * dy - n * dy + dy))
         lasthWnd := -2
         loop, Parse, listOfWindow, `n
         {
@@ -508,6 +506,8 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 
             x := AreaX + (n - k) * dx
             y := AreaY + (n - k) * dy
+            w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx - n * dx + 2 * k * dx))
+            h := Max(AreaH/2, (AreaH - 2 * dy - n * dy + dy))
             
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
@@ -610,10 +610,10 @@ z:: 最近1分钟内闪动窗口激活()
 x:: Send ^w ; 关闭标签
 +x:: 关闭窗口并切到下一窗口()
 ^!x:: 杀死窗口并切到下一窗口()
-c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
-^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
-+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
-^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
+c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW) ; 自动排列窗口
+^c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
++c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动堆叠窗口
+^+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
 +v:: 当前窗口置顶透明切换()
 v:: 当前窗口临时透明()
 v Up:: 当前窗口临时透明取消()
