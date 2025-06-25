@@ -412,6 +412,9 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         {
             hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
 
+            ; set side-by-side transparent
+            WinSet, Transparent, 255, ahk_id %hWnd%
+
             ; 同一进程窗口长边优先排列
             if (AreaW >= AreaH) {
                 ; row first
@@ -489,8 +492,8 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
     
-    dx := Min(64, AreaW / n)
-    dy := Min(64, AreaH / n)
+    dx := Min(48, AreaW / n)
+    dy := Min(48, AreaH / n)
 
     if (arrangeFlags & ARRANGE_MOVING) {
         k := 0
@@ -498,15 +501,21 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         loop, Parse, listOfWindow, `n
         {
             hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+
+
             ; fix hidden UWP ApplicationFrameWindow Window
             WinGetClass, this_class, ahk_id %hWnd%
             if (this_class == "ApplicationFrameWindow") {
                 WinActivate, ahk_id %hWnd%
             }
 
+            ; set stacked transparent
+            WinSet, Transparent, 240, ahk_id %hWnd%
+
             x := AreaX + (n - k) * dx
             y := AreaY + (n - k) * dy
-            w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx - n * dx + 2 * k * dx))
+            ; w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx - n * dx + 2 * k * dx))
+            w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx))
             h := Max(AreaH/2, (AreaH - 2 * dy - n * dy + dy))
             
             FastResizeWindow(hWnd, x, y, w, h)
