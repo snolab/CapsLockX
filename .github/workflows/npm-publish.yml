@@ -9,12 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      # pnpm install
+      - uses: pnpm/action-setup@v2
         with:
-          node-version: 14
+          version: 6.32.9
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
           registry-url: https://registry.npmjs.org/
-      # NPM 包发布
-      - run: npm i
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      # npm publish
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

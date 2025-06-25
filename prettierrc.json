@@ -1,0 +1,11 @@
+{
+  "tabWidth": 2,
+  "useTabs": false,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "plugins": [
+    "./node_modules/prettier-plugin-packagejson",
+    "./node_modules/prettier-plugin-organize-imports",
+    "./node_modules/prettier-plugin-tsconfig"
+  ]
+}

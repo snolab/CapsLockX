@@ -22,18 +22,18 @@ return
 
 ExitCapsLockX()
 {
-    exit
+    ExitApp
 }
 ; 修改配置
 #if CapsLockXMode
-    
-; m:: 配置文件编辑()
-m:: CapsLockX_配置窗口()
+
+; ,:: 配置文件编辑()
+,:: CapsLockX_配置窗口()
 
 CapsLockX_配置窗口(){
     Gui, Destroy
     ; TODO update this to web view
-    Gui, Add, Text, , 你可以按 CapsLockX + M 打开此窗口
+    Gui, Add, Text, , 你可以按 "CapsLockX + ," 打开此窗口
     Gui, Add, Text, , 当前 CapsLockX_配置目录：%CapsLockX_配置目录%
     Gui, Add, Text, , CLX脚本交流群： QQ群 100949388， https://t.me/capslockx
     Gui, Add, Text, , 版本: CapsLockX %CapsLockX_VersionName%
@@ -43,28 +43,28 @@ CapsLockX_配置窗口(){
     Gui, Add, Button, w80, 打开官方文档
     Gui, Add, Button, w80, 添加开机自动启动
     Gui, Add, Button, w80, 配置文件编辑
-    
+
     global T_TomatoLife
         if (T_TomatoLife) {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife Checked, 启用番茄时钟，每25分钟休息5分钟·。
     } else {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_TomatoLife, 启用番茄时钟，每25分钟休息5分钟·。
     }
-    
+
     global T_XKeyAsCapsLock
     if (T_XKeyAsCapsLock) {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_XKeyAsCapsLock Checked, 使用 CapsLock 作为引导键（默认启用）
     } else {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_XKeyAsCapsLock, 使用 CapsLock 作为引导键（默认启用）
     }
-    
+
     global T_XKeyAsSpace
     if (T_XKeyAsSpace) {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_XKeyAsSpace Checked, 使用 Space 作为引导键（默认启用）
     } else {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_XKeyAsSpace, 使用 Space 作为引导键（默认启用）
     }
-    
+
     global T_AskRunAsAdmin
     if (T_AskRunAsAdmin) {
         Gui, Add, CheckBox, gCapsLockX_ConfigureUpdate vT_AskRunAsAdmin Checked, 请求管理员权限（权限受限时，鼠标模拟等功能无法正常运行，如果不需要管理权限下的功能，可以改为0）

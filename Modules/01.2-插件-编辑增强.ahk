@@ -19,11 +19,13 @@ if (!CapsLockX) {
 global 编辑增强_SpeedRatioX := CapsLockX_Config("EditEnhance", "SpeedRatioX", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_SpeedRatioY := CapsLockX_Config("EditEnhance", "SpeedRatioY", 1, "光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类")
 global 编辑增强_PageSpeed := CapsLockX_Config("EditEnhance", "PageSpeed", 1, "翻页速率")
-
+global 编辑增强_TabSpeed := CapsLockX_Config("EditEnhance", "TabSpeed", 1, "Tab速率")
 global 方向键模拟 := new AccModel2D(Func("方向键模拟"), 0.1, 编辑增强_SpeedRatioX * 15, 编辑增强_SpeedRatioY * 15)
 global 翻页键模拟 := new AccModel2D(Func("翻页键模拟"), 0.1, 20 * 编辑增强_PageSpeed)
+global Tab键模拟 := new AccModel2D(Func("Tab键模拟"), 0.1, 15 * 编辑增强_TabSpeed)
 方向键模拟.最大速度 := 250
 翻页键模拟.最大速度 := 250
+Tab键模拟.最大速度 := 250
 
 global 编辑增强_TurboTab := CapsLockX_Config("EditEnhance", "TurboTab", 0, "Tab键加速，可能和一些游戏不兼容，默认禁用")
 if (编辑增强_TurboTab) {
@@ -48,22 +50,50 @@ DisableLockWorkstation()
 ; 这里用 SendEvent 防止把 hl 按出来
 左方向键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{Left}
     }
 }
 右方向键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{Right}
     }
 }
 上翻页键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{PgUp}
     }
 }
 下翻页键发送(n:=1){
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         SendEvent {Blind}{PgDn}
+    }
+}
+正Tab键发送(n:=1){
+    loop %n%{
+        if (A_Index > 32) {
+            return
+        }
+        SendEvent {Blind}{Tab}
+    }
+}
+反Tab键发送(n:=1){
+    loop %n%{
+        if (A_Index > 32) {
+            return
+        }
+        SendEvent {Blind}+{Tab}
     }
 }
 上方向键发送(n:=1)
@@ -73,11 +103,17 @@ DisableLockWorkstation()
         ControlGetFocus, focusedClassNN, ahk_id %hWnd%
         if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
             loop %n%{
+                if (A_Index > 128) {
+                    return
+                }
                 ControlSend, OneNote::DocumentCanvas1, {Blind}{Up}
             }
         }
     }
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         ; 这里如果使用 SendInput 则会出现打出kj的情况。
         SendEvent {Blind}{up}
     }
@@ -89,12 +125,18 @@ DisableLockWorkstation()
         ControlGetFocus, focusedClassNN, ahk_id %hWnd%
         if (focusedClassNN == "OneNote`:`:DocumentCanvas1") {
             loop %n%{
+                if (A_Index > 128) {
+                    return
+                }
                 ControlSend, OneNote::DocumentCanvas1, {Blind}{Down}
             }
             return
         }
     }
     loop %n%{
+        if (A_Index > 128) {
+            return
+        }
         ; 这里如果使用 SendInput 则会出现打出kj的情况。
         SendEvent {Blind}{Down}
     }
@@ -109,6 +151,20 @@ DisableLockWorkstation()
     }
     _ := dy < 0 && 上翻页键发送(-dy)
     _ := dy > 0 && 下翻页键发送(dy )
+}
+
+Tab键模拟(dx, dy, 状态){
+    if (!CapsLockXMode) {
+        return 翻页键模拟.止动()
+    }
+    if (状态 != "移动") {
+        return
+    }
+    ; reverse by shift key pressed
+    sdy := GetKeyState("Shift", "P") ? -dy : dy
+    ;
+    _ := sdy < 0 && 反Tab键发送(-sdy)
+    _ := sdy > 0 && 正Tab键发送(sdy )
 }
 
 TurboTab(dx, dy, 状态)
@@ -165,13 +221,16 @@ TurboTab(dx, dy, 状态)
 *Tab:: TurboTab.下按("Tab")
 
 #if CapsLockXMode
-    
-*u:: 翻页键模拟.下按("u")
+
+*c:: Tab键模拟.上按("c")
+*v:: Tab键模拟.下按("v")
 *i:: 翻页键模拟.上按("i")
+*u:: 翻页键模拟.下按("u")
 *h:: 方向键模拟.左按("h")
 *l:: 方向键模拟.右按("l")
 *k:: 方向键模拟.上按("k")
 *j:: 方向键模拟.下按("j")
+
 
 *y:: Home
 *o:: End

@@ -101,9 +101,9 @@ GetMonitorIndexFromWindow(hWnd)
         workRight := NumGet(monitorInfo, 28, "Int")
         workBottom := NumGet(monitorInfo, 32, "Int")
         isPrimary := NumGet(monitorInfo, 36, "Int") & 1
-        
+
         ; msgbox, , , workLeft%workLeft% workTop%workTop% workRight%workRight% workBottom%workBottom%
-        
+
         SysGet, monitorCount, MonitorCount
         loop %monitorCount%
         {
@@ -135,9 +135,9 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0)
     WS_EX_NOACTIVATE := 0x08000000
     WS_POPUP := 0x80000000
     WS_VISIBLE := 0x10000000
-    
+
     DetectHiddenWindows, Off
-    WinGet, id, List, , , 
+    WinGet, id, List, , ,
     loop %id% {
         hWnd := id%A_Index%
         WinGet, style, style, ahk_id %hWnd%
@@ -187,9 +187,9 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
     WS_EX_NOANIMATION := 0x04000000
     WS_EX_NOACTIVATE := 0x08000000
     WS_POPUP := 0x80000000
-    
+
     DetectHiddenWindows, Off
-    WinGet, id, List, , , 
+    WinGet, id, List, , ,
     loop %id% {
         hWnd := id%A_Index%
         WinGet, style, style, ahk_id %hWnd%
@@ -247,7 +247,7 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
         if ( this_class == "ApplicationFrameWindow") {
             Continue
         }
-        
+
         WinGet, this_exe, ProcessName, ahk_id %hWnd%
         windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -271,7 +271,7 @@ WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
         listOfWindow_cache_time := A_TickCount
     }
     ; tooltip %listOfWindow%
-    
+
     ; 相对当前窗口的位置计算
     hWnd := WinActive("A")
     WinGetPos, X, Y, W, H, ahk_id %hWnd%
@@ -399,7 +399,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         loop Parse, listOfWindow, `n
         {
             hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-            
+
             ; 同一进程窗口长边优先排列
             if (AreaW >= AreaH) {
                 ; row first
@@ -412,24 +412,24 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             }
             x := AreaX + nx * size_x
             y := AreaY + ny * size_y
-            
+
             ; 填满窗口间的缝隙
             x:= x-8, y:=y, w:=size_x+16, h:=size_y+8
-            
+
             ; 左上角不要出界，否则不同DPI的显示器连接处宽度计算不正常
             dX := max(AreaX - x, 0), x += dX, w -= dX
             dY := max(AreaY - y, 0), y += dY, h -= dY
             ; 右下角也不要出界，下边留出1px让wallpaper engine 的bgm放出来
             w := min(x + w, AreaX + AreaW) - x
             h := min(y + h, AreaY + AreaH - 1) - y
-            
+
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
             k-=1
         }
         WinGet, hWnd, , A
         ; DllCall( "FlashWindow", UInt, hWnd, Int, True )
-        
+
         ; loop Parse, listOfWindow, `n
         ; {
         ;     hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
@@ -461,10 +461,10 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 }
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 {
-    
+
     dx := 96
     dy := 96
-    
+
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; try parse work rect from monitor
@@ -480,7 +480,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaW := MonitorWorkAreaRight - MonitorWorkAreaLeft
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
-    
+
     if (arrangeFlags & ARRANGE_MOVING) {
         k := 0
         w := AreaW - 2 * dx - n * dx + dx
@@ -494,7 +494,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             if (this_class == "ApplicationFrameWindow") {
                 WinActivate, ahk_id %hWnd%
             }
-            
+
             x := AreaX + (n - k) * dx
             y := AreaY + (n - k) * dy
             FastResizeWindow(hWnd, x, y, w, h)
@@ -524,7 +524,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             , "UInt", SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_ASYNCWINDOWPOS) ; SWP_ASYNCWINDOWPOS
             lasthWnd := hWnd
         }
-        
+
     }
     ; loop, Parse, listOfWindow, `n
     ; {
@@ -590,7 +590,7 @@ CurrentWindowSetAsBackground()
 ; Make sure WinTab module has higher priority than Mouse, otherwise WASD is invalid here
 
 #if CapsLockXMode
-    
+
 z:: 最近1分钟内闪动窗口激活()
 ; z:: 上一个窗口激活()
 +z:: 下一个窗口激活()
@@ -598,13 +598,13 @@ z:: 最近1分钟内闪动窗口激活()
 x:: Send ^w ; 关闭标签
 +x:: 关闭窗口并切到下一窗口()
 ^!x:: 杀死窗口并切到下一窗口()
-c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
-^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
-+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
-^+c:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
-+v:: 当前窗口置顶透明切换()
-v:: 当前窗口临时透明()
-v Up:: 当前窗口临时透明取消()
+n:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
+^n:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
++n:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED) ; 自动堆叠窗口
+^+n:: ArrangeWindows(ARRANGE_MAXWINDOW|ARRANGE_STACKED|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
++m:: 当前窗口置顶透明切换()
+m:: 当前窗口临时透明()
+m Up:: 当前窗口临时透明取消()
 b:: 任务栏任务切换()
 
 当前窗口置顶透明切换()
@@ -638,7 +638,7 @@ b:: 任务栏任务切换()
 
 ; 使普通的按方向窗口切换的热键与CapsLockXMode互不干扰
 #if !CapsLockXMode
-    
+
 #+h:: 窗口向右上左下方显示器移动(3)
 #+l:: 窗口向右上左下方显示器移动(1)
 #+j:: 窗口向右上左下方显示器移动(4)
@@ -724,7 +724,7 @@ CtrlShiftAlt弹起() {
         return
     }
     FLAG_CtrlShiftAlt按下 := 0
-    
+
     上次CtrlShiftAlt锁 := 1
     ToolTip, % "双击 LCtrl LAlt LShift 来最后置当前窗口（主要用于虚拟机和远程桌面）"
     SetTimer, 窗口增强_RemoveToolTip, -1024
@@ -758,7 +758,7 @@ Delete:: 任务栏中关闭窗口()
 x:: 任务栏中关闭窗口()
 
 #if
-    
+
 任务栏中关闭窗口()
 {
     SendEvent {AppsKey}

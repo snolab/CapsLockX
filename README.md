@@ -279,6 +279,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | 全局(基本) | `CapsLockX + h j k l` | 上下左右 方向键                  |
 | 全局(基本) | `CapsLockX + y o`     | Home End                         |
 | 全局(基本) | `CapsLockX + u i`     | PageUp PageDown                  |
+| 全局(基本) | `CapsLockX + c v`     | Shift+Tab 和 Tab                 |
 | 全局(基本) | `CapsLockX + g`       | 回车                             |
 | 全局(进阶) | `CapsLockX + t`       | Delete                           |
 | 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
@@ -289,7 +290,7 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 
 ### 窗口增强插件 (CLX + 1234567890 ZXCV)
 
-#### 功能简述
+## 功能简述
 
 用好 Win 10 自带的 10 个虚拟桌面豪华配置、多显示器自动排列窗口、半透明置顶、（注：任务栏和 AltTab 相关功能暂不兼容 Win11，窗口排列功能正常。）
 
@@ -301,14 +302,14 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 6. 高效使用虚拟桌面：`CapsLockX + 0123456789` 切换、增减虚拟桌面，加上 `Shift` 键可以转移当前窗口
 7. 虚拟机与远程桌面快速脱离：双击左边 `Shift + Ctrl + Alt`。
 
-#### 效果图
+## 效果图
 
 - Alt + Tab 管理窗口增强
-  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./docs/media/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
+  ![02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif](./docs/02-插件-窗口增强_Alt+Tab+WASD管理窗口.gif)
 - CapsLockX + C 一键排列窗口（这 GIF 是旧版本录的看起来比较卡，新版本优化过 API 就不卡了）
   ![02-插件-窗口增强_一键排列窗口.gif](./docs/media/02-插件-窗口增强_一键排列窗口.gif)
 
-#### 使用方法如下 ( Alt+Tab 与 CapsLockX )
+## 使用方法如下 ( Alt+Tab 与 CapsLockX )
 
 | 作用域       | 窗口增强模块                          | 说明                                       |
 | ------------ | ------------------------------------- | ------------------------------------------ |
@@ -322,17 +323,17 @@ TODO：FN 键、方向键、编辑操作、61 配列 vs 87 键配列、
 | 全局         | `CapsLockX + 1 2 ... 9 0`             | 切换到第 1 .. 12 个桌面                    |
 | 全局         | `CapsLockX + Shift + 1 2 ... 9 0 - =` | 把当前窗口移到第 n 个桌面(如果有的话)      |
 | 全局         | `CapsLockX + Alt + Backspace`         | 删除当前桌面（会把所有窗口移到上一个桌面） |
-| 全局         | `CapsLockX + C`                       | 快速排列当前桌面的窗口                     |
-| 全局         | `CapsLockX + Ctrl + C`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
-| 全局         | `CapsLockX + Shift + C`               | 快速堆叠当前桌面的窗口                     |
-| 全局         | `CapsLockX + Shift + Ctrl + C`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
+| 全局         | `CapsLockX + N`                       | 快速排列当前桌面的窗口                     |
+| 全局         | `CapsLockX + Ctrl + N`                | 快速排列当前桌面的窗口（包括最小化的窗口） |
+| 全局         | `CapsLockX + Shift + N`               | 快速堆叠当前桌面的窗口                     |
+| 全局         | `CapsLockX + Shift + Ctrl + N`        | 快速堆叠当前桌面的窗口（包括最小化的窗口） |
 | 全局         | `CapsLockX + Shift + [ ]`             | 把当前窗口移到上一个/下一个桌面            |
 | 全局         | `CapsLockX + Z`                       | 循环切到最近使用的窗口                     |
 | 全局         | `CapsLockX + Shift + Z`               | 循环切到最不近使用的窗口                   |
 | 全局         | `CapsLockX + X`                       | 关掉当前标签页 Ctrl+W                      |
 | 全局         | `CapsLockX + Shift + X`               | 关掉当前窗口 Alt+F4                        |
-| 全局         | `CapsLockX + V`                       | 让窗口透明                                 |
-| 全局         | `CapsLockX + Shift + V`               | 让窗口保持透明（并置顶）                   |
+| 全局         | `CapsLockX + M`                       | 让窗口透明                                 |
+| 全局         | `CapsLockX + Shift + M`               | 让窗口保持透明（并置顶）                   |
 | 任意窗口     | `双击左边 Shift+Ctrl+Alt`             | 后置当前窗口， \* 见下方注                 |
 
 \*注： 双击左边 Shift+Ctrl+Alt 设计用于远程桌面与虚拟机，使其可与本机桌面窗口同时显示。
@@ -535,7 +536,7 @@ Anki 操作增强
 
 25 分钟固定循环休息提醒。
 
-使用 CapsLockX + M 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
+使用 `CapsLockX + ,` 打开配置，然后修改 EnableScheduleTasks=1 即可启用本插件。
 
 - 使用番茄报时（00 分和 30 分播放工作铃声，每小时的 25 分和 55 分播放休息铃声）（需要先开启定时任务）
 
@@ -742,31 +743,31 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
     - [软件的热键缺陷](#软件的热键缺陷)
     - [便携键盘的可用性](#便携键盘的可用性)
     - [帮助模块](#帮助模块)
-  - [本模块功能见下](#本模块功能见下)
+      - [本模块功能见下](#本模块功能见下)
     - [模拟鼠标插件（ WASD QERF ）](#模拟鼠标插件-wasd-qerf-)
-  - [功能](#功能)
-  - [使用方法如下](#使用方法如下)
-  - [操作细节](#操作细节)
+      - [功能](#功能)
+      - [使用方法如下](#使用方法如下)
+      - [操作细节](#操作细节)
     - [编辑增强插件（ TG YUIO HJKL ）](#编辑增强插件-tg-yuio-hjkl-)
     - [窗口增强插件 (CLX + 1234567890 ZXCV)](#窗口增强插件-clx--1234567890-zxcv)
-  - [功能简述](#功能简述)
-  - [效果图](#效果图)
-  - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
+      - [功能简述](#功能简述)
+      - [效果图](#效果图)
+      - [使用方法如下 ( Alt+Tab 与 CapsLockX )](#使用方法如下--alttab-与-capslockx-)
     - [JavaScript 计算 (建议安装 NodeJS )](#javascript-计算-建议安装-nodejs-)
     - [Surface 笔记本扩充功能键](#surface-笔记本扩充功能键)
     - [快捷输入](#快捷输入)
     - [锁屏自动息屏](#锁屏自动息屏)
     - [Anki 增强模块](#anki-增强模块)
-  - [常用功能/特性](#常用功能特性)
-  - [说明](#说明)
+      - [常用功能/特性](#常用功能特性)
+      - [说明](#说明)
     - [OneNote 2016 - 2019 增强](#onenote-2016---2019-增强)
-  - [雪星喵常用功能](#雪星喵常用功能)
-  - [按键分布设计（开发中）](#按键分布设计开发中)
-  - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
+      - [雪星喵常用功能](#雪星喵常用功能)
+      - [按键分布设计（开发中）](#按键分布设计开发中)
+      - [详细按键表 / CheatSheet](#详细按键表--cheatsheet)
     - [讯飞输入法悬浮窗插件](#讯飞输入法悬浮窗插件)
-  - [用法](#用法)
-  - [注：](#注)
-  - [效果如下图](#效果如下图)
+      - [用法](#用法)
+      - [注：](#注)
+      - [效果如下图](#效果如下图)
     - [媒体键模块](#媒体键模块)
     - [番茄时钟](#番茄时钟)
   - [过去与未来 🛰](#过去与未来-)
@@ -776,16 +777,6 @@ CapsLockX 相关答疑直接进群 [@雪星](tencent://message?uin=997596439) �
     - [CapsLockX 与类似项目的功能对比 ⚔ Feat Compare Matrix](#capslockx-与类似项目的功能对比--feat-compare-matrix)
       - [CapsLockX 地址 🔗 Project Urls](#capslockx-地址--project-urls)
       - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
-  - [答疑相关 ❓ Questions](#答疑相关--questions)
-    - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
-  - [支持 ⭐️ Supports](#支持-️-supports)
-    - [捐赠记录(截至 20210821) 📄 Donate Records](#捐赠记录截至-20210821--donate-records)
-    - [鸣谢 🙏🏻 Thanks](#鸣谢--thanks)
-    - [相关话题 - Related Topics](#相关话题---related-topics)
-  - [页尾目录 - Table of Contents](#页尾目录---table-of-contents)
-    CapsLockX - [与类似项目的功能对比 ⚔ Feat Compare Matrix](#与类似项目的功能对比--feat-compare-matrix)
-    - [地址 🔗 Project Urls](#地址--project-urls)
-    - [相似项目地址 🔗 Similar Projects](#相似项目地址--similar-projects)
   - [答疑相关 ❓ Questions](#答疑相关--questions)
     - [隐私与安全性 🔒 Privacy](#隐私与安全性--privacy)
   - [支持 ⭐️ Supports](#支持-️-supports)
