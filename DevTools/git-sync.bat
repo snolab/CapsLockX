@@ -12,5 +12,5 @@ git remote -v
 
 @REM sync
 git fetch all
-git pull --set-upstream all master
-git push all master --follow-tags
+git pull --set-upstream all main
+git push all main --follow-tags
