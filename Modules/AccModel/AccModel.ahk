@@ -5,7 +5,7 @@
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
-; 版权：Copyright © 2017-2022 Snowstar Laboratory. All Rights Reserved.
+; 版权：Copyright © 2017-2024 Snowstar Laboratory. All Rights Reserved.
 ; ========== CapsLockX ==========
 ; 光标加速度微分对称模型（不要在意这中二的名字hhhh
 
@@ -60,7 +60,7 @@ class AccModel2D
         ; 1x 指数函数 + 1x 4次函数
         a := 0
         a += 1 * sgn * ( Exp(abs) - 1 )
-        a += 1 * sgn
+        a += 3 * sgn
         a += 4 * sgn * abs
         a += 9 * sgn * abs * abs
         a += 16 * sgn * abs * abs * abs
@@ -85,10 +85,14 @@ class AccModel2D
         if (a * v > 0) {
             Return v
         }
-        
+
         ; 简单粗暴倍数降速
         v *= Exp(-dt*20)
         v -= this._sign(v) * dt
+        ; if (a==0){
+        ;     v *= 0.5 ** (dt / (halflife / 1000));
+        ; }
+
         ; v *= 1 - this.衰减率
         ; 线性降速
         ; v -= !this.衰减率 ? 0 : v > 1 ? 1 : (v < -1 ? -1 : 0)
@@ -123,32 +127,32 @@ class AccModel2D
         ; 处理移动
         横加速 := this._ma(右时-左时) * this.横加速比率
         纵加速 := this._ma(下时-上时) * this.纵加速比率
-        this.横速 += 横加速 * dt
-        this.纵速 += 纵加速 * dt
+        this.横速 := this._ADD(this.横速, 横加速 * dt)
+        this.纵速 := this._ADD(this.纵速, 纵加速 * dt)
         this.横速 := this._damping(this.横速, 横加速, dt)
         this.纵速 := this._damping(this.纵速, 纵加速, dt)
-        
+
         ; perf_timing(1)
         ; 快速启动
         if (!dt) {
             this.启动中 := 1
             this.实动函数.Call(0, 0, "启动")
             this.启动中 := 0
-            
+
             this.横移 := this._sign(横加速)
             this.纵移 := this._sign(纵加速)
         }
-        this.横移 += this.横速 * dt
-        this.纵移 += this.纵速 * dt
+        this.横移 := this._ADD(this.横移, this.横速 * dt)
+        this.纵移 := this._ADD(this.纵移, this.纵速 * dt)
         横输出 := this.横移 | 0  ; 取整输出
         纵输出 := this.纵移 | 0  ; 取整输出
         this.横移 -= 横输出      ; 收回零头攒起来
         this.纵移 -= 纵输出      ; 收回零头攒起来
-        
+
         ; debug
         ; msg := dt "`n" 现刻 "`n" this.动刻 "`n" 横加速 "`n" this.横速 "`n" this.横移 "`n" this.横输出
         ; tooltip %msg%
-        
+
         if (横输出 || 纵输出) {
             ; tooltip %dt% %横输出% %纵输出% %横加速% %纵加速%
             this.实动函数.Call(横输出, 纵输出, "移动")
@@ -253,6 +257,21 @@ class AccModel2D
     {
         ; static _QPF
         return this._QPC() / this._QPF()
+    }
+    _ADD(acc,x){
+        c:=acc+x
+        ; prevent overflow
+        if(this._sign(acc) == this._sign(c)){
+            return c
+        }
+        if (acc > (2147483647/2) && this._sign(acc) != this._sign(c)) {
+           return 2147483647
+        }
+        if (acc < -2147483648/2 && this._sign(acc) != this._sign(c)) {
+           return -2147483648
+        }
+        ; should never happend
+        return c
     }
 }
 class FPS_Debugger

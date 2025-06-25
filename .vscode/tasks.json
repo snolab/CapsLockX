@@ -7,7 +7,13 @@
       "problemMatcher": [],
       "label": "npm: start",
       "detail": "CapsLockX.exe",
-      "runOptions": { "runOn": "folderOpen" }
+    },
+    {
+      "type": "npm",
+      "script": "release",
+      "problemMatcher": [],
+      "label": "npm: release",
+      "detail": "pnpm upgrade & standard-version --commit-all && git push --follow-tag --all"
     }
   ]
 }

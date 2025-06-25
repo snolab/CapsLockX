@@ -1,7 +1,7 @@
 {
   "command": {
     "version": {
-      "allowBranch": "master",
+      "allowBranch": "main",
       "conventionalCommits": true,
       "yes": true
     }

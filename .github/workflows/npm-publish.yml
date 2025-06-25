@@ -1,3 +1,4 @@
+# @deprecated use semantic-release
 name: npm-publish
 on:
   push:
@@ -8,18 +9,13 @@ jobs:
     if: github.repository == 'snolab/CapsLockX'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      # pnpm install
-      - uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - uses: actions/setup-node@v4
         with:
-          version: 6.32.9
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          registry-url: https://registry.npmjs.org/
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      # npm publish
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: bun install
       - run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

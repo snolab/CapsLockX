@@ -1,3 +1,4 @@
+# @depreacted use semantic-release
 on:
   push:
     tags:

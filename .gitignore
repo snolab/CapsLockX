@@ -12,7 +12,7 @@ node_modules
 *.sha256
 *.bak
 CapsLockX-ModulesRunner.ahk
-CapsLockX-ModulesLoader.ahk
+CapsLockX-ModulesFunctions.ahk
 *.!sync
 version-*.txt
 
@@ -26,3 +26,23 @@ debug.log
 #cache
 .eslintcache
 /worktrees
+.vscode/.go
+.vscode/.vscode-server
+
+dist
+dist/cli.cjs
+dist/cli.cjs.map
+dist/cli.min.cjs
+dist/cli.min.cjs.map
+dist/cli.min.mjs
+dist/cli.min.mjs.map
+dist/cli.mjs
+dist/cli.mjs.map
+.env
+
+# logs
+*.log
+docs/.vitepress
+
+bun.lockb
+.env*

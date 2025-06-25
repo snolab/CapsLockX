@@ -2,10 +2,10 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>CapsLockX</id>
-    <version>1.29.1</version>
+    <version>1.34.12</version>
     <owners>snomiao</owners>
     <authors>snomiao</authors>
-    <copyright>Copyright (C) Snowstar Laboratory 2017-2022</copyright>
+    <copyright>Copyright (C) Snowstar Laboratory 2017-2024</copyright>
 
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>https://github.com/snolab/CapsLockX/blob/master/LICENSE.md</licenseUrl>
@@ -65,83 +65,48 @@ You can also write your own my-ahk.user.ahkand put it ./User/in the directory, C
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.29.1](https://github.com/snolab/CapsLockX/compare/v1.29.0...v1.29.1) (2022-12-07)
+### [1.34.12](https://github.com/snolab/CapsLockX/compare/v1.34.11...v1.34.12) (2025-02-24)
 
-## [1.29.0](https://github.com/snolab/CapsLockX/compare/v1.28.7...v1.29.0) (2022-12-07)
-
-### Features
-
-- **edit-enhance:** CLX+N/M to control tab ([7a677f7](https://github.com/snolab/CapsLockX/commit/7a677f7f36f4254b70230a6662927dd13e73461f))
-
-### [1.28.7](https://github.com/snolab/CapsLockX/compare/v1.28.6...v1.28.7) (2022-11-19)
 
 ### Bug Fixes
 
-- **capslockx:** on a{End} ([761210a](https://github.com/snolab/CapsLockX/commit/761210ab5dfc663efadb72d5d4380e5040b6abf7))
-- **edit-enhance:** dead loop ([3342d9b](https://github.com/snolab/CapsLockX/commit/3342d9b935ac8390364e758e77413b0ce5ceddd1))
-- **Modules:** onenote toggle todo without table conflict ([8fa0766](https://github.com/snolab/CapsLockX/commit/8fa0766e1c7e9851a72e64cadff3d59c6b553d5c))
-- **Modules:** pomodoro enable ([7c3c838](https://github.com/snolab/CapsLockX/commit/7c3c83881905b4f1437e53582d5f318241645be8))
+* **brainstorm:** esc to stop streaming ([e22f61c](https://github.com/snolab/CapsLockX/commit/e22f61c8b494c96ed807b712768ed2b8a871a984))
+* **CapsLockX:** add types bun ([165e401](https://github.com/snolab/CapsLockX/commit/165e40182fb483f89e0ec215349da805a8c7cb51))
+* **CapsLockX:** misc ([d0c6d08](https://github.com/snolab/CapsLockX/commit/d0c6d08adada50e75cd0bcd98f33dc8318e836cf))
+* **CapsLockX:** npm upgrade ([165bdb6](https://github.com/snolab/CapsLockX/commit/165bdb6446ba407003a29e678b1bfdca732bb23a))
+* **CapsLockX:** prompt update ([e8b7178](https://github.com/snolab/CapsLockX/commit/e8b71784a7b2232eec2812e8c8acbfe2a64e31e1))
+* **capslockx:** ts ([ac0c03f](https://github.com/snolab/CapsLockX/commit/ac0c03f45082881df2d7ec5b7cb3608dd8c4a444))
+* **CapsLockX:** update author ([c45e13c](https://github.com/snolab/CapsLockX/commit/c45e13cfbdb0823ec5693bf96e34d59f989af02f))
+* **CapsLockX:** use key as default lang ([d58d9a6](https://github.com/snolab/CapsLockX/commit/d58d9a6074dd7cda9b517f895545240ca521115c))
+* **i18n:** get keyboard lang ([029e70b](https://github.com/snolab/CapsLockX/commit/029e70b64f68a66cb2ea5cbb65308a9180415315))
+* remove golang pkg ([12e8b1f](https://github.com/snolab/CapsLockX/commit/12e8b1fb3874453aa1508890a586d1b890249e8d))
+* **settings:** add ButtonLanguageSwitchWindow for ([0a5f8b6](https://github.com/snolab/CapsLockX/commit/0a5f8b6bac89b683082948952880fb0c4744baa9))
+* **virtual-desktop:** switch win10 bug ([8912a66](https://github.com/snolab/CapsLockX/commit/8912a664325f6df57371fa0773ca08aaf8a216b6))
+* **window-manager:** play-pause on alt-tab view ([856ddf6](https://github.com/snolab/CapsLockX/commit/856ddf672d54b1e7bbadc7a6bd2d7df3cd2c69ed))
 
-### [1.28.4](https://github.com/snolab/CapsLockX/compare/v1.28.3...v1.28.4) (2022-09-03)
+### [1.34.11](https://github.com/snolab/CapsLockX/compare/v1.34.8...v1.34.11) (2024-12-30)
 
-### [1.28.3](https://github.com/snolab/CapsLockX/compare/v1.28.2...v1.28.3) (2022-08-26)
-
-### [1.28.2](https://github.com/snolab/CapsLockX/compare/v1.28.1...v1.28.2) (2022-08-26)
-
-### Bug Fixes
-
-- anki 631 ([483687a](https://github.com/snolab/CapsLockX/commit/483687a42cca80fd8b8b29cb6b35f3e68a74b085))
-
-### [1.28.1](https://github.com/snolab/CapsLockX/compare/v1.28.0...v1.28.1) (2022-07-17)
-
-## [1.28.0](https://github.com/snolab/CapsLockX/compare/v1.27.0...v1.28.0) (2022-07-17)
-
-### Features
-
-- search today ([dcf4f86](https://github.com/snolab/CapsLockX/commit/dcf4f86e09b7d3f3ebdf2b462c954657ef10b61b))
-
-## [1.27.0](https://github.com/snolab/CapsLockX/compare/v1.26.1...v1.27.0) (2022-07-03)
-
-### Features
-
-- **quickinput:** ISODateStringGenerate ([d321b99](https://github.com/snolab/CapsLockX/commit/d321b996dd9903a6a136e03742b53f52ac3fef1b))
-
-### [1.26.1](https://github.com/snolab/CapsLockX/compare/v1.26.0...v1.26.1) (2022-06-28)
 
 ### Bug Fixes
 
-- **onenote:** !r:: altSend(wi2) ;  -  ([7185268](https://github.com/snolab/CapsLockX/commit/7185268cbcea507bc47cf73ff7d785dad73a1774))
+* **brainstorm:** use temp dir ([14ce615](https://github.com/snolab/CapsLockX/commit/14ce615c03dace8ee4b19a91208b461c9cf25346))
+* **CapsLockX:** auto ([bbc07b0](https://github.com/snolab/CapsLockX/commit/bbc07b0b845aa43351e80656c44d9b7ae3b16c04))
+* **CapsLockX:** i18n optimize prompt ([bb8ff36](https://github.com/snolab/CapsLockX/commit/bb8ff36a29ef71790b4cf10408949a0ef03a75ef))
+* **CapsLockX:** ignore translation error ([4033e82](https://github.com/snolab/CapsLockX/commit/4033e8230a90c0124bf0fd0a84bf3d79778f6772))
+* **CapsLockX:** optimize i18n prompt ([7fc238b](https://github.com/snolab/CapsLockX/commit/7fc238ba690b5a15eb7183c6446da9bdc141c3c6))
+* **capslockx:** update link ([a535bcb](https://github.com/snolab/CapsLockX/commit/a535bcbb17459455ea2d54962cdc6565b81c2da7))
+* **capslockx:** versioning ([5881b05](https://github.com/snolab/CapsLockX/commit/5881b05e5a8e3a8c6d89b5c716ba299643cf9638))
 
-## [1.26.0](https://github.com/snolab/CapsLockX/compare/v1.25.10...v1.26.0) (2022-06-26)
+### [1.34.10](https://github.com/snolab/CapsLockX/compare/v1.34.8...v1.34.10) (2024-12-30)
 
-### Features
-
-- **virtualdesktop:** EnsureCurrentEnviromentRule ([3618182](https://github.com/snolab/CapsLockX/commit/36181829d8821a91b11340fe9bdb10ad75d5155a))
-
-### Bug Fixes
-
-- **doc:**  capslockx  ([b6350f3](https://github.com/snolab/CapsLockX/commit/b6350f30d8a5ca8794b34e572790bab9f3476c5e))
-- **mouse:** shift to move 1px ([9b3b430](https://github.com/snolab/CapsLockX/commit/9b3b430bd746fded3addef49eda3a2913ee2a5e4))
-
-### [1.25.10](https://github.com/snolab/CapsLockX/compare/v1.25.9...v1.25.10) (2022-05-11)
 
 ### Bug Fixes
 
-- ] ([e1ae74f](https://github.com/snolab/CapsLockX/commit/e1ae74f994fd76eb013e2fa37be7d332e738807b))
-- fix RunSilent ([c14b501](https://github.com/snolab/CapsLockX/commit/c14b5010ff5301e86d2f15c55671962438d28398))
--  ([6c188be](https://github.com/snolab/CapsLockX/commit/6c188be28b9d1054d400bedaa07655df01433b56))
-
-### [1.25.9](https://github.com/snolab/CapsLockX/compare/v1.25.8...v1.25.9) (2022-05-01)
-
-### Bug Fixes
-
-- use #Include to load accmodel ([b11d2c8](https://github.com/snolab/CapsLockX/commit/b11d2c84bad68f3cc8b3986c9421d76d79ff3eda))
--  [#43](https://github.com/snolab/CapsLockX/issues/43) ([3e05303](https://github.com/snolab/CapsLockX/commit/3e05303de770c4884c4885a072a688b2715be6a9))
-
-### [1.25.8](https://github.com/snolab/CapsLockX/compare/v1.25.7...v1.25.8) (2022-04-20)
-
-### [1.25.7](https://github.com/snolab/CapsLockX/compare/v1.25.6...v1.25.7) (2022-04-20)
-]]></releaseNotes>
+* **brainstorm:** use temp dir ([14ce615](https://github.com/snolab/CapsLockX/commit/14ce615c03dace8ee4b19a91208b461c9cf25346))
+* **CapsLockX:** auto ([bbc07b0](https://github.com/snolab/CapsLockX/commit/bbc07b0b845aa43351e80656c44d9b7ae3b16c04))
+* **CapsLockX:** i18n optimize prompt ([bb8ff36](https://github.com/snolab/CapsLockX/commit/bb8ff36a29ef71790b4cf10408949a0ef03a75ef))
+* **CapsLockX:** ignore translation error ([4033e82](https://github.com/snolab/CapsLockX/commit/4033e8230a90c0124bf0fd0a84bf3d79778f6772))
+* **CapsLockX:** optimize i18n prompt ([7fc238b](https://github.com/snolab/CapsLockX/commit/7fc238ba690b5a15eb7183c6446da9bdc141c3c6))]]></releaseNotes>
     
     <dependencies></dependencies>
   </metadata>

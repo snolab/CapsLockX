@@ -1,6 +1,6 @@
 ﻿
 Return
- 
+
 ; 用户触发的
 QuickTips(){
     msg := ""
@@ -20,10 +20,10 @@ QuickTips(){
             msg .= "|	Shift + z	|	下一个窗口激活	|`n"
             msg .= "|	Ctrl + Alt + x	|	杀死窗口并切到下一窗口	|`n"
             msg .= "|	Shift + Ctrl + c	|	自动堆叠窗口（包括最小化的窗口）	|`n"
-            msg .= "|	\	|	CapsLockX_模块重载	|`n"
-            msg .= "|	Shift + \	|	CapsLockX_Reload	|`n"
-            msg .= "|	Shift + \	|	CapsLockX_重新启动	|`n"
-            msg .= "|	Shift + Ctrl + \	|	CapsLockX_退出	|`n"
+            msg .= "|	\	|	CLX_模块重载	|`n"
+            msg .= "|	Shift + \	|	CLX_Reload	|`n"
+            msg .= "|	Shift + \	|	CLX_重新启动	|`n"
+            msg .= "|	Shift + Ctrl + \	|	CLX_退出	|`n"
             msg .= "|	m	|	配置文件编辑	|`n"
         }
     }
@@ -35,7 +35,7 @@ QuickTips(){
     }
 
     try{
-        if (Blender窗口内() && Blender增强模式) {
+        if (Func("Blender窗口内").Call() && Blender增强模式) {
             msg .= "|	i + a	|	X全局缩放+	|`n"
             msg .= "|	i + d	|	X全局缩放-	|`n"
             msg .= "|	i + e	|	Z全局缩放-	|`n"
