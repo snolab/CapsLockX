@@ -107,6 +107,7 @@ OneNote2019主页启动(){
 }
 OneNote2019搜索启动() {
     OneNote快速笔记窗口启动()
+    SendEvent ^{PgUp}
     SendEvent ^e{Text}""
     SendEvent {Left}
     OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
@@ -315,14 +316,14 @@ F3:: 精确查找笔记()
 F2:: SendEvent ^+t ; 重命名笔记
 +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
 !F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
-; !/:: OneNote2019_ToggleTitleTODO()
++^Enter:: OneNote2019_ToggleTODO() ; 切换 OneNote TODO 前缀状态 (Beta)
 
 OneNote2019_ToggleTitleTODO(){
     ; request clipboard
     backup:=ClipboardAll
     Clipboard:=""
     ; select current line 行は選る
-    Send {End}^a^c
+    Send {Home}^a{Home}+{End}^c
 
     ; get clipboard
     ClipWait, 2
@@ -339,7 +340,7 @@ OneNote2019_ToggleTitleTODO(){
     if (isTODO ) {
         so := RegExReplace(s, "^TODO ?", "DOING ")
         SendEvent, {Text}%so%
-        SendEvent {Left}
+        SendEvent, ^a{End}
         return
     }
 
@@ -347,7 +348,7 @@ OneNote2019_ToggleTitleTODO(){
     if (isDOING ) {
         so := RegExReplace(s, "^DOING ?", "DONE ")
         SendEvent, {Text}%so%
-        SendEvent {Left}
+        SendEvent, ^a{End}
         return
     }
 
@@ -355,14 +356,13 @@ OneNote2019_ToggleTitleTODO(){
     if (isDONE ) {
         so := RegExReplace(s, "^DONE ?", "")
         SendEvent, {Text}%so%
-        SendEvent {Left}
+        SendEvent, ^a{End}
         return
     }
-
     ; is nothing
     so := RegExReplace(s, "^ ?", "TODO ")
     SendEvent, {Text}%so%
-    SendEvent {Left}
+    SendEvent, ^a{End}
     return
 }
 

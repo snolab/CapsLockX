@@ -1,6 +1,6 @@
 {
   "name": "capslockx",
-  "version": "1.28.6",
+  "version": "1.29.1",
   "description": "CapsLockX 提供一套超好上手的：鼠标模拟、编辑增强、虚拟桌面与窗口管理、应用内热键增强、JS数学表达式计算、等超多功能等你来定义。",
   "scripts": {
     "start": "CapsLockX.exe",
@@ -8,7 +8,7 @@
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
     "prepare": "husky install",
     "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
-    "release": "pnpm upgrade & standard-version --commit-all && git push --follow-tag --all",
+    "release": "pnpm upgrade && standard-version --commit-all && git push --follow-tag --all",
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build"
   },
   "files": [
@@ -42,18 +42,18 @@
   },
   "main": "DevTools/CapsLockX.mjs",
   "devDependencies": {
-    "@commitlint/cli": "^16.3.0",
-    "@commitlint/config-conventional": "^16.2.4",
+    "prettier-plugin-packagejson": "2.3.0",
+    "prettier-plugin-tsconfig": "^0.0.1",
+    "@types/lodash-es": "^4.17.6",
     "@types/pinyin": "^2.10.0",
-    "eslint": "^8.23.0",
+    "eslint": "^8.29.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
-    "husky": "^7.0.4",
-    "lint-staged": "^12.5.0",
-    "lodash": "^4.17.21",
+    "husky": "^8.0.2",
+    "lint-staged": "^13.1.0",
+    "lodash-es": "^4.17.21",
     "pinyin": "^2.11.2",
-    "pnpm": "^6.34.0",
-    "prettier": "^2.7.1",
+    "prettier": "^2.8.1",
     "sno-utils": "^0.3.16",
     "standard-version": "^9.5.0"
   },
@@ -61,12 +61,9 @@
     "DevTools/CLXConfig.js"
   ],
   "lint-staged": {
-    "*.js": [
-      "prettier --write",
-      "eslint --cache --fix"
-    ],
-    "*.{css,md}": "prettier --write",
-    "*": []
+    "*.{js,ts}":"eslint --cache --fix",
+    "*.{css,md,js,ts}": "prettier --write",
+    "*.ahk": []
   },
   "directories": {
     "doc": "docs"
