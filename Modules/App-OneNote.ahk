@@ -1,6 +1,6 @@
 ﻿; ========== CapsLockX ==========
-; 名称：OneNote 2019 增强
-; 版本：v2025.06.02
+; 名称：OneNote 增强
+; 版本：v2025.06.30
 ; 作者：snomiao
 ; 联系：snomiao@gmail.com
 ; 支持：https://github.com/snomiao/CapsLockX
@@ -8,11 +8,6 @@
 ; ========== CapsLockX ==========
 ;
 ; save as utf8 with bom
-
-if (!CapsLockX) {
-    MsgBox, % "本模块只为 CapsLockX 工作"
-    ExitApp
-}
 
 ; 引用剪贴板依赖
 #Include Modules/WinClip/WinClipAPI.ahk
@@ -57,7 +52,7 @@ getAscStr(str)
     Return out
 }
 
-OneNote2019_Win11_Detect()
+OneNote_Win11_Detect()
 {
     IServiceProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{6D5140C1-7436-11CE-8034-00AA006009FA}")
     IVirtualDesktopManagerInternal := ComObjQuery(IServiceProvider, "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}", "{F31574D6-B682-4CDC-BD56-1827860ABEC6}")
@@ -70,18 +65,18 @@ OneNote2019_Win11_Detect()
     return true
 }
 
-OneNote2019_SNODateStringGenerate()
+OneNote_SNODateStringGenerate()
 {
     FormatTime, TimeString, , (yyyyMMdd)
     return TimeString
 }
-OneNote2019_QuickTextInput(str)
+OneNote_QuickTextInput(str)
 {
     SendInput {Text}%str%
 }
 ; 打开快速笔记主页
 OneNote快速笔记窗口启动(){
-    if (OneNote2019_Win11_Detect()) {
+    if (OneNote_Win11_Detect()) {
         SendEvent #!n
     } else {
         ; SendEvent #n
@@ -100,7 +95,7 @@ OneNote快速笔记窗口启动(){
     }
     return true
 }
-OneNote2019主页启动(){
+OneNote主页启动(){
     HomePageMathcer := ".*(HOME|TODO).* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinActivate %HomePageMathcer%
     if (!WinActive(HomePageMathcer)) {
@@ -111,8 +106,9 @@ OneNote2019主页启动(){
     SendEvent !{Home}^{End}!{Enter}
     Return
 }
-OneNote2019搜索启动() {
+OneNote搜索启动() {
     FormatTime, TimeString, , yyyyMMdd
+    
     TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinActivate %TodayNoteMatcher%
     if (!WinActive(TodayNoteMatcher)) {
@@ -121,16 +117,27 @@ OneNote2019搜索启动() {
     }
     SendEvent ^e{Text}""
     SendEvent {Left}
-    OneNote2019_QuickTextInput(OneNote2019_SNODateStringGenerate())
+    OneNote_QuickTextInput(OneNote_SNODateStringGenerate())
     SendEvent +{Left 10}
     Sleep, 200
     SendEvent {Down}{Up 2}{End}+{Left}+{Home}+{Right} ; 定位到搜索框
 
     Return
 }
-OneNote2019日记启动() {
+OneNote日记启动() {
     FormatTime, TimeString, , yyyyMMdd
     TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+
+    ; Format yesterday's date
+    Yesterday := A_Now
+    Yesterday += -1, Days
+    FormatTime, YesterdayTimeString, %Yesterday%, yyyyMMdd
+    YesterdayNoteMatcher := ".*" . YesterdayTimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+
+    ; Create matcher for today or yesterday notes
+    TodayOrYesterdayNoteMatcher := ".*((" . TimeString . ")|(" . YesterdayTimeString . ")).* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    
+
     OneNoteMatcher := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
     WinActivate %TodayNoteMatcher%
     if (WinActive(TodayNoteMatcher)) {
@@ -152,9 +159,10 @@ OneNote2019日记启动() {
     }
 
     ; switch to diary tab
-    SendEvent ^{Tab}!{End}
-
-    WinWaitActive, %TodayNoteMatcher%, , 8
+    SendEvent ^{Tab}
+    SendEvent !{End}
+    
+    WinWaitActive, %TodayOrYesterdayNoteMatcher%, , 8¦
     if (ErrorLevel) {
         ; if not today note, then create a new one
         if (!WinActive(OneNoteMatcher)) {
@@ -172,6 +180,21 @@ OneNote2019日记启动() {
         }
         return true
     }
+    
+    ; if yesterday note is active, create a new note for today
+    if (WinActive(YesterdayNoteMatcher)) {
+        SendEvent ^n
+        Sleep, 300
+        把笔记时间显式填充到标题()
+        
+        WinWaitActive %TodayNoteMatcher%, , 5
+        if (ErrorLevel) {
+            ; fail to create new note
+            return false
+        }
+        return true
+    }
+    
     Return true
 }
 
@@ -275,21 +298,16 @@ OneNote2019日记启动() {
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
 ; 打开 主页
-#!n:: OneNote2019主页启动()
+#!n:: OneNote主页启动()
 ; 打开 OneNote 并精确匹配查找搜索笔记j
-#+n:: OneNote2019日记启动() ; OneNote2019搜索启动()
+#+n:: OneNote日记启动() ; OneNote搜索启动()
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
-; 单独运行
-#if (!CapsLockX)
-
-    ^+!F12:: ExitApp ; 退出脚本
-
 ;
-#if OneNote2019搜索界面内()
+#if OneNote搜索界面内()
 
-    OneNote2019搜索界面内(){
+    OneNote搜索界面内(){
         return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
     }
 ; $^f::
@@ -323,21 +341,21 @@ OneNote2019日记启动() {
 ; Return
 ; }
 
-#if OneNote2019创建链接窗口内()
+#if OneNote创建链接窗口内()
 
-    OneNote2019创建链接窗口内(){
+    OneNote创建链接窗口内(){
         return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
     }
 
-    ; /:: CLX_ShowHelp OneNote2019创建链接窗口
+    ; /:: CLX_ShowHelp OneNote创建链接窗口
 
     ; 复制链接笔记页面的搜索结果
     !+s:: 笔记条目搜索结果复制整理向页面粘贴条数()
     !s:: 笔记条目搜索结果复制整理条数()
 
-#if OneNote2019笔记编辑窗口内()
+#if OneNote笔记编辑窗口内()
 
-    OneNote2019笔记编辑窗口内(){
+    OneNote笔记编辑窗口内(){
         return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
     }
 
@@ -376,9 +394,9 @@ OneNote2019日记启动() {
     F2:: SendEvent ^+t ; 重命名笔记
     +F2:: SendEvent ^+g{AppsKey}r ; 重命名分区
     !F2:: SendEvent ^+a{AppsKey}l ; 页面链接复制
-    +^Enter:: OneNote2019_ToggleTODO() ; 切换 OneNote TODO 前缀状态 (Beta)
+    +^Enter:: OneNote_ToggleTODO() ; 切换 OneNote TODO 前缀状态 (Beta)
 
-    OneNote2019_ToggleTODO(){
+    OneNote_ToggleTODO(){
         ; request clipboard
         backup:=ClipboardAll
         Clipboard:=""
@@ -546,11 +564,11 @@ OneNote2019日记启动() {
             SendEvent {Home}{Left}^a{Delete}
         }
     }
-    OneNote2019NoteSplit()
+    OneNoteNoteSplit()
     {
         SendEvent {Home}[[{End}]] ; 将内容做成单独链接
     }
-    $!+k:: OneNote2019NoteSplit()
+    $!+k:: OneNoteNoteSplit()
     $!1:: SendEvent !+1 ; 大纲折叠展开到1
     $!2:: SendEvent !+2 ; 大纲折叠展开到2
     $!3:: SendEvent !+3 ; 大纲折叠展开到3
@@ -570,9 +588,9 @@ OneNote2019日记启动() {
     $^]:: altSendEx("h", "{Down}{Tab 1}{Down 2}{Enter}")
     $^\:: altSendEx("h", "{Down}+{Tab 1}{Enter}")
 
-#if OneNote2019换笔界面()
+#if OneNote换笔界面()
 
-    OneNote2019换笔界面(){
+    OneNote换笔界面(){
         return WinActive("ahk_class Net UI Tool Window ahk_exe ONENOTE.EXE") && A_PriorHotkey=="!d"
     }
     $1:: SendEvent {Right 0}{Enter}           ; 向第1行第1支笔切换
