@@ -512,11 +512,11 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             ; set stacked transparent
             WinSet, Transparent, 240, ahk_id %hWnd%
 
-            x := AreaX + (n - k) * dx
-            y := AreaY + (n - k) * dy
+            x := AreaX + (n - k - 1) * dx
+            y := AreaY + (n - k - 1) * dy
             ; w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx - n * dx + 2 * k * dx))
-            w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx))
-            h := Max(AreaH/2, (AreaH - 2 * dy - n * dy + dy))
+            w := Max(AreaW/2, (AreaW - 2 * dx - (n - 2) * dx + dx))
+            h := Max(AreaH/2, (AreaH - 2 * dy - (n - 2) * dy + dy))
             
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
