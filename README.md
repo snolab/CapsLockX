@@ -267,7 +267,7 @@ Enhanced Anki Operations
 | --------------------- | :---------------------: | ------------------------------------------------------------ |
 | In Anki-Learning Interface | `w or k or ↑`
 
-<!-- MODULE_FILE: App-OneNote2019.ahk-->
+<!-- MODULE_FILE: App-OneNote.ahk-->
 
 ### OneNote 2016 - 2019 Enhancement
 
