@@ -280,7 +280,7 @@ Anki Operation Enhancement
 | In Anki-Learning Interface |   `Alt + i`    | Quickly import clipboard contents (separated by Tab) / can be copied from Excel |
 | In Anki-Adding Card Interface |   `Alt + s`    | Press Add button                                        |
 
-<!-- MODULE_FILE: App-OneNote2019.ahk-->
+<!-- MODULE_FILE: App-OneNote.ahk-->
 
 ### OneNote 2016 - 2019 Enhancements
 
