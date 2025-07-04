@@ -619,10 +619,10 @@ z:: 最近1分钟内闪动窗口激活()
 x:: Send ^w ; 关闭标签
 +x:: 关闭窗口并切到下一窗口()
 ^!x:: 杀死窗口并切到下一窗口()
-c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW) ; 自动排列窗口
-^c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
-+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动堆叠窗口
-^+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
+c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
+^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
++c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW) ; 自动堆叠窗口
+^+c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
 +v:: 当前窗口置顶透明切换()
 v:: 当前窗口临时透明()
 v Up:: 当前窗口临时透明取消()
