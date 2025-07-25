@@ -6,7 +6,7 @@
       "script": "start",
       "problemMatcher": [],
       "label": "npm: start",
-      "detail": "CapsLockX.exe",
+      "detail": "CapsLockX.exe"
     },
     {
       "type": "npm",

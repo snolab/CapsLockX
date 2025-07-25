@@ -385,7 +385,7 @@ SwitchToDesktopByInternalAPI(idx)
             _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", DesktopCount)
             _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
 
-            ; TrayTip, CapsLockX, % t("切换到桌面: ") . idx . "/" . DesktopCount
+            ; TrayTip, CapsLockX, % t("切换到桌面：") . idx . "/" . DesktopCount
             ; if idx-th desktop doesn't exists then create a new desktop
             if (idx > DesktopCount) {
                 diff := idx - DesktopCount

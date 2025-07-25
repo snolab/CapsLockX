@@ -61,10 +61,10 @@ CLX_ConfigWindow()
     Gui, Add, Text, , % t("你可以按 'CapsLockX +, ' （CLX+逗号） 打开此窗口")
     Gui, Add, Text, , % t("当前配置目录：") . CLX_ConfigDir
     Gui, Add, Text, , % t("CLX脚本交流群： QQ群 100949388 、 Telegram 群 https://t.me/capslockx 、微信群: 添加 @snomiao 拉你")
-    Gui, Add, Text, , % "CapsLockX " . t("'版本'") . ": " . CLX_VersionName
+    Gui, Add, Text, , % "CapsLockX " . t("版本") . ": " . CLX_VersionName
     Gui, Add, Text, , % t("作者: 雪星 ( Snowstar Miao <snomiao@gmail.com> )")
     Gui, Add, Button, Default w120 gButton确认, % t("确定")
-    Gui, Add, Button, w200 gButtonLanguageSwitch, % t("'切换語言'") . "`n" . t("'Current Language is: '") . " " .  CLX_Lang
+    Gui, Add, Button, w200 gButtonLanguageSwitch, % t("切换語言") . "`n" . t("当前語言") . " = " .  CLX_Lang
     Gui, Add, Button, w200 gButton打开BUG反馈与建议页面, % t("打开BUG反馈与建议页面")
     Gui, Add, Button, w200 gButton打开官方文档, % t("打开官方文档")
     Gui, Add, Button, w200 gButton添加开机自动启动, % t("添加开机自动启动")
@@ -179,7 +179,7 @@ Button配置文件编辑:
 Return
 
 CLX_LanguageSwitch(){
-    msg := t("'Choose your language, default option is auto'") . "`n" . t("For example: zh,ja,en,fr,es,ar...'")
+    msg := t("Choose your language, default option is auto") . "`n" . t("For example: zh,ja,en,fr,es,ar...'")
     InputBox, targetLang, % t("Change Language of CapsLockX"), % msg ,,,,,,,,% CLX_Lang
     ; InputBox, OutputVar [, Title, Prompt, HIDE, Width, Height, X, Y, Locale, Timeout, Default
     ; targetLang

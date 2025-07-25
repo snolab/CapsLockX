@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   # code-clx-go:
   #   build: go/code

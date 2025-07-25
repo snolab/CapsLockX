@@ -4,7 +4,7 @@ async function ahksf() {
   return await glob("**/*.ahk");
   // return ahks;
 }
-ahksf()
+ahksf();
 const read = async (f: string) => ({ f, s: await readFile(f, "utf8") });
 let ahkitems;
 ahkitems = await Promise.all(ahks.map(read));

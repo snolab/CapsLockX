@@ -242,11 +242,11 @@ If you want to learn how to develop a plugin for CapsLockX, please:
 
 #### Functions of this module are as follows
 
-| Applies to | Key                 | Function                             |
-| -----------| ------------------- | ------------------------------------- |
-| Global     | CapsLockX + /       | Temporarily show hotkey hints          |
-| Global     | CapsLockX + Alt + / | 🔗 Open the full documentation page of CapsLockX |
-| Global     | CapsLockX + Shift + / | 🕷 Submit bugs, suggestions, etc.        |
+| Applies to | Key                   | Function                                         |
+| ---------- | --------------------- | ------------------------------------------------ |
+| Global     | CapsLockX + /         | Temporarily show hotkey hints                    |
+| Global     | CapsLockX + Alt + /   | 🔗 Open the full documentation page of CapsLockX |
+| Global     | CapsLockX + Shift + / | 🕷 Submit bugs, suggestions, etc.                 |
 
 <!-- MODULE_FILE: App-AnkiEnhanced.ahk-->
 
@@ -263,22 +263,22 @@ Anki Operation Enhancement
 
 #### Description
 
-| Mode                 | Anki Enhanced Module | Description                                             |
-| -------------------- | :------------------: | ------------------------------------------------------- |
-| In Anki-Learning Interface | `w or k or ↑`  | Press=undo, release to show answer                      |
-| In Anki-Learning Interface | `a or h or ←`  | Press=smooth, release to show answer                    |
-| In Anki-Learning Interface | `s or j or ↓`  | Press=average, release to show answer                   |
-| In Anki-Learning Interface | `d or l or →`  | Press=familiar, release to show answer                  |
-| In Anki-Learning Interface |      `q`       | Return to the previous screen                           |
-| In Anki-Learning Interface |      `c`       | Add a new card                                          |
-| In Anki-Learning Interface | `1 or NumPad1` | Hard (original key position)                            |
-| In Anki-Learning Interface | `2 or NumPad2` | Unfamiliar (original key position)                      |
-| In Anki-Learning Interface | `3 or NumPad3` | Average (original key position)                         |
-| In Anki-Learning Interface | `4 or NumPad4` | Smooth (original key position)                          |
-| In Anki-Learning Interface | `5 or NumPad5` | Undo                                                    |
-| In Anki-Learning Interface | `6 or NumPad6` | Suspend card                                            |
-| In Anki-Learning Interface |   `Alt + i`    | Quickly import clipboard contents (separated by Tab) / can be copied from Excel |
-| In Anki-Adding Card Interface |   `Alt + s`    | Press Add button                                        |
+| Mode                          | Anki Enhanced Module | Description                                                                     |
+| ----------------------------- | :------------------: | ------------------------------------------------------------------------------- |
+| In Anki-Learning Interface    |    `w or k or ↑`     | Press=undo, release to show answer                                              |
+| In Anki-Learning Interface    |    `a or h or ←`     | Press=smooth, release to show answer                                            |
+| In Anki-Learning Interface    |    `s or j or ↓`     | Press=average, release to show answer                                           |
+| In Anki-Learning Interface    |    `d or l or →`     | Press=familiar, release to show answer                                          |
+| In Anki-Learning Interface    |         `q`          | Return to the previous screen                                                   |
+| In Anki-Learning Interface    |         `c`          | Add a new card                                                                  |
+| In Anki-Learning Interface    |    `1 or NumPad1`    | Hard (original key position)                                                    |
+| In Anki-Learning Interface    |    `2 or NumPad2`    | Unfamiliar (original key position)                                              |
+| In Anki-Learning Interface    |    `3 or NumPad3`    | Average (original key position)                                                 |
+| In Anki-Learning Interface    |    `4 or NumPad4`    | Smooth (original key position)                                                  |
+| In Anki-Learning Interface    |    `5 or NumPad5`    | Undo                                                                            |
+| In Anki-Learning Interface    |    `6 or NumPad6`    | Suspend card                                                                    |
+| In Anki-Learning Interface    |      `Alt + i`       | Quickly import clipboard contents (separated by Tab) / can be copied from Excel |
+| In Anki-Adding Card Interface |      `Alt + s`       | Press Add button                                                                |
 
 <!-- MODULE_FILE: App-OneNote.ahk-->
 
@@ -295,59 +295,59 @@ Elegantly enhance keyboard operations for OneNote 2016 - 2019, conveniently usin
 
 #### Key Distribution Design (In Development)
 
-| Key Description             | Function                   | Note        |
-| --------------------------- | -------------------------- | ----------- |
-| `All OneNote Built-in Hotkeys` | Original Function         |             |
-| `Press Alt, then something else` | Triggers OneNote's original menu function |             |
-| `Alt + 1234567`             | Outline folding and expanding to levels 1-7 |             |
-| `Alt + qwe asd r`           | Tools, pen switch, view   |             |
-| `Alt + f`                   | Find tag                   |             |
-| `Alt + -=`                  | Formula related            |             |
-| `Alt + m`                   | Move note, section         |             |
-| `Alt + hjkl`                | Various link functions     |             |
-| `Alt + zxcv`                | Advanced copy-paste        | Details developing |
-| `Alt + /`                   | Hotkey help, tips          | In development |
-| `F2 F3`                     | Rename, find notes         |             |
+| Key Description                  | Function                                    | Note               |
+| -------------------------------- | ------------------------------------------- | ------------------ |
+| `All OneNote Built-in Hotkeys`   | Original Function                           |                    |
+| `Press Alt, then something else` | Triggers OneNote's original menu function   |                    |
+| `Alt + 1234567`                  | Outline folding and expanding to levels 1-7 |                    |
+| `Alt + qwe asd r`                | Tools, pen switch, view                     |                    |
+| `Alt + f`                        | Find tag                                    |                    |
+| `Alt + -=`                       | Formula related                             |                    |
+| `Alt + m`                        | Move note, section                          |                    |
+| `Alt + hjkl`                     | Various link functions                      |                    |
+| `Alt + zxcv`                     | Advanced copy-paste                         | Details developing |
+| `Alt + /`                        | Hotkey help, tips                           | In development     |
+| `F2 F3`                          | Rename, find notes                          |                    |
 
 #### Detailed Key Table / CheatSheet
 
-| Applied To                 | Formatting Hotkey           | Function                                                                   |
-| -------------------------- | --------------------------- | -------------------------------------------------------------------------- |
-| Global                     | `Win + Alt + N`             | Open the first quick note page (compensates for the lack of a homepage concept in OneNote like Notion) |
-| Global                     | `Win + Shift + N`           | Open OneNote and search precisely for today's tag                          |
-| OneNote2019                | `Alt + 1234567`             | Outline: Fold and expand the outline to that layer (highly recommended, super useful) |
-| OneNote2019                | `F2`                        | Organize: Rename note                                                      |
-| OneNote2019                | `Shift + F2`                | Organize: Rename section                                                   |
-| OneNote2019                | `Alt + m`                   | Organize: Move note                                                        |
-| OneNote2019                | `Alt + Shift + m`           | Organize: Move section                                                     |
-| OneNote2019                | `Ctrl + n`                  | Organize: New note                                                         |
-| OneNote2019                | `Ctrl + Alt + n`            | Organize: Create a new note below the current note                         |
-| OneNote2019                | `Alt + Delete`              | Organize: Quickly delete the current page                                  |
-| OneNote2019                | `Ctrl + s`                  | Organize: Sync this notebook immediately                                   |
-| OneNote2019                | `Ctrl + w`                  | Organize: Close window                                                     |
-| OneNote2019                | `Shift + Delete`            | Edit: Quickly delete the current line                                      |
-| OneNote2019                | `Alt + -`                   | Edit: Automatically 2D the formula                                         |
-| OneNote2019                | `Alt + k`                   | Edit: ⭐🔗 Expand related page links for the current keyword (quick keyword one-to-many link) |
-| OneNote2019                | `Alt + n`                   | Style: Change page to colorless background                                 |
-| OneNote2019                | `Alt + v`                   | Style: Change text background color                                        |
-| OneNote2019                | `Alt + q`                   | Tool: Drag                                                                 |
-| OneNote2019                | `Alt + w`                   | Tool: Lasso                                                                |
-| OneNote2019                | `Alt + e`                   | Tool: Eraser                                                               |
-| OneNote2019                | `Alt + s`                   | Tool: Input                                                                |
-| OneNote2019                | `Alt + a`                   | Tool: Switch to the 2nd pen                                                |
-| OneNote2019                | `Alt + d`                   | Tool: Open pen switch menu (then use arrow keys to select a pen (currently not working in full screen) |
-| OneNote2019                | `Alt + d -> 1234567`        | Tool: Open pen switch menu (then select the 1st row, xth pen) (currently not working in full screen) |
-| OneNote2019                | `Alt + d -> Shift + 1234567`| Tool: Open pen switch menu (then select the 2nd row, xth pen) (currently not working in full screen) |
-| OneNote2019                | `Alt + r`                   | View: Zoom to original size                                                |
-| OneNote2019                | `Alt + y`                   | View: Zoom to page width                                                   |
-| OneNote2019                | `^!+- or ^!+=`              | View: Zoom out or zoom in page                                             |
-| OneNote2019                | `Alt + f`                   | View: Search marks                                                         |
-| OneNote2019                | `Alt + t`                   | Edit: Add a date tag to the note, e.g., (20220717)                       |
-| OneNote2019                | `Ctrl + Shift + c`          | Edit: Copy (plain text)                                                    |
-| OneNote2019                | `Ctrl + Shift + v`          | Edit: Paste (plain text)                                                   |
-| OneNote2019 Create Link Window | `Alt + s`               | Edit: Copy links to all currently searched result pages                    |
-| OneNote2019 Create Link Window | `Alt + Shift + s`       | Edit: Copy links to all currently searched result pages and paste          |
-| OneNote2019 Clipboard Note    | `Ctrl + C`               | Edit: ⭐ Add copied content to the note whose name contains "Clipboard" or "剪贴板" |
+| Applied To                     | Formatting Hotkey            | Function                                                                                               |
+| ------------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Global                         | `Win + Alt + N`              | Open the first quick note page (compensates for the lack of a homepage concept in OneNote like Notion) |
+| Global                         | `Win + Shift + N`            | Open OneNote and search precisely for today's tag                                                      |
+| OneNote2019                    | `Alt + 1234567`              | Outline: Fold and expand the outline to that layer (highly recommended, super useful)                  |
+| OneNote2019                    | `F2`                         | Organize: Rename note                                                                                  |
+| OneNote2019                    | `Shift + F2`                 | Organize: Rename section                                                                               |
+| OneNote2019                    | `Alt + m`                    | Organize: Move note                                                                                    |
+| OneNote2019                    | `Alt + Shift + m`            | Organize: Move section                                                                                 |
+| OneNote2019                    | `Ctrl + n`                   | Organize: New note                                                                                     |
+| OneNote2019                    | `Ctrl + Alt + n`             | Organize: Create a new note below the current note                                                     |
+| OneNote2019                    | `Alt + Delete`               | Organize: Quickly delete the current page                                                              |
+| OneNote2019                    | `Ctrl + s`                   | Organize: Sync this notebook immediately                                                               |
+| OneNote2019                    | `Ctrl + w`                   | Organize: Close window                                                                                 |
+| OneNote2019                    | `Shift + Delete`             | Edit: Quickly delete the current line                                                                  |
+| OneNote2019                    | `Alt + -`                    | Edit: Automatically 2D the formula                                                                     |
+| OneNote2019                    | `Alt + k`                    | Edit: ⭐🔗 Expand related page links for the current keyword (quick keyword one-to-many link)          |
+| OneNote2019                    | `Alt + n`                    | Style: Change page to colorless background                                                             |
+| OneNote2019                    | `Alt + v`                    | Style: Change text background color                                                                    |
+| OneNote2019                    | `Alt + q`                    | Tool: Drag                                                                                             |
+| OneNote2019                    | `Alt + w`                    | Tool: Lasso                                                                                            |
+| OneNote2019                    | `Alt + e`                    | Tool: Eraser                                                                                           |
+| OneNote2019                    | `Alt + s`                    | Tool: Input                                                                                            |
+| OneNote2019                    | `Alt + a`                    | Tool: Switch to the 2nd pen                                                                            |
+| OneNote2019                    | `Alt + d`                    | Tool: Open pen switch menu (then use arrow keys to select a pen (currently not working in full screen) |
+| OneNote2019                    | `Alt + d -> 1234567`         | Tool: Open pen switch menu (then select the 1st row, xth pen) (currently not working in full screen)   |
+| OneNote2019                    | `Alt + d -> Shift + 1234567` | Tool: Open pen switch menu (then select the 2nd row, xth pen) (currently not working in full screen)   |
+| OneNote2019                    | `Alt + r`                    | View: Zoom to original size                                                                            |
+| OneNote2019                    | `Alt + y`                    | View: Zoom to page width                                                                               |
+| OneNote2019                    | `^!+- or ^!+=`               | View: Zoom out or zoom in page                                                                         |
+| OneNote2019                    | `Alt + f`                    | View: Search marks                                                                                     |
+| OneNote2019                    | `Alt + t`                    | Edit: Add a date tag to the note, e.g., (20220717)                                                     |
+| OneNote2019                    | `Ctrl + Shift + c`           | Edit: Copy (plain text)                                                                                |
+| OneNote2019                    | `Ctrl + Shift + v`           | Edit: Paste (plain text)                                                                               |
+| OneNote2019 Create Link Window | `Alt + s`                    | Edit: Copy links to all currently searched result pages                                                |
+| OneNote2019 Create Link Window | `Alt + Shift + s`            | Edit: Copy links to all currently searched result pages and paste                                      |
+| OneNote2019 Clipboard Note     | `Ctrl + C`                   | Edit: ⭐ Add copied content to the note whose name contains "Clipboard" or "剪贴板"                    |
 
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
 
@@ -355,9 +355,9 @@ Elegantly enhance keyboard operations for OneNote 2016 - 2019, conveniently usin
 
 #### Usage
 
-| Applies to |     Key Combination      | Function Description       |
-| ---------- | :----------------------: | -------------------------- |
-| Global     | Win + Alt + H            | Start/Switch iFlyTek Voice Input |
+| Applies to | Key Combination | Function Description             |
+| ---------- | :-------------: | -------------------------------- |
+| Global     |  Win + Alt + H  | Start/Switch iFlyTek Voice Input |
 
 #### Note
 
@@ -367,17 +367,17 @@ Elegantly enhance keyboard operations for OneNote 2016 - 2019, conveniently usin
 
 <!-- MODULE_FILE: CLX-Brainstorm.ahk-->
 
-### CLX - Brainstorm 
+### CLX - Brainstorm
 
 Any time, any input box, press `CLX+b` to start using AI-assisted input.
 
 #### Key Distribution (In Development)
 
-| Key Description    | Function                                        | Note |
-| ------------------ | ----------------------------------------------- | ---- |
-| CLX + b            | Automatically copy current selection, input command, let AI assist you with input |      |
-| CLX + Alt + b      | Configure activation code (currently only a free plan, potential enhancements in the future) |      |
-| CLX + Shift + b    | View usage quota                                |      |
+| Key Description | Function                                                                                     | Note |
+| --------------- | -------------------------------------------------------------------------------------------- | ---- |
+| CLX + b         | Automatically copy current selection, input command, let AI assist you with input            |      |
+| CLX + Alt + b   | Configure activation code (currently only a free plan, potential enhancements in the future) |      |
+| CLX + Shift + b | View usage quota                                                                             |      |
 
 #### Protips:
 
@@ -395,21 +395,21 @@ Any time, any input box, press `CLX+b` to start using AI-assisted input.
 
 ### Editing Enhancement Plugin (TG YUIO HJKL) 🌟
 
-Is there anything better in this world than moving the cursor with Vim mode's HJKL? 
+Is there anything better in this world than moving the cursor with Vim mode's HJKL?
 There must be!
 That's the smooth editing experience with accelerated HJKL! Do you want to try a high-end operation of having your cursor take a high-speed turn around a bend? Install it!
 
-| Scope      | Edit Module           | Description                       |
-| ---------- | --------------------- | --------------------------------- |
-| Global(Basic) | `CapsLockX + h j k l` | Up, Down, Left, Right Arrow keys  |
-| Global(Basic) | `CapsLockX + y o`    | Home End                          |
-| Global(Basic) | `CapsLockX + u i`    | PageUp PageDown                   |
-| Global(Basic) | `CapsLockX + [ ]`    | Shift+Tab and Tab                 |
-| Global(Basic) | `CapsLockX + g`      | Enter                             |
-| Global(Advanced) | `CapsLockX + t`   | Delete                            |
-| Global(Advanced) | `CapsLockX + hl`  | Press together to select current word |
-| Global(Advanced) | `CapsLockX + kj`  | Press together to select current line |
-| Global(Advanced) | `CapsLockX + h + t` | Shift delete: can replace backspace in most cases |
+| Scope            | Edit Module           | Description                                       |
+| ---------------- | --------------------- | ------------------------------------------------- |
+| Global(Basic)    | `CapsLockX + h j k l` | Up, Down, Left, Right Arrow keys                  |
+| Global(Basic)    | `CapsLockX + y o`     | Home End                                          |
+| Global(Basic)    | `CapsLockX + u i`     | PageUp PageDown                                   |
+| Global(Basic)    | `CapsLockX + [ ]`     | Shift+Tab and Tab                                 |
+| Global(Basic)    | `CapsLockX + g`       | Enter                                             |
+| Global(Advanced) | `CapsLockX + t`       | Delete                                            |
+| Global(Advanced) | `CapsLockX + hl`      | Press together to select current word             |
+| Global(Advanced) | `CapsLockX + kj`      | Press together to select current line             |
+| Global(Advanced) | `CapsLockX + h + t`   | Shift delete: can replace backspace in most cases |
 
 <!-- MODULE_FILE: CLX-LaptopKeyboardFix.ahk-->
 
@@ -421,31 +421,31 @@ Specially designed for various broken notebook keyboards
 2. No Pause key? Win + Alt + P can also open the System Properties.
 3. More to be added
 
-| Mode             | Key                                   | Function                          |
-| ---------------- | :------------------------------------ | --------------------------------- |
-| Global           | Win + Alt + P                         | Equivalent to Win + Pause, tailored for notebooks |
-| Global           | Press right Ctrl once                 | Will bring up the menu like pressing Menu |
-| Global           | Hold down the right Menu              | Will hold Ctrl, allowing combination with other keys |
-| When Win key simulation is enabled | Hold ] while pressing [            | Equivalent to pressing the Win key         |
+| Mode                               | Key                                                 | Function                                             |
+| ---------------------------------- | :-------------------------------------------------- | ---------------------------------------------------- |
+| Global                             | Win + Alt + P                                       | Equivalent to Win + Pause, tailored for notebooks    |
+| Global                             | Press right Ctrl once                               | Will bring up the menu like pressing Menu            |
+| Global                             | Hold down the right Menu                            | Will hold Ctrl, allowing combination with other keys |
+| When Win key simulation is enabled | Hold ] while pressing [                             | Equivalent to pressing the Win key                   |
 | When Win key simulation is enabled | RAlt+\| Equivalent to Alt+Tab but on the right hand |
 
 <!-- MODULE_FILE: CLX-MediaKeys.ahk-->
 
 ### Media Key Module
 
-| Applied to | Media Key Module   | Description                                 |
-| ---------- | ------------------ | ------------------------------------------- |
-| Global     | `CapsLockX + F1`   | Open: My Computer                           |
-| Global     | `CapsLockX + F2`   | Open: Calculator                            |
-| Global     | `CapsLockX + F3`   | Open: Browser Homepage                      |
-| Global     | `CapsLockX + F4`   | Open: Media Library (default is Windows Media Player) |
-| Global     | `CapsLockX + F5`   | Play: Pause/Play                            |
-| Global     | `CapsLockX + F6`   | Play: Previous Track                        |
-| Global     | `CapsLockX + F7`   | Play: Next Track                            |
-| Global     | `CapsLockX + F8`   | Play: Stop                                  |
-| Global     | `CapsLockX + F9`   | Volume Up                                   |
-| Global     | `CapsLockX + F10`  | Volume Down                                 |
-| Global     | `CapsLockX + F11`  | Mute                                        |
+| Applied to | Media Key Module  | Description                                           |
+| ---------- | ----------------- | ----------------------------------------------------- |
+| Global     | `CapsLockX + F1`  | Open: My Computer                                     |
+| Global     | `CapsLockX + F2`  | Open: Calculator                                      |
+| Global     | `CapsLockX + F3`  | Open: Browser Homepage                                |
+| Global     | `CapsLockX + F4`  | Open: Media Library (default is Windows Media Player) |
+| Global     | `CapsLockX + F5`  | Play: Pause/Play                                      |
+| Global     | `CapsLockX + F6`  | Play: Previous Track                                  |
+| Global     | `CapsLockX + F7`  | Play: Next Track                                      |
+| Global     | `CapsLockX + F8`  | Play: Stop                                            |
+| Global     | `CapsLockX + F9`  | Volume Up                                             |
+| Global     | `CapsLockX + F10` | Volume Down                                           |
+| Global     | `CapsLockX + F11` | Mute                                                  |
 
 <!-- MODULE_FILE: CLX-Mouse.ahk-->
 
@@ -466,17 +466,17 @@ Features:
 
 Usage details as follows:
 
-| Applies To | Key                               | Description                              |
-|------------|-----------------------------------|------------------------------------------|
-| Global     | `CapsLockX + w a s d`             | Mouse movement (up, down, left, right)   |
-| Global     | `CapsLockX + a d`                 | Switch HJKL keys to wheel mode (scroll)  |
-| Global     | `CapsLockX + r f`                 | Vertical wheel (up, down)                |
-| Global     | `CapsLockX + Shift + r f`         | Horizontal wheel (left, right)           |
-| Global     | `CapsLockX + Ctrl + Alt + r f`    | Automatic vertical scrolling (up, down)  |
-| Global     | `CapsLockX + Ctrl + Alt + Shift+ r f` | Automatic horizontal scrolling (left, right) |
-| Global     | `CapsLockX + rf`                  | Pressing rf simultaneously equals the middle mouse button |
-| Global     | `CapsLockX + e`                   | Left mouse button                        |
-| Global     | `CapsLockX + q`                   | Right mouse button                       |
+| Applies To | Key                                   | Description                                               |
+| ---------- | ------------------------------------- | --------------------------------------------------------- |
+| Global     | `CapsLockX + w a s d`                 | Mouse movement (up, down, left, right)                    |
+| Global     | `CapsLockX + a d`                     | Switch HJKL keys to wheel mode (scroll)                   |
+| Global     | `CapsLockX + r f`                     | Vertical wheel (up, down)                                 |
+| Global     | `CapsLockX + Shift + r f`             | Horizontal wheel (left, right)                            |
+| Global     | `CapsLockX + Ctrl + Alt + r f`        | Automatic vertical scrolling (up, down)                   |
+| Global     | `CapsLockX + Ctrl + Alt + Shift+ r f` | Automatic horizontal scrolling (left, right)              |
+| Global     | `CapsLockX + rf`                      | Pressing rf simultaneously equals the middle mouse button |
+| Global     | `CapsLockX + e`                       | Left mouse button                                         |
+| Global     | `CapsLockX + q`                       | Right mouse button                                        |
 
 Operation Details
 
@@ -484,10 +484,10 @@ Fast consecutive presses of AD for stepping
 
 <!-- MODULE_FILE: CLX-NodeEval.ahk-->
 
-| Applied to | Key              | Effect                                  |
-| ---------- | ---------------- | ---------------------------------------- |
-| Global     | `CapsLockX + -`  | Evaluate and replace the selected JavaScript expression |
-| Global     | `CapsLockX + =`  | Evaluate and replace the selected JavaScript expression |
+| Applied to | Key             | Effect                                                  |
+| ---------- | --------------- | ------------------------------------------------------- |
+| Global     | `CapsLockX + -` | Evaluate and replace the selected JavaScript expression |
+| Global     | `CapsLockX + =` | Evaluate and replace the selected JavaScript expression |
 
 <!-- MODULE_FILE: CLX-WindowManager.ahk-->
 
@@ -514,30 +514,30 @@ Make the best use of Win 10's built-in 10 virtual desktops with luxurious config
 
 #### Usage ( Alt+Tab and CapsLockX )
 
-| Scope        | Window Enhancement Module               | Description                                      |
-| ------------ | --------------------------------------- | ----------------------------------------------- |
-| Alt+Tab UI   | `Q E`                                   | Switch between desktops left and right          |
-| Alt+Tab UI   | `W A S D`                               | Switch window selection up, down, left, right   |
-| Alt+Tab UI   | `X C`                                   | Close the selected window (currently no difference between X and C) |
-| Win+Tab View | `Alt + W A S D`                         | Switch window selection                         |
-| Global       | `Win + [Shift] + B`                     | Locate to tray task (Windows system built-in hotkey) |
-| Global       | `Win + [Shift] + T`                     | Locate to taskbar task (Windows system built-in hotkey) |
-| Global       | `Win + Shift + hjkl`                    | Switch focus between windows by direction       |
-| Taskbar      | `Ctrl + W or Delete`                    | Select exit button in tray icon or taskbar task |
-| Global       | `CapsLockX + 1 2 ... 9 0`               | Switch to the 1st ... 12th desktop              |
-| Global       | `CapsLockX + Shift + 1 2 ... 9 0 - =`   | Move current window to the nth desktop (if available) |
-| Global       | `CapsLockX + Alt + Backspace`           | Delete the current desktop (move all windows to the previous desktop) |
-| Global       | `CapsLockX + C`                         | Quickly arrange windows on the current desktop  |
-| Global       | `CapsLockX + Ctrl + C`                  | Quickly arrange windows on the current desktop (including minimized windows) |
-| Global       | `CapsLockX + Shift + C`                 | Quickly stack windows on the current desktop    |
-| Global       | `CapsLockX + Shift + Ctrl + C`          | Quickly stack windows on the current desktop (including minimized windows) |
-| Global       | `CapsLockX + Z`                         | Cycle to recently used windows                  |
-| Global       | `CapsLockX + Shift + Z`                 | Cycle to least recently used windows            |
-| Global       | `CapsLockX + X`                         | Close current tab Ctrl+W                        |
-| Global       | `CapsLockX + Shift + X`                 | Close current window Alt+F4                     |
-| Global       | `CapsLockX + V`                         | Make the window transparent                     |
-| Global       | `CapsLockX + Shift + V`                 | Keep the window transparent (and always on top) |
-| Any Window   | `Double-click left Shift+Ctrl+Alt`      | Send the current window to the back \* see note below |
+| Scope        | Window Enhancement Module             | Description                                                                  |
+| ------------ | ------------------------------------- | ---------------------------------------------------------------------------- |
+| Alt+Tab UI   | `Q E`                                 | Switch between desktops left and right                                       |
+| Alt+Tab UI   | `W A S D`                             | Switch window selection up, down, left, right                                |
+| Alt+Tab UI   | `X C`                                 | Close the selected window (currently no difference between X and C)          |
+| Win+Tab View | `Alt + W A S D`                       | Switch window selection                                                      |
+| Global       | `Win + [Shift] + B`                   | Locate to tray task (Windows system built-in hotkey)                         |
+| Global       | `Win + [Shift] + T`                   | Locate to taskbar task (Windows system built-in hotkey)                      |
+| Global       | `Win + Shift + hjkl`                  | Switch focus between windows by direction                                    |
+| Taskbar      | `Ctrl + W or Delete`                  | Select exit button in tray icon or taskbar task                              |
+| Global       | `CapsLockX + 1 2 ... 9 0`             | Switch to the 1st ... 12th desktop                                           |
+| Global       | `CapsLockX + Shift + 1 2 ... 9 0 - =` | Move current window to the nth desktop (if available)                        |
+| Global       | `CapsLockX + Alt + Backspace`         | Delete the current desktop (move all windows to the previous desktop)        |
+| Global       | `CapsLockX + C`                       | Quickly arrange windows on the current desktop                               |
+| Global       | `CapsLockX + Ctrl + C`                | Quickly arrange windows on the current desktop (including minimized windows) |
+| Global       | `CapsLockX + Shift + C`               | Quickly stack windows on the current desktop                                 |
+| Global       | `CapsLockX + Shift + Ctrl + C`        | Quickly stack windows on the current desktop (including minimized windows)   |
+| Global       | `CapsLockX + Z`                       | Cycle to recently used windows                                               |
+| Global       | `CapsLockX + Shift + Z`               | Cycle to least recently used windows                                         |
+| Global       | `CapsLockX + X`                       | Close current tab Ctrl+W                                                     |
+| Global       | `CapsLockX + Shift + X`               | Close current window Alt+F4                                                  |
+| Global       | `CapsLockX + V`                       | Make the window transparent                                                  |
+| Global       | `CapsLockX + Shift + V`               | Keep the window transparent (and always on top)                              |
+| Any Window   | `Double-click left Shift+Ctrl+Alt`    | Send the current window to the back \* see note below                        |
 
 \* Note: Double-click the left Shift+Ctrl+Alt is designed for remote desktop and virtual machines, so that they can be displayed simultaneously with the local desktop windows. For example, mstsc.exe, TeamViewer, VirtualBox, HyperV, VMWare, etc., remote desktop or virtual machine programs, combined with the CapsLockX + Shift + V transparent always-on-top feature, allows you to simultaneously use Linux or MacOS interface on Windows interface without issue.
 
@@ -549,15 +549,15 @@ Borrowed from [@yangbin9317's comment](https://v2ex.com/t/772052#r_10458792):
 
 <!-- MODULE_FILE: QuickInput.ahk-->
 
-| Mode | Quick Input | Description                                       |
-| ---- | ----------- | ------------------------------------------------- |
-| Global | `#D#`    | Date input: `(20220217)`                          |
-| Global | `#T#`    | Time input: `(20220217.220717)`                   |
-| Global | `#DT#`   | Date and time input: `2022-02-17 22:07:33`        |
-| Global | `#NPW#`  | Random numerical password input, e.g., `7500331260229289`         |
-| Global | `#PW#`   | Random alphanumeric password input, e.g., `yyCTCNYodECTLr2h`     |
-| Global | `#WPW#`  | Random alphanumeric password input, e.g., `FtD5BB1m5H98eY7Y`     |
-| Global | `#SPW#`  | Random alphanumeric symbol password input, e.g., `/})y+xK]z~>XKQ+p` |
+| Mode   | Quick Input | Description                                                         |
+| ------ | ----------- | ------------------------------------------------------------------- |
+| Global | `#D#`       | Date input: `(20220217)`                                            |
+| Global | `#T#`       | Time input: `(20220217.220717)`                                     |
+| Global | `#DT#`      | Date and time input: `2022-02-17 22:07:33`                          |
+| Global | `#NPW#`     | Random numerical password input, e.g., `7500331260229289`           |
+| Global | `#PW#`      | Random alphanumeric password input, e.g., `yyCTCNYodECTLr2h`        |
+| Global | `#WPW#`     | Random alphanumeric password input, e.g., `FtD5BB1m5H98eY7Y`        |
+| Global | `#SPW#`     | Random alphanumeric symbol password input, e.g., `/})y+xK]z~>XKQ+p` |
 
 <!-- MODULE_FILE: TomatoLife.ahk-->
 
@@ -614,8 +614,8 @@ The core philosophy of CapsLockX is to simplify system operation logic, improve 
 7. [ ] A user-friendly options configuration UI (though changing ini isn't that hard)
 8. [ ] Execute external code (Python, Nodejs, external AHK, Bash, …) (although running a script isn't much trouble)
 9. [ ] Can be install with "irm https://get.capslockx.com | iex"
-If you have any ideas or suggestions, please propose them here:
-[Issues · snomiao/CapslockX](https://github.com/snolab/CapsLockX/issues)
+       If you have any ideas or suggestions, please propose them here:
+       [Issues · snomiao/CapslockX](https://github.com/snolab/CapsLockX/issues)
 
 ### Key Combination Meaning Design ⌨ Chore Design
 

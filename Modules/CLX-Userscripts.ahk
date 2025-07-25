@@ -70,12 +70,6 @@ UserModuleEdit(dir, filename := "")
 
     ; clipboard := 填充内容
     Run code.cmd "%path%" || notepad "%path%"
-    ; WinWaitActive Notepad, , 3
-    ; if(ErrorLevel){
-    ;     return aw
-    ; }
-    ; Sleep 2000
-    ; SendEvent ^{End}^v
 }
 
 ; 自定义脚本创建

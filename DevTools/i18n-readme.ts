@@ -1,3 +1,4 @@
+// WIP
 `
 Main  Reference: /README.md
 Translated Reference: docs/README.*.md
@@ -15,7 +16,7 @@ If not translated or outdated, then ask for translation and append to the final 
 `;
 import fs from "fs";
 import { readFile } from "fs/promises";
-import ai from "openai";
+import { OpenAI } from "openai";
 // Define the paths for the main and translated reference files
 const mainFilePath = "README.md";
 const translatedFilePath = "docs/README.es.md"; // Assuming Spanish as an example
@@ -34,7 +35,7 @@ const translateUpdatedQ = async (
   referenceSection,
   translatedSection,
 ) =>
-  await new ai.Chat.Completions()
+  await new OpenAI().chat.completions
     .create({
       messages: [
         {
@@ -51,13 +52,13 @@ const translateUpdatedQ = async (
             'You received a JSON, Is the translation content already updated with reference section? Reply "Yes" or "No", Do not explain other things, do not add any punctuations.',
         },
       ],
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4o",
     })
     .then((e) => e.choices[0].message.content);
 
 // Helper function to translate a section
 const translateSection = async (lang, section) =>
-  await new ai.Chat.Completions()
+  await new OpenAI().chat.completions
     .create({
       messages: [
         {
@@ -66,7 +67,7 @@ const translateSection = async (lang, section) =>
         },
         { role: "user", message: "Is the translation already updated?" },
       ],
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4o",
     })
     .then((e) => e.choices[0].message.content);
 

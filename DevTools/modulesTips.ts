@@ -127,4 +127,6 @@ const QuickTipsUpdate = async (条件热键表) => {
   await fs.promises.writeFile(QuickTipsAHK, dst);
 };
 
-await QuickTipsUpdate(条件热键表);
+if (import.meta.main) {
+  await QuickTipsUpdate(条件热键表);
+}

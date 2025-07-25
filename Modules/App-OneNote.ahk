@@ -13,6 +13,7 @@
 #Include Modules/WinClip/WinClipAPI.ahk
 #Include Modules/WinClip/WinClip.ahk
 global wc := new WinClip
+global ONENOTE_MATCHER := "- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
 
 Return
 
@@ -76,6 +77,7 @@ OneNote_QuickTextInput(str)
 }
 ; 打开快速笔记主页
 OneNote快速笔记窗口启动(){
+    global ONENOTE_MATCHER
     if (OneNote_Win11_Detect()) {
         SendEvent #!n
     } else {
@@ -83,7 +85,7 @@ OneNote快速笔记窗口启动(){
         SendEvent #!n
     }
 
-    OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    OneNote窗口匹配串 := ".* " . ONENOTE_MATCHER
     WinWaitActive %OneNote窗口匹配串%, , 1 ; wait seconds
     if (ErrorLevel) {
         WinWait %OneNote窗口匹配串%, , 5 ; wait seconds
@@ -96,7 +98,8 @@ OneNote快速笔记窗口启动(){
     return true
 }
 OneNote主页启动(){
-    HomePageMathcer := ".*(HOME|TODO).* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    global ONENOTE_MATCHER
+    HomePageMathcer := ".*(HOME|TODO).* " . ONENOTE_MATCHER
     WinActivate %HomePageMathcer%
     if (!WinActive(HomePageMathcer)) {
         OneNote快速笔记窗口启动()
@@ -107,9 +110,10 @@ OneNote主页启动(){
     Return
 }
 OneNote搜索启动() {
+    global ONENOTE_MATCHER
     FormatTime, TimeString, , yyyyMMdd
     
-    TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    TodayNoteMatcher := ".*" . TimeString . ".* " . ONENOTE_MATCHER
     WinActivate %TodayNoteMatcher%
     if (!WinActive(TodayNoteMatcher)) {
         OneNote快速笔记窗口启动()
@@ -125,20 +129,21 @@ OneNote搜索启动() {
     Return
 }
 OneNote日记启动() {
+    global ONENOTE_MATCHER
     FormatTime, TimeString, , yyyyMMdd
-    TodayNoteMatcher := ".*" . TimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    TodayNoteMatcher := ".*" . TimeString . ".* " . ONENOTE_MATCHER
 
     ; Format yesterday's date
     Yesterday := A_Now
     Yesterday += -1, Days
     FormatTime, YesterdayTimeString, %Yesterday%, yyyyMMdd
-    YesterdayNoteMatcher := ".*" . YesterdayTimeString . ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    YesterdayNoteMatcher := ".*" . YesterdayTimeString . ".* " . ONENOTE_MATCHER
 
     ; Create matcher for today or yesterday notes
-    TodayOrYesterdayNoteMatcher := ".*((" . TimeString . ")|(" . YesterdayTimeString . ")).* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    TodayOrYesterdayNoteMatcher := ".*((" . TimeString . ")|(" . YesterdayTimeString . ")).* " . ONENOTE_MATCHER
     
 
-    OneNoteMatcher := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    OneNoteMatcher := ".* " . ONENOTE_MATCHER
     WinActivate %TodayNoteMatcher%
     if (WinActive(TodayNoteMatcher)) {
         return true
@@ -158,35 +163,26 @@ OneNote日记启动() {
         return false
     }
 
-    ; switch to diary tab
+    Tooltip % t("Switch to diary tab")
+    WinGetTitle, CurrentTitle
     SendEvent ^{Tab}
+    Tooltip % t("Wait for title change after switching tabs")
+    WinWaitNotActive, %CurrentTitle%, , 3
+    WinWaitActive, %OneNoteMatcher%, , 3
+
+    Tooltip % t("Navigate to end of notebook")
+    WinGetTitle, CurrentTitle
     SendEvent !{End}
+    Tooltip % t("Wait for title change after navigation")
+    WinWaitNotActive, %CurrentTitle%, , 3
+    WinWaitActive, %OneNoteMatcher%, , 3
     
-    WinWaitActive, %TodayOrYesterdayNoteMatcher%, , 8¦
-    if (ErrorLevel) {
-        ; if not today note, then create a new one
-        if (!WinActive(OneNoteMatcher)) {
-            return false
-        }
-    
+    Tooltip % t("Creating TODAY-NOTE")
+    if(!WinActive(TodayNoteMatcher)){
         SendEvent ^n
         Sleep, 300
         把笔记时间显式填充到标题()
     
-        WinWaitActive %TodayNoteMatcher%, , 5
-        if (ErrorLevel) {
-            ; fail to create new note
-            return false
-        }
-        return true
-    }
-    
-    ; if yesterday note is active, create a new note for today
-    if (WinActive(YesterdayNoteMatcher)) {
-        SendEvent ^n
-        Sleep, 300
-        把笔记时间显式填充到标题()
-        
         WinWaitActive %TodayNoteMatcher%, , 5
         if (ErrorLevel) {
             ; fail to create new note
@@ -199,7 +195,8 @@ OneNote日记启动() {
 }
 
 笔记条目搜索结果复制整理向页面粘贴条数(){
-    OneNote窗口匹配串 := ".* - OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE"
+    global ONENOTE_MATCHER
+    OneNote窗口匹配串 := ".* " . ONENOTE_MATCHER
     条数 := 笔记条目搜索结果复制整理条数()
     ; WinWaitNotActive ahk_class NUIDialog ahk_exe ONENOTE.EXE, , 2
     WinWaitActive %OneNote窗口匹配串%, , 5 ; wait for 5 seconds
@@ -308,7 +305,8 @@ OneNote日记启动() {
 #if OneNote搜索界面内()
 
     OneNote搜索界面内(){
-        return (WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE") || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
+    global ONENOTE_MATCHER
+        return (WinActive(".*" . ONENOTE_MATCHER) || WinActive("ahk_class ahk_class OneNote`:`:NavigationUIPopup ahk_exe ONENOTE.EXE"))
     }
 ; $^f::
 ; $^e::
@@ -344,6 +342,7 @@ OneNote日记启动() {
 #if OneNote创建链接窗口内()
 
     OneNote创建链接窗口内(){
+    global ONENOTE_MATCHER
         return WinActive("ahk_class NUIDialog ahk_exe ONENOTE.EXE")
     }
 
@@ -356,7 +355,8 @@ OneNote日记启动() {
 #if OneNote笔记编辑窗口内()
 
     OneNote笔记编辑窗口内(){
-        return !CapsLockXMode && WinActive(".*- OneNote ahk_class Framework`:`:CFrame ahk_exe ONENOTE.EXE")
+    global ONENOTE_MATCHER
+        return !CapsLockXMode && WinActive(".*" . ONENOTE_MATCHER)
     }
 
     F3:: 精确查找笔记()
