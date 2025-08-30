@@ -42,7 +42,11 @@ AnkiUnlock(x)
 
 AnkiWindowActiveQ()
 {
-    if(WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe")) {
+    ; 2025-08-31 add
+    if( WinActive(".*- Anki ahk_class Qt6.*QWindowIcon ahk_exe pythonw.exe")) {
+        return 1
+    }
+    if( WinActive("Anki -.* ahk_class QWidget ahk_exe anki.exe")) {
         return 1
     }
     if( WinActive("Anki - .*|.* - Anki ahk_class Qt5QWindowIcon ahk_exe anki.exe")) {
