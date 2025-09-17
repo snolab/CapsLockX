@@ -78,8 +78,6 @@ Return
 !Backspace:: SendEvent ^#{F4}
 !+Backspace:: SendEvent ^#d
 
-
-
 ; Switch to desktop
 1:: SwitchToDesktop(1)
 2:: SwitchToDesktop(2)

@@ -45,10 +45,70 @@ return
 
 #if
 
+; Calculate display width considering CJK characters (count as 2 width)
+GetDisplayWidth(str) {
+    width := 0
+    Loop, Parse, str
+    {
+        ; Check if character is CJK (Chinese, Japanese, Korean)
+        ; Unicode ranges: CJK Unified (4E00-9FFF), Hiragana/Katakana (3040-30FF), Hangul (AC00-D7AF)
+        code := Ord(A_LoopField)
+        if ((code >= 0x4E00 && code <= 0x9FFF)
+         || (code >= 0x3040 && code <= 0x30FF)
+         || (code >= 0xAC00 && code <= 0xD7AF)
+         || (code >= 0xFF00 && code <= 0xFFEF)) {
+            width += 2  ; CJK characters count as 2
+        } else {
+            width += 1  ; ASCII and other characters count as 1
+        }
+    }
+    return width
+}
+
+; Wrap text considering different character widths
+WrapTextWithWidth(text, maxWidth := 80) {
+    result := ""
+    currentLine := ""
+    words := StrSplit(text, " ")
+
+    for index, word in words {
+        testLine := currentLine ? currentLine . " " . word : word
+        if (GetDisplayWidth(testLine) <= maxWidth) {
+            currentLine := testLine
+        } else {
+            if (currentLine != "") {
+                result .= currentLine . "`n"
+            }
+            ; If single word is too long, break it
+            if (GetDisplayWidth(word) > maxWidth) {
+                chars := ""
+                Loop, Parse, word
+                {
+                    testChars := chars . A_LoopField
+                    if (GetDisplayWidth(testChars) > maxWidth) {
+                        result .= chars . "`n"
+                        chars := A_LoopField
+                    } else {
+                        chars := testChars
+                    }
+                }
+                currentLine := chars
+            } else {
+                currentLine := word
+            }
+        }
+    }
+    if (currentLine != "") {
+        result .= currentLine
+    }
+    return result
+}
+
 brainstorm_Tooltip(Text){
     global brainstormed
     TOOLTIP_ID_BRAINSTORM := 20
-    ToolTip, % Text, , , TOOLTIP_ID_BRAINSTORM
+    WrappedText := WrapTextWithWidth(Text, 80)
+    ToolTip, % WrappedText, , , TOOLTIP_ID_BRAINSTORM
     brainstormed := true
 }
 brainstorm_show()

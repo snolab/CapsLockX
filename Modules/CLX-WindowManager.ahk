@@ -171,12 +171,12 @@ WindowsListOfMonitorFast(arrangeFlags, MonitorIndex := 0)
                 Continue
             }
         }
-        ; 跳过置頂窗口
-        WinGet, ExStyle, ExStyle, ahk_id %hWnd%
-        if (ExStyle & 0x8) {
-            ; 0x8 is WS_EX_TOPMOST
-            Continue
-        }
+        ; ; 跳过置頂窗口
+        ; WinGet, ExStyle, ExStyle, ahk_id %hWnd%
+        ; if (ExStyle & 0x8) {
+        ;     ; 0x8 is WS_EX_TOPMOST
+        ;     Continue
+        ; }
         WinGet, this_exe, ProcessName, ahk_id %hWnd%
         windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
@@ -253,20 +253,29 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
         if ( this_class == "ApplicationFrameWindow") {
             Continue
         }
-        ; 跳过置頂窗口
-        WinGet, ExStyle, ExStyle, ahk_id %hWnd%
-        if (ExStyle & 0x8) {
-            ; 0x8 is WS_EX_TOPMOST
-            Continue
-        }
+        ; ; 跳过置頂窗口
+        ; WinGet, ExStyle, ExStyle, ahk_id %hWnd%
+        ; if (ExStyle & 0x8) {
+        ;     ; 0x8 is WS_EX_TOPMOST
+        ;     Continue
+        ; }
         WinGet, this_exe, ProcessName, ahk_id %hWnd%
-        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
+        
+        windowsMatches .= this_exe " - " CLX_WM_StrReverse(this_title) " SORT_SALT_Foy4crf "
+        windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n"
+        ; windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_pid " this_pid " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
     }
     Sort windowsMatches, R
+    windowsMatches := RegExReplace(windowsMatches, "m)[ \S]*SORT_SALT_Foy4crf")
     return windowsMatches
 }
+CLX_WM_StrReverse(String) {
+	String .= "", DllCall("msvcrt.dll\_wcsrev", "Ptr", &String, "CDecl")
+    return String
+}
+
 WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
 {
     ; 列出所有窗口
@@ -342,6 +351,105 @@ WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
         return True
     }
     return False
+}
+CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
+{
+    arrangeFlags += 0 ; string to number
+    SysGet, MonitorCount, MonitorCount
+    ; "List the windows within each monitor." 列出每个显示器内的窗口
+    loop %MonitorCount% {
+        MonitorIndex := A_Index
+        ; you can use cache here to improve performance
+        if (listOfWindow_%MonitorIndex%) {
+            continue
+        }
+        ; note: window list is sorted in reverse order
+        listOfWindow_%MonitorIndex% := WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex)
+    }
+    if (switchTo == "first") {
+        ; activate first window in all monitors
+        loop %MonitorCount% {
+            MonitorIndex := A_Index
+            n := StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r").Count() - 1
+            if (n > 0) {
+                next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[n], "^.*?ahk_id (\S+?)$", "$1")
+                break
+            }
+        }
+        WinActivate, ahk_id %next_hWnd%
+        return True
+    } else if (switchTo == "last") {
+        ; activate last window in all monitors
+        loop %MonitorCount% {
+            MonitorIndex := A_Index
+            n := StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r").Count() - 1
+            if (n > 0) {
+                next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[1], "^.*?ahk_id (\S+?)$", "$1")
+                break
+            }
+        }
+        WinActivate, ahk_id %next_hWnd%
+        return True
+    }else{
+        ; check current focused window index, and get next hWnd
+        hWnd := WinActive("A")
+        next_hWnd := ""
+        loop %MonitorCount% {
+            MonitorIndex := A_Index
+            ; msgbox, % "MonitorIndex " MonitorIndex " listOfWindow_" MonitorIndex ": " listOfWindow_%MonitorIndex%
+            n := StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r").Count() - 1
+            k := 0
+            loop Parse, listOfWindow_%MonitorIndex%, `n
+            {
+                this_hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
+                ; msgbox, % "this_hWnd " this_hWnd " hWnd " hWnd " k " k " n " n
+                if (this_hWnd == hWnd) {
+                    offset := -direction ; the listOfWindow is sorted in reverse order
+
+                    ; found current window
+                    ; Way1 cycle in current desktop
+                    ; if (direction > 0) {
+                    ;     k := Mod((k + offset), n)
+                    ; } else {
+                    ;     k := Mod((k + n + offset), n)
+                    ; }
+                    ; next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[k + 1], "^.*?ahk_id (\S+?)$", "$1")
+
+                    ; way2 cycle in multiple desktops, auto switch to next desktop if out of range
+                    ; get next index
+                    k := k + offset
+                    next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[k + 1], "^.*?ahk_id (\S+?)$", "$1")
+                    
+                    break
+                }
+                k += 1
+            }
+            if (next_hWnd) {
+                break
+            }
+        }
+        ; msgbox, % "next_hWnd " next_hWnd
+        if (next_hWnd) {
+            WinGetTitle, Title, ahk_id %next_hWnd%
+            WinActivate, ahk_id %next_hWnd%
+            ; TrayTip, CapsLockX 窗口增强, 切换到窗口 %Title%
+            return True
+        }
+    }
+    
+    if (direction < 0) {
+        SendInput ^#{Left}
+        if (switchTo == "first|last") {
+            Sleep 200
+            CycleWindows(arrangeFlags, direction, "last")
+        }
+    } else {
+        SendInput ^#{Right}
+        if (switchTo == "first|last") {
+            Sleep 200
+            CycleWindows(arrangeFlags, direction, "first")
+        }
+    }
 }
 ArrangeWindows(arrangeFlags = "0")
 {
@@ -612,17 +720,17 @@ CurrentWindowSetAsBackground()
 
 #if CapsLockXMode
 
-z:: 最近1分钟内闪动窗口激活()
+z:: 下一个窗口激活()
 +z:: 上一个窗口激活()
-; +z:: 下一个窗口激活()
-; !z:: 最近1分钟内闪动窗口激活()
+!z:: 最近1分钟内闪动窗口激活()
+
 x:: Send ^w ; 关闭标签
 +x:: 关闭窗口并切到下一窗口()
 ^!x:: 杀死窗口并切到下一窗口()
++c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW) ; 自动堆叠窗口
++^c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
 c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW) ; 自动排列窗口
 ^c:: ArrangeWindows(ARRANGE_SIDE_BY_SIDE|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动排列窗口（包括最小化的窗口）
-+c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW) ; 自动堆叠窗口
-^+c:: ArrangeWindows(ARRANGE_STACKED|ARRANGE_MAXWINDOW|ARRANGE_MINWINDOW) ; 自动堆叠窗口（包括最小化的窗口）
 +v:: 当前窗口置顶透明切换()
 v:: 当前窗口临时透明()
 v Up:: 当前窗口临时透明取消()
@@ -910,30 +1018,38 @@ ShellMessage( wParam, lParam )
         TrayTip, % t("最近1分钟内闪动窗口激活"), %this_title%
         最迟闪动窗口 := {}
         鼠标位置还原尝试()
-    } else {
-        下一个窗口激活()
+        return true
     }
+    return false
 }
 下一个窗口激活()
 {
-    鼠标位置记忆尝试()
-    WinGet, hWnd, id, A
-    SendEvent +!{Esc}
-    WinWaitNotActive ahk_id %hWnd%, , 1
-    if (ErrorLevel) {
+    if (最近1分钟内闪动窗口激活()){
         return
     }
+    鼠标位置记忆尝试()
+    ; WinGet, hWnd, id, A
+    ; SendEvent +!{Esc}
+    ; WinWaitNotActive ahk_id %hWnd%, , 1
+    ; if (ErrorLevel) {
+    ;     return
+    ; }
+    CycleWindows(ARRANGE_MAXWINDOW, 1)
     鼠标位置还原尝试()
 }
 上一个窗口激活()
 {
-    鼠标位置记忆尝试()
-    WinGet, hWnd, id, A
-    SendEvent !{Esc}
-    WinWaitNotActive ahk_id %hWnd%, , 1
-    if (ErrorLevel) {
+    if (最近1分钟内闪动窗口激活()){
         return
     }
+    鼠标位置记忆尝试()
+    ; WinGet, hWnd, id, A
+    ; SendEvent !{Esc}
+    ; WinWaitNotActive ahk_id %hWnd%, , 1
+    ; if (ErrorLevel) {
+    ;     return
+    ; }
+    CycleWindows(ARRANGE_MAXWINDOW, -1)
     鼠标位置还原尝试()
 }
 最迟闪动窗口激活()
