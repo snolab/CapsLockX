@@ -2,11 +2,9 @@
 ; #Requires AutoHotkey v1.1.33
 #Include ./Modules/Lib/AHK-GDIp-Library-Compilation/ahk-v1-1/Gdip_All.ahk ; https://github.com/marius-sucan/AHK-GDIp-Library-Compilation
 
-; Note: This module uses WinHttp.WinHttpRequest.5.1 for HTTP requests
-; which automatically respects Windows system proxy settings.
-; Proxy configuration: SetProxy(0) = use system proxy settings
-; SetProxy(1) = direct connection (no proxy)
-; SetProxy(2, "proxy:port") = use specific proxy
+; Note: This module uses Msxml2.XMLHTTP for HTTP requests
+; which automatically respects Windows Internet Explorer proxy settings.
+; To configure proxy: Control Panel → Internet Options → Connections → LAN settings
 
 global brainstorming := false
 global brainstormed := false
@@ -200,9 +198,8 @@ brainstorm_quick_capture(skip_prompt:=false, defaultPrompt:="")
     ; heat up
     global brainstorm_origin
     endpoint := brainstorm_origin . "/ai/chat?ret=polling"
-    xhrHeatUp := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    xhrHeatUp := ComObjCreate("Msxml2.XMLHTTP")
     xhrHeatUp.Open("PUT", endpoint)
-    xhrHeatUp.SetProxy(0)  ; 0 = HTTPREQUEST_PROXYSETTING_PRECONFIG (use system proxy settings)
     xhrHeatUp.onreadystatechange := Func("BS_heatUp_onReadyStateChange").Bind(xhrHeatUp)
     xhrHeatUp.Send("")
 
@@ -258,9 +255,8 @@ brainstorm_prompt(skip_prompt:=false, defaultPrompt:="")
     ; heat up
     global brainstorm_origin
     endpoint := brainstorm_origin . "/ai/chat?ret=polling"
-    xhrHeatUp := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    xhrHeatUp := ComObjCreate("Msxml2.XMLHTTP")
     xhrHeatUp.Open("PUT", endpoint)
-    xhrHeatUp.SetProxy(0)  ; 0 = HTTPREQUEST_PROXYSETTING_PRECONFIG (use system proxy settings)
     xhrHeatUp.onreadystatechange := Func("BS_heatUp_onReadyStateChange").Bind(xhrHeatUp)
     xhrHeatUp.Send("")
 
@@ -322,9 +318,8 @@ brainstorm_questionPost(question, imagePath)
 {
     global brainstorm_origin
     endpoint := brainstorm_origin . "/ai/chat?ret=polling"
-    xhr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    xhr := ComObjCreate("Msxml2.XMLHTTP")
     xhr.Open("POST", endpoint)
-    xhr.SetProxy(0)  ; 0 = HTTPREQUEST_PROXYSETTING_PRECONFIG (use system proxy settings)
     xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
     global brainstorming
     if (!brainstorming) {
@@ -390,9 +385,8 @@ tokenAppend(questionId)
         return
     global brainstorm_origin
     endpoint := brainstorm_origin "/ai/" questionId
-    xhra := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    xhra := ComObjCreate("Msxml2.XMLHTTP")
     xhra.open("GET", endpoint)
-    xhra.SetProxy(0)  ; 0 = HTTPREQUEST_PROXYSETTING_PRECONFIG (use system proxy settings)
     xhra.onreadystatechange := Func("tokenAppend_onReadyStateChange").Bind(xhra)
     xhra.Send()
 }
