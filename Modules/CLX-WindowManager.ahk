@@ -439,13 +439,13 @@ CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
     }
     
     if (direction < 0) {
-        SendInput ^#{Left}
+        Func("SwitchToPrevDesktop").Call()
         if (switchTo == "first|last") {
             Sleep 200
             CycleWindows(arrangeFlags, direction, "last")
         }
     } else {
-        SendInput ^#{Right}
+        Func("SwitchToNextDesktop").Call()
         if (switchTo == "first|last") {
             Sleep 200
             CycleWindows(arrangeFlags, direction, "first")
