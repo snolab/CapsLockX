@@ -68,6 +68,7 @@ CLX_ConfigWindow()
     Gui, Add, Button, w200 gButton打开BUG反馈与建议页面, % t("打开BUG反馈与建议页面")
     Gui, Add, Button, w200 gButton打开官方文档, % t("打开官方文档")
     Gui, Add, Button, w200 gButton添加开机自动启动, % t("添加开机自动启动")
+    Gui, Add, Button, w200 gButtonSetupAutostart, % t("设置Windows自动启动")
     Gui, Add, Button, w200 gButton配置文件编辑, % t("配置文件编辑")
     Gui, Add, Button, w200 gButton重新載入, % t("重新載入CapsLockX")
     
@@ -131,6 +132,9 @@ return
 
 Button添加开机自动启动:
     Func("CLX_MakeStartup").Call()
+return
+ButtonSetupAutostart:
+    Run *RunAs CMD.exe /k %A_ScriptDir%\..\setup_autostart.bat
 return
 Button打开BUG反馈与建议页面:
     Run https://github.com/snolab/CapsLockX/issues

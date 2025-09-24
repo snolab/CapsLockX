@@ -58,6 +58,9 @@ global VirtualDesktopPinPattern9 := CLX_Config("VirtualDesktopPinPattern", "p9",
 global VirtualDesktopPinPattern0 := CLX_Config("VirtualDesktopPinPattern", "p0", "#Desktop0", "Pin matched window to desktop 0")
 ; @deprecated end
 
+; Global variable to track current desktop index (fallback when API fails)
+global CurrentVirtualDesktopIdx := 1
+
 Return
 
 ; Define hotkeys
@@ -65,8 +68,8 @@ Return
 #if CapsLockXMode && ExtraVirtualDesktopManageFunction
 
 ; Switch desktop left and right
-[:: SendInput ^#{Left}
-]:: SendInput ^#{Right}
+[:: Func("SwitchToPrevDesktop").Call()
+]:: Func("SwitchToNextDesktop").Call()
 
 ; Move the current window to the left or right desktop
 +[:: MoveActiveWindowWithAction("^#{Left}")
@@ -212,33 +215,159 @@ object QueryService(ref Guid service, ref Guid riid);
 
 #if ; Define Functions
 
+; Get current virtual desktop index
+; First tries to get from API, falls back to global variable if API fails
+GetCurrentVirtualDesktopIdx()
+{
+    global CurrentVirtualDesktopIdx
+
+    ; Try to get current desktop from API
+    idx := GetCurrentVirtualDesktopIdxFromAPI()
+    if (idx) {
+        ; Update our cached value
+        CurrentVirtualDesktopIdx := idx
+        return idx
+    }
+
+    ; API failed, return cached value
+    return CurrentVirtualDesktopIdx
+}
+
+; Helper function to get current desktop index from Windows API
+GetCurrentVirtualDesktopIdxFromAPI()
+{
+    idx := 0
+
+    CLSID_ImmersiveShell := "{C2F03A33-21F5-47FA-B4BB-156362A2F239}"
+    CLSID_IServiceProvider10 := "{6D5140C1-7436-11CE-8034-00AA006009FA}"
+    CLSID_IVirtualDesktop_Win12 := "{3F07F4BE-B107-441A-AF0F-39D82529072C}"
+    CLSID_IVirtualDesktop_Win11 := "{536D3495-B208-4CC9-AE26-DE8111275BF8}"
+    CLSID_IVirtualDesktop_Win10 := "{FF72FFDD-BE7E-43FC-9C03-AD81681E88E4}"
+    CLSID_VirtualDesktopManagerInternal := "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}"
+    CLSID_IVirtualDesktopManagerInternal_Win12 := "{53F5CA0B-158F-4124-900C-057158060B27}"
+    CLSID_IVirtualDesktopManagerInternal_Win11 := "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}"
+    CLSID_IVirtualDesktopManagerInternal_Win10 := "{F31574D6-B682-4CDC-BD56-1827860ABEC6}"
+
+    try {
+        IServiceProvider := ComObjCreate(CLSID_ImmersiveShell, CLSID_IServiceProvider10)
+        IVirtualDesktopManagerInternal_Win12 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win12)
+        IVirtualDesktopManagerInternal_Win11 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win11)
+        IVirtualDesktopManagerInternal_Win10 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win10)
+
+        win12 := !!IVirtualDesktopManagerInternal_Win12
+        win11 := !!IVirtualDesktopManagerInternal_Win11
+        win10 := !!IVirtualDesktopManagerInternal_Win10
+
+        _ := win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
+        _ := win11 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win11)
+        _ := win10 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win10)
+
+        ObjRelease(IServiceProvider)
+
+        if (IVirtualDesktopManagerInternal) {
+            GetCurrentDesktop := vtable(IVirtualDesktopManagerInternal, 6)
+            GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
+
+            ; Get current desktop
+            pCurrentDesktop := 0
+            _ := win12 && DllCall(GetCurrentDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pCurrentDesktop)
+            _ := win11 && DllCall(GetCurrentDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr*", pCurrentDesktop)
+            _ := win10 && DllCall(GetCurrentDesktop, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pCurrentDesktop)
+
+            if (pCurrentDesktop) {
+                ; Get all desktops
+                pDesktopIObjectArray := 0
+                _ := win12 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
+                _ := win11 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr*", pDesktopIObjectArray)
+                _ := win10 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
+
+                if (pDesktopIObjectArray) {
+                    GetDesktopCount := vtable(pDesktopIObjectArray, 3)
+                    GetDesktopAt := vtable(pDesktopIObjectArray, 4)
+
+                    _ := win12 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
+                    _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", DesktopCount)
+                    _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", DesktopCount)
+
+                    ; Find which desktop index matches current desktop
+                    _ := win12 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win12)
+                    _ := win11 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win11)
+                    _ := win10 && GetGUIDFromString(IID_IVirtualDesktop, CLSID_IVirtualDesktop_Win10)
+
+                    Loop %DesktopCount% {
+                        pDesktop := 0
+                        DllCall(GetDesktopAt, "Ptr", pDesktopIObjectArray, "UInt", A_Index - 1, "Ptr", &IID_IVirtualDesktop, "Ptr*", pDesktop)
+                        if (pDesktop == pCurrentDesktop) {
+                            idx := A_Index
+                            ObjRelease(pDesktop)
+                            break
+                        }
+                        if (pDesktop) {
+                            ObjRelease(pDesktop)
+                        }
+                    }
+                    ObjRelease(pDesktopIObjectArray)
+                }
+                ObjRelease(pCurrentDesktop)
+            }
+            ObjRelease(IVirtualDesktopManagerInternal)
+        }
+    } catch {
+        ; API call failed, return 0
+        idx := 0
+    }
+
+    return idx
+}
+
 ; Move the current window to another desktop
 MoveActiveWindowWithAction(action)
 {
+    global CurrentVirtualDesktopIdx
+
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput %action%
+
+    ; Update index based on action
+    if (action == "^#{Left}") {
+        CurrentVirtualDesktopIdx := max(1, CurrentVirtualDesktopIdx - 1)
+    } else if (action == "^#{Right}") {
+        CurrentVirtualDesktopIdx := CurrentVirtualDesktopIdx + 1
+    }
+
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
 MoveActiveWindowToNewDesktop()
 {
+    global CurrentVirtualDesktopIdx
+
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SendInput ^#d
+
+    ; When creating a new desktop, increment the index
+    CurrentVirtualDesktopIdx := CurrentVirtualDesktopIdx + 1
+
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
 MoveActiveWindowToDesktop(idx)
 {
+    global CurrentVirtualDesktopIdx
+
     activeWin := WinActive("A")
     WinHide ahk_id %activeWin%
     SwitchToDesktop(idx)
+    CurrentVirtualDesktopIdx := idx
     WinShow ahk_id %activeWin%
     WinActivate ahk_id %activeWin%
 }
 MoveAllVisibleWindowToDesktop(idx)
 {
+    global CurrentVirtualDesktopIdx
+
     listOfWindow := WindowsListOfMonitorFast(arrangeFlags | ARRANGE_MAXWINDOW | ARRANGE_MINWINDOW)
 
     loop Parse, listOfWindow, `n
@@ -250,6 +379,7 @@ MoveAllVisibleWindowToDesktop(idx)
         DllCall("ShowWindowAsync", UInt, hWnd, UInt, (SW_HIDE := 0x0) )
     }
     SwitchToDesktop(idx)
+    CurrentVirtualDesktopIdx := idx
     Sleep 128
     loop Parse, listOfWindow, `n
     {
@@ -262,15 +392,111 @@ MoveAllVisibleWindowToDesktop(idx)
 }
 SwitchToDesktop(idx)
 {
+    global CurrentVirtualDesktopIdx
+
     if (SwitchToDesktopByInternalAPI(idx)) {
         ; ok
+        CurrentVirtualDesktopIdx := idx
     } else if (SwitchToDesktopByHotkey(idx)) {
         ; Tooltip, WARN SwitchToDesktopByHotkey %idx%
+        CurrentVirtualDesktopIdx := idx
     } else {
         Tooltip, WARN SwitchToDesktop FAILED
     }
     EnsureCurrentEnviromentRule(idx)
     return idx
+}
+
+SwitchToNextDesktop()
+{
+    currentIdx := GetCurrentVirtualDesktopIdx()
+
+    ; Get total desktop count to avoid going beyond available desktops
+    desktopCount := GetVirtualDesktopCount()
+    if (!desktopCount) {
+        ; If we can't get count from API, assume max 10 desktops
+        desktopCount := 10
+    }
+
+    ; Calculate next index (wrap around or stop at last desktop)
+    nextIdx := currentIdx + 1
+    if (nextIdx > desktopCount) {
+        ; Optionally wrap around to first desktop
+        ; nextIdx := 1
+        ; Or stay at current desktop
+        return currentIdx
+    }
+
+    return SwitchToDesktop(nextIdx)
+}
+
+SwitchToPrevDesktop()
+{
+    currentIdx := GetCurrentVirtualDesktopIdx()
+
+    ; Calculate previous index
+    prevIdx := currentIdx - 1
+    if (prevIdx < 1) {
+        ; Stay at first desktop or optionally wrap to last
+        return currentIdx
+    }
+
+    return SwitchToDesktop(prevIdx)
+}
+
+; Helper function to get total desktop count
+GetVirtualDesktopCount()
+{
+    count := 0
+
+    CLSID_ImmersiveShell := "{C2F03A33-21F5-47FA-B4BB-156362A2F239}"
+    CLSID_IServiceProvider10 := "{6D5140C1-7436-11CE-8034-00AA006009FA}"
+    CLSID_VirtualDesktopManagerInternal := "{C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B}"
+    CLSID_IVirtualDesktopManagerInternal_Win12 := "{53F5CA0B-158F-4124-900C-057158060B27}"
+    CLSID_IVirtualDesktopManagerInternal_Win11 := "{B2F925B9-5A0F-4D2E-9F4D-2B1507593C10}"
+    CLSID_IVirtualDesktopManagerInternal_Win10 := "{F31574D6-B682-4CDC-BD56-1827860ABEC6}"
+
+    try {
+        IServiceProvider := ComObjCreate(CLSID_ImmersiveShell, CLSID_IServiceProvider10)
+        IVirtualDesktopManagerInternal_Win12 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win12)
+        IVirtualDesktopManagerInternal_Win11 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win11)
+        IVirtualDesktopManagerInternal_Win10 := ComObjQuery(IServiceProvider, CLSID_VirtualDesktopManagerInternal, CLSID_IVirtualDesktopManagerInternal_Win10)
+
+        win12 := !!IVirtualDesktopManagerInternal_Win12
+        win11 := !!IVirtualDesktopManagerInternal_Win11
+        win10 := !!IVirtualDesktopManagerInternal_Win10
+
+        _ := win12 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win12)
+        _ := win11 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win11)
+        _ := win10 && (IVirtualDesktopManagerInternal := IVirtualDesktopManagerInternal_Win10)
+
+        ObjRelease(IServiceProvider)
+
+        if (IVirtualDesktopManagerInternal) {
+            GetCount := vtable(IVirtualDesktopManagerInternal, 3)
+            GetDesktops := vtable(IVirtualDesktopManagerInternal, 7)
+
+            pDesktopIObjectArray := 0
+            _ := win12 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
+            _ := win11 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "Ptr*", pDesktopIObjectArray)
+            _ := win10 && DllCall(GetDesktops, "Ptr", IVirtualDesktopManagerInternal, "Ptr*", pDesktopIObjectArray)
+
+            if (pDesktopIObjectArray) {
+                GetDesktopCount := vtable(pDesktopIObjectArray, 3)
+                _ := win12 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", count)
+                _ := win11 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "Ptr", 0, "UInt*", count)
+                _ := win10 && DllCall(GetDesktopCount, "Ptr", IVirtualDesktopManagerInternal, "UInt*", count)
+
+                ObjRelease(pDesktopIObjectArray)
+            }
+            ObjRelease(IVirtualDesktopManagerInternal)
+        }
+    } catch {
+        ; API call failed
+        count := 0
+    }
+
+    return count
 }
 EnsureCurrentEnviromentRule(idx)
 {

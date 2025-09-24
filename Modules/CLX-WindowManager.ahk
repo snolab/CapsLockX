@@ -261,7 +261,8 @@ WindowsListOfMonitorInCurrentDesktop(arrangeFlags, MonitorIndex := 0)
         ; }
         WinGet, this_exe, ProcessName, ahk_id %hWnd%
         
-        windowsMatches .= this_exe " - " CLX_WM_StrReverse(this_title) " SORT_SALT_Foy4crf "
+        ; windowsMatches .= this_exe " - " CLX_WM_StrReverse(this_title) " SORT_SALT_Foy4crf "
+        windowsMatches .= this_exe " - " hWnd " SORT_SALT_Foy4crf "
         windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n"
         ; windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
         ; windowsMatches .= "ahk_exe " this_exe " ahk_id " hWnd "`n" ; . "`t" . this_title . "`n"
