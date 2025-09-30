@@ -756,14 +756,14 @@ v Up:: 当前窗口临时透明取消()
 关闭窗口并切到下一窗口()
 {
     hWnd := WinActive("A")
-    Send !{Esc}
+    下一个窗口激活()
     WM_CLOSE := 0x0010
     SendMessage %WM_CLOSE%, 0, 0, , ahk_id %hWnd%
 }
 杀死窗口并切到下一窗口()
 {
     hWnd := WinActive("A")
-    Send !{Esc}
+    下一个窗口激活()
     WinKill ahk_id %hWnd%
 }
 
