@@ -411,20 +411,18 @@ SwitchToNextDesktop()
 {
     currentIdx := GetCurrentVirtualDesktopIdx()
 
-    ; Get total desktop count to avoid going beyond available desktops
+    ; Get total desktop count
     desktopCount := GetVirtualDesktopCount()
     if (!desktopCount) {
         ; If we can't get count from API, assume max 10 desktops
         desktopCount := 10
     }
 
-    ; Calculate next index (wrap around or stop at last desktop)
+    ; Calculate next index with wrap around
     nextIdx := currentIdx + 1
     if (nextIdx > desktopCount) {
-        ; Optionally wrap around to first desktop
-        ; nextIdx := 1
-        ; Or stay at current desktop
-        return currentIdx
+        ; Wrap around to first desktop
+        nextIdx := 1
     }
 
     return SwitchToDesktop(nextIdx)
@@ -434,11 +432,18 @@ SwitchToPrevDesktop()
 {
     currentIdx := GetCurrentVirtualDesktopIdx()
 
-    ; Calculate previous index
+    ; Get total desktop count for wrap around
+    desktopCount := GetVirtualDesktopCount()
+    if (!desktopCount) {
+        ; If we can't get count from API, assume max 10 desktops
+        desktopCount := 10
+    }
+
+    ; Calculate previous index with wrap around
     prevIdx := currentIdx - 1
     if (prevIdx < 1) {
-        ; Stay at first desktop or optionally wrap to last
-        return currentIdx
+        ; Wrap around to last desktop
+        prevIdx := desktopCount
     }
 
     return SwitchToDesktop(prevIdx)
