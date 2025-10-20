@@ -75,7 +75,6 @@ OneNote_QuickTextInput(str)
 {
     SendInput {Text}%str%
 }
-; 打开快速笔记主页
 OneNote快速笔记窗口启动(){
     global ONENOTE_MATCHER
     if (OneNote_Win11_Detect()) {
@@ -95,14 +94,26 @@ OneNote快速笔记窗口启动(){
         }
         WinActivate %OneNote窗口匹配串%
     }
+    ; set to topmost, (but not always on top).  first, set always on top = off, and then set HWND_TOP
+    ; use DllCall setwindowpos
+    WinSet, AlwaysOnTop, Off, %OneNote窗口匹配串%
+    DllCall("SetWindowPos", "UInt", WinExist(OneNote窗口匹配串), "UInt", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0002 | 0x0001)
+    ; tooltip % t("OneNote 快速笔记窗口已启动")
+    
     return true
 }
 OneNote主页启动(){
     global ONENOTE_MATCHER
     HomePageMathcer := ".*(HOME|TODO).* " . ONENOTE_MATCHER
     WinActivate %HomePageMathcer%
-    if (!WinActive(HomePageMathcer)) {
+    hWnd := WinActive(HomePageMathcer)
+    if (!hWnd) {
         OneNote快速笔记窗口启动()
+    }else{
+        ; make it top but not always on top
+        WinSet, AlwaysOnTop, Off, %HomePageMathcer%
+        DllCall("SetWindowPos", "UInt", hWnd, "UInt", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0002 | 0x0001)
+
     }
 
     ; SendEvent !{Home}^{Home}!{Enter}{Left}
@@ -294,10 +305,9 @@ OneNote日记启动() {
 ; 注意win11下OneNote快速笔记热键变成了Win+Alt+N，而Win+N的新功能为打开消息中心
 ; 原热键，打开快速笔记
 ; $#n:: SendEvent #n
-; 打开 主页
-#!n:: OneNote主页启动()
-; 打开 OneNote 并精确匹配查找搜索笔记j
-#+n:: OneNote日记启动() ; OneNote搜索启动()
+#n:: OneNote快速笔记窗口启动() ; 打开 快速笔记
+#!n:: OneNote主页启动() ; 打开 主页
+#+n:: OneNote日记启动() ; OneNote搜索启动() ; 打开 OneNote 并精确匹配查找搜索笔记
 ; 打开 UWP 版 OneNote 的快速笔记
 ; $#+n:: Run "onenote-cmd://quicknote?onOpen=typing"
 
