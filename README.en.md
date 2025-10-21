@@ -229,6 +229,7 @@ TODO: FN key, arrow keys, editing operations, 61-key layout vs 87-key layout,
 | 全局   | CapsLockX + /         | 临时显示热键提示                 |
 | 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
 | 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
+
 ]
 
 <!-- MODULE_FILE: App-AnkiEnhanced.ahk-->
@@ -262,6 +263,7 @@ Anki 操作增强
 | 在 Anki-学习界面     | `6 或 NumPad6` | 暂停卡片                                                    |
 | 在 Anki-学习界面     |   `Alt + i`    | 快速导入剪贴版的内容（按 Tab 分割） / 比如可以从 Excel 复制 |
 | 在 Anki-添加卡片界面 |   `Alt + s`    | 按下 添加 按钮                                              |
+
 ]
 
 <!-- MODULE_FILE: App-OneNote2019.ahk-->
@@ -332,6 +334,7 @@ Anki 操作增强
 | OneNote2019 创建链接窗口 | `Alt + s`                    | 编辑：复制当前所有搜索结果页面的链接                                      |
 | OneNote2019 创建链接窗口 | `Alt + Shift + s`            | 编辑：复制当前所有搜索结果页面的链接并粘贴                                |
 | OneNote2019 剪贴板笔记   | `Ctrl + C`                   | 编辑：⭐ 追加复制的内容到名称中含有 "Clipboard" 或 "剪贴板" 的笔记        |
+
 ]
 
 <!-- MODULE_FILE: App-XunFeiSwitching.ahk-->
@@ -340,8 +343,8 @@ Anki 操作增强
 
 #### 用法
 
-| 作用于 |  按键   | 功能说明              |
-| ------ | :-----: | --------------------- |
+| 作用于 |     按键      | 功能说明              |
+| ------ | :-----------: | --------------------- |
 | 全局   | Win + Alt + H | 启动/切换讯飞语音输入 |
 
 #### 注
@@ -377,7 +380,7 @@ Anki 操作增强
 
 1. 任何輸入框内，选中你想要翻譯的文字
 2. 然後全選按下 `CLX+b`，`to chinese:` AI 自動幫你輸入成中文。
-]
+   ]
 
 <!-- MODULE_FILE: CLX-Edit.ahk-->
 
@@ -400,6 +403,7 @@ Anki 操作增强
 | 全局(进阶) | `CapsLockX + hl`      | hl 一起按选择当前词              |
 | 全局(进阶) | `CapsLockX + kj`      | kj 一起按选择当前行              |
 | 全局(进阶) | `CapsLockX + h + t`   | 移位后删：大部分情况可代替退格键 |
+
 ]
 
 <!-- MODULE_FILE: CLX-LaptopKeyboardFix.ahk-->
@@ -419,6 +423,7 @@ Anki 操作增强
 | 全局             | 按住右 Menu                           | 会按住 Ctrl，此时可以与其它键组合  |
 | Win 键模拟启用后 | ] 按住同时，[ 按下                    | 相当于按 Win 键                    |
 | Win 键模拟启用后 | RAlt+\| 相当于按 Alt+Tab 只不过在右手 |
+
 ]
 
 <!-- MODULE_FILE: CLX-MediaKeys.ahk-->
@@ -438,6 +443,7 @@ Anki 操作增强
 | 全局   | `CapsLockX + F9`  | 音量加                                      |
 | 全局   | `CapsLockX + F10` | 音量减                                      |
 | 全局   | `CapsLockX + F11` | 静音                                        |
+
 ]
 
 <!-- MODULE_FILE: CLX-Mouse.ahk-->
@@ -485,6 +491,7 @@ Anki 操作增强
 | ------ | --------------- | -------------------------------------- |
 | 全局   | `CapsLockX + -` | 计算当前选区 JavaScript 表达式，并替换 |
 | 全局   | `CapsLockX + =` | 计算当前选区 JavaScript 表达式，并替换 |
+
 ]
 
 <!-- MODULE_FILE: CLX-WindowManager.ahk-->
@@ -560,6 +567,7 @@ Anki 操作增强
 | 全局 | `#PW#`   | 随机输入数字字母密码如： `yyCTCNYodECTLr2h`     |
 | 全局 | `#WPW#`  | 随机输入数字字母密码如： `FtD5BB1m5H98eY7Y`     |
 | 全局 | `#SPW#`  | 随机输入数字字母符号密码如： `/})y+xK]z~>XKQ+p` |
+
 ]
 
 <!-- MODULE_FILE: TomatoLife.ahk-->
