@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=CapsLockX
-AppVersion=1.34.12
+AppVersion=1.35.0
 WizardStyle=modern
 ; DefaultDirName={autopf}\CapsLockX
 DefaultDirName={userappdata}\CapsLockX
