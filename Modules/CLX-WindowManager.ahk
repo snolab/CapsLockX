@@ -627,8 +627,8 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             ; y := AreaY + (n - k - 1) * dy
 
             ; Order left-bottom to right-top
-            x := AreaX + 0      +  k * dx ; + -k * dx + AreaW
-            y := AreaY + n * dy + -k * dy
+            x := AreaX + dx * (0 +k    )
+            y := AreaY + dy * (n -k - 1)
 
             ; w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx - n * dx + 2 * k * dx))
             w := Max(AreaW/2, (AreaW - 2 * dx - (n - 2) * dx + dx))
@@ -640,8 +640,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             k+=1
         }
         ; Activate the first window
-        ; firstHWND := 
-        CycleWindows(ARRANGE_MAXWINDOW, 1, "first")
+        ; CycleWindows(ARRANGE_MAXWINDOW, 1, "first")
 
     }
     ; if (false && arrangeFlags & ARRANGE_Z_ORDERING) {
