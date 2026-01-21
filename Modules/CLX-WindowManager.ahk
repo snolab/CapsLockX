@@ -373,7 +373,7 @@ CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
             MonitorIndex := A_Index
             n := StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r").Count() - 1
             if (n > 0) {
-                next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[n], "^.*?ahk_id (\S+?)$", "$1")
+                next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[1], "^.*?ahk_id (\S+?)$", "$1")
                 break
             }
         }
@@ -385,7 +385,7 @@ CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
             MonitorIndex := A_Index
             n := StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r").Count() - 1
             if (n > 0) {
-                next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[1], "^.*?ahk_id (\S+?)$", "$1")
+                next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[n], "^.*?ahk_id (\S+?)$", "$1")
                 break
             }
         }
@@ -405,7 +405,7 @@ CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
                 this_hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
                 ; msgbox, % "this_hWnd " this_hWnd " hWnd " hWnd " k " k " n " n
                 if (this_hWnd == hWnd) {
-                    offset := -direction ; the listOfWindow is sorted in reverse order
+                    offset := direction ; the listOfWindow is sorted in reverse order
 
                     ; found current window
                     ; Way1 cycle in current desktop
@@ -515,7 +515,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         }
         size_x := AreaW / col
         size_y := AreaH / row
-        k := n - 1
+        k := 0
         lasthWnd := 0
         loop Parse, listOfWindow, `n
         {
@@ -549,7 +549,8 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
 
             FastResizeWindow(hWnd, x, y, w, h)
             lasthWnd := hWnd
-            k-=1
+            
+            k += 1
         }
         WinGet, hWnd, , A
         ; DllCall( "FlashWindow", UInt, hWnd, Int, True )
@@ -621,8 +622,14 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             ; set stacked transparent
             WinSet, Transparent, 240, ahk_id %hWnd%
 
-            x := AreaX + (n - k - 1) * dx
-            y := AreaY + (n - k - 1) * dy
+            ; Order left-top to right-bottom
+            ; x := AreaX + (n - k - 1) * dx
+            ; y := AreaY + (n - k - 1) * dy
+
+            ; Order left-bottom to right-top
+            x := AreaX + 0      +  k * dx ; + -k * dx + AreaW
+            y := AreaY + n * dy + -k * dy
+
             ; w := Max(AreaW/2, (AreaW - 2 * dx - n * dx + dx - n * dx + 2 * k * dx))
             w := Max(AreaW/2, (AreaW - 2 * dx - (n - 2) * dx + dx))
             h := Max(AreaH/2, (AreaH - 2 * dy - (n - 2) * dy + dy))
@@ -632,6 +639,10 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
             ; FastResizeWindow(hWnd, x, y, w, h)
             k+=1
         }
+        ; Activate the first window
+        ; firstHWND := 
+        CycleWindows(ARRANGE_MAXWINDOW, 1, "first")
+
     }
     ; if (false && arrangeFlags & ARRANGE_Z_ORDERING) {
     ;     WinActivate ahk_id %lasthWnd%
