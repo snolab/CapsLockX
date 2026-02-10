@@ -833,10 +833,26 @@ CLX_MoveCurrentWindowTo(x)
 !d:: Right ; 右
 !w:: Up ; 上
 !s:: Down ; 下
+
+; Quick media pad, on alt+tab
 !r:: Volume_Up ; 音量+
 !f:: Volume_Down ; 音量-
+!q:: Media_Prev
+!e:: Media_Next
+
+; right hand media pad
 !t:: Media_Stop
 !g:: Media_Play_Pause
+; volume
+!k:: Volume_Up ; 音量+
+!j:: Volume_Down ; 音量-
+!m:: Volume_Mute
+
+; seek uihl
+!h:: Media_Prev
+!l:: Media_Next
+; !y:: Media_Rewind  ; seems not supported yet
+; !o:: Media_FastForward ; seems not supported yet
 
 ; cx 关闭应用
 !c:: AltTabViewCloseWindow()
@@ -851,8 +867,8 @@ AltTabViewCloseWindow(){
 }
 
 ; 切换多桌面
-!q:: Send ^#{Left} ; 向左切换多桌面
-!e:: Send ^#{Right} ; 向右切换多桌面
+; !q:: Send ^#{Left} ; 向左切换多桌面
+; !e:: Send ^#{Right} ; 向右切换多桌面
 
 #if
 
