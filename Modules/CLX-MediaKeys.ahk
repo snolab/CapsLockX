@@ -24,8 +24,3 @@ F12:: Send {Launch_App2} ; 启动计算器
 
 ; 关掉屏幕显示
 Pause:: SendMessage, 0x112, 0xF170, 2, , Program Manager
-
-#if CapsLockXMode
-
-[:: Send {Media_Prev} 
-]:: Send {Media_Next}
