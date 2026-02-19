@@ -23,6 +23,9 @@ version-*.txt
 /User*
 debug.log
 
+# claude
+.claude/settings.local.json
+
 #cache
 .eslintcache
 /worktrees
