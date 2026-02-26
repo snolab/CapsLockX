@@ -228,7 +228,7 @@ TODO: FN key, arrow keys, editing operations, 61-key layout vs 87-key layout,
 | ------ | --------------------- | -------------------------------- |
 | 全局   | CapsLockX + /         | 临时显示热键提示                 |
 | 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
+| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等              |
 
 ]
 
@@ -737,7 +737,7 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
 | Donation Date | Name                             | Channel         | Amount      | Comment                                                        |
 | ------------- | -------------------------------- | --------------- | ----------- | -------------------------------------------------------------- |
 | 2021-06-19    | \*\*Yu                           | Alipay QR       | +50.00 CNY  | A little support, in favor of independent developers           |
-| 2023-05-12    | Karawen                          | WeChat Transfer | +200.00 CNY | 🫡 (Salute)                                                     |
+| 2023-05-12    | Karawen                          | WeChat Transfer | +200.00 CNY | 🫡 (Salute)                                                    |
 | 2023-06-09    | [@andriasw](github.com/andriasw) | Alipay Transfer | +66.66 CNY  | for CapsLockX-mac, 66.66 is good (https://github.com/andriasw) |
 | 2023-12-19    | Huidan                           | QQ Red Packet   | +45.00 CNY  | Buy the developer a coffee                                     |
 

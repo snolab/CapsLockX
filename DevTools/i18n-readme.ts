@@ -30,11 +30,7 @@ const mainSections = splitReadme(mainFull);
 const translatedSections = splitReadme(translatedParts);
 
 // Helper function to check if a section is translated and updated
-const translateUpdatedQ = async (
-  translationLanguage,
-  referenceSection,
-  translatedSection,
-) =>
+const translateUpdatedQ = async (translationLanguage, referenceSection, translatedSection) =>
   await new OpenAI().chat.completions
     .create({
       messages: [
