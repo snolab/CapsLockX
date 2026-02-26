@@ -1,19 +1,79 @@
-# CapsLockX – Rust Core
+# CapsLockX – Rust core
 
-A Rust reimplementation of the CapsLockX keyboard enhancer core.
+A Rust reimplementation of the CapsLockX keyboard enhancer, split into a
+**platform-agnostic core library** and **per-platform adapters**.
+
+## Project structure
+
+```
+rs/
+  core/                      ← capslockx-core  (pure Rust, no OS APIs)
+    src/
+      key_code.rs            KeyCode enum + Modifiers
+      platform.rs            Platform trait (what adapters implement)
+      state.rs               CLX mode state machine
+      acc_model.rs           AccModel2D physics (std::time::Instant)
+      engine.rs              ClxEngine – processes key events, calls Platform
+      modules/
+        edit.rs              HJKL cursor / YUIO page / PN tab
+        mouse.rs             WASD mouse / QE buttons / RF scroll
+        media.rs             F5-F11 media keys
+        window_manager.rs    Z/X/C/V window management (dispatches to Platform)
+  adapters/
+    windows/                 ← capslockx-windows  (Win32)
+      src/
+        main.rs              Win32 message loop entry point
+        hook.rs              WH_KEYBOARD_LL hook → ClxEngine
+        output.rs            WinPlatform impl (SendInput + Win32 window APIs)
+        vk.rs                Windows VK ↔ KeyCode mapping
+```
 
 ## Building
 
+```sh
+# Windows adapter (produces capslockx.exe)
+cargo build -p capslockx-windows
+cargo build -p capslockx-windows --release
 ```
-cargo build          # debug
-cargo build --release
+
+## How adapters work
+
+Each platform adapter is responsible for **three things**:
+
+### 1. Hooking into keyboard events
+
+| Platform | Mechanism |
+|----------|-----------|
+| **Windows** | `WH_KEYBOARD_LL` (low-level hook) or `RegisterHotKey` |
+| **macOS** | `CGEventTap` |
+| **Linux** | `evdev` / `XGrabKey` / `uinput` |
+| **Browser** | `window.addEventListener('keydown', handler, {capture:true})` compiled to WASM |
+| **Android** | `AccessibilityService` / `InputMethodService` |
+
+### 2. Converting native keys and calling the engine
+
+```rust
+// pseudo-code (same pattern for every adapter)
+let code = platform_keycode_to_KeyCode(native_event.key);
+match engine.on_key_event(code, pressed) {
+    CoreResponse::Suppress    => prevent_default(native_event),
+    CoreResponse::PassThrough => pass_through(native_event),
+}
 ```
 
-The binary is `target/release/capslockx.exe`.
+### 3. Implementing the `Platform` trait
 
-## How it works
+```rust
+impl Platform for MyPlatform {
+    fn key_down(&self, key: KeyCode) { /* inject synthetic key press */ }
+    fn key_up(&self, key: KeyCode)   { /* inject synthetic key release */ }
+    fn mouse_move(&self, dx: i32, dy: i32) { /* move cursor */ }
+    // optional window management: cycle_windows, arrange_windows, …
+}
+```
 
-A `WH_KEYBOARD_LL` hook intercepts all keystrokes system-wide. Holding a **trigger key** (CapsLock or Space by default) activates **FN mode**; pressing CapsLock+Space together locks **CLX mode**. In either mode, mapped keys are remapped to the actions below.
+Window management methods have default no-op implementations, so adapters
+that don't support them (e.g. browser) compile without extra code.
 
 ## Hotkeys
 
@@ -32,7 +92,7 @@ A `WH_KEYBOARD_LL` hook intercepts all keystrokes system-wide. Holding a **trigg
 
 | CLX + | Action |
 |-------|--------|
-| W / A / S / D | Mouse move ↑ ← ↓ → (with acceleration) |
+| W / A / S / D | Mouse ↑ ← ↓ → (with acceleration) |
 | E / Q | Left / Right mouse button |
 | R / F | Scroll up / down |
 
@@ -54,7 +114,7 @@ A `WH_KEYBOARD_LL` hook intercepts all keystrokes system-wide. Holding a **trigg
 | X | Close tab (Ctrl+W) |
 | Shift+X | Close window & cycle |
 | Ctrl+Alt+X | Kill process & cycle |
-| C / Shift+C | Arrange cascaded / grid |
+| C / Shift+C | Arrange cascaded / side-by-side |
 | V (hold) | Transparent + always-on-top |
 | V (release) | Restore |
 | Shift+V | Toggle always-on-top |
@@ -69,21 +129,5 @@ A `WH_KEYBOARD_LL` hook intercepts all keystrokes system-wide. Holding a **trigg
 | ScrollLock | off |
 | Right Alt | off |
 
-Single-tap a trigger with no other key → restores its native function (CapsLock toggles caps, Space types a space).
-
-## Module structure
-
-```
-src/
-  main.rs          – entry point, Win32 message loop
-  hook.rs          – WH_KEYBOARD_LL callback & CLX state machine
-  state.rs         – global atomic mode state
-  vk.rs            – virtual key code constants
-  input.rs         – SendInput wrappers (keyboard + mouse)
-  acc_model.rs     – AccModel2D physics (exp+poly acceleration)
-  modules/
-    edit.rs        – cursor / page / tab navigation
-    mouse.rs       – mouse movement & buttons
-    media.rs       – media key shortcuts
-    window_manager.rs – window cycling, tiling, close/kill, transparency
-```
+Single-tap restores native key function (toggle caps / type space).
+CapsLock+Space together locks CLX mode until any trigger tap.

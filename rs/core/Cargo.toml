@@ -1,0 +1,14 @@
+[package]
+name = "capslockx-core"
+version = "0.1.0"
+edition = "2021"
+description = "CapsLockX core logic – platform-agnostic key engine and physics"
+license = "GPL-3.0"
+
+[lib]
+name = "capslockx_core"
+path = "src/lib.rs"
+
+[dependencies]
+once_cell = "1.19"
+parking_lot = "0.12"
