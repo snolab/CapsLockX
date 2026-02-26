@@ -12,4 +12,4 @@
 | ------ | --------------------- | -------------------------------- |
 | 全局   | CapsLockX + /         | 临时显示热键提示                 |
 | 全局   | CapsLockX + Alt + /   | 🔗 打开 CapsLockX 的完整文档页面 |
-| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等               |
+| 全局   | CapsLockX + Shift + / | 🕷 提交 bug、建议等              |

@@ -5,9 +5,7 @@ import pkg from "rambda";
 const { filter, pipe, sortBy, dissoc } = pkg;
 const caller = callerPath({ depth: 1 });
 if (!caller) throw new Error(`Cannot find caller`);
-process.chdir(
-  path.dirname(path.resolve(caller.replace("file:///", ""), "../")),
-);
+process.chdir(path.dirname(path.resolve(caller.replace("file:///", ""), "../")));
 const replaceMapper = (s = "", 表: Record<string, RegExp>) =>
   Object.entries(表).reduce((s, [k, v]) => s.replace(RegExp(v, v.flags), k), s);
 const hkp = (s = "") =>
@@ -34,11 +32,7 @@ const hkp = (s = "") =>
 // .replace(, "ctrl"+alt)
 const 热键列提取 = (文件内容: string) => {
   // const 函数列 = 全部提取(文件内容, /^(\S+)\(\)\s*?{/);
-  const conds = [
-    ...文件内容.matchAll(
-      /(?<=\n|^)(#if\w*)[ \t]*(.*)\s*([\s\S]*?)(?:$|(?=#if))/gi,
-    ),
-  ];
+  const conds = [...文件内容.matchAll(/(?<=\n|^)(#if\w*)[ \t]*(.*)\s*([\s\S]*?)(?:$|(?=#if))/gi)];
   const 热键列 = conds.flatMap(([_, head, rawCond, code]) => {
     let trimedCond = rawCond.trim().replace(/;.*/, "");
     const cond =
@@ -71,9 +65,7 @@ const 条件热键对表列 = (
     moduleFiles
       .filter((e) => e.match(/.ahk$/))
       .map(async (文件名) => {
-        return 热键列提取(
-          await fs.promises.readFile(`${ModulesPath}/${文件名}`, "utf8"),
-        );
+        return 热键列提取(await fs.promises.readFile(`${ModulesPath}/${文件名}`, "utf8"));
       }),
   )
 ).flat();
@@ -108,8 +100,7 @@ const QuickTipsUpdate = async (条件热键表) => {
             ${Object.entries(热键表).map(动作生成函数).join("\n            ")}
         }
     }`;
-  const msgAppend = ([描述, 热键]) =>
-    `msg .= "|\t${热键 + "\t|\t" + 描述}\t|\`n"`;
+  const msgAppend = ([描述, 热键]) => `msg .= "|\t${热键 + "\t|\t" + 描述}\t|\`n"`;
   const content = [
     ...Object.entries(非函数条件热键表).map(ahkTryIf(msgAppend)),
     ...Object.entries(函数条件热键表).map(ahkFuncTry(msgAppend)),
@@ -120,10 +111,7 @@ const QuickTipsUpdate = async (条件热键表) => {
   const src = await fs.promises.readFile(QuickTipsAHK, "utf8");
   const dst = `\uFEFF${src
     .replace(/^\uFEFF/, "")
-    .replace(
-      /^QuickTips\(\)\s*?{[\s\S]*?^}/gim,
-      `QuickTips(){\n${QuickTips}\n}`,
-    )}`;
+    .replace(/^QuickTips\(\)\s*?{[\s\S]*?^}/gim, `QuickTips(){\n${QuickTips}\n}`)}`;
   await fs.promises.writeFile(QuickTipsAHK, dst);
 };
 

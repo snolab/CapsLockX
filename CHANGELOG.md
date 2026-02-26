@@ -4,35 +4,33 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [1.35.0](https://github.com/snolab/CapsLockX/compare/v1.34.12...v1.35.0) (2025-10-21)
 
-
 ### Features
 
-* add OneNote enhancement module with various functionalities ([7ffa3a6](https://github.com/snolab/CapsLockX/commit/7ffa3a6a1b39d46dc7327cb39383b36e035886ab))
-* **App-OneNote2019.ahk:** add OneNote2019日记启动 function to enhance note-taking capabilities ([f1afe7a](https://github.com/snolab/CapsLockX/commit/f1afe7a1f6c8ce0338bad3c9361c1b0139cc0a5c))
-* **App-OneNote2019.ahk:** enhance OneNote diary startup function to handle existing OneNote window and create new notes if necessary ([42ee8a7](https://github.com/snolab/CapsLockX/commit/42ee8a7a4e551b0ac0af3a66f4b38ed92ce22cbf))
-* **App-OneNote2019.ahk:** update script for OneNote 2019 with new features and enhancements ([3b040ec](https://github.com/snolab/CapsLockX/commit/3b040ecea21696dbca366bc29f5e9d01b64be282))
-* **locales:** add English language file for localization support ([c0c9d62](https://github.com/snolab/CapsLockX/commit/c0c9d62f5c065e2fddeee0fbb11d6d7cd7e872fb))
-* **VirtualDesktop:** Add desktop index tracking and navigation functions ([0114f6c](https://github.com/snolab/CapsLockX/commit/0114f6c9cf9c6eb858d00ae67c2fffe0dde475db))
-* **WindowManager:** swap stacked and side-by-side window arrangement keybindings ([55bbc22](https://github.com/snolab/CapsLockX/commit/55bbc227fb668702b763852c6e89600f54f86fb9))
-
+- add OneNote enhancement module with various functionalities ([7ffa3a6](https://github.com/snolab/CapsLockX/commit/7ffa3a6a1b39d46dc7327cb39383b36e035886ab))
+- **App-OneNote2019.ahk:** add OneNote2019日记启动 function to enhance note-taking capabilities ([f1afe7a](https://github.com/snolab/CapsLockX/commit/f1afe7a1f6c8ce0338bad3c9361c1b0139cc0a5c))
+- **App-OneNote2019.ahk:** enhance OneNote diary startup function to handle existing OneNote window and create new notes if necessary ([42ee8a7](https://github.com/snolab/CapsLockX/commit/42ee8a7a4e551b0ac0af3a66f4b38ed92ce22cbf))
+- **App-OneNote2019.ahk:** update script for OneNote 2019 with new features and enhancements ([3b040ec](https://github.com/snolab/CapsLockX/commit/3b040ecea21696dbca366bc29f5e9d01b64be282))
+- **locales:** add English language file for localization support ([c0c9d62](https://github.com/snolab/CapsLockX/commit/c0c9d62f5c065e2fddeee0fbb11d6d7cd7e872fb))
+- **VirtualDesktop:** Add desktop index tracking and navigation functions ([0114f6c](https://github.com/snolab/CapsLockX/commit/0114f6c9cf9c6eb858d00ae67c2fffe0dde475db))
+- **WindowManager:** swap stacked and side-by-side window arrangement keybindings ([55bbc22](https://github.com/snolab/CapsLockX/commit/55bbc227fb668702b763852c6e89600f54f86fb9))
 
 ### Bug Fixes
 
-* **App-AnkiEnhanced.ahk:** update window active check to support new Anki window class for better compatibility with future versions ([0a6aea1](https://github.com/snolab/CapsLockX/commit/0a6aea1ccb04f3e662ab49d566a9ded1f8bd7e13))
-* **Brainstorm:** Improve system proxy support ([fe2373f](https://github.com/snolab/CapsLockX/commit/fe2373f0a0fa9546000e58e4fe16109a15d02caf))
-* **CapsLockX:** clipstack ([796411b](https://github.com/snolab/CapsLockX/commit/796411b14411c8d140df776ff3ce12105bc89c40))
-* **capslockx:** dont show modulefile msgbox on laun ([6828f2b](https://github.com/snolab/CapsLockX/commit/6828f2bf6c8af896654a567aadb64fd9b607e8ba))
-* **CapsLockX:** i18n ([b2ad108](https://github.com/snolab/CapsLockX/commit/b2ad108d8599558f00d39a601081ee83e8b29599))
-* **CapsLockX:** ok ([3e4784b](https://github.com/snolab/CapsLockX/commit/3e4784b55d14e4c962d5fb6d0b1f0effe5987a7e))
-* **CapsLockX:** remove ctrlalti ([ade9b3b](https://github.com/snolab/CapsLockX/commit/ade9b3b1cb9e201d5a8f56c6e788724f2b2e717e))
-* **CapsLockX:** update lang ([6b85af6](https://github.com/snolab/CapsLockX/commit/6b85af685f841d82a32dc0cfb3c43ce0edcf5065))
-* **capslockx:** wm ([3eec444](https://github.com/snolab/CapsLockX/commit/3eec44470ce2941a317200611391f77b579d3e3b))
-* correct window arrangement calculations in ArrangeWindowsStacked function ([95219a8](https://github.com/snolab/CapsLockX/commit/95219a8827d351e8c3bd521d1a794137ba41e311))
-* **DevTools:** todo winget ([06e4db9](https://github.com/snolab/CapsLockX/commit/06e4db9211f51d59ef5f437f1596189bcac36942))
-* **evalnode:** support nvm ([136a51a](https://github.com/snolab/CapsLockX/commit/136a51a3def4c0b383139954a41e314ec0554688))
-* **Modules:** remove debug hotkey ([b2123a8](https://github.com/snolab/CapsLockX/commit/b2123a8cef7f0a1962818b1d3f81d1849946a612))
-* update OneNote module reference in README ([6c364c2](https://github.com/snolab/CapsLockX/commit/6c364c2e1898d4a3436dc888cc2bdad786ff798a))
-* winmanager-transparen ([0847dac](https://github.com/snolab/CapsLockX/commit/0847dac7cbd589b74929c410bd24b9c7ed5f9134))
+- **App-AnkiEnhanced.ahk:** update window active check to support new Anki window class for better compatibility with future versions ([0a6aea1](https://github.com/snolab/CapsLockX/commit/0a6aea1ccb04f3e662ab49d566a9ded1f8bd7e13))
+- **Brainstorm:** Improve system proxy support ([fe2373f](https://github.com/snolab/CapsLockX/commit/fe2373f0a0fa9546000e58e4fe16109a15d02caf))
+- **CapsLockX:** clipstack ([796411b](https://github.com/snolab/CapsLockX/commit/796411b14411c8d140df776ff3ce12105bc89c40))
+- **capslockx:** dont show modulefile msgbox on laun ([6828f2b](https://github.com/snolab/CapsLockX/commit/6828f2bf6c8af896654a567aadb64fd9b607e8ba))
+- **CapsLockX:** i18n ([b2ad108](https://github.com/snolab/CapsLockX/commit/b2ad108d8599558f00d39a601081ee83e8b29599))
+- **CapsLockX:** ok ([3e4784b](https://github.com/snolab/CapsLockX/commit/3e4784b55d14e4c962d5fb6d0b1f0effe5987a7e))
+- **CapsLockX:** remove ctrlalti ([ade9b3b](https://github.com/snolab/CapsLockX/commit/ade9b3b1cb9e201d5a8f56c6e788724f2b2e717e))
+- **CapsLockX:** update lang ([6b85af6](https://github.com/snolab/CapsLockX/commit/6b85af685f841d82a32dc0cfb3c43ce0edcf5065))
+- **capslockx:** wm ([3eec444](https://github.com/snolab/CapsLockX/commit/3eec44470ce2941a317200611391f77b579d3e3b))
+- correct window arrangement calculations in ArrangeWindowsStacked function ([95219a8](https://github.com/snolab/CapsLockX/commit/95219a8827d351e8c3bd521d1a794137ba41e311))
+- **DevTools:** todo winget ([06e4db9](https://github.com/snolab/CapsLockX/commit/06e4db9211f51d59ef5f437f1596189bcac36942))
+- **evalnode:** support nvm ([136a51a](https://github.com/snolab/CapsLockX/commit/136a51a3def4c0b383139954a41e314ec0554688))
+- **Modules:** remove debug hotkey ([b2123a8](https://github.com/snolab/CapsLockX/commit/b2123a8cef7f0a1962818b1d3f81d1849946a612))
+- update OneNote module reference in README ([6c364c2](https://github.com/snolab/CapsLockX/commit/6c364c2e1898d4a3436dc888cc2bdad786ff798a))
+- winmanager-transparen ([0847dac](https://github.com/snolab/CapsLockX/commit/0847dac7cbd589b74929c410bd24b9c7ed5f9134))
 
 ### [1.34.12](https://github.com/snolab/CapsLockX/compare/v1.34.11...v1.34.12) (2025-02-24)
 

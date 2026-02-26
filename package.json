@@ -9,14 +9,12 @@
   "bugs": {
     "url": "https://github.com/snolab/CapsLockX/issues"
   },
+  "license": "GPL-3.0-or-later",
+  "author": "snomiao <snomiao@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/snolab/CapsLockX.git"
   },
-  "license": "GPL-3.0-or-later",
-  "author": "snomiao <snomiao@gmail.com>",
-  "type": "module",
-  "main": "DevTools/CapsLockX.mjs",
   "bin": {
     "capslockx": "CapsLockX.exe"
   },
@@ -34,25 +32,22 @@
     "*.txt",
     "*.md"
   ],
+  "type": "module",
+  "main": "DevTools/CapsLockX.mjs",
   "scripts": {
     "build": "CapsLockX.exe CapsLockX.ahk /CI_TEST",
     "build-tauri": "cd DevTools/CLXConfig.js && npm run build",
     "docs:build": "vitepress build docs",
     "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs",
-    "fmt": "prettier --write .",
+    "fmt": "oxfmt .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
     "prepare": "husky install",
     "prerelease": "git diff --quiet || echo worktree not clean, commit it first",
     "release": "standard-version --commit-all && git push --follow-tag --all",
     "start": "CapsLockX.exe",
     "test": "CapsLockX.exe CapsLockX.ahk /CI_TEST"
-  },
-  "lint-staged": {
-    "*.{js,ts,jsx,tsx,mjs,cjs}": [
-      "prettier -w"
-    ],
-    "BAK_*.{css,md,js,ts,jsx,tsx}": "prettier --write",
-    "*.ahk": []
   },
   "dependencies": {
     "@types/ink": "^2.0.3",
@@ -71,11 +66,6 @@
     "@types/node": "^20.17.10",
     "dotenv": "^16.4.7",
     "enquirer": "^2.4.1",
-    "eslint": "^8.57.1",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-standard-with-typescript": "^34.0.1",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-react": "^7.37.3",
     "fast-diff": "^1.3.0",
     "glob": "^10.4.5",
     "global-agent": "^3.0.0",
@@ -87,16 +77,21 @@
     "lodash-es": "^4.17.21",
     "md5": "^2.3.0",
     "openai": "^4.77.0",
+    "oxfmt": "^0.35.0",
+    "oxlint": "^1.50.0",
     "p-map": "^7.0.3",
-    "prettier": "^2.8.8",
-    "prettier-plugin-organize-imports": "^3.2.4",
-    "prettier-plugin-packagejson": "2.3.0",
-    "prettier-plugin-tsconfig": "^0.0.1",
     "rambda": "^7.5.0",
     "standard-version": "^9.5.0",
     "tsx": "^3.14.0",
     "typescript": "^4.9.5",
     "yaml": "^2.6.1"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,mjs,cjs}": [
+      "oxfmt",
+      "oxlint"
+    ],
+    "*.ahk": []
   },
   "standard-version": {
     "scripts": {

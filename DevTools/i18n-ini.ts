@@ -51,10 +51,7 @@ if (import.meta.main) {
   // console.log('http_proxy', HTTP_PROXY)
   // const httpAgent = !HTTP_PROXY ? undefined : new HttpProxyAgent(HTTP_PROXY);
 
-  const ahks = await hotMemo(
-    () => sflow(new Bun.Glob("./**/*.ahk").scan()).toArray(),
-    [],
-  );
+  const ahks = await hotMemo(() => sflow(new Bun.Glob("./**/*.ahk").scan()).toArray(), []);
   console.log(`Scanning ${ahks.length} AHK files`);
   // console.log(process.env)
   // throw 'check'
@@ -64,9 +61,7 @@ if (import.meta.main) {
     (ahks) =>
       sflow(ahks)
         .map(async (file) => ({ file }))
-        .mapAddField("content", ({ file }) =>
-          hotMemo((f) => Bun.file(f).text(), [file]),
-        )
+        .mapAddField("content", ({ file }) => hotMemo((f) => Bun.file(f).text(), [file]))
         .mapAddField("translationKeys", ({ content }) =>
           [...content.matchAll(/\bt\(\s*(?:"([^"]+)"|'([^']+)')\s*\)/g)].map(
             (match) => match.slice(1).filter(Boolean)[0],
@@ -121,18 +116,13 @@ if (import.meta.main) {
       translationKeys.filter((key) => !res[`lang-${locale}`]?.[key]),
     )
     .mapAddField("unusedKeys", ({ res, locale }) =>
-      Object.keys(res[`lang-${locale}`] || {}).filter(
-        (key) => !translationKeys.includes(key),
-      ),
+      Object.keys(res[`lang-${locale}`] || {}).filter((key) => !translationKeys.includes(key)),
     )
     .log(
       ({ file, locale, missingKeys, unusedKeys }) =>
         `LOCALE ${locale}: missing ${missingKeys.length}, unused ${unusedKeys.length}`,
     )
-    .filter(
-      ({ missingKeys, unusedKeys }) =>
-        missingKeys.length > 0 || unusedKeys.length > 0,
-    )
+    .filter(({ missingKeys, unusedKeys }) => missingKeys.length > 0 || unusedKeys.length > 0)
     .pMap(
       async ({ missingKeys, unusedKeys, locale, res }) => {
         const newRes = clone(res);
@@ -145,10 +135,7 @@ if (import.meta.main) {
         });
         // for existed keys, trim '"'
         Object.keys(translations).forEach((key) => {
-          if (
-            translations[key].startsWith('"') &&
-            translations[key].endsWith('"')
-          ) {
+          if (translations[key].startsWith('"') && translations[key].endsWith('"')) {
             translations[key] = translations[key].slice(1, -1);
           }
         });
@@ -195,9 +182,7 @@ if (import.meta.main) {
           })
           .run();
 
-        await saveLocale(locale, newRes).then(() =>
-          console.log(`Saved ${locale} locale file`),
-        );
+        await saveLocale(locale, newRes).then(() => console.log(`Saved ${locale} locale file`));
         return [];
       },
       { concurrency: 3 },
@@ -218,10 +203,7 @@ async function saveLocale(locale: string, newRes: { [x: string]: {} }) {
   }
 }
 
-async function saveIni(
-  filePath: string,
-  content: { [topic: string]: { [key: string]: string } },
-) {
+async function saveIni(filePath: string, content: { [topic: string]: { [key: string]: string } }) {
   const text = stringifyINI(content);
   await writeFileUtf16le(filePath, text);
 }
