@@ -105,6 +105,17 @@ impl ClxEngine {
         self.modules.is_mapped_key(code)
     }
 
+    /// Advance all AccModel physics by one step.
+    ///
+    /// **Native**: the background ticker threads handle this automatically — you
+    /// do not need to call `tick()`.
+    ///
+    /// **WASM**: call this every ~16 ms from a JS `setInterval` to drive the
+    /// cursor and scroll acceleration models.
+    pub fn tick(&self) {
+        self.modules.tick();
+    }
+
     pub fn state(&self) -> &Arc<ClxState> { &self.state }
 
     // ── CLX_Dn ────────────────────────────────────────────────────────────────

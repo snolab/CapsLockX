@@ -53,6 +53,12 @@ impl Modules {
             || self.window_manager.is_mapped_key(key)
     }
 
+    /// Advance all AccModel physics by one step (WASM adapter tick loop).
+    pub fn tick(&self) {
+        self.edit.tick();
+        self.mouse.tick();
+    }
+
     /// Stop all ongoing AccModel physics (called when CLX mode exits).
     pub fn stop_all(&self) {
         self.edit.stop();

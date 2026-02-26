@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "core",
     "adapters/windows",
+    "adapters/browser",
 ]
 
 [profile.release]

@@ -35,6 +35,12 @@ impl MouseModule {
         Self { mouse_model, scroll_model, left_btn, right_btn, platform }
     }
 
+    /// Advance AccModel physics by one step (called by WASM adapter tick loop).
+    pub fn tick(&self) {
+        self.mouse_model.tick_once();
+        self.scroll_model.tick_once();
+    }
+
     pub fn stop(&self) {
         self.mouse_model.stop();
         self.scroll_model.stop();

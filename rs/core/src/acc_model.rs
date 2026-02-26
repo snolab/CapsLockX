@@ -2,9 +2,16 @@
 ///
 /// Ported from AHK `AccModel2D` (Modules/AccModel/AccModel.ahk).
 /// Uses `std::time::Instant` for cross-platform timing.
-use std::sync::{Arc, Condvar, Mutex};
+///
+/// On native platforms the model runs a background thread that ticks every 16 ms.
+/// On WASM (single-threaded) the thread is omitted; callers must drive ticks via
+/// `AccModel2D::tick_once()` from a JS `setInterval` (see `ClxEngine::tick()`).
+#[cfg(not(target_arch = "wasm32"))]
 use std::thread;
-use std::time::{Duration, Instant};
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Duration;
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::Instant;
 
 // ──────────────────────────────── math helpers ───────────────────────────────
 
@@ -50,7 +57,7 @@ struct State {
     h_accel_ratio:  f64,
     v_accel_ratio:  f64,
     max_speed:      f64,
-    mid_key_window: Duration,
+    mid_key_window: std::time::Duration,
 }
 
 impl State {
@@ -76,9 +83,14 @@ impl State {
 
 pub type ActionFn = dyn Fn(i32, i32, &str) + Send + Sync + 'static;
 
-/// 2-D acceleration model with a background ticker thread.
+/// 2-D acceleration model.
+///
+/// On native targets a background thread drives the physics.
+/// On WASM the caller must call `tick_once()` periodically (e.g. every 16 ms
+/// via `setInterval`).
 pub struct AccModel2D {
-    inner: Arc<(Mutex<State>, Condvar)>,
+    inner:  Arc<(Mutex<State>, Condvar)>,
+    action: Arc<ActionFn>,
 }
 
 impl AccModel2D {
@@ -97,16 +109,30 @@ impl AccModel2D {
                 h_accel_ratio,
                 v_accel_ratio: if v_accel_ratio == 0.0 { h_accel_ratio } else { v_accel_ratio },
                 max_speed,
-                mid_key_window: Duration::from_millis(100),
+                mid_key_window: std::time::Duration::from_millis(100),
             }),
             Condvar::new(),
         ));
-        let clone = Arc::clone(&inner);
-        thread::Builder::new()
-            .name("clx-acc-ticker".into())
-            .spawn(move || ticker_thread(clone, action))
-            .expect("failed to spawn acc ticker thread");
-        AccModel2D { inner }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let inner_clone = Arc::clone(&inner);
+            let action_clone = Arc::clone(&action);
+            thread::Builder::new()
+                .name("clx-acc-ticker".into())
+                .spawn(move || ticker_thread(inner_clone, action_clone))
+                .expect("failed to spawn acc ticker thread");
+        }
+
+        AccModel2D { inner, action }
+    }
+
+    /// Advance the physics by one ~16 ms step.
+    ///
+    /// On native this is called automatically by the background thread.
+    /// On WASM the adapter calls this from a JS `setInterval(fn, 16)`.
+    pub fn tick_once(&self) {
+        tick_step(&self.inner, &*self.action);
     }
 
     fn press_dir(inner: &Arc<(Mutex<State>, Condvar)>, field: fn(&mut State) -> &mut Option<Instant>) {
@@ -115,7 +141,7 @@ impl AccModel2D {
         if field(&mut st).is_none() { *field(&mut st) = Some(Instant::now()); }
         if !st.active {
             st.active = true;
-            st.last_tick = None; // fast-start on first tick
+            st.last_tick = None;
             cvar.notify_all();
         }
     }
@@ -143,8 +169,101 @@ impl AccModel2D {
 unsafe impl Sync for AccModel2D {}
 unsafe impl Send for AccModel2D {}
 
-// ──────────────────────────────── ticker thread ──────────────────────────────
+// ──────────────────────────────── tick logic ─────────────────────────────────
 
+/// One physics step (no sleep).  Returns `true` to keep ticking, `false` if
+/// the model has settled and the caller can stop driving it.
+fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
+    let now = Instant::now();
+    let (lock, _cvar) = inner.as_ref();
+
+    let mut st = lock.lock().unwrap();
+    if !st.active { return false; }
+
+    // Fast-start: first tick just fires the "started" callback and sets direction.
+    if st.last_tick.is_none() {
+        st.last_tick = Some(now);
+        let h_sign = sign(
+            if st.right_down.is_some() { 1.0 } else { 0.0 }
+            - if st.left_down.is_some()  { 1.0 } else { 0.0 },
+        );
+        let v_sign = sign(
+            if st.down_down.is_some() { 1.0 } else { 0.0 }
+            - if st.up_down.is_some()  { 1.0 } else { 0.0 },
+        );
+        st.h_accum = h_sign;
+        st.v_accum = v_sign;
+        drop(st);
+        action(0, 0, "启动");
+        return true;
+    }
+
+    let dt = {
+        let last = st.last_tick.unwrap();
+        let d = now.duration_since(last).as_secs_f64();
+        st.last_tick = Some(now);
+        d
+    };
+
+    // Hold durations
+    let left_s  = st.left_down .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+    let right_s = st.right_down.map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+    let up_s    = st.up_down   .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+    let down_s  = st.down_down .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+
+    // Mid-key: simultaneous opposite directions
+    let mid_win = st.mid_key_window;
+    if let (Some(lt), Some(rt)) = (st.left_down, st.right_down) {
+        let diff = if rt > lt { rt - lt } else { lt - rt };
+        if diff < mid_win {
+            let s = if rt > lt { 1i32 } else { -1i32 };
+            st.reset(); drop(st);
+            action(s, 0, "横中键");
+            return false;
+        }
+    }
+    if let (Some(ut), Some(dt_inst)) = (st.up_down, st.down_down) {
+        let diff = if dt_inst > ut { dt_inst - ut } else { ut - dt_inst };
+        if diff < mid_win {
+            let s = if dt_inst > ut { 1i32 } else { -1i32 };
+            st.reset(); drop(st);
+            action(0, s, "纵中键");
+            return false;
+        }
+    }
+
+    // Physics integration
+    let h_accel = ma(right_s - left_s) * st.h_accel_ratio;
+    let v_accel = ma(down_s  - up_s)   * st.v_accel_ratio;
+
+    st.h_vel = add_safe(st.h_vel, h_accel * dt);
+    st.v_vel = add_safe(st.v_vel, v_accel * dt);
+    st.h_vel = damping(st.h_vel, h_accel, dt, st.max_speed);
+    st.v_vel = damping(st.v_vel, v_accel, dt, st.max_speed);
+
+    st.h_accum = add_safe(st.h_accum, st.h_vel * dt);
+    st.v_accum = add_safe(st.v_accum, st.v_vel * dt);
+
+    let h_out = st.h_accum as i32; st.h_accum -= h_out as f64;
+    let v_out = st.v_accum as i32; st.v_accum -= v_out as f64;
+    let h_vel = st.h_vel;
+    let v_vel = st.v_vel;
+    let any_key = st.any_key_held();
+    drop(st);
+
+    if h_out != 0 || v_out != 0 { action(h_out, v_out, "移动"); }
+
+    if h_vel == 0.0 && v_vel == 0.0 && h_out == 0 && v_out == 0 && !any_key {
+        lock.lock().unwrap().active = false;
+        action(0, 0, "止动");
+        return false;
+    }
+    true
+}
+
+// ──────────────────────────────── native ticker thread ────────────────────────
+
+#[cfg(not(target_arch = "wasm32"))]
 fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
     let (lock, cvar) = inner.as_ref();
     loop {
@@ -153,87 +272,10 @@ fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
             let mut st = lock.lock().unwrap();
             while !st.active { st = cvar.wait(st).unwrap(); }
         }
-
-        // Tick loop
+        // Tick loop (sleep first, then step)
         loop {
             thread::sleep(Duration::from_millis(16));
-            let now = Instant::now();
-            let mut st = lock.lock().unwrap();
-            if !st.active { break; }
-
-            // First tick: fast-start
-            let dt = if st.last_tick.is_none() {
-                st.last_tick = Some(now);
-                let h_sign = sign(
-                    if st.right_down.is_some() { 1.0 } else { 0.0 }
-                    - if st.left_down.is_some() { 1.0 } else { 0.0 },
-                );
-                let v_sign = sign(
-                    if st.down_down.is_some() { 1.0 } else { 0.0 }
-                    - if st.up_down.is_some()  { 1.0 } else { 0.0 },
-                );
-                st.h_accum = h_sign;
-                st.v_accum = v_sign;
-                drop(st);
-                action(0, 0, "启动");
-                continue;
-            } else {
-                let last = st.last_tick.unwrap();
-                let d = now.duration_since(last).as_secs_f64();
-                st.last_tick = Some(now);
-                d
-            };
-
-            // Hold durations
-            let left_s  = st.left_down .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-            let right_s = st.right_down.map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-            let up_s    = st.up_down   .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-            let down_s  = st.down_down .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-
-            // Mid-key: simultaneous opposite directions
-            let mid_win = st.mid_key_window;
-            if let (Some(lt), Some(rt)) = (st.left_down, st.right_down) {
-                let diff = if rt > lt { rt - lt } else { lt - rt };
-                if diff < mid_win {
-                    let s = if rt > lt { 1i32 } else { -1i32 };
-                    st.reset(); drop(st);
-                    action(s, 0, "横中键"); break;
-                }
-            }
-            if let (Some(ut), Some(dt_inst)) = (st.up_down, st.down_down) {
-                let diff = if dt_inst > ut { dt_inst - ut } else { ut - dt_inst };
-                if diff < mid_win {
-                    let s = if dt_inst > ut { 1i32 } else { -1i32 };
-                    st.reset(); drop(st);
-                    action(0, s, "纵中键"); break;
-                }
-            }
-
-            // Physics integration
-            let h_accel = ma(right_s - left_s) * st.h_accel_ratio;
-            let v_accel = ma(down_s  - up_s)   * st.v_accel_ratio;
-
-            st.h_vel = add_safe(st.h_vel, h_accel * dt);
-            st.v_vel = add_safe(st.v_vel, v_accel * dt);
-            st.h_vel = damping(st.h_vel, h_accel, dt, st.max_speed);
-            st.v_vel = damping(st.v_vel, v_accel, dt, st.max_speed);
-
-            st.h_accum = add_safe(st.h_accum, st.h_vel * dt);
-            st.v_accum = add_safe(st.v_accum, st.v_vel * dt);
-
-            let h_out = st.h_accum as i32; st.h_accum -= h_out as f64;
-            let v_out = st.v_accum as i32; st.v_accum -= v_out as f64;
-            let h_vel = st.h_vel;
-            let v_vel = st.v_vel;
-            let any_key = st.any_key_held();
-            drop(st);
-
-            if h_out != 0 || v_out != 0 { action(h_out, v_out, "移动"); }
-
-            if h_vel == 0.0 && v_vel == 0.0 && h_out == 0 && v_out == 0 && !any_key {
-                lock.lock().unwrap().active = false;
-                action(0, 0, "止动"); break;
-            }
+            if !tick_step(&inner, &*action) { break; }
         }
     }
 }

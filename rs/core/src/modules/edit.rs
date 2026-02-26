@@ -37,6 +37,13 @@ impl EditModule {
         self.tab.stop();
     }
 
+    /// Advance AccModel physics by one step (called by WASM adapter tick loop).
+    pub fn tick(&self) {
+        self.cursor.tick_once();
+        self.page.tick_once();
+        self.tab.tick_once();
+    }
+
     pub fn on_key_down(&self, key: KeyCode, p: &dyn Platform) -> bool {
         match key {
             KeyCode::H => { self.cursor.press_left();  true }
