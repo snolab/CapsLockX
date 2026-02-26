@@ -1,6 +1,7 @@
 pub mod edit;
 pub mod media;
 pub mod mouse;
+pub mod window_manager;
 
 use crate::vk::*;
 
@@ -16,12 +17,14 @@ pub fn init() {
 /// Returns true if the key was handled (hook should suppress it).
 pub fn on_key_down(vk: u32) -> bool {
     edit::on_key_down(vk) || mouse::on_key_down(vk) || media::on_key_down(vk)
+        || window_manager::on_key_down(vk)
 }
 
 /// Called when a key is released while CLX was active.
 /// Returns true if handled.
 pub fn on_key_up(vk: u32) -> bool {
     edit::on_key_up(vk) || mouse::on_key_up(vk) || media::on_key_up(vk)
+        || window_manager::on_key_up(vk)
 }
 
 /// Returns true if `vk` is handled by any module in CLX mode.
@@ -41,5 +44,5 @@ pub fn is_mapped_key(vk: u32) -> bool {
         // CLX-MediaKeys (Fn only, not interfering with CLX-Edit F-keys)
         | VK_F5 | VK_F6 | VK_F7 | VK_F8
         | VK_F9 | VK_F10 | VK_F11
-    )
+    ) || window_manager::is_mapped_key(vk)
 }

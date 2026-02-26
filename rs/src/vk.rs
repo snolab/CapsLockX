@@ -33,6 +33,8 @@ pub const VK_SHIFT: u32 = 0x10;
 
 // --- Alpha keys (A=0x41 … Z=0x5A, same as ASCII uppercase) ---
 pub const VK_A: u32 = 0x41;
+pub const VK_B: u32 = 0x42;
+pub const VK_C: u32 = 0x43;
 pub const VK_D: u32 = 0x44;
 pub const VK_E: u32 = 0x45;
 pub const VK_F: u32 = 0x46;
@@ -42,6 +44,7 @@ pub const VK_I: u32 = 0x49;
 pub const VK_J: u32 = 0x4A;
 pub const VK_K: u32 = 0x4B;
 pub const VK_L: u32 = 0x4C;
+pub const VK_M: u32 = 0x4D;
 pub const VK_N: u32 = 0x4E;
 pub const VK_O: u32 = 0x4F;
 pub const VK_P: u32 = 0x50;
@@ -50,8 +53,11 @@ pub const VK_R: u32 = 0x52;
 pub const VK_S: u32 = 0x53;
 pub const VK_T: u32 = 0x54;
 pub const VK_U: u32 = 0x55;
+pub const VK_V: u32 = 0x56;
 pub const VK_W: u32 = 0x57;
+pub const VK_X: u32 = 0x58;
 pub const VK_Y: u32 = 0x59;
+pub const VK_Z: u32 = 0x5A;
 
 // --- Function keys ---
 pub const VK_F1: u32 = 0x70;
