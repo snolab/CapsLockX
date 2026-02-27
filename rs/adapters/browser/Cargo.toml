@@ -26,6 +26,8 @@ features = [
     "Event",
     "KeyboardEvent",
     "KeyboardEventInit",
+    "CustomEvent",
+    "CustomEventInit",
     "Document",
     "Element",
     "console",

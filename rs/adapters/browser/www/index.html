@@ -29,6 +29,17 @@ body {
   min-height: 100vh;
 }
 
+/* ── Virtual cursor overlay ──────────────────────────────────────────── */
+#clx-cursor {
+  position: fixed;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  will-change: transform;
+  /* The SVG hotspot is top-left, no offset needed */
+}
+
 /* ── Header ──────────────────────────────────────────────────────────── */
 header {
   position: sticky; top: 0; z-index: 100;
@@ -62,7 +73,7 @@ header h1 { font-size: 1rem; font-weight: 600; }
 main {
   display: grid;
   grid-template-columns: 300px 1fr;
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   gap: 1rem;
   padding: 1rem 1.5rem;
   max-width: 1100px;
@@ -146,7 +157,7 @@ textarea:focus { border-color: var(--accent); }
 }
 #scroll-box div { padding: 1px 0; border-bottom: 1px solid #ffffff06; }
 
-/* ── Hint strip ──────────────────────────────────────────────────────── */
+/* ── How it works ────────────────────────────────────────────────────── */
 #hints { grid-column: 2; grid-row: 3; }
 #hints p { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.4rem; }
 #hints p span { color: var(--text); }
@@ -156,6 +167,33 @@ textarea:focus { border-color: var(--accent); }
   font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.78rem;
   color: var(--yellow); display: inline-block; margin-top: 0.3rem;
 }
+
+/* ── Focus / WASD test ───────────────────────────────────────────────── */
+#focus-section { grid-column: 1 / -1; grid-row: 4; }
+
+.focus-inputs {
+  display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem;
+}
+.focus-inputs input[type="text"] {
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 0.4rem;
+  padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none;
+  width: 160px;
+}
+.focus-inputs input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px #cba6f733;
+}
+.focus-inputs label {
+  display: flex; flex-direction: column; gap: 0.2rem;
+  font-size: 0.72rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.wasd-hint {
+  margin-top: 0.6rem;
+  font-size: 0.82rem; color: var(--muted);
+}
+.wasd-hint span { color: var(--text); }
 
 /* ── Error banner ────────────────────────────────────────────────────── */
 #err {
@@ -170,6 +208,14 @@ tip { font-size: 0.78rem; color: var(--muted); display: block; margin-top: 0.4re
 </style>
 </head>
 <body>
+
+<!-- Virtual cursor overlay (shown when CLX active + WASD used) -->
+<div id="clx-cursor" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+    <path d="M1 1L1 16L5.5 11.5L8.5 19L11.5 17.5L8.5 10.5L14 10.5Z"
+          fill="white" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg>
+</div>
 
 <header>
   <span style="font-size:1.1rem">⌨</span>
@@ -198,10 +244,12 @@ tip { font-size: 0.78rem; color: var(--muted); display: block; margin-top: 0.4re
       <tr><td><kbd>U</kbd> / <kbd>I</kbd></td><td>Page Up / Down</td></tr>
       <tr><td><kbd>G</kbd></td><td>Enter</td></tr>
       <tr><td><kbd>T</kbd></td><td>Delete</td></tr>
-      <tr><td><kbd>N</kbd> / <kbd>P</kbd></td><td>Tab / Shift+Tab</td></tr>
+      <tr><td><kbd>N</kbd> / <kbd>P</kbd></td><td>Focus next / prev</td></tr>
 
-      <tr class="section-label"><td colspan="2">CLX‑Scroll</td></tr>
-      <tr><td><kbd>R</kbd> / <kbd>F</kbd></td><td>Scroll up / down</td></tr>
+      <tr class="section-label"><td colspan="2">CLX‑Mouse (virtual cursor)</td></tr>
+      <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Move virtual cursor</td></tr>
+      <tr><td><kbd>R</kbd> / <kbd>F</kbd></td><td>Scroll up / down at cursor</td></tr>
+      <tr><td><kbd>E</kbd> / <kbd>Q</kbd></td><td>Left / Right click (visual only)</td></tr>
 
       <tr class="section-label"><td colspan="2">CLX‑Media (F5–F11)</td></tr>
       <tr><td><kbd>F5</kbd></td><td>Play / Pause</td></tr>
@@ -218,7 +266,7 @@ tip { font-size: 0.78rem; color: var(--muted); display: block; margin-top: 0.4re
         <td>Lock CLX (tap either to unlock)</td>
       </tr>
     </table>
-    <tip>Mouse movement (WASD) is disabled in browsers. W/A/S/D and Q/E type normally.</tip>
+    <tip>The virtual cursor appears when you first use WASD. Moving the real mouse snaps it back.</tip>
   </section>
 
   <!-- ── Editor test ───────────────────────────────────────────────── -->
@@ -235,7 +283,7 @@ Hold CapsLock and:
   U / I  →  page up / page down
   G      →  insert newline
   T      →  delete character ahead of cursor
-  N / P  →  Tab / Shift+Tab (for indentation)</textarea>
+  N / P  →  focus next / previous element</textarea>
     <tip>The key log below shows only events CLX <em>passed through</em> — CLX hotkeys won't appear there.</tip>
   </section>
 
@@ -256,11 +304,11 @@ Hold CapsLock and:
   <section id="scroll-section">
     <h2>Scroll box · CLX + <kbd>R</kbd> / <kbd>F</kbd></h2>
     <div id="scroll-box"></div>
-    <tip>CLX+R/F call <code>window.scrollBy()</code> — they scroll the <em>page</em>, not just this box.
-    Make the window tall enough that the page can scroll.</tip>
+    <tip>Move the virtual cursor over this box (WASD), then press CLX+R/F to scroll it.
+    R/F always scroll the scrollable element under the virtual cursor.</tip>
   </section>
 
-  <!-- ── Hints ─────────────────────────────────────────────────────── -->
+  <!-- ── How it works ──────────────────────────────────────────────── -->
   <section id="hints">
     <h2>How it works</h2>
     <p>
@@ -268,38 +316,207 @@ Hold CapsLock and:
       Intercepted events get <code>preventDefault()</code> + <code>stopPropagation()</code>.
     </p>
     <p>
-      <span>Output:</span> synthetic <code>KeyboardEvent</code>s dispatched on the focused element.
-      Synthetic events have <code>isTrusted=false</code> so the hook ignores them.
+      <span>Cursor (HJKL):</span> synthetic <code>ArrowLeft/Right/Up/Down</code> dispatched on the
+      focused element. <code>isTrusted=false</code> but browsers still move the text cursor.
     </p>
     <p>
-      <span>Physics:</span> AccModel2D runs via <code>setInterval(tick, 16)</code> — same
-      acceleration model as the Windows / AHK version.
+      <span>Virtual mouse (WASD):</span> WASM dispatches <code>clx:mouse_move [dx,dy]</code>;
+      JS renders a cursor overlay and moves it. Real <code>mousemove</code> snaps it back.
     </p>
     <p>
-      <span>Limitations:</span> mouse cursor movement (WASD) is a no-op in browsers.
-      CapsLock toggle via synthetic event may not work in all browsers.
+      <span>Scroll (R/F):</span> WASM dispatches <code>clx:scroll_v/h</code>;
+      JS walks up from <code>elementFromPoint(vx, vy)</code> to find the nearest
+      scrollable ancestor and calls <code>scrollBy</code> on it.
+    </p>
+    <p>
+      <span>Focus (N/P):</span> WASM dispatches <code>clx:focus ±1</code>;
+      JS cycles through <code>querySelectorAll</code> of all tabbable elements.
+    </p>
+  </section>
+
+  <!-- ── Focus / WASD test ─────────────────────────────────────────── -->
+  <section id="focus-section">
+    <h2>Focus test · CLX + <kbd>N</kbd> (next) / <kbd>P</kbd> (prev)</h2>
+    <div class="focus-inputs">
+      <label>Field 1<input id="focus-field-1" type="text" placeholder="tab here…"></label>
+      <label>Field 2<input id="focus-field-2" type="text" placeholder="tab here…"></label>
+      <label>Field 3<input id="focus-field-3" type="text" placeholder="tab here…"></label>
+    </div>
+    <p class="wasd-hint">
+      <span>Virtual cursor:</span> hold CLX + WASD to move the crosshair cursor.
+      Move it over the scroll box above, then CLX+F to scroll that box, not the page.
+      Real mouse movement instantly snaps the virtual cursor back.
     </p>
   </section>
 
 </main>
 
 <script type="module">
+// ── Virtual cursor ────────────────────────────────────────────────────────────
+// vx/vy track the virtual cursor position; they snap to the real mouse on
+// mousemove and are offset by WASD delta from WASM.
+
+let vx = window.innerWidth  / 2;
+let vy = window.innerHeight / 2;
+let cursorVisible = false;
+
+const cursorEl = document.getElementById('clx-cursor');
+
+function setCursorPos(x, y) {
+  vx = Math.max(0, Math.min(window.innerWidth  - 1, x));
+  vy = Math.max(0, Math.min(window.innerHeight - 1, y));
+  cursorEl.style.transform = `translate(${vx}px,${vy}px)`;
+}
+
+// Real mouse → snap vx/vy, hide the overlay (native cursor is visible)
+window.addEventListener('mousemove', e => {
+  vx = e.clientX;
+  vy = e.clientY;
+  if (cursorVisible) {
+    cursorVisible = false;
+    cursorEl.style.display = 'none';
+  }
+});
+
+// WASM mouse_move → move overlay
+window.addEventListener('clx:mouse_move', e => {
+  const [dx, dy] = e.detail;
+  setCursorPos(vx + dx, vy + dy);
+  cursorVisible = true;
+  cursorEl.style.display = 'block';
+});
+
+// Expose position for e2e tests
+window.__clxGetCursorPos = () => ({ x: vx, y: vy, visible: cursorVisible });
+
+// ── Scroll at virtual cursor ──────────────────────────────────────────────────
+
+// elementsFromPoint returns all elements overlapping (x, y) from topmost to
+// bottommost, including ancestor elements.  We scan for the first one that is
+// actually scrollable in the given axis.
+function findScrollableAtPoint(x, y, vertical) {
+  const hits = document.elementsFromPoint(x, y);
+  for (const el of hits) {
+    if (el === document.documentElement) continue;
+    const st = getComputedStyle(el);
+    const ov = vertical ? st.overflowY : st.overflowX;
+    if (ov !== 'auto' && ov !== 'scroll') continue;
+    const scrollable = vertical
+      ? el.scrollHeight > el.clientHeight
+      : el.scrollWidth  > el.clientWidth;
+    if (scrollable) return el;
+  }
+  return null;
+}
+
+window.addEventListener('clx:scroll_v', e => {
+  const pixels = e.detail;  // negative = scroll up, positive = scroll down
+  const target = findScrollableAtPoint(vx, vy, true);
+  if (target) target.scrollBy({ top: pixels, behavior: 'instant' });
+  else        window.scrollBy({ top: pixels, behavior: 'instant' });
+});
+
+window.addEventListener('clx:scroll_h', e => {
+  const pixels = e.detail;
+  const target = findScrollableAtPoint(vx, vy, false);
+  if (target) target.scrollBy({ left: pixels, behavior: 'instant' });
+  else        window.scrollBy({ left: pixels, behavior: 'instant' });
+});
+
+// ── Cursor movement for textarea / input (clx:cursor_move) ───────────────────
+// Chrome does NOT move selectionStart for untrusted synthetic KeyboardEvents.
+// WASM dispatches clx:cursor_move with the direction string so we can
+// manipulate selectionStart directly.
+
+window.addEventListener('clx:cursor_move', e => {
+  const el = document.activeElement;
+  if (!el) return;
+  const tag = el.tagName;
+  if (tag !== 'TEXTAREA' && tag !== 'INPUT') return;
+  const val = el.value ?? '';
+  let pos = el.selectionStart ?? 0;
+  switch (e.detail) {
+    case 'ArrowLeft':  pos = Math.max(0, pos - 1); break;
+    case 'ArrowRight': pos = Math.min(val.length, pos + 1); break;
+    case 'Home': {
+      const nl = val.lastIndexOf('\n', pos - 1);
+      pos = nl === -1 ? 0 : nl + 1;
+      break;
+    }
+    case 'End': {
+      const nl = val.indexOf('\n', pos);
+      pos = nl === -1 ? val.length : nl;
+      break;
+    }
+    case 'ArrowUp': {
+      const before  = val.slice(0, pos);
+      const curNl   = before.lastIndexOf('\n');   // \n ending prev line, or -1
+      const col     = pos - (curNl + 1);          // 0-based column
+      if (curNl <= 0) { pos = 0; break; }         // already on first line
+      const prevNl  = val.lastIndexOf('\n', curNl - 1);
+      pos = prevNl + 1 + Math.min(col, curNl - prevNl - 1);
+      break;
+    }
+    case 'ArrowDown': {
+      const before      = val.slice(0, pos);
+      const curNl       = before.lastIndexOf('\n');
+      const col         = pos - (curNl + 1);
+      const nextNl      = val.indexOf('\n', pos);
+      if (nextNl === -1) { pos = val.length; break; }  // already on last line
+      const afterNextNl = val.indexOf('\n', nextNl + 1);
+      const nextLineLen = (afterNextNl === -1 ? val.length : afterNextNl) - nextNl - 1;
+      pos = nextNl + 1 + Math.min(col, nextLineLen);
+      break;
+    }
+    case 'PageUp':   pos = 0; break;
+    case 'PageDown': pos = val.length; break;
+  }
+  el.setSelectionRange(pos, pos);
+});
+
+// ── Focus cycling (N / P = Tab / Shift+Tab) ───────────────────────────────────
+
+const TABBABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+window.addEventListener('clx:focus', e => {
+  const dir = e.detail; // 1 = forward, -1 = backward
+  const all = Array.from(document.querySelectorAll(TABBABLE));
+  if (all.length === 0) return;
+  const cur  = all.indexOf(document.activeElement);
+  const next = all[(cur + dir + all.length) % all.length];
+  next?.focus();
+});
+
 // ── CLX status tracking ───────────────────────────────────────────────────────
 // Register BEFORE start() so our listener fires first in capture phase.
 const statusEl = document.getElementById('status');
 let capsHeld = false, spaceHeld = false, locked = false;
 
 function refreshStatus() {
-  if (locked)                         { statusEl.className = 'locked'; statusEl.textContent = 'CLX LOCKED'; }
-  else if (capsHeld || spaceHeld)     { statusEl.className = 'fn';     statusEl.textContent = 'CLX HELD'; }
-  else                                { statusEl.className = 'off';    statusEl.textContent = 'CLX OFF'; }
+  if (locked) {
+    statusEl.className = 'locked';
+    statusEl.textContent = 'CLX LOCKED';
+  } else if (capsHeld || spaceHeld) {
+    statusEl.className = 'fn';
+    statusEl.textContent = 'CLX HELD';
+  } else {
+    statusEl.className = 'off';
+    statusEl.textContent = 'CLX OFF';
+    // Virtual cursor stays visible until real mouse moves – do NOT hide here.
+  }
 }
 
 window.addEventListener('keydown', e => {
   if (!e.isTrusted) return;
   if (e.code === 'CapsLock') capsHeld  = true;
   if (e.code === 'Space')    spaceHeld = true;
-  // Detect chord: both trigger keys pressed → locked mode
   if (capsHeld && spaceHeld) locked = true;
   refreshStatus();
 }, { capture: true });
@@ -312,7 +529,7 @@ window.addEventListener('keyup', e => {
 }, { capture: true });
 
 // ── Key log (bubble phase = only events CLX let through) ─────────────────────
-const logBox  = document.getElementById('log-box');
+const logBox = document.getElementById('log-box');
 const t0 = Date.now();
 
 function logEvent(e) {
@@ -328,7 +545,6 @@ function logEvent(e) {
     `<span class="le-key">${e.key.length === 1 ? JSON.stringify(e.key) : ''}</span>`;
   logBox.appendChild(row);
   logBox.scrollTop = logBox.scrollHeight;
-  // Keep log bounded
   while (logBox.children.length > 200) logBox.firstChild.remove();
 }
 window.addEventListener('keydown', logEvent);
@@ -340,7 +556,7 @@ document.getElementById('clear-log').onclick = () => { logBox.innerHTML = ''; };
 const box = document.getElementById('scroll-box');
 for (let i = 1; i <= 50; i++) {
   const d = document.createElement('div');
-  d.textContent = `Line ${i.toString().padStart(2)} – hold CapsLock, then R (up) or F (down)`;
+  d.textContent = `Line ${i.toString().padStart(2)} – CLX+R (up) or F (down) while cursor is here`;
   box.appendChild(d);
 }
 

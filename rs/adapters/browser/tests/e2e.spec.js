@@ -36,6 +36,30 @@ async function getSynth(page) {
   return page.evaluate(() => window.__synth ?? []);
 }
 
+/** Hold CapsLock+key for `ms` ms, then release both. */
+async function holdClx(page, key, ms = 200) {
+  await page.keyboard.down("CapsLock");
+  await page.keyboard.down(key);
+  await page.waitForTimeout(ms);
+  await page.keyboard.up(key);
+  await page.keyboard.up("CapsLock");
+  await page.waitForTimeout(50); // drain in-flight ticks
+}
+
+/** Place textarea value + cursor, return initial selectionStart. */
+async function setEditorCursor(page, text, pos) {
+  await page.evaluate(
+    ({ text, pos }) => {
+      const ta = document.getElementById("editor");
+      ta.value = text;
+      ta.setSelectionRange(pos, pos);
+      ta.focus();
+    },
+    { text, pos },
+  );
+  return pos;
+}
+
 // ── WASM bootstrap ───────────────────────────────────────────────────────────
 
 test("WASM module loads – badge turns green", async ({ page }) => {
@@ -197,4 +221,275 @@ test("clear button empties the key log", async ({ page }) => {
 
   await page.click("#clear-log");
   await expect(page.locator("#log-box")).toBeEmpty();
+});
+
+// ── HJKL actually moves the textarea cursor ───────────────────────────────────
+//
+// These tests set a known selectionStart, hold CLX+key, then assert the
+// cursor moved in the expected direction.  Synthetic ArrowKey events dispatched
+// via dispatchEvent() do move the cursor in Chromium textareas.
+
+test.describe("HJKL moves text cursor (selectionStart)", () => {
+  test("CLX+H moves cursor left", async ({ page }) => {
+    await loadPage(page);
+    await setEditorCursor(page, "abcde fghij", 5);
+
+    await holdClx(page, "KeyH", 200);
+
+    const pos = await page.evaluate(() => document.getElementById("editor").selectionStart);
+    expect(pos).toBeLessThan(5);
+  });
+
+  test("CLX+L moves cursor right", async ({ page }) => {
+    await loadPage(page);
+    await setEditorCursor(page, "abcde fghij", 5);
+
+    await holdClx(page, "KeyL", 200);
+
+    const pos = await page.evaluate(() => document.getElementById("editor").selectionStart);
+    expect(pos).toBeGreaterThan(5);
+  });
+
+  test("CLX+K moves cursor up (multi-line)", async ({ page }) => {
+    await loadPage(page);
+    // Place cursor on line 2, column 3
+    await setEditorCursor(page, "line1\nline2\nline3", 9); // 'i' in line2
+
+    await holdClx(page, "KeyK", 200);
+
+    const pos = await page.evaluate(() => document.getElementById("editor").selectionStart);
+    // Cursor should now be on line 1 (position < 6)
+    expect(pos).toBeLessThan(6);
+  });
+
+  test("CLX+J moves cursor down (multi-line)", async ({ page }) => {
+    await loadPage(page);
+    await setEditorCursor(page, "line1\nline2\nline3", 3); // 'e' in line1
+
+    await holdClx(page, "KeyJ", 200);
+
+    const pos = await page.evaluate(() => document.getElementById("editor").selectionStart);
+    // Cursor should now be on line 2 or 3 (position > 5)
+    expect(pos).toBeGreaterThan(5);
+  });
+
+  test("CLX+Y jumps to line start (Home)", async ({ page }) => {
+    await loadPage(page);
+    await setEditorCursor(page, "hello world", 7);
+
+    // Y uses AccModel (page model), so we need to hold long enough for ticks.
+    await holdClx(page, "KeyY", 200);
+
+    const pos = await page.evaluate(() => document.getElementById("editor").selectionStart);
+    expect(pos).toBe(0);
+  });
+
+  test("CLX+O jumps to line end (End)", async ({ page }) => {
+    await loadPage(page);
+    await setEditorCursor(page, "hello world", 0);
+
+    await holdClx(page, "KeyO", 200);
+
+    const pos = await page.evaluate(() => document.getElementById("editor").selectionStart);
+    expect(pos).toBe(11); // end of "hello world"
+  });
+});
+
+// ── WASD virtual cursor ───────────────────────────────────────────────────────
+//
+// After holding CLX+D the WASM mouse_move fires clx:mouse_move events which
+// move the virtual cursor to the right.  The cursor overlay becomes visible
+// and window.__clxGetCursorPos() reflects the updated position.
+
+test.describe("WASD virtual cursor", () => {
+  test("CLX+D moves virtual cursor right", async ({ page }) => {
+    await loadPage(page);
+
+    // Initialise known position via real mouse move (sets vx/vy in JS).
+    await page.mouse.move(400, 300);
+    await page.waitForTimeout(30);
+
+    const before = await page.evaluate(() => window.__clxGetCursorPos());
+
+    await holdClx(page, "KeyD", 300);
+
+    const after = await page.evaluate(() => window.__clxGetCursorPos());
+
+    expect(after.x).toBeGreaterThan(before.x);
+    expect(after.visible).toBe(true);
+  });
+
+  test("CLX+A moves virtual cursor left", async ({ page }) => {
+    await loadPage(page);
+    await page.mouse.move(600, 300);
+    await page.waitForTimeout(30);
+
+    const before = await page.evaluate(() => window.__clxGetCursorPos());
+
+    await holdClx(page, "KeyA", 300);
+
+    const after = await page.evaluate(() => window.__clxGetCursorPos());
+    expect(after.x).toBeLessThan(before.x);
+  });
+
+  test("CLX+S moves virtual cursor down", async ({ page }) => {
+    await loadPage(page);
+    await page.mouse.move(500, 200);
+    await page.waitForTimeout(30);
+
+    const before = await page.evaluate(() => window.__clxGetCursorPos());
+
+    await holdClx(page, "KeyS", 300);
+
+    const after = await page.evaluate(() => window.__clxGetCursorPos());
+    expect(after.y).toBeGreaterThan(before.y);
+  });
+
+  test("real mousemove snaps cursor back and hides overlay", async ({ page }) => {
+    await loadPage(page);
+    // Activate virtual cursor
+    await holdClx(page, "KeyD", 200);
+    expect(await page.evaluate(() => window.__clxGetCursorPos().visible)).toBe(true);
+
+    // Move real mouse – should snap and hide overlay
+    await page.mouse.move(300, 300);
+    await page.waitForTimeout(30);
+
+    const state = await page.evaluate(() => window.__clxGetCursorPos());
+    expect(state.visible).toBe(false);
+    expect(state.x).toBeCloseTo(300, 0);
+    expect(state.y).toBeCloseTo(300, 0);
+  });
+});
+
+// ── Scroll at virtual cursor (R / F) ─────────────────────────────────────────
+//
+// Position the virtual cursor over the scroll-box, then press CLX+F.
+// The scroll-box's scrollTop should increase (not window.scrollY).
+
+test.describe("R/F scroll at virtual cursor", () => {
+  test("CLX+F scrolls scroll-box when cursor is over it", async ({ page }) => {
+    await loadPage(page);
+
+    // Scroll the box into the viewport first — the default 720 px viewport
+    // is too short for the grid layout so the box starts below the fold.
+    const scrollBox = page.locator("#scroll-box");
+    await scrollBox.scrollIntoViewIfNeeded();
+
+    // Move real mouse to the centre of the scroll-box to set vx/vy there.
+    const bb = await scrollBox.boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.waitForTimeout(30);
+
+    const scrollBefore = await page.evaluate(() => document.getElementById("scroll-box").scrollTop);
+
+    await holdClx(page, "KeyF", 400);
+
+    const scrollAfter = await page.evaluate(() => document.getElementById("scroll-box").scrollTop);
+    expect(scrollAfter).toBeGreaterThan(scrollBefore);
+  });
+
+  test("CLX+R scrolls scroll-box up when cursor is over it", async ({ page }) => {
+    await loadPage(page);
+
+    // Scroll the box down first so there is room to scroll up.
+    await page.evaluate(() => {
+      document.getElementById("scroll-box").scrollTop = 200;
+    });
+
+    const scrollBox = page.locator("#scroll-box");
+    await scrollBox.scrollIntoViewIfNeeded();
+
+    const bb = await scrollBox.boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.waitForTimeout(30);
+
+    const scrollBefore = await page.evaluate(() => document.getElementById("scroll-box").scrollTop);
+
+    await holdClx(page, "KeyR", 400);
+
+    const scrollAfter = await page.evaluate(() => document.getElementById("scroll-box").scrollTop);
+    expect(scrollAfter).toBeLessThan(scrollBefore);
+  });
+
+  test("CLX+F scrolls window when cursor is NOT over a scrollable element", async ({ page }) => {
+    await loadPage(page);
+
+    // Put a lot of content so the page is scrollable
+    await page.evaluate(() => {
+      document.body.style.paddingBottom = "2000px";
+    });
+
+    // Move cursor to the header (not over a scrollable box)
+    await page.mouse.move(200, 10);
+    await page.waitForTimeout(30);
+
+    const winScrollBefore = await page.evaluate(() => window.scrollY);
+
+    await holdClx(page, "KeyF", 400);
+
+    const winScrollAfter = await page.evaluate(() => window.scrollY);
+    expect(winScrollAfter).toBeGreaterThan(winScrollBefore);
+  });
+});
+
+// ── N / P focus cycling ───────────────────────────────────────────────────────
+//
+// CLX+N dispatches clx:focus(1) which cycles querySelectorAll tabbable
+// elements forward; CLX+P goes backward.
+
+test.describe("N/P focus cycling", () => {
+  test("CLX+N moves focus from editor to next tabbable element", async ({ page }) => {
+    await loadPage(page);
+
+    const startId = await page.evaluate(() => document.activeElement?.id);
+    expect(startId).toBe("editor");
+
+    // A single N press: AccModel needs ~2 ticks (≥32 ms) to fire.
+    await holdClx(page, "KeyN", 100);
+
+    const newId = await page.evaluate(() => document.activeElement?.id);
+    expect(newId).not.toBe("editor");
+    expect(newId).toBeTruthy();
+  });
+
+  test("CLX+P moves focus backward from editor", async ({ page }) => {
+    await loadPage(page);
+
+    await holdClx(page, "KeyP", 100);
+
+    // Focus should have moved to the last tabbable element (wraps around)
+    const newId = await page.evaluate(() => document.activeElement?.id);
+    expect(newId).not.toBe("editor");
+    expect(newId).toBeTruthy();
+  });
+
+  test("CLX+N cycles through focus-field inputs", async ({ page }) => {
+    await loadPage(page);
+
+    // Advance focus until we reach focus-field-1
+    const ids = [];
+    for (let i = 0; i < 10; i++) {
+      await holdClx(page, "KeyN", 80);
+      const id = await page.evaluate(() => document.activeElement?.id ?? "");
+      ids.push(id);
+      if (id === "focus-field-1") break;
+    }
+    expect(ids).toContain("focus-field-1");
+  });
+
+  test("CLX+N then CLX+P returns focus to the same element", async ({ page }) => {
+    await loadPage(page);
+
+    // Move forward once
+    await holdClx(page, "KeyN", 100);
+    const afterN = await page.evaluate(() => document.activeElement?.id);
+
+    // Move backward once (back to editor)
+    await holdClx(page, "KeyP", 100);
+    const afterP = await page.evaluate(() => document.activeElement?.id);
+
+    expect(afterP).toBe("editor");
+    expect(afterN).not.toBe("editor");
+  });
 });
