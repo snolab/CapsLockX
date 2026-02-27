@@ -12,6 +12,13 @@ use super::platform::WebPlatform;
 // Engine lives for the lifetime of the WASM module.
 static ENGINE: OnceCell<Arc<ClxEngine>> = OnceCell::new();
 
+fn install_panic_hook() {
+    std::panic::set_hook(Box::new(|info| {
+        let msg = info.to_string();
+        web_sys::console::error_1(&format!("[CLX panic] {}", msg).into());
+    }));
+}
+
 /// Install the CapsLockX keyboard hook and physics ticker.
 ///
 /// Safe to call multiple times – subsequent calls are no-ops.
@@ -23,6 +30,7 @@ static ENGINE: OnceCell<Arc<ClxEngine>> = OnceCell::new();
 /// ```
 #[wasm_bindgen]
 pub fn start() {
+    install_panic_hook();
     let engine = ENGINE.get_or_init(|| ClxEngine::new(Arc::new(WebPlatform::new())));
 
     let win = match window() {

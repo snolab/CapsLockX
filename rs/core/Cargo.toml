@@ -10,5 +10,10 @@ name = "capslockx_core"
 path = "src/lib.rs"
 
 [dependencies]
-once_cell = "1.19"
-parking_lot = "0.12"
+once_cell    = "1.19"
+parking_lot  = "0.12"
+
+# web-time provides a wasm32-compatible Instant (via performance.now()).
+# On native targets this dep is unused.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = "1"

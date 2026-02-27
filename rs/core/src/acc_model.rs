@@ -11,7 +11,13 @@ use std::thread;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 use std::sync::{Arc, Condvar, Mutex};
+
+// web-time provides performance.now()-backed Instant on wasm32-unknown-unknown.
+// On native targets std::time::Instant is used directly.
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 
 // ──────────────────────────────── math helpers ───────────────────────────────
 
