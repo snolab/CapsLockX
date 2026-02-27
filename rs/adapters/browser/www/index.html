@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapsLockX – Browser Test</title>
+<style>
+:root {
+  --bg:      #1e1e2e;
+  --surface: #313244;
+  --border:  #45475a;
+  --text:    #cdd6f4;
+  --muted:   #6c7086;
+  --accent:  #cba6f7;
+  --green:   #a6e3a1;
+  --yellow:  #f9e2af;
+  --red:     #f38ba8;
+  --blue:    #89b4fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 1.5rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+
+header h1 { font-size: 1rem; font-weight: 600; }
+
+#status {
+  margin-left: auto;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em;
+  transition: background 0.12s, color 0.12s;
+}
+#status.off    { background: #313244; color: var(--muted); }
+#status.fn     { background: #f9e2af1a; color: var(--yellow); border: 1px solid #f9e2af33; }
+#status.locked { background: #cba6f71a; color: var(--accent); border: 1px solid #cba6f733; }
+
+#wasm-badge {
+  font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 2rem;
+  background: #f38ba81a; color: var(--red); border: 1px solid #f38ba833;
+  transition: all 0.2s;
+}
+#wasm-badge.ok { background: #a6e3a11a; color: var(--green); border-color: #a6e3a133; }
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+main {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  max-width: 1100px;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 1rem;
+}
+
+h2 {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent); margin-bottom: 0.75rem;
+}
+
+/* ── Hotkey table ─────────────────────────────────────────────────────── */
+#ref { grid-column: 1; grid-row: 1 / 3; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+tr + tr td { border-top: 1px solid #ffffff08; }
+td { padding: 0.28rem 0; }
+td:first-child { color: var(--muted); white-space: nowrap; padding-right: 0.75rem; }
+
+kbd {
+  display: inline-block;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 0.25rem; padding: 0 0.35rem;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.78rem; line-height: 1.6;
+}
+
+.section-label {
+  font-size: 0.72rem; color: var(--blue); text-transform: uppercase;
+  letter-spacing: 0.06em; padding-top: 0.5rem; padding-bottom: 0.1rem;
+  border-top: 1px solid var(--border); margin-top: 0.4rem;
+}
+
+/* ── Editor test ─────────────────────────────────────────────────────── */
+#editor-section { grid-column: 2; grid-row: 1; }
+
+textarea {
+  width: 100%; height: 170px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.88rem; line-height: 1.7; resize: vertical; outline: none;
+  tab-size: 2;
+}
+textarea:focus { border-color: var(--accent); }
+
+/* ── Key log ─────────────────────────────────────────────────────────── */
+#log-section { grid-column: 2; grid-row: 2; }
+
+#log-box {
+  height: 150px; overflow-y: auto;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 0.4rem;
+  padding: 0.3rem;
+  font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.78rem;
+}
+
+.le {
+  display: grid; grid-template-columns: 5ch 2.5ch 1fr 1fr;
+  gap: 0.5rem; padding: 0.15rem 0.4rem; border-radius: 0.25rem;
+}
+.le:nth-child(odd) { background: #ffffff05; }
+.le-t  { color: var(--muted); }
+.le-dn { color: var(--green); }
+.le-up { color: var(--red); }
+.le-code { color: var(--accent); }
+.le-key  { color: var(--text); }
+
+/* ── Scroll test ─────────────────────────────────────────────────────── */
+#scroll-section { grid-column: 1; grid-row: 3; }
+#scroll-box {
+  height: 130px; overflow-y: scroll;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 0.4rem;
+  padding: 0.5rem 0.75rem; font-size: 0.82rem;
+}
+#scroll-box div { padding: 1px 0; border-bottom: 1px solid #ffffff06; }
+
+/* ── Hint strip ──────────────────────────────────────────────────────── */
+#hints { grid-column: 2; grid-row: 3; }
+#hints p { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.4rem; }
+#hints p span { color: var(--text); }
+#hints code {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 0.3rem; padding: 0.15rem 0.5rem;
+  font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.78rem;
+  color: var(--yellow); display: inline-block; margin-top: 0.3rem;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────── */
+#err {
+  grid-column: 1 / -1; display: none;
+  background: #f38ba81a; border: 1px solid #f38ba844;
+  border-radius: 0.5rem; padding: 0.75rem 1rem;
+  color: var(--red); font-size: 0.88rem; line-height: 1.6;
+}
+#err code { color: var(--yellow); background: var(--bg); padding: 0.1rem 0.4rem; border-radius: 0.25rem; }
+
+tip { font-size: 0.78rem; color: var(--muted); display: block; margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.1rem">⌨</span>
+  <h1>CapsLockX · Browser Test</h1>
+  <div id="status" class="off">CLX OFF</div>
+  <div id="wasm-badge">WASM loading…</div>
+</header>
+
+<main>
+
+  <!-- ── Error banner ──────────────────────────────────────────────── -->
+  <div id="err">
+    Failed to load the WASM module.  Build it first, then serve via HTTP:<br>
+    <code>wasm-pack build --target web rs/adapters/browser</code><br>
+    <code>npx serve rs/adapters/browser  # or: python -m http.server -d rs/adapters/browser</code><br>
+    Then open <code>http://localhost:3000/www/</code> (or the port your server uses).
+  </div>
+
+  <!-- ── Hotkey reference ──────────────────────────────────────────── -->
+  <section id="ref">
+    <h2>Hotkey Reference</h2>
+    <table>
+      <tr class="section-label"><td colspan="2">CLX‑Edit (cursor)</td></tr>
+      <tr><td><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></td><td>← ↓ ↑ → (accel)</td></tr>
+      <tr><td><kbd>Y</kbd> / <kbd>O</kbd></td><td>Home / End</td></tr>
+      <tr><td><kbd>U</kbd> / <kbd>I</kbd></td><td>Page Up / Down</td></tr>
+      <tr><td><kbd>G</kbd></td><td>Enter</td></tr>
+      <tr><td><kbd>T</kbd></td><td>Delete</td></tr>
+      <tr><td><kbd>N</kbd> / <kbd>P</kbd></td><td>Tab / Shift+Tab</td></tr>
+
+      <tr class="section-label"><td colspan="2">CLX‑Scroll</td></tr>
+      <tr><td><kbd>R</kbd> / <kbd>F</kbd></td><td>Scroll up / down</td></tr>
+
+      <tr class="section-label"><td colspan="2">CLX‑Media (F5–F11)</td></tr>
+      <tr><td><kbd>F5</kbd></td><td>Play / Pause</td></tr>
+      <tr><td><kbd>F6</kbd> / <kbd>F7</kbd></td><td>Prev / Next track</td></tr>
+      <tr><td><kbd>F8</kbd></td><td>Stop</td></tr>
+      <tr><td><kbd>F9</kbd> / <kbd>F10</kbd></td><td>Volume + / −</td></tr>
+      <tr><td><kbd>F11</kbd></td><td>Mute</td></tr>
+
+      <tr class="section-label"><td colspan="2">Trigger keys</td></tr>
+      <tr><td><kbd>CapsLock</kbd></td><td>Hold to activate</td></tr>
+      <tr><td><kbd>Space</kbd></td><td>Hold to activate</td></tr>
+      <tr>
+        <td><kbd>CapsLock</kbd>+<kbd>Space</kbd></td>
+        <td>Lock CLX (tap either to unlock)</td>
+      </tr>
+    </table>
+    <tip>Mouse movement (WASD) is disabled in browsers. W/A/S/D and Q/E type normally.</tip>
+  </section>
+
+  <!-- ── Editor test ───────────────────────────────────────────────── -->
+  <section id="editor-section">
+    <h2>Cursor / Edit Test · hold <kbd>CapsLock</kbd> then use HJKL</h2>
+    <textarea id="editor" autofocus spellcheck="false">The quick brown fox jumps over the lazy dog.
+Pack my box with five dozen liquor jugs.
+How vexingly quick daft zebras jump!
+
+Hold CapsLock and:
+  H / L  →  move cursor left / right (hold for acceleration)
+  K / J  →  move cursor up / down
+  Y / O  →  jump to line start / end
+  U / I  →  page up / page down
+  G      →  insert newline
+  T      →  delete character ahead of cursor
+  N / P  →  Tab / Shift+Tab (for indentation)</textarea>
+    <tip>The key log below shows only events CLX <em>passed through</em> — CLX hotkeys won't appear there.</tip>
+  </section>
+
+  <!-- ── Key log ───────────────────────────────────────────────────── -->
+  <section id="log-section">
+    <h2>
+      Key Log
+      <span style="font-size:0.72rem;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">
+        — events that reached the page (CLX-intercepted keys are absent)
+      </span>
+      <button id="clear-log" style="float:right;font-size:0.72rem;background:none;border:1px solid var(--border);
+        color:var(--muted);border-radius:0.3rem;padding:0 0.5rem;cursor:pointer">clear</button>
+    </h2>
+    <div id="log-box"></div>
+  </section>
+
+  <!-- ── Scroll test ───────────────────────────────────────────────── -->
+  <section id="scroll-section">
+    <h2>Scroll box · CLX + <kbd>R</kbd> / <kbd>F</kbd></h2>
+    <div id="scroll-box"></div>
+    <tip>CLX+R/F call <code>window.scrollBy()</code> — they scroll the <em>page</em>, not just this box.
+    Make the window tall enough that the page can scroll.</tip>
+  </section>
+
+  <!-- ── Hints ─────────────────────────────────────────────────────── -->
+  <section id="hints">
+    <h2>How it works</h2>
+    <p>
+      <span>Hook:</span> capture-phase <code>keydown</code>/<code>keyup</code> listeners on <code>window</code>.
+      Intercepted events get <code>preventDefault()</code> + <code>stopPropagation()</code>.
+    </p>
+    <p>
+      <span>Output:</span> synthetic <code>KeyboardEvent</code>s dispatched on the focused element.
+      Synthetic events have <code>isTrusted=false</code> so the hook ignores them.
+    </p>
+    <p>
+      <span>Physics:</span> AccModel2D runs via <code>setInterval(tick, 16)</code> — same
+      acceleration model as the Windows / AHK version.
+    </p>
+    <p>
+      <span>Limitations:</span> mouse cursor movement (WASD) is a no-op in browsers.
+      CapsLock toggle via synthetic event may not work in all browsers.
+    </p>
+  </section>
+
+</main>
+
+<script type="module">
+// ── CLX status tracking ───────────────────────────────────────────────────────
+// Register BEFORE start() so our listener fires first in capture phase.
+const statusEl = document.getElementById('status');
+let capsHeld = false, spaceHeld = false, locked = false;
+
+function refreshStatus() {
+  if (locked)                         { statusEl.className = 'locked'; statusEl.textContent = 'CLX LOCKED'; }
+  else if (capsHeld || spaceHeld)     { statusEl.className = 'fn';     statusEl.textContent = 'CLX HELD'; }
+  else                                { statusEl.className = 'off';    statusEl.textContent = 'CLX OFF'; }
+}
+
+window.addEventListener('keydown', e => {
+  if (!e.isTrusted) return;
+  if (e.code === 'CapsLock') capsHeld  = true;
+  if (e.code === 'Space')    spaceHeld = true;
+  // Detect chord: both trigger keys pressed → locked mode
+  if (capsHeld && spaceHeld) locked = true;
+  refreshStatus();
+}, { capture: true });
+
+window.addEventListener('keyup', e => {
+  if (!e.isTrusted) return;
+  if (e.code === 'CapsLock') { capsHeld = false; if (locked && !spaceHeld) locked = false; }
+  if (e.code === 'Space')    { spaceHeld = false; if (locked && !capsHeld) locked = false; }
+  refreshStatus();
+}, { capture: true });
+
+// ── Key log (bubble phase = only events CLX let through) ─────────────────────
+const logBox  = document.getElementById('log-box');
+const t0 = Date.now();
+
+function logEvent(e) {
+  if (!e.isTrusted) return;
+  const ts  = ((Date.now() - t0) / 1000).toFixed(2).padStart(5);
+  const dir = e.type === 'keydown' ? 'dn' : 'up';
+  const row = document.createElement('div');
+  row.className = `le le-${dir}`;
+  row.innerHTML =
+    `<span class="le-t">${ts}s</span>` +
+    `<span class="le-${dir}">${dir}</span>` +
+    `<span class="le-code">${e.code}</span>` +
+    `<span class="le-key">${e.key.length === 1 ? JSON.stringify(e.key) : ''}</span>`;
+  logBox.appendChild(row);
+  logBox.scrollTop = logBox.scrollHeight;
+  // Keep log bounded
+  while (logBox.children.length > 200) logBox.firstChild.remove();
+}
+window.addEventListener('keydown', logEvent);
+window.addEventListener('keyup',   logEvent);
+
+document.getElementById('clear-log').onclick = () => { logBox.innerHTML = ''; };
+
+// ── Scroll test filler ────────────────────────────────────────────────────────
+const box = document.getElementById('scroll-box');
+for (let i = 1; i <= 50; i++) {
+  const d = document.createElement('div');
+  d.textContent = `Line ${i.toString().padStart(2)} – hold CapsLock, then R (up) or F (down)`;
+  box.appendChild(d);
+}
+
+// ── Load WASM ─────────────────────────────────────────────────────────────────
+const badge = document.getElementById('wasm-badge');
+try {
+  const mod = await import('../pkg/capslockx_browser.js');
+  await mod.default();   // init()
+  mod.start();
+  badge.textContent = 'WASM ✓';
+  badge.className   = 'ok';
+} catch (err) {
+  console.error('[CLX test]', err);
+  badge.textContent = 'WASM ✗';
+  document.getElementById('err').style.display = 'block';
+}
+</script>
+</body>
+</html>
