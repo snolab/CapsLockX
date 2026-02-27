@@ -88,10 +88,8 @@ impl ClxEngine {
                 if self.modules.on_key_down(code, &mods) {
                     return CoreResponse::Suppress;
                 }
-            } else if !pressed {
-                if self.modules.on_key_up(code) {
-                    return CoreResponse::Suppress;
-                }
+            } else if !pressed && self.modules.on_key_up(code) {
+                return CoreResponse::Suppress;
             }
         }
 

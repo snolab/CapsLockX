@@ -24,12 +24,12 @@ impl MouseModule {
 
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let mouse_model = AccModel2D::new(
-            Arc::new(move |dx, dy, phase| mouse_action(&*p, &*s, dx, dy, phase)),
+            Arc::new(move |dx, dy, phase| mouse_action(&*p, &s, dx, dy, phase)),
             MOUSE_SPEED, MOUSE_SPEED, f64::INFINITY,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let scroll_model = AccModel2D::new(
-            Arc::new(move |dx, dy, phase| scroll_action(&*p, &*s, dx, dy, phase)),
+            Arc::new(move |dx, dy, phase| scroll_action(&*p, &s, dx, dy, phase)),
             SCROLL_SPEED, SCROLL_SPEED, f64::INFINITY,
         );
         Self { mouse_model, scroll_model, left_btn, right_btn, platform }

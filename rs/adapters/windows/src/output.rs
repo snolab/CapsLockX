@@ -287,11 +287,11 @@ fn arrange_side_by_side() {
     let (rows, cols) = if aw <= ah {
         let c = (n as f64).sqrt() as usize;
         let c = c.max(1);
-        ((n + c - 1) / c, c)
+        (n.div_ceil(c), c)
     } else {
         let r = (n as f64).sqrt() as usize;
         let r = r.max(1);
-        (r, (n + r - 1) / r)
+        (r, n.div_ceil(r))
     };
     for (k, &hwnd) in windows.iter().enumerate() {
         let nx = (k % cols) as i32;

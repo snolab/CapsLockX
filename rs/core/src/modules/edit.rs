@@ -15,17 +15,17 @@ impl EditModule {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let cursor = AccModel2D::new(
-            Arc::new(move |dx, dy, phase| cursor_action(&*p, &*s, dx, dy, phase)),
+            Arc::new(move |dx, dy, phase| cursor_action(&*p, &s, dx, dy, phase)),
             15.0, 15.0, 250.0,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let page = AccModel2D::new(
-            Arc::new(move |dx, dy, phase| page_action(&*p, &*s, dx, dy, phase)),
+            Arc::new(move |dx, dy, phase| page_action(&*p, &s, dx, dy, phase)),
             20.0, 20.0, 250.0,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let tab = AccModel2D::new(
-            Arc::new(move |dx, dy, phase| tab_action(&*p, &*s, dx, dy, phase)),
+            Arc::new(move |dx, dy, phase| tab_action(&*p, &s, dx, dy, phase)),
             15.0, 15.0, 250.0,
         );
         Self { cursor, page, tab }
