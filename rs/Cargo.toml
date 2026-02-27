@@ -4,6 +4,7 @@ members = [
     "core",
     "adapters/windows",
     "adapters/browser",
+    "adapters/linux",
 ]
 
 [profile.release]

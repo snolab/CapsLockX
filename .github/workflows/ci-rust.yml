@@ -53,3 +53,39 @@ jobs:
       - name: cargo build --release (windows adapter)
         working-directory: rs
         run: cargo build -p capslockx-windows --release
+
+  build-linux:
+    name: Build & Test (ubuntu-latest / x86_64-unknown-linux-gnu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      # linux crate compiles to real impl; windows/browser crates compile to
+      # their stubs (cfg guards keep them valid on non-target platforms).
+      - name: cargo check (workspace)
+        working-directory: rs
+        run: cargo check --workspace --all-targets
+
+      - name: cargo clippy (workspace)
+        working-directory: rs
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test (workspace)
+        working-directory: rs
+        run: cargo test --workspace
+
+      # Full release build of the Linux adapter.
+      - name: cargo build --release (linux adapter)
+        working-directory: rs
+        run: cargo build -p capslockx-linux --release
