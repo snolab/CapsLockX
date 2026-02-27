@@ -1,0 +1,61 @@
+name: release-rust
+
+# Trigger: any "v*" tag created by `npm run release` (standard-version).
+# The tag push is the canonical signal that a release has been cut.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    name: Build & publish capslockx-windows (x86_64-pc-windows-msvc)
+    runs-on: windows-latest
+    if: github.repository == 'snolab/CapsLockX'
+
+    permissions:
+      contents: write   # create release + upload assets
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Stable MSVC toolchain – link.exe and the Windows SDK are already
+      # present on windows-latest; no cross-compilation needed.
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      # [profile.release] in rs/Cargo.toml: opt-level=3, lto=true, codegen-units=1
+      - name: Build capslockx-windows --release
+        working-directory: rs
+        run: cargo build -p capslockx-windows --release
+
+      # Rename to the canonical asset name before uploading.
+      - name: Rename binary
+        shell: pwsh
+        run: Copy-Item rs\target\release\capslockx.exe capslockx-windows-x86_64.exe
+
+      # Create (or update) the GitHub Release for this tag and attach the binary.
+      #
+      # generate_release_notes: true — GitHub generates the release body from
+      # PR titles and commit messages (conventional commits) between this tag
+      # and the previous one.  This gives semantic-release-quality notes
+      # without requiring a full semantic-release migration.
+      #
+      # If a release for this tag already exists (e.g. created by another job),
+      # softprops/action-gh-release updates it in place rather than failing.
+      - name: Create GitHub Release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: capslockx-windows-x86_64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

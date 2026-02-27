@@ -1,0 +1,55 @@
+name: ci-rust
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "rs/**"
+      - ".github/workflows/ci-rust.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "rs/**"
+      - ".github/workflows/ci-rust.yml"
+
+jobs:
+  build-and-test:
+    name: Build & Test (windows-latest / x86_64-pc-windows-msvc)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Stable toolchain + clippy.
+      # windows-latest ships with the MSVC linker and Windows SDK, so
+      # x86_64-pc-windows-msvc is available without any extra setup.
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      # Cache ~/.cargo/registry, ~/.cargo/git, and rs/target.
+      # workspaces: "<manifest-dir> -> <target-dir>" (non-root workspace)
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      # Type-check the whole workspace (browser adapter guards itself with
+      # #[cfg(target_arch = "wasm32")], so it compiles to a no-op here).
+      - name: cargo check (workspace)
+        working-directory: rs
+        run: cargo check --workspace --all-targets
+
+      - name: cargo clippy (workspace)
+        working-directory: rs
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test (workspace)
+        working-directory: rs
+        run: cargo test --workspace
+
+      # Full release build to catch LTO / codegen-units issues early.
+      - name: cargo build --release (windows adapter)
+        working-directory: rs
+        run: cargo build -p capslockx-windows --release
