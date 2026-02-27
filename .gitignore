@@ -49,3 +49,7 @@ docs/.vitepress
 
 bun.lockb
 .env*
+
+# Playwright
+test-results/
+.playwright-mcp/
