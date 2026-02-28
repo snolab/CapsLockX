@@ -58,6 +58,26 @@ impl EditModule {
             KeyCode::T => { p.key_tap(KeyCode::Delete); true }
             KeyCode::P => { self.tab.press_up();       true }  // Shift+Tab
             KeyCode::N => { self.tab.press_down();     true }  // Tab
+            // EnterWithoutBreak: End → Enter (newline without splitting line)
+            KeyCode::Enter => {
+                p.key_tap(KeyCode::End);
+                p.key_tap(KeyCode::End);
+                p.key_tap(KeyCode::Enter);
+                true
+            }
+            // Delete entire line: Home Home → Shift+End Shift+Right → Delete
+            KeyCode::Backspace => {
+                p.key_tap(KeyCode::Home);
+                p.key_tap(KeyCode::Home);
+                p.key_tap(KeyCode::End);
+                p.key_tap(KeyCode::Home);
+                p.key_tap(KeyCode::Home);
+                p.key_tap_shifted(KeyCode::End);
+                p.key_tap_shifted(KeyCode::End);
+                p.key_tap_shifted(KeyCode::Right);
+                p.key_tap(KeyCode::Delete);
+                true
+            }
             _ => false,
         }
     }
@@ -72,7 +92,7 @@ impl EditModule {
             KeyCode::O => { self.page.release_right();   true }
             KeyCode::U => { self.page.release_up();      true }
             KeyCode::I => { self.page.release_down();    true }
-            KeyCode::G | KeyCode::T => true, // instantaneous, no release
+            KeyCode::G | KeyCode::T | KeyCode::Enter | KeyCode::Backspace => true,
             KeyCode::P => { self.tab.release_up();       true }
             KeyCode::N => { self.tab.release_down();     true }
             _ => false,
@@ -86,6 +106,7 @@ impl EditModule {
             | KeyCode::Y | KeyCode::U | KeyCode::I | KeyCode::O
             | KeyCode::G | KeyCode::T
             | KeyCode::P | KeyCode::N
+            | KeyCode::Enter | KeyCode::Backspace
         )
     }
 }
