@@ -138,17 +138,35 @@ impl Platform for WinPlatform {
 
     fn cycle_windows(&self, dir: i32) {
         let windows = get_app_windows();
-        if windows.is_empty() { return; }
         let fg = unsafe { GetForegroundWindow() };
         let pos = windows.iter().position(|&h| h == fg);
-        let target = match pos {
-            None => windows[0],
-            Some(idx) => {
-                let n = windows.len() as i32;
-                windows[((idx as i32 + dir).rem_euclid(n)) as usize]
+        match pos {
+            None => {
+                // No focused window in list — focus first/last on current desktop.
+                if let Some(&w) = if dir > 0 { windows.first() } else { windows.last() } {
+                    unsafe { let _ = SetForegroundWindow(w); }
+                }
             }
-        };
-        unsafe { let _ = SetForegroundWindow(target); }
+            Some(idx) => {
+                let new_idx = idx as i32 + dir;
+                if new_idx >= 0 && (new_idx as usize) < windows.len() {
+                    // Normal: activate adjacent window on the same desktop.
+                    unsafe { let _ = SetForegroundWindow(windows[new_idx as usize]); }
+                } else {
+                    // At the boundary: switch to the next/prev virtual desktop,
+                    // then focus the first/last window there.
+                    // Run in a thread so the hook callback is not blocked.
+                    std::thread::spawn(move || {
+                        switch_desktop_step(dir);
+                        std::thread::sleep(std::time::Duration::from_millis(250));
+                        let new_windows = get_app_windows();
+                        if let Some(&w) = if dir > 0 { new_windows.first() } else { new_windows.last() } {
+                            unsafe { let _ = SetForegroundWindow(w); }
+                        }
+                    });
+                }
+            }
+        }
     }
 
     fn arrange_windows(&self, mode: ArrangeMode) {
@@ -278,6 +296,24 @@ fn get_app_windows() -> Vec<HWND> {
 }
 
 // ── Virtual desktop helpers ───────────────────────────────────────────────────
+
+/// Send one Win+Ctrl+Right (dir > 0) or Win+Ctrl+Left (dir < 0) to step
+/// one virtual desktop in the given direction.
+fn switch_desktop_step(dir: i32) {
+    const VK_LWIN: u16  = 0x5B;
+    const VK_LCTRL: u16 = 0xA2;
+    const VK_LEFT: u16  = 0x25;
+    const VK_RIGHT: u16 = 0x27;
+    let vk_dir = if dir > 0 { VK_RIGHT } else { VK_LEFT };
+    send(&[
+        kbd(VK_LWIN,  KEYBD_EVENT_FLAGS(0)),
+        kbd(VK_LCTRL, KEYBD_EVENT_FLAGS(0)),
+        kbd(vk_dir,   KEYBD_EVENT_FLAGS(0)),
+        kbd(vk_dir,   KEYEVENTF_KEYUP),
+        kbd(VK_LCTRL, KEYEVENTF_KEYUP),
+        kbd(VK_LWIN,  KEYEVENTF_KEYUP),
+    ]);
+}
 
 /// Navigate from desktop `from` to desktop `to` by sending Win+Ctrl+Left/Right.
 fn navigate_desktops(from: usize, to: usize) {

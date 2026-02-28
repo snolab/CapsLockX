@@ -48,14 +48,12 @@ pub fn install_hook() {
             .expect("SetWindowsHookExW failed")
     };
     HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
-    eprintln!("[CLX] keyboard hook installed ({:?})", hhook.0);
 }
 
 pub fn uninstall_hook() {
     let raw = HOOK_RAW.swap(0, Ordering::SeqCst) as *mut _;
     if !std::ptr::eq(raw, std::ptr::null()) {
         unsafe { let _ = UnhookWindowsHookEx(HHOOK(raw)); }
-        eprintln!("[CLX] keyboard hook removed");
     }
 }
 

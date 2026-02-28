@@ -59,8 +59,8 @@ impl EditModule {
             KeyCode::J => { self.cursor.press_down();  true }
             KeyCode::Y => { self.page.press_left();    true }  // Home
             KeyCode::O => { self.page.press_right();   true }  // End
-            KeyCode::U => { self.page.press_up();      true }  // PageUp
-            KeyCode::I => { self.page.press_down();    true }  // PageDown
+            KeyCode::U => { self.page.press_down();    true }  // PageDown
+            KeyCode::I => { self.page.press_up();      true }  // PageUp
             KeyCode::G => { p.key_tap(KeyCode::Enter);  true }
             KeyCode::T => { p.key_tap(KeyCode::Delete); true }
             KeyCode::P => { self.tab.press_up();       true }  // Shift+Tab
@@ -97,8 +97,8 @@ impl EditModule {
             KeyCode::J => { self.cursor.release_down();  true }
             KeyCode::Y => { self.page.release_left();    true }
             KeyCode::O => { self.page.release_right();   true }
-            KeyCode::U => { self.page.release_up();      true }
-            KeyCode::I => { self.page.release_down();    true }
+            KeyCode::U => { self.page.release_down();    true }
+            KeyCode::I => { self.page.release_up();      true }
             KeyCode::G | KeyCode::T | KeyCode::Enter | KeyCode::Backspace => true,
             KeyCode::P => { self.tab.release_up();       true }
             KeyCode::N => { self.tab.release_down();     true }

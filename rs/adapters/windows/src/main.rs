@@ -1,5 +1,4 @@
-// Hide console window in release builds
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![windows_subsystem = "windows"]
 
 //! CapsLockX – Windows adapter entry point.
 //!
@@ -15,8 +14,6 @@ mod vk;
 use tauri::Manager as _;
 
 fn main() {
-    eprintln!("[CLX] CapsLockX Windows adapter starting…");
-
     let cfg = config_store::load();
     hook::init_engine(cfg.clone().into_clx_config());
     hook::install_hook();
@@ -58,5 +55,4 @@ fn main() {
         .expect("tauri error");
 
     hook::uninstall_hook();
-    eprintln!("[CLX] exited cleanly");
 }
