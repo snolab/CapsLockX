@@ -1,0 +1,9 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for CapsLockX preferences window",
+  "windows": ["prefs"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show"
+  ]
+}

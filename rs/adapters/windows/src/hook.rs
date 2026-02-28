@@ -1,6 +1,5 @@
 /// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
-use once_cell::sync::Lazy;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
@@ -10,7 +9,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     SetWindowsHookExW, UnhookWindowsHookEx, WH_KEYBOARD_LL,
 };
 
-use capslockx_core::{ClxEngine, CoreResponse};
+use capslockx_core::{ClxConfig, ClxEngine, CoreResponse};
 use crate::output::{WinPlatform, CLX_EXTRA_INFO};
 use crate::vk::vk_to_keycode;
 
@@ -18,12 +17,9 @@ use crate::vk::vk_to_keycode;
 
 static HOOK_RAW: AtomicUsize = AtomicUsize::new(0);
 
-// ── Engine (created once on first use) ───────────────────────────────────────
+// ── Engine (initialised once via init_engine before hook installs) ────────────
 
-static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
-    let platform = Arc::new(WinPlatform::new());
-    ClxEngine::new(platform)
-});
+static ENGINE: OnceLock<Arc<ClxEngine>> = OnceLock::new();
 
 // ── Win32 message constants ───────────────────────────────────────────────────
 
@@ -36,11 +32,16 @@ const LLKHF_INJECTED:u32 = 0x10;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-pub fn install_hook() {
-    // Force engine (and its platform + module threads) to initialise now,
-    // before the hook fires any events.
-    Lazy::force(&ENGINE);
+pub fn init_engine(config: ClxConfig) {
+    let platform = Arc::new(WinPlatform::new());
+    ENGINE.set(ClxEngine::with_config(platform, config)).ok();
+}
 
+pub fn engine() -> Arc<ClxEngine> {
+    ENGINE.get().expect("init_engine must be called before engine()").clone()
+}
+
+pub fn install_hook() {
     let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
     let hhook = unsafe {
         SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), hmod, 0)
@@ -84,7 +85,7 @@ unsafe extern "system" fn keyboard_proc(
 
     let code = vk_to_keycode(kb.vkCode);
 
-    match ENGINE.on_key_event(code, pressed) {
+    match ENGINE.get().expect("init_engine not called").on_key_event(code, pressed) {
         CoreResponse::Suppress    => LRESULT(1),
         CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
     }

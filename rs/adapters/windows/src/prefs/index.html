@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>CapsLockX Preferences</title>
+  <style>
+    /* Catppuccin Mocha palette */
+    :root {
+      --base:     #1e1e2e;
+      --mantle:   #181825;
+      --surface0: #313244;
+      --overlay1: #7f849c;
+      --text:     #cdd6f4;
+      --subtext0: #a6adc8;
+      --blue:     #89b4fa;
+      --green:    #a6e3a1;
+      --red:      #f38ba8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--base);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 20px;
+      letter-spacing: 0.4px;
+    }
+
+    section {
+      background: var(--mantle);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--subtext0);
+      margin-bottom: 14px;
+    }
+
+    /* Checkboxes */
+    .cb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 0;
+    }
+
+    .cb-row input[type=checkbox] {
+      width: 16px; height: 16px;
+      accent-color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .cb-row label { cursor: pointer; }
+
+    /* Sliders */
+    .sl-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 56px;
+      align-items: center;
+      gap: 14px;
+      padding: 7px 0;
+    }
+
+    .sl-row label { color: var(--text); }
+
+    .sl-row input[type=range] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .sl-row span {
+      text-align: right;
+      color: var(--blue);
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+    }
+
+    /* Status bar */
+    #status {
+      font-size: 12px;
+      color: var(--overlay1);
+      text-align: right;
+      margin-top: 8px;
+      min-height: 18px;
+      transition: color 0.2s;
+    }
+
+    #status.saved { color: var(--green); }
+    #status.error { color: var(--red); }
+  </style>
+</head>
+<body>
+  <h1>CapsLockX Preferences</h1>
+
+  <section>
+    <h2>Trigger Keys</h2>
+    <div class="cb-row">
+      <input type="checkbox" id="use_capslock">
+      <label for="use_capslock">CapsLock</label>
+    </div>
+    <div class="cb-row">
+      <input type="checkbox" id="use_space">
+      <label for="use_space">Space</label>
+    </div>
+    <div class="cb-row">
+      <input type="checkbox" id="use_insert">
+      <label for="use_insert">Insert</label>
+    </div>
+    <div class="cb-row">
+      <input type="checkbox" id="use_scroll_lock">
+      <label for="use_scroll_lock">Scroll Lock</label>
+    </div>
+    <div class="cb-row">
+      <input type="checkbox" id="use_ralt">
+      <label for="use_ralt">Right Alt</label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Speeds</h2>
+    <div class="sl-row">
+      <label for="cursor_speed">Cursor Speed</label>
+      <input type="range" id="cursor_speed" min="1" max="50" step="0.5">
+      <span id="cursor_speed_val">15</span>
+    </div>
+    <div class="sl-row">
+      <label for="mouse_speed">Mouse Speed</label>
+      <input type="range" id="mouse_speed" min="50" max="800" step="10">
+      <span id="mouse_speed_val">360</span>
+    </div>
+    <div class="sl-row">
+      <label for="scroll_speed">Scroll Speed</label>
+      <input type="range" id="scroll_speed" min="100" max="1500" step="20">
+      <span id="scroll_speed_val">720</span>
+    </div>
+  </section>
+
+  <div id="status">Loading…</div>
+
+  <script>
+    const invoke = window.__TAURI__.core.invoke;
+    const status = document.getElementById('status');
+    let debounce = null;
+
+    function collectForm() {
+      return {
+        use_capslock:    document.getElementById('use_capslock').checked,
+        use_space:       document.getElementById('use_space').checked,
+        use_insert:      document.getElementById('use_insert').checked,
+        use_scroll_lock: document.getElementById('use_scroll_lock').checked,
+        use_ralt:        document.getElementById('use_ralt').checked,
+        cursor_speed:    parseFloat(document.getElementById('cursor_speed').value),
+        mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
+        scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
+      };
+    }
+
+    function populateForm(cfg) {
+      document.getElementById('use_capslock').checked    = cfg.use_capslock;
+      document.getElementById('use_space').checked       = cfg.use_space;
+      document.getElementById('use_insert').checked      = cfg.use_insert;
+      document.getElementById('use_scroll_lock').checked = cfg.use_scroll_lock;
+      document.getElementById('use_ralt').checked        = cfg.use_ralt;
+      setSlider('cursor_speed', cfg.cursor_speed);
+      setSlider('mouse_speed',  cfg.mouse_speed);
+      setSlider('scroll_speed', cfg.scroll_speed);
+    }
+
+    function setSlider(id, value) {
+      document.getElementById(id).value = value;
+      document.getElementById(id + '_val').textContent = value;
+    }
+
+    // Live label update while dragging
+    ['cursor_speed', 'mouse_speed', 'scroll_speed'].forEach(id => {
+      document.getElementById(id).addEventListener('input', e => {
+        document.getElementById(id + '_val').textContent = e.target.value;
+      });
+    });
+
+    function schedulesSave() {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        invoke('set_config', { cfg: collectForm() })
+          .then(() => {
+            status.textContent = 'Saved \u2713';
+            status.className = 'saved';
+            setTimeout(() => { status.textContent = ''; status.className = ''; }, 2000);
+          })
+          .catch(err => {
+            status.textContent = 'Error: ' + err;
+            status.className = 'error';
+          });
+      }, 300);
+    }
+
+    document.querySelectorAll('input').forEach(el => {
+      el.addEventListener('change', schedulesSave);
+      el.addEventListener('input',  schedulesSave);
+    });
+
+    // Initial load
+    invoke('get_config')
+      .then(cfg => { populateForm(cfg); status.textContent = ''; })
+      .catch(err => { status.textContent = 'Failed to load: ' + err; status.className = 'error'; });
+  </script>
+</body>
+</html>

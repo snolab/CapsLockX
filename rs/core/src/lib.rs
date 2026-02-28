@@ -8,4 +8,4 @@ pub mod state;
 pub use engine::{ClxEngine, CoreResponse};
 pub use key_code::{KeyCode, Modifiers};
 pub use platform::Platform;
-pub use state::ClxState;
+pub use state::{ClxConfig, ClxState, SpeedConfig};

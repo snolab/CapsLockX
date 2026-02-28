@@ -2,16 +2,23 @@
 name = "capslockx-windows"
 version = "0.1.0"
 edition = "2021"
-description = "CapsLockX Windows adapter – WH_KEYBOARD_LL hook + SendInput"
+description = "CapsLockX Windows adapter – WH_KEYBOARD_LL hook + SendInput + Tauri tray"
 license = "GPL-3.0"
 
 [[bin]]
 name = "capslockx"
 path = "src/main.rs"
 
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
 [dependencies]
 capslockx-core = { path = "../../core" }
 once_cell = "1.19"
+tauri      = { version = "2", features = ["tray-icon", "image-png"] }
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs       = "5"
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_UI_Input_KeyboardAndMouse",

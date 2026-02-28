@@ -7,7 +7,7 @@ pub mod window_manager;
 use std::sync::Arc;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
-use crate::state::ClxState;
+use crate::state::{ClxState, SpeedConfig};
 
 use edit::EditModule;
 use media::MediaModule;
@@ -57,6 +57,11 @@ impl Modules {
             || self.media.is_mapped_key(key)
             || self.virtual_desktop.is_mapped_key(key)
             || self.window_manager.is_mapped_key(key)
+    }
+
+    pub fn apply_speeds(&self, s: &SpeedConfig) {
+        self.edit .apply_speeds(s);
+        self.mouse.apply_speeds(s);
     }
 
     /// Advance all AccModel physics by one step (WASM adapter tick loop).

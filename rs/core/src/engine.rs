@@ -119,6 +119,16 @@ impl ClxEngine {
 
     pub fn state(&self) -> &Arc<ClxState> { &self.state }
 
+    pub fn get_config(&self) -> ClxConfig {
+        self.state.config.read().unwrap().clone()
+    }
+
+    pub fn update_config(&self, new_cfg: ClxConfig) {
+        let speed = new_cfg.speed.clone();
+        *self.state.config.write().unwrap() = new_cfg;
+        self.modules.apply_speeds(&speed);
+    }
+
     // ── CLX_Dn ────────────────────────────────────────────────────────────────
 
     fn clx_dn(&self, code: KeyCode, prior: KeyCode) {

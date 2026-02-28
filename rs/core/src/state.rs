@@ -1,11 +1,27 @@
 /// Global CapsLockX mode state (atomics → no locking in hot path).
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::RwLock;
 use crate::key_code::KeyCode;
 
 // ── Mode bitmask constants ─────────────────────────────────────────────────────
 pub const CM_NORMAL: u32 = 0;
 pub const CM_FN:     u32 = 1;  // trigger key held
 pub const CM_CLX:    u32 = 2;  // CapsLock locked mode
+
+// ── Speed configuration ────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct SpeedConfig {
+    pub cursor_speed: f64,  // default 15.0
+    pub mouse_speed:  f64,  // default 240.0
+    pub scroll_speed: f64,  // default 480.0
+}
+
+impl Default for SpeedConfig {
+    fn default() -> Self {
+        Self { cursor_speed: 15.0, mouse_speed: 360.0, scroll_speed: 720.0 }
+    }
+}
 
 // ── Trigger-key configuration ─────────────────────────────────────────────────
 
@@ -16,6 +32,7 @@ pub struct ClxConfig {
     pub use_insert:      bool,
     pub use_scroll_lock: bool,
     pub use_ralt:        bool,
+    pub speed:           SpeedConfig,
 }
 
 impl Default for ClxConfig {
@@ -26,6 +43,7 @@ impl Default for ClxConfig {
             use_insert:      false,
             use_scroll_lock: false,
             use_ralt:        false,
+            speed:           SpeedConfig::default(),
         }
     }
 }
@@ -33,7 +51,7 @@ impl Default for ClxConfig {
 // ── State struct ──────────────────────────────────────────────────────────────
 
 pub struct ClxState {
-    pub config: ClxConfig,
+    pub config: RwLock<ClxConfig>,
     mode:   AtomicU32,
     paused: AtomicBool,
 }
@@ -47,7 +65,7 @@ impl Default for ClxState {
 impl ClxState {
     pub fn new(config: ClxConfig) -> Self {
         Self {
-            config,
+            config: RwLock::new(config),
             mode:   AtomicU32::new(CM_NORMAL),
             paused: AtomicBool::new(false),
         }
@@ -59,11 +77,12 @@ impl ClxState {
 
     #[inline]
     pub fn is_trigger_key(&self, key: KeyCode) -> bool {
-        (self.config.use_capslock    && key == KeyCode::CapsLock)
-        || (self.config.use_space       && key == KeyCode::Space)
-        || (self.config.use_insert      && key == KeyCode::Insert)
-        || (self.config.use_scroll_lock && key == KeyCode::ScrollLock)
-        || (self.config.use_ralt        && key == KeyCode::RAlt)
+        let cfg = self.config.read().unwrap();
+        (cfg.use_capslock    && key == KeyCode::CapsLock)
+        || (cfg.use_space       && key == KeyCode::Space)
+        || (cfg.use_insert      && key == KeyCode::Insert)
+        || (cfg.use_scroll_lock && key == KeyCode::ScrollLock)
+        || (cfg.use_ralt        && key == KeyCode::RAlt)
     }
 
     pub fn enter_fn_mode(&self) {

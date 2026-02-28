@@ -4,10 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::acc_model::AccModel2D;
 use crate::key_code::KeyCode;
 use crate::platform::{MouseButton, Platform};
-use crate::state::ClxState;
-
-const MOUSE_SPEED:  f64 = 360.0;
-const SCROLL_SPEED: f64 = 720.0;
+use crate::state::{ClxState, SpeedConfig};
 
 pub struct MouseModule {
     mouse_model:  AccModel2D,
@@ -19,20 +16,26 @@ pub struct MouseModule {
 
 impl MouseModule {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
+        let speed = state.config.read().unwrap().speed.clone();
         let left_btn  = Arc::new(AtomicBool::new(false));
         let right_btn = Arc::new(AtomicBool::new(false));
 
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let mouse_model = AccModel2D::new(
             Arc::new(move |dx, dy, phase| mouse_action(&*p, &s, dx, dy, phase)),
-            MOUSE_SPEED, MOUSE_SPEED, f64::INFINITY,
+            speed.mouse_speed, speed.mouse_speed, f64::INFINITY,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let scroll_model = AccModel2D::new(
             Arc::new(move |dx, dy, phase| scroll_action(&*p, &s, dx, dy, phase)),
-            SCROLL_SPEED, SCROLL_SPEED, f64::INFINITY,
+            speed.scroll_speed, speed.scroll_speed, f64::INFINITY,
         );
         Self { mouse_model, scroll_model, left_btn, right_btn, platform }
+    }
+
+    pub fn apply_speeds(&self, s: &SpeedConfig) {
+        self.mouse_model .set_ratios(s.mouse_speed,  s.mouse_speed,  f64::INFINITY);
+        self.scroll_model.set_ratios(s.scroll_speed, s.scroll_speed, f64::INFINITY);
     }
 
     /// Advance AccModel physics by one step (called by WASM adapter tick loop).

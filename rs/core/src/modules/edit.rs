@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::acc_model::AccModel2D;
 use crate::key_code::KeyCode;
 use crate::platform::Platform;
-use crate::state::ClxState;
+use crate::state::{ClxState, SpeedConfig};
 
 pub struct EditModule {
     cursor: AccModel2D,
@@ -13,22 +13,29 @@ pub struct EditModule {
 
 impl EditModule {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
+        let speed = state.config.read().unwrap().speed.clone();
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let cursor = AccModel2D::new(
             Arc::new(move |dx, dy, phase| cursor_action(&*p, &s, dx, dy, phase)),
-            15.0, 15.0, 250.0,
+            speed.cursor_speed, speed.cursor_speed, 250.0,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let page = AccModel2D::new(
             Arc::new(move |dx, dy, phase| page_action(&*p, &s, dx, dy, phase)),
-            20.0, 20.0, 250.0,
+            speed.cursor_speed, speed.cursor_speed, 250.0,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let tab = AccModel2D::new(
             Arc::new(move |dx, dy, phase| tab_action(&*p, &s, dx, dy, phase)),
-            15.0, 15.0, 250.0,
+            speed.cursor_speed, speed.cursor_speed, 250.0,
         );
         Self { cursor, page, tab }
+    }
+
+    pub fn apply_speeds(&self, s: &SpeedConfig) {
+        self.cursor.set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
+        self.page  .set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
+        self.tab   .set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
     }
 
     pub fn stop(&self) {

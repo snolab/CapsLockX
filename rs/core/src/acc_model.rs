@@ -166,6 +166,14 @@ impl AccModel2D {
     pub fn press_down(&self)    { Self::press_dir(&self.inner,   |s| &mut s.down_down); }
     pub fn release_down(&self)  { Self::release_dir(&self.inner, |s| &mut s.down_down); }
 
+    pub fn set_ratios(&self, h: f64, v: f64, max: f64) {
+        let (lock, _) = self.inner.as_ref();
+        let mut st = lock.lock().unwrap();
+        st.h_accel_ratio = h;
+        st.v_accel_ratio = if v == 0.0 { h } else { v };
+        st.max_speed = max;
+    }
+
     pub fn stop(&self) {
         let (lock, _) = self.inner.as_ref();
         lock.lock().unwrap().reset();

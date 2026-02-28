@@ -1,0 +1,25 @@
+{
+  "productName": "CapsLockX",
+  "version": "0.1.0",
+  "identifier": "com.capslockx.app",
+  "build": {
+    "frontendDist": "src/prefs"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "prefs",
+        "title": "CapsLockX Preferences",
+        "width": 560,
+        "height": 640,
+        "visible": false,
+        "resizable": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["icons/icon.ico", "icons/tray.png"]
+  }
+}
