@@ -305,10 +305,12 @@ CapsLockX启动(){
     ; 启动
     global T_AskRunAsAdmin := CLX_ConfigGet("Core", "T_AskRunAsAdmin", 0)
     adminCommand := RegExMatch(DllCall("GetCommandLine", "str"), "/admin")
+    ; Forward --no-core flag from Rust launcher to Core
+    noCoreFlag := RegExMatch(DllCall("GetCommandLine", "str"), "--no-core") ? " --no-core" : ""
     if (!A_IsAdmin && T_AskRunAsAdmin || adminCommand) {
-        RunWait *RunAs %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
+        RunWait *RunAs %AHK_EXE_TEMP_PATH% %CoreAHK%%noCoreFlag%, %A_ScriptDir%
     } else {
-        RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%, %A_ScriptDir%
+        RunWait %AHK_EXE_TEMP_PATH% %CoreAHK%%noCoreFlag%, %A_ScriptDir%
     }
     if (ErrorLevel) {
         MsgBox, 4, % t("CapsLockX 错误"), % t("CapsLockX 异常退出，是否重载？")

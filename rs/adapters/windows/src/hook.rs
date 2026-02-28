@@ -11,6 +11,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 use capslockx_core::{ClxConfig, ClxEngine, CoreResponse};
 use crate::output::{WinPlatform, CLX_EXTRA_INFO};
+use crate::shm::SharedState;
 use crate::vk::vk_to_keycode;
 
 // ── Raw HHOOK stored as usize for atomic access ───────────────────────────────
@@ -20,6 +21,15 @@ static HOOK_RAW: AtomicUsize = AtomicUsize::new(0);
 // ── Engine (initialised once via init_engine before hook installs) ────────────
 
 static ENGINE: OnceLock<Arc<ClxEngine>> = OnceLock::new();
+
+// ── Shared memory (set from main before hook install) ────────────────────────
+
+static SHM: OnceLock<SharedState> = OnceLock::new();
+
+/// Store the shared memory handle so the hook callback can publish mode changes.
+pub fn init_shared_state(shm: SharedState) {
+    let _ = SHM.set(shm);
+}
 
 // ── Win32 message constants ───────────────────────────────────────────────────
 
@@ -82,8 +92,16 @@ unsafe extern "system" fn keyboard_proc(
     if !pressed && !released { return call_next(n_code, w_param, l_param); }
 
     let code = vk_to_keycode(kb.vkCode);
+    let engine = ENGINE.get().expect("init_engine not called");
 
-    match ENGINE.get().expect("init_engine not called").on_key_event(code, pressed) {
+    let response = engine.on_key_event(code, pressed);
+
+    // Publish current mode to shared memory so AHK extensions can read it.
+    if let Some(shm) = SHM.get() {
+        shm.write_mode(engine.state().mode());
+    }
+
+    match response {
         CoreResponse::Suppress    => LRESULT(1),
         CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
     }

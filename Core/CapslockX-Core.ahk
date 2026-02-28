@@ -41,6 +41,20 @@ global CM_CapsLockX := 2 ; CapsLockX 模式，通过长按CLX键进入
 global CapsLockPressTimestamp := 0
 global CLX_上次触发键 := ""
 
+; ── Rust IPC: --no-core mode ──────────────────────────────────────────────────
+; When launched with --no-core, Rust handles the keyboard hook and publishes
+; mode via shared memory "CapsLockX_SharedState".  AHK reads it on a 10ms timer.
+global CLX_NoCore := !!RegExMatch(DllCall("GetCommandLine", "str"), "--no-core")
+global CLX_ShmPtr := 0
+global CLX_ShmHandle := 0
+
+if (CLX_NoCore) {
+    if (!CLX_InitSharedMemory()) {
+        ; Shared memory not available — fall back to standalone mode.
+        CLX_NoCore := false
+    }
+}
+
 ; value func
 CapsLockX()
 {
@@ -84,44 +98,47 @@ global CLX_Paused := 0
 
 #If
 
-Hotkey, If, CLX_Avaliable()
+; In --no-core mode Rust owns the keyboard hook; skip AHK hotkey registration.
+if (!CLX_NoCore) {
+    Hotkey, If, CLX_Avaliable()
 
-if(T_XKeyAsCapsLock)
-    Hotkey *CapsLock, CLX_Dn
-if(T_XKeyAsSpace)
-    Hotkey *Space, CLX_Dn
-if(T_XKeyAsInsert)
-    Hotkey *Insert, CLX_Dn
-if(T_XKeyAsScrollLock)
-    Hotkey *ScrollLock, CLX_Dn
-if(T_XKeyAsRAlt)
-    Hotkey *RAlt, CLX_Dn
+    if(T_XKeyAsCapsLock)
+        Hotkey *CapsLock, CLX_Dn
+    if(T_XKeyAsSpace)
+        Hotkey *Space, CLX_Dn
+    if(T_XKeyAsInsert)
+        Hotkey *Insert, CLX_Dn
+    if(T_XKeyAsScrollLock)
+        Hotkey *ScrollLock, CLX_Dn
+    if(T_XKeyAsRAlt)
+        Hotkey *RAlt, CLX_Dn
 
-Hotkey, If, CLX_NotAvaliable()
+    Hotkey, If, CLX_NotAvaliable()
 
-if(T_XKeyAsCapsLock)
-    Hotkey CapsLock, CLX_NotAvaliable
-if(T_XKeyAsSpace)
-    Hotkey Space, CLX_NotAvaliable
-if(T_XKeyAsInsert)
-    Hotkey Insert, CLX_NotAvaliable
-if(T_XKeyAsScrollLock)
-    Hotkey ScrollLock, CLX_NotAvaliable
-if(T_XKeyAsRAlt)
-    Hotkey RAlt, CLX_NotAvaliable
+    if(T_XKeyAsCapsLock)
+        Hotkey CapsLock, CLX_NotAvaliable
+    if(T_XKeyAsSpace)
+        Hotkey Space, CLX_NotAvaliable
+    if(T_XKeyAsInsert)
+        Hotkey Insert, CLX_NotAvaliable
+    if(T_XKeyAsScrollLock)
+        Hotkey ScrollLock, CLX_NotAvaliable
+    if(T_XKeyAsRAlt)
+        Hotkey RAlt, CLX_NotAvaliable
 
-Hotkey, If
+    Hotkey, If
 
-if(T_XKeyAsCapsLock)
-    Hotkey *CapsLock Up, CLX_Up
-if(T_XKeyAsSpace)
-    Hotkey *Space Up, CLX_Up
-if(T_XKeyAsInsert)
-    Hotkey *Insert Up, CLX_Up
-if(T_XKeyAsScrollLock)
-    Hotkey *ScrollLock Up, CLX_Up
-if(T_XKeyAsRAlt)
-    Hotkey *RAlt Up, CLX_Up
+    if(T_XKeyAsCapsLock)
+        Hotkey *CapsLock Up, CLX_Up
+    if(T_XKeyAsSpace)
+        Hotkey *Space Up, CLX_Up
+    if(T_XKeyAsInsert)
+        Hotkey *Insert Up, CLX_Up
+    if(T_XKeyAsScrollLock)
+        Hotkey *ScrollLock Up, CLX_Up
+    if(T_XKeyAsRAlt)
+        Hotkey *RAlt Up, CLX_Up
+}
 
 SetWorkingDir, %A_ScriptDir%\..\
 
@@ -406,4 +423,53 @@ CLX_HideToolTips()
 {
     ToolTip
     SetTimer CLX_HideToolTips, Off
+}
+
+; ── Shared memory IPC helpers ─────────────────────────────────────────────────
+
+CLX_InitSharedMemory()
+{
+    ; Open the shared memory region created by the Rust core.
+    FILE_MAP_READ := 0x0004
+    hMap := DllCall("OpenFileMappingW", "UInt", FILE_MAP_READ, "Int", 0, "WStr", "CapsLockX_SharedState", "Ptr")
+    if (!hMap) {
+        return false
+    }
+    ptr := DllCall("MapViewOfFile", "Ptr", hMap, "UInt", FILE_MAP_READ, "UInt", 0, "UInt", 0, "UPtr", 256, "Ptr")
+    if (!ptr) {
+        DllCall("CloseHandle", "Ptr", hMap)
+        return false
+    }
+    ; Verify protocol version
+    version := NumGet(ptr + 0, 0, "UInt")
+    if (version != 1) {
+        DllCall("UnmapViewOfFile", "Ptr", ptr)
+        DllCall("CloseHandle", "Ptr", hMap)
+        return false
+    }
+    CLX_ShmPtr := ptr
+    CLX_ShmHandle := hMap
+    SetTimer, CLX_ReadSharedMemory, 10
+    OnExit("CLX_CleanupShm")
+    return true
+}
+
+CLX_ReadSharedMemory:
+    if (CLX_ShmPtr) {
+        CapsLockXMode := NumGet(CLX_ShmPtr + 0, 4, "UInt")
+        UpdateCapsLockXLight()
+    }
+Return
+
+CLX_CleanupShm()
+{
+    SetTimer, CLX_ReadSharedMemory, Off
+    if (CLX_ShmPtr) {
+        DllCall("UnmapViewOfFile", "Ptr", CLX_ShmPtr)
+        CLX_ShmPtr := 0
+    }
+    if (CLX_ShmHandle) {
+        DllCall("CloseHandle", "Ptr", CLX_ShmHandle)
+        CLX_ShmHandle := 0
+    }
 }
