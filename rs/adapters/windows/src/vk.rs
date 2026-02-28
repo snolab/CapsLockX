@@ -31,6 +31,11 @@ pub fn vk_to_keycode(vk: u32) -> KeyCode {
         0x24 => KeyCode::Home,
         0x23 => KeyCode::End,
 
+        0x30 => KeyCode::D0, 0x31 => KeyCode::D1, 0x32 => KeyCode::D2,
+        0x33 => KeyCode::D3, 0x34 => KeyCode::D4, 0x35 => KeyCode::D5,
+        0x36 => KeyCode::D6, 0x37 => KeyCode::D7, 0x38 => KeyCode::D8,
+        0x39 => KeyCode::D9,
+
         0x41 => KeyCode::A,  0x42 => KeyCode::B,  0x43 => KeyCode::C,
         0x44 => KeyCode::D,  0x45 => KeyCode::E,  0x46 => KeyCode::F,
         0x47 => KeyCode::G,  0x48 => KeyCode::H,  0x49 => KeyCode::I,
@@ -87,6 +92,11 @@ pub fn keycode_to_vk(key: KeyCode) -> u16 {
         KeyCode::PageDown  => 0x22,
         KeyCode::Home      => 0x24,
         KeyCode::End       => 0x23,
+
+        KeyCode::D0 => 0x30, KeyCode::D1 => 0x31, KeyCode::D2 => 0x32,
+        KeyCode::D3 => 0x33, KeyCode::D4 => 0x34, KeyCode::D5 => 0x35,
+        KeyCode::D6 => 0x36, KeyCode::D7 => 0x37, KeyCode::D8 => 0x38,
+        KeyCode::D9 => 0x39,
 
         KeyCode::A => 0x41, KeyCode::B => 0x42, KeyCode::C => 0x43,
         KeyCode::D => 0x44, KeyCode::E => 0x45, KeyCode::F => 0x46,

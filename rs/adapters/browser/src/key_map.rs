@@ -34,6 +34,12 @@ pub fn code_to_keycode(code: &str) -> KeyCode {
         "Home"         => KeyCode::Home,
         "End"          => KeyCode::End,
 
+        // ── Digits ────────────────────────────────────────────────────────────
+        "Digit0" => KeyCode::D0, "Digit1" => KeyCode::D1, "Digit2" => KeyCode::D2,
+        "Digit3" => KeyCode::D3, "Digit4" => KeyCode::D4, "Digit5" => KeyCode::D5,
+        "Digit6" => KeyCode::D6, "Digit7" => KeyCode::D7, "Digit8" => KeyCode::D8,
+        "Digit9" => KeyCode::D9,
+
         // ── Alpha ─────────────────────────────────────────────────────────────
         "KeyA" => KeyCode::A, "KeyB" => KeyCode::B, "KeyC" => KeyCode::C,
         "KeyD" => KeyCode::D, "KeyE" => KeyCode::E, "KeyF" => KeyCode::F,
@@ -102,6 +108,12 @@ pub fn keycode_to_event_strs(key: KeyCode) -> (&'static str, &'static str) {
         KeyCode::RAlt                    => ("Alt",     "AltRight"),
         KeyCode::LWin                    => ("Meta",    "MetaLeft"),
         KeyCode::RWin                    => ("Meta",    "MetaRight"),
+
+        KeyCode::D0 => ("0", "Digit0"), KeyCode::D1 => ("1", "Digit1"),
+        KeyCode::D2 => ("2", "Digit2"), KeyCode::D3 => ("3", "Digit3"),
+        KeyCode::D4 => ("4", "Digit4"), KeyCode::D5 => ("5", "Digit5"),
+        KeyCode::D6 => ("6", "Digit6"), KeyCode::D7 => ("7", "Digit7"),
+        KeyCode::D8 => ("8", "Digit8"), KeyCode::D9 => ("9", "Digit9"),
 
         KeyCode::A => ("a", "KeyA"), KeyCode::B => ("b", "KeyB"),
         KeyCode::C => ("c", "KeyC"), KeyCode::D => ("d", "KeyD"),

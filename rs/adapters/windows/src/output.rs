@@ -16,13 +16,14 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
     MOUSEEVENTF_WHEEL, MOUSE_EVENT_FLAGS, MOUSEINPUT, VIRTUAL_KEY, SendInput,
 };
+use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::UI::WindowsAndMessaging::{
-    EnumWindows, GetClassNameW, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
+    EnumWindows, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
     GetWindowThreadProcessId, IsWindowVisible, SendMessageW, SetForegroundWindow,
     SetLayeredWindowAttributes, SetWindowLongW, SetWindowPos, ShowWindow,
     GWL_EXSTYLE, GWL_STYLE, HWND_NOTOPMOST, HWND_TOPMOST,
     LWA_ALPHA, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER,
-    SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
+    SW_HIDE, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
 };
 
 use capslockx_core::{KeyCode, Platform};
@@ -43,11 +44,16 @@ const WM_CLOSE: u32             = 0x0010;
 pub struct WinPlatform {
     /// HWND stored during V-hold transparent (0 = none).
     v_hwnd: AtomicUsize,
+    /// Tracked current virtual desktop index (1-based).
+    desktop_idx: AtomicUsize,
 }
 
 impl WinPlatform {
     pub fn new() -> Self {
-        Self { v_hwnd: AtomicUsize::new(0) }
+        Self {
+            v_hwnd: AtomicUsize::new(0),
+            desktop_idx: AtomicUsize::new(1),
+        }
     }
 }
 
@@ -214,6 +220,31 @@ impl Platform for WinPlatform {
             }
         }
     }
+
+    // ── Virtual desktop ────────────────────────────────────────────────────────
+
+    fn switch_to_desktop(&self, idx: u32) {
+        let idx = idx.clamp(1, 10) as usize;
+        let cur = self.desktop_idx.load(Ordering::Relaxed);
+        if cur == idx { return; }
+        navigate_desktops(cur, idx);
+        self.desktop_idx.store(idx, Ordering::Relaxed);
+    }
+
+    fn move_window_to_desktop(&self, idx: u32) {
+        let idx = idx.clamp(1, 10) as usize;
+        let cur = self.desktop_idx.load(Ordering::Relaxed);
+        if cur == idx { return; }
+        // Hide window, switch desktop, then show it on the new desktop.
+        let hwnd = unsafe { GetForegroundWindow() };
+        unsafe { let _ = ShowWindow(hwnd, SW_HIDE); }
+        navigate_desktops(cur, idx);
+        self.desktop_idx.store(idx, Ordering::Relaxed);
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_RESTORE);
+            let _ = SetForegroundWindow(hwnd);
+        }
+    }
 }
 
 // ── Window enumeration ────────────────────────────────────────────────────────
@@ -226,11 +257,15 @@ extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
         if style & WS_CAPTION_RAW == 0 { return BOOL(1); }
         if exstyle & WS_EX_TOOLWINDOW_RAW != 0 { return BOOL(1); }
         if GetWindowTextLengthW(hwnd) == 0 { return BOOL(1); }
-        let mut cls = [0u16; 256];
-        let len = GetClassNameW(hwnd, &mut cls) as usize;
-        if String::from_utf16_lossy(&cls[..len.min(cls.len())]) == "ApplicationFrameWindow" {
-            return BOOL(1);
-        }
+        // Skip cloaked windows (e.g. UWP apps on other virtual desktops).
+        let mut cloaked: u32 = 0;
+        let _ = DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_CLOAKED,
+            &mut cloaked as *mut u32 as *mut _,
+            std::mem::size_of::<u32>() as u32,
+        );
+        if cloaked != 0 { return BOOL(1); }
         (&mut *(lparam.0 as *mut Vec<HWND>)).push(hwnd);
         BOOL(1)
     }
@@ -240,6 +275,42 @@ fn get_app_windows() -> Vec<HWND> {
     let mut v: Vec<HWND> = Vec::new();
     unsafe { let _ = EnumWindows(Some(enum_callback), LPARAM(&mut v as *mut Vec<HWND> as isize)); }
     v
+}
+
+// ── Virtual desktop helpers ───────────────────────────────────────────────────
+
+/// Navigate from desktop `from` to desktop `to` by sending Win+Ctrl+Left/Right.
+fn navigate_desktops(from: usize, to: usize) {
+    // VK codes
+    const VK_LWIN: u16  = 0x5B;
+    const VK_LCTRL: u16 = 0xA2;
+    const VK_LEFT: u16  = 0x25;
+    const VK_RIGHT: u16 = 0x27;
+
+    let (count, vk_dir) = if to > from {
+        (to - from, VK_RIGHT)
+    } else {
+        (from - to, VK_LEFT)
+    };
+
+    // Hold Win+Ctrl
+    send(&[
+        kbd(VK_LWIN, KEYBD_EVENT_FLAGS(0)),
+        kbd(VK_LCTRL, KEYBD_EVENT_FLAGS(0)),
+    ]);
+    // Tap direction key `count` times
+    for _ in 0..count {
+        send(&[
+            kbd(vk_dir, KEYBD_EVENT_FLAGS(0)),
+            kbd(vk_dir, KEYEVENTF_KEYUP),
+        ]);
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    // Release Win+Ctrl
+    send(&[
+        kbd(VK_LCTRL, KEYEVENTF_KEYUP),
+        kbd(VK_LWIN, KEYEVENTF_KEYUP),
+    ]);
 }
 
 // ── Transparency helpers ──────────────────────────────────────────────────────

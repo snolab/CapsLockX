@@ -1,6 +1,7 @@
 pub mod edit;
 pub mod media;
 pub mod mouse;
+pub mod virtual_desktop;
 pub mod window_manager;
 
 use std::sync::Arc;
@@ -11,23 +12,26 @@ use crate::state::ClxState;
 use edit::EditModule;
 use media::MediaModule;
 use mouse::MouseModule;
+use virtual_desktop::VirtualDesktopModule;
 use window_manager::WindowManagerModule;
 
 pub struct Modules {
-    edit:           EditModule,
-    mouse:          MouseModule,
-    media:          MediaModule,
-    window_manager: WindowManagerModule,
-    platform:       Arc<dyn Platform>,
+    edit:            EditModule,
+    mouse:           MouseModule,
+    media:           MediaModule,
+    virtual_desktop: VirtualDesktopModule,
+    window_manager:  WindowManagerModule,
+    platform:        Arc<dyn Platform>,
 }
 
 impl Modules {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
         Self {
-            edit:           EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
-            mouse:          MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
-            media:          MediaModule::new(Arc::clone(&platform)),
-            window_manager: WindowManagerModule::new(Arc::clone(&platform)),
+            edit:            EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            mouse:           MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            media:           MediaModule::new(Arc::clone(&platform)),
+            virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform)),
+            window_manager:  WindowManagerModule::new(Arc::clone(&platform)),
             platform,
         }
     }
@@ -36,6 +40,7 @@ impl Modules {
         self.edit.on_key_down(key, &*self.platform)
             || self.mouse.on_key_down(key)
             || self.media.on_key_down(key)
+            || self.virtual_desktop.on_key_down(key, mods)
             || self.window_manager.on_key_down(key, mods)
     }
 
@@ -50,6 +55,7 @@ impl Modules {
         self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
+            || self.virtual_desktop.is_mapped_key(key)
             || self.window_manager.is_mapped_key(key)
     }
 

@@ -84,4 +84,11 @@ pub trait Platform: Send + Sync + 'static {
     fn set_window_transparent(&self, _alpha: u8) {}
     fn restore_window(&self) {}
     fn toggle_window_topmost(&self) {}
+
+    // ── Virtual desktop (optional, default = no-op) ────────────────────────────
+
+    /// Switch to virtual desktop by 1-based index.
+    fn switch_to_desktop(&self, _idx: u32) {}
+    /// Move the active window to virtual desktop by 1-based index, then follow.
+    fn move_window_to_desktop(&self, _idx: u32) {}
 }
