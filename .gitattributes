@@ -9,6 +9,12 @@
 *.json text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.rs text eol=lf
+*.toml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.ps1 text eol=lf
+*.sh text eol=lf
 
 # Binary files
 *.exe binary
