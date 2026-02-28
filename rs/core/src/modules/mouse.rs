@@ -6,8 +6,8 @@ use crate::key_code::KeyCode;
 use crate::platform::{MouseButton, Platform};
 use crate::state::ClxState;
 
-const MOUSE_SPEED:  f64 = 240.0;
-const SCROLL_SPEED: f64 = 480.0;
+const MOUSE_SPEED:  f64 = 360.0;
+const SCROLL_SPEED: f64 = 720.0;
 
 pub struct MouseModule {
     mouse_model:  AccModel2D,

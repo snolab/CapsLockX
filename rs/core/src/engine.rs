@@ -88,6 +88,9 @@ impl ClxEngine {
                 if self.modules.on_key_down(code, &mods) {
                     return CoreResponse::Suppress;
                 }
+            } else if pressed && is_repeat && self.modules.is_mapped_key(code) {
+                // Suppress auto-repeat of mapped keys so they don't leak through.
+                return CoreResponse::Suppress;
             } else if !pressed && self.modules.on_key_up(code) {
                 return CoreResponse::Suppress;
             }
