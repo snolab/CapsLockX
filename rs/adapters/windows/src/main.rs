@@ -90,9 +90,12 @@ fn main() {
                 });
             }
 
-            let prefs_item = MenuItemBuilder::with_id("prefs", "Preferences…").build(app)?;
-            let quit_item  = MenuItemBuilder::with_id("quit",  "Quit").build(app)?;
-            let menu = MenuBuilder::new(app).items(&[&prefs_item, &quit_item]).build()?;
+            let prefs_item  = MenuItemBuilder::with_id("prefs",      "Preferences…").build(app)?;
+            let config_item = MenuItemBuilder::with_id("config_dir", "Open Config Folder…").build(app)?;
+            let quit_item   = MenuItemBuilder::with_id("quit",       "Quit").build(app)?;
+            let menu = MenuBuilder::new(app)
+                .items(&[&prefs_item, &config_item, &quit_item])
+                .build()?;
 
             let icon = Image::from_bytes(ICON_OFF)
                 .expect("embedded ICO must be valid");
@@ -123,6 +126,12 @@ fn main() {
                             .center()
                             .build();
                         });
+                    }
+                    "config_dir" => {
+                        if let Some(dir) = config_store::config_path().parent() {
+                            let _ = std::fs::create_dir_all(dir);
+                            let _ = Command::new("explorer").arg(dir).spawn();
+                        }
                     }
                     "quit" => app.exit(0),
                     _ => {}

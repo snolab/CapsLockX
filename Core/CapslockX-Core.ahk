@@ -78,7 +78,12 @@ UpdateCapsLockXMode()
 UpdateCapsLockXMode()
 
 ; 根据当前模式，切换灯
-Menu, tray, icon, %T_SwitchTrayIconOff%
+; When Rust core manages the tray, hide AHK's tray icon to avoid duplicates.
+if (CLX_NoCore) {
+    Menu, tray, NoIcon
+} else {
+    Menu, tray, icon, %T_SwitchTrayIconOff%
+}
 UpdateCapsLockXLight()
 
 global T_IgnoresByLines
@@ -189,14 +194,18 @@ UpdateCapsLockXLight()
         }
     }
     if (UpEdge) {
-        global T_SwitchTrayIconOn
-        Menu, tray, icon, %T_SwitchTrayIconOn%
+        if (!CLX_NoCore) {
+            global T_SwitchTrayIconOn
+            Menu, tray, icon, %T_SwitchTrayIconOn%
+        }
         if (T_SwitchSound && T_SwitchSoundOn) {
             SoundPlay %T_SwitchSoundOn%
         }
     } else {
-        global T_SwitchTrayIconOff
-        Menu, tray, icon, %T_SwitchTrayIconOff%
+        if (!CLX_NoCore) {
+            global T_SwitchTrayIconOff
+            Menu, tray, icon, %T_SwitchTrayIconOff%
+        }
         if (T_SwitchSound && T_SwitchSoundOff) {
             SoundPlay %T_SwitchSoundOff%
         }
