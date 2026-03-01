@@ -10,6 +10,7 @@ mod config_store;
 mod hook;
 mod output;
 mod shm;
+mod vd_api;
 mod vk;
 
 use std::path::Path;
@@ -48,7 +49,7 @@ fn main() {
 
             let icon = Image::from_bytes(include_bytes!("../icons/tray.png"))
                 .expect("tray.png must be a valid PNG");
-            TrayIconBuilder::new()
+            TrayIconBuilder::with_id("clx")
                 .icon(icon)
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
@@ -61,6 +62,7 @@ fn main() {
                     _ => {}
                 })
                 .build(app)?;
+            hook::set_app_handle(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -70,6 +70,11 @@ impl ClxEngine {
             *self.prior_key.lock().unwrap() = code;
         }
 
+        // ── 3a. Track Shift for AccModel callbacks ────────────────────────────
+        if matches!(code, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift) {
+            self.state.set_shift_held(pressed);
+        }
+
         // ── 3. Trigger key ────────────────────────────────────────────────────
         if self.state.is_trigger_key(code) {
             if pressed && !is_repeat {

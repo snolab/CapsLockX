@@ -9,6 +9,7 @@ pub struct EditModule {
     cursor: AccModel2D,
     page:   AccModel2D,
     tab:    AccModel2D,
+    action: AccModel2D,  // T=Delete (press_down), G=Enter (press_up)
 }
 
 impl EditModule {
@@ -29,19 +30,26 @@ impl EditModule {
             Arc::new(move |dx, dy, phase| tab_action(&*p, &s, dx, dy, phase)),
             speed.cursor_speed, speed.cursor_speed, 250.0,
         );
-        Self { cursor, page, tab }
+        let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
+        let action = AccModel2D::new(
+            Arc::new(move |_dx, dy, phase| action_action(&*p, &s, dy, phase)),
+            speed.cursor_speed, speed.cursor_speed, 250.0,
+        );
+        Self { cursor, page, tab, action }
     }
 
     pub fn apply_speeds(&self, s: &SpeedConfig) {
         self.cursor.set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
         self.page  .set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
         self.tab   .set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
+        self.action.set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
     }
 
     pub fn stop(&self) {
         self.cursor.stop();
         self.page.stop();
         self.tab.stop();
+        self.action.stop();
     }
 
     /// Advance AccModel physics by one step (called by WASM adapter tick loop).
@@ -49,6 +57,7 @@ impl EditModule {
         self.cursor.tick_once();
         self.page.tick_once();
         self.tab.tick_once();
+        self.action.tick_once();
     }
 
     pub fn on_key_down(&self, key: KeyCode, p: &dyn Platform) -> bool {
@@ -61,8 +70,8 @@ impl EditModule {
             KeyCode::O => { self.page.press_right();   true }  // End
             KeyCode::U => { self.page.press_down();    true }  // PageDown
             KeyCode::I => { self.page.press_up();      true }  // PageUp
-            KeyCode::G => { p.key_tap(KeyCode::Enter);  true }
-            KeyCode::T => { p.key_tap(KeyCode::Delete); true }
+            KeyCode::G => { self.action.press_up();   true }
+            KeyCode::T => { self.action.press_down(); true }
             KeyCode::P => { self.tab.press_up();       true }  // Shift+Tab
             KeyCode::N => { self.tab.press_down();     true }  // Tab
             // EnterWithoutBreak: End → Enter (newline without splitting line)
@@ -99,7 +108,9 @@ impl EditModule {
             KeyCode::O => { self.page.release_right();   true }
             KeyCode::U => { self.page.release_down();    true }
             KeyCode::I => { self.page.release_up();      true }
-            KeyCode::G | KeyCode::T | KeyCode::Enter | KeyCode::Backspace => true,
+            KeyCode::G => { self.action.release_up();   true }
+            KeyCode::T => { self.action.release_down(); true }
+            KeyCode::Enter | KeyCode::Backspace => true,
             KeyCode::P => { self.tab.release_up();       true }
             KeyCode::N => { self.tab.release_down();     true }
             _ => false,
@@ -122,19 +133,36 @@ impl EditModule {
 
 fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() { return; }
+    let shift = s.is_shift_held();
     match phase {
         "横中键" => {
-            if dx > 0 { p.key_tap(KeyCode::Right); } else { p.key_tap(KeyCode::Left); }
+            if shift {
+                if dx > 0 { p.key_tap_shifted(KeyCode::Right); } else { p.key_tap_shifted(KeyCode::Left); }
+            } else {
+                if dx > 0 { p.key_tap(KeyCode::Right); } else { p.key_tap(KeyCode::Left); }
+            }
         }
         "纵中键" => {
-            if dy > 0 { p.key_tap(KeyCode::Down); } else { p.key_tap(KeyCode::Up); }
-            p.key_tap(KeyCode::Home);
+            if shift {
+                if dy > 0 { p.key_tap_shifted(KeyCode::Down); } else { p.key_tap_shifted(KeyCode::Up); }
+                p.key_tap_shifted(KeyCode::Home);
+            } else {
+                if dy > 0 { p.key_tap(KeyCode::Down); } else { p.key_tap(KeyCode::Up); }
+                p.key_tap(KeyCode::Home);
+            }
         }
         "移动" => {
-            if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
-            if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
-            if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
-            if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
+            if shift {
+                if dy < 0 { p.key_tap_shifted_n(KeyCode::Up,    -dy); }
+                if dy > 0 { p.key_tap_shifted_n(KeyCode::Down,   dy); }
+                if dx < 0 { p.key_tap_shifted_n(KeyCode::Left,  -dx); }
+                if dx > 0 { p.key_tap_shifted_n(KeyCode::Right,  dx); }
+            } else {
+                if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
+                if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
+                if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
+                if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
+            }
         }
         _ => {}
     }
@@ -152,4 +180,10 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() || phase != "移动" { return; }
     if dy < 0 { p.key_tap_shifted_n(KeyCode::Tab, -dy); }
     if dy > 0 { p.key_tap_n(KeyCode::Tab,          dy); }
+}
+
+fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
+    if !s.is_clx_active() || phase != "移动" { return; }
+    if dy < 0 { p.key_tap_n(KeyCode::Enter,  -dy); }  // G
+    if dy > 0 { p.key_tap_n(KeyCode::Delete,  dy); }  // T
 }

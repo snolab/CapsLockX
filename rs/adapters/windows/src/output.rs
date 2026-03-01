@@ -28,6 +28,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 use capslockx_core::{KeyCode, Platform};
 use capslockx_core::platform::{ArrangeMode, MouseButton};
+use crate::vd_api;
 use crate::vk::keycode_to_vk;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -153,17 +154,10 @@ impl Platform for WinPlatform {
                     // Normal: activate adjacent window on the same desktop.
                     unsafe { let _ = SetForegroundWindow(windows[new_idx as usize]); }
                 } else {
-                    // At the boundary: switch to the next/prev virtual desktop,
-                    // then focus the first/last window there.
-                    // Run in a thread so the hook callback is not blocked.
-                    std::thread::spawn(move || {
-                        switch_desktop_step(dir);
-                        std::thread::sleep(std::time::Duration::from_millis(250));
-                        let new_windows = get_app_windows();
-                        if let Some(&w) = if dir > 0 { new_windows.first() } else { new_windows.last() } {
-                            unsafe { let _ = SetForegroundWindow(w); }
-                        }
-                    });
+                    // At the boundary: switch to the next/prev virtual desktop.
+                    // Run synchronously on the hook thread (which has COM/message-pump)
+                    // rather than a spawned thread (which does not).
+                    switch_desktop_step(dir);
                 }
             }
         }
@@ -243,7 +237,11 @@ impl Platform for WinPlatform {
 
     fn switch_to_desktop(&self, idx: u32) {
         let idx = idx.clamp(1, 10) as usize;
-        let cur = self.desktop_idx.load(Ordering::Relaxed);
+        // Try instant COM API first (Win10+, position-independent).
+        if vd_api::switch_desktop(idx) { return; }
+        // Hotkey fallback: query real current position, then send Win+Ctrl+Arrow.
+        let cur = vd_api::current_desktop_idx()
+            .unwrap_or_else(|| self.desktop_idx.load(Ordering::Relaxed));
         if cur == idx { return; }
         navigate_desktops(cur, idx);
         self.desktop_idx.store(idx, Ordering::Relaxed);
@@ -251,13 +249,16 @@ impl Platform for WinPlatform {
 
     fn move_window_to_desktop(&self, idx: u32) {
         let idx = idx.clamp(1, 10) as usize;
-        let cur = self.desktop_idx.load(Ordering::Relaxed);
+        let cur = vd_api::current_desktop_idx()
+            .unwrap_or_else(|| self.desktop_idx.load(Ordering::Relaxed));
         if cur == idx { return; }
-        // Hide window, switch desktop, then show it on the new desktop.
+        // Hide window, switch desktop, show it on the new desktop.
         let hwnd = unsafe { GetForegroundWindow() };
         unsafe { let _ = ShowWindow(hwnd, SW_HIDE); }
-        navigate_desktops(cur, idx);
-        self.desktop_idx.store(idx, Ordering::Relaxed);
+        if !vd_api::switch_desktop(idx) {
+            navigate_desktops(cur, idx);
+            self.desktop_idx.store(idx, Ordering::Relaxed);
+        }
         unsafe {
             let _ = ShowWindow(hwnd, SW_RESTORE);
             let _ = SetForegroundWindow(hwnd);
@@ -292,14 +293,24 @@ extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
 fn get_app_windows() -> Vec<HWND> {
     let mut v: Vec<HWND> = Vec::new();
     unsafe { let _ = EnumWindows(Some(enum_callback), LPARAM(&mut v as *mut Vec<HWND> as isize)); }
+    // Sort by HWND value for a stable ordering that doesn't shift when focus changes.
+    // EnumWindows returns Z-order (top window first), which rearranges on every focus
+    // change and causes cycling to bounce between two windows.
+    v.sort_by_key(|h| h.0 as usize);
     v
 }
 
 // ── Virtual desktop helpers ───────────────────────────────────────────────────
 
-/// Send one Win+Ctrl+Right (dir > 0) or Win+Ctrl+Left (dir < 0) to step
-/// one virtual desktop in the given direction.
+/// Step one virtual desktop in `dir` direction (+1 or -1).
+/// Uses the instant COM API when available; falls back to Win+Ctrl+Arrow.
 fn switch_desktop_step(dir: i32) {
+    // Query real current index so we don't drift if user switched manually.
+    if let Some(cur) = vd_api::current_desktop_idx() {
+        let next = (cur as i32 + dir).max(1) as usize;
+        if vd_api::switch_desktop(next) { return; }
+    }
+    // Hotkey fallback.
     const VK_LWIN: u16  = 0x5B;
     const VK_LCTRL: u16 = 0xA2;
     const VK_LEFT: u16  = 0x25;

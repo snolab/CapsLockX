@@ -16,12 +16,18 @@ fn generate_icons() {
         std::fs::write(&tray, &png).expect("cannot write icons/tray.png");
     }
 
+    let tray_on = dir.join("tray_on.png");
+    if !tray_on.exists() {
+        std::fs::write(&tray_on, make_png_on()).expect("cannot write icons/tray_on.png");
+    }
+
     let ico = dir.join("icon.ico");
     if !ico.exists() {
         std::fs::write(&ico, make_ico(&png)).expect("cannot write icons/icon.ico");
     }
 
     println!("cargo:rerun-if-changed=icons/tray.png");
+    println!("cargo:rerun-if-changed=icons/tray_on.png");
     println!("cargo:rerun-if-changed=icons/icon.ico");
 }
 
@@ -58,6 +64,43 @@ fn make_png() -> Vec<u8> {
     ihdr[4..8].copy_from_slice(&H.to_be_bytes());
     ihdr[8] = 8; // bit depth
     ihdr[9] = 6; // colour type: RGBA
+    chunk(&mut png, b"IHDR", &ihdr);
+    chunk(&mut png, b"IDAT", &compressed);
+    chunk(&mut png, b"IEND", &[]);
+    png
+}
+
+/// 32×32 "active" icon: blue fill, dark border (inverted from tray.png).
+fn make_png_on() -> Vec<u8> {
+    const W: u32 = 32;
+    const H: u32 = 32;
+    const BG: [u8; 4] = [0x89, 0xb4, 0xfa, 0xff]; // Mocha blue (fill)
+    const AC: [u8; 4] = [0x1e, 0x1e, 0x2e, 0xff]; // Mocha base (border)
+
+    let row_stride = 1 + (W as usize) * 4;
+    let mut img = vec![0u8; (H as usize) * row_stride];
+    for row in 0..H as usize {
+        img[row * row_stride] = 0;
+        for col in 0..W as usize {
+            let border = col < 4 || col >= (W as usize - 4)
+                || row < 4  || row >= (H as usize - 4);
+            let color = if border { AC } else { BG };
+            let i = row * row_stride + 1 + col * 4;
+            img[i]   = color[0];
+            img[i+1] = color[1];
+            img[i+2] = color[2];
+            img[i+3] = color[3];
+        }
+    }
+
+    let compressed = zlib_store(&img);
+    let mut png = Vec::with_capacity(512 + compressed.len());
+    png.extend_from_slice(b"\x89PNG\r\n\x1a\n");
+    let mut ihdr = [0u8; 13];
+    ihdr[0..4].copy_from_slice(&W.to_be_bytes());
+    ihdr[4..8].copy_from_slice(&H.to_be_bytes());
+    ihdr[8] = 8;
+    ihdr[9] = 6;
     chunk(&mut png, b"IHDR", &ihdr);
     chunk(&mut png, b"IDAT", &compressed);
     chunk(&mut png, b"IEND", &[]);

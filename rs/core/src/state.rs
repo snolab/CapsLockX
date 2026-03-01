@@ -51,9 +51,10 @@ impl Default for ClxConfig {
 // ── State struct ──────────────────────────────────────────────────────────────
 
 pub struct ClxState {
-    pub config: RwLock<ClxConfig>,
-    mode:   AtomicU32,
-    paused: AtomicBool,
+    pub config:  RwLock<ClxConfig>,
+    mode:        AtomicU32,
+    paused:      AtomicBool,
+    shift_held:  AtomicBool,
 }
 
 impl Default for ClxState {
@@ -65,15 +66,18 @@ impl Default for ClxState {
 impl ClxState {
     pub fn new(config: ClxConfig) -> Self {
         Self {
-            config: RwLock::new(config),
-            mode:   AtomicU32::new(CM_NORMAL),
-            paused: AtomicBool::new(false),
+            config:     RwLock::new(config),
+            mode:       AtomicU32::new(CM_NORMAL),
+            paused:     AtomicBool::new(false),
+            shift_held: AtomicBool::new(false),
         }
     }
 
     #[inline] pub fn mode(&self)            -> u32  { self.mode.load(Ordering::Relaxed) }
     #[inline] pub fn is_clx_active(&self)   -> bool { self.mode() != CM_NORMAL && !self.paused.load(Ordering::Relaxed) }
     #[inline] pub fn is_clx_locked(&self)   -> bool { self.mode() & CM_CLX != 0 }
+    #[inline] pub fn set_shift_held(&self, held: bool) { self.shift_held.store(held, Ordering::Relaxed); }
+    #[inline] pub fn is_shift_held(&self)   -> bool { self.shift_held.load(Ordering::Relaxed) }
 
     #[inline]
     pub fn is_trigger_key(&self, key: KeyCode) -> bool {
