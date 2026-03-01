@@ -115,7 +115,12 @@ impl MouseModule {
 fn mouse_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() { return; }
     if phase == "移动" && (dx != 0 || dy != 0) {
-        p.mouse_move(dx, dy);
+        // Shift = precision mode: clamp to ±1 pixel (matches AHK behaviour).
+        if s.is_shift_held() {
+            p.mouse_move(dx.signum(), dy.signum());
+        } else {
+            p.mouse_move(dx, dy);
+        }
     }
 }
 
