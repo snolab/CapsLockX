@@ -59,11 +59,16 @@ fn main() {
     }
 
     vd_api::init();
+
+    // Spawn AHK first so its hooks are installed before ours.
+    // WH_KEYBOARD_LL hooks are called most-recent-first, so installing
+    // our hook AFTER AHK ensures Rust gets first crack at every key.
+    let mut ahk_child = spawn_ahk();
+    if ahk_child.is_some() {
+        std::thread::sleep(std::time::Duration::from_millis(800));
+    }
     hook::install_hook();
     let engine = hook::engine();
-
-    // Spawn AHK with --no-core so it reads mode from shared memory.
-    let mut ahk_child = spawn_ahk();
 
     tauri::Builder::default()
         .manage(engine)

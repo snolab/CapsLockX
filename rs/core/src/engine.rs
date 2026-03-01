@@ -150,11 +150,17 @@ impl ClxEngine {
             return;
         }
 
-        // Bypass: a non-modifier, non-space key was already held when trigger pressed
+        // Bypass: pass the trigger key through instead of entering CLX mode.
+        // - Space trigger + modifier held → bypass (preserves Shift+Space, Ctrl+Space, etc.)
+        // - Non-Space trigger + non-modifier key held → bypass (avoids interfering with typing)
         let prior_held = prior != KeyCode::Unknown(0)
             && prior != code
             && self.held_keys.lock().unwrap().contains(&prior);
-        let bypass = !prior.is_modifier() && code != KeyCode::Space && prior_held;
+        let bypass = if code == KeyCode::Space {
+            prior.is_modifier() && prior_held
+        } else {
+            !prior.is_modifier() && prior_held
+        };
         if bypass {
             self.platform.key_tap(code);
             return;

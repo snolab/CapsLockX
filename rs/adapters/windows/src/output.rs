@@ -247,6 +247,15 @@ impl Platform for WinPlatform {
         self.desktop_idx.store(idx, Ordering::Relaxed);
     }
 
+    fn restart(&self) {
+        // Spawn a new instance of ourselves, then exit.
+        if let Ok(exe) = std::env::current_exe() {
+            let wd = std::env::current_dir().unwrap_or_else(|_| exe.parent().unwrap().to_path_buf());
+            let _ = std::process::Command::new(&exe).current_dir(wd).spawn();
+        }
+        std::process::exit(0);
+    }
+
     fn move_window_to_desktop(&self, idx: u32) {
         let idx = idx.clamp(1, 10) as usize;
         let cur = vd_api::current_desktop_idx()

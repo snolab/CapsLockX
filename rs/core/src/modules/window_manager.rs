@@ -41,6 +41,11 @@ impl WindowManagerModule {
                 else          { self.platform.set_window_transparent(100) }
                 true
             }
+            KeyCode::Period => {
+                if mods.shift { self.platform.restart() }
+                // Plain CLX+. passes through to AHK for script reload
+                true
+            }
             _ => false,
         }
     }
@@ -54,6 +59,6 @@ impl WindowManagerModule {
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
-        matches!(key, KeyCode::Z | KeyCode::X | KeyCode::C | KeyCode::V)
+        matches!(key, KeyCode::Z | KeyCode::X | KeyCode::C | KeyCode::V | KeyCode::Period)
     }
 }

@@ -91,4 +91,9 @@ pub trait Platform: Send + Sync + 'static {
     fn switch_to_desktop(&self, _idx: u32) {}
     /// Move the active window to virtual desktop by 1-based index, then follow.
     fn move_window_to_desktop(&self, _idx: u32) {}
+
+    // ── Lifecycle (optional, default = no-op) ────────────────────────────────
+
+    /// Restart the entire application (spawn new instance, exit current).
+    fn restart(&self) {}
 }
