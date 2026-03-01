@@ -1,6 +1,6 @@
 /// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
 use std::sync::{Arc, OnceLock};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -26,15 +26,13 @@ static ENGINE: OnceLock<Arc<ClxEngine>> = OnceLock::new();
 
 static SHM: OnceLock<SharedState> = OnceLock::new();
 
+/// Last tray-active state for edge detection (0 = off, 1 = on, u32::MAX = uninitialised).
+static LAST_TRAY_ACTIVE: AtomicU32 = AtomicU32::new(u32::MAX);
+
 /// Store the shared memory handle so the hook callback can publish mode changes.
 pub fn init_shared_state(shm: SharedState) {
     let _ = SHM.set(shm);
 }
-
-// ── Tauri AppHandle for tray icon updates ─────────────────────────────────────
-
-static APP_HANDLE:  OnceLock<tauri::AppHandle<tauri::Wry>> = OnceLock::new();
-static TRAY_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 // ── Win32 message constants ───────────────────────────────────────────────────
 
@@ -54,10 +52,6 @@ pub fn init_engine(config: ClxConfig) {
 
 pub fn engine() -> Arc<ClxEngine> {
     ENGINE.get().expect("init_engine must be called before engine()").clone()
-}
-
-pub fn set_app_handle(handle: tauri::AppHandle<tauri::Wry>) {
-    APP_HANDLE.set(handle).ok();
 }
 
 pub fn install_hook() {
@@ -105,11 +99,18 @@ unsafe extern "system" fn keyboard_proc(
     let resp = engine.on_key_event(code, pressed);
 
     // Publish current mode to shared memory so AHK extensions can read it.
+    let mode = engine.state().mode();
     if let Some(shm) = SHM.get() {
-        shm.write_mode(engine.state().mode());
+        shm.write_mode(mode);
     }
 
-    sync_tray_icon(engine);
+    // Update tray icon on mode edge transitions.
+    let active = u32::from(mode != 0);
+    let prev = LAST_TRAY_ACTIVE.swap(active, Ordering::Relaxed);
+    if prev != active {
+        crate::update_tray_icon(active != 0);
+    }
+
     match resp {
         CoreResponse::Suppress    => LRESULT(1),
         CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
@@ -120,23 +121,4 @@ unsafe extern "system" fn keyboard_proc(
 unsafe fn call_next(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let raw = HOOK_RAW.load(Ordering::Relaxed) as *mut _;
     CallNextHookEx(HHOOK(raw), n_code, w_param, l_param)
-}
-
-// ── Tray icon state sync ──────────────────────────────────────────────────────
-
-fn sync_tray_icon(engine: &ClxEngine) {
-    let active = engine.state().is_clx_active();
-    // Only update when state transitions to avoid redundant work.
-    if TRAY_ACTIVE.swap(active, Ordering::Relaxed) == active { return; }
-    let Some(handle) = APP_HANDLE.get() else { return };
-    let bytes: &[u8] = if active {
-        include_bytes!("../icons/tray_on.png")
-    } else {
-        include_bytes!("../icons/tray.png")
-    };
-    if let Ok(icon) = tauri::image::Image::from_bytes(bytes) {
-        if let Some(tray) = handle.tray_by_id("clx") {
-            let _ = tray.set_icon(Some(icon));
-        }
-    }
 }

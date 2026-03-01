@@ -7,16 +7,7 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [
-      {
-        "label": "prefs",
-        "title": "CapsLockX Preferences",
-        "width": 560,
-        "height": 640,
-        "visible": false,
-        "resizable": false
-      }
-    ]
+    "windows": []
   },
   "bundle": {
     "active": false,

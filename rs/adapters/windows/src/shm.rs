@@ -4,15 +4,21 @@
 ///   0x00  u32  version   (always 1)
 ///   0x04  u32  mode      (bitmask: CM_FN=1, CM_CLX=2)
 ///   0x08  u32  rust_pid
-///   0x0C  [u8; 244] reserved
+///   0x0C  u32  main_thread_id
+///   0x10  [u8; 240] reserved
 use std::ptr;
 
 use windows::core::w;
-use windows::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
+use windows::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE, WAIT_TIMEOUT};
 use windows::Win32::System::Memory::{
-    CreateFileMappingW, MapViewOfFile, UnmapViewOfFile,
-    FILE_MAP_ALL_ACCESS, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READWRITE,
+    CreateFileMappingW, MapViewOfFile, OpenFileMappingW, UnmapViewOfFile,
+    FILE_MAP_ALL_ACCESS, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READWRITE,
 };
+use windows::Win32::System::Threading::{
+    GetCurrentThreadId, OpenProcess, TerminateProcess, WaitForSingleObject,
+    PROCESS_TERMINATE, PROCESS_SYNCHRONIZE,
+};
+use windows::Win32::UI::WindowsAndMessaging::{PostThreadMessageW, WM_QUIT};
 
 const SHM_SIZE: u32 = 256;
 const VERSION: u32 = 1;
@@ -28,6 +34,60 @@ unsafe impl Send for SharedState {}
 unsafe impl Sync for SharedState {}
 
 impl SharedState {
+    /// If a previous instance left shared memory behind, ask it to quit gracefully.
+    /// Falls back to TerminateProcess if WM_QUIT doesn't work within 3 seconds.
+    pub fn kill_previous() {
+        unsafe {
+            let handle = match OpenFileMappingW(FILE_MAP_READ.0, false, w!("CapsLockX_SharedState"))
+            {
+                Ok(h) => h,
+                Err(_) => return, // no previous SHM – nothing to kill
+            };
+
+            let view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, SHM_SIZE as usize);
+            if view.Value.is_null() {
+                let _ = CloseHandle(handle);
+                return;
+            }
+
+            let p = view.Value as *const u8;
+            let pid = ptr::read_volatile(p.add(8) as *const u32);
+            let tid = ptr::read_volatile(p.add(12) as *const u32);
+
+            let _ = UnmapViewOfFile(MEMORY_MAPPED_VIEW_ADDRESS {
+                Value: view.Value,
+            });
+            let _ = CloseHandle(handle);
+
+            if pid == 0 || pid == std::process::id() {
+                return;
+            }
+
+            let proc = match OpenProcess(PROCESS_TERMINATE | PROCESS_SYNCHRONIZE, false, pid) {
+                Ok(h) => h,
+                Err(_) => return,
+            };
+
+            // Try graceful: post WM_QUIT to the main thread so Tauri cleans up the tray.
+            if tid != 0 {
+                eprintln!("[CLX] requesting previous instance to quit (pid={pid}, tid={tid})");
+                let _ = PostThreadMessageW(tid, WM_QUIT, None, None);
+                let r = WaitForSingleObject(proc, 3000);
+                if r != WAIT_TIMEOUT {
+                    let _ = CloseHandle(proc);
+                    return;
+                }
+                eprintln!("[CLX] graceful quit timed out, force-killing");
+            }
+
+            // Fallback: force kill.
+            eprintln!("[CLX] killing previous instance (pid={pid})");
+            let _ = TerminateProcess(proc, 1);
+            let _ = WaitForSingleObject(proc, 1000);
+            let _ = CloseHandle(proc);
+        }
+    }
+
     /// Create the named shared memory region and initialise the header.
     pub fn create() -> Option<Self> {
         unsafe {
@@ -55,6 +115,8 @@ impl SharedState {
             ptr::write_volatile(p.add(4) as *mut u32, 0);
             // rust_pid
             ptr::write_volatile(p.add(8) as *mut u32, std::process::id());
+            // main_thread_id
+            ptr::write_volatile(p.add(12) as *mut u32, GetCurrentThreadId());
 
             Some(Self { handle, ptr: p })
         }
