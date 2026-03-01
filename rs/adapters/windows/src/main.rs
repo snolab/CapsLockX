@@ -58,6 +58,7 @@ fn main() {
         eprintln!("[CLX] shared memory creation failed (standalone mode)");
     }
 
+    vd_api::init();
     hook::install_hook();
     let engine = hook::engine();
 
@@ -140,7 +141,10 @@ fn main() {
 
 /// Spawn `CapsLockX.exe CapsLockX.ahk --no-core` if the AHK launcher exists.
 fn spawn_ahk() -> Option<Child> {
-    let exe = Path::new("CapsLockX.exe");
+    // Use `.\` prefix so Windows resolves from CWD, not the app's own directory.
+    // Without it, CreateProcess finds our own binary (target/release/CapsLockX.exe)
+    // first, causing an infinite fork bomb.
+    let exe = Path::new(r".\CapsLockX.exe");
     if !exe.exists() {
         eprintln!("[CLX] CapsLockX.exe not found, AHK modules disabled");
         return None;

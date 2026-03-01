@@ -8,6 +8,7 @@
 //! Falls back silently (returns false / None) if the COM interfaces fail.
 
 use std::ffi::c_void;
+use std::sync::OnceLock;
 use windows::core::GUID;
 
 // ── GUID helpers ──────────────────────────────────────────────────────────────
@@ -51,9 +52,11 @@ extern "system" {
         riid:   *const GUID,
         ppv:    *mut *mut c_void,
     ) -> i32;
+    fn CoInitializeEx(reserved: *const c_void, co_init: u32) -> i32;
 }
 
 const CLSCTX_ALL: u32 = 0x17;
+const COINIT_APARTMENTTHREADED: u32 = 0x2;
 const S_OK: i32 = 0;
 
 // ── File logger (appends to %TEMP%\capslockx_vd.log) ─────────────────────────
@@ -93,6 +96,68 @@ unsafe fn vt<F: Copy>(obj: *mut c_void, n: usize) -> F {
     std::mem::transmute_copy(&*vtbl.add(n))
 }
 
+// ── Cached VDMI pointer (acquired once at startup, reused from hook callback) ─
+
+struct CachedVdmi {
+    ptr: *mut c_void,
+    ver: Ver,
+}
+
+// SAFETY: COM object lives on main STA thread; hook callback also runs on main thread.
+unsafe impl Send for CachedVdmi {}
+unsafe impl Sync for CachedVdmi {}
+
+static VDMI_CACHE: OnceLock<Option<CachedVdmi>> = OnceLock::new();
+
+/// Initialize COM and pre-acquire the virtual desktop manager interface.
+/// Must be called on the main thread before the keyboard hook is installed.
+pub fn init() {
+    unsafe { CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED); }
+    VDMI_CACHE.get_or_init(|| {
+        unsafe {
+            let mut sp: *mut c_void = std::ptr::null_mut();
+            let hr = CoCreateInstance(
+                &CLSID_IMMERSIVE_SHELL, std::ptr::null_mut(),
+                CLSCTX_ALL, &IID_ISERVICE_PROVIDER, &mut sp,
+            );
+            if hr != S_OK || sp.is_null() {
+                log(&format!("[vd_api] init: CoCreateInstance FAILED hr=0x{:08X}", hr as u32));
+                return None;
+            }
+
+            type QsFn = unsafe extern "system" fn(
+                *mut c_void, *const GUID, *const GUID, *mut *mut c_void,
+            ) -> i32;
+            let qs: QsFn = vt(sp, 3);
+
+            let mut result = None;
+            for &(ref iid, ver) in &[
+                (IID_VDMI_W12, Ver::W12),
+                (IID_VDMI_W11, Ver::W11),
+                (IID_VDMI_W10, Ver::W10),
+            ] {
+                let mut mgr: *mut c_void = std::ptr::null_mut();
+                let hr2 = qs(sp, &SID_VDMI, iid, &mut mgr);
+                if hr2 == S_OK && !mgr.is_null() {
+                    let ver_name = match ver { Ver::W10 => "W10", Ver::W11 => "W11", Ver::W12 => "W12" };
+                    log(&format!("[vd_api] init: acquired VDMI ver={}", ver_name));
+                    result = Some(CachedVdmi { ptr: mgr, ver });
+                    break;
+                }
+            }
+
+            // Release IServiceProvider (manager has its own ref)
+            let release: unsafe extern "system" fn(*mut c_void) -> u32 = vt(sp, 2);
+            release(sp);
+
+            if result.is_none() {
+                log("[vd_api] init: QueryService failed for all version GUIDs");
+            }
+            result
+        }
+    });
+}
+
 // ── Windows-version variant ───────────────────────────────────────────────────
 
 #[derive(Clone, Copy)]
@@ -110,44 +175,16 @@ impl Ver {
 
 struct Manager(ComPtr, Ver);
 
-/// Try to obtain IVirtualDesktopManagerInternal.  Tries Win12→Win11→Win10.
-/// Must be called from a thread with a Win32 message pump (i.e. the main/hook thread).
+/// Return a Manager backed by the cached VDMI pointer (acquired at startup).
+/// AddRefs so the caller's Drop doesn't release the cached pointer.
 fn acquire() -> Option<Manager> {
+    let cached = VDMI_CACHE.get()?.as_ref()?;
     unsafe {
-
-        let mut sp: *mut c_void = std::ptr::null_mut();
-        let hr = CoCreateInstance(
-            &CLSID_IMMERSIVE_SHELL, std::ptr::null_mut(),
-            CLSCTX_ALL, &IID_ISERVICE_PROVIDER, &mut sp,
-        );
-        if hr != S_OK || sp.is_null() {
-            log(&format!("[vd_api] CoCreateInstance FAILED hr=0x{:08X}", hr as u32));
-            return None;
-        }
-        let sp = ComPtr(sp);
-
-        // IServiceProvider::QueryService is vtable[3]
-        type QsFn = unsafe extern "system" fn(
-            *mut c_void, *const GUID, *const GUID, *mut *mut c_void,
-        ) -> i32;
-        let qs: QsFn = vt(sp.ptr(), 3);
-
-        for &(ref iid, ver) in &[
-            (IID_VDMI_W12, Ver::W12),
-            (IID_VDMI_W11, Ver::W11),
-            (IID_VDMI_W10, Ver::W10),
-        ] {
-            let mut mgr: *mut c_void = std::ptr::null_mut();
-            let hr2 = qs(sp.ptr(), &SID_VDMI, iid, &mut mgr);
-            if hr2 == S_OK && !mgr.is_null() {
-                let ver_name = match ver { Ver::W10 => "W10", Ver::W11 => "W11", Ver::W12 => "W12" };
-                log(&format!("[vd_api] acquired VDMI ver={}", ver_name));
-                return Some(Manager(ComPtr(mgr), ver));
-            }
-        }
-        log("[vd_api] QueryService failed for all version GUIDs");
-        None
+        // AddRef so the caller's ComPtr::drop doesn't release our cached pointer.
+        let addref: unsafe extern "system" fn(*mut c_void) -> u32 = vt(cached.ptr, 1);
+        addref(cached.ptr);
     }
+    Some(Manager(ComPtr(cached.ptr), cached.ver))
 }
 
 impl Manager {
