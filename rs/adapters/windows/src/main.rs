@@ -157,12 +157,13 @@ fn main() {
 
 /// Spawn `CapsLockX.exe CapsLockX.ahk --no-core` if the AHK launcher exists.
 fn spawn_ahk() -> Option<Child> {
-    // Use `.\` prefix so Windows resolves from CWD, not the app's own directory.
-    // Without it, CreateProcess finds our own binary (target/release/CapsLockX.exe)
-    // first, causing an infinite fork bomb.
+    let ahk_script = Path::new(r".\CapsLockX.ahk");
     let exe = Path::new(r".\CapsLockX.exe");
-    if !exe.exists() {
-        eprintln!("[CLX] CapsLockX.exe not found, AHK modules disabled");
+    // Both the AHK script and launcher must exist in CWD.
+    // Also guard against fork-bomb: if our own binary IS the CapsLockX.exe in CWD,
+    // the script file won't exist next to it (we're in target/debug or target/release).
+    if !ahk_script.exists() || !exe.exists() {
+        eprintln!("[CLX] CapsLockX.ahk or CapsLockX.exe not found, AHK modules disabled");
         return None;
     }
     match Command::new(exe).args(["CapsLockX.ahk", "--no-core"]).spawn() {
