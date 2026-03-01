@@ -95,6 +95,12 @@ unsafe extern "system" fn keyboard_proc(
     if !pressed && !released { return call_next(n_code, w_param, l_param); }
 
     let code = vk_to_keycode(kb.vkCode);
+
+    // Debug: log trigger key events to verify hook ordering
+    if matches!(code, capslockx_core::KeyCode::CapsLock | capslockx_core::KeyCode::Space) {
+        debug_log(&format!("[hook] {:?} {}", code, if pressed { "DN" } else { "UP" }));
+    }
+
     let engine = ENGINE.get().expect("init_engine not called");
     let resp = engine.on_key_event(code, pressed);
 
@@ -114,6 +120,16 @@ unsafe extern "system" fn keyboard_proc(
     match resp {
         CoreResponse::Suppress    => LRESULT(1),
         CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
+    }
+}
+
+fn debug_log(msg: &str) {
+    use std::io::Write as _;
+    if let Ok(tmp) = std::env::var("TEMP") {
+        let path = format!(r"{}\capslockx_hook.log", tmp);
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+            let _ = writeln!(f, "{}", msg);
+        }
     }
 }
 

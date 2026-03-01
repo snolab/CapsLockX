@@ -22,7 +22,7 @@ pub struct ClxEngine {
     state:       Arc<ClxState>,
     modules:     Modules,
     platform:    Arc<dyn Platform>,
-    held_keys:   Mutex<HashSet<KeyCode>>,
+    held_keys:   Arc<Mutex<HashSet<KeyCode>>>,
     prior_key:   Mutex<KeyCode>,
     trigger_key: Arc<Mutex<Option<KeyCode>>>,
     fn_acted:    Arc<AtomicBool>,
@@ -43,7 +43,7 @@ impl ClxEngine {
             state,
             modules,
             platform,
-            held_keys:   Mutex::new(HashSet::new()),
+            held_keys:   Arc::new(Mutex::new(HashSet::new())),
             prior_key:   Mutex::new(KeyCode::Unknown(0)),
             trigger_key: Arc::new(Mutex::new(None)),
             fn_acted:    Arc::new(AtomicBool::new(false)),
@@ -151,13 +151,16 @@ impl ClxEngine {
         }
 
         // Bypass: pass the trigger key through instead of entering CLX mode.
-        // - Space trigger + modifier held → bypass (preserves Shift+Space, Ctrl+Space, etc.)
+        // - Space + Shift held → bypass (preserves Shift+Space for input method switching)
         // - Non-Space trigger + non-modifier key held → bypass (avoids interfering with typing)
+        // Note: Ctrl/Alt/Win + Space should NOT bypass — they enter CLX mode so
+        // combos like Ctrl+Space+E (Ctrl+Click) work.
         let prior_held = prior != KeyCode::Unknown(0)
             && prior != code
             && self.held_keys.lock().unwrap().contains(&prior);
+        let prior_is_shift = matches!(prior, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift);
         let bypass = if code == KeyCode::Space {
-            prior.is_modifier() && prior_held
+            prior_is_shift && prior_held
         } else {
             !prior.is_modifier() && prior_held
         };
@@ -179,11 +182,18 @@ impl ClxEngine {
             let timeout     = Arc::clone(&self.trigger_timeout_fired);
             let platform    = Arc::clone(&self.platform);
             let state       = Arc::clone(&self.state);
+            let held_keys = Arc::clone(&self.held_keys);
             std::thread::spawn(move || {
                 std::thread::sleep(std::time::Duration::from_millis(200));
                 let still_held = *trigger_key.lock().unwrap() == Some(KeyCode::Space);
                 let acted      = fn_acted.load(Ordering::Relaxed);
-                if still_held && !acted {
+                // Don't fire timeout if a modifier is held — user intends
+                // Space as a trigger for combos like Ctrl+Space+E.
+                let modifier_held = {
+                    let hk = held_keys.lock().unwrap();
+                    hk.iter().any(|k| k.is_modifier())
+                };
+                if still_held && !acted && !modifier_held {
                     // CAS: only the first path (timeout vs key-up) to swap
                     // false→true gets to emit the character.
                     if !timeout.swap(true, Ordering::SeqCst) {
