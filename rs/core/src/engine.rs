@@ -24,8 +24,11 @@ pub struct ClxEngine {
     platform:    Arc<dyn Platform>,
     held_keys:   Mutex<HashSet<KeyCode>>,
     prior_key:   Mutex<KeyCode>,
-    trigger_key: Mutex<Option<KeyCode>>,
-    fn_acted:    AtomicBool,
+    trigger_key: Arc<Mutex<Option<KeyCode>>>,
+    fn_acted:    Arc<AtomicBool>,
+    /// CAS flag: whichever of the timeout thread or clx_up swaps this
+    /// from false→true first gets to emit the native key character.
+    trigger_timeout_fired: Arc<AtomicBool>,
 }
 
 impl ClxEngine {
@@ -42,8 +45,9 @@ impl ClxEngine {
             platform,
             held_keys:   Mutex::new(HashSet::new()),
             prior_key:   Mutex::new(KeyCode::Unknown(0)),
-            trigger_key: Mutex::new(None),
-            fn_acted:    AtomicBool::new(false),
+            trigger_key: Arc::new(Mutex::new(None)),
+            fn_acted:    Arc::new(AtomicBool::new(false)),
+            trigger_timeout_fired: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -158,6 +162,31 @@ impl ClxEngine {
 
         self.state.enter_fn_mode();
         self.store_trigger(code);
+
+        // ── 200 ms hold timeout (native only) ─────────────────────────────
+        // If Space is held >200ms with no combo action, emit a space
+        // character and deactivate FN mode — matches original AHK behaviour.
+        #[cfg(not(target_arch = "wasm32"))]
+        if code == KeyCode::Space {
+            let trigger_key = Arc::clone(&self.trigger_key);
+            let fn_acted    = Arc::clone(&self.fn_acted);
+            let timeout     = Arc::clone(&self.trigger_timeout_fired);
+            let platform    = Arc::clone(&self.platform);
+            let state       = Arc::clone(&self.state);
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(200));
+                let still_held = *trigger_key.lock().unwrap() == Some(KeyCode::Space);
+                let acted      = fn_acted.load(Ordering::Relaxed);
+                if still_held && !acted {
+                    // CAS: only the first path (timeout vs key-up) to swap
+                    // false→true gets to emit the character.
+                    if !timeout.swap(true, Ordering::SeqCst) {
+                        platform.key_tap(KeyCode::Space);
+                        state.exit_fn_mode();
+                    }
+                }
+            });
+        }
     }
 
     // ── CLX_Up ────────────────────────────────────────────────────────────────
@@ -173,17 +202,22 @@ impl ClxEngine {
             self.modules.stop_all();
         }
 
-        // Single tap with no action → restore native key function
+        // Single tap with no action → restore native key function.
+        // CAS on trigger_timeout_fired: if the 200ms timeout thread already
+        // emitted the character and exited FN mode, the swap returns true
+        // and we skip the duplicate tap.
         if trigger == Some(code) && !fn_acted {
-            if self.state.is_clx_locked() {
-                // Tap inside locked mode → unlock
-                self.state.exit_clx_mode();
-                self.modules.stop_all();
-            } else {
-                match code {
-                    KeyCode::CapsLock => self.platform.key_tap(KeyCode::CapsLock),
-                    KeyCode::Space    => self.platform.key_tap(KeyCode::Space),
-                    _ => {}
+            if !self.trigger_timeout_fired.swap(true, Ordering::SeqCst) {
+                if self.state.is_clx_locked() {
+                    // Tap inside locked mode → unlock
+                    self.state.exit_clx_mode();
+                    self.modules.stop_all();
+                } else {
+                    match code {
+                        KeyCode::CapsLock => self.platform.key_tap(KeyCode::CapsLock),
+                        KeyCode::Space    => self.platform.key_tap(KeyCode::Space),
+                        _ => {}
+                    }
                 }
             }
         }
@@ -197,6 +231,7 @@ impl ClxEngine {
     fn store_trigger(&self, code: KeyCode) {
         *self.trigger_key.lock().unwrap() = Some(code);
         self.fn_acted.store(false, Ordering::Relaxed);
+        self.trigger_timeout_fired.store(false, Ordering::Relaxed);
     }
 
     fn compute_mods(&self) -> Modifiers {
