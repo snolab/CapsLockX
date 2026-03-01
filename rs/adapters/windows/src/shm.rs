@@ -4,8 +4,7 @@
 ///   0x00  u32  version   (always 1)
 ///   0x04  u32  mode      (bitmask: CM_FN=1, CM_CLX=2)
 ///   0x08  u32  rust_pid
-///   0x0C  u32  main_thread_id
-///   0x10  [u8; 240] reserved
+///   0x0C  [u8; 244] reserved
 use std::ptr;
 
 use windows::core::w;
@@ -15,10 +14,10 @@ use windows::Win32::System::Memory::{
     FILE_MAP_ALL_ACCESS, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READWRITE,
 };
 use windows::Win32::System::Threading::{
-    GetCurrentThreadId, OpenProcess, TerminateProcess, WaitForSingleObject,
-    PROCESS_TERMINATE, PROCESS_SYNCHRONIZE,
+    CreateEventW, OpenEventW, OpenProcess,
+    SetEvent, TerminateProcess, WaitForSingleObject,
+    EVENT_MODIFY_STATE, PROCESS_TERMINATE, PROCESS_SYNCHRONIZE,
 };
-use windows::Win32::UI::WindowsAndMessaging::{PostThreadMessageW, WM_QUIT};
 
 const SHM_SIZE: u32 = 256;
 const VERSION: u32 = 1;
@@ -35,7 +34,7 @@ unsafe impl Sync for SharedState {}
 
 impl SharedState {
     /// If a previous instance left shared memory behind, ask it to quit gracefully.
-    /// Falls back to TerminateProcess if WM_QUIT doesn't work within 3 seconds.
+    /// Falls back to TerminateProcess if graceful quit doesn't work within 3 seconds.
     pub fn kill_previous() {
         unsafe {
             let handle = match OpenFileMappingW(FILE_MAP_READ.0, false, w!("CapsLockX_SharedState"))
@@ -52,7 +51,6 @@ impl SharedState {
 
             let p = view.Value as *const u8;
             let pid = ptr::read_volatile(p.add(8) as *const u32);
-            let tid = ptr::read_volatile(p.add(12) as *const u32);
 
             let _ = UnmapViewOfFile(MEMORY_MAPPED_VIEW_ADDRESS {
                 Value: view.Value,
@@ -68,10 +66,11 @@ impl SharedState {
                 Err(_) => return,
             };
 
-            // Try graceful: post WM_QUIT to the main thread so Tauri cleans up the tray.
-            if tid != 0 {
-                eprintln!("[CLX] requesting previous instance to quit (pid={pid}, tid={tid})");
-                let _ = PostThreadMessageW(tid, WM_QUIT, None, None);
+            // Try graceful: signal the quit event so the old instance calls app.exit().
+            if let Ok(evt) = OpenEventW(EVENT_MODIFY_STATE, false, w!("CapsLockX_Quit")) {
+                eprintln!("[CLX] requesting previous instance to quit (pid={pid})");
+                let _ = SetEvent(evt);
+                let _ = CloseHandle(evt);
                 let r = WaitForSingleObject(proc, 3000);
                 if r != WAIT_TIMEOUT {
                     let _ = CloseHandle(proc);
@@ -85,6 +84,13 @@ impl SharedState {
             let _ = TerminateProcess(proc, 1);
             let _ = WaitForSingleObject(proc, 1000);
             let _ = CloseHandle(proc);
+        }
+    }
+
+    /// Create the named quit event. Returns a handle the caller can wait on.
+    pub fn create_quit_event() -> Option<HANDLE> {
+        unsafe {
+            CreateEventW(None, true, false, w!("CapsLockX_Quit")).ok()
         }
     }
 
@@ -115,8 +121,6 @@ impl SharedState {
             ptr::write_volatile(p.add(4) as *mut u32, 0);
             // rust_pid
             ptr::write_volatile(p.add(8) as *mut u32, std::process::id());
-            // main_thread_id
-            ptr::write_volatile(p.add(12) as *mut u32, GetCurrentThreadId());
 
             Some(Self { handle, ptr: p })
         }

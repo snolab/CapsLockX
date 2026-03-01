@@ -74,6 +74,22 @@ fn main() {
             // Store the handle so hook.rs can update the tray icon.
             let _ = APP_HANDLE.set(app.handle().clone());
 
+            // Watch the quit event so a new instance can ask us to exit cleanly.
+            if let Some(evt) = shm::SharedState::create_quit_event() {
+                let app_handle = app.handle().clone();
+                let raw = evt.0 as usize; // extract raw ptr for Send
+                std::thread::spawn(move || {
+                    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+                    use windows::Win32::System::Threading::WaitForSingleObject;
+                    unsafe {
+                        let h = HANDLE(raw as *mut _);
+                        WaitForSingleObject(h, u32::MAX); // INFINITE
+                        let _ = CloseHandle(h);
+                    }
+                    app_handle.exit(0);
+                });
+            }
+
             let prefs_item = MenuItemBuilder::with_id("prefs", "Preferences…").build(app)?;
             let quit_item  = MenuItemBuilder::with_id("quit",  "Quit").build(app)?;
             let menu = MenuBuilder::new(app).items(&[&prefs_item, &quit_item]).build()?;
