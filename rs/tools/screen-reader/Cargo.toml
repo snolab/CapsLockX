@@ -1,0 +1,17 @@
+[package]
+name = "clx-screen-reader"
+version = "2.0.0"
+edition = "2021"
+description = "CapsLockX screen reader — dumps text from all visible windows via UI Automation"
+license = "GPL-3.0"
+
+[[bin]]
+name = "clx-screen-reader"
+path = "src/main.rs"
+
+[dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_UI_Accessibility",
+] }

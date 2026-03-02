@@ -1,6 +1,6 @@
 [package]
 name = "capslockx-core"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 description = "CapsLockX core logic – platform-agnostic key engine and physics"
 license = "GPL-3.0"

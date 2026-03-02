@@ -1,12 +1,16 @@
 [package]
 name = "capslockx-windows"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 description = "CapsLockX Windows adapter – WH_KEYBOARD_LL hook + SendInput + Tauri tray"
 license = "GPL-3.0"
 
 [[bin]]
 name = "capslockx"
+path = "src/main.rs"
+
+[[bin]]
+name = "clx"
 path = "src/main.rs"
 
 [build-dependencies]

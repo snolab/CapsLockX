@@ -1,6 +1,6 @@
 [package]
 name = "capslockx-linux"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 description = "CapsLockX Linux adapter – evdev grab + uinput"
 license = "GPL-3.0"

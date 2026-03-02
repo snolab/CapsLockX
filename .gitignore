@@ -2,6 +2,9 @@
 .sync
 *.!sync
 
+# rust build output
+rs/target/
+
 # generated
 *.nupkg
 node_modules

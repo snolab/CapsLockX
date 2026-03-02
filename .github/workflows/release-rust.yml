@@ -14,10 +14,12 @@ jobs:
     if: github.repository == 'snolab/CapsLockX'
 
     permissions:
-      contents: write   # create release + upload assets
+      contents: write   # create release + upload assets + push binaries
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # check out main so we can push binaries back
 
       # Stable MSVC toolchain – link.exe and the Windows SDK are already
       # present on windows-latest; no cross-compilation needed.
@@ -32,30 +34,37 @@ jobs:
           workspaces: rs -> rs/target
 
       # [profile.release] in rs/Cargo.toml: opt-level=3, lto=true, codegen-units=1
-      - name: Build capslockx-windows --release
+      - name: Build all Windows binaries --release
         working-directory: rs
-        run: cargo build -p capslockx-windows --release
+        run: cargo build -p capslockx-windows -p clx-screen-reader --release
 
-      # Rename to the canonical asset name before uploading.
-      - name: Rename binary
+      # Copy binaries to repo root (as users would see them after unzip).
+      - name: Stage release binaries
         shell: pwsh
-        run: Copy-Item rs\target\release\capslockx.exe capslockx-windows-x86_64.exe
+        run: |
+          Copy-Item rs\target\release\capslockx.exe capslockx-windows-x86_64.exe
+          Copy-Item rs\target\release\clx.exe       CLX.exe
+          Copy-Item rs\target\release\clx-screen-reader.exe clx-screen-reader.exe
 
-      # Create (or update) the GitHub Release for this tag and attach the binary.
-      #
-      # generate_release_notes: true — GitHub generates the release body from
-      # PR titles and commit messages (conventional commits) between this tag
-      # and the previous one.  This gives semantic-release-quality notes
-      # without requiring a full semantic-release migration.
-      #
-      # If a release for this tag already exists (e.g. created by another job),
-      # softprops/action-gh-release updates it in place rather than failing.
-      - name: Create GitHub Release and upload asset
+      # Commit built binaries to main so zip-downloaders get them.
+      - name: Commit binaries to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CLX.exe clx-screen-reader.exe
+          git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
+          git push origin main
+
+      # Create (or update) the GitHub Release for this tag and attach binaries.
+      - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: true
-          files: capslockx-windows-x86_64.exe
+          files: |
+            capslockx-windows-x86_64.exe
+            CLX.exe
+            clx-screen-reader.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

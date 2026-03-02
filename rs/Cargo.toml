@@ -5,6 +5,7 @@ members = [
     "adapters/windows",
     "adapters/browser",
     "adapters/linux",
+    "tools/screen-reader",
 ]
 
 [profile.release]

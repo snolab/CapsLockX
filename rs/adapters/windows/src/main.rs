@@ -44,6 +44,30 @@ pub fn update_tray_icon(active: bool) {
 }
 
 fn main() {
+    // ── CLI subcommands (delegate to external tools, no GUI) ───────────
+    if let Some(cmd) = std::env::args().nth(1) {
+        match cmd.as_str() {
+            "read-screen-text" => {
+                let tool = Path::new(r".\rs\target\release\clx-screen-reader.exe");
+                let tool_alt = Path::new(r".\clx-screen-reader.exe");
+                let exe = if tool.exists() {
+                    tool
+                } else if tool_alt.exists() {
+                    tool_alt
+                } else {
+                    eprintln!("error: clx-screen-reader.exe not found");
+                    std::process::exit(1);
+                };
+                let status = Command::new(exe).status().unwrap_or_else(|e| {
+                    eprintln!("error: {e}");
+                    std::process::exit(1);
+                });
+                std::process::exit(status.code().unwrap_or(1));
+            }
+            _ => {}
+        }
+    }
+
     // Ensure only one instance runs at a time.
     shm::SharedState::kill_previous();
 
@@ -169,24 +193,47 @@ fn main() {
     }
 }
 
-/// Spawn `CapsLockX.exe CapsLockX.ahk --no-core` if the AHK launcher exists.
+/// Spawn AHK module loader (lightweight, Rust-first path).
+///
+/// 1. Run `Core\ahk.exe Core\GenerateModuleRunner.ahk` and wait for it to finish
+///    (generates `Core\CapsLockX-ModulesRunner.ahk` and `Core\CapsLockX-ModulesFunctions.ahk`).
+/// 2. Spawn `Core\ahk.exe Core\ModuleLoader.ahk` (stays running for modules).
 fn spawn_ahk() -> Option<Child> {
-    let ahk_script = Path::new(r".\CapsLockX.ahk");
-    let exe = Path::new(r".\CapsLockX.exe");
-    // Both the AHK script and launcher must exist in CWD.
-    // Also guard against fork-bomb: if our own binary IS the CapsLockX.exe in CWD,
-    // the script file won't exist next to it (we're in target/debug or target/release).
-    if !ahk_script.exists() || !exe.exists() {
-        eprintln!("[CLX] CapsLockX.ahk or CapsLockX.exe not found, AHK modules disabled");
+    let exe = Path::new(r".\Core\ahk.exe");
+    let generator = Path::new(r".\Core\GenerateModuleRunner.ahk");
+    let loader = Path::new(r".\Core\ModuleLoader.ahk");
+
+    if !exe.exists() {
+        eprintln!("[CLX] Core\\ahk.exe not found, AHK modules disabled");
         return None;
     }
-    match Command::new(exe).args(["CapsLockX.ahk", "--no-core"]).spawn() {
+    if !generator.exists() || !loader.exists() {
+        eprintln!("[CLX] GenerateModuleRunner.ahk or ModuleLoader.ahk not found, AHK modules disabled");
+        return None;
+    }
+
+    // Step 1: generate module runner/functions files (blocking).
+    eprintln!("[CLX] running GenerateModuleRunner.ahk …");
+    match Command::new(exe).arg(r"Core\GenerateModuleRunner.ahk").status() {
+        Ok(status) => {
+            if !status.success() {
+                eprintln!("[CLX] GenerateModuleRunner exited with {status}");
+            }
+        }
+        Err(e) => {
+            eprintln!("[CLX] failed to run GenerateModuleRunner: {e}");
+            return None;
+        }
+    }
+
+    // Step 2: spawn the lightweight module loader (non-blocking).
+    match Command::new(exe).arg(r"Core\ModuleLoader.ahk").spawn() {
         Ok(child) => {
-            eprintln!("[CLX] spawned AHK (pid={})", child.id());
+            eprintln!("[CLX] spawned ModuleLoader (pid={})", child.id());
             Some(child)
         }
         Err(e) => {
-            eprintln!("[CLX] failed to spawn AHK: {e}");
+            eprintln!("[CLX] failed to spawn ModuleLoader: {e}");
             None
         }
     }

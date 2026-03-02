@@ -50,9 +50,9 @@ jobs:
         run: cargo test --workspace
 
       # Full release build to catch LTO / codegen-units issues early.
-      - name: cargo build --release (windows adapter)
+      - name: cargo build --release (windows adapter + tools)
         working-directory: rs
-        run: cargo build -p capslockx-windows --release
+        run: cargo build -p capslockx-windows -p clx-screen-reader --release
 
   build-linux:
     name: Build & Test (ubuntu-latest / x86_64-unknown-linux-gnu)

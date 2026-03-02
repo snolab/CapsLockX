@@ -229,7 +229,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-browser"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "capslockx-core",
  "js-sys",
@@ -240,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-core"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "once_cell",
  "parking_lot",
@@ -249,7 +249,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-linux"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "capslockx-core",
  "evdev",
@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-windows"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "capslockx-core",
  "dirs 5.0.1",
@@ -356,6 +356,13 @@ dependencies = [
  "num-traits",
  "serde",
  "windows-link 0.2.1",
+]
+
+[[package]]
+name = "clx-screen-reader"
+version = "2.0.0"
+dependencies = [
+ "windows 0.58.0",
 ]
 
 [[package]]

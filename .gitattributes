@@ -18,6 +18,10 @@
 
 # Binary files
 *.exe binary
+
+# Built binaries — auto-resolve merge conflicts by keeping ours (newer build wins)
+CLX.exe merge=ours
+clx-screen-reader.exe merge=ours
 *.dll binary
 *.ico binary
 *.png binary
