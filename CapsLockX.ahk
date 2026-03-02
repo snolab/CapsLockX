@@ -288,7 +288,7 @@ CapsLockX启动(){
     CoreAHK := CLX_CoreDir "\CapsLockX-Core.ahk"
     UpdatorAHK := CLX_CoreDir "\CapsLockX-Update.ahk"
     ; 为了避免运行时对更新模块的影响，先把 EXE 文件扔到 Temp 目录，然后再使用 Temp 里的 AHK 来运行本核心。
-    AHK_EXE_CORE_PATH := "./Core/ahk.exe"
+    AHK_EXE_CORE_PATH := "./Core/capslockx-ahkv1.exe"
     AHK_EXE_ROOT_PATH := "CapsLockX.exe"
     AHK_EXE_TEMP_PATH := A_Temp "/CapsLockX-AHK.exe"
     FileCopy, %AHK_EXE_CORE_PATH%, %AHK_EXE_TEMP_PATH%, 1

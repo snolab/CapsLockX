@@ -210,11 +210,11 @@ fn main() {
 
 /// Spawn AHK module loader (lightweight, Rust-first path).
 ///
-/// 1. Run `Core\ahk.exe Core\GenerateModuleRunner.ahk` and wait for it to finish
+/// 1. Run `Core\capslockx-ahkv1.exe Core\GenerateModuleRunner.ahk` and wait for it to finish
 ///    (generates `Core\CapsLockX-ModulesRunner.ahk` and `Core\CapsLockX-ModulesFunctions.ahk`).
-/// 2. Spawn `Core\ahk.exe Core\ModuleLoader.ahk` (stays running for modules).
+/// 2. Spawn `Core\capslockx-ahkv1.exe Core\ModuleLoader.ahk` (stays running for modules).
 fn spawn_ahk() -> Option<Child> {
-    let exe = Path::new(r".\Core\ahk.exe");
+    let exe = Path::new(r".\Core\capslockx-ahkv1.exe");
     let generator = Path::new(r".\Core\GenerateModuleRunner.ahk");
     let loader = Path::new(r".\Core\ModuleLoader.ahk");
 
