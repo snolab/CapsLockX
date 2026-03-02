@@ -133,36 +133,23 @@ impl EditModule {
 
 fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() { return; }
-    let shift = s.is_shift_held();
+    // Physical Shift is passed through to the OS when held, so the OS
+    // naturally produces Shift+Arrow for plain key_tap while Shift is down.
+    // Do NOT use key_tap_shifted_n here — it injects LShift_up between taps
+    // which releases the held Shift and breaks text selection.
     match phase {
         "横中键" => {
-            if shift {
-                if dx > 0 { p.key_tap_shifted(KeyCode::Right); } else { p.key_tap_shifted(KeyCode::Left); }
-            } else {
-                if dx > 0 { p.key_tap(KeyCode::Right); } else { p.key_tap(KeyCode::Left); }
-            }
+            if dx > 0 { p.key_tap(KeyCode::Right); } else { p.key_tap(KeyCode::Left); }
         }
         "纵中键" => {
-            if shift {
-                if dy > 0 { p.key_tap_shifted(KeyCode::Down); } else { p.key_tap_shifted(KeyCode::Up); }
-                p.key_tap_shifted(KeyCode::Home);
-            } else {
-                if dy > 0 { p.key_tap(KeyCode::Down); } else { p.key_tap(KeyCode::Up); }
-                p.key_tap(KeyCode::Home);
-            }
+            if dy > 0 { p.key_tap(KeyCode::Down); } else { p.key_tap(KeyCode::Up); }
+            if !s.is_shift_held() { p.key_tap(KeyCode::Home); }
         }
         "移动" => {
-            if shift {
-                if dy < 0 { p.key_tap_shifted_n(KeyCode::Up,    -dy); }
-                if dy > 0 { p.key_tap_shifted_n(KeyCode::Down,   dy); }
-                if dx < 0 { p.key_tap_shifted_n(KeyCode::Left,  -dx); }
-                if dx > 0 { p.key_tap_shifted_n(KeyCode::Right,  dx); }
-            } else {
-                if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
-                if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
-                if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
-                if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
-            }
+            if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
+            if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
+            if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
+            if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
         }
         _ => {}
     }
