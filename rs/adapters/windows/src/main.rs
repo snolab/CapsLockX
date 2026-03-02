@@ -85,11 +85,26 @@ fn main() {
     vd_api::init();
 
     // Spawn AHK first so its hooks are installed before ours.
-    // WH_KEYBOARD_LL hooks are called most-recent-first, so installing
+    // WH_KEYBOARD_LL hooks are called most-recent-first (LIFO), so installing
     // our hook AFTER AHK ensures Rust gets first crack at every key.
+    // We use a named Win32 event so AHK signals us when it's truly ready
+    // instead of sleeping for an arbitrary duration.
+    let ahk_ready_event = unsafe {
+        use windows::core::w;
+        use windows::Win32::System::Threading::CreateEventW;
+        CreateEventW(None, true, false, w!("CapsLockX_AhkReady")).ok()
+    };
     let mut ahk_child = spawn_ahk();
     if ahk_child.is_some() {
-        std::thread::sleep(std::time::Duration::from_millis(2000));
+        if let Some(ev) = &ahk_ready_event {
+            unsafe {
+                use windows::Win32::System::Threading::WaitForSingleObject;
+                WaitForSingleObject(*ev, 10_000); // wait up to 10s
+            }
+        }
+    }
+    if let Some(ev) = ahk_ready_event {
+        unsafe { let _ = windows::Win32::Foundation::CloseHandle(ev); }
     }
     hook::install_hook();
     let engine = hook::engine();

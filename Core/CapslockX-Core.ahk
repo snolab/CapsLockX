@@ -158,6 +158,11 @@ SetWorkingDir, %A_ScriptDir%\..\
 
 #Include Core\CapsLockX-QuickTips.ahk
 
+; All modules loaded, hotkeys and keyboard hook are now installed.
+; Signal the Rust launcher so it can install its own hook after ours.
+if (CLX_NoCore)
+    CLX_SignalAhkReady()
+
 #If
 
 UpdateCapsLockXLight()
@@ -434,6 +439,16 @@ CLX_HideToolTips()
 }
 
 ; ── Shared memory IPC helpers ─────────────────────────────────────────────────
+
+CLX_SignalAhkReady()
+{
+    ; EVENT_MODIFY_STATE = 0x0002
+    hEvent := DllCall("OpenEventW", "UInt", 0x0002, "Int", 0, "WStr", "CapsLockX_AhkReady", "Ptr")
+    if (hEvent) {
+        DllCall("SetEvent", "Ptr", hEvent)
+        DllCall("CloseHandle", "Ptr", hEvent)
+    }
+}
 
 CLX_InitSharedMemory()
 {
