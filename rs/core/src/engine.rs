@@ -147,6 +147,9 @@ impl ClxEngine {
         if chord {
             self.state.enter_clx_mode();
             self.store_trigger(code);
+            // Mark as "acted" so releasing either chord key doesn't trigger
+            // the single-tap-unlock path in clx_up.
+            self.fn_acted.store(true, Ordering::Relaxed);
             return;
         }
 
