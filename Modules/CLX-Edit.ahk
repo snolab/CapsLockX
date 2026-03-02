@@ -16,6 +16,9 @@ if (!CapsLockX) {
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
+; In --no-core mode Rust owns HJKL/YUIO cursor; skip this module entirely.
+if (CLX_NoCore)
+    return
 
 global CLX_HJKL_Scroll := CLX_Config("TMouse", "CLX_HJKL_Scroll", 0, t("使用IJKL滚轮移动滚轮，比RF多一个横轴。"))
 global 编辑增强_SpeedRatioX := CLX_Config("EditEnhance", "SpeedRatioX", 1, t("HJKL光标加速度比率, 默认为 1, 你想慢点就改成 0.5 之类"))

@@ -89,7 +89,7 @@ fn main() {
     // our hook AFTER AHK ensures Rust gets first crack at every key.
     let mut ahk_child = spawn_ahk();
     if ahk_child.is_some() {
-        std::thread::sleep(std::time::Duration::from_millis(800));
+        std::thread::sleep(std::time::Duration::from_millis(2000));
     }
     hook::install_hook();
     let engine = hook::engine();

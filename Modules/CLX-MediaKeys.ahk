@@ -2,6 +2,9 @@
     MsgBox, % "本模块只在 CapsLockX 下工作 / This module is only for CapsLockX"
     ExitApp
 }
+; In --no-core mode Rust owns media keys; skip this module entirely.
+if (CLX_NoCore)
+    return
 CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 Return
 

@@ -15,6 +15,9 @@ if (!CapsLockX) {
     MsgBox, % "本模块只为 CapsLockX 工作"
     ExitApp
 }
+; In --no-core mode Rust owns window management; skip this module entirely.
+if (CLX_NoCore)
+    return
 
 CLX_AppendHelp( CLX_LoadHelpFrom(CLX_THIS_MODULE_HELP_FILE_PATH))
 

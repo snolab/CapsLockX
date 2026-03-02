@@ -44,6 +44,9 @@ CLSID_VirtualDesktopPinnedApps := "{B5A399E7-1C87-46B8-88E9-FC5747B171BD}"
 if (!CapsLockX) {
     ExitApp
 }
+; In --no-core mode Rust owns virtual desktop switching; skip this module entirely.
+if (CLX_NoCore)
+    return
 
 ; @deprecated start, will remove in future version
 global VirtualDesktopPinPattern1 := CLX_Config("VirtualDesktopPinPattern", "p1", "#Desktop1", "Pin matched window to desktop 1")

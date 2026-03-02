@@ -16,6 +16,9 @@ if (!CapsLockX) {
     MsgBox, % "本模块只在 CapsLockX 下工作 / This module is only for CapsLockX"
     ExitApp
 }
+; In --no-core mode Rust owns WASD mouse; skip this module entirely.
+if (CLX_NoCore)
+    return
 
 global TMouse_Disabled := CLX_Config("TMouse", "Disabled", 0, t("禁用模拟鼠标模块"))
 global TMouse_SendInput := CLX_Config("TMouse", "SendInput", 1,t( "使用 SendInput 方法提高模拟鼠标点击、移动性能"))
