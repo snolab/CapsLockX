@@ -42,8 +42,7 @@ impl WindowManagerModule {
                 true
             }
             KeyCode::Period => {
-                if mods.shift { self.platform.restart() }
-                // Plain CLX+. passes through to AHK for script reload
+                self.platform.restart();
                 true
             }
             _ => false,

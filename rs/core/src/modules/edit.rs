@@ -138,7 +138,7 @@ fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) 
     // Do NOT use key_tap_shifted_n here — it injects LShift_up between taps
     // which releases the held Shift and breaks text selection.
     match phase {
-        "横中键" => {
+        "横中键" => { 
             if dx > 0 { p.key_tap(KeyCode::Right); } else { p.key_tap(KeyCode::Left); }
         }
         "纵中键" => {
