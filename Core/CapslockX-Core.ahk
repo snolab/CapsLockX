@@ -49,10 +49,9 @@ global CLX_ShmPtr := 0
 global CLX_ShmHandle := 0
 
 if (CLX_NoCore) {
-    if (!CLX_InitSharedMemory()) {
-        ; Shared memory not available — fall back to standalone mode.
-        CLX_NoCore := false
-    }
+    ; --no-core is a hard flag: Rust owns the keyboard hook regardless of whether
+    ; shared memory is available.  Shared memory is optional (used only for mode sync).
+    CLX_InitSharedMemory()
 }
 
 ; value func
