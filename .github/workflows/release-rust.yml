@@ -42,8 +42,7 @@ jobs:
       - name: Stage release binaries
         shell: pwsh
         run: |
-          Copy-Item rs\target\release\capslockx.exe capslockx-windows-x86_64.exe
-          Copy-Item rs\target\release\clx.exe       CLX.exe
+          Copy-Item rs\target\release\clx-rust.exe  clx-rust.exe
           Copy-Item rs\target\release\clx-screen-reader.exe clx-screen-reader.exe
 
       # Commit built binaries to main so zip-downloaders get them.
@@ -51,7 +50,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CLX.exe clx-screen-reader.exe
+          git add clx-rust.exe clx-screen-reader.exe
           git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
           git push origin main
 
@@ -63,8 +62,7 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            capslockx-windows-x86_64.exe
-            CLX.exe
+            clx-rust.exe
             clx-screen-reader.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -34,6 +34,11 @@ pub fn init_shared_state(shm: SharedState) {
     let _ = SHM.set(shm);
 }
 
+/// Get a reference to the shared memory state (if initialised).
+pub fn get_shared_state() -> Option<&'static SharedState> {
+    SHM.get()
+}
+
 // ── Win32 message constants ───────────────────────────────────────────────────
 
 const WM_KEYDOWN:    u32 = 0x0100;

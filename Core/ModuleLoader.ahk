@@ -5,7 +5,7 @@
 ; Encoding: UTF-8 with BOM
 ; ========== CapsLockX ==========
 
-#SingleInstance Force
+#SingleInstance Off
 #Persistent
 #NoTrayIcon
 #MaxHotkeysPerInterval 1000

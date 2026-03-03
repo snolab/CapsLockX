@@ -4,7 +4,9 @@
 ///   0x00  u32  version   (always 1)
 ///   0x04  u32  mode      (bitmask: CM_FN=1, CM_CLX=2)
 ///   0x08  u32  rust_pid
-///   0x0C  [u8; 244] reserved
+///   0x0C  u32  reserved
+///   0x10  u32  ahk_pid   (set by write_ahk_pid after spawning AHK)
+///   0x14  [u8; 236] reserved
 use std::ptr;
 
 use windows::core::w;
@@ -51,11 +53,21 @@ impl SharedState {
 
             let p = view.Value as *const u8;
             let pid = ptr::read_volatile(p.add(8) as *const u32);
+            let ahk_pid = ptr::read_volatile(p.add(0x10) as *const u32);
 
             let _ = UnmapViewOfFile(MEMORY_MAPPED_VIEW_ADDRESS {
                 Value: view.Value,
             });
             let _ = CloseHandle(handle);
+
+            // Kill orphaned AHK child first.
+            if ahk_pid != 0 {
+                if let Ok(ahk_proc) = OpenProcess(PROCESS_TERMINATE, false, ahk_pid) {
+                    eprintln!("[CLX] killing previous AHK child (pid={ahk_pid})");
+                    let _ = TerminateProcess(ahk_proc, 1);
+                    let _ = CloseHandle(ahk_proc);
+                }
+            }
 
             if pid == 0 || pid == std::process::id() {
                 return;
@@ -131,6 +143,13 @@ impl SharedState {
     pub fn write_mode(&self, mode: u32) {
         unsafe {
             ptr::write_volatile(self.ptr.add(4) as *mut u32, mode);
+        }
+    }
+
+    /// Store the AHK child PID (offset 0x10) so a future instance can kill it.
+    pub fn write_ahk_pid(&self, pid: u32) {
+        unsafe {
+            ptr::write_volatile(self.ptr.add(0x10) as *mut u32, pid);
         }
     }
 }

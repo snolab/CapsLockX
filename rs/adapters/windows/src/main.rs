@@ -95,6 +95,12 @@ fn main() {
         CreateEventW(None, true, false, w!("CapsLockX_AhkReady")).ok()
     };
     let mut ahk_child = spawn_ahk();
+    // Store AHK PID in shared memory so the next instance can kill it.
+    if let Some(ref child) = ahk_child {
+        if let Some(shm) = hook::get_shared_state() {
+            shm.write_ahk_pid(child.id());
+        }
+    }
     if ahk_child.is_some() {
         if let Some(ev) = &ahk_ready_event {
             unsafe {
