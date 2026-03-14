@@ -137,6 +137,10 @@ impl Platform for WinPlatform {
 
     // ── Window management ─────────────────────────────────────────────────────
 
+    /// Cycle windows in order:
+    ///   1. Windows on the current monitor (first → last)
+    ///   2. Next monitor's windows on the same virtual desktop
+    ///   3. Next virtual desktop's first monitor's first window
     fn cycle_windows(&self, dir: i32) {
         let windows = get_app_windows();
         let fg = unsafe { GetForegroundWindow() };
@@ -299,13 +303,19 @@ extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
     }
 }
 
+/// Enumerate visible app windows, ordered by monitor index then HWND value.
+///
+/// Cycling order: current monitor's windows → next monitor → … → desktop switch.
 fn get_app_windows() -> Vec<HWND> {
     let mut v: Vec<HWND> = Vec::new();
     unsafe { let _ = EnumWindows(Some(enum_callback), LPARAM(&mut v as *mut Vec<HWND> as isize)); }
-    // Sort by HWND value for a stable ordering that doesn't shift when focus changes.
-    // EnumWindows returns Z-order (top window first), which rearranges on every focus
-    // change and causes cycling to bounce between two windows.
-    v.sort_by_key(|h| h.0 as usize);
+    // Sort by (monitor_index, hwnd) so cycling goes through all windows on one
+    // monitor before moving to the next.  Within a monitor, HWND order is stable
+    // (doesn't shift on focus change, unlike Z-order from EnumWindows).
+    v.sort_by_key(|&h| {
+        let mon = unsafe { MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST) };
+        (mon.0 as usize, h.0 as usize)
+    });
     v
 }
 

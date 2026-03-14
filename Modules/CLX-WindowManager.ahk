@@ -356,6 +356,11 @@ WindowsWalkToDirection右上左下(arrangeFlags = "0", direction := 0)
     }
     return False
 }
+
+; CycleWindows - cycle through windows in order:
+;   1. Windows on the current monitor (first → last)
+;   2. Next monitor's windows on the same virtual desktop
+;   3. Next virtual desktop's first monitor's first window
 CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
 {
     arrangeFlags += 0 ; string to number
@@ -395,40 +400,28 @@ CycleWindows(arrangeFlags = "0", direction := 1, switchTo :="first|last")
         WinActivate, ahk_id %next_hWnd%
         return True
     }else{
-        ; check current focused window index, and get next hWnd
+        ; Build flat list of all windows across monitors (ordered by monitor index)
         hWnd := WinActive("A")
         next_hWnd := ""
+        allWindows := []
         loop %MonitorCount% {
             MonitorIndex := A_Index
-            ; msgbox, % "MonitorIndex " MonitorIndex " listOfWindow_" MonitorIndex ": " listOfWindow_%MonitorIndex%
-            n := StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r").Count() - 1
-            k := 0
             loop Parse, listOfWindow_%MonitorIndex%, `n
             {
                 this_hWnd := RegExReplace(A_LoopField, "^.*?ahk_id (\S+?)$", "$1")
-                ; msgbox, % "this_hWnd " this_hWnd " hWnd " hWnd " k " k " n " n
-                if (this_hWnd == hWnd) {
-                    offset := direction ; the listOfWindow is sorted in reverse order
-
-                    ; found current window
-                    ; Way1 cycle in current desktop
-                    ; if (direction > 0) {
-                    ;     k := Mod((k + offset), n)
-                    ; } else {
-                    ;     k := Mod((k + n + offset), n)
-                    ; }
-                    ; next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[k + 1], "^.*?ahk_id (\S+?)$", "$1")
-
-                    ; way2 cycle in multiple desktops, auto switch to next desktop if out of range
-                    ; get next index
-                    k := k + offset
-                    next_hWnd := RegExReplace(StrSplit(listOfWindow_%MonitorIndex%, "`n", "`r")[k + 1], "^.*?ahk_id (\S+?)$", "$1")
-                    
-                    break
+                if (this_hWnd != "") {
+                    allWindows.Push(this_hWnd)
                 }
-                k += 1
             }
-            if (next_hWnd) {
+        }
+        ; Find current window in flat list and pick next/prev
+        totalWindows := allWindows.Count()
+        loop % totalWindows {
+            if (allWindows[A_Index] == hWnd) {
+                nextIdx := A_Index + direction
+                if (nextIdx >= 1 && nextIdx <= totalWindows) {
+                    next_hWnd := allWindows[nextIdx]
+                }
                 break
             }
         }
