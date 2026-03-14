@@ -11,6 +11,18 @@ use std::thread;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 use std::sync::{Arc, Condvar, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// When true, AccModel2D does NOT spawn background ticker threads.
+/// The caller must drive ticks externally (e.g. via SetTimer on Windows).
+/// This ensures SendInput runs on the main/hook thread, avoiding phantom
+/// modifier key-up events that the OS inserts for cross-thread injections.
+static EXTERNAL_TICK: AtomicBool = AtomicBool::new(false);
+
+/// Call before creating any AccModel2D instances to disable background threads.
+pub fn set_external_tick(enabled: bool) {
+    EXTERNAL_TICK.store(enabled, Ordering::SeqCst);
+}
 
 // web-time provides performance.now()-backed Instant on wasm32-unknown-unknown.
 // On native targets std::time::Instant is used directly.
@@ -121,7 +133,7 @@ impl AccModel2D {
         ));
 
         #[cfg(not(target_arch = "wasm32"))]
-        {
+        if !EXTERNAL_TICK.load(Ordering::SeqCst) {
             let inner_clone = Arc::clone(&inner);
             let action_clone = Arc::clone(&action);
             thread::Builder::new()

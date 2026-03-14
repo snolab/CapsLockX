@@ -137,8 +137,14 @@ fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) 
     // corrupted by phantom Shift UP events from the OS.
     // Use atomic key_tap_n_with_mod to send Shift+Arrow in a single SendInput
     // batch, avoiding phantom events between separate calls.
-    let shift = p.is_key_physically_down(KeyCode::LShift)
+    let shift_phys = p.is_key_physically_down(KeyCode::LShift)
              || p.is_key_physically_down(KeyCode::RShift);
+    let shift_tracked = s.is_shift_held();
+    let shift = shift_phys || shift_tracked;
+    if phase == "移动" {
+        eprintln!("[cursor] dx={} dy={} phys={} tracked={} tid={:?}",
+            dx, dy, shift_phys, shift_tracked, std::thread::current().id());
+    }
     match phase {
         "横中键" => {
             let key = if dx > 0 { KeyCode::Right } else { KeyCode::Left };

@@ -1,0 +1,27 @@
+=== CLX E2E Test Started ===
+
+--- TEST 1: Space+L (cursor right, no selection) ---
+PASS: No text selected
+
+--- TEST 2: Space+H (cursor left, no selection) ---
+PASS: No text selected
+
+--- TEST 3: Space+Shift+L (select right) ---
+FAIL: No text selected
+
+--- TEST 4: Shift+Space+L (shift first, select right) ---
+FAIL: No text selected
+
+--- TEST 5: Space+K (cursor up, no selection) ---
+PASS: No text selected
+
+--- TEST 6: Space+J (cursor down, no selection) ---
+PASS: No text selected
+
+--- TEST 7: Space+Shift+H (select left) ---
+FAIL: No text selected
+
+--- TEST 8: Shift not stuck after all tests ---
+PASS: Shift is not stuck (typed lowercase)
+
+=== RESULTS: 5/8 passed, 3 failed ===

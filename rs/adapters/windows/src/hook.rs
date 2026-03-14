@@ -2,11 +2,12 @@
 use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
-use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, HHOOK, KBDLLHOOKSTRUCT,
     SetWindowsHookExW, UnhookWindowsHookEx, WH_KEYBOARD_LL,
+    SetTimer,
 };
 
 use capslockx_core::{ClxConfig, ClxEngine, CoreResponse};
@@ -51,6 +52,10 @@ const LLKHF_INJECTED:u32 = 0x10;
 // ── Public API ────────────────────────────────────────────────────────────────
 
 pub fn init_engine(config: ClxConfig) {
+    // Drive AccModel ticks from the main thread (via SetTimer) instead of
+    // background threads.  This ensures SendInput runs on the hook thread,
+    // avoiding phantom modifier key-up events from cross-thread injection.
+    capslockx_core::acc_model::set_external_tick(true);
     let platform = Arc::new(WinPlatform::new());
     ENGINE.set(ClxEngine::with_config(platform, config)).ok();
 }
@@ -66,6 +71,20 @@ pub fn install_hook() {
             .expect("SetWindowsHookExW failed")
     };
     HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
+
+    // Drive AccModel ticks on the main/hook thread (16 ms timer).
+    // This replaces background ticker threads so SendInput runs on the same
+    // thread as the keyboard hook, avoiding phantom modifier key-up events.
+    unsafe {
+        SetTimer(None, 0, 16, Some(tick_timer_proc));
+    }
+}
+
+/// Timer callback — drives AccModel physics on the main/hook thread.
+unsafe extern "system" fn tick_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _time: u32) {
+    if let Some(engine) = ENGINE.get() {
+        engine.tick();
+    }
 }
 
 pub fn uninstall_hook() {
