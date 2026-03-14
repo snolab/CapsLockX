@@ -15,6 +15,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN,
     MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
     MOUSEEVENTF_WHEEL, MOUSE_EVENT_FLAGS, MOUSEINPUT, VIRTUAL_KEY, SendInput,
+    GetAsyncKeyState,
 };
 use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -113,6 +114,39 @@ impl Platform for WinPlatform {
             kbd(vk, KEYEVENTF_EXTENDEDKEY),
             kbd(vk, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP),
         ]);
+    }
+
+    fn key_tap_n_with_mod(&self, mod_key: KeyCode, key: KeyCode, n: i32) {
+        let mod_vk = keycode_to_vk(mod_key);
+        let vk = keycode_to_vk(key);
+        let n = n.clamp(0, 128) as usize;
+        // If the modifier is already physically held, don't re-inject it —
+        // that causes the OS to insert a phantom key-up between our DN and
+        // the next event.  Just send plain arrow taps; the OS will combine
+        // them with the already-held modifier.
+        let mod_already_down = unsafe { GetAsyncKeyState(mod_vk as i32) < 0 };
+        if mod_already_down {
+            let mut inputs = Vec::with_capacity(n * 2);
+            for _ in 0..n {
+                inputs.push(kbd(vk, KEYBD_EVENT_FLAGS(0)));
+                inputs.push(kbd(vk, KEYEVENTF_KEYUP));
+            }
+            send(&inputs);
+        } else {
+            let mut inputs = Vec::with_capacity(2 + n * 2);
+            inputs.push(kbd(mod_vk, KEYBD_EVENT_FLAGS(0)));
+            for _ in 0..n {
+                inputs.push(kbd(vk, KEYBD_EVENT_FLAGS(0)));
+                inputs.push(kbd(vk, KEYEVENTF_KEYUP));
+            }
+            inputs.push(kbd(mod_vk, KEYEVENTF_KEYUP));
+            send(&inputs);
+        }
+    }
+
+    fn is_key_physically_down(&self, key: KeyCode) -> bool {
+        let vk = keycode_to_vk(key) as i32;
+        unsafe { GetAsyncKeyState(vk) < 0 }
     }
 
     fn mouse_move(&self, dx: i32, dy: i32) {

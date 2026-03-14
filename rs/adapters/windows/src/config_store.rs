@@ -12,6 +12,8 @@ pub struct FullConfig {
     pub cursor_speed:    f64,
     pub mouse_speed:     f64,
     pub scroll_speed:    f64,
+    #[serde(default)]
+    pub request_admin:   bool,
 }
 
 impl Default for FullConfig {
@@ -25,6 +27,7 @@ impl Default for FullConfig {
             cursor_speed:    15.0,
             mouse_speed:     360.0,
             scroll_speed:    720.0,
+            request_admin:   false,
         }
     }
 }
@@ -40,6 +43,7 @@ impl FullConfig {
             cursor_speed:    cfg.speed.cursor_speed,
             mouse_speed:     cfg.speed.mouse_speed,
             scroll_speed:    cfg.speed.scroll_speed,
+            request_admin:   false,
         }
     }
 

@@ -87,24 +87,27 @@ unsafe extern "system" fn keyboard_proc(
     let kb = &*(l_param.0 as *const KBDLLHOOKSTRUCT);
     let flags = kb.flags.0;
 
-    // Skip events injected by us
-    if (flags & LLKHF_INJECTED) != 0 && kb.dwExtraInfo == CLX_EXTRA_INFO {
-        return call_next(n_code, w_param, l_param);
-    }
-
     let msg = w_param.0 as u32;
     let is_up   = (flags & LLKHF_UP) != 0;
     let pressed = matches!(msg, WM_KEYDOWN | WM_SYSKEYDOWN) && !is_up;
     let released= matches!(msg, WM_KEYUP   | WM_SYSKEYUP)   &&  is_up;
 
-    if !pressed && !released { return call_next(n_code, w_param, l_param); }
-
     let code = vk_to_keycode(kb.vkCode);
+    let injected = (flags & LLKHF_INJECTED) != 0;
+    let is_ours = injected && kb.dwExtraInfo == CLX_EXTRA_INFO;
 
-    // Debug: log trigger key events to verify hook ordering
-    if matches!(code, capslockx_core::KeyCode::CapsLock | capslockx_core::KeyCode::Space) {
-        debug_log(&format!("[hook] {:?} {}", code, if pressed { "DN" } else { "UP" }));
+    // // Debug: uncomment to log ALL key events
+    // if pressed || released {
+    //     debug_log(&format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} extra=0x{:X}",
+    //         kb.vkCode, code, if pressed { "DN" } else { "UP" }, injected, is_ours, kb.dwExtraInfo));
+    // }
+
+    // Skip events injected by us
+    if is_ours {
+        return call_next(n_code, w_param, l_param);
     }
+
+    if !pressed && !released { return call_next(n_code, w_param, l_param); }
 
     let engine = ENGINE.get().expect("init_engine not called");
     let resp = engine.on_key_event(code, pressed);

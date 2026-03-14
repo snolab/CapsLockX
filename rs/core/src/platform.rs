@@ -67,6 +67,19 @@ pub trait Platform: Send + Sync + 'static {
         self.key_tap(key);
     }
 
+    /// Tap multiple keys while holding a modifier, all in one atomic SendInput
+    /// call to avoid phantom key-up events between separate SendInput calls.
+    /// Default implementation falls back to individual calls.
+    fn key_tap_n_with_mod(&self, mod_key: KeyCode, key: KeyCode, n: i32) {
+        self.key_down(mod_key);
+        self.key_tap_n(key, n);
+        self.key_up(mod_key);
+    }
+
+    /// Query physical key state (e.g. for Shift).  Default uses the tracked
+    /// state in ClxState; Windows adapter overrides with GetAsyncKeyState.
+    fn is_key_physically_down(&self, _key: KeyCode) -> bool { false }
+
     // ── Mouse output ──────────────────────────────────────────────────────────
 
     fn mouse_move(&self, dx: i32, dy: i32);

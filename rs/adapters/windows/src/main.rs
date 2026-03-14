@@ -17,6 +17,10 @@ use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::OnceLock;
 
+use windows::Win32::Foundation::HANDLE;
+use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+
 use tauri::image::Image;
 use tauri::tray::TrayIconId;
 use tauri::{AppHandle, Manager as _};
@@ -68,6 +72,14 @@ fn main() {
         }
     }
 
+    // ── Elevate to admin if configured ─────────────────────────────────
+    let cfg_pre = config_store::load();
+    if cfg_pre.request_admin && !is_elevated() {
+        eprintln!("[CLX] requesting elevation …");
+        relaunch_elevated();
+        return;
+    }
+
     // Ensure only one instance runs at a time.
     shm::SharedState::kill_previous();
 
@@ -84,17 +96,22 @@ fn main() {
 
     vd_api::init();
 
-    // Spawn AHK first so its hooks are installed before ours.
+    // Spawn AHK modules only when --with-ahk is passed.
     // WH_KEYBOARD_LL hooks are called most-recent-first (LIFO), so installing
     // our hook AFTER AHK ensures Rust gets first crack at every key.
     // We use a named Win32 event so AHK signals us when it's truly ready
     // instead of sleeping for an arbitrary duration.
-    let ahk_ready_event = unsafe {
-        use windows::core::w;
-        use windows::Win32::System::Threading::CreateEventW;
-        CreateEventW(None, true, false, w!("CapsLockX_AhkReady")).ok()
+    let with_ahk = std::env::args().any(|a| a == "--with-ahk");
+    let ahk_ready_event = if with_ahk {
+        unsafe {
+            use windows::core::w;
+            use windows::Win32::System::Threading::CreateEventW;
+            CreateEventW(None, true, false, w!("CapsLockX_AhkReady")).ok()
+        }
+    } else {
+        None
     };
-    let mut ahk_child = spawn_ahk();
+    let mut ahk_child = if with_ahk { spawn_ahk() } else { None };
     // Store AHK PID in shared memory so the next instance can kill it.
     if let Some(ref child) = ahk_child {
         if let Some(shm) = hook::get_shared_state() {
@@ -257,5 +274,52 @@ fn spawn_ahk() -> Option<Child> {
             eprintln!("[CLX] failed to spawn ModuleLoader: {e}");
             None
         }
+    }
+}
+
+// ── Elevation helpers ────────────────────────────────────────────────────────
+
+fn is_elevated() -> bool {
+    unsafe {
+        let mut token = HANDLE::default();
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token).is_err() {
+            return false;
+        }
+        let mut elevation = TOKEN_ELEVATION::default();
+        let mut len = 0u32;
+        let ok = GetTokenInformation(
+            token,
+            TokenElevation,
+            Some(&mut elevation as *mut _ as *mut _),
+            std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+            &mut len,
+        );
+        let _ = windows::Win32::Foundation::CloseHandle(token);
+        ok.is_ok() && elevation.TokenIsElevated != 0
+    }
+}
+
+fn relaunch_elevated() {
+    use windows::core::w;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+    let exe = std::env::current_exe().unwrap_or_default();
+    let exe_w: Vec<u16> = exe.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
+    let args: String = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+    let args_w: Vec<u16> = args.encode_utf16().chain(std::iter::once(0)).collect();
+    let dir = std::env::current_dir().unwrap_or_default();
+    let dir_w: Vec<u16> = dir.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
+
+    unsafe {
+        use windows::core::PCWSTR;
+        ShellExecuteW(
+            None,
+            w!("runas"),
+            PCWSTR(exe_w.as_ptr()),
+            PCWSTR(args_w.as_ptr()),
+            PCWSTR(dir_w.as_ptr()),
+            SW_SHOWNORMAL,
+        );
     }
 }

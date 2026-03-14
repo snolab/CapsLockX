@@ -133,23 +133,35 @@ impl EditModule {
 
 fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() { return; }
-    // Physical Shift is passed through to the OS when held, so the OS
-    // naturally produces Shift+Arrow for plain key_tap while Shift is down.
-    // Do NOT use key_tap_shifted_n here — it injects LShift_up between taps
-    // which releases the held Shift and breaks text selection.
+    // Use GetAsyncKeyState to detect Shift — the hook-tracked state gets
+    // corrupted by phantom Shift UP events from the OS.
+    // Use atomic key_tap_n_with_mod to send Shift+Arrow in a single SendInput
+    // batch, avoiding phantom events between separate calls.
+    let shift = p.is_key_physically_down(KeyCode::LShift)
+             || p.is_key_physically_down(KeyCode::RShift);
     match phase {
-        "横中键" => { 
-            if dx > 0 { p.key_tap(KeyCode::Right); } else { p.key_tap(KeyCode::Left); }
+        "横中键" => {
+            let key = if dx > 0 { KeyCode::Right } else { KeyCode::Left };
+            if shift { p.key_tap_n_with_mod(KeyCode::LShift, key, 1); }
+            else     { p.key_tap(key); }
         }
         "纵中键" => {
-            if dy > 0 { p.key_tap(KeyCode::Down); } else { p.key_tap(KeyCode::Up); }
-            if !s.is_shift_held() { p.key_tap(KeyCode::Home); }
+            let key = if dy > 0 { KeyCode::Down } else { KeyCode::Up };
+            if shift { p.key_tap_n_with_mod(KeyCode::LShift, key, 1); }
+            else     { p.key_tap(key); p.key_tap(KeyCode::Home); }
         }
         "移动" => {
-            if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
-            if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
-            if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
-            if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
+            if shift {
+                if dy < 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Up,    -dy); }
+                if dy > 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Down,   dy); }
+                if dx < 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Left,  -dx); }
+                if dx > 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Right,  dx); }
+            } else {
+                if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
+                if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
+                if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
+                if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
+            }
         }
         _ => {}
     }

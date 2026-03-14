@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head><title>CLX Key Test</title></head>
+<body>
+<h2>CLX Key Event Test</h2>
+<textarea id="area" rows="5" cols="60" style="font-size:16px">hello world test string for selection</textarea>
+<pre id="log" style="font-family:monospace;font-size:13px;max-height:400px;overflow:auto"></pre>
+<script>
+const area = document.getElementById('area');
+const log = document.getElementById('log');
+const events = [];
+
+function add(e) {
+  const t = performance.now().toFixed(1);
+  const entry = {
+    time: t,
+    type: e.type,
+    key: e.key,
+    code: e.code,
+    shiftKey: e.shiftKey,
+    ctrlKey: e.ctrlKey,
+    altKey: e.altKey
+  };
+  events.push(entry);
+  log.textContent = events.map(ev =>
+    `${ev.time}ms ${ev.type.padEnd(7)} key=${ev.key.padEnd(12)} code=${ev.code.padEnd(15)} shift=${ev.shiftKey} ctrl=${ev.ctrlKey}`
+  ).join('\n');
+  log.scrollTop = log.scrollHeight;
+}
+
+area.addEventListener('keydown', add);
+area.addEventListener('keyup', add);
+
+// Expose for external reading
+window.getEvents = () => JSON.stringify(events);
+window.getSelection = () => {
+  const sel = area.selectionStart !== area.selectionEnd
+    ? area.value.substring(area.selectionStart, area.selectionEnd)
+    : '';
+  return JSON.stringify({ selection: sel, cursor: area.selectionStart, selEnd: area.selectionEnd });
+};
+window.clearEvents = () => { events.length = 0; log.textContent = ''; };
+window.resetArea = () => {
+  area.value = 'hello world test string for selection';
+  area.selectionStart = area.selectionEnd = 0;
+  area.focus();
+};
+
+area.focus();
+area.selectionStart = area.selectionEnd = 0;
+</script>
+</body>
+</html>
