@@ -155,15 +155,18 @@ impl ClxEngine {
 
         // Bypass: pass the trigger key through instead of entering CLX mode.
         // - Space + Shift held → bypass (preserves Shift+Space for input method switching)
+        // - Space + Win/Cmd held → bypass (Cmd+Space = Spotlight on macOS,
+        //   Win+Space = input language on Windows)
         // - Non-Space trigger + non-modifier key held → bypass (avoids interfering with typing)
-        // Note: Ctrl/Alt/Win + Space should NOT bypass — they enter CLX mode so
+        // Note: Ctrl/Alt + Space should NOT bypass — they enter CLX mode so
         // combos like Ctrl+Space+E (Ctrl+Click) work.
         let prior_held = prior != KeyCode::Unknown(0)
             && prior != code
             && self.held_keys.lock().unwrap().contains(&prior);
         let prior_is_shift = matches!(prior, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift);
+        let prior_is_win = matches!(prior, KeyCode::LWin | KeyCode::RWin);
         let bypass = if code == KeyCode::Space {
-            prior_is_shift && prior_held
+            (prior_is_shift || prior_is_win) && prior_held
         } else {
             !prior.is_modifier() && prior_held
         };
