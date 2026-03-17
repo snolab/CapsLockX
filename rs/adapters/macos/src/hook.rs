@@ -32,9 +32,9 @@ static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
     let config = ClxConfig {
         speed: SpeedConfig {
-            // macOS LINE scroll units are much larger than Windows/Linux,
-            // so use a much lower scroll speed for natural feel.
-            scroll_speed: 80.0,  // default is 720.0
+            // Using PIXEL scroll units — 1 unit = 1 pixel, so use the
+            // default speed (720). Scroll action multiplies by 3, giving
+            // ~2160 px/s at full acceleration which feels similar to trackpad.
             ..SpeedConfig::default()
         },
         ..ClxConfig::default()
