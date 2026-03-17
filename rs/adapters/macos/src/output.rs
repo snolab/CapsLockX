@@ -12,16 +12,128 @@ use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use core_graphics::geometry::CGPoint;
 
 use capslockx_core::{KeyCode, Platform};
-use capslockx_core::platform::MouseButton;
+use capslockx_core::platform::{ArrangeMode, MouseButton};
 
 use crate::key_map::keycode_to_cg_keycode;
 
-// Raw FFI for CGEventSourceKeyState (not exposed by the core-graphics crate).
+// Raw FFI bindings not exposed by the core-graphics crate.
 extern "C" {
     fn CGEventSourceKeyState(
         source_state_id: core_graphics::event_source::CGEventSourceStateID,
         key: core_graphics::event::CGKeyCode,
     ) -> bool;
+}
+
+// ── Window-cycling FFI ──────────────────────────────────────────────────────
+
+use core_foundation::base::{CFRelease, TCFType};
+use core_foundation::string::CFString;
+
+type CFArrayRef = *const std::ffi::c_void;
+
+extern "C" {
+    fn CGWindowListCopyWindowInfo(
+        option: u32,
+        relative_to: u32,
+    ) -> CFArrayRef;
+}
+
+// Objective-C runtime FFI for NSRunningApplication.
+extern "C" {
+    fn objc_getClass(name: *const std::ffi::c_char) -> *mut std::ffi::c_void;
+    fn sel_registerName(name: *const std::ffi::c_char) -> *mut std::ffi::c_void;
+    fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void, ...) -> *mut std::ffi::c_void;
+}
+
+/// Visible, on-screen windows only (kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements).
+const WINDOW_LIST_OPTIONS: u32 = (1 << 0) | (1 << 4);
+
+/// A visible window: (pid, window_layer, window_id).
+#[derive(Debug)]
+struct WinInfo {
+    pid: i64,
+    #[allow(dead_code)]
+    layer: i64,
+}
+
+/// Enumerate visible, normal (layer 0) windows in front-to-back order.
+fn list_visible_windows() -> Vec<WinInfo> {
+    unsafe {
+        let list_ref = CGWindowListCopyWindowInfo(WINDOW_LIST_OPTIONS, 0);
+        if list_ref.is_null() {
+            return Vec::new();
+        }
+
+        let count: isize = {
+            extern "C" { fn CFArrayGetCount(arr: CFArrayRef) -> isize; }
+            CFArrayGetCount(list_ref)
+        };
+
+        let key_pid = CFString::new("kCGWindowOwnerPID");
+        let key_layer = CFString::new("kCGWindowLayer");
+
+        let mut results = Vec::new();
+        for i in 0..count {
+            extern "C" {
+                fn CFArrayGetValueAtIndex(arr: CFArrayRef, idx: isize) -> *const std::ffi::c_void;
+                fn CFDictionaryGetValue(dict: *const std::ffi::c_void, key: *const std::ffi::c_void) -> *const std::ffi::c_void;
+            }
+            let dict = CFArrayGetValueAtIndex(list_ref, i);
+            if dict.is_null() { continue; }
+
+            let pid_ref = CFDictionaryGetValue(dict, key_pid.as_concrete_TypeRef() as *const _);
+            let layer_ref = CFDictionaryGetValue(dict, key_layer.as_concrete_TypeRef() as *const _);
+            if pid_ref.is_null() || layer_ref.is_null() { continue; }
+
+            extern "C" {
+                fn CFNumberGetValue(number: *const std::ffi::c_void, the_type: i32, value_ptr: *mut std::ffi::c_void) -> bool;
+            }
+            let mut pid: i64 = 0;
+            let mut layer: i64 = 0;
+            // kCFNumberSInt64Type = 4
+            CFNumberGetValue(pid_ref, 4, &mut pid as *mut _ as *mut _);
+            CFNumberGetValue(layer_ref, 4, &mut layer as *mut _ as *mut _);
+
+            // Layer 0 = normal windows (skip menu bar, dock, desktop, etc.)
+            if layer == 0 {
+                results.push(WinInfo { pid, layer });
+            }
+        }
+
+        CFRelease(list_ref);
+
+        // Deduplicate by pid, keeping front-to-back order (first occurrence wins).
+        let mut seen = std::collections::HashSet::new();
+        results.retain(|w| seen.insert(w.pid));
+
+        results
+    }
+}
+
+/// Activate the app with the given pid using NSRunningApplication.
+fn activate_pid(pid: i64) {
+    unsafe {
+        let cls = objc_getClass(b"NSRunningApplication\0".as_ptr() as *const _);
+        if cls.is_null() { return; }
+        let sel_running = sel_registerName(
+            b"runningApplicationWithProcessIdentifier:\0".as_ptr() as *const _,
+        );
+        let app: *mut std::ffi::c_void = {
+            // NSRunningApplication class method with pid_t argument.
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, i32) -> *mut std::ffi::c_void
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(cls, sel_running, pid as i32)
+        };
+        if app.is_null() { return; }
+
+        let sel_activate = sel_registerName(
+            b"activateWithOptions:\0".as_ptr() as *const _,
+        );
+        // NSApplicationActivateIgnoringOtherApps = 2
+        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, u64) -> bool
+            = std::mem::transmute(objc_msgSend as *const ());
+        f(app, sel_activate, 2);
+    }
 }
 
 /// Tag value written to EVENT_SOURCE_USER_DATA on injected events so the
@@ -202,7 +314,7 @@ impl Platform for MacPlatform {
         let source = Self::source();
         if let Ok(event) = CGEvent::new_scroll_event(
             source,
-            ScrollEventUnit::LINE,
+            ScrollEventUnit::PIXEL,
             1,
             delta,
             0,
@@ -217,7 +329,7 @@ impl Platform for MacPlatform {
         let source = Self::source();
         if let Ok(event) = CGEvent::new_scroll_event(
             source,
-            ScrollEventUnit::LINE,
+            ScrollEventUnit::PIXEL,
             2,
             0,
             delta,
@@ -253,6 +365,42 @@ impl Platform for MacPlatform {
     }
 
     // ── Window management: use Cmd shortcuts on macOS ──────────────────────────
+
+    fn cycle_windows(&self, dir: i32) {
+        // Enumerate visible windows (front-to-back) and activate the next/prev app.
+        let windows = list_visible_windows();
+        if windows.is_empty() { return; }
+
+        // Find which pid is currently frontmost (index 0 in front-to-back list).
+        // Cycle to the next or previous app in the z-order.
+        let target_idx = if dir > 0 { 1 } else { windows.len() - 1 };
+        if let Some(w) = windows.get(target_idx) {
+            activate_pid(w.pid);
+        }
+    }
+
+    fn arrange_windows(&self, mode: ArrangeMode) {
+        // macOS Sequoia+ tiling: use Ctrl+Cmd+arrow shortcuts (Globe key).
+        // Stacked = fill screen (Globe+F or Ctrl+Cmd+F via green button menu).
+        // SideBySide: no single-key shortcut; use Mission Control (Ctrl+Up).
+        match mode {
+            ArrangeMode::Stacked => {
+                // Ctrl+Cmd+F = toggle fullscreen (works in most apps).
+                if let Some(cg_key) = keycode_to_cg_keycode(KeyCode::F) {
+                    Self::tap_with_flags(
+                        cg_key,
+                        CGEventFlags::CGEventFlagControl | CGEventFlags::CGEventFlagCommand,
+                    );
+                }
+            }
+            ArrangeMode::SideBySide => {
+                // Ctrl+Up = Mission Control (show all windows side by side).
+                if let Some(cg_key) = keycode_to_cg_keycode(KeyCode::Up) {
+                    Self::tap_with_flags(cg_key, CGEventFlags::CGEventFlagControl);
+                }
+            }
+        }
+    }
 
     fn close_tab(&self) {
         // Cmd+W
