@@ -93,6 +93,16 @@ jobs:
       - name: Stage macOS binary
         run: cp rs/target/release/capslockx capslockx-macos-arm64
 
+      # Commit binary to main so npm package includes it.
+      - name: Commit macOS binary to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull origin main --rebase
+          git add capslockx-macos-arm64
+          git diff --cached --quiet || git commit -m "chore: update macOS binary for ${{ github.ref_name }}"
+          git push origin main
+
       - name: Upload macOS binary to GitHub Release
         uses: softprops/action-gh-release@v2
         with:

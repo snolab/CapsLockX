@@ -16,12 +16,13 @@
     "url": "git+https://github.com/snolab/CapsLockX.git"
   },
   "bin": {
-    "capslockx": "CapsLockX.exe"
+    "capslockx": "bin/capslockx.mjs"
   },
   "directories": {
     "doc": "docs"
   },
   "files": [
+    "bin",
     "Core",
     "Data",
     "package*",
@@ -29,6 +30,10 @@
     "Tools",
     "docs",
     "CapsLockX*",
+    "clx-rust.exe",
+    "clx-screen-reader.exe",
+    "capslockx-macos-*",
+    "capslockx-linux-*",
     "*.txt",
     "*.md"
   ],
