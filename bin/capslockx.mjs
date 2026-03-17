@@ -41,11 +41,6 @@ const candidates = [
   join(root, "rs", "target", "release", info.name.replace(/-macos-arm64$/, "").replace(/-macos-x64$/, "").replace(/-linux-x64$/, "")), // local cargo build
 ];
 
-// On Windows, also check for the legacy AHK launcher.
-if (process.platform === "win32") {
-  candidates.push(join(root, "CapsLockX.exe"));
-}
-
 let binary = candidates.find((p) => existsSync(p));
 
 // If not found locally, try to download from the latest GitHub release.
