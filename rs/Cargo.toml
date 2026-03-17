@@ -5,6 +5,7 @@ members = [
     "adapters/windows",
     "adapters/browser",
     "adapters/linux",
+    "adapters/macos",
     "tools/screen-reader",
 ]
 
