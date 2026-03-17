@@ -82,7 +82,11 @@ impl ClxEngine {
         // ── 3. Trigger key ────────────────────────────────────────────────────
         if self.state.is_trigger_key(code) {
             if pressed && !is_repeat {
-                self.clx_dn(code, prior);
+                if self.clx_dn(code, prior) {
+                    // Bypass: let the original event pass through to the OS
+                    // so modifier+trigger combos (Cmd+Space, Shift+Space) work.
+                    return CoreResponse::PassThrough;
+                }
             } else if !pressed {
                 self.clx_up(code);
             }
@@ -140,7 +144,8 @@ impl ClxEngine {
 
     // ── CLX_Dn ────────────────────────────────────────────────────────────────
 
-    fn clx_dn(&self, code: KeyCode, prior: KeyCode) {
+    /// Returns `true` if the trigger key should be passed through (bypass).
+    fn clx_dn(&self, code: KeyCode, prior: KeyCode) -> bool {
         // CapsLock+Space chord (either order)
         let chord = (code == KeyCode::CapsLock && prior == KeyCode::Space)
             || (code == KeyCode::Space && prior == KeyCode::CapsLock);
@@ -150,14 +155,14 @@ impl ClxEngine {
             // Mark as "acted" so releasing either chord key doesn't trigger
             // the single-tap-unlock path in clx_up.
             self.fn_acted.store(true, Ordering::Relaxed);
-            return;
+            return false;
         }
 
-        // Bypass: pass the trigger key through instead of entering CLX mode.
-        // - Space + Shift held → bypass (preserves Shift+Space for input method switching)
-        // - Space + Win/Cmd held → bypass (Cmd+Space = Spotlight on macOS,
-        //   Win+Space = input language on Windows)
-        // - Non-Space trigger + non-modifier key held → bypass (avoids interfering with typing)
+        // Bypass: let the original event pass through to the OS instead of
+        // entering CLX mode. This preserves system shortcuts:
+        // - Shift+Space → input method switching
+        // - Cmd/Win+Space → Spotlight (macOS) / input language (Windows)
+        // - Non-trigger typing + trigger → avoids interfering with typing
         // Note: Ctrl/Alt + Space should NOT bypass — they enter CLX mode so
         // combos like Ctrl+Space+E (Ctrl+Click) work.
         let prior_held = prior != KeyCode::Unknown(0)
@@ -171,8 +176,7 @@ impl ClxEngine {
             !prior.is_modifier() && prior_held
         };
         if bypass {
-            self.platform.key_tap(code);
-            return;
+            return true; // pass through — don't suppress, don't re-inject
         }
 
         self.state.enter_fn_mode();
@@ -209,6 +213,7 @@ impl ClxEngine {
                 }
             });
         }
+        false
     }
 
     // ── CLX_Up ────────────────────────────────────────────────────────────────
