@@ -9,7 +9,7 @@
 //! → Accessibility).
 
 use std::ptr;
-use std::sync::{Arc, atomic::{AtomicPtr, Ordering}};
+use std::sync::{Arc, atomic::{AtomicPtr, AtomicU32, Ordering}};
 
 use core_foundation::base::TCFType;
 use core_foundation::mach_port::CFMachPortRef;
@@ -75,6 +75,9 @@ fn event_mask(types: &[CGEventType]) -> CGEventMask {
 
 /// Global tap reference so the callback can re-enable it after secure input.
 static TAP_REF: AtomicPtr<std::ffi::c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// Last tray-active state for edge detection (0 = off, 1 = on, u32::MAX = uninitialised).
+static LAST_TRAY_ACTIVE: AtomicU32 = AtomicU32::new(u32::MAX);
 
 // CGEventType raw values for tap-disabled notifications (not in the Rust crate enum).
 const TAP_DISABLED_BY_TIMEOUT: u32 = 0xFFFFFFFE;
@@ -162,8 +165,35 @@ pub fn install_and_run() {
 
     eprintln!("[CLX] CGEventTap installed – running…");
 
-    // Block forever on the run loop.
-    CFRunLoop::run_current();
+    // Run the NSApplication event loop (which also processes CFRunLoop sources).
+    // This is required for AppKit (NSStatusBar/NSMenu) to function.
+    unsafe {
+        extern "C" {
+            fn objc_getClass(name: *const std::ffi::c_char) -> *mut std::ffi::c_void;
+            fn sel_registerName(name: *const std::ffi::c_char) -> *mut std::ffi::c_void;
+            fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void, ...) -> *mut std::ffi::c_void;
+        }
+        let nsapp = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+        let app: *mut std::ffi::c_void = {
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(nsapp, sel_registerName(b"sharedApplication\0".as_ptr() as *const _))
+        };
+        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+            = std::mem::transmute(objc_msgSend as *const ());
+        f(app, sel_registerName(b"run\0".as_ptr() as *const _));
+    }
+}
+
+// ── Tray icon edge detection ─────────────────────────────────────────────────
+
+/// Check the engine mode and update the tray icon on edge transitions.
+fn update_tray_on_edge() {
+    let active = u32::from(ENGINE.state().is_clx_active());
+    let prev = LAST_TRAY_ACTIVE.swap(active, Ordering::Relaxed);
+    if prev != active {
+        crate::tray::update_tray_icon(active != 0);
+    }
 }
 
 // ── Event handler ────────────────────────────────────────────────────────────
@@ -183,7 +213,9 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
             let pressed = matches!(event_type, CGEventType::KeyDown);
             let code = cg_keycode_to_keycode(cg_keycode);
 
-            match ENGINE.on_key_event(code, pressed) {
+            let resp = ENGINE.on_key_event(code, pressed);
+            update_tray_on_edge();
+            match resp {
                 CoreResponse::Suppress => None,
                 CoreResponse::PassThrough => Some(()),
             }
@@ -195,7 +227,9 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
             let code = cg_keycode_to_keycode(cg_keycode);
             let pressed = is_modifier_pressed(cg_keycode, flags);
 
-            match ENGINE.on_key_event(code, pressed) {
+            let resp = ENGINE.on_key_event(code, pressed);
+            update_tray_on_edge();
+            match resp {
                 CoreResponse::Suppress => None,
                 CoreResponse::PassThrough => Some(()),
             }

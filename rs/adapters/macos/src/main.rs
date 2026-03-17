@@ -12,12 +12,17 @@ mod hook;
 mod key_map;
 #[cfg(target_os = "macos")]
 mod output;
+#[cfg(target_os = "macos")]
+mod tray;
 
 #[cfg(target_os = "macos")]
 fn main() {
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) to exit");
+
+    // Install the menu bar icon before entering the run loop.
+    tray::setup_tray();
 
     // Install CGEventTap and block on CFRunLoop.
     hook::install_and_run();
