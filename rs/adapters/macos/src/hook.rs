@@ -9,7 +9,7 @@
 //! → Accessibility).
 
 use std::ptr;
-use std::sync::Arc;
+use std::sync::{Arc, atomic::{AtomicPtr, Ordering}};
 
 use core_foundation::base::TCFType;
 use core_foundation::mach_port::CFMachPortRef;
@@ -73,6 +73,13 @@ fn event_mask(types: &[CGEventType]) -> CGEventMask {
     types.iter().fold(0u64, |mask, &t| mask | (1u64 << t as u64))
 }
 
+/// Global tap reference so the callback can re-enable it after secure input.
+static TAP_REF: AtomicPtr<std::ffi::c_void> = AtomicPtr::new(ptr::null_mut());
+
+// CGEventType raw values for tap-disabled notifications (not in the Rust crate enum).
+const TAP_DISABLED_BY_TIMEOUT: u32 = 0xFFFFFFFE;
+const TAP_DISABLED_BY_USER: u32    = 0xFFFFFFFF;
+
 // ── Raw callback ─────────────────────────────────────────────────────────────
 // Returns the event pointer to pass through, or NULL to suppress.
 
@@ -83,6 +90,19 @@ unsafe extern "C" fn raw_callback(
     _user_info: *mut std::ffi::c_void,
 ) -> CGEventRef {
     use foreign_types::ForeignType;
+
+    // When macOS disables our tap (e.g. during secure input / password fields),
+    // it sends a special event type. Re-enable the tap so it resumes working
+    // after the secure input ends.
+    let etype_raw: u32 = std::mem::transmute(etype);
+    if etype_raw == TAP_DISABLED_BY_TIMEOUT || etype_raw == TAP_DISABLED_BY_USER {
+        let tap = TAP_REF.load(Ordering::Relaxed);
+        if !tap.is_null() {
+            eprintln!("[CLX] CGEventTap was disabled (secure input?) – re-enabling…");
+            CGEventTapEnable(tap as CFMachPortRef, true);
+        }
+        return event;
+    }
 
     // Wrap the raw pointer so we can call core-graphics methods on it.
     // ManuallyDrop ensures we don't free the event (the OS still owns it).
@@ -125,6 +145,9 @@ pub fn install_and_run() {
         eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
         std::process::exit(1);
     }
+
+    // Store tap reference so the callback can re-enable it after secure input.
+    TAP_REF.store(tap as *mut _, Ordering::Relaxed);
 
     unsafe {
         // Wrap in CFMachPort so we can create a run-loop source.
