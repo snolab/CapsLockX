@@ -21,7 +21,7 @@ use core_graphics::event::{
 
 use once_cell::sync::Lazy;
 
-use capslockx_core::{ClxEngine, CoreResponse};
+use capslockx_core::{ClxEngine, ClxConfig, CoreResponse, SpeedConfig};
 
 use crate::key_map::cg_keycode_to_keycode;
 use crate::output::MacPlatform;
@@ -30,7 +30,16 @@ use crate::output::MacPlatform;
 
 static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
-    ClxEngine::new(platform)
+    let config = ClxConfig {
+        speed: SpeedConfig {
+            // macOS LINE scroll units are much larger than Windows/Linux,
+            // so use a much lower scroll speed for natural feel.
+            scroll_speed: 80.0,  // default is 720.0
+            ..SpeedConfig::default()
+        },
+        ..ClxConfig::default()
+    };
+    ClxEngine::with_config(platform, config)
 });
 
 // ── Raw FFI for CGEventTap (bypasses the buggy Rust wrapper) ────────────────
