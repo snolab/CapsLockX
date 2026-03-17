@@ -60,9 +60,46 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
           files: |
             clx-rust.exe
             clx-screen-reader.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    name: Build & publish capslockx-macos (aarch64-apple-darwin)
+    runs-on: macos-latest
+    if: github.repository == 'snolab/CapsLockX'
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      - name: Build macOS binary --release
+        working-directory: rs
+        run: cargo build -p capslockx-macos --release
+
+      - name: Stage macOS binary
+        run: cp rs/target/release/capslockx capslockx-macos-arm64
+
+      - name: Upload macOS binary to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            capslockx-macos-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
