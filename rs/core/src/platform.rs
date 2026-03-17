@@ -60,6 +60,15 @@ pub trait Platform: Send + Sync + 'static {
         self.key_up(KeyCode::LCtrl);
     }
 
+    /// Ctrl+Shift+key (e.g. Ctrl+Shift+Tab for prev tab).
+    fn key_tap_ctrl_shifted(&self, key: KeyCode) {
+        self.key_down(KeyCode::LCtrl);
+        self.key_down(KeyCode::LShift);
+        self.key_tap(key);
+        self.key_up(KeyCode::LShift);
+        self.key_up(KeyCode::LCtrl);
+    }
+
     /// Extended key tap (platform-specific; default forwards to `key_tap`).
     /// Windows adapter overrides this to add `KEYEVENTF_EXTENDEDKEY` for
     /// media/volume keys.

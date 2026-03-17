@@ -183,8 +183,25 @@ fn page_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
 
 fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() || phase != "移动" { return; }
-    if dy < 0 { p.key_tap_shifted_n(KeyCode::Tab, -dy); }
-    if dy > 0 { p.key_tap_n(KeyCode::Tab,          dy); }
+    let ctrl = p.is_key_physically_down(KeyCode::LCtrl)
+            || p.is_key_physically_down(KeyCode::RCtrl);
+    if ctrl {
+        // Ctrl held → Ctrl+Tab (next page) / Ctrl+Shift+Tab (prev page).
+        if dy < 0 {
+            for _ in 0..(-dy).min(128) {
+                p.key_tap_ctrl_shifted(KeyCode::Tab);
+            }
+        }
+        if dy > 0 {
+            for _ in 0..dy.min(128) {
+                p.key_tap_ctrl(KeyCode::Tab);
+            }
+        }
+    } else {
+        // No Ctrl → plain Tab / Shift+Tab.
+        if dy < 0 { p.key_tap_shifted_n(KeyCode::Tab, -dy); }
+        if dy > 0 { p.key_tap_n(KeyCode::Tab,          dy); }
+    }
 }
 
 fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
