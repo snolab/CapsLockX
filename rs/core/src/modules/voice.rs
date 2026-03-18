@@ -28,6 +28,47 @@ const HOLD_THRESHOLD_MS: u128 = 300;
 /// Default server URL for voice transcription.
 const DEFAULT_SERVER_URL: &str = "https://brainstorm.snomiao.com/api/voice-transcribe";
 
+/// Read voice_server URL from config file, then env var, then default.
+fn resolve_server_url() -> String {
+    // 1. Try config file
+    if let Some(config_dir) = dirs::config_dir() {
+        let path = config_dir.join("CapsLockX").join("config.json");
+        if let Ok(data) = std::fs::read_to_string(&path) {
+            if let Some(url) = extract_json_text_for_key(&data, "voice_server") {
+                if !url.is_empty() {
+                    return url;
+                }
+            }
+        }
+    }
+    // 2. Try env var
+    if let Ok(url) = std::env::var("CLX_VOICE_SERVER") {
+        return url;
+    }
+    // 3. Default
+    DEFAULT_SERVER_URL.to_string()
+}
+
+/// Extract a string value for a given key from a JSON object.
+fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
+    let needle = format!("\"{}\"", key);
+    let idx = json.find(&needle)?;
+    let after_key = &json[idx + needle.len()..];
+    let after_colon = after_key.trim_start().strip_prefix(':')?;
+    let after_colon = after_colon.trim_start();
+    if !after_colon.starts_with('"') { return None; }
+    let mut result = String::new();
+    let mut chars = after_colon[1..].chars();
+    loop {
+        match chars.next()? {
+            '"' => break,
+            '\\' => { result.push(chars.next()?); }
+            ch => result.push(ch),
+        }
+    }
+    Some(result)
+}
+
 // ── VAD constants ─────────────────────────────────────────────────────────────
 
 /// Frame size in samples at 16kHz (20ms).
@@ -110,8 +151,11 @@ impl VoiceModule {
                 self.state.store(STATE_IDLE, Ordering::Relaxed);
                 *self.press_time.lock().unwrap() = None;
                 self.stop_listening();
+            } else {
+                // Toggle mode (<300ms): clear press_time to signal toggle mode.
+                // This tells stop() (from CLX deactivate) to NOT stop listening.
+                *self.press_time.lock().unwrap() = None;
             }
-            // Toggle mode (<300ms): keep listening, do nothing.
         }
         true
     }
@@ -120,13 +164,20 @@ impl VoiceModule {
         key == KeyCode::V
     }
 
-    /// Called when CLX mode deactivates -- ensure we stop listening.
+    /// Called when CLX mode deactivates.
+    /// In toggle mode (V was tapped <300ms), keep listening — don't stop.
+    /// Only stop if we're in hold mode (press_time is set and recent).
     pub fn stop(&self) {
-        let prev = self.state.swap(STATE_IDLE, Ordering::Relaxed);
-        *self.press_time.lock().unwrap() = None;
-        if prev == STATE_LISTENING {
+        // If press_time is None, it was a toggle (already cleared on key_up).
+        // Keep listening — user will tap V again to stop.
+        let press_time = *self.press_time.lock().unwrap();
+        if press_time.is_some() {
+            // Hold mode — Space released while V was held. Stop.
+            self.state.store(STATE_IDLE, Ordering::Relaxed);
+            *self.press_time.lock().unwrap() = None;
             self.stop_listening();
         }
+        // Toggle mode: do nothing, keep listening.
     }
 
     pub fn is_listening(&self) -> bool {
@@ -149,8 +200,7 @@ impl VoiceModule {
         let bg_wake = Arc::clone(&self.bg_wake);
         let platform = Arc::clone(&self.platform);
 
-        let server_url = std::env::var("CLX_VOICE_SERVER")
-            .unwrap_or_else(|_| DEFAULT_SERVER_URL.to_string());
+        let server_url = resolve_server_url();
 
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
@@ -200,7 +250,7 @@ fn voice_bg_persistent(
     server_url: &str,
 ) {
     // Load Whisper model once (the slow part).
-    let local_whisper = match LocalWhisper::new() {
+    let mut local_whisper = match LocalWhisper::new() {
         Ok(w) => {
             eprintln!("[CLX] voice: local Whisper ready");
             Some(w)
@@ -250,14 +300,14 @@ fn voice_bg_persistent(
 
             let chunks = vad.feed(&samples);
             for chunk in chunks {
-                transcribe_and_type(&chunk, sample_rate, server_url, &platform, local_whisper.as_ref());
+                transcribe_and_type(&chunk, sample_rate, server_url, &platform, &mut local_whisper);
             }
         }
 
         // Flush remaining speech.
         if let Some(chunk) = vad.flush() {
             if chunk.len() > VAD_FRAME_SIZE * VAD_SPEECH_START_FRAMES {
-                transcribe_and_type(&chunk, sample_rate, server_url, &platform, local_whisper.as_ref());
+                transcribe_and_type(&chunk, sample_rate, server_url, &platform, &mut local_whisper);
             }
         }
 
@@ -337,7 +387,7 @@ impl VadState {
                     if self.speech_frames >= VAD_SPEECH_START_FRAMES {
                         self.in_speech = true;
                         self.silence_frames = 0;
-                        // eprintln!("[CLX] voice: speech started (rms={:.4})", rms);
+                        eprintln!("[CLX] vad: speech started (rms={:.4})", rms);
                     }
                 } else {
                     // Reset speech frame counter and discard buffered pre-speech.
@@ -354,11 +404,8 @@ impl VadState {
                     self.silence_frames += 1;
                     if self.silence_frames >= VAD_SILENCE_END_FRAMES {
                         // Speech ended -- emit chunk.
-                        // eprintln!(
-                        //     "[CLX] voice: speech ended (silence {}ms, chunk {:.1}s)",
-                        //     self.silence_frames * 20,
-                        //     self.chunk.len() as f64 / 16000.0
-                        // );
+                        eprintln!("[CLX] vad: speech ended ({:.1}s chunk)",
+                            self.chunk.len() as f64 / 16000.0);
                         completed.push(std::mem::take(&mut self.chunk));
                         self.in_speech = false;
                         self.speech_frames = 0;
@@ -459,7 +506,7 @@ fn transcribe_and_type(
     sample_rate: u32,
     server_url: &str,
     platform: &Arc<dyn Platform>,
-    local_whisper: Option<&LocalWhisper>,
+    local_whisper: &mut Option<LocalWhisper>,
 ) {
     // Resample to 16kHz for Whisper (most mics capture at 44.1/48kHz).
     let samples_16k = resample(samples, sample_rate, 16000);
@@ -472,19 +519,26 @@ fn transcribe_and_type(
     let mut rough_len: usize = 0;
 
     // Phase 1: instant local transcription.
-    if let Some(whisper) = local_whisper {
+    if let Some(ref mut whisper) = local_whisper {
         match whisper.transcribe(&samples_16k) {
             Ok(rough) if !rough.is_empty() => {
                 eprintln!("[CLX] voice: local rough: {:?}", rough);
                 platform.type_text(&rough);
                 rough_len = rough.chars().count();
             }
-            Ok(_) => {
-                eprintln!("[CLX] voice: local Whisper returned empty text");
-            }
+            Ok(_) => {}
             Err(e) => {
                 eprintln!("[CLX] voice: local Whisper error: {e}");
             }
+        }
+    }
+    // Auto-scale: check if a new model is ready from background loading.
+    // Done outside the borrow of local_whisper.
+    if let Some(ref mut whisper) = local_whisper {
+        let mut swap: Option<LocalWhisper> = None;
+        whisper.check_pending_upgrade(&mut swap);
+        if let Some(new_model) = swap {
+            *local_whisper = Some(new_model);
         }
     }
 

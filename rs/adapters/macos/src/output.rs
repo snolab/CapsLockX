@@ -620,6 +620,43 @@ impl Platform for MacPlatform {
         }
     }
 
+    /// Type a Unicode string by setting the string directly on CGEvents.
+    fn type_text(&self, text: &str) {
+        let source = Self::source();
+        // Process text in chunks — CGEventKeyboardSetUnicodeString supports
+        // up to ~20 UTF-16 code units per event reliably.
+        for ch in text.chars() {
+            let mut utf16_buf = [0u16; 2];
+            let utf16 = ch.encode_utf16(&mut utf16_buf);
+            let len = utf16.len();
+
+            if let Ok(event) = CGEvent::new_keyboard_event(source.clone(), 0, true) {
+                unsafe {
+                    extern "C" {
+                        fn CGEventKeyboardSetUnicodeString(
+                            event: *mut std::ffi::c_void,
+                            len: u64,
+                            str: *const u16,
+                        );
+                    }
+                    use foreign_types::ForeignType;
+                    CGEventKeyboardSetUnicodeString(
+                        event.as_ptr() as *mut _,
+                        len as u64,
+                        utf16.as_ptr(),
+                    );
+                }
+                Self::tag(&event);
+                event.post(CGEventTapLocation::HID);
+            }
+            // Key up
+            if let Ok(event) = CGEvent::new_keyboard_event(source.clone(), 0, false) {
+                Self::tag(&event);
+                event.post(CGEventTapLocation::HID);
+            }
+        }
+    }
+
     /// Shift+key — set CGEventFlagShift on the event itself.
     fn key_tap_shifted(&self, key: KeyCode) {
         if let Some(cg_key) = keycode_to_cg_keycode(key) {
