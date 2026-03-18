@@ -403,29 +403,21 @@ unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
     let result = msg0(msg0(mut_attr_cls, sel(b"alloc\0")), sel(b"init\0"));
 
     // Split text into segments by newlines or [Me]/🔊 tags.
-    let mic_tag = "🎤 ";
-    let sys_tag = "🔊 ";
-    let mic_tag_len = mic_tag.len(); // 5 bytes
-    let sys_tag_len = sys_tag.len(); // 5 bytes
-
-    let mut remaining = text;
-    while !remaining.is_empty() {
-        let (segment, bg, rest) = if remaining.starts_with(mic_tag) {
-            let after = &remaining[mic_tag_len..];
-            let end = after.find(mic_tag).or_else(|| after.find(sys_tag)).map(|i| i + mic_tag_len).unwrap_or(remaining.len());
-            (&remaining[..end], bg_me, &remaining[end..])
-        } else if remaining.starts_with(sys_tag) {
-            let after = &remaining[sys_tag_len..];
-            let end = after.find(mic_tag).or_else(|| after.find(sys_tag)).map(|i| i + sys_tag_len).unwrap_or(remaining.len());
-            (&remaining[..end], bg_other, &remaining[end..])
+    // Process each line separately, then join with newline.
+    let lines: Vec<&str> = text.split('\n').collect();
+    for (li, line) in lines.iter().enumerate() {
+        // Determine background color from line prefix.
+        let (content, bg) = if line.starts_with("🎤 ") {
+            (*line, bg_me)
+        } else if line.starts_with("🔊 ") {
+            (*line, bg_other)
         } else {
-            let end = remaining.find(mic_tag).or_else(|| remaining.find(sys_tag)).unwrap_or(remaining.len());
-            (&remaining[..end], bg_default, &remaining[end..])
+            (*line, bg_default)
         };
 
-        if !segment.is_empty() {
+        if !content.is_empty() {
             let attrs = make_attrs(bg);
-            let ns_seg = nsstring(segment);
+            let ns_seg = nsstring(content);
             let attr_seg: *mut c_void = {
                 let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
                     std::mem::transmute(objc_msgSend as *const ());
@@ -435,7 +427,18 @@ unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
             msg1_ptr(result, sel(b"appendAttributedString:\0"), attr_seg);
         }
 
-        remaining = rest;
+        // Add newline between lines (not after the last one).
+        if li < lines.len() - 1 {
+            let nl = nsstring("\n");
+            let nl_attrs = make_attrs(nscolor(0.0, 0.0, 0.0, 0.0)); // transparent bg for newline
+            let nl_seg: *mut c_void = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+                    std::mem::transmute(objc_msgSend as *const ());
+                f(msg0(cls(b"NSAttributedString\0"), sel(b"alloc\0")),
+                  sel(b"initWithString:attributes:\0"), nl, nl_attrs)
+            };
+            msg1_ptr(result, sel(b"appendAttributedString:\0"), nl_seg);
+        }
     }
 
     msg1_ptr(label, sel(b"setAttributedStringValue:\0"), result);

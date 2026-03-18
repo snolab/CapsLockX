@@ -142,10 +142,10 @@ impl VoiceModule {
 
         *self.press_time.lock().unwrap() = Some(Instant::now());
 
-        // Shift+V = capture system audio too.
-        let sys_audio = self.platform.is_key_physically_down(KeyCode::LShift)
+        // Default = dual capture (mic+system). Shift+V = mic only.
+        let shift_held = self.platform.is_key_physically_down(KeyCode::LShift)
             || self.platform.is_key_physically_down(KeyCode::RShift);
-        self.with_system_audio.store(sys_audio, Ordering::Relaxed);
+        self.with_system_audio.store(!shift_held, Ordering::Relaxed);
 
         // Audio pipeline starts immediately so we capture from the beginning.
         self.ensure_pipeline_running();
