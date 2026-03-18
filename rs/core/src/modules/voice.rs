@@ -412,8 +412,9 @@ fn voice_bg_persistent(
 
         // These are the mic track variables used by the existing pipeline code below.
         // Named without mic_ prefix for backward compatibility.
-        // NLMS adaptive echo canceller: 300ms filter at 16kHz = 4800 taps.
-        let mut nlms = NlmsEchoCancel::new(4800, 0.3);
+        // NLMS adaptive echo canceller: 100ms filter at 16kHz = 1600 taps.
+        // Reduced from 4800 to cut CPU usage (77M→26M ops/sec).
+        let mut nlms = NlmsEchoCancel::new(1600, 0.3);
         // Legacy echo ratio (unused with NLMS, kept for reference).
         let mut echo_ratio: f32 = 0.5;
 
@@ -702,16 +703,17 @@ fn voice_bg_persistent(
 
             // ── System audio track: independent VAD + Whisper ──────────────
             // (sys VAD already fed above, before mic processing)
+            // Use a larger streaming interval for sys to avoid blocking mic Whisper.
+            const SYS_STREAMING_INTERVAL: usize = STREAMING_CHUNK_SAMPLES * 3; // 3x slower than mic
             if let Some(ref mut svad) = sys_vad {
                 if !sys_16k.is_empty() {
                     let sys_was_speech = sys_was_speech_before;
-                    // VAD already fed above — don't feed again.
 
                     if svad.in_speech {
                         sys_pending_buf.extend_from_slice(&sys_16k);
                         sys_pending_since += sys_16k.len();
 
-                        if sys_pending_since >= STREAMING_CHUNK_SAMPLES {
+                        if sys_pending_since >= SYS_STREAMING_INTERVAL {
                             let text = transcribe_local(&sys_pending_buf, &mut sys_whisper);
                             if !text.is_empty() {
                                 sys_whisper_pending = text;
