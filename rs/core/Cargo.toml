@@ -15,6 +15,7 @@ parking_lot  = "0.12"
 cpal         = "0.15"
 dirs         = "5"
 whisper-rs   = "0.13"
+ten-vad-rs = "0.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq         = "2"

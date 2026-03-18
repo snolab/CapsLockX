@@ -177,6 +177,12 @@ pub trait Platform: Send + Sync + 'static {
         }
     }
 
+    // ── Voice overlay (optional, default = no-op) ─────────────────────────────
+
+    fn show_voice_overlay(&self) {}
+    fn hide_voice_overlay(&self) {}
+    fn update_voice_overlay(&self, _levels: &[f32], _vad: bool) {}
+
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 
     /// Restart the entire application (spawn new instance, exit current).

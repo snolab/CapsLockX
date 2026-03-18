@@ -899,4 +899,10 @@ impl Platform for MacPlatform {
             Self::tap_with_flags(cg_key, CGEventFlags::CGEventFlagCommand);
         }
     }
+
+    fn show_voice_overlay(&self) { crate::voice_overlay::show_overlay(); }
+    fn hide_voice_overlay(&self) { crate::voice_overlay::hide_overlay(); }
+    fn update_voice_overlay(&self, levels: &[f32], vad: bool) {
+        crate::voice_overlay::push_audio_levels(levels, vad);
+    }
 }
