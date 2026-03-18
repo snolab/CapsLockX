@@ -71,14 +71,15 @@ fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
 
 // ── VAD constants ─────────────────────────────────────────────────────────────
 
-/// Frame size in samples at 16kHz (20ms).
-const VAD_FRAME_SIZE: usize = 320;
-/// RMS threshold to consider a frame as speech.
-const VAD_RMS_THRESHOLD: f32 = 0.01;
-/// Number of consecutive speech frames to trigger speech start.
-const VAD_SPEECH_START_FRAMES: usize = 3;
-/// Number of consecutive silence frames (500ms at 20ms/frame = 25) to trigger speech end.
-const VAD_SILENCE_END_FRAMES: usize = 25;
+// TEN VAD constants are defined near VadState below.
+/// Speech probability threshold to start recording.
+const SPEECH_START_PROB: f32 = 0.5;
+/// Speech probability threshold below which silence is counted.
+const SPEECH_END_PROB: f32 = 0.3;
+/// Consecutive speech frames to trigger speech start.
+const SPEECH_START_FRAMES: usize = 2;
+/// Consecutive silence frames to end speech (~480ms at 32ms/frame).
+const SILENCE_END_FRAMES: usize = 15;
 /// Maximum chunk duration in samples at 16kHz (25 seconds).
 const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
@@ -276,6 +277,7 @@ fn voice_bg_persistent(
         }
 
         // Create AudioCapture fresh each session (cpal::Stream is !Send).
+        let t_wake = std::time::Instant::now();
         let ac = match AudioCapture::new() {
             Ok(ac) => ac,
             Err(e) => {
@@ -290,26 +292,49 @@ fn voice_bg_persistent(
         let sample_rate = ac.sample_rate();
         let mut vad = VadState::new();
 
-        eprintln!("[CLX] voice: recording started (sr={sample_rate}, stop={})", bg_stop.load(Ordering::Relaxed));
+        eprintln!("[CLX] voice: recording started ({:.0}ms startup, sr={sample_rate})",
+            t_wake.elapsed().as_millis());
+
+        platform.show_voice_overlay();
 
         // Record loop until bg_stop is set.
         while !bg_stop.load(Ordering::Relaxed) {
             std::thread::sleep(std::time::Duration::from_millis(50));
             let samples = ac.take_samples();
-            if samples.is_empty() { continue; }
+            if samples.is_empty() {
+                platform.update_voice_overlay(&[], vad.in_speech);
+                continue;
+            }
 
-            let chunks = vad.feed(&samples);
+            // Resample to 16kHz BEFORE VAD (Silero expects 16kHz).
+            let samples_16k = resample(&samples, sample_rate, 16000);
+
+            // Compute RMS levels for the overlay.
+            let rms_levels: Vec<f32> = samples_16k
+                .chunks(TEN_VAD_FRAME_SIZE.max(1))
+                .map(|frame| {
+                    let sum_sq: f32 = frame.iter().map(|s| s * s).sum();
+                    (sum_sq / frame.len() as f32).sqrt()
+                })
+                .collect();
+            platform.update_voice_overlay(&rms_levels, vad.in_speech);
+
+            // Feed 16kHz samples to Silero VAD.
+            let chunks = vad.feed(&samples_16k);
             for chunk in chunks {
-                transcribe_and_type(&chunk, sample_rate, server_url, &platform, &mut local_whisper);
+                // Chunks are already 16kHz — no resampling needed in transcribe_and_type.
+                transcribe_and_type(&chunk, 16000, server_url, &platform, &mut local_whisper);
             }
         }
 
         // Flush remaining speech.
         if let Some(chunk) = vad.flush() {
-            if chunk.len() > VAD_FRAME_SIZE * VAD_SPEECH_START_FRAMES {
-                transcribe_and_type(&chunk, sample_rate, server_url, &platform, &mut local_whisper);
+            if chunk.len() > TEN_VAD_FRAME_SIZE * SPEECH_START_FRAMES {
+                transcribe_and_type(&chunk, 16000, server_url, &platform, &mut local_whisper);
             }
         }
+
+        platform.hide_voice_overlay();
 
         ac.stop();
         eprintln!("[CLX] voice: session ended, waiting for next activation");
@@ -340,21 +365,27 @@ fn resample(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
 // ── VAD (Voice Activity Detection) ───────────────────────────────────────────
 
 struct VadState {
-    /// Accumulated samples for the current speech chunk.
+    vad: ten_vad_rs::TenVad,
     chunk: Vec<f32>,
-    /// Leftover samples from previous poll that didn't fill a frame.
     remainder: Vec<f32>,
-    /// Whether we're currently in a speech segment.
-    in_speech: bool,
-    /// Consecutive frames above threshold.
+    pub in_speech: bool,
     speech_frames: usize,
-    /// Consecutive frames below threshold (while in speech).
     silence_frames: usize,
 }
 
+/// TEN VAD frame size: 256 samples at 16kHz (16ms).
+const TEN_VAD_FRAME_SIZE: usize = 256;
+
 impl VadState {
     fn new() -> Self {
+        // Embed the 308KB TEN VAD ONNX model in the binary.
+        // Embed the 308KB TEN VAD ONNX model directly in the binary.
+        let model_bytes = include_bytes!(concat!(env!("CARGO_HOME"), "/registry/src/index.crates.io-1949cf8c6b5b557f/ten-vad-rs-0.1.6/onnx/ten-vad.onnx"));
+        let vad = ten_vad_rs::TenVad::new_from_bytes(model_bytes, 16000)
+            .expect("failed to create TEN VAD");
+        eprintln!("[CLX] vad: TEN VAD neural network initialized");
         Self {
+            vad,
             chunk: Vec::new(),
             remainder: Vec::new(),
             in_speech: false,
@@ -363,31 +394,34 @@ impl VadState {
         }
     }
 
-    /// Feed new samples into the VAD. Returns completed speech chunks (if any).
+    /// Feed 16kHz f32 samples. Returns completed speech chunks.
     fn feed(&mut self, samples: &[f32]) -> Vec<Vec<f32>> {
         let mut completed = Vec::new();
 
-        // Prepend any leftover samples from last time.
         self.remainder.extend_from_slice(samples);
         let all = std::mem::take(&mut self.remainder);
 
         let mut offset = 0;
-        while offset + VAD_FRAME_SIZE <= all.len() {
-            let frame = &all[offset..offset + VAD_FRAME_SIZE];
-            offset += VAD_FRAME_SIZE;
+        while offset + TEN_VAD_FRAME_SIZE <= all.len() {
+            let frame = &all[offset..offset + TEN_VAD_FRAME_SIZE];
+            offset += TEN_VAD_FRAME_SIZE;
 
-            let rms = compute_rms(frame);
-            let is_speech = rms > VAD_RMS_THRESHOLD;
+            // Convert f32 → i16 for TEN VAD
+            let frame_i16: Vec<i16> = frame.iter()
+                .map(|&s| (s.clamp(-1.0, 1.0) * 32767.0) as i16)
+                .collect();
+            let prob = self.vad.process_frame(&frame_i16).unwrap_or(0.0);
+            let is_speech = prob > SPEECH_START_PROB;
 
             if !self.in_speech {
                 if is_speech {
                     self.speech_frames += 1;
                     // Buffer pre-speech frames so we don't cut the start.
                     self.chunk.extend_from_slice(frame);
-                    if self.speech_frames >= VAD_SPEECH_START_FRAMES {
+                    if self.speech_frames >= SPEECH_START_FRAMES {
                         self.in_speech = true;
                         self.silence_frames = 0;
-                        eprintln!("[CLX] vad: speech started (rms={:.4})", rms);
+                        eprintln!("[CLX] vad: speech started (prob={:.2})", prob);
                     }
                 } else {
                     // Reset speech frame counter and discard buffered pre-speech.
@@ -398,11 +432,11 @@ impl VadState {
                 // Currently in speech.
                 self.chunk.extend_from_slice(frame);
 
-                if is_speech {
+                if prob > SPEECH_END_PROB {
                     self.silence_frames = 0;
                 } else {
                     self.silence_frames += 1;
-                    if self.silence_frames >= VAD_SILENCE_END_FRAMES {
+                    if self.silence_frames >= SILENCE_END_FRAMES {
                         // Speech ended -- emit chunk.
                         eprintln!("[CLX] vad: speech ended ({:.1}s chunk)",
                             self.chunk.len() as f64 / 16000.0);
@@ -448,13 +482,7 @@ impl VadState {
     }
 }
 
-fn compute_rms(frame: &[f32]) -> f32 {
-    if frame.is_empty() {
-        return 0.0;
-    }
-    let sum_sq: f32 = frame.iter().map(|&s| s * s).sum();
-    (sum_sq / frame.len() as f32).sqrt()
-}
+// compute_rms removed — replaced by TEN VAD neural network
 
 // ── WAV encoding ─────────────────────────────────────────────────────────────
 
@@ -511,10 +539,18 @@ fn transcribe_and_type(
     // Resample to 16kHz for Whisper (most mics capture at 44.1/48kHz).
     let samples_16k = resample(samples, sample_rate, 16000);
 
-    // Skip chunks shorter than 1 second (Whisper can't handle them).
-    if samples_16k.len() < 16000 {
+    // Skip very short chunks. Pad to 1s if between 0.3-1s (Whisper needs ≥1s).
+    if samples_16k.len() < 4800 { // < 0.3s — too short, skip
         return;
     }
+    let samples_16k = if samples_16k.len() < 16000 {
+        // Pad with silence to reach 1s minimum for Whisper.
+        let mut padded = samples_16k;
+        padded.resize(16000, 0.0);
+        padded
+    } else {
+        samples_16k
+    };
 
     let mut rough_len: usize = 0;
 

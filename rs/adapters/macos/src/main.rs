@@ -18,6 +18,8 @@ mod tray;
 mod config_store;
 #[cfg(target_os = "macos")]
 mod prefs;
+#[cfg(target_os = "macos")]
+mod voice_overlay;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -25,8 +27,9 @@ fn main() {
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) to exit");
 
-    // Install the menu bar icon before entering the run loop.
+    // Install the menu bar icon and voice overlay class before entering the run loop.
     tray::setup_tray();
+    voice_overlay::init_overlay();
 
     // Install CGEventTap and block on CFRunLoop.
     hook::install_and_run();
