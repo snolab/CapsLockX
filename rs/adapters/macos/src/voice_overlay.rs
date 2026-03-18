@@ -261,51 +261,23 @@ extern "C" fn show_main(_: *mut c_void) {
         };
         if !label.is_null() {
             let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
-            // Non-editable label with dark semi-transparent background.
+            // Non-editable label, NO background (we use attributed string instead).
             f_bool(label, sel(b"setBezeled:\0"), false);
-            f_bool(label, sel(b"setDrawsBackground:\0"), true);
+            f_bool(label, sel(b"setDrawsBackground:\0"), false);
             f_bool(label, sel(b"setEditable:\0"), false);
             f_bool(label, sel(b"setSelectable:\0"), false);
-            // Dark background on the text itself (subtitle style).
-            let label_bg: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void =
-                    std::mem::transmute(objc_msgSend as *const ());
-                f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.0, 0.0, 0.0, 0.7)
-            };
-            msg1_ptr(label, sel(b"setBackgroundColor:\0"), label_bg);
-            // Rounded corners on the label via its layer.
-            f_bool(label, sel(b"setWantsLayer:\0"), true);
-            let label_layer = msg0(label, sel(b"layer\0"));
-            if !label_layer.is_null() {
-                let f_f64: extern "C" fn(*mut c_void, *mut c_void, f64) = std::mem::transmute(objc_msgSend as *const ());
-                f_f64(label_layer, sel(b"setCornerRadius:\0"), 8.0);
-                f_bool(label_layer, sel(b"setMasksToBounds:\0"), true);
-            }
-            // White text.
-            let white = msg0(cls(b"NSColor\0"), sel(b"whiteColor\0"));
-            msg1_ptr(label, sel(b"setTextColor:\0"), white);
-            // Set font size.
-            let font_cls = cls(b"NSFont\0");
-            let font: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void =
-                    std::mem::transmute(objc_msgSend as *const ());
-                f(font_cls, sel(b"systemFontOfSize:\0"), 13.0_f64)
-            };
-            msg1_ptr(label, sel(b"setFont:\0"), font);
             // Align center.
             let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
-            f_i64(label, sel(b"setAlignment:\0"), 1); // NSTextAlignmentCenter = 1
+            f_i64(label, sel(b"setAlignment:\0"), 1); // NSTextAlignmentCenter
             // Allow up to 3 lines with word wrapping.
             f_i64(label, sel(b"setMaximumNumberOfLines:\0"), 3);
-            // NSLineBreakByWordWrapping = 0
             let cell = msg0(label, sel(b"cell\0"));
             if !cell.is_null() {
                 f_i64(cell, sel(b"setLineBreakMode:\0"), 0); // word wrap
                 f_bool(cell, sel(b"setWraps:\0"), true);
             }
-            // Set initial text.
-            let initial = nsstring("🎤 Listening...");
-            msg1_ptr(label, sel(b"setStringValue:\0"), initial);
+            // Set initial attributed text with per-character background.
+            set_attributed_subtitle(label, "🎤 Listening...");
 
             msg1_ptr(container, sel(b"addSubview:\0"), label);
             LABEL_PTR.store(label, Ordering::Release);
@@ -367,6 +339,63 @@ pub fn push_audio_levels_with_text(levels: &[f32], vad_active: bool, subtitle: O
     }
 }
 
+/// Set an NSAttributedString on the label with per-character dark background.
+/// This gives true subtitle-style rendering — background only behind text, not the whole frame.
+unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
+    let ns_text = nsstring(text);
+
+    // Create attributes dictionary: white text, dark bg, font
+    let dict_cls = cls(b"NSMutableDictionary\0");
+    let dict = msg0(msg0(dict_cls, sel(b"alloc\0")), sel(b"init\0"));
+
+    // NSForegroundColorAttributeName = white
+    let fg_key = nsstring("NSColor");
+    let white = msg0(cls(b"NSColor\0"), sel(b"whiteColor\0"));
+    msg1_ptr(dict, sel(b"setObject:forKey:\0"), white);
+    // Use the two-arg version properly
+    let f2: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) =
+        std::mem::transmute(objc_msgSend as *const ());
+    f2(dict, sel(b"setObject:forKey:\0"), white, fg_key);
+
+    // NSBackgroundColorAttributeName = dark semi-transparent
+    let bg_key = nsstring("NSBackgroundColor");
+    let bg_color: *mut c_void = {
+        let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.0, 0.0, 0.0, 0.7)
+    };
+    f2(dict, sel(b"setObject:forKey:\0"), bg_color, bg_key);
+
+    // NSFontAttributeName
+    let font_key = nsstring("NSFont");
+    let font: *mut c_void = {
+        let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(cls(b"NSFont\0"), sel(b"systemFontOfSize:\0"), 14.0_f64)
+    };
+    f2(dict, sel(b"setObject:forKey:\0"), font, font_key);
+
+    // NSParagraphStyle with center alignment
+    let para_cls = cls(b"NSMutableParagraphStyle\0");
+    let para = msg0(msg0(para_cls, sel(b"alloc\0")), sel(b"init\0"));
+    let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
+    f_i64(para, sel(b"setAlignment:\0"), 1); // center
+    let para_key = nsstring("NSParagraphStyle");
+    f2(dict, sel(b"setObject:forKey:\0"), para, para_key);
+
+    // Create NSAttributedString
+    let attr_cls = cls(b"NSAttributedString\0");
+    let attr_alloc = msg0(attr_cls, sel(b"alloc\0"));
+    let attr_str: *mut c_void = {
+        let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(attr_alloc, sel(b"initWithString:attributes:\0"), ns_text, dict)
+    };
+
+    // Set on label
+    msg1_ptr(label, sel(b"setAttributedStringValue:\0"), attr_str);
+}
+
 extern "C" fn trigger_redraw(_: *mut c_void) {
     unsafe {
         let view = VIEW_PTR.load(Ordering::Acquire);
@@ -391,35 +420,7 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
                     }
                 }
             };
-            let ns = nsstring(&text);
-            msg1_ptr(label, sel(b"setStringValue:\0"), ns);
-            // Resize to fit text, then position: centered horizontally, anchored below waveform.
-            msg0(label, sel(b"sizeToFit\0"));
-            #[cfg(target_arch = "aarch64")]
-            {
-                let label_frame: NSRect = {
-                    let f: extern "C" fn(*mut c_void, *mut c_void) -> NSRect =
-                        std::mem::transmute(objc_msgSend as *const ());
-                    f(label, sel(b"frame\0"))
-                };
-                let win = WINDOW_PTR.load(Ordering::Acquire);
-                if !win.is_null() {
-                    let cont = msg0(win, sel(b"contentView\0"));
-                    let cont_frame: NSRect = {
-                        let f: extern "C" fn(*mut c_void, *mut c_void) -> NSRect =
-                            std::mem::transmute(objc_msgSend as *const ());
-                        f(cont, sel(b"frame\0"))
-                    };
-                    // Anchor to top (just below waveform, which is top 20px).
-                    // AppKit: y=0 is bottom, so top = cont_h - waveform_h - label_h
-                    let new_x = (cont_frame.w - label_frame.w) / 2.0;
-                    let new_y = cont_frame.h - 20.0 - label_frame.h - 4.0; // 4px gap below waveform
-                    let new_frame = NSRect { x: new_x.max(4.0), y: new_y, w: label_frame.w, h: label_frame.h };
-                    let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) =
-                        std::mem::transmute(objc_msgSend as *const ());
-                    f(label, sel(b"setFrame:\0"), new_frame);
-                }
-            }
+            set_attributed_subtitle(label, &text);
         }
     }
 }
