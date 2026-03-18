@@ -462,13 +462,15 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
                         (false, false) => "🎤 Listening...".to_string(),
                     }
                 } else {
-                    // Show last ~150 chars (fits ~3 lines at 50 chars/line).
-                    let s = &g.subtitle;
-                    if s.chars().count() > 150 {
-                        format!("...{}", s.chars().rev().take(147).collect::<Vec<_>>().into_iter().rev().collect::<String>())
-                    } else {
-                        s.clone()
-                    }
+                    // Truncate each line independently so both 🎤 and 🔊 are visible.
+                    g.subtitle.lines().map(|line| {
+                        let chars: Vec<char> = line.chars().collect();
+                        if chars.len() > 80 {
+                            format!("...{}", chars[chars.len()-77..].iter().collect::<String>())
+                        } else {
+                            line.to_string()
+                        }
+                    }).collect::<Vec<_>>().join("\n")
                 }
             };
             set_attributed_subtitle(label, &text);
