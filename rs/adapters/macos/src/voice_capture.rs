@@ -283,59 +283,57 @@ impl VoiceCapture {
             // Leave output on Bus 0 enabled — VoiceProcessingIO uses it
             // internally as the AEC reference signal (speaker output).
 
-            // ── Configure stream format: 16kHz mono float32 ────────────────
-            let desired_rate = 16000u32;
-            let format = AudioStreamBasicDescription {
-                sample_rate: desired_rate as f64,
-                format_id: K_AUDIO_FORMAT_LINEAR_PCM,
-                format_flags: K_AUDIO_FORMAT_FLAG_IS_FLOAT | K_AUDIO_FORMAT_FLAG_IS_PACKED,
-                bytes_per_packet: 4,
-                frames_per_packet: 1,
-                bytes_per_frame: 4,
-                channels_per_frame: 1,
-                bits_per_channel: 32,
-                reserved: 0,
-            };
+            // ── Initialize the Audio Unit first, then query/set format ─────
+            let status = AudioUnitInitialize(unit);
+            if status != 0 {
+                AudioComponentInstanceDispose(unit);
+                return Err(format!("AudioUnitInitialize failed (status {})", status));
+            }
 
-            // Set format on Bus 1 output scope (the side we read from)
-            let status = AudioUnitSetProperty(
+            // Query the default format on Bus 1 output scope.
+            let mut actual_format: AudioStreamBasicDescription = std::mem::zeroed();
+            let mut size = std::mem::size_of::<AudioStreamBasicDescription>() as u32;
+            let status = AudioUnitGetProperty(
                 unit,
                 K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
                 K_AUDIO_UNIT_SCOPE_OUTPUT,
-                1, // Bus 1
-                &format as *const AudioStreamBasicDescription as *const c_void,
-                std::mem::size_of::<AudioStreamBasicDescription>() as u32,
+                1,
+                &mut actual_format as *mut AudioStreamBasicDescription as *mut c_void,
+                &mut size,
             );
 
             let actual_rate;
-            if status != 0 {
-                // Hardware may not support 16kHz — query what we actually got
-                eprintln!(
-                    "[CLX] voice_capture: 16kHz not accepted (status {}), querying actual format",
-                    status
-                );
-                let mut actual_format: AudioStreamBasicDescription = std::mem::zeroed();
-                let mut size = std::mem::size_of::<AudioStreamBasicDescription>() as u32;
-                let status = AudioUnitGetProperty(
+            if status == 0 {
+                actual_rate = actual_format.sample_rate as u32;
+                eprintln!("[CLX] voice_capture: hardware format: {}Hz {}ch {}bit",
+                    actual_rate, actual_format.channels_per_frame, actual_format.bits_per_channel);
+
+                // Try to set our preferred format: mono float32 at hardware rate.
+                let format = AudioStreamBasicDescription {
+                    sample_rate: actual_format.sample_rate,
+                    format_id: K_AUDIO_FORMAT_LINEAR_PCM,
+                    format_flags: K_AUDIO_FORMAT_FLAG_IS_FLOAT | K_AUDIO_FORMAT_FLAG_IS_PACKED,
+                    bytes_per_packet: 4,
+                    frames_per_packet: 1,
+                    bytes_per_frame: 4,
+                    channels_per_frame: 1,
+                    bits_per_channel: 32,
+                    reserved: 0,
+                };
+                let s = AudioUnitSetProperty(
                     unit,
                     K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
                     K_AUDIO_UNIT_SCOPE_OUTPUT,
                     1,
-                    &mut actual_format as *mut AudioStreamBasicDescription as *mut c_void,
-                    &mut size,
+                    &format as *const AudioStreamBasicDescription as *const c_void,
+                    std::mem::size_of::<AudioStreamBasicDescription>() as u32,
                 );
-                if status != 0 {
-                    AudioComponentInstanceDispose(unit);
-                    return Err(format!(
-                        "Failed to get stream format on Bus 1 (status {})",
-                        status
-                    ));
+                if s != 0 {
+                    eprintln!("[CLX] voice_capture: couldn't set mono f32 (status {}), using hardware format", s);
                 }
-                actual_rate = actual_format.sample_rate as u32;
-                eprintln!(
-                    "[CLX] voice_capture: using hardware rate {}Hz (resampling upstream)",
-                    actual_rate
-                );
+            } else {
+                eprintln!("[CLX] voice_capture: couldn't query format (status {}), assuming 48kHz", status);
+                actual_rate = 48000;
 
                 // Set mono float32 at the hardware rate
                 let hw_format = AudioStreamBasicDescription {
@@ -364,9 +362,6 @@ impl VoiceCapture {
                         status
                     ));
                 }
-            } else {
-                actual_rate = desired_rate;
-                eprintln!("[CLX] voice_capture: stream format set to 16kHz mono float32");
             }
 
             // ── Tell the AU not to allocate its own buffer — we provide ours ─
@@ -419,12 +414,7 @@ impl VoiceCapture {
                 ));
             }
 
-            // ── Initialize the Audio Unit ──────────────────────────────────
-            let status = AudioUnitInitialize(unit);
-            if status != 0 {
-                AudioComponentInstanceDispose(unit);
-                return Err(format!("AudioUnitInitialize failed (status {})", status));
-            }
+            // (Already initialized above before format query)
 
             eprintln!(
                 "[CLX] voice_capture: initialized ({}Hz mono, AEC enabled)",
