@@ -95,8 +95,8 @@ impl AudioCapture {
             )
             .map_err(|e| format!("Failed to build input stream: {e}"))?;
 
-        eprintln!("[CLX] audio capture: device ready, {}Hz {}ch",
-            sample_rate, config.channels);
+        // eprintln!("[CLX] audio capture: device ready, {}Hz {}ch",
+        //     sample_rate, config.channels);
 
         Ok(Self {
             recording,
@@ -113,7 +113,7 @@ impl AudioCapture {
                 .play()
                 .map_err(|e| format!("Failed to start audio stream: {e}"))?;
             self.recording.store(true, Ordering::Relaxed);
-            eprintln!("[CLX] audio capture: started");
+            // eprintln!("[CLX] audio capture: started");
             Ok(())
         } else {
             Err("No audio stream available".to_string())
@@ -126,7 +126,7 @@ impl AudioCapture {
         if let Some(ref stream) = self.stream {
             let _ = stream.pause();
         }
-        eprintln!("[CLX] audio capture: stopped");
+        // eprintln!("[CLX] audio capture: stopped");
     }
 
     /// Drain and return all buffered samples collected so far.

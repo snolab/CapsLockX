@@ -45,10 +45,14 @@ pub struct VoiceModule {
     state: Arc<AtomicU8>,
     press_time: Mutex<Option<Instant>>,
     platform: Arc<dyn Platform>,
-    /// Signal to stop the background thread.
+    /// Signal to stop recording (but keep thread alive).
     bg_stop: Arc<AtomicBool>,
-    /// Handle to the background thread (so we can join on stop).
+    /// Signal to fully terminate the background thread.
+    bg_quit: Arc<AtomicBool>,
+    /// Handle to the background thread.
     bg_thread: Mutex<Option<std::thread::JoinHandle<()>>>,
+    /// Signal to wake the bg thread when recording starts.
+    bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
 }
 
 impl VoiceModule {
@@ -58,7 +62,9 @@ impl VoiceModule {
             press_time: Mutex::new(None),
             platform,
             bg_stop: Arc::new(AtomicBool::new(false)),
+            bg_quit: Arc::new(AtomicBool::new(false)),
             bg_thread: Mutex::new(None),
+            bg_wake: Arc::new((std::sync::Mutex::new(false), std::sync::Condvar::new())),
         }
     }
 
@@ -129,19 +135,18 @@ impl VoiceModule {
 
     // ── Internal: audio lifecycle ─────────────────────────────────────────────
 
-    fn start_listening(&self) {
-        eprintln!("[CLX] voice: start listening");
-
-        // Stop any previous background thread.
-        self.bg_stop.store(true, Ordering::Relaxed);
-        if let Some(handle) = self.bg_thread.lock().unwrap().take() {
-            let _ = handle.join();
+    /// Spawn the background thread eagerly so the Whisper model loads at startup.
+    pub fn preload(&self) {
+        let mut bg = self.bg_thread.lock().unwrap();
+        if bg.is_none() {
+            self.spawn_bg_thread(&mut bg);
         }
+    }
 
-        // Spawn a single background thread that owns AudioCapture (which is !Send
-        // but we create it on the thread that uses it).
-        self.bg_stop.store(false, Ordering::Relaxed);
+    fn spawn_bg_thread(&self, bg: &mut Option<std::thread::JoinHandle<()>>) {
         let bg_stop = Arc::clone(&self.bg_stop);
+        let bg_quit = Arc::clone(&self.bg_quit);
+        let bg_wake = Arc::clone(&self.bg_wake);
         let platform = Arc::clone(&self.platform);
 
         let server_url = std::env::var("CLX_VOICE_SERVER")
@@ -150,86 +155,136 @@ impl VoiceModule {
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                // Create AudioCapture on this thread (cpal::Stream is !Send).
-                let ac = match AudioCapture::new() {
-                    Ok(ac) => ac,
-                    Err(e) => {
-                        eprintln!("[CLX] voice: failed to create audio capture: {e}");
-                        return;
-                    }
-                };
-                if let Err(e) = ac.start() {
-                    eprintln!("[CLX] voice: failed to start audio: {e}");
-                    return;
-                }
-                let sample_rate = ac.sample_rate();
-
-                // Lazily initialise local Whisper (None if model not found).
-                let local_whisper = match LocalWhisper::new() {
-                    Ok(w) => {
-                        eprintln!("[CLX] voice: local Whisper ready for instant transcription");
-                        Some(w)
-                    }
-                    Err(e) => {
-                        eprintln!("[CLX] voice: local Whisper unavailable ({e}), server-only mode");
-                        None
-                    }
-                };
-
-                let mut vad = VadState::new();
-                eprintln!("[CLX] voice: bg thread started (sr={sample_rate}, url={server_url})");
-
-                while !bg_stop.load(Ordering::Relaxed) {
-                    std::thread::sleep(std::time::Duration::from_millis(50));
-                    let samples = ac.take_samples();
-                    if samples.is_empty() { continue; }
-
-                    let chunks = vad.feed(&samples);
-                    for chunk in chunks {
-                        transcribe_and_type(
-                            &chunk,
-                            sample_rate,
-                            &server_url,
-                            &platform,
-                            local_whisper.as_ref(),
-                        );
-                    }
-                }
-
-                // Flush remaining speech.
-                if let Some(chunk) = vad.flush() {
-                    if chunk.len() > VAD_FRAME_SIZE * VAD_SPEECH_START_FRAMES {
-                        eprintln!("[CLX] voice: flushing final chunk ({:.1}s)",
-                            chunk.len() as f64 / sample_rate as f64);
-                        transcribe_and_type(
-                            &chunk,
-                            sample_rate,
-                            &server_url,
-                            &platform,
-                            local_whisper.as_ref(),
-                        );
-                    }
-                }
-
-                ac.stop();
-                eprintln!("[CLX] voice: bg thread exiting");
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, platform, &server_url);
             })
             .expect("failed to spawn voice bg thread");
 
-        *self.bg_thread.lock().unwrap() = Some(handle);
+        *bg = Some(handle);
+    }
+
+    /// Ensure the persistent bg thread is running, then wake it to start recording.
+    fn start_listening(&self) {
+        eprintln!("[CLX] voice: start listening");
+
+        // Spawn the bg thread once — it stays alive and waits between sessions.
+        let mut bg = self.bg_thread.lock().unwrap();
+        if bg.is_none() {
+            self.spawn_bg_thread(&mut bg);
+        }
+
+        // Signal the bg thread to start recording.
+        self.bg_stop.store(false, Ordering::Relaxed);
+        let (lock, cvar) = &*self.bg_wake;
+        let mut started = lock.lock().unwrap();
+        *started = true;
+        cvar.notify_one();
+        drop(started);
     }
 
     fn stop_listening(&self) {
         eprintln!("[CLX] voice: stop listening");
-
-        // Signal background thread to stop.
         self.bg_stop.store(true, Ordering::Relaxed);
-
-        // Join background thread.
-        if let Some(handle) = self.bg_thread.lock().unwrap().take() {
-            let _ = handle.join();
-        }
+        // Don't join — thread stays alive for next session.
     }
+}
+
+// ── Persistent background thread ──────────────────────────────────────────────
+
+/// Background thread that loads the Whisper model once, then loops:
+/// wait for wake signal → record + VAD + transcribe → wait again.
+fn voice_bg_persistent(
+    bg_stop: Arc<AtomicBool>,
+    bg_quit: Arc<AtomicBool>,
+    bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
+    platform: Arc<dyn Platform>,
+    server_url: &str,
+) {
+    // Load Whisper model once (the slow part).
+    let local_whisper = match LocalWhisper::new() {
+        Ok(w) => {
+            eprintln!("[CLX] voice: local Whisper ready");
+            Some(w)
+        }
+        Err(e) => {
+            eprintln!("[CLX] voice: local Whisper unavailable ({e}), server-only");
+            None
+        }
+    };
+
+    eprintln!("[CLX] voice: bg thread ready, waiting for activation");
+
+    loop {
+        // Wait for wake signal.
+        {
+            let (lock, cvar) = &*bg_wake;
+            let mut started = lock.lock().unwrap();
+            while !*started && !bg_quit.load(Ordering::Relaxed) {
+                started = cvar.wait_timeout(started, std::time::Duration::from_secs(1)).unwrap().0;
+            }
+            if bg_quit.load(Ordering::Relaxed) { break; }
+            *started = false;
+        }
+
+        // Create AudioCapture fresh each session (cpal::Stream is !Send).
+        let ac = match AudioCapture::new() {
+            Ok(ac) => ac,
+            Err(e) => {
+                eprintln!("[CLX] voice: audio capture failed: {e}");
+                continue;
+            }
+        };
+        if let Err(e) = ac.start() {
+            eprintln!("[CLX] voice: audio start failed: {e}");
+            continue;
+        }
+        let sample_rate = ac.sample_rate();
+        let mut vad = VadState::new();
+
+        eprintln!("[CLX] voice: recording started (sr={sample_rate}, stop={})", bg_stop.load(Ordering::Relaxed));
+
+        // Record loop until bg_stop is set.
+        while !bg_stop.load(Ordering::Relaxed) {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            let samples = ac.take_samples();
+            if samples.is_empty() { continue; }
+
+            let chunks = vad.feed(&samples);
+            for chunk in chunks {
+                transcribe_and_type(&chunk, sample_rate, server_url, &platform, local_whisper.as_ref());
+            }
+        }
+
+        // Flush remaining speech.
+        if let Some(chunk) = vad.flush() {
+            if chunk.len() > VAD_FRAME_SIZE * VAD_SPEECH_START_FRAMES {
+                transcribe_and_type(&chunk, sample_rate, server_url, &platform, local_whisper.as_ref());
+            }
+        }
+
+        ac.stop();
+        eprintln!("[CLX] voice: session ended, waiting for next activation");
+    }
+
+    eprintln!("[CLX] voice: bg thread exiting");
+}
+
+// ── Resampling ───────────────────────────────────────────────────────────────
+
+/// Resample audio from `from_rate` to `to_rate` using linear interpolation.
+fn resample(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
+    if from_rate == to_rate { return samples.to_vec(); }
+    let ratio = from_rate as f64 / to_rate as f64;
+    let out_len = (samples.len() as f64 / ratio) as usize;
+    let mut out = Vec::with_capacity(out_len);
+    for i in 0..out_len {
+        let src_idx = i as f64 * ratio;
+        let idx0 = src_idx as usize;
+        let frac = (src_idx - idx0 as f64) as f32;
+        let s0 = samples.get(idx0).copied().unwrap_or(0.0);
+        let s1 = samples.get(idx0 + 1).copied().unwrap_or(s0);
+        out.push(s0 + (s1 - s0) * frac);
+    }
+    out
 }
 
 // ── VAD (Voice Activity Detection) ───────────────────────────────────────────
@@ -282,7 +337,7 @@ impl VadState {
                     if self.speech_frames >= VAD_SPEECH_START_FRAMES {
                         self.in_speech = true;
                         self.silence_frames = 0;
-                        eprintln!("[CLX] voice: speech started (rms={:.4})", rms);
+                        // eprintln!("[CLX] voice: speech started (rms={:.4})", rms);
                     }
                 } else {
                     // Reset speech frame counter and discard buffered pre-speech.
@@ -299,11 +354,11 @@ impl VadState {
                     self.silence_frames += 1;
                     if self.silence_frames >= VAD_SILENCE_END_FRAMES {
                         // Speech ended -- emit chunk.
-                        eprintln!(
-                            "[CLX] voice: speech ended (silence {}ms, chunk {:.1}s)",
-                            self.silence_frames * 20,
-                            self.chunk.len() as f64 / 16000.0
-                        );
+                        // eprintln!(
+                        //     "[CLX] voice: speech ended (silence {}ms, chunk {:.1}s)",
+                        //     self.silence_frames * 20,
+                        //     self.chunk.len() as f64 / 16000.0
+                        // );
                         completed.push(std::mem::take(&mut self.chunk));
                         self.in_speech = false;
                         self.speech_frames = 0;
@@ -313,10 +368,10 @@ impl VadState {
 
                 // Force-split at max chunk size.
                 if self.chunk.len() >= VAD_MAX_CHUNK_SAMPLES {
-                    eprintln!(
-                        "[CLX] voice: force-split chunk at {:.1}s",
-                        self.chunk.len() as f64 / 16000.0
-                    );
+                    // eprintln!(
+                    //     "[CLX] voice: force-split chunk at {:.1}s",
+                    //     self.chunk.len() as f64 / 16000.0
+                    // );
                     completed.push(std::mem::take(&mut self.chunk));
                     // Stay in speech mode for the next segment.
                     self.silence_frames = 0;
@@ -406,11 +461,19 @@ fn transcribe_and_type(
     platform: &Arc<dyn Platform>,
     local_whisper: Option<&LocalWhisper>,
 ) {
+    // Resample to 16kHz for Whisper (most mics capture at 44.1/48kHz).
+    let samples_16k = resample(samples, sample_rate, 16000);
+
+    // Skip chunks shorter than 1 second (Whisper can't handle them).
+    if samples_16k.len() < 16000 {
+        return;
+    }
+
     let mut rough_len: usize = 0;
 
     // Phase 1: instant local transcription.
     if let Some(whisper) = local_whisper {
-        match whisper.transcribe(samples) {
+        match whisper.transcribe(&samples_16k) {
             Ok(rough) if !rough.is_empty() => {
                 eprintln!("[CLX] voice: local rough: {:?}", rough);
                 platform.type_text(&rough);
@@ -425,8 +488,8 @@ fn transcribe_and_type(
         }
     }
 
-    // Phase 2: server transcription (polished).
-    let polished = send_chunk_to_server(samples, sample_rate, server_url);
+    // Phase 2: server transcription (polished). Send 16kHz WAV.
+    let polished = send_chunk_to_server(&samples_16k, 16000, server_url);
 
     if !polished.is_empty() {
         // Delete the rough draft first.
