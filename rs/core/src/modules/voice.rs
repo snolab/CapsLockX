@@ -631,7 +631,6 @@ fn voice_bg_persistent(
         // Flush MP3 encoder and save SRT.
         if let (Some(mut enc), Some(mut file)) = (mp3_encoder.take(), mp3_file.take()) {
             use std::io::Write;
-            // Encode remaining PCM samples (pad to 1152 if needed).
             if !mp3_pcm_buf.is_empty() {
                 mp3_pcm_buf.resize(1152, 0);
                 let mut mp3_buf = Vec::with_capacity(2048);
@@ -639,21 +638,47 @@ fn voice_bg_persistent(
                     let _ = file.write_all(&mp3_buf);
                 }
             }
-            // Flush encoder.
             let mut tail = Vec::with_capacity(7200);
             if enc.flush_to_vec::<mp3lame_encoder::FlushNoGap>(&mut tail).is_ok() {
                 let _ = file.write_all(&tail);
             }
-            eprintln!("[CLX] voice: MP3 recording saved");
+            drop(file);
+            eprintln!("[CLX] voice: MP3 saved");
         }
         if !note_srt.is_empty() {
             if let Some(ref dir) = note_dir {
                 let srt_path = dir.join(format!("{}.srt", session_ts));
-                if let Err(e) = std::fs::write(&srt_path, &note_srt) {
-                    eprintln!("[CLX] voice: failed to write SRT: {e}");
-                } else {
-                    eprintln!("[CLX] voice: saved {}", srt_path.display());
-                }
+                let _ = std::fs::write(&srt_path, &note_srt);
+                eprintln!("[CLX] voice: SRT saved");
+            }
+        }
+        // Mux MP3 + SRT → WebM via ffmpeg (background, non-blocking).
+        if let Some(ref dir) = note_dir {
+            let mp3_path = dir.join(format!("{}.mp3", session_ts));
+            let srt_path = dir.join(format!("{}.srt", session_ts));
+            let webm_path = dir.join(format!("{}.webm", session_ts));
+            if mp3_path.exists() && srt_path.exists() {
+                std::thread::spawn(move || {
+                    let result = std::process::Command::new("ffmpeg")
+                        .args([
+                            "-y", "-i", mp3_path.to_str().unwrap_or(""),
+                            "-i", srt_path.to_str().unwrap_or(""),
+                            "-c:a", "libopus", "-b:a", "48k",
+                            "-c:s", "webvtt",
+                            "-f", "webm",
+                            webm_path.to_str().unwrap_or(""),
+                        ])
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .status();
+                    match result {
+                        Ok(s) if s.success() => {
+                            eprintln!("[CLX] voice: WebM muxed ({})", webm_path.display());
+                        }
+                        Ok(s) => eprintln!("[CLX] voice: ffmpeg failed (exit {})", s),
+                        Err(e) => eprintln!("[CLX] voice: ffmpeg not found: {e}"),
+                    }
+                });
             }
         }
 
