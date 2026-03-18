@@ -210,10 +210,14 @@ unsafe extern "C" fn input_callback(
         return status;
     }
 
-    // Apply 30x gain — VPIO output is very quiet after AEC processing.
-    const AEC_GAIN: f32 = 30.0;
+    // Apply gain + noise gate — VPIO output is very quiet after AEC.
+    // Noise gate: zero out samples below threshold to suppress residual echo.
+    const AEC_GAIN: f32 = 40.0;
+    const NOISE_GATE: f32 = 0.002; // below this raw level = silence (residual echo)
     let amplified: Vec<f32> = ctx.render_buf[..frames].iter()
-        .map(|&s| (s * AEC_GAIN).clamp(-1.0, 1.0))
+        .map(|&s| {
+            if s.abs() < NOISE_GATE { 0.0 } else { (s * AEC_GAIN).clamp(-1.0, 1.0) }
+        })
         .collect();
     let samples = &amplified[..];
 
