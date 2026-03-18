@@ -80,11 +80,12 @@ const SPEECH_END_PROB: f32 = 0.3;
 const SPEECH_START_FRAMES: usize = 2;
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
 const SILENCE_END_FRAMES: usize = 15;
-/// Streaming interval: transcribe every N new samples of speech.
-/// Whisper's inference time is nearly constant regardless of audio length
-/// (~450ms base, ~1300ms small), so smaller intervals are free.
-/// 8000 samples = 0.5s at 16kHz → transcription every ~0.5s of new speech.
-const STREAMING_CHUNK_SAMPLES: usize = 8_000; // 0.5s at 16kHz
+/// Streaming interval: transcribe after this many new samples accumulate.
+/// Whisper inference is ~constant time regardless of audio length (~450ms
+/// for base model), so the real cadence is limited by inference speed,
+/// not this threshold. Setting it low (1600 = 100ms) means "transcribe
+/// as fast as the model can keep up" — back-to-back inference during speech.
+const STREAMING_CHUNK_SAMPLES: usize = 1_600; // 100ms at 16kHz
 /// Maximum chunk duration in samples at 16kHz (25 seconds).
 const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
@@ -329,11 +330,16 @@ fn voice_bg_persistent(
 
         platform.show_voice_overlay();
 
-        // Rolling audio buffer for continuous transcription.
-        let mut speech_buf: Vec<f32> = Vec::new();
-        let mut last_audio_len: usize = 0;
-        // Track what was already typed to only emit the diff.
-        let mut typed_text = String::new();
+        // Committed text: confirmed transcriptions that won't change.
+        let mut committed_text = String::new();
+        // Pending audio: only the uncommitted tail gets re-transcribed.
+        let mut pending_buf: Vec<f32> = Vec::new();
+        let mut pending_text = String::new();
+        let mut pending_audio_since_last: usize = 0;
+
+        // Session log.
+        let voice_log = std::path::PathBuf::from("/tmp/clx-voice.log");
+        let _ = std::fs::write(&voice_log, "");
 
         // Record loop until bg_stop is set.
         while !bg_stop.load(Ordering::Relaxed) {
@@ -381,66 +387,74 @@ fn voice_bg_persistent(
             let _chunks = vad.feed(&samples_16k);
 
             if vad.in_speech {
-                speech_buf.extend_from_slice(&samples_16k);
+                pending_buf.extend_from_slice(&samples_16k);
+                pending_audio_since_last += samples_16k.len();
 
-                // Transcribe every STREAMING_CHUNK_SAMPLES of new audio.
-                // Since Whisper takes ~constant time regardless of length,
-                // we transcribe the entire buffer each time for full context.
-                let new_samples = speech_buf.len() - last_audio_len;
-                if new_samples >= STREAMING_CHUNK_SAMPLES {
-                    let new_text = transcribe_local(
-                        &speech_buf, &mut local_whisper,
-                    );
+                // Transcribe the pending (uncommitted) buffer only.
+                if pending_audio_since_last >= STREAMING_CHUNK_SAMPLES {
+                    let new_text = transcribe_local(&pending_buf, &mut local_whisper);
                     if !new_text.is_empty() {
-                        type_diff(&typed_text, &new_text, &platform);
-                        typed_text = new_text;
+                        // Diff only against pending_text (not committed).
+                        type_diff(&pending_text, &new_text, &platform);
+                        pending_text = new_text;
+
+                        // Log full text (committed + pending).
+                        use std::io::Write;
+                        if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+                            let _ = writeln!(f, "{}{}", committed_text, pending_text);
+                        }
                     }
-                    last_audio_len = speech_buf.len();
+                    pending_audio_since_last = 0;
+                }
+
+                // Commit pending text when buffer exceeds 5s — freeze it.
+                // This prevents Whisper from changing its mind about old text.
+                if pending_buf.len() > 80_000 { // 5s at 16kHz
+                    committed_text.push_str(&pending_text);
+                    eprintln!("[CLX] voice: committed {:?}", pending_text);
+                    pending_text.clear();
+                    pending_buf.clear();
+                    pending_audio_since_last = 0;
                 }
             } else if was_in_speech {
-                // Speech just ended — final local transcription.
-                if speech_buf.len() > 4800 {
-                    let new_text = transcribe_local(&speech_buf, &mut local_whisper);
-                    if !new_text.is_empty() {
-                        type_diff(&typed_text, &new_text, &platform);
-                        typed_text = new_text.clone();
+                // Speech ended — commit remaining pending text.
+                if pending_buf.len() > 4800 {
+                    let final_text = transcribe_local(&pending_buf, &mut local_whisper);
+                    if !final_text.is_empty() {
+                        type_diff(&pending_text, &final_text, &platform);
+                        pending_text = final_text;
                     }
-
-                    // Send to server in background for polished version.
-                    let server_url_owned = server_url.to_string();
-                    let buf_copy = speech_buf.clone();
-                    let typed_copy = typed_text.clone();
-                    let plat = Arc::clone(&platform);
-                    std::thread::spawn(move || {
-                        let polished = send_chunk_to_server(&buf_copy, 16000, &server_url_owned);
-                        if !polished.is_empty() && polished != typed_copy {
-                            let to_delete = typed_copy.chars().count();
-                            for _ in 0..to_delete {
-                                plat.key_tap(KeyCode::Backspace);
-                            }
-                            plat.type_text(&polished);
-                        }
-                    });
                 }
-                // Reset for next utterance.
-                speech_buf.clear();
-                last_audio_len = 0;
-                typed_text.clear();
-            }
 
-            // Cap buffer at 25s to prevent unbounded growth.
-            if speech_buf.len() > VAD_MAX_CHUNK_SAMPLES {
-                let excess = speech_buf.len() - STREAMING_CHUNK_SAMPLES;
-                speech_buf.drain(..excess);
-                last_audio_len = last_audio_len.saturating_sub(excess);
+                committed_text.push_str(&pending_text);
+
+                // Log final text.
+                {
+                    use std::io::Write;
+                    if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+                        let _ = writeln!(f, "{}", committed_text);
+                    }
+                }
+
+                // Send committed text to server for polishing.
+                if !committed_text.is_empty() {
+                    // TODO: send full audio to server in background
+                    // For now, just log the committed text.
+                    eprintln!("[CLX] voice: utterance done: {:?}", committed_text);
+                }
+
+                pending_text.clear();
+                pending_buf.clear();
+                pending_audio_since_last = 0;
+                committed_text.clear();
             }
         }
 
-        // Flush remaining speech.
-        if speech_buf.len() > 4800 {
-            let new_text = transcribe_local(&speech_buf, &mut local_whisper);
+        // Flush remaining.
+        if pending_buf.len() > 4800 {
+            let new_text = transcribe_local(&pending_buf, &mut local_whisper);
             if !new_text.is_empty() {
-                type_diff(&typed_text, &new_text, &platform);
+                type_diff(&pending_text, &new_text, &platform);
             }
         }
 
@@ -489,7 +503,7 @@ fn transcribe_local(samples: &[f32], local_whisper: &mut Option<LocalWhisper>) -
 
 /// Type only the difference between old and new text.
 /// Finds the longest common prefix, deletes the diverging suffix of old,
-/// then types the new suffix.
+/// then types the new suffix. Logs the resulting text to /tmp/clx-voice.log.
 fn type_diff(old: &str, new: &str, platform: &Arc<dyn Platform>) {
     // Find common prefix length (in chars).
     let common_chars = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
@@ -506,9 +520,19 @@ fn type_diff(old: &str, new: &str, platform: &Arc<dyn Platform>) {
 
     // Type the new suffix.
     let suffix: String = new_chars[common_chars..].iter().collect();
-    if !suffix.is_empty() {
+    if !suffix.is_empty() || to_delete > 0 {
         eprintln!("[CLX] voice: +{:?} (-{} chars)", suffix, to_delete);
-        platform.type_text(&suffix);
+        if !suffix.is_empty() {
+            platform.type_text(&suffix);
+        }
+    }
+
+    // Log current state of what's in the input box to /tmp/clx-voice.log
+    if !new.is_empty() {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+            let _ = writeln!(f, "{}", new);
+        }
     }
 }
 
