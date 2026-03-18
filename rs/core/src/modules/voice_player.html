@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Voice Note Player</title>
+<style>
+body { background: #1e1e2e; color: #cdd6f4; font-family: system-ui; display: flex; flex-direction: column; align-items: center; padding: 40px; }
+video { max-width: 600px; border-radius: 12px; background: #313244; }
+h1 { color: #89b4fa; font-size: 18px; }
+::cue { background: rgba(0,0,0,0.7); color: white; font-size: 16px; }
+</style></head>
+<body>
+<h1>🎤 Voice Note Player</h1>
+<p>Drag a .webm + .srt file here, or use the file picker below.</p>
+<input type="file" id="picker" accept=".webm,.srt" multiple>
+<br><br>
+<video id="player" controls style="width:600px;height:80px"></video>
+<script>
+const player = document.getElementById('player');
+document.getElementById('picker').addEventListener('change', (e) => {
+  for (const file of e.target.files) {
+    if (file.name.endsWith('.webm')) {
+      player.src = URL.createObjectURL(file);
+    } else if (file.name.endsWith('.srt')) {
+      // Convert SRT to VTT on the fly
+      const reader = new FileReader();
+      reader.onload = () => {
+        const vtt = 'WEBVTT\n\n' + reader.result.replace(/(\d\d:\d\d:\d\d),(\d\d\d)/g, '$1.$2');
+        const blob = new Blob([vtt], { type: 'text/vtt' });
+        const track = document.createElement('track');
+        track.kind = 'subtitles';
+        track.label = 'Subtitles';
+        track.srclang = 'en';
+        track.default = true;
+        track.src = URL.createObjectURL(blob);
+        player.appendChild(track);
+        // Force enable
+        if (player.textTracks[0]) player.textTracks[0].mode = 'showing';
+      };
+      reader.readAsText(file);
+    }
+  }
+});
+</script>
+</body></html>
