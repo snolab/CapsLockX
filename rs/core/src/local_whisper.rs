@@ -17,11 +17,12 @@ const MODEL_TIERS: &[ModelTier] = &[
 ];
 
 /// Upgrade if inference speed > this multiple of realtime.
-const UPGRADE_THRESHOLD: f64 = 1.25;
+/// Set high to prevent flip-flopping between models during streaming.
+const UPGRADE_THRESHOLD: f64 = 5.0;
 /// Downgrade if inference speed < 1.0x realtime (can't keep up).
 const DOWNGRADE_THRESHOLD: f64 = 1.0;
 /// Number of samples to average before making scaling decision.
-const SAMPLES_BEFORE_UPGRADE: usize = 3;
+const SAMPLES_BEFORE_UPGRADE: usize = 10;
 
 struct ModelTier {
     name: &'static str,

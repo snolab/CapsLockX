@@ -407,9 +407,9 @@ fn voice_bg_persistent(
                     pending_audio_since_last = 0;
                 }
 
-                // Commit pending text when buffer exceeds 5s — freeze it.
-                // This prevents Whisper from changing its mind about old text.
-                if pending_buf.len() > 80_000 { // 5s at 16kHz
+                // Commit pending text when buffer exceeds 3s — freeze it.
+                // Shorter window = less instability from Whisper changing its mind.
+                if pending_buf.len() > 48_000 { // 3s at 16kHz
                     committed_text.push_str(&pending_text);
                     eprintln!("[CLX] voice: committed {:?}", pending_text);
                     pending_text.clear();
