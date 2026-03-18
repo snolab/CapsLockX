@@ -560,10 +560,21 @@ fn voice_bg_persistent(
                             }
                         }
 
-                        // Log and update overlay subtitle.
+                        // Log and update overlay subtitle with speaker labels.
                         let display_pending = if is_input { &mic_typed_pending } else { &mic_whisper_pending };
-                        let full_text = format!("{}{}", mic_committed, display_pending);
-                        platform.update_voice_subtitle(&full_text);
+                        let mic_text = format!("{}{}", mic_committed, display_pending);
+                        let has_sys = sys_capture.is_some();
+                        let subtitle = if has_sys {
+                            let sys_text = format!("{}{}", sys_committed, sys_whisper_pending);
+                            let mut parts = Vec::new();
+                            if !mic_text.is_empty() { parts.push(format!("[Me] {}", mic_text)); }
+                            if !sys_text.is_empty() { parts.push(format!("[Other] {}", sys_text)); }
+                            parts.join(" ")
+                        } else {
+                            mic_text.clone()
+                        };
+                        platform.update_voice_subtitle(&subtitle);
+                        let full_text = mic_text;
                         use std::io::Write;
                         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
                             let _ = writeln!(f, "{}", full_text);
