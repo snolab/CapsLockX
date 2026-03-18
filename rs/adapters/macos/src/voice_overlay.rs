@@ -341,59 +341,57 @@ pub fn push_audio_levels_with_text(levels: &[f32], vad_active: bool, subtitle: O
 
 /// Set an NSAttributedString on the label with per-character dark background.
 /// This gives true subtitle-style rendering — background only behind text, not the whole frame.
+/// Set an NSAttributedString on the label with per-character dark background.
 unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
+    // Wrap in autorelease pool to prevent use-after-free on temporary ObjC objects.
+    let pool_cls = cls(b"NSAutoreleasePool\0");
+    let pool = msg0(msg0(pool_cls, sel(b"alloc\0")), sel(b"init\0"));
+
     let ns_text = nsstring(text);
-
-    // Create attributes dictionary: white text, dark bg, font
-    let dict_cls = cls(b"NSMutableDictionary\0");
-    let dict = msg0(msg0(dict_cls, sel(b"alloc\0")), sel(b"init\0"));
-
-    // NSForegroundColorAttributeName = white
-    let fg_key = nsstring("NSColor");
-    let white = msg0(cls(b"NSColor\0"), sel(b"whiteColor\0"));
-    msg1_ptr(dict, sel(b"setObject:forKey:\0"), white);
-    // Use the two-arg version properly
     let f2: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) =
         std::mem::transmute(objc_msgSend as *const ());
-    f2(dict, sel(b"setObject:forKey:\0"), white, fg_key);
 
-    // NSBackgroundColorAttributeName = dark semi-transparent
-    let bg_key = nsstring("NSBackgroundColor");
-    let bg_color: *mut c_void = {
+    // Build attributes dictionary.
+    let dict = msg0(msg0(cls(b"NSMutableDictionary\0"), sel(b"alloc\0")), sel(b"init\0"));
+
+    // White foreground
+    f2(dict, sel(b"setObject:forKey:\0"),
+        msg0(cls(b"NSColor\0"), sel(b"whiteColor\0")),
+        nsstring("NSColor"));
+
+    // Dark semi-transparent background (subtitle style)
+    let bg: *mut c_void = {
         let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
         f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.0, 0.0, 0.0, 0.7)
     };
-    f2(dict, sel(b"setObject:forKey:\0"), bg_color, bg_key);
+    f2(dict, sel(b"setObject:forKey:\0"), bg, nsstring("NSBackgroundColor"));
 
-    // NSFontAttributeName
-    let font_key = nsstring("NSFont");
+    // Font
     let font: *mut c_void = {
         let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
         f(cls(b"NSFont\0"), sel(b"systemFontOfSize:\0"), 14.0_f64)
     };
-    f2(dict, sel(b"setObject:forKey:\0"), font, font_key);
+    f2(dict, sel(b"setObject:forKey:\0"), font, nsstring("NSFont"));
 
-    // NSParagraphStyle with center alignment
-    let para_cls = cls(b"NSMutableParagraphStyle\0");
-    let para = msg0(msg0(para_cls, sel(b"alloc\0")), sel(b"init\0"));
+    // Center paragraph style
+    let para = msg0(msg0(cls(b"NSMutableParagraphStyle\0"), sel(b"alloc\0")), sel(b"init\0"));
     let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
-    f_i64(para, sel(b"setAlignment:\0"), 1); // center
-    let para_key = nsstring("NSParagraphStyle");
-    f2(dict, sel(b"setObject:forKey:\0"), para, para_key);
+    f_i64(para, sel(b"setAlignment:\0"), 1);
+    f2(dict, sel(b"setObject:forKey:\0"), para, nsstring("NSParagraphStyle"));
 
-    // Create NSAttributedString
-    let attr_cls = cls(b"NSAttributedString\0");
-    let attr_alloc = msg0(attr_cls, sel(b"alloc\0"));
+    // Create attributed string and set on label.
     let attr_str: *mut c_void = {
         let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
-        f(attr_alloc, sel(b"initWithString:attributes:\0"), ns_text, dict)
+        f(msg0(cls(b"NSAttributedString\0"), sel(b"alloc\0")),
+          sel(b"initWithString:attributes:\0"), ns_text, dict)
     };
-
-    // Set on label
     msg1_ptr(label, sel(b"setAttributedStringValue:\0"), attr_str);
+
+    // Drain pool.
+    msg0(pool, sel(b"drain\0"));
 }
 
 extern "C" fn trigger_redraw(_: *mut c_void) {
