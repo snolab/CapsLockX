@@ -567,8 +567,8 @@ fn voice_bg_persistent(
                         let subtitle = if has_sys {
                             let sys_text = format!("{}{}", sys_committed, sys_whisper_pending);
                             let mut parts = Vec::new();
-                            if !mic_text.is_empty() { parts.push(format!("[Me] {}", mic_text)); }
-                            if !sys_text.is_empty() { parts.push(format!("[Other] {}", sys_text)); }
+                            if !mic_text.is_empty() { parts.push(format!("🎤 {}", mic_text)); }
+                            if !sys_text.is_empty() { parts.push(format!("🔊 {}", sys_text)); }
                             parts.join(" ")
                         } else {
                             mic_text.clone()
@@ -609,10 +609,10 @@ fn voice_bg_persistent(
                         let elapsed = note_start_time.elapsed().as_secs_f64();
                         let start_srt = format_srt_time(elapsed - (mic_pending_buf.len() as f64 / 16000.0).max(0.0));
                         let end_srt = format_srt_time(elapsed);
-                        let label = if sys_capture.is_some() { "[Me] " } else { "" };
+                        let label = if sys_capture.is_some() { "🎤 " } else { "" };
                         note_srt.push_str(&format!("{}\n{} --> {}\n{}{}\n\n", srt_index, start_srt, end_srt, label, mic_whisper_pending));
                     }
-                    eprintln!("[CLX] voice: [Me] committed {:?} (stable={})", mic_whisper_pending, mic_stable);
+                    eprintln!("[CLX] voice: 🎤 committed {:?} (stable={})", mic_whisper_pending, mic_stable);
                     mic_whisper_pending.clear();
                     mic_typed_pending.clear();
                     mic_prev_whisper.clear();
@@ -643,10 +643,10 @@ fn voice_bg_persistent(
                     let elapsed = note_start_time.elapsed().as_secs_f64();
                     let start_srt = format_srt_time(elapsed - (mic_pending_buf.len() as f64 / 16000.0).max(0.0));
                     let end_srt = format_srt_time(elapsed);
-                    let label = if sys_capture.is_some() { "[Me] " } else { "" };
+                    let label = if sys_capture.is_some() { "🎤 " } else { "" };
                     note_srt.push_str(&format!("{}\n{} --> {}\n{}{}\n\n", srt_index, start_srt, end_srt, label, mic_whisper_pending));
                 }
-                eprintln!("[CLX] voice: [Me] utterance done: {:?}", mic_committed);
+                eprintln!("[CLX] voice: 🎤 utterance done: {:?}", mic_committed);
 
                 // Log final text.
                 {
@@ -695,17 +695,17 @@ fn voice_bg_persistent(
                         sys_prev_whisper = sys_whisper_pending.clone();
 
                         if (sys_stable >= 2 && sys_pending_buf.len() > 32_000) || sys_pending_buf.len() > 80_000 {
-                            // Add [Other] SRT entry.
+                            // Add 🔊 SRT entry.
                             if note_active.load(Ordering::Relaxed) && !sys_whisper_pending.is_empty() {
                                 srt_index += 1;
                                 let elapsed = note_start_time.elapsed().as_secs_f64();
                                 let start_srt = format_srt_time(elapsed - (sys_pending_buf.len() as f64 / 16000.0).max(0.0));
                                 let end_srt = format_srt_time(elapsed);
-                                note_srt.push_str(&format!("{}\n{} --> {}\n[Other] {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
+                                note_srt.push_str(&format!("{}\n{} --> {}\n🔊 {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
                             }
                             if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
                             sys_committed.push_str(&sys_whisper_pending);
-                            eprintln!("[CLX] voice: [Other] committed {:?}", sys_whisper_pending);
+                            eprintln!("[CLX] voice: 🔊 committed {:?}", sys_whisper_pending);
                             sys_whisper_pending.clear();
                             sys_prev_whisper.clear();
                             sys_pending_buf.clear();
@@ -723,11 +723,11 @@ fn voice_bg_persistent(
                             let elapsed = note_start_time.elapsed().as_secs_f64();
                             let start_srt = format_srt_time(elapsed - (sys_pending_buf.len() as f64 / 16000.0).max(0.0));
                             let end_srt = format_srt_time(elapsed);
-                            note_srt.push_str(&format!("{}\n{} --> {}\n[Other] {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
+                            note_srt.push_str(&format!("{}\n{} --> {}\n🔊 {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
                         }
                         if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
                         sys_committed.push_str(&sys_whisper_pending);
-                        eprintln!("[CLX] voice: [Other] utterance: {:?}", sys_whisper_pending);
+                        eprintln!("[CLX] voice: 🔊 utterance: {:?}", sys_whisper_pending);
                         sys_whisper_pending.clear();
                         sys_prev_whisper.clear();
                         sys_pending_buf.clear();

@@ -398,22 +398,28 @@ unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
     let bg_other = nscolor(0.1, 0.2, 0.4, 0.8);     // dark blue
     let bg_default = nscolor(0.0, 0.0, 0.0, 0.7);   // dark
 
-    // Build NSMutableAttributedString by parsing [Me]/[Other] prefixes.
+    // Build NSMutableAttributedString by parsing [Me]/🔊 prefixes.
     let mut_attr_cls = cls(b"NSMutableAttributedString\0");
     let result = msg0(msg0(mut_attr_cls, sel(b"alloc\0")), sel(b"init\0"));
 
-    // Split text into segments by newlines or [Me]/[Other] tags.
+    // Split text into segments by newlines or [Me]/🔊 tags.
+    let mic_tag = "🎤 ";
+    let sys_tag = "🔊 ";
+    let mic_tag_len = mic_tag.len(); // 5 bytes
+    let sys_tag_len = sys_tag.len(); // 5 bytes
+
     let mut remaining = text;
     while !remaining.is_empty() {
-        let (segment, bg, rest) = if remaining.starts_with("[Me] ") {
-            let end = remaining[5..].find("[Me] ").or_else(|| remaining[5..].find("[Other] ")).map(|i| i + 5).unwrap_or(remaining.len());
+        let (segment, bg, rest) = if remaining.starts_with(mic_tag) {
+            let after = &remaining[mic_tag_len..];
+            let end = after.find(mic_tag).or_else(|| after.find(sys_tag)).map(|i| i + mic_tag_len).unwrap_or(remaining.len());
             (&remaining[..end], bg_me, &remaining[end..])
-        } else if remaining.starts_with("[Other] ") {
-            let end = remaining[8..].find("[Me] ").or_else(|| remaining[8..].find("[Other] ")).map(|i| i + 8).unwrap_or(remaining.len());
+        } else if remaining.starts_with(sys_tag) {
+            let after = &remaining[sys_tag_len..];
+            let end = after.find(mic_tag).or_else(|| after.find(sys_tag)).map(|i| i + sys_tag_len).unwrap_or(remaining.len());
             (&remaining[..end], bg_other, &remaining[end..])
         } else {
-            // No tag — find next tag or take all.
-            let end = remaining.find("[Me] ").or_else(|| remaining.find("[Other] ")).unwrap_or(remaining.len());
+            let end = remaining.find(mic_tag).or_else(|| remaining.find(sys_tag)).unwrap_or(remaining.len());
             (&remaining[..end], bg_default, &remaining[end..])
         };
 
