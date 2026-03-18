@@ -172,16 +172,40 @@ pub fn setup_tray() {
         let menu_cls = cls(b"NSMenu\0");
         let menu = msg0(msg0(menu_cls, sel(b"alloc\0")), sel(b"init\0"));
 
-        // NSMenuItem *quitItem = [[NSMenuItem alloc]
-        //     initWithTitle:@"Quit CapsLockX"
-        //     action:@selector(terminate:)
-        //     keyEquivalent:@"q"];
         let menuitem_cls = cls(b"NSMenuItem\0");
+        let sel_init_item = sel(b"initWithTitle:action:keyEquivalent:\0");
+
+        // ── "Preferences…" menu item ────────────────────────────────────
+        let prefs_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
+        let prefs_title = nsstring("Preferences\u{2026}");
+        let prefs_action = sel(b"openPrefs:\0");
+        let prefs_key = nsstring(",");
+        let prefs_item: *mut c_void = {
+            let f: extern "C" fn(
+                *mut c_void, *mut c_void,
+                *mut c_void, *mut c_void, *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            f(prefs_alloc, sel_init_item, prefs_title, prefs_action, prefs_key)
+        };
+
+        // Set the target to our CLXPrefsActionTarget instance.
+        let action_target = crate::prefs::get_action_target();
+        if !action_target.is_null() {
+            msg1_ptr(prefs_item, sel(b"setTarget:\0"), action_target);
+        }
+
+        // [menu addItem:prefsItem];
+        msg1_ptr(menu, sel(b"addItem:\0"), prefs_item);
+
+        // ── Separator ───────────────────────────────────────────────────
+        let separator = msg0(menuitem_cls, sel(b"separatorItem\0"));
+        msg1_ptr(menu, sel(b"addItem:\0"), separator);
+
+        // ── "Quit CapsLockX" menu item ──────────────────────────────────
         let quit_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
         let title = nsstring("Quit CapsLockX");
         let action = sel(b"terminate:\0");
         let key_equiv = nsstring("q");
-        let sel_init_item = sel(b"initWithTitle:action:keyEquivalent:\0");
         let quit_item: *mut c_void = {
             let f: extern "C" fn(
                 *mut c_void, *mut c_void,
