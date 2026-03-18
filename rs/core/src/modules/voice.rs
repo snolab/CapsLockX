@@ -331,18 +331,18 @@ fn voice_bg_persistent(
 
         // Create AudioCapture fresh each session (cpal::Stream is !Send).
         let t_wake = std::time::Instant::now();
-        let ac = match AudioCapture::new() {
-            Ok(ac) => ac,
-            Err(e) => {
-                eprintln!("[CLX] voice: audio capture failed: {e}");
-                continue;
+        // Try AEC mic (VoiceProcessingIO with echo cancellation) first.
+        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = platform.start_aec_mic();
+        let use_aec = aec_mic.is_some();
+
+        // Fall back to cpal AudioCapture if AEC not available.
+        let ac = if aec_mic.is_none() {
+            match AudioCapture::new() {
+                Ok(ac) => { let _ = ac.start(); Some(ac) }
+                Err(e) => { eprintln!("[CLX] voice: audio capture failed: {e}"); continue; }
             }
-        };
-        if let Err(e) = ac.start() {
-            eprintln!("[CLX] voice: audio start failed: {e}");
-            continue;
-        }
-        let sample_rate = ac.sample_rate();
+        } else { None };
+        let sample_rate = if let Some(ref aec) = aec_mic { aec.sample_rate() } else { ac.as_ref().unwrap().sample_rate() };
         let mut vad = VadState::new();
 
         // Start system audio capture if Shift+V was pressed.
@@ -417,7 +417,7 @@ fn voice_bg_persistent(
         // Record loop until bg_stop is set.
         while !bg_stop.load(Ordering::Relaxed) {
             std::thread::sleep(std::time::Duration::from_millis(50));
-            let samples = ac.take_samples();
+            let samples = if let Some(ref aec) = aec_mic { aec.take_samples() } else { ac.as_ref().unwrap().take_samples() };
             if samples.is_empty() {
                 platform.update_voice_overlay(&[], vad.in_speech, &[], false);
                 continue;
@@ -440,7 +440,8 @@ fn voice_bg_persistent(
                     mic_committed.push_str(&mic_whisper_pending);
                 }
                 // Drain the audio capture buffer so old samples don't leak in.
-                let _ = ac.take_samples();
+                if let Some(ref aec) = aec_mic { let _ = aec.take_samples(); }
+                if let Some(ref a) = ac { let _ = a.take_samples(); }
                 // Reset all pending state.
                 mic_pending_buf.clear();
                 mic_whisper_pending.clear();
@@ -550,6 +551,16 @@ fn voice_bg_persistent(
                 }
             }
 
+            // Process system VAD FIRST so we know if system is playing
+            // before deciding whether to feed mic to VAD.
+            let sys_was_speech_before = sys_vad.as_ref().map(|v| v.in_speech).unwrap_or(false);
+            if let Some(ref mut svad) = sys_vad {
+                if !sys_16k.is_empty() {
+                    svad.feed(&sys_16k);
+                }
+            }
+            let sys_is_playing = sys_vad.as_ref().map(|v| v.in_speech).unwrap_or(false);
+
             // Compute RMS levels for overlay (dual waveforms).
             let mic_rms: Vec<f32> = mic_16k.chunks(TEN_VAD_FRAME_SIZE.max(1))
                 .map(|f| { let s: f32 = f.iter().map(|x| x*x).sum(); (s / f.len() as f32).sqrt() })
@@ -569,9 +580,10 @@ fn voice_bg_persistent(
             }
             platform.update_voice_overlay(&mic_rms, vad.in_speech, &sys_rms, sys_vad_active);
 
-            // Feed to VAD for speech detection.
+            // Feed mic to VAD — both tracks run independently.
+            // Mic may pick up speaker bleed, but system track has clean audio.
             let was_in_speech = vad.in_speech;
-            let _chunks = vad.feed(&samples_16k);
+            let _chunks = vad.feed(samples_16k);
 
             if vad.in_speech {
                 mic_pending_buf.extend_from_slice(&samples_16k);
@@ -698,13 +710,11 @@ fn voice_bg_persistent(
             }
 
             // ── System audio track: independent VAD + Whisper ──────────────
+            // (sys VAD already fed above, before mic processing)
             if let Some(ref mut svad) = sys_vad {
                 if !sys_16k.is_empty() {
-                    let sys_was_speech = svad.in_speech;
-                    let _sys_chunks = svad.feed(&sys_16k);
-
-                    // Update overlay with sys VAD state.
-                    // (mic overlay already updated above, sys_vad state used in next frame)
+                    let sys_was_speech = sys_was_speech_before;
+                    // VAD already fed above — don't feed again.
 
                     if svad.in_speech {
                         sys_pending_buf.extend_from_slice(&sys_16k);
@@ -836,7 +846,8 @@ fn voice_bg_persistent(
         }
 
         if let Some(ref sys) = sys_capture { sys.stop(); }
-        ac.stop();
+        if let Some(ref aec) = aec_mic { aec.stop(); }
+        if let Some(ref a) = ac { a.stop(); }
         eprintln!("[CLX] voice: session ended, waiting for next activation");
     }
 
