@@ -192,7 +192,7 @@ pub trait Platform: Send + Sync + 'static {
 
     fn show_voice_overlay(&self) {}
     fn hide_voice_overlay(&self) {}
-    fn update_voice_overlay(&self, _levels: &[f32], _vad: bool) {}
+    fn update_voice_overlay(&self, _mic_levels: &[f32], _mic_vad: bool, _sys_levels: &[f32], _sys_vad: bool) {}
     fn update_voice_subtitle(&self, _text: &str) {}
 
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
