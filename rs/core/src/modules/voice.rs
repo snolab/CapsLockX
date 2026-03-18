@@ -375,38 +375,9 @@ fn voice_bg_persistent(
         let mut srt_index: usize = 0;
         let note_start_time = std::time::Instant::now();
 
-        // Stream audio to WebM via ffmpeg pipe (crash-safe — each cluster is self-contained).
+        // ffmpeg pipe for streaming WebM — lazily started when note_active becomes true.
         let mut ffmpeg_stdin: Option<std::process::ChildStdin> = None;
         let mut ffmpeg_child: Option<std::process::Child> = None;
-        if note_active.load(Ordering::Relaxed) {
-            if let Some(ref dir) = note_dir {
-                let webm_path = dir.join(format!("{}.webm", session_ts));
-                match std::process::Command::new("ffmpeg")
-                    .args([
-                        "-y",
-                        "-f", "s16le",       // raw PCM input
-                        "-ar", "16000",       // 16kHz
-                        "-ac", "1",           // mono
-                        "-i", "pipe:0",       // read from stdin
-                        "-c:a", "libopus",    // Opus codec
-                        "-b:a", "48k",        // 48kbps (great for speech)
-                        "-f", "webm",         // WebM container
-                        webm_path.to_str().unwrap_or("output.webm"),
-                    ])
-                    .stdin(std::process::Stdio::piped())
-                    .stdout(std::process::Stdio::null())
-                    .stderr(std::process::Stdio::null())
-                    .spawn()
-                {
-                    Ok(mut child) => {
-                        ffmpeg_stdin = child.stdin.take();
-                        ffmpeg_child = Some(child);
-                        eprintln!("[CLX] voice: streaming WebM to {}", webm_path.display());
-                    }
-                    Err(e) => eprintln!("[CLX] voice: ffmpeg spawn failed: {e}"),
-                }
-            }
-        }
 
         // Committed text: confirmed transcriptions that won't change.
         let mut committed_text = String::new();
@@ -479,6 +450,31 @@ fn voice_bg_persistent(
 
             // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
+
+            // Lazily start ffmpeg when note mode activates.
+            if note_active.load(Ordering::Relaxed) && ffmpeg_stdin.is_none() && ffmpeg_child.is_none() {
+                if let Some(ref dir) = note_dir {
+                    let webm_path = dir.join(format!("{}.webm", session_ts));
+                    match std::process::Command::new("ffmpeg")
+                        .args([
+                            "-y", "-f", "s16le", "-ar", "16000", "-ac", "1",
+                            "-i", "pipe:0", "-c:a", "libopus", "-b:a", "48k",
+                            "-f", "webm", webm_path.to_str().unwrap_or("out.webm"),
+                        ])
+                        .stdin(std::process::Stdio::piped())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .spawn()
+                    {
+                        Ok(mut child) => {
+                            ffmpeg_stdin = child.stdin.take();
+                            ffmpeg_child = Some(child);
+                            eprintln!("[CLX] voice: streaming WebM to {}", webm_path.display());
+                        }
+                        Err(e) => eprintln!("[CLX] voice: ffmpeg spawn failed: {e}"),
+                    }
+                }
+            }
 
             // Pipe raw PCM to ffmpeg for streaming WebM encoding.
             if let Some(ref mut stdin) = ffmpeg_stdin {
