@@ -77,11 +77,13 @@ fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
 
 // TEN VAD constants are defined near VadState below.
 /// Speech probability threshold to start recording.
-const SPEECH_START_PROB: f32 = 0.5;
+/// Speech probability threshold — raised to avoid triggering on
+/// YouTube/background audio from laptop speakers.
+const SPEECH_START_PROB: f32 = 0.7;
 /// Speech probability threshold below which silence is counted.
-const SPEECH_END_PROB: f32 = 0.3;
-/// Consecutive speech frames to trigger speech start.
-const SPEECH_START_FRAMES: usize = 2;
+const SPEECH_END_PROB: f32 = 0.4;
+/// Consecutive speech frames to trigger speech start (more = less sensitive).
+const SPEECH_START_FRAMES: usize = 4;
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
 const SILENCE_END_FRAMES: usize = 15;
 /// Streaming interval: transcribe after this many new samples accumulate.
@@ -527,7 +529,13 @@ fn voice_bg_persistent(
             } else {
                 Vec::new()
             };
-            platform.update_voice_overlay(&mic_rms, vad.in_speech, &sys_rms, false);
+            let sys_vad_active = sys_vad.as_ref().map(|v| v.in_speech).unwrap_or(false);
+            if !sys_rms.is_empty() && sys_rms.iter().any(|&v| v > 0.001) {
+                static SYS_LOG_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                let c = SYS_LOG_COUNT.fetch_add(1, Ordering::Relaxed);
+                if c < 5 { eprintln!("[CLX] voice: sys_rms samples={} max={:.4}", sys_rms.len(), sys_rms.iter().cloned().fold(0.0f32, f32::max)); }
+            }
+            platform.update_voice_overlay(&mic_rms, vad.in_speech, &sys_rms, sys_vad_active);
 
             // Feed to VAD for speech detection.
             let was_in_speech = vad.in_speech;

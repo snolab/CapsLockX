@@ -363,55 +363,76 @@ pub fn push_dual_audio_levels(mic_levels: &[f32], mic_vad: bool, sys_levels: &[f
 /// Set an NSAttributedString on the label with per-character dark background.
 /// This gives true subtitle-style rendering — background only behind text, not the whole frame.
 /// Set an NSAttributedString on the label with per-character dark background.
-unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
-    // Wrap in autorelease pool to prevent use-after-free on temporary ObjC objects.
-    let pool_cls = cls(b"NSAutoreleasePool\0");
-    let pool = msg0(msg0(pool_cls, sel(b"alloc\0")), sel(b"init\0"));
+/// Create an NSColor from RGBA.
+unsafe fn nscolor(r: f64, g: f64, b: f64, a: f64) -> *mut c_void {
+    let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void =
+        std::mem::transmute(objc_msgSend as *const ());
+    f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), r, g, b, a)
+}
 
-    let ns_text = nsstring(text);
+/// Build an attributes dictionary with given bg color.
+unsafe fn make_attrs(bg: *mut c_void) -> *mut c_void {
     let f2: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) =
         std::mem::transmute(objc_msgSend as *const ());
-
-    // Build attributes dictionary.
     let dict = msg0(msg0(cls(b"NSMutableDictionary\0"), sel(b"alloc\0")), sel(b"init\0"));
-
-    // White foreground
-    f2(dict, sel(b"setObject:forKey:\0"),
-        msg0(cls(b"NSColor\0"), sel(b"whiteColor\0")),
-        nsstring("NSColor"));
-
-    // Dark semi-transparent background (subtitle style)
-    let bg: *mut c_void = {
-        let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void =
-            std::mem::transmute(objc_msgSend as *const ());
-        f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.0, 0.0, 0.0, 0.7)
-    };
+    f2(dict, sel(b"setObject:forKey:\0"), msg0(cls(b"NSColor\0"), sel(b"whiteColor\0")), nsstring("NSColor"));
     f2(dict, sel(b"setObject:forKey:\0"), bg, nsstring("NSBackgroundColor"));
-
-    // Font
     let font: *mut c_void = {
         let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
         f(cls(b"NSFont\0"), sel(b"systemFontOfSize:\0"), 14.0_f64)
     };
     f2(dict, sel(b"setObject:forKey:\0"), font, nsstring("NSFont"));
-
-    // Center paragraph style
     let para = msg0(msg0(cls(b"NSMutableParagraphStyle\0"), sel(b"alloc\0")), sel(b"init\0"));
     let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
     f_i64(para, sel(b"setAlignment:\0"), 1);
     f2(dict, sel(b"setObject:forKey:\0"), para, nsstring("NSParagraphStyle"));
+    dict
+}
 
-    // Create attributed string and set on label.
-    let attr_str: *mut c_void = {
-        let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
-            std::mem::transmute(objc_msgSend as *const ());
-        f(msg0(cls(b"NSAttributedString\0"), sel(b"alloc\0")),
-          sel(b"initWithString:attributes:\0"), ns_text, dict)
-    };
-    msg1_ptr(label, sel(b"setAttributedStringValue:\0"), attr_str);
+unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
+    let pool = msg0(msg0(cls(b"NSAutoreleasePool\0"), sel(b"alloc\0")), sel(b"init\0"));
 
-    // Drain pool.
+    // Colors: green bg for [Me], blue bg for [Other], dark bg for default.
+    let bg_me = nscolor(0.1, 0.35, 0.15, 0.8);     // dark green
+    let bg_other = nscolor(0.1, 0.2, 0.4, 0.8);     // dark blue
+    let bg_default = nscolor(0.0, 0.0, 0.0, 0.7);   // dark
+
+    // Build NSMutableAttributedString by parsing [Me]/[Other] prefixes.
+    let mut_attr_cls = cls(b"NSMutableAttributedString\0");
+    let result = msg0(msg0(mut_attr_cls, sel(b"alloc\0")), sel(b"init\0"));
+
+    // Split text into segments by newlines or [Me]/[Other] tags.
+    let mut remaining = text;
+    while !remaining.is_empty() {
+        let (segment, bg, rest) = if remaining.starts_with("[Me] ") {
+            let end = remaining[5..].find("[Me] ").or_else(|| remaining[5..].find("[Other] ")).map(|i| i + 5).unwrap_or(remaining.len());
+            (&remaining[..end], bg_me, &remaining[end..])
+        } else if remaining.starts_with("[Other] ") {
+            let end = remaining[8..].find("[Me] ").or_else(|| remaining[8..].find("[Other] ")).map(|i| i + 8).unwrap_or(remaining.len());
+            (&remaining[..end], bg_other, &remaining[end..])
+        } else {
+            // No tag — find next tag or take all.
+            let end = remaining.find("[Me] ").or_else(|| remaining.find("[Other] ")).unwrap_or(remaining.len());
+            (&remaining[..end], bg_default, &remaining[end..])
+        };
+
+        if !segment.is_empty() {
+            let attrs = make_attrs(bg);
+            let ns_seg = nsstring(segment);
+            let attr_seg: *mut c_void = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+                    std::mem::transmute(objc_msgSend as *const ());
+                f(msg0(cls(b"NSAttributedString\0"), sel(b"alloc\0")),
+                  sel(b"initWithString:attributes:\0"), ns_seg, attrs)
+            };
+            msg1_ptr(result, sel(b"appendAttributedString:\0"), attr_seg);
+        }
+
+        remaining = rest;
+    }
+
+    msg1_ptr(label, sel(b"setAttributedStringValue:\0"), result);
     msg0(pool, sel(b"drain\0"));
 }
 
