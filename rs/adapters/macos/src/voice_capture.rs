@@ -180,39 +180,27 @@ unsafe extern "C" fn input_callback(
         ctx.render_buf.resize(frames, 0.0);
     }
 
-    // VPIO format is 9ch non-interleaved (flags=0x29).
-    // Must provide separate buffer per channel. We read channel 0 only.
-    const MAX_CH: usize = 16;
-    let mut ch_bufs: [[f32; 2048]; MAX_CH] = [[0.0; 2048]; MAX_CH];
-    let num_ch = 9usize.min(MAX_CH);
-    let capped_frames = frames.min(2048);
+    // Simple 1-buffer mono render — matches test-vpio which works.
+    if ctx.render_buf.len() < frames {
+        ctx.render_buf.resize(frames, 0.0);
+    }
 
-    // Build AudioBufferList with N separate buffers (non-interleaved).
-    // Use a raw byte array since AudioBufferList has variable-length array.
-    #[repr(C)]
-    struct ABL16 {
-        number_buffers: u32,
-        buffers: [AudioBuffer; 16],
-    }
-    let mut abl = ABL16 {
-        number_buffers: num_ch as u32,
-        buffers: unsafe { std::mem::zeroed() },
-    };
-    for i in 0..num_ch {
-        abl.buffers[i] = AudioBuffer {
+    let mut abl = AudioBufferList {
+        number_buffers: 1,
+        buffers: [AudioBuffer {
             number_channels: 1,
-            data_byte_size: (capped_frames * 4) as u32,
-            data: ch_bufs[i].as_mut_ptr() as *mut c_void,
-        };
-    }
+            data_byte_size: (frames * 4) as u32,
+            data: ctx.render_buf.as_mut_ptr() as *mut c_void,
+        }],
+    };
 
     let status = AudioUnitRender(
         ctx.unit,
         io_action_flags,
         in_time_stamp,
         in_bus_number,
-        capped_frames as u32,
-        &mut abl as *mut ABL16 as *mut AudioBufferList,
+        in_number_frames,
+        &mut abl,
     );
 
     if status != 0 {
@@ -222,10 +210,9 @@ unsafe extern "C" fn input_callback(
         return status;
     }
 
-    // Channel 0 = echo-cancelled mono mic audio.
-    // Apply gain — VPIO output is very quiet after AEC processing.
+    // Apply 30x gain — VPIO output is very quiet after AEC processing.
     const AEC_GAIN: f32 = 30.0;
-    let amplified: Vec<f32> = ch_bufs[0][..capped_frames].iter()
+    let amplified: Vec<f32> = ctx.render_buf[..frames].iter()
         .map(|&s| (s * AEC_GAIN).clamp(-1.0, 1.0))
         .collect();
     let samples = &amplified[..];
@@ -235,7 +222,7 @@ unsafe extern "C" fn input_callback(
         let c = CB_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if c < 5 {
             let rms: f32 = (samples.iter().map(|s| s*s).sum::<f32>() / samples.len().max(1) as f32).sqrt();
-            eprintln!("[CLX] voice_capture: cb#{} frames={} rms={:.4}", c, capped_frames, rms);
+            eprintln!("[CLX] voice_capture: cb#{} frames={} rms={:.4}", c, frames, rms);
         }
     }
     if let Ok(mut buf) = ctx.buffer.try_lock() {
