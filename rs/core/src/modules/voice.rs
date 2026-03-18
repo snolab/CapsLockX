@@ -95,6 +95,8 @@ pub struct VoiceModule {
     bg_thread: Mutex<Option<std::thread::JoinHandle<()>>>,
     /// Signal to wake the bg thread when recording starts.
     bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
+    /// Whether to capture system audio (Shift+V).
+    with_system_audio: Arc<AtomicBool>,
 }
 
 impl VoiceModule {
@@ -107,6 +109,7 @@ impl VoiceModule {
             bg_quit: Arc::new(AtomicBool::new(false)),
             bg_thread: Mutex::new(None),
             bg_wake: Arc::new((std::sync::Mutex::new(false), std::sync::Condvar::new())),
+            with_system_audio: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -120,6 +123,11 @@ impl VoiceModule {
             STATE_IDLE => {
                 self.state.store(STATE_LISTENING, Ordering::Relaxed);
                 *self.press_time.lock().unwrap() = Some(Instant::now());
+                // Shift+V = capture system audio too.
+                let sys_audio = self.platform.is_key_physically_down(KeyCode::LShift)
+                    || self.platform.is_key_physically_down(KeyCode::RShift);
+                self.with_system_audio.store(sys_audio, Ordering::Relaxed);
+                if sys_audio { eprintln!("[CLX] voice: Shift+V → mic + system audio"); }
                 self.start_listening();
                 true
             }
@@ -199,6 +207,7 @@ impl VoiceModule {
         let bg_stop = Arc::clone(&self.bg_stop);
         let bg_quit = Arc::clone(&self.bg_quit);
         let bg_wake = Arc::clone(&self.bg_wake);
+        let with_sys = Arc::clone(&self.with_system_audio);
         let platform = Arc::clone(&self.platform);
 
         let server_url = resolve_server_url();
@@ -206,7 +215,7 @@ impl VoiceModule {
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, platform, &server_url);
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, platform, &server_url);
             })
             .expect("failed to spawn voice bg thread");
 
@@ -247,6 +256,7 @@ fn voice_bg_persistent(
     bg_stop: Arc<AtomicBool>,
     bg_quit: Arc<AtomicBool>,
     bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
+    with_system_audio: Arc<AtomicBool>,
     platform: Arc<dyn Platform>,
     server_url: &str,
 ) {
@@ -292,8 +302,25 @@ fn voice_bg_persistent(
         let sample_rate = ac.sample_rate();
         let mut vad = VadState::new();
 
-        eprintln!("[CLX] voice: recording started ({:.0}ms startup, sr={sample_rate})",
-            t_wake.elapsed().as_millis());
+        // Start system audio capture if Shift+V was pressed.
+        let sys_capture = if with_system_audio.load(Ordering::Relaxed) {
+            match platform.start_system_audio() {
+                Some(s) => {
+                    eprintln!("[CLX] voice: system audio capture started");
+                    Some(s)
+                }
+                None => {
+                    eprintln!("[CLX] voice: system audio not available on this platform");
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        eprintln!("[CLX] voice: recording started ({:.0}ms startup, sr={sample_rate}{})",
+            t_wake.elapsed().as_millis(),
+            if sys_capture.is_some() { " +sysaudio" } else { "" });
 
         platform.show_voice_overlay();
 
@@ -306,7 +333,27 @@ fn voice_bg_persistent(
                 continue;
             }
 
-            // Resample to 16kHz BEFORE VAD (Silero expects 16kHz).
+            // Mix in system audio if available.
+            let samples = if let Some(ref sys) = sys_capture {
+                let sys_samples = sys.take_samples();
+                if sys_samples.is_empty() {
+                    samples
+                } else {
+                    // Mix: same length, add sample-by-sample, clamp.
+                    let max_len = samples.len().max(sys_samples.len());
+                    (0..max_len)
+                        .map(|i| {
+                            let m = samples.get(i).copied().unwrap_or(0.0);
+                            let s = sys_samples.get(i).copied().unwrap_or(0.0);
+                            (m + s).clamp(-1.0, 1.0)
+                        })
+                        .collect()
+                }
+            } else {
+                samples
+            };
+
+            // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
 
             // Compute RMS levels for the overlay.
@@ -336,6 +383,7 @@ fn voice_bg_persistent(
 
         platform.hide_voice_overlay();
 
+        if let Some(ref sys) = sys_capture { sys.stop(); }
         ac.stop();
         eprintln!("[CLX] voice: session ended, waiting for next activation");
     }

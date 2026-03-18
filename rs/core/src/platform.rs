@@ -20,6 +20,13 @@ pub enum MouseButton { Left, Right, Middle }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArrangeMode { Stacked, SideBySide }
 
+/// System audio capture stream (returned by Platform::start_system_audio).
+pub trait SystemAudioStream: Send {
+    fn take_samples(&self) -> Vec<f32>;
+    fn stop(&self);
+    fn sample_rate(&self) -> u32;
+}
+
 pub trait Platform: Send + Sync + 'static {
     // ── Keyboard output ───────────────────────────────────────────────────────
 
@@ -178,6 +185,10 @@ pub trait Platform: Send + Sync + 'static {
     }
 
     // ── Voice overlay (optional, default = no-op) ─────────────────────────────
+
+    /// Start capturing system audio. Returns a boxed trait with take_samples()/stop().
+    /// Default returns None (not supported).
+    fn start_system_audio(&self) -> Option<Box<dyn SystemAudioStream>> { None }
 
     fn show_voice_overlay(&self) {}
     fn hide_voice_overlay(&self) {}

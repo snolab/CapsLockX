@@ -900,6 +900,16 @@ impl Platform for MacPlatform {
         }
     }
 
+    fn start_system_audio(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
+        match crate::system_audio::SystemAudioCapture::new() {
+            Ok(cap) => Some(Box::new(cap)),
+            Err(e) => {
+                eprintln!("[CLX] system audio: {e}");
+                None
+            }
+        }
+    }
+
     fn show_voice_overlay(&self) { crate::voice_overlay::show_overlay(); }
     fn hide_voice_overlay(&self) { crate::voice_overlay::hide_overlay(); }
     fn update_voice_overlay(&self, levels: &[f32], vad: bool) {
