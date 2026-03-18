@@ -448,6 +448,11 @@ fn voice_bg_persistent(
             // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
 
+            // Accumulate audio for voice note WAV file.
+            if note_active.load(Ordering::Relaxed) {
+                note_audio.extend_from_slice(&samples_16k);
+            }
+
             // Compute RMS levels for the overlay.
             let rms_levels: Vec<f32> = samples_16k
                 .chunks(TEN_VAD_FRAME_SIZE.max(1))
@@ -513,6 +518,14 @@ fn voice_bg_persistent(
                     committed_text.push(' ');
                 }
                 committed_text.push_str(&whisper_pending);
+                    // Add SRT entry for voice note.
+                    if note_active.load(Ordering::Relaxed) && !whisper_pending.is_empty() {
+                        srt_index += 1;
+                        let elapsed = note_start_time.elapsed().as_secs_f64();
+                        let start_srt = format_srt_time(elapsed - (pending_buf.len() as f64 / 16000.0).max(0.0));
+                        let end_srt = format_srt_time(elapsed);
+                        note_srt.push_str(&format!("{}\n{} --> {}\n{}\n\n", srt_index, start_srt, end_srt, whisper_pending));
+                    }
                     eprintln!("[CLX] voice: committed {:?} (stable={})", whisper_pending, stable_count);
                     whisper_pending.clear();
                     typed_pending.clear();
@@ -538,6 +551,14 @@ fn voice_bg_persistent(
                     committed_text.push(' ');
                 }
                 committed_text.push_str(&whisper_pending);
+                // Add SRT entry for the utterance end.
+                if note_active.load(Ordering::Relaxed) && !whisper_pending.is_empty() {
+                    srt_index += 1;
+                    let elapsed = note_start_time.elapsed().as_secs_f64();
+                    let start_srt = format_srt_time(elapsed - (pending_buf.len() as f64 / 16000.0).max(0.0));
+                    let end_srt = format_srt_time(elapsed);
+                    note_srt.push_str(&format!("{}\n{} --> {}\n{}\n\n", srt_index, start_srt, end_srt, whisper_pending));
+                }
                 eprintln!("[CLX] voice: utterance done: {:?}", committed_text);
 
                 // Log final text.
@@ -568,6 +589,30 @@ fn voice_bg_persistent(
 
         platform.hide_voice_overlay();
 
+        // Save voice note files if note mode was active.
+        if !note_audio.is_empty() {
+            if let Some(ref dir) = note_dir {
+                let wav_path = dir.join(format!("{}.wav", session_ts));
+                let srt_path = dir.join(format!("{}.srt", session_ts));
+                let wav_data = encode_wav(&note_audio, 16000);
+                if let Err(e) = std::fs::write(&wav_path, &wav_data) {
+                    eprintln!("[CLX] voice: failed to write WAV: {e}");
+                } else {
+                    eprintln!("[CLX] voice: saved {} ({:.1}s, {:.1}MB)",
+                        wav_path.display(),
+                        note_audio.len() as f64 / 16000.0,
+                        wav_data.len() as f64 / 1_048_576.0);
+                }
+                if !note_srt.is_empty() {
+                    if let Err(e) = std::fs::write(&srt_path, &note_srt) {
+                        eprintln!("[CLX] voice: failed to write SRT: {e}");
+                    } else {
+                        eprintln!("[CLX] voice: saved {}", srt_path.display());
+                    }
+                }
+            }
+        }
+
         if let Some(ref sys) = sys_capture { sys.stop(); }
         ac.stop();
         eprintln!("[CLX] voice: session ended, waiting for next activation");
@@ -592,6 +637,16 @@ fn chrono_timestamp() -> String {
     let mon = doy / 30 + 1;
     let day = doy % 30 + 1;
     format!("{y:04}-{mon:02}-{day:02}T{h:02}{m:02}{s:02}")
+}
+
+/// Format seconds as SRT timestamp: HH:MM:SS,mmm
+fn format_srt_time(secs: f64) -> String {
+    let secs = secs.max(0.0);
+    let h = (secs / 3600.0) as u32;
+    let m = ((secs % 3600.0) / 60.0) as u32;
+    let s = (secs % 60.0) as u32;
+    let ms = ((secs % 1.0) * 1000.0) as u32;
+    format!("{:02}:{:02}:{:02},{:03}", h, m, s, ms)
 }
 
 // ── Streaming diff helpers ────────────────────────────────────────────────────
