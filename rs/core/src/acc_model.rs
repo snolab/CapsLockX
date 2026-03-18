@@ -244,7 +244,7 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
         if diff < mid_win {
             let s = if rt > lt { 1i32 } else { -1i32 };
             st.reset(); drop(st);
-            action(s, 0, "横中键");
+            action(s, 0, "H_MIDKEY");
             return false;
         }
     }
@@ -253,7 +253,7 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
         if diff < mid_win {
             let s = if dt_inst > ut { 1i32 } else { -1i32 };
             st.reset(); drop(st);
-            action(0, s, "纵中键");
+            action(0, s, "V_MIDKEY");
             return false;
         }
     }
@@ -277,11 +277,11 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
     let any_key = st.any_key_held();
     drop(st);
 
-    if h_out != 0 || v_out != 0 { action(h_out, v_out, "移动"); }
+    if h_out != 0 || v_out != 0 { action(h_out, v_out, "MOVE"); }
 
     if h_vel == 0.0 && v_vel == 0.0 && h_out == 0 && v_out == 0 && !any_key {
         lock.lock().unwrap().active = false;
-        action(0, 0, "止动");
+        action(0, 0, "STOP");
         return false;
     }
     true

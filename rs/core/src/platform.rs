@@ -89,6 +89,7 @@ pub trait Platform: Send + Sync + 'static {
     /// state in ClxState; Windows adapter overrides with GetAsyncKeyState.
     fn is_key_physically_down(&self, _key: KeyCode) -> bool { false }
 
+
     // ── Mouse output ──────────────────────────────────────────────────────────
 
     fn mouse_move(&self, dx: i32, dy: i32);

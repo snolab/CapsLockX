@@ -131,58 +131,65 @@ impl EditModule {
 
 // ── Action callbacks ──────────────────────────────────────────────────────────
 
+/// Collect physically-held modifier keys into a list.
+fn held_modifiers(p: &dyn Platform) -> Vec<KeyCode> {
+    let mut mods = Vec::new();
+    if p.is_key_physically_down(KeyCode::LShift) || p.is_key_physically_down(KeyCode::RShift) { mods.push(KeyCode::LShift); }
+    if p.is_key_physically_down(KeyCode::LCtrl)  || p.is_key_physically_down(KeyCode::RCtrl)  { mods.push(KeyCode::LCtrl); }
+    if p.is_key_physically_down(KeyCode::LAlt)   || p.is_key_physically_down(KeyCode::RAlt)   { mods.push(KeyCode::LAlt); }
+    if p.is_key_physically_down(KeyCode::LWin)   || p.is_key_physically_down(KeyCode::RWin)   { mods.push(KeyCode::LWin); }
+    mods
+}
+
+/// Tap a key with all currently-held modifiers passed through.
+fn tap_with_held_mods(p: &dyn Platform, key: KeyCode, n: i32) {
+    let mods = held_modifiers(p);
+    if mods.is_empty() {
+        p.key_tap_n(key, n);
+    } else {
+        for m in &mods { p.key_down(*m); }
+        p.key_tap_n(key, n);
+        for m in mods.iter().rev() { p.key_up(*m); }
+    }
+}
+
 fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() { return; }
-    // Use GetAsyncKeyState to detect Shift — the hook-tracked state gets
-    // corrupted by phantom Shift UP events from the OS.
-    // Use atomic key_tap_n_with_mod to send Shift+Arrow in a single SendInput
-    // batch, avoiding phantom events between separate calls.
-    let shift_phys = p.is_key_physically_down(KeyCode::LShift)
-             || p.is_key_physically_down(KeyCode::RShift);
-    let shift_tracked = s.is_shift_held();
-    let shift = shift_phys || shift_tracked;
-    if phase == "移动" {
-        eprintln!("[cursor] dx={} dy={} phys={} tracked={} tid={:?}",
-            dx, dy, shift_phys, shift_tracked, std::thread::current().id());
-    }
     match phase {
-        "横中键" => {
+        "H_MIDKEY" => {
             let key = if dx > 0 { KeyCode::Right } else { KeyCode::Left };
-            if shift { p.key_tap_n_with_mod(KeyCode::LShift, key, 1); }
-            else     { p.key_tap(key); }
+            tap_with_held_mods(p, key, 1);
         }
-        "纵中键" => {
+        "V_MIDKEY" => {
             let key = if dy > 0 { KeyCode::Down } else { KeyCode::Up };
-            if shift { p.key_tap_n_with_mod(KeyCode::LShift, key, 1); }
-            else     { p.key_tap(key); p.key_tap(KeyCode::Home); }
-        }
-        "移动" => {
-            if shift {
-                if dy < 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Up,    -dy); }
-                if dy > 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Down,   dy); }
-                if dx < 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Left,  -dx); }
-                if dx > 0 { p.key_tap_n_with_mod(KeyCode::LShift, KeyCode::Right,  dx); }
+            let mods = held_modifiers(p);
+            if mods.is_empty() {
+                p.key_tap(key);
+                p.key_tap(KeyCode::Home);
             } else {
-                if dy < 0 { p.key_tap_n(KeyCode::Up,    -dy); }
-                if dy > 0 { p.key_tap_n(KeyCode::Down,   dy); }
-                if dx < 0 { p.key_tap_n(KeyCode::Left,  -dx); }
-                if dx > 0 { p.key_tap_n(KeyCode::Right,  dx); }
+                tap_with_held_mods(p, key, 1);
             }
+        }
+        "MOVE" => {
+            if dy < 0 { tap_with_held_mods(p, KeyCode::Up,    -dy); }
+            if dy > 0 { tap_with_held_mods(p, KeyCode::Down,   dy); }
+            if dx < 0 { tap_with_held_mods(p, KeyCode::Left,  -dx); }
+            if dx > 0 { tap_with_held_mods(p, KeyCode::Right,  dx); }
         }
         _ => {}
     }
 }
 
 fn page_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
-    if !s.is_clx_active() || phase != "移动" { return; }
-    if dy < 0 { p.key_tap_n(KeyCode::PageUp,   -dy); }
-    if dy > 0 { p.key_tap_n(KeyCode::PageDown,  dy); }
-    if dx < 0 { p.key_tap_n(KeyCode::Home,     -dx); }
-    if dx > 0 { p.key_tap_n(KeyCode::End,       dx); }
+    if !s.is_clx_active() || phase != "MOVE" { return; }
+    if dy < 0 { tap_with_held_mods(p, KeyCode::PageUp,   -dy); }
+    if dy > 0 { tap_with_held_mods(p, KeyCode::PageDown,  dy); }
+    if dx < 0 { tap_with_held_mods(p, KeyCode::Home,     -dx); }
+    if dx > 0 { tap_with_held_mods(p, KeyCode::End,       dx); }
 }
 
 fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
-    if !s.is_clx_active() || phase != "移动" { return; }
+    if !s.is_clx_active() || phase != "MOVE" { return; }
     let ctrl = p.is_key_physically_down(KeyCode::LCtrl)
             || p.is_key_physically_down(KeyCode::RCtrl);
     if ctrl {
@@ -205,7 +212,7 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
 }
 
 fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
-    if !s.is_clx_active() || phase != "移动" { return; }
+    if !s.is_clx_active() || phase != "MOVE" { return; }
     if dy < 0 { p.key_tap_n(KeyCode::Enter,  -dy); }  // G
     if dy > 0 { p.key_tap_n(KeyCode::Delete,  dy); }  // T
 }
