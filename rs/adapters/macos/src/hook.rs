@@ -28,7 +28,7 @@ use crate::output::MacPlatform;
 
 // ── Engine (created once on first use) ───────────────────────────────────────
 
-static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
+pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
     let config = ClxConfig {
         speed: SpeedConfig {

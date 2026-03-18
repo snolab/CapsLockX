@@ -14,6 +14,10 @@ mod key_map;
 mod output;
 #[cfg(target_os = "macos")]
 mod tray;
+#[cfg(target_os = "macos")]
+mod config_store;
+#[cfg(target_os = "macos")]
+mod prefs;
 
 #[cfg(target_os = "macos")]
 fn main() {
