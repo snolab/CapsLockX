@@ -4,7 +4,8 @@
 //! YouTube, music, etc. Mixed with mic audio for voice transcription.
 
 use std::ffi::c_void;
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+use std::ptr::null_mut;
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, AtomicPtr, Ordering}};
 use capslockx_core::platform::SystemAudioStream;
 
 // ── ObjC runtime FFI ─────────────────────────────────────────────────────────
@@ -18,6 +19,7 @@ extern "C" {
     fn class_addMethod(cls: *mut c_void, sel: *mut c_void, imp: *const c_void, types: *const std::ffi::c_char) -> bool;
     fn class_addProtocol(cls: *mut c_void, protocol: *mut c_void) -> bool;
     fn objc_getProtocol(name: *const std::ffi::c_char) -> *mut c_void;
+    fn objc_retain(obj: *mut c_void) -> *mut c_void;
 }
 
 // CoreMedia FFI
@@ -32,12 +34,141 @@ extern "C" {
     ) -> i32;
 }
 
+// CoreFoundation / GCD FFI
+extern "C" {
+    fn dispatch_semaphore_create(value: isize) -> *mut c_void;
+    fn dispatch_semaphore_wait(dsema: *mut c_void, timeout: u64) -> isize;
+    fn dispatch_semaphore_signal(dsema: *mut c_void) -> isize;
+    fn CFArrayGetCount(array: *mut c_void) -> isize;
+    fn CFArrayGetValueAtIndex(array: *mut c_void, idx: isize) -> *mut c_void;
+}
+
+const DISPATCH_TIME_FOREVER: u64 = !0;
+
+// Block runtime — _NSConcreteGlobalBlock is in libSystem
+#[link(name = "System", kind = "dylib")]
+extern "C" {
+    static _NSConcreteGlobalBlock: *const c_void;
+}
+
 unsafe fn sel(name: &[u8]) -> *mut c_void { sel_registerName(name.as_ptr() as *const _) }
 unsafe fn cls(name: &[u8]) -> *mut c_void { objc_getClass(name.as_ptr() as *const _) }
 unsafe fn msg0(obj: *mut c_void, s: *mut c_void) -> *mut c_void {
     let f: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
     f(obj, s)
 }
+
+// ── ObjC Block types for completion handlers ────────────────────────────────
+
+/// Minimal ObjC block layout (global block — no captures, lives in static memory).
+#[repr(C)]
+struct GlobalBlock {
+    isa: *const *const c_void,
+    flags: i32,
+    reserved: i32,
+    invoke: *const c_void,
+    descriptor: *const BlockDescriptor,
+}
+
+// Safety: GlobalBlock only contains raw pointers to static data and function pointers.
+unsafe impl Sync for GlobalBlock {}
+
+#[repr(C)]
+struct BlockDescriptor {
+    reserved: u64,
+    size: u64,
+}
+
+static BLOCK_DESCRIPTOR: BlockDescriptor = BlockDescriptor {
+    reserved: 0,
+    size: std::mem::size_of::<GlobalBlock>() as u64,
+};
+
+// ── SCShareableContent async result ─────────────────────────────────────────
+
+static CONTENT_RESULT: AtomicPtr<c_void> = AtomicPtr::new(null_mut());
+static CONTENT_SEM: AtomicPtr<c_void> = AtomicPtr::new(null_mut());
+
+/// Completion handler for `getShareableContentExcludingDesktopWindows:onScreenWindowsOnly:completionHandler:`
+/// Signature: ^(SCShareableContent * _Nullable content, NSError * _Nullable error)
+unsafe extern "C" fn shareable_content_completion(
+    _block: *mut GlobalBlock,
+    content: *mut c_void,
+    error: *mut c_void,
+) {
+    if !error.is_null() {
+        // Log the error
+        let desc = msg0(error, sel(b"localizedDescription\0"));
+        if !desc.is_null() {
+            let utf8: *const u8 = std::mem::transmute(msg0(desc, sel(b"UTF8String\0")));
+            if !utf8.is_null() {
+                let s = std::ffi::CStr::from_ptr(utf8 as *const _);
+                eprintln!("[CLX] system_audio: SCShareableContent error: {:?}", s);
+            }
+        }
+    }
+    if !content.is_null() {
+        // Retain so it survives past the completion handler
+        objc_retain(content);
+        CONTENT_RESULT.store(content, Ordering::Release);
+    }
+    let sem = CONTENT_SEM.load(Ordering::Acquire);
+    if !sem.is_null() {
+        dispatch_semaphore_signal(sem);
+    }
+}
+
+// SAFETY: _NSConcreteGlobalBlock is a stable ABI symbol provided by libSystem.
+// These blocks are global (no captures) and live for the entire program lifetime.
+static CONTENT_COMPLETION_BLOCK: GlobalBlock = unsafe {
+    GlobalBlock {
+        isa: &_NSConcreteGlobalBlock as *const *const c_void,
+        flags: 1 << 28,
+        reserved: 0,
+        invoke: shareable_content_completion as *const c_void,
+        descriptor: &BLOCK_DESCRIPTOR,
+    }
+};
+
+// ── SCStream start capture completion ───────────────────────────────────────
+
+static START_SEM: AtomicPtr<c_void> = AtomicPtr::new(null_mut());
+static START_ERROR: AtomicBool = AtomicBool::new(false);
+
+/// Completion handler for `startCaptureWithCompletionHandler:`
+/// Signature: ^(NSError * _Nullable error)
+unsafe extern "C" fn start_capture_completion(
+    _block: *mut GlobalBlock,
+    error: *mut c_void,
+) {
+    if !error.is_null() {
+        START_ERROR.store(true, Ordering::Release);
+        let desc = msg0(error, sel(b"localizedDescription\0"));
+        if !desc.is_null() {
+            let utf8: *const u8 = std::mem::transmute(msg0(desc, sel(b"UTF8String\0")));
+            if !utf8.is_null() {
+                let s = std::ffi::CStr::from_ptr(utf8 as *const _);
+                eprintln!("[CLX] system_audio: startCapture error: {:?}", s);
+            }
+        }
+    } else {
+        START_ERROR.store(false, Ordering::Release);
+    }
+    let sem = START_SEM.load(Ordering::Acquire);
+    if !sem.is_null() {
+        dispatch_semaphore_signal(sem);
+    }
+}
+
+static START_COMPLETION_BLOCK: GlobalBlock = unsafe {
+    GlobalBlock {
+        isa: &_NSConcreteGlobalBlock as *const *const c_void,
+        flags: 1 << 28,
+        reserved: 0,
+        invoke: start_capture_completion as *const c_void,
+        descriptor: &BLOCK_DESCRIPTOR,
+    }
+};
 
 // ── Shared audio buffer ──────────────────────────────────────────────────────
 
@@ -75,9 +206,9 @@ extern "C" fn did_output_sample_buffer(
 
         let mut buf = SYS_AUDIO_BUF.lock().unwrap();
         buf.extend_from_slice(samples);
-        // Cap buffer at 5 seconds of audio (16kHz * 5 = 80000)
-        if buf.len() > 80000 {
-            let excess = buf.len() - 80000;
+        // Cap buffer at 5 seconds of audio (48kHz * 5 = 240000)
+        if buf.len() > 240_000 {
+            let excess = buf.len() - 240_000;
             buf.drain(..excess);
         }
     }
@@ -132,82 +263,182 @@ impl SystemAudioCapture {
                 return Err("ScreenCaptureKit not available (requires macOS 12.3+)".into());
             }
 
-            // Create configuration
+            eprintln!("[CLX] system_audio: ScreenCaptureKit setup starting...");
+
+            // ── Step 1: Get SCShareableContent asynchronously ────────────────
+
+            let sem = dispatch_semaphore_create(0);
+            CONTENT_SEM.store(sem, Ordering::Release);
+            CONTENT_RESULT.store(null_mut(), Ordering::Release);
+
+            let sc_content_cls = cls(b"SCShareableContent\0");
+            if sc_content_cls.is_null() {
+                return Err("SCShareableContent class not found".into());
+            }
+
+            // [SCShareableContent getShareableContentExcludingDesktopWindows:YES
+            //                                          onScreenWindowsOnly:NO
+            //                                            completionHandler:block]
+            let sel_get = sel(b"getShareableContentExcludingDesktopWindows:onScreenWindowsOnly:completionHandler:\0");
+            let f_get: extern "C" fn(*mut c_void, *mut c_void, bool, bool, *const GlobalBlock) =
+                std::mem::transmute(objc_msgSend as *const ());
+            f_get(sc_content_cls, sel_get, true, false, &CONTENT_COMPLETION_BLOCK);
+
+            // Block until the completion handler fires (with a 10s timeout)
+            let timeout_ns: u64 = 10_000_000_000; // 10 seconds
+            extern "C" { fn dispatch_time(when: u64, delta: i64) -> u64; }
+            let deadline = dispatch_time(0, timeout_ns as i64);
+            let wait_result = dispatch_semaphore_wait(sem, deadline);
+
+            if wait_result != 0 {
+                return Err("Timed out waiting for SCShareableContent".into());
+            }
+
+            let content = CONTENT_RESULT.load(Ordering::Acquire);
+            if content.is_null() {
+                return Err("SCShareableContent returned nil (permission denied?)".into());
+            }
+
+            // ── Step 2: Get the first display ────────────────────────────────
+
+            let displays = msg0(content, sel(b"displays\0"));
+            if displays.is_null() {
+                return Err("SCShareableContent.displays is nil".into());
+            }
+            let count = CFArrayGetCount(displays as *mut _);
+            if count <= 0 {
+                return Err("No displays found in SCShareableContent".into());
+            }
+            let first_display = CFArrayGetValueAtIndex(displays as *mut _, 0) as *mut c_void;
+            if first_display.is_null() {
+                return Err("First display is nil".into());
+            }
+
+            eprintln!("[CLX] system_audio: found {} display(s)", count);
+
+            // ── Step 3: Create SCContentFilter ───────────────────────────────
+
+            // Create empty NSArray for excludingApplications and exceptingWindows
+            let nsarray_cls = cls(b"NSArray\0");
+            let empty_array = msg0(nsarray_cls, sel(b"array\0"));
+
+            // [[SCContentFilter alloc] initWithDisplay:excludingApplications:exceptingWindows:]
+            let filter_cls = cls(b"SCContentFilter\0");
+            let filter_alloc = msg0(filter_cls, sel(b"alloc\0"));
+            let sel_init_filter = sel(b"initWithDisplay:excludingApplications:exceptingWindows:\0");
+            let f_init_filter: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
+            let filter = f_init_filter(filter_alloc, sel_init_filter, first_display, empty_array, empty_array);
+            if filter.is_null() {
+                return Err("Failed to create SCContentFilter".into());
+            }
+
+            // ── Step 4: Create SCStreamConfiguration ─────────────────────────
+
             let config = msg0(msg0(sc_config_cls, sel(b"alloc\0")), sel(b"init\0"));
 
             // config.capturesAudio = YES
-            let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
-            f_bool(config, sel(b"setCapturesAudio:\0"), true);
+            let f_set_bool: extern "C" fn(*mut c_void, *mut c_void, bool) =
+                std::mem::transmute(objc_msgSend as *const ());
+            f_set_bool(config, sel(b"setCapturesAudio:\0"), true);
 
             // config.excludesCurrentProcessAudio = YES
-            f_bool(config, sel(b"setExcludesCurrentProcessAudio:\0"), true);
+            f_set_bool(config, sel(b"setExcludesCurrentProcessAudio:\0"), true);
 
-            // config.channelCount = 1
-            let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
-            f_i64(config, sel(b"setChannelCount:\0"), 1);
+            // config.channelCount = 1 (mono)
+            let f_set_i64: extern "C" fn(*mut c_void, *mut c_void, i64) =
+                std::mem::transmute(objc_msgSend as *const ());
+            f_set_i64(config, sel(b"setChannelCount:\0"), 1);
 
-            // config.sampleRate = 48000 (match mic, will be resampled together)
-            f_i64(config, sel(b"setSampleRate:\0"), 48000);
+            // config.sampleRate = 48000
+            f_set_i64(config, sel(b"setSampleRate:\0"), 48000);
 
-            // We need a display filter. Get the main display.
-            // SCShareableContent is async — use a semaphore to wait.
-            extern "C" { fn dispatch_semaphore_create(value: isize) -> *mut c_void; }
-            extern "C" { fn dispatch_semaphore_wait(dsema: *mut c_void, timeout: u64) -> isize; }
-            extern "C" { fn dispatch_semaphore_signal(dsema: *mut c_void) -> isize; }
-            const DISPATCH_TIME_FOREVER: u64 = !0;
+            // Don't capture video — set minimal size to avoid wasting resources
+            f_set_i64(config, sel(b"setWidth:\0"), 2);
+            f_set_i64(config, sel(b"setHeight:\0"), 2);
 
-            let sem = dispatch_semaphore_create(0);
-            let content_ptr: Arc<Mutex<Option<*mut c_void>>> = Arc::new(Mutex::new(None));
-            let content_ptr2 = content_ptr.clone();
+            // config.minimumFrameInterval = very long (we don't want video frames)
+            // CMTime { value=1, timescale=1 } = 1 frame per second (minimum)
+            // Actually just skip video output entirely — we only add audio output below.
 
-            // SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly:false) { ... }
-            // This requires an ObjC block which is complex. Let's use a simpler approach:
-            // Create a content filter for the entire display using CGMainDisplayID.
+            // ── Step 5: Create SCStream ──────────────────────────────────────
 
-            extern "C" { fn CGMainDisplayID() -> u32; }
-            let display_id = CGMainDisplayID();
+            let stream_cls = cls(b"SCStream\0");
+            let stream_alloc = msg0(stream_cls, sel(b"alloc\0"));
+            let sel_init_stream = sel(b"initWithFilter:configuration:delegate:\0");
+            let f_init_stream: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
+            let stream = f_init_stream(stream_alloc, sel_init_stream, filter, config, null_mut());
+            if stream.is_null() {
+                return Err("Failed to create SCStream".into());
+            }
 
-            // SCContentFilter with desktopIndependentWindow doesn't work for audio.
-            // We need SCDisplay — get it from SCShareableContent.
-            // For simplicity, use SCContentFilter initWithDisplay:excludingApplications:exceptingWindows:
-            // But we need an SCDisplay object...
+            // ── Step 6: Create handler and add as stream output ──────────────
 
-            // Alternative: Use the display-based filter with CGDirectDisplayID.
-            // SCContentFilter has initWithDisplay:including/excluding which takes an SCDisplay.
-            // Without async, the easiest approach: get displays synchronously.
-
-            // Actually let's use a simpler approach: use the getShareableContent class method
-            // with a completion handler implemented as an ObjC block.
-            // This is very complex in raw FFI. Let's use a workaround:
-            // Create the stream with a nil filter (audio-only streams might work).
-
-            // Actually on macOS 14+, there's a simpler audio-only API.
-            // For now, let's just note that this is a stub and return an error
-            // if we can't set it up simply.
-
-            eprintln!("[CLX] system_audio: ScreenCaptureKit setup starting...");
-
-            // Use SCContentFilter with display-based capture.
-            // We need to call the async getShareableContent first.
-            // For now, use a simplified approach with the main display.
-
-            // Create handler instance
             let handler_cls = cls(b"CLXAudioOutputHandler\0");
             let handler = msg0(msg0(handler_cls, sel(b"alloc\0")), sel(b"init\0"));
+            if handler.is_null() {
+                return Err("Failed to create CLXAudioOutputHandler".into());
+            }
 
-            // For the actual SCStream creation, we need an SCDisplay from SCShareableContent.
-            // This requires async completion handler (ObjC block).
-            // Let's use a thread-blocking approach with NSRunLoop.
+            // [stream addStreamOutput:handler type:SCStreamOutputTypeAudio
+            //        sampleHandlerQueue:nil error:&error]
+            // SCStreamOutputTypeAudio = 1
+            let sel_add_output = sel(b"addStreamOutput:type:sampleHandlerQueue:error:\0");
+            let mut error: *mut c_void = null_mut();
+            let f_add_output: extern "C" fn(
+                *mut c_void, *mut c_void,
+                *mut c_void, i64, *mut c_void, *mut *mut c_void,
+            ) -> bool = std::mem::transmute(objc_msgSend as *const ());
+            let ok = f_add_output(stream, sel_add_output, handler, 1, null_mut(), &mut error);
+            if !ok || !error.is_null() {
+                let err_msg = if !error.is_null() {
+                    let desc = msg0(error, sel(b"localizedDescription\0"));
+                    if !desc.is_null() {
+                        let utf8: *const u8 = std::mem::transmute(msg0(desc, sel(b"UTF8String\0")));
+                        if !utf8.is_null() {
+                            let s = std::ffi::CStr::from_ptr(utf8 as *const _);
+                            format!("{:?}", s)
+                        } else {
+                            "unknown".into()
+                        }
+                    } else {
+                        "unknown".into()
+                    }
+                } else {
+                    "addStreamOutput returned false".into()
+                };
+                return Err(format!("Failed to add stream output: {}", err_msg));
+            }
 
-            // TODO: Full ScreenCaptureKit integration with async getShareableContent.
-            // For now, return the handler — system audio will be silent until
-            // we implement the full async flow.
-            eprintln!("[CLX] system_audio: stub — full ScreenCaptureKit async flow TODO");
+            // ── Step 7: Start capture ────────────────────────────────────────
+
+            let start_sem = dispatch_semaphore_create(0);
+            START_SEM.store(start_sem, Ordering::Release);
+            START_ERROR.store(false, Ordering::Release);
+
+            // [stream startCaptureWithCompletionHandler:block]
+            let sel_start = sel(b"startCaptureWithCompletionHandler:\0");
+            let f_start: extern "C" fn(*mut c_void, *mut c_void, *const GlobalBlock) =
+                std::mem::transmute(objc_msgSend as *const ());
+            f_start(stream, sel_start, &START_COMPLETION_BLOCK);
+
+            let deadline = dispatch_time(0, 10_000_000_000); // 10s
+            let wait_result = dispatch_semaphore_wait(start_sem, deadline);
+
+            if wait_result != 0 {
+                return Err("Timed out waiting for startCapture".into());
+            }
+            if START_ERROR.load(Ordering::Acquire) {
+                return Err("startCapture failed (check stderr for details)".into());
+            }
 
             SYS_AUDIO_ACTIVE.store(true, Ordering::Relaxed);
 
+            eprintln!("[CLX] system_audio: ScreenCaptureKit stream started (48kHz mono)");
+
             Ok(Self {
-                stream: std::ptr::null_mut(), // TODO: actual SCStream
+                stream,
                 handler,
             })
         }
