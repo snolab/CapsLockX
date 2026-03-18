@@ -80,9 +80,10 @@ const SPEECH_END_PROB: f32 = 0.3;
 const SPEECH_START_FRAMES: usize = 2;
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
 const SILENCE_END_FRAMES: usize = 15;
-/// Streaming chunk size: emit partial transcription every ~3s of continuous speech
-/// so text appears incrementally like an IME, not dumped all at once.
-const STREAMING_CHUNK_SAMPLES: usize = 48_000; // 3s at 16kHz
+/// Streaming chunk size: emit partial transcription frequently for IME-like feel.
+/// With base model: 1s audio → ~180ms inference → text in ~1.2s
+/// With small model: 1s audio → ~575ms inference → text in ~1.6s
+const STREAMING_CHUNK_SAMPLES: usize = 16_000; // 1s at 16kHz
 /// Maximum chunk duration in samples at 16kHz (25 seconds).
 const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
@@ -327,6 +328,10 @@ fn voice_bg_persistent(
 
         platform.show_voice_overlay();
 
+        // Rolling audio buffer for continuous transcription.
+        let mut speech_buf: Vec<f32> = Vec::new();
+        let mut last_transcribed_len: usize = 0;
+
         // Record loop until bg_stop is set.
         while !bg_stop.load(Ordering::Relaxed) {
             std::thread::sleep(std::time::Duration::from_millis(50));
@@ -342,7 +347,6 @@ fn voice_bg_persistent(
                 if sys_samples.is_empty() {
                     samples
                 } else {
-                    // Mix: same length, add sample-by-sample, clamp.
                     let max_len = samples.len().max(sys_samples.len());
                     (0..max_len)
                         .map(|i| {
@@ -369,19 +373,48 @@ fn voice_bg_persistent(
                 .collect();
             platform.update_voice_overlay(&rms_levels, vad.in_speech);
 
-            // Feed 16kHz samples to Silero VAD.
-            let chunks = vad.feed(&samples_16k);
-            for chunk in chunks {
-                // Chunks are already 16kHz — no resampling needed in transcribe_and_type.
-                transcribe_and_type(&chunk, 16000, server_url, &platform, &mut local_whisper);
+            // Feed to VAD for speech detection.
+            let was_in_speech = vad.in_speech;
+            let _chunks = vad.feed(&samples_16k);
+            // We don't use VAD chunks directly — instead we use the rolling buffer.
+
+            if vad.in_speech {
+                speech_buf.extend_from_slice(&samples_16k);
+
+                // Transcribe every STREAMING_CHUNK_SAMPLES of new speech.
+                let new_samples = speech_buf.len() - last_transcribed_len;
+                if new_samples >= STREAMING_CHUNK_SAMPLES {
+                    // Transcribe the entire buffer for context, but only type the new part.
+                    transcribe_and_type(
+                        &speech_buf, 16000, server_url, &platform, &mut local_whisper,
+                    );
+                    last_transcribed_len = speech_buf.len();
+                }
+            } else if was_in_speech {
+                // Speech just ended — flush remaining.
+                if speech_buf.len() > last_transcribed_len + 4800 {
+                    transcribe_and_type(
+                        &speech_buf[last_transcribed_len..], 16000, server_url, &platform, &mut local_whisper,
+                    );
+                }
+                // Reset for next utterance.
+                speech_buf.clear();
+                last_transcribed_len = 0;
+            }
+
+            // Cap buffer at 25s to prevent unbounded growth.
+            if speech_buf.len() > VAD_MAX_CHUNK_SAMPLES {
+                let excess = speech_buf.len() - STREAMING_CHUNK_SAMPLES;
+                speech_buf.drain(..excess);
+                last_transcribed_len = last_transcribed_len.saturating_sub(excess);
             }
         }
 
         // Flush remaining speech.
-        if let Some(chunk) = vad.flush() {
-            if chunk.len() > TEN_VAD_FRAME_SIZE * SPEECH_START_FRAMES {
-                transcribe_and_type(&chunk, 16000, server_url, &platform, &mut local_whisper);
-            }
+        if speech_buf.len() > last_transcribed_len + 4800 {
+            transcribe_and_type(
+                &speech_buf[last_transcribed_len..], 16000, server_url, &platform, &mut local_whisper,
+            );
         }
 
         platform.hide_voice_overlay();
