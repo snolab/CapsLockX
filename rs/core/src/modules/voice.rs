@@ -402,6 +402,8 @@ fn voice_bg_persistent(
             }
         }
 
+        let mut mp3_pcm_buf: Vec<i16> = Vec::new(); // accumulate PCM for MP3 frame encoding
+
         // Committed text: confirmed transcriptions that won't change.
         let mut committed_text = String::new();
         // Pending audio: only the uncommitted tail gets re-transcribed.
@@ -474,15 +476,19 @@ fn voice_bg_persistent(
             // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
 
-            // Stream audio to MP3 file in real-time.
-            if let (Some(ref mut enc), Some(ref mut file)) = (&mut mp3_encoder, &mut mp3_file) {
-                let pcm: Vec<i16> = samples_16k.iter()
-                    .map(|&s| (s.clamp(-1.0, 1.0) * 32767.0) as i16)
-                    .collect();
-                let mut mp3_buf = Vec::new();
-                if enc.encode_to_vec(mp3lame_encoder::MonoPcm(&pcm), &mut mp3_buf).is_ok() {
-                    use std::io::Write;
-                    let _ = file.write_all(&mp3_buf);
+            // Accumulate samples for MP3 encoding in proper frame batches.
+            if mp3_encoder.is_some() {
+                mp3_pcm_buf.extend(samples_16k.iter().map(|&s| (s.clamp(-1.0, 1.0) * 32767.0) as i16));
+                // Encode in 1152-sample frames (MP3 standard frame size).
+                while mp3_pcm_buf.len() >= 1152 {
+                    let frame: Vec<i16> = mp3_pcm_buf.drain(..1152).collect();
+                    if let (Some(ref mut enc), Some(ref mut file)) = (&mut mp3_encoder, &mut mp3_file) {
+                        let mut mp3_buf = Vec::with_capacity(2048);
+                        if let Ok(_) = enc.encode_to_vec(mp3lame_encoder::MonoPcm(&frame), &mut mp3_buf) {
+                            use std::io::Write;
+                            let _ = file.write_all(&mp3_buf);
+                        }
+                    }
                 }
             }
 
@@ -624,9 +630,18 @@ fn voice_bg_persistent(
 
         // Flush MP3 encoder and save SRT.
         if let (Some(mut enc), Some(mut file)) = (mp3_encoder.take(), mp3_file.take()) {
-            let mut tail = Vec::new();
+            use std::io::Write;
+            // Encode remaining PCM samples (pad to 1152 if needed).
+            if !mp3_pcm_buf.is_empty() {
+                mp3_pcm_buf.resize(1152, 0);
+                let mut mp3_buf = Vec::with_capacity(2048);
+                if enc.encode_to_vec(mp3lame_encoder::MonoPcm(&mp3_pcm_buf), &mut mp3_buf).is_ok() {
+                    let _ = file.write_all(&mp3_buf);
+                }
+            }
+            // Flush encoder.
+            let mut tail = Vec::with_capacity(7200);
             if enc.flush_to_vec::<mp3lame_encoder::FlushNoGap>(&mut tail).is_ok() {
-                use std::io::Write;
                 let _ = file.write_all(&tail);
             }
             eprintln!("[CLX] voice: MP3 recording saved");
