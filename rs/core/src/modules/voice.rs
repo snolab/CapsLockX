@@ -330,7 +330,9 @@ fn voice_bg_persistent(
 
         // Rolling audio buffer for continuous transcription.
         let mut speech_buf: Vec<f32> = Vec::new();
-        let mut last_transcribed_len: usize = 0;
+        let mut last_audio_len: usize = 0;
+        // Track what was already typed to only emit the diff.
+        let mut typed_text = String::new();
 
         // Record loop until bg_stop is set.
         while !bg_stop.load(Ordering::Relaxed) {
@@ -376,45 +378,66 @@ fn voice_bg_persistent(
             // Feed to VAD for speech detection.
             let was_in_speech = vad.in_speech;
             let _chunks = vad.feed(&samples_16k);
-            // We don't use VAD chunks directly — instead we use the rolling buffer.
 
             if vad.in_speech {
                 speech_buf.extend_from_slice(&samples_16k);
 
-                // Transcribe every STREAMING_CHUNK_SAMPLES of new speech.
-                let new_samples = speech_buf.len() - last_transcribed_len;
+                // Transcribe every STREAMING_CHUNK_SAMPLES of new audio.
+                let new_samples = speech_buf.len() - last_audio_len;
                 if new_samples >= STREAMING_CHUNK_SAMPLES {
-                    // Transcribe the entire buffer for context, but only type the new part.
-                    transcribe_and_type(
-                        &speech_buf, 16000, server_url, &platform, &mut local_whisper,
+                    // Transcribe the full buffer for context.
+                    let new_text = transcribe_local(
+                        &speech_buf, &mut local_whisper,
                     );
-                    last_transcribed_len = speech_buf.len();
+                    if !new_text.is_empty() {
+                        // Diff: find what's new compared to what we already typed.
+                        type_diff(&typed_text, &new_text, &platform);
+                        typed_text = new_text;
+                    }
+                    last_audio_len = speech_buf.len();
                 }
             } else if was_in_speech {
-                // Speech just ended — flush remaining.
-                if speech_buf.len() > last_transcribed_len + 4800 {
-                    transcribe_and_type(
-                        &speech_buf[last_transcribed_len..], 16000, server_url, &platform, &mut local_whisper,
-                    );
+                // Speech just ended — flush remaining and send to server.
+                if speech_buf.len() > 4800 {
+                    // Final local transcription of full utterance.
+                    let new_text = transcribe_local(&speech_buf, &mut local_whisper);
+                    if !new_text.is_empty() {
+                        type_diff(&typed_text, &new_text, &platform);
+                        typed_text = new_text.clone();
+                    }
+
+                    // Send to server for polished version (async replacement).
+                    let polished = send_chunk_to_server(&speech_buf, 16000, server_url);
+                    if !polished.is_empty() && polished != typed_text {
+                        // Delete what we typed and replace with polished.
+                        let chars_to_delete = typed_text.chars().count();
+                        for _ in 0..chars_to_delete {
+                            platform.key_tap(KeyCode::Backspace);
+                        }
+                        platform.type_text(&polished);
+                        typed_text = polished;
+                    }
                 }
                 // Reset for next utterance.
                 speech_buf.clear();
-                last_transcribed_len = 0;
+                last_audio_len = 0;
+                typed_text.clear();
             }
 
             // Cap buffer at 25s to prevent unbounded growth.
             if speech_buf.len() > VAD_MAX_CHUNK_SAMPLES {
                 let excess = speech_buf.len() - STREAMING_CHUNK_SAMPLES;
                 speech_buf.drain(..excess);
-                last_transcribed_len = last_transcribed_len.saturating_sub(excess);
+                last_audio_len = last_audio_len.saturating_sub(excess);
             }
         }
 
         // Flush remaining speech.
-        if speech_buf.len() > last_transcribed_len + 4800 {
-            transcribe_and_type(
-                &speech_buf[last_transcribed_len..], 16000, server_url, &platform, &mut local_whisper,
-            );
+        if speech_buf.len() > 4800 {
+            let new_text = transcribe_local(&speech_buf, &mut local_whisper);
+            if !new_text.is_empty() {
+                type_diff(&typed_text, &new_text, &platform);
+            }
         }
 
         platform.hide_voice_overlay();
@@ -425,6 +448,64 @@ fn voice_bg_persistent(
     }
 
     eprintln!("[CLX] voice: bg thread exiting");
+}
+
+// ── Streaming diff helpers ────────────────────────────────────────────────────
+
+/// Transcribe audio locally (Whisper only, no server). Returns text or empty.
+fn transcribe_local(samples: &[f32], local_whisper: &mut Option<LocalWhisper>) -> String {
+    let samples = if samples.len() < 16000 {
+        let mut padded = samples.to_vec();
+        padded.resize(16000, 0.0);
+        padded
+    } else {
+        samples.to_vec()
+    };
+
+    if let Some(ref mut whisper) = local_whisper {
+        match whisper.transcribe(&samples) {
+            Ok(text) => {
+                // Auto-scale check.
+                let mut swap: Option<LocalWhisper> = None;
+                whisper.check_pending_upgrade(&mut swap);
+                if let Some(new_model) = swap {
+                    *local_whisper = Some(new_model);
+                }
+                text
+            }
+            Err(e) => {
+                eprintln!("[CLX] voice: local Whisper error: {e}");
+                String::new()
+            }
+        }
+    } else {
+        String::new()
+    }
+}
+
+/// Type only the difference between old and new text.
+/// Finds the longest common prefix, deletes the diverging suffix of old,
+/// then types the new suffix.
+fn type_diff(old: &str, new: &str, platform: &Arc<dyn Platform>) {
+    // Find common prefix length (in chars).
+    let common_chars = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
+    let old_chars = old.chars().count();
+    let new_chars: Vec<char> = new.chars().collect();
+
+    // Delete the diverging tail of old text.
+    let to_delete = old_chars - common_chars;
+    if to_delete > 0 {
+        for _ in 0..to_delete {
+            platform.key_tap(KeyCode::Backspace);
+        }
+    }
+
+    // Type the new suffix.
+    let suffix: String = new_chars[common_chars..].iter().collect();
+    if !suffix.is_empty() {
+        eprintln!("[CLX] voice: +{:?} (-{} chars)", suffix, to_delete);
+        platform.type_text(&suffix);
+    }
 }
 
 // ── Resampling ───────────────────────────────────────────────────────────────
