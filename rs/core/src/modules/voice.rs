@@ -407,8 +407,8 @@ fn voice_bg_persistent(
 
         // These are the mic track variables used by the existing pipeline code below.
         // Named without mic_ prefix for backward compatibility.
-        #[allow(unused_variables)]
-        let _mic_track_marker = ();
+        // Echo cancellation: auto-calibrated ratio of mic bleed from speakers.
+        let mut echo_ratio: f32 = 0.5; // initial guess, auto-calibrates during playback
 
         // Session log.
         let voice_log = std::path::PathBuf::from("/tmp/clx-voice.log");
@@ -454,15 +454,47 @@ fn voice_bg_persistent(
             }
 
             // Resample both streams to 16kHz.
-            let mic_16k = resample(&samples, sample_rate, 16000);
+            let mic_16k_raw = resample(&samples, sample_rate, 16000);
             let sys_16k = if !sys_samples.is_empty() {
                 resample(&sys_samples, 48000, 16000)
             } else {
                 Vec::new()
             };
 
-            // For VAD + transcription, use mic audio.
-            // System audio gets its own processing below (TODO: separate sys VAD + Whisper).
+            // Auto-calibrating echo cancellation: subtract system audio from mic.
+            // Measures the actual bleed ratio when only system audio is playing
+            // (sys VAD active, mic VAD not active = pure speaker bleed on mic).
+            let mic_16k = if !sys_16k.is_empty() {
+                // Update echo ratio when we can measure pure bleed.
+                let sys_is_speech = sys_vad.as_ref().map(|v| v.in_speech).unwrap_or(false);
+                if sys_is_speech && !vad.in_speech {
+                    // Pure bleed: mic is only hearing the speakers.
+                    let mic_rms: f32 = (mic_16k_raw.iter().map(|s| s*s).sum::<f32>() / mic_16k_raw.len().max(1) as f32).sqrt();
+                    let sys_rms: f32 = (sys_16k.iter().map(|s| s*s).sum::<f32>() / sys_16k.len().max(1) as f32).sqrt();
+                    if sys_rms > 0.001 {
+                        let measured = mic_rms / sys_rms;
+                        // Exponential moving average for smooth adaptation.
+                        echo_ratio = echo_ratio * 0.9 + measured * 0.1;
+                        static ECHO_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                        let c = ECHO_LOG.fetch_add(1, Ordering::Relaxed);
+                        if c < 5 || c % 50 == 0 {
+                            eprintln!("[CLX] voice: echo ratio calibrated: {:.3} (mic_rms={:.4}, sys_rms={:.4})", echo_ratio, mic_rms, sys_rms);
+                        }
+                    }
+                }
+
+                let max_len = mic_16k_raw.len().max(sys_16k.len());
+                (0..max_len)
+                    .map(|i| {
+                        let m = mic_16k_raw.get(i).copied().unwrap_or(0.0);
+                        let s = sys_16k.get(i).copied().unwrap_or(0.0);
+                        (m - s * echo_ratio).clamp(-1.0, 1.0)
+                    })
+                    .collect::<Vec<f32>>()
+            } else {
+                mic_16k_raw
+            };
+
             let samples_16k = &mic_16k;
 
             // Lazily start ffmpeg — stereo if system audio present, mono otherwise.
@@ -569,7 +601,7 @@ fn voice_bg_persistent(
                             let mut parts = Vec::new();
                             if !mic_text.is_empty() { parts.push(format!("🎤 {}", mic_text)); }
                             if !sys_text.is_empty() { parts.push(format!("🔊 {}", sys_text)); }
-                            parts.join(" ")
+                            parts.join("\n")
                         } else {
                             mic_text.clone()
                         };
