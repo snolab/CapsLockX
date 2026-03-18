@@ -187,18 +187,66 @@ fn main() {
         let s = AudioOutputUnitStart(unit);
         eprintln!("[test-vpio] Started: status={s}\n");
 
-        // Monitor loop
+        // Load Whisper for transcription test
+        eprintln!("[test-vpio] Loading Whisper...");
+        let mut whisper = capslockx_core::local_whisper::LocalWhisper::new()
+            .expect("whisper failed");
+        eprintln!("[test-vpio] Whisper ready. Transcribing every 3s...\n");
+
+        let mut accum: Vec<f32> = Vec::new();
+        let mut iter = 0u32;
+
         loop {
             std::thread::sleep(std::time::Duration::from_millis(100));
             let samples = {
                 let mut buf = buffer.lock().unwrap();
                 std::mem::take(&mut *buf)
             };
-            if samples.is_empty() { eprint!("\r[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] rms=0.0000 n=0    "); continue; }
-            let rms: f32 = (samples.iter().map(|s| s * s).sum::<f32>() / samples.len() as f32).sqrt();
-            let bar_len = (rms * 200.0).min(30.0) as usize;
+            if samples.is_empty() { continue; }
+
+            // Apply 30x gain (VPIO output is very quiet after AEC)
+            let amplified: Vec<f32> = samples.iter()
+                .map(|&s| (s * 30.0).clamp(-1.0, 1.0))
+                .collect();
+
+            let rms: f32 = (amplified.iter().map(|s| s * s).sum::<f32>() / amplified.len() as f32).sqrt();
+            let bar_len = (rms * 30.0).min(30.0) as usize;
             let bar = "█".repeat(bar_len) + &"░".repeat(30 - bar_len);
-            eprint!("\r[{bar}] rms={rms:.4} n={}   ", samples.len());
+            eprint!("\r[{bar}] rms={rms:.4} n={}   ", amplified.len());
+
+            // Resample 48kHz → 16kHz for Whisper
+            let ratio = 48000.0 / 16000.0;
+            let out_len = (amplified.len() as f64 / ratio) as usize;
+            let resampled: Vec<f32> = (0..out_len).map(|i| {
+                let src = i as f64 * ratio;
+                let idx = src as usize;
+                let frac = (src - idx as f64) as f32;
+                let s0 = amplified.get(idx).copied().unwrap_or(0.0);
+                let s1 = amplified.get(idx + 1).copied().unwrap_or(s0);
+                s0 + (s1 - s0) * frac
+            }).collect();
+
+            accum.extend_from_slice(&resampled);
+
+            // Transcribe every 3s (48000 samples at 16kHz)
+            if accum.len() >= 48000 {
+                iter += 1;
+                let mut padded = accum.clone();
+                if padded.len() < 16000 { padded.resize(16000, 0.0); }
+
+                match whisper.transcribe(&padded) {
+                    Ok(text) if !text.is_empty() => {
+                        eprintln!("\n[iter {}] 🎤 VPIO: \"{}\"", iter, text);
+                    }
+                    Ok(_) => {
+                        eprintln!("\n[iter {}] 🎤 VPIO: (empty/noise)", iter);
+                    }
+                    Err(e) => {
+                        eprintln!("\n[iter {}] 🎤 VPIO error: {}", iter, e);
+                    }
+                }
+                accum.clear();
+            }
         }
     }
 }
