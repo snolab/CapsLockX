@@ -412,8 +412,10 @@ fn voice_bg_persistent(
 
         // These are the mic track variables used by the existing pipeline code below.
         // Named without mic_ prefix for backward compatibility.
-        // Echo cancellation: auto-calibrated ratio of mic bleed from speakers.
-        let mut echo_ratio: f32 = 0.5; // initial guess, auto-calibrates during playback
+        // NLMS adaptive echo canceller: 300ms filter at 16kHz = 4800 taps.
+        let mut nlms = NlmsEchoCancel::new(4800, 0.3);
+        // Legacy echo ratio (unused with NLMS, kept for reference).
+        let mut echo_ratio: f32 = 0.5;
 
         // Session log.
         let voice_log = std::path::PathBuf::from("/tmp/clx-voice.log");
@@ -467,36 +469,10 @@ fn voice_bg_persistent(
                 Vec::new()
             };
 
-            // Auto-calibrating echo cancellation: subtract system audio from mic.
-            // Measures the actual bleed ratio when only system audio is playing
-            // (sys VAD active, mic VAD not active = pure speaker bleed on mic).
+            // NLMS adaptive echo cancellation: learns the acoustic path from
+            // system audio → mic and subtracts predicted echo. Cross-platform.
             let mic_16k = if !sys_16k.is_empty() {
-                // Update echo ratio when we can measure pure bleed.
-                let sys_is_speech = sys_vad.as_ref().map(|v| v.in_speech).unwrap_or(false);
-                if sys_is_speech && !vad.in_speech {
-                    // Pure bleed: mic is only hearing the speakers.
-                    let mic_rms: f32 = (mic_16k_raw.iter().map(|s| s*s).sum::<f32>() / mic_16k_raw.len().max(1) as f32).sqrt();
-                    let sys_rms: f32 = (sys_16k.iter().map(|s| s*s).sum::<f32>() / sys_16k.len().max(1) as f32).sqrt();
-                    if sys_rms > 0.001 {
-                        let measured = mic_rms / sys_rms;
-                        // Exponential moving average for smooth adaptation.
-                        echo_ratio = echo_ratio * 0.9 + measured * 0.1;
-                        static ECHO_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-                        let c = ECHO_LOG.fetch_add(1, Ordering::Relaxed);
-                        if c < 5 || c % 50 == 0 {
-                            eprintln!("[CLX] voice: echo ratio calibrated: {:.3} (mic_rms={:.4}, sys_rms={:.4})", echo_ratio, mic_rms, sys_rms);
-                        }
-                    }
-                }
-
-                let max_len = mic_16k_raw.len().max(sys_16k.len());
-                (0..max_len)
-                    .map(|i| {
-                        let m = mic_16k_raw.get(i).copied().unwrap_or(0.0);
-                        let s = sys_16k.get(i).copied().unwrap_or(0.0);
-                        (m - s * echo_ratio).clamp(-1.0, 1.0)
-                    })
-                    .collect::<Vec<f32>>()
+                nlms.process_buf(&mic_16k_raw, &sys_16k)
             } else {
                 mic_16k_raw
             };
@@ -963,6 +939,66 @@ fn type_replace(old: &str, new: &str, platform: &Arc<dyn Platform>) {
         platform.type_text(new);
     }
     eprintln!("[CLX] voice: replace {:?} → {:?}", old, new);
+}
+
+// ── NLMS Adaptive Echo Canceller ─────────────────────────────────────────────
+/// Cross-platform echo cancellation using Normalized Least Mean Squares filter.
+/// Given the system audio (reference) and mic audio, adaptively learns the
+/// acoustic path and subtracts the predicted echo from the mic signal.
+struct NlmsEchoCancel {
+    w: Vec<f32>,       // adaptive filter coefficients
+    x_buf: Vec<f32>,   // reference signal ring buffer
+    mu: f32,           // step size (learning rate)
+    pos: usize,        // ring buffer position
+}
+
+impl NlmsEchoCancel {
+    fn new(filter_len: usize, mu: f32) -> Self {
+        Self {
+            w: vec![0.0; filter_len],
+            x_buf: vec![0.0; filter_len],
+            mu,
+            pos: 0,
+        }
+    }
+
+    /// Process one sample: returns echo-cancelled mic sample.
+    /// `mic` = microphone input, `ref_sample` = system audio (what speakers play).
+    fn process(&mut self, mic: f32, ref_sample: f32) -> f32 {
+        let n = self.w.len();
+
+        // Insert reference sample into ring buffer.
+        self.x_buf[self.pos] = ref_sample;
+
+        // Predict echo: y_hat = sum(w[i] * x_buf[(pos-i) mod n])
+        let mut y_hat: f32 = 0.0;
+        for i in 0..n {
+            let idx = (self.pos + n - i) % n;
+            y_hat += self.w[i] * self.x_buf[idx];
+        }
+
+        // Error = mic - predicted echo (this is the cleaned signal).
+        let error = mic - y_hat;
+
+        // Compute reference signal power for normalization.
+        let power: f32 = self.x_buf.iter().map(|x| x * x).sum::<f32>() + 1e-8;
+
+        // Update filter coefficients: w += mu * error * x / power
+        let step = self.mu * error / power;
+        for i in 0..n {
+            let idx = (self.pos + n - i) % n;
+            self.w[i] += step * self.x_buf[idx];
+        }
+
+        self.pos = (self.pos + 1) % n;
+        error
+    }
+
+    /// Process a buffer of samples.
+    fn process_buf(&mut self, mic: &[f32], reference: &[f32]) -> Vec<f32> {
+        let len = mic.len().min(reference.len());
+        (0..len).map(|i| self.process(mic[i], reference[i])).collect()
+    }
 }
 
 // ── Resampling ───────────────────────────────────────────────────────────────
