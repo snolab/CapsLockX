@@ -402,27 +402,15 @@ fn voice_bg_persistent(
             std::thread::sleep(std::time::Duration::from_millis(50));
             let samples = ac.take_samples();
             if samples.is_empty() {
-                platform.update_voice_overlay(&[], vad.in_speech);
+                platform.update_voice_overlay(&[], vad.in_speech, &[], false);
                 continue;
             }
 
-            // Mix in system audio if available.
-            let samples = if let Some(ref sys) = sys_capture {
-                let sys_samples = sys.take_samples();
-                if sys_samples.is_empty() {
-                    samples
-                } else {
-                    let max_len = samples.len().max(sys_samples.len());
-                    (0..max_len)
-                        .map(|i| {
-                            let m = samples.get(i).copied().unwrap_or(0.0);
-                            let s = sys_samples.get(i).copied().unwrap_or(0.0);
-                            (m + s).clamp(-1.0, 1.0)
-                        })
-                        .collect()
-                }
+            // Get system audio samples separately (don't mix).
+            let sys_samples = if let Some(ref sys) = sys_capture {
+                sys.take_samples()
             } else {
-                samples
+                Vec::new()
             };
 
             // Check flush signal: discard ALL buffered audio when input mode starts fresh.
@@ -448,17 +436,28 @@ fn voice_bg_persistent(
                 eprintln!("[CLX] voice: flushed ALL buffers for fresh input session");
             }
 
-            // Resample to 16kHz BEFORE VAD.
-            let samples_16k = resample(&samples, sample_rate, 16000);
+            // Resample both streams to 16kHz.
+            let mic_16k = resample(&samples, sample_rate, 16000);
+            let sys_16k = if !sys_samples.is_empty() {
+                resample(&sys_samples, 48000, 16000)
+            } else {
+                Vec::new()
+            };
 
-            // Lazily start ffmpeg when note mode activates.
+            // For VAD + transcription, use mic audio.
+            // System audio gets its own processing below (TODO: separate sys VAD + Whisper).
+            let samples_16k = &mic_16k;
+
+            // Lazily start ffmpeg — stereo if system audio present, mono otherwise.
             if note_active.load(Ordering::Relaxed) && ffmpeg_stdin.is_none() && ffmpeg_child.is_none() {
                 if let Some(ref dir) = note_dir {
                     let webm_path = dir.join(format!("{}.webm", session_ts));
+                    let channels = if sys_capture.is_some() { "2" } else { "1" };
+                    let bitrate = if sys_capture.is_some() { "64k" } else { "48k" };
                     match std::process::Command::new("ffmpeg")
                         .args([
-                            "-y", "-f", "s16le", "-ar", "16000", "-ac", "1",
-                            "-i", "pipe:0", "-c:a", "libopus", "-b:a", "48k",
+                            "-y", "-f", "s16le", "-ar", "16000", "-ac", channels,
+                            "-i", "pipe:0", "-c:a", "libopus", "-b:a", bitrate,
                             "-f", "webm", webm_path.to_str().unwrap_or("out.webm"),
                         ])
                         .stdin(std::process::Stdio::piped())
@@ -469,35 +468,51 @@ fn voice_bg_persistent(
                         Ok(mut child) => {
                             ffmpeg_stdin = child.stdin.take();
                             ffmpeg_child = Some(child);
-                            eprintln!("[CLX] voice: streaming WebM to {}", webm_path.display());
+                            eprintln!("[CLX] voice: streaming WebM to {} ({}ch)", webm_path.display(), channels);
                         }
                         Err(e) => eprintln!("[CLX] voice: ffmpeg spawn failed: {e}"),
                     }
                 }
             }
 
-            // Pipe raw PCM to ffmpeg for streaming WebM encoding.
+            // Pipe PCM to ffmpeg — stereo interleaved (mic=L, sys=R) or mono.
             if let Some(ref mut stdin) = ffmpeg_stdin {
                 use std::io::Write;
-                let pcm_bytes: Vec<u8> = samples_16k.iter()
-                    .flat_map(|&s| ((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes())
-                    .collect();
+                let pcm_bytes: Vec<u8> = if sys_capture.is_some() {
+                    // Stereo: interleave mic (left) and system (right).
+                    let max_len = mic_16k.len().max(sys_16k.len());
+                    (0..max_len).flat_map(|i| {
+                        let m = (mic_16k.get(i).copied().unwrap_or(0.0).clamp(-1.0, 1.0) * 32767.0) as i16;
+                        let s = (sys_16k.get(i).copied().unwrap_or(0.0).clamp(-1.0, 1.0) * 32767.0) as i16;
+                        let mut bytes = [0u8; 4];
+                        bytes[0..2].copy_from_slice(&m.to_le_bytes());
+                        bytes[2..4].copy_from_slice(&s.to_le_bytes());
+                        bytes
+                    }).collect()
+                } else {
+                    // Mono: mic only.
+                    mic_16k.iter()
+                        .flat_map(|&s| ((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes())
+                        .collect()
+                };
                 if stdin.write_all(&pcm_bytes).is_err() {
-                    // ffmpeg died — close stdin.
                     ffmpeg_stdin = None;
                     eprintln!("[CLX] voice: ffmpeg pipe broken");
                 }
             }
 
-            // Compute RMS levels for the overlay.
-            let rms_levels: Vec<f32> = samples_16k
-                .chunks(TEN_VAD_FRAME_SIZE.max(1))
-                .map(|frame| {
-                    let sum_sq: f32 = frame.iter().map(|s| s * s).sum();
-                    (sum_sq / frame.len() as f32).sqrt()
-                })
+            // Compute RMS levels for overlay (dual waveforms).
+            let mic_rms: Vec<f32> = mic_16k.chunks(TEN_VAD_FRAME_SIZE.max(1))
+                .map(|f| { let s: f32 = f.iter().map(|x| x*x).sum(); (s / f.len() as f32).sqrt() })
                 .collect();
-            platform.update_voice_overlay(&rms_levels, vad.in_speech);
+            let sys_rms: Vec<f32> = if !sys_16k.is_empty() {
+                sys_16k.chunks(TEN_VAD_FRAME_SIZE.max(1))
+                    .map(|f| { let s: f32 = f.iter().map(|x| x*x).sum(); (s / f.len() as f32).sqrt() })
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            platform.update_voice_overlay(&mic_rms, vad.in_speech, &sys_rms, false);
 
             // Feed to VAD for speech detection.
             let was_in_speech = vad.in_speech;

@@ -11,14 +11,18 @@ use std::sync::atomic::{AtomicPtr, Ordering};
 // ── Global shared waveform state ─────────────────────────────────────────────
 
 struct WaveformData {
-    levels: Vec<f32>,
-    vad_active: bool,
+    mic_levels: Vec<f32>,
+    sys_levels: Vec<f32>,
+    mic_vad: bool,
+    sys_vad: bool,
     subtitle: String,
 }
 
 static WAVEFORM_DATA: Mutex<WaveformData> = Mutex::new(WaveformData {
-    levels: Vec::new(),
-    vad_active: false,
+    mic_levels: Vec::new(),
+    sys_levels: Vec::new(),
+    mic_vad: false,
+    sys_vad: false,
     subtitle: String::new(),
 });
 
@@ -102,53 +106,62 @@ extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
         let bounds = NSRect { x: 0.0, y: 0.0, w: 400.0, h: 80.0 };
 
         let (w, h) = (bounds.w, bounds.h);
-        let (levels, vad) = {
+        let (mic_levels, sys_levels, mic_vad, sys_vad) = {
             let g = WAVEFORM_DATA.lock().unwrap();
-            (g.levels.clone(), g.vad_active)
+            (g.mic_levels.clone(), g.sys_levels.clone(), g.mic_vad, g.sys_vad)
         };
 
         CGContextSaveGState(cg);
 
-        // No background here — the window itself has the semi-transparent bg.
-
-        // Waveform
-        let mid = h / 2.0;
-        let mx = 16.0;
+        let mx = 8.0;
         let uw = w - 2.0 * mx;
-        let max_amp = mid - 8.0;
 
-        if vad {
+        // Draw a waveform helper
+        fn draw_wave(cg: *mut c_void, levels: &[f32], mid_y: f64, max_amp: f64, mx: f64, uw: f64, w: f64) {
+            unsafe {
+                if levels.is_empty() {
+                    CGContextMoveToPoint(cg, mx, mid_y);
+                    CGContextAddLineToPoint(cg, w - mx, mid_y);
+                    CGContextStrokePath(cg);
+                } else {
+                    let n = levels.len();
+                    let step = if n > 1 { uw / (n - 1) as f64 } else { uw };
+                    CGContextMoveToPoint(cg, mx, mid_y);
+                    for (i, &l) in levels.iter().enumerate() {
+                        let x = mx + i as f64 * step;
+                        CGContextAddLineToPoint(cg, x, mid_y + l.clamp(0.0, 1.0) as f64 * max_amp);
+                    }
+                    CGContextStrokePath(cg);
+                    CGContextMoveToPoint(cg, mx, mid_y);
+                    for (i, &l) in levels.iter().enumerate() {
+                        let x = mx + i as f64 * step;
+                        CGContextAddLineToPoint(cg, x, mid_y - l.clamp(0.0, 1.0) as f64 * max_amp);
+                    }
+                    CGContextStrokePath(cg);
+                }
+            }
+        }
+
+        // Mic waveform — top half, green
+        let mic_mid = h * 0.75;
+        let amp = h / 4.0 - 2.0;
+        if mic_vad {
             CGContextSetRGBStrokeColor(cg, 0.29, 0.87, 0.5, 0.9); // green
         } else {
-            CGContextSetRGBStrokeColor(cg, 0.42, 0.44, 0.49, 0.7); // gray
+            CGContextSetRGBStrokeColor(cg, 0.42, 0.44, 0.49, 0.5);
         }
-        CGContextSetLineWidth(cg, 2.0);
-        CGContextSetLineCap(cg, 1); // round
+        CGContextSetLineWidth(cg, 1.5);
+        CGContextSetLineCap(cg, 1);
+        draw_wave(cg, &mic_levels, mic_mid, amp, mx, uw, w);
 
-        if levels.is_empty() {
-            CGContextMoveToPoint(cg, mx, mid);
-            CGContextAddLineToPoint(cg, w - mx, mid);
-            CGContextStrokePath(cg);
+        // System waveform — bottom half, blue
+        let sys_mid = h * 0.25;
+        if sys_vad {
+            CGContextSetRGBStrokeColor(cg, 0.3, 0.5, 0.95, 0.9); // blue
         } else {
-            let n = levels.len();
-            let step = if n > 1 { uw / (n - 1) as f64 } else { uw };
-
-            // Upper half
-            CGContextMoveToPoint(cg, mx, mid);
-            for (i, &l) in levels.iter().enumerate() {
-                let x = mx + i as f64 * step;
-                CGContextAddLineToPoint(cg, x, mid + l.clamp(0.0, 1.0) as f64 * max_amp);
-            }
-            CGContextStrokePath(cg);
-
-            // Lower half (mirror)
-            CGContextMoveToPoint(cg, mx, mid);
-            for (i, &l) in levels.iter().enumerate() {
-                let x = mx + i as f64 * step;
-                CGContextAddLineToPoint(cg, x, mid - l.clamp(0.0, 1.0) as f64 * max_amp);
-            }
-            CGContextStrokePath(cg);
+            CGContextSetRGBStrokeColor(cg, 0.42, 0.44, 0.49, 0.3);
         }
+        draw_wave(cg, &sys_levels, sys_mid, amp, mx, uw, w);
 
         CGContextRestoreGState(cg);
     }
@@ -241,8 +254,8 @@ extern "C" fn show_main(_: *mut c_void) {
             f(container_alloc, sel(b"initWithFrame:\0"), vr)
         };
 
-        // Waveform view: thin strip at top (20px)
-        let wf_rect = NSRect { x: 0.0, y: oh - 20.0, w: ow, h: 20.0 };
+        // Waveform view: dual waveform strip at top (40px)
+        let wf_rect = NSRect { x: 0.0, y: oh - 40.0, w: ow, h: 40.0 };
         let wf_view: *mut c_void = {
             let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                 std::mem::transmute(objc_msgSend as *const ());
@@ -308,26 +321,34 @@ extern "C" fn hide_main(_: *mut c_void) {
         }
         // Clear waveform data
         if let Ok(mut g) = WAVEFORM_DATA.lock() {
-            g.levels.clear();
-            g.vad_active = false;
+            g.mic_levels.clear();
+            g.sys_levels.clear();
+            g.mic_vad = false;
+            g.sys_vad = false;
         }
     }
 }
 
 pub fn push_audio_levels(levels: &[f32], vad_active: bool) {
-    push_audio_levels_with_text(levels, vad_active, None);
+    push_dual_audio_levels(levels, vad_active, &[], false, None);
 }
 
 pub fn push_audio_levels_with_text(levels: &[f32], vad_active: bool, subtitle: Option<&str>) {
+    push_dual_audio_levels(levels, vad_active, &[], false, subtitle);
+}
+
+pub fn push_dual_audio_levels(mic_levels: &[f32], mic_vad: bool, sys_levels: &[f32], sys_vad: bool, subtitle: Option<&str>) {
     {
         let mut g = WAVEFORM_DATA.lock().unwrap();
-        if !levels.is_empty() {
-            g.levels.extend_from_slice(levels);
-            if g.levels.len() > 100 {
-                let excess = g.levels.len() - 100;
-                g.levels.drain(..excess);
-            }
-            g.vad_active = vad_active;
+        if !mic_levels.is_empty() {
+            g.mic_levels.extend_from_slice(mic_levels);
+            if g.mic_levels.len() > 100 { let e = g.mic_levels.len() - 100; g.mic_levels.drain(..e); }
+            g.mic_vad = mic_vad;
+        }
+        if !sys_levels.is_empty() {
+            g.sys_levels.extend_from_slice(sys_levels);
+            if g.sys_levels.len() > 100 { let e = g.sys_levels.len() - 100; g.sys_levels.drain(..e); }
+            g.sys_vad = sys_vad;
         }
         if let Some(text) = subtitle {
             g.subtitle = text.to_string();
@@ -407,7 +428,12 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
             let text = {
                 let g = WAVEFORM_DATA.lock().unwrap();
                 if g.subtitle.is_empty() {
-                    if g.vad_active { "🎤 Speaking...".to_string() } else { "🎤 Listening...".to_string() }
+                    match (g.mic_vad, g.sys_vad) {
+                        (true, true) => "🎤 Speaking... 🔊 Playing...".to_string(),
+                        (true, false) => "🎤 Speaking...".to_string(),
+                        (false, true) => "🔊 Playing...".to_string(),
+                        (false, false) => "🎤 Listening...".to_string(),
+                    }
                 } else {
                     // Show last ~150 chars (fits ~3 lines at 50 chars/line).
                     let s = &g.subtitle;

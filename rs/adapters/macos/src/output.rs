@@ -921,8 +921,8 @@ impl Platform for MacPlatform {
 
     fn show_voice_overlay(&self) { crate::voice_overlay::show_overlay(); }
     fn hide_voice_overlay(&self) { crate::voice_overlay::hide_overlay(); }
-    fn update_voice_overlay(&self, levels: &[f32], vad: bool) {
-        crate::voice_overlay::push_audio_levels(levels, vad);
+    fn update_voice_overlay(&self, mic_levels: &[f32], mic_vad: bool, sys_levels: &[f32], sys_vad: bool) {
+        crate::voice_overlay::push_dual_audio_levels(mic_levels, mic_vad, sys_levels, sys_vad, None);
     }
     fn update_voice_subtitle(&self, text: &str) {
         crate::voice_overlay::push_audio_levels_with_text(&[], false, Some(text));
