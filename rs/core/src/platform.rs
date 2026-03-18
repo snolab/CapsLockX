@@ -115,6 +115,58 @@ pub trait Platform: Send + Sync + 'static {
     /// Move the active window to virtual desktop by 1-based index, then follow.
     fn move_window_to_desktop(&self, _idx: u32) {}
 
+    // ── Text input (optional, default uses key_tap per character) ──────────
+
+    /// Type a string of text at the current cursor position.
+    /// Default implementation maps ASCII characters to key taps.
+    /// Platform adapters can override with native text input (e.g. CGEvent
+    /// unicode strings, SendInput with KEYEVENTF_UNICODE, etc.).
+    fn type_text(&self, text: &str) {
+        for ch in text.chars() {
+            let needs_shift = ch.is_ascii_uppercase() || matches!(ch,
+                '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')' |
+                '_' | '+' | '{' | '}' | '|' | ':' | '"' | '<' | '>' | '?' | '~'
+            );
+            let key = match ch.to_ascii_lowercase() {
+                'a' => Some(KeyCode::A), 'b' => Some(KeyCode::B),
+                'c' => Some(KeyCode::C), 'd' => Some(KeyCode::D),
+                'e' => Some(KeyCode::E), 'f' => Some(KeyCode::F),
+                'g' => Some(KeyCode::G), 'h' => Some(KeyCode::H),
+                'i' => Some(KeyCode::I), 'j' => Some(KeyCode::J),
+                'k' => Some(KeyCode::K), 'l' => Some(KeyCode::L),
+                'm' => Some(KeyCode::M), 'n' => Some(KeyCode::N),
+                'o' => Some(KeyCode::O), 'p' => Some(KeyCode::P),
+                'q' => Some(KeyCode::Q), 'r' => Some(KeyCode::R),
+                's' => Some(KeyCode::S), 't' => Some(KeyCode::T),
+                'u' => Some(KeyCode::U), 'v' => Some(KeyCode::V),
+                'w' => Some(KeyCode::W), 'x' => Some(KeyCode::X),
+                'y' => Some(KeyCode::Y), 'z' => Some(KeyCode::Z),
+                '0' | ')' => Some(KeyCode::D0), '1' | '!' => Some(KeyCode::D1),
+                '2' | '@' => Some(KeyCode::D2), '3' | '#' => Some(KeyCode::D3),
+                '4' | '$' => Some(KeyCode::D4), '5' | '%' => Some(KeyCode::D5),
+                '6' | '^' => Some(KeyCode::D6), '7' | '&' => Some(KeyCode::D7),
+                '8' | '*' => Some(KeyCode::D8), '9' | '(' => Some(KeyCode::D9),
+                ' ' => Some(KeyCode::Space),
+                '\n' => Some(KeyCode::Enter),
+                '\t' => Some(KeyCode::Tab),
+                '.' | '>' => Some(KeyCode::Period),
+                '[' | '{' => Some(KeyCode::BracketLeft),
+                ']' | '}' => Some(KeyCode::BracketRight),
+                '\\' | '|' => Some(KeyCode::Backslash),
+                _ => None,
+            };
+            if let Some(k) = key {
+                if needs_shift {
+                    self.key_tap_shifted(k);
+                } else {
+                    self.key_tap(k);
+                }
+            }
+            // Characters without a KeyCode mapping are silently skipped.
+            // Platform adapters should override type_text for full Unicode support.
+        }
+    }
+
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 
     /// Restart the entire application (spawn new instance, exit current).
