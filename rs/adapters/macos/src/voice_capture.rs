@@ -290,6 +290,31 @@ impl VoiceCapture {
                 return Err(format!("AudioUnitInitialize failed (status {})", status));
             }
 
+            // Minimize ducking of other system audio (macOS 14+).
+            // Without this, VoiceProcessingIO significantly lowers all other audio.
+            #[repr(C)]
+            struct DuckingConfig {
+                enable_advanced: u8, // Boolean
+                level: u32,         // AUVoiceIOOtherAudioDuckingLevel
+            }
+            let ducking = DuckingConfig {
+                enable_advanced: 0,  // false — don't duck based on VAD
+                level: 10,           // kAUVoiceIOOtherAudioDuckingLevelMin
+            };
+            let s = AudioUnitSetProperty(
+                unit,
+                2108, // kAUVoiceIOProperty_OtherAudioDuckingConfiguration
+                0,    // kAudioUnitScope_Global
+                0,
+                &ducking as *const DuckingConfig as *const c_void,
+                std::mem::size_of::<DuckingConfig>() as u32,
+            );
+            if s != 0 {
+                eprintln!("[CLX] voice_capture: ducking config not supported (status {}), older macOS?", s);
+            } else {
+                eprintln!("[CLX] voice_capture: audio ducking minimized");
+            }
+
             // Query the default format on Bus 1 output scope.
             let mut actual_format: AudioStreamBasicDescription = std::mem::zeroed();
             let mut size = std::mem::size_of::<AudioStreamBasicDescription>() as u32;
