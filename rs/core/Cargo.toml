@@ -13,6 +13,8 @@ path = "src/lib.rs"
 once_cell    = "1.19"
 parking_lot  = "0.12"
 cpal         = "0.15"
+dirs         = "5"
+whisper-rs   = "0.13"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq         = "2"

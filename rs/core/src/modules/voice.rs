@@ -1,6 +1,8 @@
 /// CLX-Voice -- V key toggles voice listening (toggle / hold modes).
 ///
-/// Pipeline: AudioCapture -> VAD (energy-based) -> WAV encode -> HTTP POST -> type text
+/// Pipeline: AudioCapture -> VAD (energy-based) -> two-phase transcription:
+///   1. Local Whisper (instant rough draft typed at cursor)
+///   2. Server Whisper + LLM (polished text replaces rough draft via Backspace)
 ///
 /// State machine:
 ///   - on_key_down(V): Idle->Listening (start), Listening->Idle (toggle off)
@@ -12,6 +14,7 @@ use std::time::Instant;
 
 use crate::audio_capture::AudioCapture;
 use crate::key_code::KeyCode;
+use crate::local_whisper::LocalWhisper;
 use crate::platform::Platform;
 
 const STATE_IDLE: u8 = 0;
@@ -161,6 +164,18 @@ impl VoiceModule {
                 }
                 let sample_rate = ac.sample_rate();
 
+                // Lazily initialise local Whisper (None if model not found).
+                let local_whisper = match LocalWhisper::new() {
+                    Ok(w) => {
+                        eprintln!("[CLX] voice: local Whisper ready for instant transcription");
+                        Some(w)
+                    }
+                    Err(e) => {
+                        eprintln!("[CLX] voice: local Whisper unavailable ({e}), server-only mode");
+                        None
+                    }
+                };
+
                 let mut vad = VadState::new();
                 eprintln!("[CLX] voice: bg thread started (sr={sample_rate}, url={server_url})");
 
@@ -171,7 +186,13 @@ impl VoiceModule {
 
                     let chunks = vad.feed(&samples);
                     for chunk in chunks {
-                        send_chunk_and_type(&chunk, sample_rate, &server_url, &platform);
+                        transcribe_and_type(
+                            &chunk,
+                            sample_rate,
+                            &server_url,
+                            &platform,
+                            local_whisper.as_ref(),
+                        );
                     }
                 }
 
@@ -180,7 +201,13 @@ impl VoiceModule {
                     if chunk.len() > VAD_FRAME_SIZE * VAD_SPEECH_START_FRAMES {
                         eprintln!("[CLX] voice: flushing final chunk ({:.1}s)",
                             chunk.len() as f64 / sample_rate as f64);
-                        send_chunk_and_type(&chunk, sample_rate, &server_url, &platform);
+                        transcribe_and_type(
+                            &chunk,
+                            sample_rate,
+                            &server_url,
+                            &platform,
+                            local_whisper.as_ref(),
+                        );
                     }
                 }
 
@@ -366,7 +393,120 @@ fn encode_wav(samples: &[f32], sample_rate: u32) -> Vec<u8> {
     buf
 }
 
+/// Two-phase transcription pipeline:
+/// 1. Local Whisper (if available): type rough draft instantly for feedback.
+/// 2. Server Whisper + LLM: when the polished result arrives, delete the rough
+///    draft (via Backspace) and type the polished text.
+///
+/// If local Whisper is not available, falls through to server-only.
+fn transcribe_and_type(
+    samples: &[f32],
+    sample_rate: u32,
+    server_url: &str,
+    platform: &Arc<dyn Platform>,
+    local_whisper: Option<&LocalWhisper>,
+) {
+    let mut rough_len: usize = 0;
+
+    // Phase 1: instant local transcription.
+    if let Some(whisper) = local_whisper {
+        match whisper.transcribe(samples) {
+            Ok(rough) if !rough.is_empty() => {
+                eprintln!("[CLX] voice: local rough: {:?}", rough);
+                platform.type_text(&rough);
+                rough_len = rough.chars().count();
+            }
+            Ok(_) => {
+                eprintln!("[CLX] voice: local Whisper returned empty text");
+            }
+            Err(e) => {
+                eprintln!("[CLX] voice: local Whisper error: {e}");
+            }
+        }
+    }
+
+    // Phase 2: server transcription (polished).
+    let polished = send_chunk_to_server(samples, sample_rate, server_url);
+
+    if !polished.is_empty() {
+        // Delete the rough draft first.
+        if rough_len > 0 {
+            eprintln!(
+                "[CLX] voice: replacing rough draft ({rough_len} chars) with polished text"
+            );
+            for _ in 0..rough_len {
+                platform.key_tap(KeyCode::Backspace);
+            }
+        }
+        eprintln!("[CLX] voice: typing polished: {:?}", polished);
+        platform.type_text(&polished);
+    } else if rough_len == 0 {
+        eprintln!("[CLX] voice: no text from server either, skipping");
+    }
+    // If server returned empty but rough was already typed, keep the rough text.
+}
+
+/// Send a speech chunk to the server and return the polished text (or empty string).
+fn send_chunk_to_server(samples: &[f32], sample_rate: u32, server_url: &str) -> String {
+    let duration_s = samples.len() as f64 / sample_rate as f64;
+    eprintln!(
+        "[CLX] voice: sending chunk to server ({:.1}s, {} samples)",
+        duration_s,
+        samples.len()
+    );
+
+    let wav_data = encode_wav(samples, sample_rate);
+
+    let boundary = "----CLXVoiceBoundary9f8e7d6c";
+    let mut body = Vec::new();
+
+    body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+    body.extend_from_slice(
+        b"Content-Disposition: form-data; name=\"audio\"; filename=\"audio.wav\"\r\n",
+    );
+    body.extend_from_slice(b"Content-Type: audio/wav\r\n\r\n");
+    body.extend_from_slice(&wav_data);
+    body.extend_from_slice(b"\r\n");
+    body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
+
+    let content_type = format!("multipart/form-data; boundary={boundary}");
+
+    match ureq::post(server_url)
+        .set("Content-Type", &content_type)
+        .send_bytes(&body)
+    {
+        Ok(response) => match response.into_string() {
+            Ok(body_text) => {
+                let mut final_text = String::new();
+                for line in body_text.lines() {
+                    let line = line.trim();
+                    if line.is_empty() {
+                        continue;
+                    }
+                    if let Some(text) = extract_json_text(line) {
+                        final_text = text;
+                    }
+                }
+                if final_text.is_empty() {
+                    eprintln!("[CLX] voice: no text in server response: {body_text}");
+                }
+                final_text
+            }
+            Err(e) => {
+                eprintln!("[CLX] voice: failed to read response body: {e}");
+                String::new()
+            }
+        },
+        Err(e) => {
+            eprintln!("[CLX] voice: HTTP request failed: {e}");
+            String::new()
+        }
+    }
+}
+
+/// Legacy wrapper kept for backward compatibility (unused after refactor).
 /// Encode a speech chunk as WAV, POST to server, and type the transcribed text.
+#[allow(dead_code)]
 fn send_chunk_and_type(
     samples: &[f32],
     sample_rate: u32,
