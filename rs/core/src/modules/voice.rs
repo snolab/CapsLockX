@@ -80,6 +80,9 @@ const SPEECH_END_PROB: f32 = 0.3;
 const SPEECH_START_FRAMES: usize = 2;
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
 const SILENCE_END_FRAMES: usize = 15;
+/// Streaming chunk size: emit partial transcription every ~3s of continuous speech
+/// so text appears incrementally like an IME, not dumped all at once.
+const STREAMING_CHUNK_SAMPLES: usize = 48_000; // 3s at 16kHz
 /// Maximum chunk duration in samples at 16kHz (25 seconds).
 const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
@@ -495,14 +498,10 @@ impl VadState {
                     }
                 }
 
-                // Force-split at max chunk size.
-                if self.chunk.len() >= VAD_MAX_CHUNK_SAMPLES {
-                    // eprintln!(
-                    //     "[CLX] voice: force-split chunk at {:.1}s",
-                    //     self.chunk.len() as f64 / 16000.0
-                    // );
+                // Stream partial: emit every ~3s of continuous speech for IME-like feel.
+                if self.chunk.len() >= STREAMING_CHUNK_SAMPLES {
                     completed.push(std::mem::take(&mut self.chunk));
-                    // Stay in speech mode for the next segment.
+                    // Stay in speech mode — just emit what we have so far.
                     self.silence_frames = 0;
                 }
             }
