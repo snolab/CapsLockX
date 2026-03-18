@@ -331,9 +331,13 @@ fn voice_bg_persistent(
 
         // Create AudioCapture fresh each session (cpal::Stream is !Send).
         let t_wake = std::time::Instant::now();
-        // VoiceProcessingIO AEC disabled — it mutes system audio output.
-        // TODO: find a way to use VoiceProcessingIO without disrupting speakers.
-        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = None;
+        // Use VoiceProcessingIO AEC only when system audio is captured (Shift+V).
+        // Ducking is minimized so speakers stay audible.
+        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = if with_system_audio.load(Ordering::Relaxed) {
+            platform.start_aec_mic()
+        } else {
+            None
+        };
         let use_aec = aec_mic.is_some();
 
         // Fall back to cpal AudioCapture if AEC not available.
