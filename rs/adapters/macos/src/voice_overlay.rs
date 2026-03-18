@@ -465,11 +465,14 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
                         (false, false) => "🎤 Listening...".to_string(),
                     }
                 } else {
-                    // Truncate each line independently so both 🎤 and 🔊 are visible.
+                    // Truncate each line, preserving emoji prefix (🎤/🔊).
                     g.subtitle.lines().map(|line| {
                         let chars: Vec<char> = line.chars().collect();
                         if chars.len() > 80 {
-                            format!("...{}", chars[chars.len()-77..].iter().collect::<String>())
+                            // Keep first 2 chars (emoji + space), then "..." + last N chars.
+                            let prefix: String = chars[..2.min(chars.len())].iter().collect();
+                            let tail: String = chars[chars.len()-74..].iter().collect();
+                            format!("{}...{}", prefix, tail)
                         } else {
                             line.to_string()
                         }
