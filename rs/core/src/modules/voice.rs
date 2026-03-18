@@ -1,13 +1,16 @@
-/// CLX-Voice – V key toggles voice listening (toggle / hold modes).
+/// CLX-Voice -- V key toggles voice listening (toggle / hold modes).
+///
+/// Pipeline: AudioCapture -> VAD (energy-based) -> WAV encode -> HTTP POST -> type text
 ///
 /// State machine:
-///   - on_key_down(V): Idle→Listening (start), Listening→Idle (toggle off)
-///   - on_key_up(V):   if held >300ms → stop (hold mode); else keep listening (toggle mode)
+///   - on_key_down(V): Idle->Listening (start), Listening->Idle (toggle off)
+///   - on_key_up(V):   if held >300ms -> stop (hold mode); else keep listening (toggle mode)
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
 
+use crate::audio_capture::AudioCapture;
 use crate::key_code::KeyCode;
 use crate::platform::Platform;
 
@@ -19,11 +22,30 @@ const STATE_STOPPING: u8 = 2;
 /// Hold threshold: if V is held longer than this, releasing V stops listening.
 const HOLD_THRESHOLD_MS: u128 = 300;
 
+/// Default server URL for voice transcription.
+const DEFAULT_SERVER_URL: &str = "https://brainstorm.snomiao.com/api/voice-transcribe";
+
+// ── VAD constants ─────────────────────────────────────────────────────────────
+
+/// Frame size in samples at 16kHz (20ms).
+const VAD_FRAME_SIZE: usize = 320;
+/// RMS threshold to consider a frame as speech.
+const VAD_RMS_THRESHOLD: f32 = 0.01;
+/// Number of consecutive speech frames to trigger speech start.
+const VAD_SPEECH_START_FRAMES: usize = 3;
+/// Number of consecutive silence frames (500ms at 20ms/frame = 25) to trigger speech end.
+const VAD_SILENCE_END_FRAMES: usize = 25;
+/// Maximum chunk duration in samples at 16kHz (25 seconds).
+const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
+
 pub struct VoiceModule {
     state: Arc<AtomicU8>,
     press_time: Mutex<Option<Instant>>,
-    #[allow(dead_code)]
     platform: Arc<dyn Platform>,
+    /// Signal to stop the background thread.
+    bg_stop: Arc<AtomicBool>,
+    /// Handle to the background thread (so we can join on stop).
+    bg_thread: Mutex<Option<std::thread::JoinHandle<()>>>,
 }
 
 impl VoiceModule {
@@ -32,6 +54,8 @@ impl VoiceModule {
             state: Arc::new(AtomicU8::new(STATE_IDLE)),
             press_time: Mutex::new(None),
             platform,
+            bg_stop: Arc::new(AtomicBool::new(false)),
+            bg_thread: Mutex::new(None),
         }
     }
 
@@ -45,13 +69,13 @@ impl VoiceModule {
             STATE_IDLE => {
                 self.state.store(STATE_LISTENING, Ordering::Relaxed);
                 *self.press_time.lock().unwrap() = Some(Instant::now());
-                start_listening();
+                self.start_listening();
                 true
             }
             STATE_LISTENING => {
                 self.state.store(STATE_IDLE, Ordering::Relaxed);
                 *self.press_time.lock().unwrap() = None;
-                stop_listening();
+                self.stop_listening();
                 true
             }
             _ => true,
@@ -76,7 +100,7 @@ impl VoiceModule {
                 // Hold mode: release stops listening.
                 self.state.store(STATE_IDLE, Ordering::Relaxed);
                 *self.press_time.lock().unwrap() = None;
-                stop_listening();
+                self.stop_listening();
             }
             // Toggle mode (<300ms): keep listening, do nothing.
         }
@@ -87,24 +111,459 @@ impl VoiceModule {
         key == KeyCode::V
     }
 
-    /// Called when CLX mode deactivates – ensure we stop listening.
+    /// Called when CLX mode deactivates -- ensure we stop listening.
     pub fn stop(&self) {
         let prev = self.state.swap(STATE_IDLE, Ordering::Relaxed);
         *self.press_time.lock().unwrap() = None;
         if prev == STATE_LISTENING {
-            stop_listening();
+            self.stop_listening();
         }
     }
 
     pub fn is_listening(&self) -> bool {
         self.state.load(Ordering::Relaxed) == STATE_LISTENING
     }
+
+    // ── Internal: audio lifecycle ─────────────────────────────────────────────
+
+    fn start_listening(&self) {
+        eprintln!("[CLX] voice: start listening");
+
+        // Stop any previous background thread.
+        self.bg_stop.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.bg_thread.lock().unwrap().take() {
+            let _ = handle.join();
+        }
+
+        // Spawn a single background thread that owns AudioCapture (which is !Send
+        // but we create it on the thread that uses it).
+        self.bg_stop.store(false, Ordering::Relaxed);
+        let bg_stop = Arc::clone(&self.bg_stop);
+        let platform = Arc::clone(&self.platform);
+
+        let server_url = std::env::var("CLX_VOICE_SERVER")
+            .unwrap_or_else(|_| DEFAULT_SERVER_URL.to_string());
+
+        let handle = std::thread::Builder::new()
+            .name("clx-voice-bg".into())
+            .spawn(move || {
+                // Create AudioCapture on this thread (cpal::Stream is !Send).
+                let ac = match AudioCapture::new() {
+                    Ok(ac) => ac,
+                    Err(e) => {
+                        eprintln!("[CLX] voice: failed to create audio capture: {e}");
+                        return;
+                    }
+                };
+                if let Err(e) = ac.start() {
+                    eprintln!("[CLX] voice: failed to start audio: {e}");
+                    return;
+                }
+                let sample_rate = ac.sample_rate();
+
+                let mut vad = VadState::new();
+                eprintln!("[CLX] voice: bg thread started (sr={sample_rate}, url={server_url})");
+
+                while !bg_stop.load(Ordering::Relaxed) {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    let samples = ac.take_samples();
+                    if samples.is_empty() { continue; }
+
+                    let chunks = vad.feed(&samples);
+                    for chunk in chunks {
+                        send_chunk_and_type(&chunk, sample_rate, &server_url, &platform);
+                    }
+                }
+
+                // Flush remaining speech.
+                if let Some(chunk) = vad.flush() {
+                    if chunk.len() > VAD_FRAME_SIZE * VAD_SPEECH_START_FRAMES {
+                        eprintln!("[CLX] voice: flushing final chunk ({:.1}s)",
+                            chunk.len() as f64 / sample_rate as f64);
+                        send_chunk_and_type(&chunk, sample_rate, &server_url, &platform);
+                    }
+                }
+
+                ac.stop();
+                eprintln!("[CLX] voice: bg thread exiting");
+            })
+            .expect("failed to spawn voice bg thread");
+
+        *self.bg_thread.lock().unwrap() = Some(handle);
+    }
+
+    fn stop_listening(&self) {
+        eprintln!("[CLX] voice: stop listening");
+
+        // Signal background thread to stop.
+        self.bg_stop.store(true, Ordering::Relaxed);
+
+        // Join background thread.
+        if let Some(handle) = self.bg_thread.lock().unwrap().take() {
+            let _ = handle.join();
+        }
+    }
 }
 
-fn start_listening() {
-    eprintln!("[CLX] voice: start listening");
+// ── VAD (Voice Activity Detection) ───────────────────────────────────────────
+
+struct VadState {
+    /// Accumulated samples for the current speech chunk.
+    chunk: Vec<f32>,
+    /// Leftover samples from previous poll that didn't fill a frame.
+    remainder: Vec<f32>,
+    /// Whether we're currently in a speech segment.
+    in_speech: bool,
+    /// Consecutive frames above threshold.
+    speech_frames: usize,
+    /// Consecutive frames below threshold (while in speech).
+    silence_frames: usize,
 }
 
-fn stop_listening() {
-    eprintln!("[CLX] voice: stop listening");
+impl VadState {
+    fn new() -> Self {
+        Self {
+            chunk: Vec::new(),
+            remainder: Vec::new(),
+            in_speech: false,
+            speech_frames: 0,
+            silence_frames: 0,
+        }
+    }
+
+    /// Feed new samples into the VAD. Returns completed speech chunks (if any).
+    fn feed(&mut self, samples: &[f32]) -> Vec<Vec<f32>> {
+        let mut completed = Vec::new();
+
+        // Prepend any leftover samples from last time.
+        self.remainder.extend_from_slice(samples);
+        let all = std::mem::take(&mut self.remainder);
+
+        let mut offset = 0;
+        while offset + VAD_FRAME_SIZE <= all.len() {
+            let frame = &all[offset..offset + VAD_FRAME_SIZE];
+            offset += VAD_FRAME_SIZE;
+
+            let rms = compute_rms(frame);
+            let is_speech = rms > VAD_RMS_THRESHOLD;
+
+            if !self.in_speech {
+                if is_speech {
+                    self.speech_frames += 1;
+                    // Buffer pre-speech frames so we don't cut the start.
+                    self.chunk.extend_from_slice(frame);
+                    if self.speech_frames >= VAD_SPEECH_START_FRAMES {
+                        self.in_speech = true;
+                        self.silence_frames = 0;
+                        eprintln!("[CLX] voice: speech started (rms={:.4})", rms);
+                    }
+                } else {
+                    // Reset speech frame counter and discard buffered pre-speech.
+                    self.speech_frames = 0;
+                    self.chunk.clear();
+                }
+            } else {
+                // Currently in speech.
+                self.chunk.extend_from_slice(frame);
+
+                if is_speech {
+                    self.silence_frames = 0;
+                } else {
+                    self.silence_frames += 1;
+                    if self.silence_frames >= VAD_SILENCE_END_FRAMES {
+                        // Speech ended -- emit chunk.
+                        eprintln!(
+                            "[CLX] voice: speech ended (silence {}ms, chunk {:.1}s)",
+                            self.silence_frames * 20,
+                            self.chunk.len() as f64 / 16000.0
+                        );
+                        completed.push(std::mem::take(&mut self.chunk));
+                        self.in_speech = false;
+                        self.speech_frames = 0;
+                        self.silence_frames = 0;
+                    }
+                }
+
+                // Force-split at max chunk size.
+                if self.chunk.len() >= VAD_MAX_CHUNK_SAMPLES {
+                    eprintln!(
+                        "[CLX] voice: force-split chunk at {:.1}s",
+                        self.chunk.len() as f64 / 16000.0
+                    );
+                    completed.push(std::mem::take(&mut self.chunk));
+                    // Stay in speech mode for the next segment.
+                    self.silence_frames = 0;
+                }
+            }
+        }
+
+        // Save leftover samples that didn't fill a complete frame.
+        if offset < all.len() {
+            self.remainder = all[offset..].to_vec();
+        }
+
+        completed
+    }
+
+    /// Flush any remaining buffered speech (called when listening stops).
+    fn flush(&mut self) -> Option<Vec<f32>> {
+        if !self.chunk.is_empty() && self.in_speech {
+            self.in_speech = false;
+            self.speech_frames = 0;
+            self.silence_frames = 0;
+            Some(std::mem::take(&mut self.chunk))
+        } else {
+            self.chunk.clear();
+            None
+        }
+    }
+}
+
+fn compute_rms(frame: &[f32]) -> f32 {
+    if frame.is_empty() {
+        return 0.0;
+    }
+    let sum_sq: f32 = frame.iter().map(|&s| s * s).sum();
+    (sum_sq / frame.len() as f32).sqrt()
+}
+
+// ── WAV encoding ─────────────────────────────────────────────────────────────
+
+/// Encode f32 samples as a WAV file (16-bit PCM, mono).
+fn encode_wav(samples: &[f32], sample_rate: u32) -> Vec<u8> {
+    let num_samples = samples.len();
+    let data_size = (num_samples * 2) as u32; // 16-bit = 2 bytes per sample
+    let file_size = 36 + data_size;
+
+    let mut buf = Vec::with_capacity(file_size as usize + 8);
+
+    // RIFF header
+    buf.extend_from_slice(b"RIFF");
+    buf.extend_from_slice(&file_size.to_le_bytes());
+    buf.extend_from_slice(b"WAVE");
+
+    // fmt sub-chunk
+    buf.extend_from_slice(b"fmt ");
+    buf.extend_from_slice(&16u32.to_le_bytes()); // sub-chunk size
+    buf.extend_from_slice(&1u16.to_le_bytes()); // PCM format
+    buf.extend_from_slice(&1u16.to_le_bytes()); // mono
+    buf.extend_from_slice(&sample_rate.to_le_bytes()); // sample rate
+    let byte_rate = sample_rate * 2; // 16-bit mono
+    buf.extend_from_slice(&byte_rate.to_le_bytes()); // byte rate
+    buf.extend_from_slice(&2u16.to_le_bytes()); // block align
+    buf.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
+
+    // data sub-chunk
+    buf.extend_from_slice(b"data");
+    buf.extend_from_slice(&data_size.to_le_bytes());
+
+    for &sample in samples {
+        let clamped = sample.clamp(-1.0, 1.0);
+        let pcm = (clamped * 32767.0) as i16;
+        buf.extend_from_slice(&pcm.to_le_bytes());
+    }
+
+    buf
+}
+
+/// Encode a speech chunk as WAV, POST to server, and type the transcribed text.
+fn send_chunk_and_type(
+    samples: &[f32],
+    sample_rate: u32,
+    server_url: &str,
+    platform: &Arc<dyn Platform>,
+) {
+    let duration_s = samples.len() as f64 / sample_rate as f64;
+    eprintln!(
+        "[CLX] voice: sending chunk ({:.1}s, {} samples)",
+        duration_s,
+        samples.len()
+    );
+
+    let wav_data = encode_wav(samples, sample_rate);
+
+    // Build multipart body manually since ureq doesn't have built-in multipart.
+    let boundary = "----CLXVoiceBoundary9f8e7d6c";
+    let mut body = Vec::new();
+
+    // Audio part
+    body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+    body.extend_from_slice(
+        b"Content-Disposition: form-data; name=\"audio\"; filename=\"audio.wav\"\r\n",
+    );
+    body.extend_from_slice(b"Content-Type: audio/wav\r\n\r\n");
+    body.extend_from_slice(&wav_data);
+    body.extend_from_slice(b"\r\n");
+
+    // End boundary
+    body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
+
+    let content_type = format!("multipart/form-data; boundary={boundary}");
+
+    match ureq::post(server_url)
+        .set("Content-Type", &content_type)
+        .send_bytes(&body)
+    {
+        Ok(response) => {
+            match response.into_string() {
+                Ok(body_text) => {
+                    // Parse NDJSON response: each line is a JSON object.
+                    // Look for the last "transcribed" or "polished" stage.
+                    let mut final_text = String::new();
+                    for line in body_text.lines() {
+                        let line = line.trim();
+                        if line.is_empty() {
+                            continue;
+                        }
+                        // Simple JSON parsing without serde: look for "text" field.
+                        if let Some(text) = extract_json_text(line) {
+                            // Prefer "polished" stage, but use any text we find.
+                            final_text = text;
+                        }
+                    }
+
+                    if !final_text.is_empty() {
+                        eprintln!("[CLX] voice: typing: {:?}", final_text);
+                        platform.type_text(&final_text);
+                    } else {
+                        eprintln!("[CLX] voice: no text in response: {body_text}");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("[CLX] voice: failed to read response body: {e}");
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("[CLX] voice: HTTP request failed: {e}");
+        }
+    }
+}
+
+/// Extract the "text" field from a JSON line without pulling in serde.
+/// Handles: {"stage":"transcribed","text":"hello world"}
+fn extract_json_text(json: &str) -> Option<String> {
+    // Find "text" key and extract its string value.
+    let needle = "\"text\"";
+    let idx = json.find(needle)?;
+    let after_key = &json[idx + needle.len()..];
+
+    // Skip whitespace and colon.
+    let after_colon = after_key.trim_start();
+    let after_colon = after_colon.strip_prefix(':')?;
+    let after_colon = after_colon.trim_start();
+
+    // Expect a quoted string.
+    if !after_colon.starts_with('"') {
+        return None;
+    }
+
+    // Parse the JSON string value (handling basic escapes).
+    let mut result = String::new();
+    let mut chars = after_colon[1..].chars();
+    loop {
+        match chars.next()? {
+            '"' => break,
+            '\\' => {
+                match chars.next()? {
+                    '"' => result.push('"'),
+                    '\\' => result.push('\\'),
+                    'n' => result.push('\n'),
+                    't' => result.push('\t'),
+                    'r' => result.push('\r'),
+                    '/' => result.push('/'),
+                    'u' => {
+                        // Unicode escape: \uXXXX
+                        let mut hex = String::with_capacity(4);
+                        for _ in 0..4 {
+                            hex.push(chars.next()?);
+                        }
+                        if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                            if let Some(ch) = char::from_u32(code) {
+                                result.push(ch);
+                            }
+                        }
+                    }
+                    other => {
+                        result.push('\\');
+                        result.push(other);
+                    }
+                }
+            }
+            ch => result.push(ch),
+        }
+    }
+
+    if result.is_empty() {
+        None
+    } else {
+        Some(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_rms() {
+        let silence = vec![0.0f32; 320];
+        assert!(compute_rms(&silence) < VAD_RMS_THRESHOLD);
+
+        let loud: Vec<f32> = (0..320).map(|i| (i as f32 / 320.0 * std::f32::consts::TAU).sin() * 0.5).collect();
+        assert!(compute_rms(&loud) > VAD_RMS_THRESHOLD);
+    }
+
+    #[test]
+    fn test_encode_wav() {
+        let samples = vec![0.0f32; 16000]; // 1 second of silence
+        let wav = encode_wav(&samples, 16000);
+        assert_eq!(&wav[0..4], b"RIFF");
+        assert_eq!(&wav[8..12], b"WAVE");
+        assert_eq!(&wav[12..16], b"fmt ");
+        // Total size: 44 header + 32000 data = 32044
+        assert_eq!(wav.len(), 44 + 16000 * 2);
+    }
+
+    #[test]
+    fn test_vad_silence_no_chunks() {
+        let mut vad = VadState::new();
+        let silence = vec![0.0f32; 16000]; // 1 second
+        let chunks = vad.feed(&silence);
+        assert!(chunks.is_empty());
+    }
+
+    #[test]
+    fn test_vad_speech_then_silence() {
+        let mut vad = VadState::new();
+
+        // Generate 1 second of "speech" (loud sine wave).
+        let speech: Vec<f32> = (0..16000)
+            .map(|i| (i as f32 / 16000.0 * 440.0 * std::f32::consts::TAU).sin() * 0.5)
+            .collect();
+        let chunks = vad.feed(&speech);
+        // Should not complete yet (no silence tail).
+        assert!(chunks.is_empty());
+
+        // Now feed 600ms of silence to trigger end.
+        let silence = vec![0.0f32; 9600];
+        let chunks = vad.feed(&silence);
+        assert_eq!(chunks.len(), 1);
+        assert!(chunks[0].len() > 16000); // Should include the speech + some silence
+    }
+
+    #[test]
+    fn test_extract_json_text() {
+        let line = r#"{"stage":"transcribed","text":"hello world"}"#;
+        assert_eq!(extract_json_text(line), Some("hello world".to_string()));
+
+        let line = r#"{"stage":"polished","text":"Hello, world!"}"#;
+        assert_eq!(extract_json_text(line), Some("Hello, world!".to_string()));
+
+        let line = r#"{"text":"escaped \"quotes\""}"#;
+        assert_eq!(extract_json_text(line), Some("escaped \"quotes\"".to_string()));
+
+        assert_eq!(extract_json_text("{}"), None);
+        assert_eq!(extract_json_text(r#"{"text":""}"#), None);
+    }
 }
