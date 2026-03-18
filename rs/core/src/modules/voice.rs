@@ -469,12 +469,22 @@ fn voice_bg_persistent(
                 Vec::new()
             };
 
-            // NLMS adaptive echo cancellation: learns the acoustic path from
-            // system audio → mic and subtracts predicted echo. Cross-platform.
-            let mic_16k = if !sys_16k.is_empty() {
+            // NLMS adaptive echo cancellation on raw (pre-gain) signal.
+            let mic_cancelled = if !sys_16k.is_empty() {
                 nlms.process_buf(&mic_16k_raw, &sys_16k)
             } else {
                 mic_16k_raw
+            };
+
+            // Apply gain + noise gate AFTER NLMS (so NLMS works on clean signal).
+            let mic_16k: Vec<f32> = if use_aec {
+                const AEC_GAIN: f32 = 40.0;
+                const NOISE_GATE: f32 = 0.002;
+                mic_cancelled.iter()
+                    .map(|&s| if s.abs() < NOISE_GATE { 0.0 } else { (s * AEC_GAIN).clamp(-1.0, 1.0) })
+                    .collect()
+            } else {
+                mic_cancelled
             };
 
             let samples_16k = &mic_16k;
