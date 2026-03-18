@@ -95,6 +95,8 @@ const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
 pub struct VoiceModule {
     press_time: Mutex<Option<Instant>>,
+    /// Atomic flag: true while V key is physically held down.
+    v_held: Arc<AtomicBool>,
     platform: Arc<dyn Platform>,
     /// Voice Note mode: recording to file + SRT (toggle with click).
     note_active: Arc<AtomicBool>,
@@ -110,12 +112,15 @@ pub struct VoiceModule {
     bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
     /// Whether to capture system audio (Shift+V).
     with_system_audio: Arc<AtomicBool>,
+    /// Signal to flush pending buffer (new input session starts).
+    flush_pending: Arc<AtomicBool>,
 }
 
 impl VoiceModule {
     pub fn new(platform: Arc<dyn Platform>) -> Self {
         Self {
             press_time: Mutex::new(None),
+            v_held: Arc::new(AtomicBool::new(false)),
             platform,
             note_active: Arc::new(AtomicBool::new(false)),
             input_active: Arc::new(AtomicBool::new(false)),
@@ -124,6 +129,7 @@ impl VoiceModule {
             bg_thread: Mutex::new(None),
             bg_wake: Arc::new((std::sync::Mutex::new(false), std::sync::Condvar::new())),
             with_system_audio: Arc::new(AtomicBool::new(false)),
+            flush_pending: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -139,11 +145,24 @@ impl VoiceModule {
             || self.platform.is_key_physically_down(KeyCode::RShift);
         self.with_system_audio.store(sys_audio, Ordering::Relaxed);
 
-        // Start input mode immediately (will be confirmed on key_up if held >300ms).
-        self.input_active.store(true, Ordering::Relaxed);
-
-        // Ensure audio pipeline is running.
+        // Audio pipeline starts immediately so we capture from the beginning.
         self.ensure_pipeline_running();
+
+        // After 300ms, if V is still held, activate input mode (typing at cursor).
+        // If released before 300ms, it's a click → note mode (no typing).
+        self.v_held.store(true, Ordering::Relaxed);
+        let input_flag = Arc::clone(&self.input_active);
+        let flush_flag = Arc::clone(&self.flush_pending);
+        let v_held = Arc::clone(&self.v_held);
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(HOLD_THRESHOLD_MS as u64));
+            if v_held.load(Ordering::Relaxed) {
+                // Flush old pending audio so input starts fresh from this moment.
+                flush_flag.store(true, Ordering::Relaxed);
+                input_flag.store(true, Ordering::Relaxed);
+                eprintln!("[CLX] voice: held >300ms → input mode activated (buffer flushed)");
+            }
+        });
         true
     }
 
@@ -151,6 +170,8 @@ impl VoiceModule {
         if key != KeyCode::V {
             return false;
         }
+
+        self.v_held.store(false, Ordering::Relaxed);
 
         let held_long = self
             .press_time
@@ -160,7 +181,8 @@ impl VoiceModule {
             .unwrap_or(false);
 
         if held_long {
-            // Hold release (>300ms): stop voice INPUT, note continues if active.
+            // Hold release (>300ms): this was voice INPUT mode.
+            // Input was active during the hold — now stop it.
             self.input_active.store(false, Ordering::Relaxed);
             eprintln!("[CLX] voice: hold release → input done");
 
@@ -170,8 +192,6 @@ impl VoiceModule {
             }
         } else {
             // Click (<300ms): toggle voice NOTE mode.
-            self.input_active.store(false, Ordering::Relaxed);
-
             if self.note_active.load(Ordering::Relaxed) {
                 // Note was running → stop it.
                 self.note_active.store(false, Ordering::Relaxed);
@@ -181,7 +201,7 @@ impl VoiceModule {
                 // Note wasn't running → start it.
                 self.note_active.store(true, Ordering::Relaxed);
                 eprintln!("[CLX] voice: click → note started (recording to file)");
-                self.ensure_pipeline_running();
+                // Pipeline already started on key_down.
             }
         }
 
@@ -196,9 +216,9 @@ impl VoiceModule {
     /// Called when CLX mode deactivates.
     /// Stop voice input (hold mode), but keep voice note running.
     pub fn stop(&self) {
-        self.input_active.store(false, Ordering::Relaxed);
-        // If note is still active, keep pipeline alive.
-        if !self.note_active.load(Ordering::Relaxed) {
+        let was_input = self.input_active.swap(false, Ordering::Relaxed);
+        // Only stop pipeline if input was active AND note is not running.
+        if was_input && !self.note_active.load(Ordering::Relaxed) {
             self.stop_pipeline();
         }
     }
@@ -224,6 +244,7 @@ impl VoiceModule {
         let with_sys = Arc::clone(&self.with_system_audio);
         let note_active = Arc::clone(&self.note_active);
         let input_active = Arc::clone(&self.input_active);
+        let flush_pending = Arc::clone(&self.flush_pending);
         let platform = Arc::clone(&self.platform);
 
         let server_url = resolve_server_url();
@@ -231,7 +252,7 @@ impl VoiceModule {
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, platform, &server_url);
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &server_url);
             })
             .expect("failed to spawn voice bg thread");
 
@@ -258,8 +279,10 @@ impl VoiceModule {
     }
 
     fn stop_pipeline(&self) {
-        eprintln!("[CLX] voice: stopping pipeline");
-        self.bg_stop.store(true, Ordering::Relaxed);
+        if !self.bg_stop.load(Ordering::Relaxed) {
+            eprintln!("[CLX] voice: stopping pipeline");
+            self.bg_stop.store(true, Ordering::Relaxed);
+        }
     }
 }
 
@@ -274,6 +297,7 @@ fn voice_bg_persistent(
     with_system_audio: Arc<AtomicBool>,
     note_active: Arc<AtomicBool>,
     input_active: Arc<AtomicBool>,
+    flush_pending: Arc<AtomicBool>,
     platform: Arc<dyn Platform>,
     server_url: &str,
 ) {
@@ -398,6 +422,29 @@ fn voice_bg_persistent(
                 samples
             };
 
+            // Check flush signal: discard ALL buffered audio when input mode starts fresh.
+            if flush_pending.swap(false, Ordering::Relaxed) {
+                // Commit whatever was pending to note (if active).
+                if !whisper_pending.is_empty() {
+                    if !committed_text.is_empty() && !committed_text.ends_with(' ') {
+                        committed_text.push(' ');
+                    }
+                    committed_text.push_str(&whisper_pending);
+                }
+                // Drain the audio capture buffer so old samples don't leak in.
+                let _ = ac.take_samples();
+                // Reset all pending state.
+                pending_buf.clear();
+                whisper_pending.clear();
+                typed_pending.clear();
+                prev_whisper.clear();
+                pending_audio_since_last = 0;
+                stable_count = 0;
+                // Reset VAD state so it doesn't think we're mid-speech.
+                vad = VadState::new();
+                eprintln!("[CLX] voice: flushed ALL buffers for fresh input session");
+            }
+
             // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
 
@@ -425,19 +472,22 @@ fn voice_bg_persistent(
                     if !new_text.is_empty() {
                         whisper_pending = new_text.clone();
 
-                        // Append-only: only type if new text extends what we already typed.
-                        type_diff(&typed_pending, &new_text, &platform);
-                        // type_diff only types if it's a pure extension.
-                        // If it was an extension, update typed_pending.
-                        if new_text.starts_with(&typed_pending) {
-                            typed_pending = new_text;
+                        // Voice Input: type at cursor only if input mode is active.
+                        let is_input = input_active.load(Ordering::Relaxed);
+                        if is_input {
+                            type_diff(&typed_pending, &new_text, &platform);
+                            if new_text.starts_with(&typed_pending) {
+                                typed_pending = new_text.clone();
+                            }
                         }
-                        // Otherwise typed_pending stays the same (we skipped the rewrite).
 
-                        // Log full text.
+                        // Log and update overlay subtitle.
+                        let display_pending = if is_input { &typed_pending } else { &whisper_pending };
+                        let full_text = format!("{}{}", committed_text, display_pending);
+                        platform.update_voice_subtitle(&full_text);
                         use std::io::Write;
                         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
-                            let _ = writeln!(f, "{}{}", committed_text, typed_pending);
+                            let _ = writeln!(f, "{}", full_text);
                         }
                     }
                     pending_audio_since_last = 0;
@@ -455,8 +505,8 @@ fn voice_bg_persistent(
                 let should_commit = (stable_count >= 2 && pending_buf.len() > 32_000)
                     || pending_buf.len() > 80_000;
                 if should_commit {
-                    // At commit: replace what's on screen with the stable version.
-                    if typed_pending != whisper_pending {
+                    // At commit: replace typed text with stable version (input mode only).
+                    if input_active.load(Ordering::Relaxed) && typed_pending != whisper_pending {
                         type_replace(&typed_pending, &whisper_pending, &platform);
                     }
                     if !committed_text.is_empty() && !committed_text.ends_with(' ') && !committed_text.ends_with('\n') {
@@ -476,8 +526,8 @@ fn voice_bg_persistent(
                 if pending_buf.len() > 4800 {
                     let final_text = transcribe_local(&pending_buf, &mut local_whisper);
                     if !final_text.is_empty() {
-                        // At speech end, accept rewrites — replace what's on screen.
-                        if typed_pending != final_text {
+                        // At speech end, accept rewrites (input mode only).
+                        if input_active.load(Ordering::Relaxed) && typed_pending != final_text {
                             type_replace(&typed_pending, &final_text, &platform);
                         }
                         whisper_pending = final_text;
@@ -511,7 +561,7 @@ fn voice_bg_persistent(
         // Flush remaining.
         if pending_buf.len() > 4800 {
             let new_text = transcribe_local(&pending_buf, &mut local_whisper);
-            if !new_text.is_empty() && typed_pending != new_text {
+            if !new_text.is_empty() && input_active.load(Ordering::Relaxed) && typed_pending != new_text {
                 type_replace(&typed_pending, &new_text, &platform);
             }
         }

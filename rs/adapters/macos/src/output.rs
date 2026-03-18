@@ -789,20 +789,29 @@ impl Platform for MacPlatform {
     fn cycle_windows(&self, dir: i32) {
         let mut guard = CYCLE.lock().unwrap();
 
-        // Reset snapshot if stale (>2s since last cycle press).
-        if let Some(ref state) = *guard {
-            if state.last_use.elapsed().as_secs() >= 2 {
-                *guard = None;
-            }
-        }
+        // Always take a fresh snapshot, but preserve position by finding
+        // the currently-active window in the new list.
+        let stale = guard.as_ref()
+            .map(|s| s.last_use.elapsed().as_secs() >= 2)
+            .unwrap_or(true);
 
-        // Take a fresh snapshot if needed.
-        if guard.is_none() {
+        if stale {
             let windows = list_all_windows();
             if windows.is_empty() { return; }
+
+            // Find the previously-activated window in the new list.
+            let prev_entry = guard.as_ref().and_then(|s| s.windows.get(s.index).cloned());
+            let start_idx = if let Some(ref prev) = prev_entry {
+                // Match by title (most specific) then pid.
+                windows.iter().position(|w| w.title == prev.title && w.pid == prev.pid)
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+
             *guard = Some(CycleState {
                 windows,
-                index: 0, // 0 = currently frontmost
+                index: start_idx,
                 last_use: Instant::now(),
             });
         }
@@ -914,5 +923,8 @@ impl Platform for MacPlatform {
     fn hide_voice_overlay(&self) { crate::voice_overlay::hide_overlay(); }
     fn update_voice_overlay(&self, levels: &[f32], vad: bool) {
         crate::voice_overlay::push_audio_levels(levels, vad);
+    }
+    fn update_voice_subtitle(&self, text: &str) {
+        crate::voice_overlay::push_audio_levels_with_text(&[], false, Some(text));
     }
 }
