@@ -336,6 +336,9 @@ fn voice_bg_persistent(
         let mut pending_buf: Vec<f32> = Vec::new();
         let mut pending_text = String::new();
         let mut pending_audio_since_last: usize = 0;
+        // Track stability: commit when text hasn't changed for 2 cycles.
+        let mut prev_pending_text = String::new();
+        let mut stable_count: usize = 0;
 
         // Session log.
         let voice_log = std::path::PathBuf::from("/tmp/clx-voice.log");
@@ -407,14 +410,27 @@ fn voice_bg_persistent(
                     pending_audio_since_last = 0;
                 }
 
-                // Commit pending text when buffer exceeds 3s — freeze it.
-                // Shorter window = less instability from Whisper changing its mind.
-                if pending_buf.len() > 48_000 { // 3s at 16kHz
+                // Commit when text is stable (same for 2 consecutive transcriptions)
+                // AND buffer is at least 2s. This avoids committing mid-word
+                // and prevents the large pre-commit diffs.
+                if pending_text == prev_pending_text && !pending_text.is_empty() {
+                    stable_count += 1;
+                } else {
+                    stable_count = 0;
+                }
+                prev_pending_text = pending_text.clone();
+
+                // Commit if stable for 2+ cycles, or forced at 5s to prevent unbounded growth.
+                let should_commit = (stable_count >= 2 && pending_buf.len() > 32_000)  // stable + >2s
+                    || pending_buf.len() > 80_000;  // force at 5s
+                if should_commit {
                     committed_text.push_str(&pending_text);
-                    eprintln!("[CLX] voice: committed {:?}", pending_text);
+                    eprintln!("[CLX] voice: committed {:?} (stable={})", pending_text, stable_count);
                     pending_text.clear();
+                    prev_pending_text.clear();
                     pending_buf.clear();
                     pending_audio_since_last = 0;
+                    stable_count = 0;
                 }
             } else if was_in_speech {
                 // Speech ended — commit remaining pending text.
