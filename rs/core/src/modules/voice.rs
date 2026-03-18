@@ -80,10 +80,11 @@ const SPEECH_END_PROB: f32 = 0.3;
 const SPEECH_START_FRAMES: usize = 2;
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
 const SILENCE_END_FRAMES: usize = 15;
-/// Streaming chunk size: emit partial transcription frequently for IME-like feel.
-/// With base model: 1s audio → ~180ms inference → text in ~1.2s
-/// With small model: 1s audio → ~575ms inference → text in ~1.6s
-const STREAMING_CHUNK_SAMPLES: usize = 16_000; // 1s at 16kHz
+/// Streaming interval: transcribe every N new samples of speech.
+/// Whisper's inference time is nearly constant regardless of audio length
+/// (~450ms base, ~1300ms small), so smaller intervals are free.
+/// 8000 samples = 0.5s at 16kHz → transcription every ~0.5s of new speech.
+const STREAMING_CHUNK_SAMPLES: usize = 8_000; // 0.5s at 16kHz
 /// Maximum chunk duration in samples at 16kHz (25 seconds).
 const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
@@ -383,40 +384,43 @@ fn voice_bg_persistent(
                 speech_buf.extend_from_slice(&samples_16k);
 
                 // Transcribe every STREAMING_CHUNK_SAMPLES of new audio.
+                // Since Whisper takes ~constant time regardless of length,
+                // we transcribe the entire buffer each time for full context.
                 let new_samples = speech_buf.len() - last_audio_len;
                 if new_samples >= STREAMING_CHUNK_SAMPLES {
-                    // Transcribe the full buffer for context.
                     let new_text = transcribe_local(
                         &speech_buf, &mut local_whisper,
                     );
                     if !new_text.is_empty() {
-                        // Diff: find what's new compared to what we already typed.
                         type_diff(&typed_text, &new_text, &platform);
                         typed_text = new_text;
                     }
                     last_audio_len = speech_buf.len();
                 }
             } else if was_in_speech {
-                // Speech just ended — flush remaining and send to server.
+                // Speech just ended — final local transcription.
                 if speech_buf.len() > 4800 {
-                    // Final local transcription of full utterance.
                     let new_text = transcribe_local(&speech_buf, &mut local_whisper);
                     if !new_text.is_empty() {
                         type_diff(&typed_text, &new_text, &platform);
                         typed_text = new_text.clone();
                     }
 
-                    // Send to server for polished version (async replacement).
-                    let polished = send_chunk_to_server(&speech_buf, 16000, server_url);
-                    if !polished.is_empty() && polished != typed_text {
-                        // Delete what we typed and replace with polished.
-                        let chars_to_delete = typed_text.chars().count();
-                        for _ in 0..chars_to_delete {
-                            platform.key_tap(KeyCode::Backspace);
+                    // Send to server in background for polished version.
+                    let server_url_owned = server_url.to_string();
+                    let buf_copy = speech_buf.clone();
+                    let typed_copy = typed_text.clone();
+                    let plat = Arc::clone(&platform);
+                    std::thread::spawn(move || {
+                        let polished = send_chunk_to_server(&buf_copy, 16000, &server_url_owned);
+                        if !polished.is_empty() && polished != typed_copy {
+                            let to_delete = typed_copy.chars().count();
+                            for _ in 0..to_delete {
+                                plat.key_tap(KeyCode::Backspace);
+                            }
+                            plat.type_text(&polished);
                         }
-                        platform.type_text(&polished);
-                        typed_text = polished;
-                    }
+                    });
                 }
                 // Reset for next utterance.
                 speech_buf.clear();
