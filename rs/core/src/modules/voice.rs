@@ -379,19 +379,34 @@ fn voice_bg_persistent(
         let mut ffmpeg_stdin: Option<std::process::ChildStdin> = None;
         let mut ffmpeg_child: Option<std::process::Child> = None;
 
-        // Committed text: confirmed transcriptions that won't change.
-        let mut committed_text = String::new();
-        // Pending audio: only the uncommitted tail gets re-transcribed.
-        let mut pending_buf: Vec<f32> = Vec::new();
-        // What Whisper thinks the pending audio says (may change each cycle).
-        let mut whisper_pending = String::new();
-        // What we've actually typed on screen for the pending portion.
-        // Only grows via append — never backspaces during streaming.
-        let mut typed_pending = String::new();
-        let mut pending_audio_since_last: usize = 0;
-        // Stability tracking.
-        let mut prev_whisper = String::new();
-        let mut stable_count: usize = 0;
+        // ── Mic track state ──
+        let mut mic_committed = String::new();
+        let mut mic_pending_buf: Vec<f32> = Vec::new();
+        let mut mic_whisper_pending = String::new();
+        let mut mic_typed_pending = String::new();
+        let mut mic_pending_since: usize = 0;
+        let mut mic_prev_whisper = String::new();
+        let mut mic_stable: usize = 0;
+
+        // ── System audio track state ──
+        let mut sys_vad = if sys_capture.is_some() { Some(VadState::new()) } else { None };
+        let mut sys_whisper: Option<LocalWhisper> = if sys_capture.is_some() {
+            match LocalWhisper::new() {
+                Ok(w) => { eprintln!("[CLX] voice: sys Whisper loaded"); Some(w) }
+                Err(_) => None
+            }
+        } else { None };
+        let mut sys_committed = String::new();
+        let mut sys_pending_buf: Vec<f32> = Vec::new();
+        let mut sys_whisper_pending = String::new();
+        let mut sys_pending_since: usize = 0;
+        let mut sys_prev_whisper = String::new();
+        let mut sys_stable: usize = 0;
+
+        // These are the mic track variables used by the existing pipeline code below.
+        // Named without mic_ prefix for backward compatibility.
+        #[allow(unused_variables)]
+        let _mic_track_marker = ();
 
         // Session log.
         let voice_log = std::path::PathBuf::from("/tmp/clx-voice.log");
@@ -416,21 +431,21 @@ fn voice_bg_persistent(
             // Check flush signal: discard ALL buffered audio when input mode starts fresh.
             if flush_pending.swap(false, Ordering::Relaxed) {
                 // Commit whatever was pending to note (if active).
-                if !whisper_pending.is_empty() {
-                    if !committed_text.is_empty() && !committed_text.ends_with(' ') {
-                        committed_text.push(' ');
+                if !mic_whisper_pending.is_empty() {
+                    if !mic_committed.is_empty() && !mic_committed.ends_with(' ') {
+                        mic_committed.push(' ');
                     }
-                    committed_text.push_str(&whisper_pending);
+                    mic_committed.push_str(&mic_whisper_pending);
                 }
                 // Drain the audio capture buffer so old samples don't leak in.
                 let _ = ac.take_samples();
                 // Reset all pending state.
-                pending_buf.clear();
-                whisper_pending.clear();
-                typed_pending.clear();
-                prev_whisper.clear();
-                pending_audio_since_last = 0;
-                stable_count = 0;
+                mic_pending_buf.clear();
+                mic_whisper_pending.clear();
+                mic_typed_pending.clear();
+                mic_prev_whisper.clear();
+                mic_pending_since = 0;
+                mic_stable = 0;
                 // Reset VAD state so it doesn't think we're mid-speech.
                 vad = VadState::new();
                 eprintln!("[CLX] voice: flushed ALL buffers for fresh input session");
@@ -519,122 +534,196 @@ fn voice_bg_persistent(
             let _chunks = vad.feed(&samples_16k);
 
             if vad.in_speech {
-                pending_buf.extend_from_slice(&samples_16k);
-                pending_audio_since_last += samples_16k.len();
+                mic_pending_buf.extend_from_slice(&samples_16k);
+                mic_pending_since += samples_16k.len();
 
                 // Transcribe the pending (uncommitted) buffer only.
-                if pending_audio_since_last >= STREAMING_CHUNK_SAMPLES {
-                    let new_text = transcribe_local(&pending_buf, &mut local_whisper);
+                if mic_pending_since >= STREAMING_CHUNK_SAMPLES {
+                    let new_text = transcribe_local(&mic_pending_buf, &mut local_whisper);
                     if !new_text.is_empty() {
-                        whisper_pending = new_text.clone();
+                        mic_whisper_pending = new_text.clone();
 
                         // Voice Input: type at cursor only if input mode is active.
                         let is_input = input_active.load(Ordering::Relaxed);
                         if is_input {
-                            type_diff(&typed_pending, &new_text, &platform);
-                            if new_text.starts_with(&typed_pending) {
-                                typed_pending = new_text.clone();
+                            type_diff(&mic_typed_pending, &new_text, &platform);
+                            if new_text.starts_with(&mic_typed_pending) {
+                                mic_typed_pending = new_text.clone();
                             }
                         }
 
                         // Log and update overlay subtitle.
-                        let display_pending = if is_input { &typed_pending } else { &whisper_pending };
-                        let full_text = format!("{}{}", committed_text, display_pending);
+                        let display_pending = if is_input { &mic_typed_pending } else { &mic_whisper_pending };
+                        let full_text = format!("{}{}", mic_committed, display_pending);
                         platform.update_voice_subtitle(&full_text);
                         use std::io::Write;
                         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
                             let _ = writeln!(f, "{}", full_text);
                         }
                     }
-                    pending_audio_since_last = 0;
+                    mic_pending_since = 0;
                 }
 
                 // Stability tracking.
-                if whisper_pending == prev_whisper && !whisper_pending.is_empty() {
-                    stable_count += 1;
+                if mic_whisper_pending == mic_prev_whisper && !mic_whisper_pending.is_empty() {
+                    mic_stable += 1;
                 } else {
-                    stable_count = 0;
+                    mic_stable = 0;
                 }
-                prev_whisper = whisper_pending.clone();
+                mic_prev_whisper = mic_whisper_pending.clone();
 
                 // Commit when stable or forced at 5s.
-                let should_commit = (stable_count >= 2 && pending_buf.len() > 32_000)
-                    || pending_buf.len() > 80_000;
+                let should_commit = (mic_stable >= 2 && mic_pending_buf.len() > 32_000)
+                    || mic_pending_buf.len() > 80_000;
                 if should_commit {
                     // At commit: replace typed text with stable version (input mode only).
-                    if input_active.load(Ordering::Relaxed) && typed_pending != whisper_pending {
-                        type_replace(&typed_pending, &whisper_pending, &platform);
+                    if input_active.load(Ordering::Relaxed) && mic_typed_pending != mic_whisper_pending {
+                        type_replace(&mic_typed_pending, &mic_whisper_pending, &platform);
                     }
-                    if !committed_text.is_empty() && !committed_text.ends_with(' ') && !committed_text.ends_with('\n') {
-                    committed_text.push(' ');
+                    if !mic_committed.is_empty() && !mic_committed.ends_with(' ') && !mic_committed.ends_with('\n') {
+                    mic_committed.push(' ');
                 }
-                committed_text.push_str(&whisper_pending);
+                mic_committed.push_str(&mic_whisper_pending);
                     // Add SRT entry for voice note.
-                    if note_active.load(Ordering::Relaxed) && !whisper_pending.is_empty() {
+                    if note_active.load(Ordering::Relaxed) && !mic_whisper_pending.is_empty() {
                         srt_index += 1;
                         let elapsed = note_start_time.elapsed().as_secs_f64();
-                        let start_srt = format_srt_time(elapsed - (pending_buf.len() as f64 / 16000.0).max(0.0));
+                        let start_srt = format_srt_time(elapsed - (mic_pending_buf.len() as f64 / 16000.0).max(0.0));
                         let end_srt = format_srt_time(elapsed);
-                        note_srt.push_str(&format!("{}\n{} --> {}\n{}\n\n", srt_index, start_srt, end_srt, whisper_pending));
+                        let label = if sys_capture.is_some() { "[Me] " } else { "" };
+                        note_srt.push_str(&format!("{}\n{} --> {}\n{}{}\n\n", srt_index, start_srt, end_srt, label, mic_whisper_pending));
                     }
-                    eprintln!("[CLX] voice: committed {:?} (stable={})", whisper_pending, stable_count);
-                    whisper_pending.clear();
-                    typed_pending.clear();
-                    prev_whisper.clear();
-                    pending_buf.clear();
-                    pending_audio_since_last = 0;
-                    stable_count = 0;
+                    eprintln!("[CLX] voice: [Me] committed {:?} (stable={})", mic_whisper_pending, mic_stable);
+                    mic_whisper_pending.clear();
+                    mic_typed_pending.clear();
+                    mic_prev_whisper.clear();
+                    mic_pending_buf.clear();
+                    mic_pending_since = 0;
+                    mic_stable = 0;
                 }
             } else if was_in_speech {
                 // Speech ended — final transcription and commit.
-                if pending_buf.len() > 4800 {
-                    let final_text = transcribe_local(&pending_buf, &mut local_whisper);
+                if mic_pending_buf.len() > 4800 {
+                    let final_text = transcribe_local(&mic_pending_buf, &mut local_whisper);
                     if !final_text.is_empty() {
                         // At speech end, accept rewrites (input mode only).
-                        if input_active.load(Ordering::Relaxed) && typed_pending != final_text {
-                            type_replace(&typed_pending, &final_text, &platform);
+                        if input_active.load(Ordering::Relaxed) && mic_typed_pending != final_text {
+                            type_replace(&mic_typed_pending, &final_text, &platform);
                         }
-                        whisper_pending = final_text;
+                        mic_whisper_pending = final_text;
                     }
                 }
 
-                if !committed_text.is_empty() && !committed_text.ends_with(' ') && !committed_text.ends_with('\n') {
-                    committed_text.push(' ');
+                if !mic_committed.is_empty() && !mic_committed.ends_with(' ') && !mic_committed.ends_with('\n') {
+                    mic_committed.push(' ');
                 }
-                committed_text.push_str(&whisper_pending);
+                mic_committed.push_str(&mic_whisper_pending);
                 // Add SRT entry for the utterance end.
-                if note_active.load(Ordering::Relaxed) && !whisper_pending.is_empty() {
+                if note_active.load(Ordering::Relaxed) && !mic_whisper_pending.is_empty() {
                     srt_index += 1;
                     let elapsed = note_start_time.elapsed().as_secs_f64();
-                    let start_srt = format_srt_time(elapsed - (pending_buf.len() as f64 / 16000.0).max(0.0));
+                    let start_srt = format_srt_time(elapsed - (mic_pending_buf.len() as f64 / 16000.0).max(0.0));
                     let end_srt = format_srt_time(elapsed);
-                    note_srt.push_str(&format!("{}\n{} --> {}\n{}\n\n", srt_index, start_srt, end_srt, whisper_pending));
+                    let label = if sys_capture.is_some() { "[Me] " } else { "" };
+                    note_srt.push_str(&format!("{}\n{} --> {}\n{}{}\n\n", srt_index, start_srt, end_srt, label, mic_whisper_pending));
                 }
-                eprintln!("[CLX] voice: utterance done: {:?}", committed_text);
+                eprintln!("[CLX] voice: [Me] utterance done: {:?}", mic_committed);
 
                 // Log final text.
                 {
                     use std::io::Write;
                     if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
-                        let _ = writeln!(f, "{}", committed_text);
+                        let _ = writeln!(f, "{}", mic_committed);
                     }
                 }
 
-                whisper_pending.clear();
-                typed_pending.clear();
-                prev_whisper.clear();
-                pending_buf.clear();
-                pending_audio_since_last = 0;
-                stable_count = 0;
-                committed_text.clear();
+                mic_whisper_pending.clear();
+                mic_typed_pending.clear();
+                mic_prev_whisper.clear();
+                mic_pending_buf.clear();
+                mic_pending_since = 0;
+                mic_stable = 0;
+                mic_committed.clear();
+            }
+
+            // ── System audio track: independent VAD + Whisper ──────────────
+            if let Some(ref mut svad) = sys_vad {
+                if !sys_16k.is_empty() {
+                    let sys_was_speech = svad.in_speech;
+                    let _sys_chunks = svad.feed(&sys_16k);
+
+                    // Update overlay with sys VAD state.
+                    // (mic overlay already updated above, sys_vad state used in next frame)
+
+                    if svad.in_speech {
+                        sys_pending_buf.extend_from_slice(&sys_16k);
+                        sys_pending_since += sys_16k.len();
+
+                        if sys_pending_since >= STREAMING_CHUNK_SAMPLES {
+                            let text = transcribe_local(&sys_pending_buf, &mut sys_whisper);
+                            if !text.is_empty() {
+                                sys_whisper_pending = text;
+                            }
+                            sys_pending_since = 0;
+                        }
+
+                        // Stability commit for sys track.
+                        if sys_whisper_pending == sys_prev_whisper && !sys_whisper_pending.is_empty() {
+                            sys_stable += 1;
+                        } else {
+                            sys_stable = 0;
+                        }
+                        sys_prev_whisper = sys_whisper_pending.clone();
+
+                        if (sys_stable >= 2 && sys_pending_buf.len() > 32_000) || sys_pending_buf.len() > 80_000 {
+                            // Add [Other] SRT entry.
+                            if note_active.load(Ordering::Relaxed) && !sys_whisper_pending.is_empty() {
+                                srt_index += 1;
+                                let elapsed = note_start_time.elapsed().as_secs_f64();
+                                let start_srt = format_srt_time(elapsed - (sys_pending_buf.len() as f64 / 16000.0).max(0.0));
+                                let end_srt = format_srt_time(elapsed);
+                                note_srt.push_str(&format!("{}\n{} --> {}\n[Other] {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
+                            }
+                            if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
+                            sys_committed.push_str(&sys_whisper_pending);
+                            eprintln!("[CLX] voice: [Other] committed {:?}", sys_whisper_pending);
+                            sys_whisper_pending.clear();
+                            sys_prev_whisper.clear();
+                            sys_pending_buf.clear();
+                            sys_pending_since = 0;
+                            sys_stable = 0;
+                        }
+                    } else if sys_was_speech {
+                        // Sys speech ended.
+                        if sys_pending_buf.len() > 4800 {
+                            let text = transcribe_local(&sys_pending_buf, &mut sys_whisper);
+                            if !text.is_empty() { sys_whisper_pending = text; }
+                        }
+                        if note_active.load(Ordering::Relaxed) && !sys_whisper_pending.is_empty() {
+                            srt_index += 1;
+                            let elapsed = note_start_time.elapsed().as_secs_f64();
+                            let start_srt = format_srt_time(elapsed - (sys_pending_buf.len() as f64 / 16000.0).max(0.0));
+                            let end_srt = format_srt_time(elapsed);
+                            note_srt.push_str(&format!("{}\n{} --> {}\n[Other] {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
+                        }
+                        if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
+                        sys_committed.push_str(&sys_whisper_pending);
+                        eprintln!("[CLX] voice: [Other] utterance: {:?}", sys_whisper_pending);
+                        sys_whisper_pending.clear();
+                        sys_prev_whisper.clear();
+                        sys_pending_buf.clear();
+                        sys_pending_since = 0;
+                        sys_stable = 0;
+                    }
+                }
             }
         }
 
         // Flush remaining.
-        if pending_buf.len() > 4800 {
-            let new_text = transcribe_local(&pending_buf, &mut local_whisper);
-            if !new_text.is_empty() && input_active.load(Ordering::Relaxed) && typed_pending != new_text {
-                type_replace(&typed_pending, &new_text, &platform);
+        if mic_pending_buf.len() > 4800 {
+            let new_text = transcribe_local(&mic_pending_buf, &mut local_whisper);
+            if !new_text.is_empty() && input_active.load(Ordering::Relaxed) && mic_typed_pending != new_text {
+                type_replace(&mic_typed_pending, &new_text, &platform);
             }
         }
 
