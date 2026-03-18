@@ -909,6 +909,23 @@ impl Platform for MacPlatform {
         }
     }
 
+    fn start_aec_mic(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
+        match crate::voice_capture::VoiceCapture::new() {
+            Ok(cap) => {
+                if let Err(e) = cap.start() {
+                    eprintln!("[CLX] VoiceProcessingIO start failed: {e}");
+                    return None;
+                }
+                eprintln!("[CLX] VoiceProcessingIO mic with AEC started");
+                Some(Box::new(cap))
+            }
+            Err(e) => {
+                eprintln!("[CLX] VoiceProcessingIO unavailable: {e}, falling back to cpal");
+                None
+            }
+        }
+    }
+
     fn start_system_audio(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
         match crate::system_audio::SystemAudioCapture::new() {
             Ok(cap) => Some(Box::new(cap)),

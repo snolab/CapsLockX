@@ -187,8 +187,12 @@ pub trait Platform: Send + Sync + 'static {
     // ── Voice overlay (optional, default = no-op) ─────────────────────────────
 
     /// Start capturing system audio. Returns a boxed trait with take_samples()/stop().
-    /// Default returns None (not supported).
     fn start_system_audio(&self) -> Option<Box<dyn SystemAudioStream>> { None }
+
+    /// Start capturing mic with echo cancellation (AEC).
+    /// Returns a boxed trait with take_samples()/stop()/sample_rate().
+    /// Default returns None (falls back to cpal AudioCapture).
+    fn start_aec_mic(&self) -> Option<Box<dyn SystemAudioStream>> { None }
 
     fn show_voice_overlay(&self) {}
     fn hide_voice_overlay(&self) {}
