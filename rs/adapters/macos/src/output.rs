@@ -260,11 +260,6 @@ fn list_all_windows() -> Vec<WindowEntry> {
         // Sort by (pid, title) for stable ordering across cycle and arrange.
         entries.sort_by(|a, b| a.pid.cmp(&b.pid).then_with(|| a.title.cmp(&b.title)));
 
-        eprintln!("[CLX] window snapshot: {} windows:", entries.len());
-        for (i, e) in entries.iter().enumerate() {
-            eprintln!("[CLX]   [{}] pid={} wi={} title={:?}", i, e.pid, e.window_index, e.title);
-        }
-
         entries
     }
 }
@@ -516,8 +511,8 @@ fn visible_work_area() -> (f64, f64, f64, f64) {
         let quartz_x = vis.x;
         let quartz_y = (full.y + full.h) - vis.y - vis.h;
 
-        eprintln!("[CLX] work area: x={} y={} w={} h={} (screen: {}x{})",
-            quartz_x, quartz_y, vis.w, vis.h, full.w, full.h);
+        // eprintln!("[CLX] work area: x={} y={} w={} h={} (screen: {}x{})",
+        //     quartz_x, quartz_y, vis.w, vis.h, full.w, full.h);
 
         (quartz_x, quartz_y, vis.w, vis.h)
     }
@@ -599,6 +594,29 @@ impl Platform for MacPlatform {
             }
         } else {
             false
+        }
+    }
+
+    /// Tap a key with multiple modifiers — all flags set on the CGEvent itself.
+    fn key_tap_with_mods(&self, key: KeyCode, mods: &[KeyCode], n: i32) {
+        if let Some(cg_key) = keycode_to_cg_keycode(key) {
+            let mut flags = CGEventFlags::CGEventFlagNull;
+            for m in mods {
+                flags = flags | match m {
+                    KeyCode::LShift | KeyCode::RShift | KeyCode::Shift
+                        => CGEventFlags::CGEventFlagShift,
+                    KeyCode::LCtrl | KeyCode::RCtrl
+                        => CGEventFlags::CGEventFlagControl,
+                    KeyCode::LAlt | KeyCode::RAlt
+                        => CGEventFlags::CGEventFlagAlternate,
+                    KeyCode::LWin | KeyCode::RWin
+                        => CGEventFlags::CGEventFlagCommand,
+                    _ => CGEventFlags::CGEventFlagNull,
+                };
+            }
+            for _ in 0..n.clamp(0, 128) {
+                Self::tap_with_flags(cg_key, flags);
+            }
         }
     }
 
@@ -820,8 +838,8 @@ impl Platform for MacPlatform {
             }
         }
 
-        eprintln!("[CLX] arrange_windows({:?}): tiled {} windows in work area ({},{} {}x{})",
-            mode, n, ax, ay, aw, ah);
+        // eprintln!("[CLX] arrange_windows({:?}): tiled {} windows in work area ({},{} {}x{})",
+        //     mode, n, ax, ay, aw, ah);
     }
 
     fn close_tab(&self) {

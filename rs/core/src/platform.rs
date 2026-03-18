@@ -89,6 +89,16 @@ pub trait Platform: Send + Sync + 'static {
     /// state in ClxState; Windows adapter overrides with GetAsyncKeyState.
     fn is_key_physically_down(&self, _key: KeyCode) -> bool { false }
 
+    /// Tap a key with multiple modifier flags applied atomically.
+    /// On macOS, modifier flags must be embedded in the CGEvent itself;
+    /// separate key_down(Shift) + key_tap(Arrow) doesn't work.
+    /// Default implementation falls back to key_down/key_tap/key_up.
+    fn key_tap_with_mods(&self, key: KeyCode, mods: &[KeyCode], n: i32) {
+        for m in mods { self.key_down(*m); }
+        self.key_tap_n(key, n);
+        for m in mods.iter().rev() { self.key_up(*m); }
+    }
+
 
     // ── Mouse output ──────────────────────────────────────────────────────────
 

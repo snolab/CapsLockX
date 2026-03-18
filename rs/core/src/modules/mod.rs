@@ -29,7 +29,7 @@ pub struct Modules {
 
 impl Modules {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
-        Self {
+        let s = Self {
             edit:            EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
             mouse:           MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
             media:           MediaModule::new(Arc::clone(&platform)),
@@ -37,7 +37,10 @@ impl Modules {
             voice:           VoiceModule::new(Arc::clone(&platform)),
             window_manager:  WindowManagerModule::new(Arc::clone(&platform)),
             platform,
-        }
+        };
+        // Preload Whisper model in background so first Space+V is instant.
+        s.voice.preload();
+        s
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
