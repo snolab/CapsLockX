@@ -1,4 +1,5 @@
 pub mod acc_model;
+pub mod audio_capture;
 pub mod engine;
 pub mod key_code;
 pub mod modules;
