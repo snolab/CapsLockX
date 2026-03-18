@@ -371,10 +371,36 @@ fn voice_bg_persistent(
             std::fs::create_dir_all(dir).ok();
         }
         let session_ts = chrono_timestamp();
-        let mut note_audio: Vec<f32> = Vec::new(); // raw audio for WAV file
         let mut note_srt = String::new();
         let mut srt_index: usize = 0;
-        let mut note_start_time = std::time::Instant::now();
+        let note_start_time = std::time::Instant::now();
+
+        // Stream MP3 to disk in real-time (crash-safe — partial file is playable).
+        let mut mp3_file: Option<std::fs::File> = None;
+        let mut mp3_encoder: Option<mp3lame_encoder::Encoder> = None;
+        if note_active.load(Ordering::Relaxed) {
+            if let Some(ref dir) = note_dir {
+                let mp3_path = dir.join(format!("{}.mp3", session_ts));
+                match std::fs::File::create(&mp3_path) {
+                    Ok(f) => {
+                        let mut enc = mp3lame_encoder::Builder::new().unwrap();
+                        enc.set_num_channels(1).unwrap();
+                        enc.set_sample_rate(16000).unwrap();
+                        enc.set_brate(mp3lame_encoder::Bitrate::Kbps64).unwrap();
+                        enc.set_quality(mp3lame_encoder::Quality::Best).unwrap();
+                        match enc.build() {
+                            Ok(encoder) => {
+                                eprintln!("[CLX] voice: streaming MP3 to {}", mp3_path.display());
+                                mp3_file = Some(f);
+                                mp3_encoder = Some(encoder);
+                            }
+                            Err(e) => eprintln!("[CLX] voice: MP3 encoder init failed: {e:?}"),
+                        }
+                    }
+                    Err(e) => eprintln!("[CLX] voice: failed to create MP3 file: {e}"),
+                }
+            }
+        }
 
         // Committed text: confirmed transcriptions that won't change.
         let mut committed_text = String::new();
@@ -448,9 +474,16 @@ fn voice_bg_persistent(
             // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
 
-            // Accumulate audio for voice note WAV file.
-            if note_active.load(Ordering::Relaxed) {
-                note_audio.extend_from_slice(&samples_16k);
+            // Stream audio to MP3 file in real-time.
+            if let (Some(ref mut enc), Some(ref mut file)) = (&mut mp3_encoder, &mut mp3_file) {
+                let pcm: Vec<i16> = samples_16k.iter()
+                    .map(|&s| (s.clamp(-1.0, 1.0) * 32767.0) as i16)
+                    .collect();
+                let mut mp3_buf = Vec::new();
+                if enc.encode_to_vec(mp3lame_encoder::MonoPcm(&pcm), &mut mp3_buf).is_ok() {
+                    use std::io::Write;
+                    let _ = file.write_all(&mp3_buf);
+                }
             }
 
             // Compute RMS levels for the overlay.
@@ -589,26 +622,22 @@ fn voice_bg_persistent(
 
         platform.hide_voice_overlay();
 
-        // Save voice note files if note mode was active.
-        if !note_audio.is_empty() {
+        // Flush MP3 encoder and save SRT.
+        if let (Some(mut enc), Some(mut file)) = (mp3_encoder.take(), mp3_file.take()) {
+            let mut tail = Vec::new();
+            if enc.flush_to_vec::<mp3lame_encoder::FlushNoGap>(&mut tail).is_ok() {
+                use std::io::Write;
+                let _ = file.write_all(&tail);
+            }
+            eprintln!("[CLX] voice: MP3 recording saved");
+        }
+        if !note_srt.is_empty() {
             if let Some(ref dir) = note_dir {
-                let wav_path = dir.join(format!("{}.wav", session_ts));
                 let srt_path = dir.join(format!("{}.srt", session_ts));
-                let wav_data = encode_wav(&note_audio, 16000);
-                if let Err(e) = std::fs::write(&wav_path, &wav_data) {
-                    eprintln!("[CLX] voice: failed to write WAV: {e}");
+                if let Err(e) = std::fs::write(&srt_path, &note_srt) {
+                    eprintln!("[CLX] voice: failed to write SRT: {e}");
                 } else {
-                    eprintln!("[CLX] voice: saved {} ({:.1}s, {:.1}MB)",
-                        wav_path.display(),
-                        note_audio.len() as f64 / 16000.0,
-                        wav_data.len() as f64 / 1_048_576.0);
-                }
-                if !note_srt.is_empty() {
-                    if let Err(e) = std::fs::write(&srt_path, &note_srt) {
-                        eprintln!("[CLX] voice: failed to write SRT: {e}");
-                    } else {
-                        eprintln!("[CLX] voice: saved {}", srt_path.display());
-                    }
+                    eprintln!("[CLX] voice: saved {}", srt_path.display());
                 }
             }
         }

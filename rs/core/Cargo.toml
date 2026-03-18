@@ -17,6 +17,7 @@ dirs         = "5"
 whisper-rs   = "0.13"
 ten-vad-rs = "0.1"
 libc         = "0.2"
+mp3lame-encoder = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq         = "2"
