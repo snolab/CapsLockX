@@ -637,12 +637,46 @@ fn voice_bg_persistent(
                 }
             });
         }
-        // Save SRT alongside WebM.
-        if !note_srt.is_empty() {
-            if let Some(ref dir) = note_dir {
-                let srt_path = dir.join(format!("{}.srt", session_ts));
+        // Save SRT, then remux WebM + SRT → WebM with embedded subtitles.
+        if let Some(ref dir) = note_dir {
+            let srt_path = dir.join(format!("{}.srt", session_ts));
+            let webm_path = dir.join(format!("{}.webm", session_ts));
+            let webm_sub_path = dir.join(format!("{}_sub.webm", session_ts));
+
+            if !note_srt.is_empty() {
                 let _ = std::fs::write(&srt_path, &note_srt);
                 eprintln!("[CLX] voice: SRT saved");
+            }
+
+            // Remux: embed SRT as WebVTT subtitle track into WebM.
+            if webm_path.exists() && srt_path.exists() {
+                let srt = srt_path.clone();
+                let webm = webm_path.clone();
+                let webm_sub = webm_sub_path.clone();
+                std::thread::spawn(move || {
+                    let result = std::process::Command::new("ffmpeg")
+                        .args([
+                            "-y",
+                            "-i", webm.to_str().unwrap_or(""),
+                            "-i", srt.to_str().unwrap_or(""),
+                            "-c:a", "copy",
+                            "-c:s", "webvtt",
+                            "-f", "webm",
+                            webm_sub.to_str().unwrap_or(""),
+                        ])
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .status();
+                    match result {
+                        Ok(s) if s.success() => {
+                            // Replace original with subtitle version.
+                            let _ = std::fs::rename(&webm_sub, &webm);
+                            eprintln!("[CLX] voice: WebM remuxed with embedded subtitles");
+                        }
+                        Ok(s) => eprintln!("[CLX] voice: ffmpeg remux failed (exit {s})"),
+                        Err(e) => eprintln!("[CLX] voice: ffmpeg not found: {e}"),
+                    }
+                });
             }
         }
 
