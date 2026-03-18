@@ -180,31 +180,64 @@ unsafe extern "C" fn input_callback(
         ctx.render_buf.resize(frames, 0.0);
     }
 
-    let mut abl = AudioBufferList {
-        number_buffers: 1,
-        buffers: [AudioBuffer {
-            number_channels: 1,
-            data_byte_size: byte_size,
-            data: ctx.render_buf.as_mut_ptr() as *mut c_void,
-        }],
-    };
+    // VPIO format is 9ch non-interleaved (flags=0x29).
+    // Must provide separate buffer per channel. We read channel 0 only.
+    const MAX_CH: usize = 16;
+    let mut ch_bufs: [[f32; 2048]; MAX_CH] = [[0.0; 2048]; MAX_CH];
+    let num_ch = 9usize.min(MAX_CH);
+    let capped_frames = frames.min(2048);
 
-    // Pull echo-cancelled audio from the VoiceProcessingIO unit
+    // Build AudioBufferList with N separate buffers (non-interleaved).
+    // Use a raw byte array since AudioBufferList has variable-length array.
+    #[repr(C)]
+    struct ABL16 {
+        number_buffers: u32,
+        buffers: [AudioBuffer; 16],
+    }
+    let mut abl = ABL16 {
+        number_buffers: num_ch as u32,
+        buffers: unsafe { std::mem::zeroed() },
+    };
+    for i in 0..num_ch {
+        abl.buffers[i] = AudioBuffer {
+            number_channels: 1,
+            data_byte_size: (capped_frames * 4) as u32,
+            data: ch_bufs[i].as_mut_ptr() as *mut c_void,
+        };
+    }
+
     let status = AudioUnitRender(
         ctx.unit,
         io_action_flags,
         in_time_stamp,
-        in_bus_number, // Bus 1 = input
-        in_number_frames,
-        &mut abl,
+        in_bus_number,
+        capped_frames as u32,
+        &mut abl as *mut ABL16 as *mut AudioBufferList,
     );
 
     if status != 0 {
+        static ERR_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let c = ERR_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if c < 3 { eprintln!("[CLX] voice_capture: render failed status={}", status); }
         return status;
     }
 
-    // Copy samples into shared buffer — lock held very briefly
-    let samples = &ctx.render_buf[..frames];
+    // Channel 0 = echo-cancelled mono mic audio.
+    // Apply gain — VPIO output is very quiet after AEC processing.
+    const AEC_GAIN: f32 = 30.0;
+    let amplified: Vec<f32> = ch_bufs[0][..capped_frames].iter()
+        .map(|&s| (s * AEC_GAIN).clamp(-1.0, 1.0))
+        .collect();
+    let samples = &amplified[..];
+
+    {
+        static CB_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let c = CB_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if c < 5 {
+            let rms: f32 = (samples.iter().map(|s| s*s).sum::<f32>() / samples.len().max(1) as f32).sqrt();
+            eprintln!("[CLX] voice_capture: cb#{} frames={} rms={:.4}", c, capped_frames, rms);
+        }
+    }
     if let Ok(mut buf) = ctx.buffer.try_lock() {
         buf.extend_from_slice(samples);
         // Cap at ~10 seconds of audio at 16kHz to prevent unbounded growth
@@ -283,11 +316,55 @@ impl VoiceCapture {
             // Leave output on Bus 0 enabled — VoiceProcessingIO uses it
             // internally as the AEC reference signal (speaker output).
 
-            // ── Initialize the Audio Unit first, then query/set format ─────
+            // ── Set output format on Bus 1 BEFORE Initialize ─────────────
+            // This tells VPIO what format we want to read from our callback.
+            let desired_format = AudioStreamBasicDescription {
+                sample_rate: 48000.0,
+                format_id: K_AUDIO_FORMAT_LINEAR_PCM,
+                format_flags: K_AUDIO_FORMAT_FLAG_IS_FLOAT | K_AUDIO_FORMAT_FLAG_IS_PACKED,
+                bytes_per_packet: 4,
+                frames_per_packet: 1,
+                bytes_per_frame: 4,
+                channels_per_frame: 1,
+                bits_per_channel: 32,
+                reserved: 0,
+            };
+            let s = AudioUnitSetProperty(
+                unit,
+                K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
+                K_AUDIO_UNIT_SCOPE_OUTPUT, // output side of Bus 1 = what we read
+                1,
+                &desired_format as *const _ as *const c_void,
+                std::mem::size_of::<AudioStreamBasicDescription>() as u32,
+            );
+            if s != 0 {
+                eprintln!("[CLX] voice_capture: set output format failed ({}), trying after init", s);
+            } else {
+                eprintln!("[CLX] voice_capture: output format set to 48kHz mono f32 before init");
+            }
+
+            // ── Initialize ─────
             let status = AudioUnitInitialize(unit);
             if status != 0 {
                 AudioComponentInstanceDispose(unit);
                 return Err(format!("AudioUnitInitialize failed (status {})", status));
+            }
+
+            // If pre-init format set failed, try again after init.
+            if s != 0 {
+                let s2 = AudioUnitSetProperty(
+                    unit,
+                    K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
+                    K_AUDIO_UNIT_SCOPE_OUTPUT,
+                    1,
+                    &desired_format as *const _ as *const c_void,
+                    std::mem::size_of::<AudioStreamBasicDescription>() as u32,
+                );
+                if s2 != 0 {
+                    eprintln!("[CLX] voice_capture: set output format still failed after init ({})", s2);
+                } else {
+                    eprintln!("[CLX] voice_capture: output format set after init");
+                }
             }
 
             // Minimize ducking of other system audio (macOS 14+).
@@ -315,23 +392,34 @@ impl VoiceCapture {
                 eprintln!("[CLX] voice_capture: audio ducking minimized");
             }
 
-            // Query the default format on Bus 1 output scope.
+            // Query format — try multiple scopes since VPIO is picky.
             let mut actual_format: AudioStreamBasicDescription = std::mem::zeroed();
             let mut size = std::mem::size_of::<AudioStreamBasicDescription>() as u32;
-            let status = AudioUnitGetProperty(
-                unit,
-                K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
-                K_AUDIO_UNIT_SCOPE_OUTPUT,
-                1,
-                &mut actual_format as *mut AudioStreamBasicDescription as *mut c_void,
-                &mut size,
-            );
+            // Try: Output scope Bus 1, Input scope Bus 1, Global scope Bus 0
+            let scopes = [(K_AUDIO_UNIT_SCOPE_OUTPUT, 1u32), (K_AUDIO_UNIT_SCOPE_INPUT, 1), (0u32/*Global*/, 0)];
+            let mut status = -1i32;
+            for &(scope, bus) in &scopes {
+                status = AudioUnitGetProperty(
+                    unit,
+                    K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
+                    scope,
+                    bus,
+                    &mut actual_format as *mut AudioStreamBasicDescription as *mut c_void,
+                    &mut size,
+                );
+                if status == 0 {
+                    eprintln!("[CLX] voice_capture: format query OK on scope={} bus={}", scope, bus);
+                    break;
+                }
+            }
 
             let actual_rate;
             if status == 0 {
                 actual_rate = actual_format.sample_rate as u32;
-                eprintln!("[CLX] voice_capture: hardware format: {}Hz {}ch {}bit",
-                    actual_rate, actual_format.channels_per_frame, actual_format.bits_per_channel);
+                eprintln!("[CLX] voice_capture: format: {}Hz {}ch {}bit flags={:#x} bpp={} fpk={} bpf={}",
+                    actual_rate, actual_format.channels_per_frame, actual_format.bits_per_channel,
+                    actual_format.format_flags, actual_format.bytes_per_packet,
+                    actual_format.frames_per_packet, actual_format.bytes_per_frame);
 
                 // Try to set our preferred format: mono float32 at hardware rate.
                 let format = AudioStreamBasicDescription {
