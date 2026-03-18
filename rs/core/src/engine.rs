@@ -29,6 +29,9 @@ pub struct ClxEngine {
     /// CAS flag: whichever of the timeout thread or clx_up swaps this
     /// from false→true first gets to emit the native key character.
     trigger_timeout_fired: Arc<AtomicBool>,
+    /// When a trigger key is bypassed (e.g. Cmd+Space), the key-up must also
+    /// pass through so the OS sees the complete down+up pair.
+    trigger_bypassed: AtomicBool,
 }
 
 impl ClxEngine {
@@ -48,6 +51,7 @@ impl ClxEngine {
             trigger_key: Arc::new(Mutex::new(None)),
             fn_acted:    Arc::new(AtomicBool::new(false)),
             trigger_timeout_fired: Arc::new(AtomicBool::new(false)),
+            trigger_bypassed: AtomicBool::new(false),
         })
     }
 
@@ -85,9 +89,16 @@ impl ClxEngine {
                 if self.clx_dn(code, prior) {
                     // Bypass: let the original event pass through to the OS
                     // so modifier+trigger combos (Cmd+Space, Shift+Space) work.
+                    self.trigger_bypassed.store(true, Ordering::Relaxed);
                     return CoreResponse::PassThrough;
                 }
+                self.trigger_bypassed.store(false, Ordering::Relaxed);
             } else if !pressed {
+                // If the key-down was bypassed, also pass through the key-up
+                // so the OS sees the complete down+up pair for the shortcut.
+                if self.trigger_bypassed.swap(false, Ordering::Relaxed) {
+                    return CoreResponse::PassThrough;
+                }
                 self.clx_up(code);
             }
             return CoreResponse::Suppress;
@@ -110,6 +121,13 @@ impl ClxEngine {
         }
 
         CoreResponse::PassThrough
+    }
+
+    /// Ensure a key is in held_keys (inject it if missing).
+    /// Used by macOS adapter to sync modifier flags from CGEvent onto held_keys,
+    /// since FlagsChanged up can arrive before the key-down event in fast combos.
+    pub fn ensure_held(&self, code: KeyCode) {
+        self.held_keys.lock().unwrap().insert(code);
     }
 
     /// Returns true if `code` is a mapped key (used by adapters to decide
@@ -165,15 +183,20 @@ impl ClxEngine {
         // - Non-trigger typing + trigger → avoids interfering with typing
         // Note: Ctrl/Alt + Space should NOT bypass — they enter CLX mode so
         // combos like Ctrl+Space+E (Ctrl+Click) work.
-        let prior_held = prior != KeyCode::Unknown(0)
-            && prior != code
-            && self.held_keys.lock().unwrap().contains(&prior);
-        let prior_is_shift = matches!(prior, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift);
-        let prior_is_win = matches!(prior, KeyCode::LWin | KeyCode::RWin);
+        //
+        // Check held_keys directly (not just prior) for reliability — the prior
+        // key can be overwritten by intervening FlagsChanged or other events.
+        let held = self.held_keys.lock().unwrap();
+        let shift_held = held.contains(&KeyCode::LShift) || held.contains(&KeyCode::RShift)
+            || held.contains(&KeyCode::Shift);
+        let win_held = held.contains(&KeyCode::LWin) || held.contains(&KeyCode::RWin);
+        let non_modifier_held = held.iter().any(|k| !k.is_modifier() && *k != code);
+        drop(held);
+
         let bypass = if code == KeyCode::Space {
-            (prior_is_shift || prior_is_win) && prior_held
+            shift_held || win_held
         } else {
-            !prior.is_modifier() && prior_held
+            non_modifier_held
         };
         if bypass {
             return true; // pass through — don't suppress, don't re-inject

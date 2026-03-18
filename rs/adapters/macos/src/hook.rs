@@ -185,6 +185,25 @@ pub fn install_and_run() {
     }
 }
 
+/// Sync the engine's held_keys with CGEvent modifier flags.
+/// This ensures modifiers are tracked even if FlagsChanged up arrives before
+/// the key-down event (fast Cmd+Space combos).
+fn sync_modifier_flags(flags: &CGEventFlags) {
+    use capslockx_core::KeyCode;
+    let pairs: &[(CGEventFlags, KeyCode)] = &[
+        (CGEventFlags::CGEventFlagCommand,   KeyCode::LWin),
+        (CGEventFlags::CGEventFlagShift,     KeyCode::LShift),
+        (CGEventFlags::CGEventFlagControl,   KeyCode::LCtrl),
+        (CGEventFlags::CGEventFlagAlternate, KeyCode::LAlt),
+    ];
+    for &(flag, code) in pairs {
+        if flags.contains(flag) {
+            // Ensure modifier is in held_keys (inject key-down if missing).
+            ENGINE.ensure_held(code);
+        }
+    }
+}
+
 // ── Tray icon edge detection ─────────────────────────────────────────────────
 
 /// Check the engine mode and update the tray icon on edge transitions.
@@ -213,6 +232,15 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
             let pressed = matches!(event_type, CGEventType::KeyDown);
             let code = cg_keycode_to_keycode(cg_keycode);
 
+            // On macOS, CGEvent carries modifier flags even if the modifier key
+            // was released by the time the callback fires. Inject modifiers into
+            // held_keys based on the event's flags so Cmd+Space bypass works
+            // reliably even with fast key combos.
+            if pressed {
+                let flags = event.get_flags();
+                sync_modifier_flags(&flags);
+            }
+
             let resp = ENGINE.on_key_event(code, pressed);
             update_tray_on_edge();
             match resp {
@@ -227,12 +255,13 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
             let code = cg_keycode_to_keycode(cg_keycode);
             let pressed = is_modifier_pressed(cg_keycode, flags);
 
-            let resp = ENGINE.on_key_event(code, pressed);
+            let _resp = ENGINE.on_key_event(code, pressed);
             update_tray_on_edge();
-            match resp {
-                CoreResponse::Suppress => None,
-                CoreResponse::PassThrough => Some(()),
-            }
+
+            // Always pass through modifier FlagsChanged events — suppressing
+            // them breaks system shortcuts (Cmd+Space, Shift+Space) because
+            // macOS needs to see the actual modifier key-down at the OS level.
+            Some(())
         }
         _ => Some(()),
     }
