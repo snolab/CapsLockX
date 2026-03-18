@@ -332,36 +332,9 @@ impl VoiceCapture {
                     eprintln!("[CLX] voice_capture: couldn't set mono f32 (status {}), using hardware format", s);
                 }
             } else {
-                eprintln!("[CLX] voice_capture: couldn't query format (status {}), assuming 48kHz", status);
+                // Can't query format — just accept defaults and hope for the best.
+                eprintln!("[CLX] voice_capture: couldn't query format (status {}), assuming 48kHz mono f32", status);
                 actual_rate = 48000;
-
-                // Set mono float32 at the hardware rate
-                let hw_format = AudioStreamBasicDescription {
-                    sample_rate: actual_rate as f64,
-                    format_id: K_AUDIO_FORMAT_LINEAR_PCM,
-                    format_flags: K_AUDIO_FORMAT_FLAG_IS_FLOAT | K_AUDIO_FORMAT_FLAG_IS_PACKED,
-                    bytes_per_packet: 4,
-                    frames_per_packet: 1,
-                    bytes_per_frame: 4,
-                    channels_per_frame: 1,
-                    bits_per_channel: 32,
-                    reserved: 0,
-                };
-                let status = AudioUnitSetProperty(
-                    unit,
-                    K_AUDIO_UNIT_PROPERTY_STREAM_FORMAT,
-                    K_AUDIO_UNIT_SCOPE_OUTPUT,
-                    1,
-                    &hw_format as *const AudioStreamBasicDescription as *const c_void,
-                    std::mem::size_of::<AudioStreamBasicDescription>() as u32,
-                );
-                if status != 0 {
-                    AudioComponentInstanceDispose(unit);
-                    return Err(format!(
-                        "Failed to set fallback stream format (status {})",
-                        status
-                    ));
-                }
             }
 
             // ── Tell the AU not to allocate its own buffer — we provide ours ─

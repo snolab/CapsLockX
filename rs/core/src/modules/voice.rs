@@ -331,8 +331,9 @@ fn voice_bg_persistent(
 
         // Create AudioCapture fresh each session (cpal::Stream is !Send).
         let t_wake = std::time::Instant::now();
-        // Try AEC mic (VoiceProcessingIO with echo cancellation) first.
-        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = platform.start_aec_mic();
+        // VoiceProcessingIO AEC disabled — it mutes system audio output.
+        // TODO: find a way to use VoiceProcessingIO without disrupting speakers.
+        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = None;
         let use_aec = aec_mic.is_some();
 
         // Fall back to cpal AudioCapture if AEC not available.
