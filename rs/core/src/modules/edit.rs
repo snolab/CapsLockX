@@ -142,14 +142,13 @@ fn held_modifiers(p: &dyn Platform) -> Vec<KeyCode> {
 }
 
 /// Tap a key with all currently-held modifiers passed through.
+/// Uses key_tap_with_mods which embeds flags atomically on macOS.
 fn tap_with_held_mods(p: &dyn Platform, key: KeyCode, n: i32) {
     let mods = held_modifiers(p);
     if mods.is_empty() {
         p.key_tap_n(key, n);
     } else {
-        for m in &mods { p.key_down(*m); }
-        p.key_tap_n(key, n);
-        for m in mods.iter().rev() { p.key_up(*m); }
+        p.key_tap_with_mods(key, &mods, n);
     }
 }
 

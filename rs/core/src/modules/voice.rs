@@ -22,6 +22,10 @@ const STATE_LISTENING: u8 = 1;
 #[allow(dead_code)]
 const STATE_STOPPING: u8 = 2;
 
+/// Two independent voice features that can run simultaneously:
+/// - Voice Note (click toggle): background recording to file + SRT + overlay
+/// - Voice Input (hold): type transcription at cursor, stops on release
+
 /// Hold threshold: if V is held longer than this, releasing V stops listening.
 const HOLD_THRESHOLD_MS: u128 = 300;
 
@@ -90,16 +94,19 @@ const STREAMING_CHUNK_SAMPLES: usize = 1_600; // 100ms at 16kHz
 const VAD_MAX_CHUNK_SAMPLES: usize = 400_000;
 
 pub struct VoiceModule {
-    state: Arc<AtomicU8>,
     press_time: Mutex<Option<Instant>>,
     platform: Arc<dyn Platform>,
-    /// Signal to stop recording (but keep thread alive).
+    /// Voice Note mode: recording to file + SRT (toggle with click).
+    note_active: Arc<AtomicBool>,
+    /// Voice Input mode: typing at cursor (hold to activate).
+    input_active: Arc<AtomicBool>,
+    /// Signal to stop audio capture entirely.
     bg_stop: Arc<AtomicBool>,
     /// Signal to fully terminate the background thread.
     bg_quit: Arc<AtomicBool>,
     /// Handle to the background thread.
     bg_thread: Mutex<Option<std::thread::JoinHandle<()>>>,
-    /// Signal to wake the bg thread when recording starts.
+    /// Signal to wake the bg thread when any mode starts.
     bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
     /// Whether to capture system audio (Shift+V).
     with_system_audio: Arc<AtomicBool>,
@@ -108,9 +115,10 @@ pub struct VoiceModule {
 impl VoiceModule {
     pub fn new(platform: Arc<dyn Platform>) -> Self {
         Self {
-            state: Arc::new(AtomicU8::new(STATE_IDLE)),
             press_time: Mutex::new(None),
             platform,
+            note_active: Arc::new(AtomicBool::new(false)),
+            input_active: Arc::new(AtomicBool::new(false)),
             bg_stop: Arc::new(AtomicBool::new(false)),
             bg_quit: Arc::new(AtomicBool::new(false)),
             bg_thread: Mutex::new(None),
@@ -124,27 +132,19 @@ impl VoiceModule {
             return false;
         }
 
-        let current = self.state.load(Ordering::Relaxed);
-        match current {
-            STATE_IDLE => {
-                self.state.store(STATE_LISTENING, Ordering::Relaxed);
-                *self.press_time.lock().unwrap() = Some(Instant::now());
-                // Shift+V = capture system audio too.
-                let sys_audio = self.platform.is_key_physically_down(KeyCode::LShift)
-                    || self.platform.is_key_physically_down(KeyCode::RShift);
-                self.with_system_audio.store(sys_audio, Ordering::Relaxed);
-                if sys_audio { eprintln!("[CLX] voice: Shift+V → mic + system audio"); }
-                self.start_listening();
-                true
-            }
-            STATE_LISTENING => {
-                self.state.store(STATE_IDLE, Ordering::Relaxed);
-                *self.press_time.lock().unwrap() = None;
-                self.stop_listening();
-                true
-            }
-            _ => true,
-        }
+        *self.press_time.lock().unwrap() = Some(Instant::now());
+
+        // Shift+V = capture system audio too.
+        let sys_audio = self.platform.is_key_physically_down(KeyCode::LShift)
+            || self.platform.is_key_physically_down(KeyCode::RShift);
+        self.with_system_audio.store(sys_audio, Ordering::Relaxed);
+
+        // Start input mode immediately (will be confirmed on key_up if held >300ms).
+        self.input_active.store(true, Ordering::Relaxed);
+
+        // Ensure audio pipeline is running.
+        self.ensure_pipeline_running();
+        true
     }
 
     pub fn on_key_up(&self, key: KeyCode) -> bool {
@@ -152,26 +152,40 @@ impl VoiceModule {
             return false;
         }
 
-        let current = self.state.load(Ordering::Relaxed);
-        if current == STATE_LISTENING {
-            let held_long = self
-                .press_time
-                .lock()
-                .unwrap()
-                .map(|t| t.elapsed().as_millis() >= HOLD_THRESHOLD_MS)
-                .unwrap_or(false);
+        let held_long = self
+            .press_time
+            .lock()
+            .unwrap()
+            .map(|t| t.elapsed().as_millis() >= HOLD_THRESHOLD_MS)
+            .unwrap_or(false);
 
-            if held_long {
-                // Hold mode: release stops listening.
-                self.state.store(STATE_IDLE, Ordering::Relaxed);
-                *self.press_time.lock().unwrap() = None;
-                self.stop_listening();
+        if held_long {
+            // Hold release (>300ms): stop voice INPUT, note continues if active.
+            self.input_active.store(false, Ordering::Relaxed);
+            eprintln!("[CLX] voice: hold release → input done");
+
+            // If note mode isn't active, stop the pipeline entirely.
+            if !self.note_active.load(Ordering::Relaxed) {
+                self.stop_pipeline();
+            }
+        } else {
+            // Click (<300ms): toggle voice NOTE mode.
+            self.input_active.store(false, Ordering::Relaxed);
+
+            if self.note_active.load(Ordering::Relaxed) {
+                // Note was running → stop it.
+                self.note_active.store(false, Ordering::Relaxed);
+                eprintln!("[CLX] voice: click → note stopped");
+                self.stop_pipeline();
             } else {
-                // Toggle mode (<300ms): clear press_time to signal toggle mode.
-                // This tells stop() (from CLX deactivate) to NOT stop listening.
-                *self.press_time.lock().unwrap() = None;
+                // Note wasn't running → start it.
+                self.note_active.store(true, Ordering::Relaxed);
+                eprintln!("[CLX] voice: click → note started (recording to file)");
+                self.ensure_pipeline_running();
             }
         }
+
+        *self.press_time.lock().unwrap() = None;
         true
     }
 
@@ -180,23 +194,17 @@ impl VoiceModule {
     }
 
     /// Called when CLX mode deactivates.
-    /// In toggle mode (V was tapped <300ms), keep listening — don't stop.
-    /// Only stop if we're in hold mode (press_time is set and recent).
+    /// Stop voice input (hold mode), but keep voice note running.
     pub fn stop(&self) {
-        // If press_time is None, it was a toggle (already cleared on key_up).
-        // Keep listening — user will tap V again to stop.
-        let press_time = *self.press_time.lock().unwrap();
-        if press_time.is_some() {
-            // Hold mode — Space released while V was held. Stop.
-            self.state.store(STATE_IDLE, Ordering::Relaxed);
-            *self.press_time.lock().unwrap() = None;
-            self.stop_listening();
+        self.input_active.store(false, Ordering::Relaxed);
+        // If note is still active, keep pipeline alive.
+        if !self.note_active.load(Ordering::Relaxed) {
+            self.stop_pipeline();
         }
-        // Toggle mode: do nothing, keep listening.
     }
 
     pub fn is_listening(&self) -> bool {
-        self.state.load(Ordering::Relaxed) == STATE_LISTENING
+        self.note_active.load(Ordering::Relaxed) || self.input_active.load(Ordering::Relaxed)
     }
 
     // ── Internal: audio lifecycle ─────────────────────────────────────────────
@@ -214,6 +222,8 @@ impl VoiceModule {
         let bg_quit = Arc::clone(&self.bg_quit);
         let bg_wake = Arc::clone(&self.bg_wake);
         let with_sys = Arc::clone(&self.with_system_audio);
+        let note_active = Arc::clone(&self.note_active);
+        let input_active = Arc::clone(&self.input_active);
         let platform = Arc::clone(&self.platform);
 
         let server_url = resolve_server_url();
@@ -221,16 +231,16 @@ impl VoiceModule {
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, platform, &server_url);
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, platform, &server_url);
             })
             .expect("failed to spawn voice bg thread");
 
         *bg = Some(handle);
     }
 
-    /// Ensure the persistent bg thread is running, then wake it to start recording.
-    fn start_listening(&self) {
-        eprintln!("[CLX] voice: start listening");
+    /// Ensure the audio pipeline bg thread is running and capturing.
+    fn ensure_pipeline_running(&self) {
+        eprintln!("[CLX] voice: ensuring pipeline running");
 
         // Spawn the bg thread once — it stays alive and waits between sessions.
         let mut bg = self.bg_thread.lock().unwrap();
@@ -247,10 +257,9 @@ impl VoiceModule {
         drop(started);
     }
 
-    fn stop_listening(&self) {
-        eprintln!("[CLX] voice: stop listening");
+    fn stop_pipeline(&self) {
+        eprintln!("[CLX] voice: stopping pipeline");
         self.bg_stop.store(true, Ordering::Relaxed);
-        // Don't join — thread stays alive for next session.
     }
 }
 
@@ -263,6 +272,8 @@ fn voice_bg_persistent(
     bg_quit: Arc<AtomicBool>,
     bg_wake: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
     with_system_audio: Arc<AtomicBool>,
+    note_active: Arc<AtomicBool>,
+    input_active: Arc<AtomicBool>,
     platform: Arc<dyn Platform>,
     server_url: &str,
 ) {
@@ -329,6 +340,17 @@ fn voice_bg_persistent(
             if sys_capture.is_some() { " +sysaudio" } else { "" });
 
         platform.show_voice_overlay();
+
+        // Voice Note: set up file output if note mode is active.
+        let note_dir = dirs::home_dir().map(|h| h.join(".capslockx").join("voice"));
+        if let Some(ref dir) = note_dir {
+            std::fs::create_dir_all(dir).ok();
+        }
+        let session_ts = chrono_timestamp();
+        let mut note_audio: Vec<f32> = Vec::new(); // raw audio for WAV file
+        let mut note_srt = String::new();
+        let mut srt_index: usize = 0;
+        let mut note_start_time = std::time::Instant::now();
 
         // Committed text: confirmed transcriptions that won't change.
         let mut committed_text = String::new();
@@ -502,6 +524,24 @@ fn voice_bg_persistent(
     }
 
     eprintln!("[CLX] voice: bg thread exiting");
+}
+
+/// Generate a timestamp string like "2026-03-19T120000".
+fn chrono_timestamp() -> String {
+    use std::time::SystemTime;
+    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
+    let secs = d.as_secs();
+    // Simple UTC timestamp without chrono crate.
+    let s = secs % 60;
+    let m = (secs / 60) % 60;
+    let h = (secs / 3600) % 24;
+    let days = secs / 86400;
+    // Approximate date (good enough for filenames).
+    let y = 1970 + days / 365;
+    let doy = days % 365;
+    let mon = doy / 30 + 1;
+    let day = doy % 30 + 1;
+    format!("{y:04}-{mon:02}-{day:02}T{h:02}{m:02}{s:02}")
 }
 
 // ── Streaming diff helpers ────────────────────────────────────────────────────
