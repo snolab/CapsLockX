@@ -1,0 +1,4 @@
+- generic [active] [ref=e1]:
+  - heading "🎤 Voice Note Player" [level=1] [ref=e2]
+  - paragraph [ref=e3]: Drag a .webm + .srt file here, or use the file picker below.
+  - button "Choose File" [ref=e4]
