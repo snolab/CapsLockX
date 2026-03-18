@@ -375,34 +375,38 @@ fn voice_bg_persistent(
         let mut srt_index: usize = 0;
         let note_start_time = std::time::Instant::now();
 
-        // Stream MP3 to disk in real-time (crash-safe — partial file is playable).
-        let mut mp3_file: Option<std::fs::File> = None;
-        let mut mp3_encoder: Option<mp3lame_encoder::Encoder> = None;
+        // Stream audio to WebM via ffmpeg pipe (crash-safe — each cluster is self-contained).
+        let mut ffmpeg_stdin: Option<std::process::ChildStdin> = None;
+        let mut ffmpeg_child: Option<std::process::Child> = None;
         if note_active.load(Ordering::Relaxed) {
             if let Some(ref dir) = note_dir {
-                let mp3_path = dir.join(format!("{}.mp3", session_ts));
-                match std::fs::File::create(&mp3_path) {
-                    Ok(f) => {
-                        let mut enc = mp3lame_encoder::Builder::new().unwrap();
-                        enc.set_num_channels(1).unwrap();
-                        enc.set_sample_rate(16000).unwrap();
-                        enc.set_brate(mp3lame_encoder::Bitrate::Kbps64).unwrap();
-                        enc.set_quality(mp3lame_encoder::Quality::Best).unwrap();
-                        match enc.build() {
-                            Ok(encoder) => {
-                                eprintln!("[CLX] voice: streaming MP3 to {}", mp3_path.display());
-                                mp3_file = Some(f);
-                                mp3_encoder = Some(encoder);
-                            }
-                            Err(e) => eprintln!("[CLX] voice: MP3 encoder init failed: {e:?}"),
-                        }
+                let webm_path = dir.join(format!("{}.webm", session_ts));
+                match std::process::Command::new("ffmpeg")
+                    .args([
+                        "-y",
+                        "-f", "s16le",       // raw PCM input
+                        "-ar", "16000",       // 16kHz
+                        "-ac", "1",           // mono
+                        "-i", "pipe:0",       // read from stdin
+                        "-c:a", "libopus",    // Opus codec
+                        "-b:a", "48k",        // 48kbps (great for speech)
+                        "-f", "webm",         // WebM container
+                        webm_path.to_str().unwrap_or("output.webm"),
+                    ])
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                {
+                    Ok(mut child) => {
+                        ffmpeg_stdin = child.stdin.take();
+                        ffmpeg_child = Some(child);
+                        eprintln!("[CLX] voice: streaming WebM to {}", webm_path.display());
                     }
-                    Err(e) => eprintln!("[CLX] voice: failed to create MP3 file: {e}"),
+                    Err(e) => eprintln!("[CLX] voice: ffmpeg spawn failed: {e}"),
                 }
             }
         }
-
-        let mut mp3_pcm_buf: Vec<i16> = Vec::new(); // accumulate PCM for MP3 frame encoding
 
         // Committed text: confirmed transcriptions that won't change.
         let mut committed_text = String::new();
@@ -476,19 +480,16 @@ fn voice_bg_persistent(
             // Resample to 16kHz BEFORE VAD.
             let samples_16k = resample(&samples, sample_rate, 16000);
 
-            // Accumulate samples for MP3 encoding in proper frame batches.
-            if mp3_encoder.is_some() {
-                mp3_pcm_buf.extend(samples_16k.iter().map(|&s| (s.clamp(-1.0, 1.0) * 32767.0) as i16));
-                // Encode in 1152-sample frames (MP3 standard frame size).
-                while mp3_pcm_buf.len() >= 1152 {
-                    let frame: Vec<i16> = mp3_pcm_buf.drain(..1152).collect();
-                    if let (Some(ref mut enc), Some(ref mut file)) = (&mut mp3_encoder, &mut mp3_file) {
-                        let mut mp3_buf = Vec::with_capacity(2048);
-                        if let Ok(_) = enc.encode_to_vec(mp3lame_encoder::MonoPcm(&frame), &mut mp3_buf) {
-                            use std::io::Write;
-                            let _ = file.write_all(&mp3_buf);
-                        }
-                    }
+            // Pipe raw PCM to ffmpeg for streaming WebM encoding.
+            if let Some(ref mut stdin) = ffmpeg_stdin {
+                use std::io::Write;
+                let pcm_bytes: Vec<u8> = samples_16k.iter()
+                    .flat_map(|&s| ((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes())
+                    .collect();
+                if stdin.write_all(&pcm_bytes).is_err() {
+                    // ffmpeg died — close stdin.
+                    ffmpeg_stdin = None;
+                    eprintln!("[CLX] voice: ffmpeg pipe broken");
                 }
             }
 
@@ -629,56 +630,23 @@ fn voice_bg_persistent(
         platform.hide_voice_overlay();
 
         // Flush MP3 encoder and save SRT.
-        if let (Some(mut enc), Some(mut file)) = (mp3_encoder.take(), mp3_file.take()) {
-            use std::io::Write;
-            if !mp3_pcm_buf.is_empty() {
-                mp3_pcm_buf.resize(1152, 0);
-                let mut mp3_buf = Vec::with_capacity(2048);
-                if enc.encode_to_vec(mp3lame_encoder::MonoPcm(&mp3_pcm_buf), &mut mp3_buf).is_ok() {
-                    let _ = file.write_all(&mp3_buf);
+        // Close ffmpeg stdin → ffmpeg finalizes the WebM file.
+        drop(ffmpeg_stdin);
+        if let Some(mut child) = ffmpeg_child.take() {
+            std::thread::spawn(move || {
+                match child.wait() {
+                    Ok(s) if s.success() => eprintln!("[CLX] voice: WebM saved"),
+                    Ok(s) => eprintln!("[CLX] voice: ffmpeg exit {s}"),
+                    Err(e) => eprintln!("[CLX] voice: ffmpeg wait error: {e}"),
                 }
-            }
-            let mut tail = Vec::with_capacity(7200);
-            if enc.flush_to_vec::<mp3lame_encoder::FlushNoGap>(&mut tail).is_ok() {
-                let _ = file.write_all(&tail);
-            }
-            drop(file);
-            eprintln!("[CLX] voice: MP3 saved");
+            });
         }
+        // Save SRT alongside WebM.
         if !note_srt.is_empty() {
             if let Some(ref dir) = note_dir {
                 let srt_path = dir.join(format!("{}.srt", session_ts));
                 let _ = std::fs::write(&srt_path, &note_srt);
                 eprintln!("[CLX] voice: SRT saved");
-            }
-        }
-        // Mux MP3 + SRT → WebM via ffmpeg (background, non-blocking).
-        if let Some(ref dir) = note_dir {
-            let mp3_path = dir.join(format!("{}.mp3", session_ts));
-            let srt_path = dir.join(format!("{}.srt", session_ts));
-            let webm_path = dir.join(format!("{}.webm", session_ts));
-            if mp3_path.exists() && srt_path.exists() {
-                std::thread::spawn(move || {
-                    let result = std::process::Command::new("ffmpeg")
-                        .args([
-                            "-y", "-i", mp3_path.to_str().unwrap_or(""),
-                            "-i", srt_path.to_str().unwrap_or(""),
-                            "-c:a", "libopus", "-b:a", "48k",
-                            "-c:s", "webvtt",
-                            "-f", "webm",
-                            webm_path.to_str().unwrap_or(""),
-                        ])
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .status();
-                    match result {
-                        Ok(s) if s.success() => {
-                            eprintln!("[CLX] voice: WebM muxed ({})", webm_path.display());
-                        }
-                        Ok(s) => eprintln!("[CLX] voice: ffmpeg failed (exit {})", s),
-                        Err(e) => eprintln!("[CLX] voice: ffmpeg not found: {e}"),
-                    }
-                });
             }
         }
 
