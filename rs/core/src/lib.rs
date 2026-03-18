@@ -2,6 +2,7 @@ pub mod acc_model;
 pub mod audio_capture;
 pub mod engine;
 pub mod key_code;
+pub mod local_whisper;
 pub mod modules;
 pub mod platform;
 pub mod state;
