@@ -334,10 +334,14 @@ fn voice_bg_persistent(
         let mut committed_text = String::new();
         // Pending audio: only the uncommitted tail gets re-transcribed.
         let mut pending_buf: Vec<f32> = Vec::new();
-        let mut pending_text = String::new();
+        // What Whisper thinks the pending audio says (may change each cycle).
+        let mut whisper_pending = String::new();
+        // What we've actually typed on screen for the pending portion.
+        // Only grows via append — never backspaces during streaming.
+        let mut typed_pending = String::new();
         let mut pending_audio_since_last: usize = 0;
-        // Track stability: commit when text hasn't changed for 2 cycles.
-        let mut prev_pending_text = String::new();
+        // Stability tracking.
+        let mut prev_whisper = String::new();
         let mut stable_count: usize = 0;
 
         // Session log.
@@ -397,52 +401,72 @@ fn voice_bg_persistent(
                 if pending_audio_since_last >= STREAMING_CHUNK_SAMPLES {
                     let new_text = transcribe_local(&pending_buf, &mut local_whisper);
                     if !new_text.is_empty() {
-                        // Diff only against pending_text (not committed).
-                        type_diff(&pending_text, &new_text, &platform);
-                        pending_text = new_text;
+                        whisper_pending = new_text.clone();
 
-                        // Log full text (committed + pending).
+                        // Append-only: only type if new text extends what we already typed.
+                        type_diff(&typed_pending, &new_text, &platform);
+                        // type_diff only types if it's a pure extension.
+                        // If it was an extension, update typed_pending.
+                        if new_text.starts_with(&typed_pending) {
+                            typed_pending = new_text;
+                        }
+                        // Otherwise typed_pending stays the same (we skipped the rewrite).
+
+                        // Log full text.
                         use std::io::Write;
                         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
-                            let _ = writeln!(f, "{}{}", committed_text, pending_text);
+                            let _ = writeln!(f, "{}{}", committed_text, typed_pending);
                         }
                     }
                     pending_audio_since_last = 0;
                 }
 
-                // Commit when text is stable (same for 2 consecutive transcriptions)
-                // AND buffer is at least 2s. This avoids committing mid-word
-                // and prevents the large pre-commit diffs.
-                if pending_text == prev_pending_text && !pending_text.is_empty() {
+                // Stability tracking.
+                if whisper_pending == prev_whisper && !whisper_pending.is_empty() {
                     stable_count += 1;
                 } else {
                     stable_count = 0;
                 }
-                prev_pending_text = pending_text.clone();
+                prev_whisper = whisper_pending.clone();
 
-                // Commit if stable for 2+ cycles, or forced at 5s to prevent unbounded growth.
-                let should_commit = (stable_count >= 2 && pending_buf.len() > 32_000)  // stable + >2s
-                    || pending_buf.len() > 80_000;  // force at 5s
+                // Commit when stable or forced at 5s.
+                let should_commit = (stable_count >= 2 && pending_buf.len() > 32_000)
+                    || pending_buf.len() > 80_000;
                 if should_commit {
-                    committed_text.push_str(&pending_text);
-                    eprintln!("[CLX] voice: committed {:?} (stable={})", pending_text, stable_count);
-                    pending_text.clear();
-                    prev_pending_text.clear();
+                    // At commit: replace what's on screen with the stable version.
+                    if typed_pending != whisper_pending {
+                        type_replace(&typed_pending, &whisper_pending, &platform);
+                    }
+                    if !committed_text.is_empty() && !committed_text.ends_with(' ') && !committed_text.ends_with('\n') {
+                    committed_text.push(' ');
+                }
+                committed_text.push_str(&whisper_pending);
+                    eprintln!("[CLX] voice: committed {:?} (stable={})", whisper_pending, stable_count);
+                    whisper_pending.clear();
+                    typed_pending.clear();
+                    prev_whisper.clear();
                     pending_buf.clear();
                     pending_audio_since_last = 0;
                     stable_count = 0;
                 }
             } else if was_in_speech {
-                // Speech ended — commit remaining pending text.
+                // Speech ended — final transcription and commit.
                 if pending_buf.len() > 4800 {
                     let final_text = transcribe_local(&pending_buf, &mut local_whisper);
                     if !final_text.is_empty() {
-                        type_diff(&pending_text, &final_text, &platform);
-                        pending_text = final_text;
+                        // At speech end, accept rewrites — replace what's on screen.
+                        if typed_pending != final_text {
+                            type_replace(&typed_pending, &final_text, &platform);
+                        }
+                        whisper_pending = final_text;
                     }
                 }
 
-                committed_text.push_str(&pending_text);
+                if !committed_text.is_empty() && !committed_text.ends_with(' ') && !committed_text.ends_with('\n') {
+                    committed_text.push(' ');
+                }
+                committed_text.push_str(&whisper_pending);
+                eprintln!("[CLX] voice: utterance done: {:?}", committed_text);
 
                 // Log final text.
                 {
@@ -452,16 +476,12 @@ fn voice_bg_persistent(
                     }
                 }
 
-                // Send committed text to server for polishing.
-                if !committed_text.is_empty() {
-                    // TODO: send full audio to server in background
-                    // For now, just log the committed text.
-                    eprintln!("[CLX] voice: utterance done: {:?}", committed_text);
-                }
-
-                pending_text.clear();
+                whisper_pending.clear();
+                typed_pending.clear();
+                prev_whisper.clear();
                 pending_buf.clear();
                 pending_audio_since_last = 0;
+                stable_count = 0;
                 committed_text.clear();
             }
         }
@@ -469,8 +489,8 @@ fn voice_bg_persistent(
         // Flush remaining.
         if pending_buf.len() > 4800 {
             let new_text = transcribe_local(&pending_buf, &mut local_whisper);
-            if !new_text.is_empty() {
-                type_diff(&pending_text, &new_text, &platform);
+            if !new_text.is_empty() && typed_pending != new_text {
+                type_replace(&typed_pending, &new_text, &platform);
             }
         }
 
@@ -518,38 +538,48 @@ fn transcribe_local(samples: &[f32], local_whisper: &mut Option<LocalWhisper>) -
 }
 
 /// Type only the difference between old and new text.
-/// Finds the longest common prefix, deletes the diverging suffix of old,
-/// then types the new suffix. Logs the resulting text to /tmp/clx-voice.log.
+/// **Append-only during streaming** — only types new characters when
+/// the new text starts with the old text (pure extension). If Whisper
+/// rewrites earlier text, we skip the update and wait for it to stabilize.
+/// Full replacement only happens at commit/speech-end boundaries.
 fn type_diff(old: &str, new: &str, platform: &Arc<dyn Platform>) {
-    // Find common prefix length (in chars).
-    let common_chars = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
-    let old_chars = old.chars().count();
-    let new_chars: Vec<char> = new.chars().collect();
-
-    // Delete the diverging tail of old text.
-    let to_delete = old_chars - common_chars;
-    if to_delete > 0 {
-        for _ in 0..to_delete {
-            platform.key_tap(KeyCode::Backspace);
-        }
-    }
-
-    // Type the new suffix.
-    let suffix: String = new_chars[common_chars..].iter().collect();
-    if !suffix.is_empty() || to_delete > 0 {
-        eprintln!("[CLX] voice: +{:?} (-{} chars)", suffix, to_delete);
+    if new.starts_with(old) {
+        // Pure extension — just type the new suffix.
+        let suffix: String = new.chars().skip(old.chars().count()).collect();
         if !suffix.is_empty() {
+            eprintln!("[CLX] voice: +{:?}", suffix);
             platform.type_text(&suffix);
         }
+    } else {
+        // Whisper rewrote earlier text — skip this update during streaming.
+        // The caller will handle it at commit time.
+        let common = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
+        let old_len = old.chars().count();
+        eprintln!("[CLX] voice: rewrite detected (common={}/{}, new_len={}), skipping",
+            common, old_len, new.chars().count());
+        return;
     }
 
-    // Log current state of what's in the input box to /tmp/clx-voice.log
+    // Log current state of what's in the input box.
     if !new.is_empty() {
         use std::io::Write;
         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
             let _ = writeln!(f, "{}", new);
         }
     }
+}
+
+/// Full replacement: delete old text and type new text.
+/// Used at commit/speech-end boundaries when we accept a rewrite.
+fn type_replace(old: &str, new: &str, platform: &Arc<dyn Platform>) {
+    let old_chars = old.chars().count();
+    for _ in 0..old_chars {
+        platform.key_tap(KeyCode::Backspace);
+    }
+    if !new.is_empty() {
+        platform.type_text(new);
+    }
+    eprintln!("[CLX] voice: replace {:?} → {:?}", old, new);
 }
 
 // ── Resampling ───────────────────────────────────────────────────────────────
