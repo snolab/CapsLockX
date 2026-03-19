@@ -789,32 +789,42 @@ impl Platform for MacPlatform {
     fn cycle_windows(&self, dir: i32) {
         let mut guard = CYCLE.lock().unwrap();
 
-        // Always take a fresh snapshot, but preserve position by finding
-        // the currently-active window in the new list.
-        let stale = guard.as_ref()
-            .map(|s| s.last_use.elapsed().as_secs() >= 2)
-            .unwrap_or(true);
+        // Always take a fresh snapshot. Find the currently-focused window
+        // (which may have changed via manual click) and start cycling from there.
+        let windows = list_all_windows();
+        if windows.is_empty() { return; }
 
-        if stale {
-            let windows = list_all_windows();
-            if windows.is_empty() { return; }
-
-            // Find the previously-activated window in the new list.
-            let prev_entry = guard.as_ref().and_then(|s| s.windows.get(s.index).cloned());
-            let start_idx = if let Some(ref prev) = prev_entry {
-                // Match by title (most specific) then pid.
-                windows.iter().position(|w| w.title == prev.title && w.pid == prev.pid)
-                    .unwrap_or(0)
+        // Find the currently-focused window by checking frontmost app pid.
+        // This handles manual clicks, Cmd+Tab, etc. between Z presses.
+        let frontmost_pid = unsafe {
+            let ws = objc_getClass(b"NSWorkspace\0".as_ptr() as *const _);
+            let shared: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(ws, sel_registerName(b"sharedWorkspace\0".as_ptr() as *const _))
+            };
+            let front_app: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(shared, sel_registerName(b"frontmostApplication\0".as_ptr() as *const _))
+            };
+            if !front_app.is_null() {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> i32
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(front_app, sel_registerName(b"processIdentifier\0".as_ptr() as *const _)) as i64
             } else {
                 0
-            };
+            }
+        };
 
-            *guard = Some(CycleState {
-                windows,
-                index: start_idx,
-                last_use: Instant::now(),
-            });
-        }
+        // Find the frontmost app's first window in our sorted list.
+        let start_idx = windows.iter().position(|w| w.pid == frontmost_pid).unwrap_or(0);
+
+        *guard = Some(CycleState {
+            windows,
+            index: start_idx,
+            last_use: Instant::now(),
+        });
 
         let state = guard.as_mut().unwrap();
         let len = state.windows.len();
