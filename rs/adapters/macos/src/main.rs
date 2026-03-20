@@ -24,6 +24,8 @@ mod voice_overlay;
 mod system_audio;
 #[cfg(target_os = "macos")]
 mod voice_capture;
+#[cfg(target_os = "macos")]
+mod brainstorm_overlay;
 
 #[cfg(target_os = "macos")]
 fn main() {

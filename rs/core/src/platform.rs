@@ -199,6 +199,20 @@ pub trait Platform: Send + Sync + 'static {
     fn update_voice_overlay(&self, _mic_levels: &[f32], _mic_vad: bool, _sys_levels: &[f32], _sys_vad: bool) {}
     fn update_voice_subtitle(&self, _text: &str) {}
 
+    // ── Brainstorm overlay (optional, default = no-op) ─────────────────────
+
+    /// Get clipboard text content.
+    fn get_clipboard_text(&self) -> String { String::new() }
+    /// Set clipboard text content.
+    fn set_clipboard_text(&self, _text: &str) {}
+    /// Show brainstorm floating overlay with streaming text.
+    fn show_brainstorm_overlay(&self, _text: &str) {}
+    /// Hide brainstorm overlay.
+    fn hide_brainstorm_overlay(&self) {}
+    /// Show a prompt input dialog. Returns the user's input, or None if cancelled.
+    /// `prefill` is shown in the text field (e.g., clipboard content).
+    fn show_prompt_input(&self, _title: &str, _message: &str, _prefill: &str) -> Option<String> { None }
+
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 
     /// Restart the entire application (spawn new instance, exit current).

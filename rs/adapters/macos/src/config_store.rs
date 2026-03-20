@@ -12,7 +12,24 @@ pub struct FullConfig {
     pub cursor_speed:    f64,
     pub mouse_speed:     f64,
     pub scroll_speed:    f64,
+    /// STT engine: "sherpa" (SenseVoice) or "whisper"
+    #[serde(default = "default_stt_engine")]
+    pub stt_engine:          String,
+    #[serde(default = "default_brainstorm_origin")]
+    pub brainstorm_origin:   String,
+    #[serde(default = "default_brainstorm_key")]
+    pub brainstorm_api_key:  String,
+    #[serde(default)]
+    pub llm_api_key:         String,
+    #[serde(default)]
+    pub llm_model:           String,
+    #[serde(default)]
+    pub stt_correction:      bool,
 }
+
+fn default_stt_engine() -> String { "sherpa".to_string() }
+fn default_brainstorm_origin() -> String { "https://brainstorm.snomiao.com".to_string() }
+fn default_brainstorm_key() -> String { "FREE".to_string() }
 
 impl Default for FullConfig {
     fn default() -> Self {
@@ -25,6 +42,12 @@ impl Default for FullConfig {
             cursor_speed:    15.0,
             mouse_speed:     360.0,
             scroll_speed:    720.0,
+            stt_engine:      "sherpa".to_string(),
+            brainstorm_origin: "https://brainstorm.snomiao.com".to_string(),
+            brainstorm_api_key: "FREE".to_string(),
+            llm_api_key: String::new(),
+            llm_model: String::new(),
+            stt_correction: false,
         }
     }
 }
@@ -37,24 +60,36 @@ impl FullConfig {
             use_insert:      cfg.use_insert,
             use_scroll_lock: cfg.use_scroll_lock,
             use_ralt:        cfg.use_ralt,
-            cursor_speed:    cfg.speed.cursor_speed,
-            mouse_speed:     cfg.speed.mouse_speed,
-            scroll_speed:    cfg.speed.scroll_speed,
+            cursor_speed:      cfg.speed.cursor_speed,
+            mouse_speed:       cfg.speed.mouse_speed,
+            scroll_speed:      cfg.speed.scroll_speed,
+            stt_engine:        cfg.stt_engine.clone(),
+            brainstorm_origin: cfg.brainstorm_origin.clone(),
+            brainstorm_api_key: cfg.brainstorm_api_key.clone(),
+            llm_api_key: cfg.llm_api_key.clone(),
+            llm_model: cfg.llm_model.clone(),
+            stt_correction: cfg.stt_correction,
         }
     }
 
     pub fn into_clx_config(self) -> ClxConfig {
         ClxConfig {
-            use_capslock:    self.use_capslock,
-            use_space:       self.use_space,
-            use_insert:      self.use_insert,
-            use_scroll_lock: self.use_scroll_lock,
-            use_ralt:        self.use_ralt,
+            use_capslock:       self.use_capslock,
+            use_space:          self.use_space,
+            use_insert:         self.use_insert,
+            use_scroll_lock:    self.use_scroll_lock,
+            use_ralt:           self.use_ralt,
             speed: SpeedConfig {
                 cursor_speed: self.cursor_speed,
                 mouse_speed:  self.mouse_speed,
                 scroll_speed: self.scroll_speed,
             },
+            stt_engine:         self.stt_engine,
+            brainstorm_origin:  self.brainstorm_origin,
+            brainstorm_api_key: self.brainstorm_api_key,
+            llm_api_key:        self.llm_api_key,
+            llm_model:          self.llm_model,
+            stt_correction:     self.stt_correction,
         }
     }
 }
@@ -66,11 +101,20 @@ pub fn config_path() -> std::path::PathBuf {
         .join("config.json")
 }
 
-#[allow(dead_code)]
 pub fn load() -> FullConfig {
     let path = config_path();
     if let Ok(data) = std::fs::read_to_string(&path) {
-        serde_json::from_str(&data).unwrap_or_default()
+        match serde_json::from_str::<FullConfig>(&data) {
+            Ok(cfg) => {
+                eprintln!("[CLX] config: stt_correction={} llm_key={}... llm_model={}",
+                    cfg.stt_correction, &cfg.llm_api_key[..cfg.llm_api_key.len().min(10)], cfg.llm_model);
+                cfg
+            }
+            Err(e) => {
+                eprintln!("[CLX] config parse error: {} — using defaults", e);
+                FullConfig::default()
+            }
+        }
     } else {
         FullConfig::default()
     }

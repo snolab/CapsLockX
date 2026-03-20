@@ -16,8 +16,10 @@ extern "C" {
     fn AudioUnitGetProperty(unit: *mut c_void, prop: u32, scope: u32, elem: u32, data: *mut c_void, size: *mut u32) -> i32;
     fn AudioUnitInitialize(unit: *mut c_void) -> i32;
     fn AudioOutputUnitStart(unit: *mut c_void) -> i32;
+    #[allow(dead_code)]
     fn AudioOutputUnitStop(unit: *mut c_void) -> i32;
     fn AudioUnitRender(unit: *mut c_void, flags: *mut u32, ts: *const c_void, bus: u32, frames: u32, bufs: *mut c_void) -> i32;
+    #[allow(dead_code)]
     fn AudioComponentInstanceDispose(unit: *mut c_void) -> i32;
 }
 
@@ -61,7 +63,7 @@ extern "C" fn input_callback(
     bus: u32, frames: u32, _: *mut c_void,
 ) -> i32 {
     unsafe {
-        let ctx = match CTX.as_mut() { Some(c) => c, None => return -1 };
+        let ctx = match (*std::ptr::addr_of_mut!(CTX)).as_mut() { Some(c) => c, None => return -1 };
         let n = frames as usize;
         if ctx.render_buf.len() < n { ctx.render_buf.resize(n, 0.0); }
 
@@ -88,7 +90,7 @@ extern "C" fn input_callback(
             struct ABL9 { number_buffers: u32, buffers: [AudioBuffer; 9] }
             let mut bufs: [[f32; 2048]; 9] = [[0.0; 2048]; 9];
             let capped = n.min(2048);
-            let mut abl9 = ABL9 { number_buffers: 9, buffers: unsafe { std::mem::zeroed() } };
+            let mut abl9 = ABL9 { number_buffers: 9, buffers: std::mem::zeroed() };
             for i in 0..9 {
                 abl9.buffers[i] = AudioBuffer {
                     number_channels: 1,

@@ -1,3 +1,4 @@
+pub mod brainstorm;
 pub mod edit;
 pub mod media;
 pub mod mouse;
@@ -10,6 +11,7 @@ use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
 use crate::state::{ClxState, SpeedConfig};
 
+use brainstorm::BrainstormModule;
 use edit::EditModule;
 use media::MediaModule;
 use mouse::MouseModule;
@@ -18,6 +20,7 @@ use voice::VoiceModule;
 use window_manager::WindowManagerModule;
 
 pub struct Modules {
+    brainstorm:      BrainstormModule,
     edit:            EditModule,
     mouse:           MouseModule,
     media:           MediaModule,
@@ -29,22 +32,38 @@ pub struct Modules {
 
 impl Modules {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
+        let cfg = state.config.read().unwrap();
         let s = Self {
+            brainstorm:      BrainstormModule::new(
+                Arc::clone(&platform),
+                cfg.brainstorm_origin.clone(),
+                cfg.llm_api_key.clone(),
+                cfg.llm_model.clone(),
+            ),
             edit:            EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
             mouse:           MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
             media:           MediaModule::new(Arc::clone(&platform)),
             virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform)),
-            voice:           VoiceModule::new(Arc::clone(&platform)),
+            voice:           VoiceModule::with_stt_engine(
+                Arc::clone(&platform),
+                cfg.stt_engine.clone(),
+            ).with_llm_config(
+                cfg.llm_api_key.clone(),
+                cfg.llm_model.clone(),
+                cfg.stt_correction,
+            ),
             window_manager:  WindowManagerModule::new(Arc::clone(&platform)),
             platform,
         };
+        drop(cfg);
         // Preload Whisper model in background so first Space+V is instant.
         s.voice.preload();
         s
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
-        self.edit.on_key_down(key, &*self.platform)
+        self.brainstorm.on_key_down(key, mods)
+            || self.edit.on_key_down(key, &*self.platform)
             || self.mouse.on_key_down(key)
             || self.media.on_key_down(key)
             || self.virtual_desktop.on_key_down(key, mods)
@@ -53,7 +72,8 @@ impl Modules {
     }
 
     pub fn on_key_up(&self, key: KeyCode) -> bool {
-        self.edit.on_key_up(key)
+        self.brainstorm.on_key_up(key)
+            || self.edit.on_key_up(key)
             || self.mouse.on_key_up(key)
             || self.media.on_key_up(key)
             || self.voice.on_key_up(key)
@@ -61,7 +81,8 @@ impl Modules {
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
-        self.edit.is_mapped_key(key)
+        self.brainstorm.is_mapped_key(key)
+            || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
             || self.virtual_desktop.is_mapped_key(key)

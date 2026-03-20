@@ -173,7 +173,6 @@ unsafe extern "C" fn input_callback(
     let ctx = &mut *(in_ref_con as *mut CallbackContext);
 
     let frames = in_number_frames as usize;
-    let byte_size = (frames * std::mem::size_of::<f32>()) as u32;
 
     // Ensure render buffer is large enough (stable after first call)
     if ctx.render_buf.len() < frames {

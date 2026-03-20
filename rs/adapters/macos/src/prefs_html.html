@@ -151,6 +151,44 @@
     </div>
   </section>
 
+  <section>
+    <h2>Voice</h2>
+    <div class="sl-row">
+      <label for="stt_engine">STT Engine</label>
+      <select id="stt_engine" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
+        <option value="sherpa">SenseVoice (sherpa) — fast, multilingual</option>
+        <option value="whisper">Whisper (whisper.cpp) — auto-scaling</option>
+      </select>
+      <span></span>
+    </div>
+    <div class="cb-row">
+      <input type="checkbox" id="stt_correction">
+      <label for="stt_correction">LLM correction (fix STT errors using AI)</label>
+    </div>
+    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
+      <b>Space+V</b> = voice input (hold) / voice note (click)<br>
+      <b>Shift+Space+V</b> = dual capture (mic + system audio with AEC)
+    </div>
+  </section>
+
+  <section>
+    <h2>LLM / AI</h2>
+    <div class="sl-row">
+      <label for="llm_api_key">API Key</label>
+      <input type="password" id="llm_api_key" placeholder="sk-... or AIza..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div class="sl-row">
+      <label for="llm_model">Model</label>
+      <input type="text" id="llm_model" placeholder="auto (gpt-4o-mini / claude / gemini)" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
+      Used for STT correction and <b>Space+B</b> brainstorm.<br>
+      Supports: OpenAI (sk-...), Anthropic (sk-ant-...), Gemini (AIza...).
+    </div>
+  </section>
+
   <div id="status">Loading...</div>
 
   <script>
@@ -167,6 +205,10 @@
         cursor_speed:    parseFloat(document.getElementById('cursor_speed').value),
         mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
+        stt_engine:      document.getElementById('stt_engine').value,
+        stt_correction:  document.getElementById('stt_correction').checked,
+        llm_api_key:     document.getElementById('llm_api_key').value,
+        llm_model:       document.getElementById('llm_model').value,
       };
     }
 
@@ -179,6 +221,10 @@
       setSlider('cursor_speed', cfg.cursor_speed);
       setSlider('mouse_speed',  cfg.mouse_speed);
       setSlider('scroll_speed', cfg.scroll_speed);
+      if (cfg.stt_engine) document.getElementById('stt_engine').value = cfg.stt_engine;
+      document.getElementById('stt_correction').checked = cfg.stt_correction || false;
+      if (cfg.llm_api_key) document.getElementById('llm_api_key').value = cfg.llm_api_key;
+      if (cfg.llm_model) document.getElementById('llm_model').value = cfg.llm_model;
     }
 
     function setSlider(id, value) {

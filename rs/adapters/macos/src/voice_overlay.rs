@@ -29,6 +29,7 @@ static WAVEFORM_DATA: Mutex<WaveformData> = Mutex::new(WaveformData {
 static VIEW_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static WINDOW_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static LABEL_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
+static HANDLE_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 
 // ── ObjC runtime FFI ─────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ extern "C" {
     fn dlsym(handle: *mut c_void, symbol: *const std::ffi::c_char) -> *mut c_void;
 }
 
+#[allow(dead_code)]
 extern "C" {
     fn CGContextSaveGState(ctx: *mut c_void);
     fn CGContextRestoreGState(ctx: *mut c_void);
@@ -83,6 +85,32 @@ unsafe fn nsstring(s: &str) -> *mut c_void {
     let f: extern "C" fn(*mut c_void, *mut c_void, *const std::ffi::c_char) -> *mut c_void =
         std::mem::transmute(objc_msgSend as *const ());
     f(cls(b"NSString\0"), sel(b"stringWithUTF8String:\0"), cstr.as_ptr())
+}
+
+// ── Position persistence ────────────────────────────────────────────────────
+
+fn pos_path() -> std::path::PathBuf {
+    dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("CapsLockX")
+        .join("voice_overlay_pos.json")
+}
+
+fn load_pos() -> Option<(f64, f64)> {
+    let data = std::fs::read_to_string(pos_path()).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&data).ok()?;
+    let x = v.get("x")?.as_f64()?;
+    let y = v.get("y")?.as_f64()?;
+    Some((x, y))
+}
+
+fn save_pos(x: f64, y: f64) {
+    let path = pos_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let json = format!("{{\"x\":{},\"y\":{}}}", x, y);
+    let _ = std::fs::write(path, json);
 }
 
 // ── drawRect: callback ───────────────────────────────────────────────────────
@@ -194,6 +222,8 @@ extern "C" fn show_main(_: *mut c_void) {
         if !existing.is_null() {
             let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
             f(existing, sel(b"orderFront:\0"), std::ptr::null_mut());
+            let handle = HANDLE_PTR.load(Ordering::Acquire);
+            if !handle.is_null() { f(handle, sel(b"orderFront:\0"), std::ptr::null_mut()); }
             return;
         }
 
@@ -230,6 +260,9 @@ extern "C" fn show_main(_: *mut c_void) {
         f_i64(win, sel(b"setLevel:\0"), 3); // floating
         f_bool(win, sel(b"setIgnoresMouseEvents:\0"), true);
         f_bool(win, sel(b"setHasShadow:\0"), false);
+        let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
+        // Hide from screen sharing / screenshots (NSWindowSharingNone = 0)
+        f_u64(win, sel(b"setSharingType:\0"), 0);
         let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
         f_u64(win, sel(b"setCollectionBehavior:\0"), 1 | 16); // allSpaces + stationary
 
@@ -282,8 +315,8 @@ extern "C" fn show_main(_: *mut c_void) {
             // Align center.
             let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
             f_i64(label, sel(b"setAlignment:\0"), 1); // NSTextAlignmentCenter
-            // Allow up to 3 lines with word wrapping.
-            f_i64(label, sel(b"setMaximumNumberOfLines:\0"), 3);
+            // Unlimited lines — overlay auto-resizes to content.
+            f_i64(label, sel(b"setMaximumNumberOfLines:\0"), 0);
             let cell = msg0(label, sel(b"cell\0"));
             if !cell.is_null() {
                 f_i64(cell, sel(b"setLineBreakMode:\0"), 0); // word wrap
@@ -302,6 +335,232 @@ extern "C" fn show_main(_: *mut c_void) {
 
         VIEW_PTR.store(wf_view, Ordering::Release);
         WINDOW_PTR.store(win, Ordering::Release);
+
+        // Create drag handle — small ⠿ button at the left edge of the overlay.
+        // This is a separate NSPanel that is NOT ignoresMouseEvents, linked as a child.
+        let handle_w = 20.0_f64;
+        let handle_h = oh;
+        let handle_rect = NSRect { x: rect.x - handle_w, y: rect.y, w: handle_w, h: handle_h };
+
+        let handle_alloc = msg0(cls(b"NSPanel\0"), sel(b"alloc\0"));
+        // styleMask: borderless(0) | nonActivatingPanel(1<<7) | utilityWindow(1<<4)
+        let handle_style: u64 = (1 << 4) | (1 << 7);
+        let handle: *mut c_void = {
+            let f: extern "C" fn(*mut c_void, *mut c_void, NSRect, u64, u64, bool) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
+            f(handle_alloc, sel(b"initWithContentRect:styleMask:backing:defer:\0"),
+              handle_rect, handle_style, 2u64, false)
+        };
+        if !handle.is_null() {
+            let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
+            f_bool(handle, sel(b"setOpaque:\0"), false);
+            f_bool(handle, sel(b"setIgnoresMouseEvents:\0"), false);
+            f_bool(handle, sel(b"setMovableByWindowBackground:\0"), true);
+            f_bool(handle, sel(b"setHasShadow:\0"), false);
+            f_bool(handle, sel(b"setHidesOnDeactivate:\0"), false);
+            let f_i64: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
+            f_i64(handle, sel(b"setLevel:\0"), 3);
+            let f_f64: extern "C" fn(*mut c_void, *mut c_void, f64) = std::mem::transmute(objc_msgSend as *const ());
+            // Start hidden — revealed on mouse hover via timer.
+            f_f64(handle, sel(b"setAlphaValue:\0"), 0.0);
+            let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
+            f_u64(handle, sel(b"setSharingType:\0"), 0); // hide from screen share
+            f_u64(handle, sel(b"setCollectionBehavior:\0"), 1 | 16);
+
+            // Dark background
+            let handle_bg = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.3, 0.3, 0.4, 0.7)
+            };
+            msg1_ptr(handle, sel(b"setBackgroundColor:\0"), handle_bg);
+
+            // Add ⠿ label
+            let grip_label = msg0(cls(b"NSTextField\0"), sel(b"alloc\0"));
+            let grip_rect = NSRect { x: 0.0, y: 0.0, w: handle_w, h: handle_h };
+            let grip_label: *mut c_void = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
+                    std::mem::transmute(objc_msgSend as *const ());
+                f(grip_label, sel(b"initWithFrame:\0"), grip_rect)
+            };
+            msg1_ptr(grip_label, sel(b"setStringValue:\0"), nsstring("⠿"));
+            f_bool(grip_label, sel(b"setBezeled:\0"), false);
+            f_bool(grip_label, sel(b"setDrawsBackground:\0"), false);
+            f_bool(grip_label, sel(b"setEditable:\0"), false);
+            f_bool(grip_label, sel(b"setSelectable:\0"), false);
+            let grip_color = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.7, 0.7, 0.8, 1.0)
+            };
+            msg1_ptr(grip_label, sel(b"setTextColor:\0"), grip_color);
+            // Center alignment
+            let f_u64_2: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
+            f_u64_2(grip_label, sel(b"setAlignment:\0"), 1); // NSTextAlignmentCenter
+
+            let content_view = msg0(handle, sel(b"contentView\0"));
+            msg1_ptr(content_view, sel(b"addSubview:\0"), grip_label);
+
+            // Add resize indicator text at bottom of handle.
+            let resize_label = msg0(cls(b"NSTextField\0"), sel(b"alloc\0"));
+            let resize_rect = NSRect { x: 0.0, y: 0.0, w: handle_w, h: 16.0 };
+            let resize_label: *mut c_void = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
+                    std::mem::transmute(objc_msgSend as *const ());
+                f(resize_label, sel(b"initWithFrame:\0"), resize_rect)
+            };
+            msg1_ptr(resize_label, sel(b"setStringValue:\0"), nsstring("↕"));
+            f_bool(resize_label, sel(b"setBezeled:\0"), false);
+            f_bool(resize_label, sel(b"setDrawsBackground:\0"), false);
+            f_bool(resize_label, sel(b"setEditable:\0"), false);
+            f_bool(resize_label, sel(b"setSelectable:\0"), false);
+            msg1_ptr(resize_label, sel(b"setTextColor:\0"), grip_color);
+            f_u64_2(resize_label, sel(b"setAlignment:\0"), 1);
+            let tiny_font = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void =
+                    std::mem::transmute(objc_msgSend as *const ());
+                f(cls(b"NSFont\0"), sel(b"systemFontOfSize:\0"), 9.0)
+            };
+            msg1_ptr(resize_label, sel(b"setFont:\0"), tiny_font);
+            msg1_ptr(content_view, sel(b"addSubview:\0"), resize_label);
+
+            // Link as child window — moving the handle moves the overlay.
+            let f_add_child: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, u64) =
+                std::mem::transmute(objc_msgSend as *const ());
+            f_add_child(handle, sel(b"addChildWindow:ordered:\0"), win, 1); // NSWindowAbove
+
+            msg0(handle, sel(b"retain\0"));
+            f_show(handle, sel(b"orderFront:\0"), std::ptr::null_mut());
+            HANDLE_PTR.store(handle, Ordering::Release);
+
+            // Restore saved position if available.
+            if let Some((sx, sy)) = load_pos() {
+                #[repr(C)]
+                #[derive(Clone, Copy)]
+                struct NSPoint { x: f64, y: f64 }
+
+                let set_origin: extern "C" fn(*mut c_void, *mut c_void, NSPoint) =
+                    std::mem::transmute(objc_msgSend as *const ());
+                // Move the handle (parent); child (win) follows automatically.
+                let hf: NSRect = {
+                    let f: extern "C" fn(*mut c_void, *mut c_void) -> NSRect =
+                        std::mem::transmute(objc_msgSend as *const ());
+                    f(handle, sel(b"frame\0"))
+                };
+                // The saved position is for the main overlay window.
+                // Handle sits to the left of the overlay.
+                let handle_new_x = sx - hf.w;
+                set_origin(handle, sel(b"setFrameOrigin:\0"),
+                    NSPoint { x: handle_new_x, y: sy });
+            }
+
+            // Spawn hover detection thread — shows/hides handle on mouse proximity.
+            std::thread::Builder::new().name("clx-hover".into()).spawn(|| {
+                hover_loop();
+            }).ok();
+        }
+    }
+}
+
+/// Polls mouse position and shows/hides the drag handle when cursor is near overlay.
+/// Also detects window movement and persists the new position.
+fn hover_loop() {
+    use core_graphics::event::{CGEvent, CGEventType};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    let mut visible = false;
+    let mut last_saved_x: f64 = f64::NAN;
+    let mut last_saved_y: f64 = f64::NAN;
+    let mut save_cooldown: u32 = 0; // ticks since position changed
+
+    loop {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        let win = WINDOW_PTR.load(Ordering::Acquire);
+        let handle = HANDLE_PTR.load(Ordering::Acquire);
+        if win.is_null() || handle.is_null() { continue; }
+
+        // Get mouse position (screen coords, y=0 at bottom on macOS).
+        let mouse = unsafe {
+            if let Ok(event) = CGEvent::new(
+                CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap()
+            ) {
+                let loc = event.location();
+                (loc.x, loc.y)
+            } else {
+                continue;
+            }
+        };
+
+        // Get overlay window frame.
+        let win_frame: NSRect = unsafe {
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(win, sel(b"frame\0"))
+        };
+
+        // Track position changes — save after position stabilizes for ~1s.
+        if (win_frame.x - last_saved_x).abs() > 1.0 || (win_frame.y - last_saved_y).abs() > 1.0 {
+            last_saved_x = win_frame.x;
+            last_saved_y = win_frame.y;
+            save_cooldown = 10; // wait 10 ticks (1 second) before saving
+        }
+        if save_cooldown > 0 {
+            save_cooldown -= 1;
+            if save_cooldown == 0 {
+                save_pos(last_saved_x, last_saved_y);
+            }
+        }
+
+        // Convert Quartz coords (y=0 at top) to AppKit (y=0 at bottom).
+        // CGEvent uses Quartz; NSWindow uses AppKit. Screen height needed.
+        let screen_h = unsafe {
+            let scr = msg0(cls(b"NSScreen\0"), sel(b"mainScreen\0"));
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(scr, sel(b"frame\0")).h
+        };
+        let mouse_appkit_y = screen_h - mouse.1;
+
+        // Check if mouse is within overlay bounds (with 30px margin).
+        let margin = 30.0;
+        let near = mouse.0 >= win_frame.x - margin
+            && mouse.0 <= win_frame.x + win_frame.w + margin
+            && mouse_appkit_y >= win_frame.y - margin
+            && mouse_appkit_y <= win_frame.y + win_frame.h + margin;
+
+        if near && !visible {
+            visible = true;
+            unsafe {
+                dispatch_async_f(main_queue(), std::ptr::null_mut(), show_handle);
+            }
+        } else if !near && visible {
+            visible = false;
+            unsafe {
+                dispatch_async_f(main_queue(), std::ptr::null_mut(), hide_handle);
+            }
+        }
+    }
+}
+
+extern "C" fn show_handle(_: *mut std::ffi::c_void) {
+    unsafe {
+        let handle = HANDLE_PTR.load(Ordering::Acquire);
+        if handle.is_null() { return; }
+        // Animate alpha to 0.6
+        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, f64)
+            = std::mem::transmute(objc_msgSend as *const ());
+        f(handle, sel(b"setAlphaValue:\0"), 0.6);
+    }
+}
+
+extern "C" fn hide_handle(_: *mut std::ffi::c_void) {
+    unsafe {
+        let handle = HANDLE_PTR.load(Ordering::Acquire);
+        if handle.is_null() { return; }
+        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, f64)
+            = std::mem::transmute(objc_msgSend as *const ());
+        f(handle, sel(b"setAlphaValue:\0"), 0.0);
     }
 }
 
@@ -319,6 +578,11 @@ extern "C" fn hide_main(_: *mut c_void) {
             let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
             f(win, sel(b"orderOut:\0"), std::ptr::null_mut());
         }
+        let handle = HANDLE_PTR.load(Ordering::Acquire);
+        if !handle.is_null() {
+            let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
+            f(handle, sel(b"orderOut:\0"), std::ptr::null_mut());
+        }
         // Clear waveform data
         if let Ok(mut g) = WAVEFORM_DATA.lock() {
             g.mic_levels.clear();
@@ -329,6 +593,7 @@ extern "C" fn hide_main(_: *mut c_void) {
     }
 }
 
+#[allow(dead_code)]
 pub fn push_audio_levels(levels: &[f32], vad_active: bool) {
     push_dual_audio_levels(levels, vad_active, &[], false, None);
 }
@@ -480,6 +745,72 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
                 }
             };
             set_attributed_subtitle(label, &text);
+
+            // Auto-resize window height to fit text content.
+            auto_resize_overlay(label);
         }
+    }
+}
+
+/// Resize the overlay window to fit the label's text content.
+unsafe fn auto_resize_overlay(label: *mut c_void) {
+    let win = WINDOW_PTR.load(Ordering::Acquire);
+    if win.is_null() { return; }
+
+    // Get current window frame.
+    let f_frame: extern "C" fn(*mut c_void, *mut c_void) -> NSRect =
+        std::mem::transmute(objc_msgSend as *const ());
+    let win_frame = f_frame(win, sel(b"frame\0"));
+
+    // Measure label's preferred height for current width.
+    // Use sizeThatFits: to get the natural size.
+    let label_w = win_frame.w - 20.0; // 10px padding each side
+    let fit_size: NSRect = {
+        let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> NSRect =
+            std::mem::transmute(objc_msgSend as *const ());
+        // fittingSize returns just (w, h) in the first two fields
+        let constraint = NSRect { x: label_w, y: 10000.0, w: 0.0, h: 0.0 };
+        let cell = msg0(label, sel(b"cell\0"));
+        if cell.is_null() { return; }
+        f(cell, sel(b"cellSizeForBounds:\0"), constraint)
+    };
+
+    let text_h = fit_size.x; // cellSizeForBounds returns size in (w, h) = (x, y) of NSRect
+    let waveform_h = 40.0_f64;
+    let padding = 12.0_f64;
+    let min_h = 80.0_f64;
+    let max_h = 500.0_f64;
+
+    let new_h = (text_h + waveform_h + padding).clamp(min_h, max_h);
+
+    // Only resize if height changed significantly (avoid jitter).
+    if (new_h - win_frame.h).abs() < 2.0 { return; }
+
+    // Resize from top (keep top-left corner fixed in AppKit coords: adjust y).
+    let new_y = win_frame.y + win_frame.h - new_h;
+    let new_frame = NSRect { x: win_frame.x, y: new_y, w: win_frame.w, h: new_h };
+
+    let f_set: extern "C" fn(*mut c_void, *mut c_void, NSRect, bool) =
+        std::mem::transmute(objc_msgSend as *const ());
+    f_set(win, sel(b"setFrame:display:\0"), new_frame, true);
+
+    // Resize the container view and reposition label/waveform.
+    let content = msg0(win, sel(b"contentView\0"));
+    if !content.is_null() {
+        let cv_rect = NSRect { x: 0.0, y: 0.0, w: win_frame.w, h: new_h };
+        let f_sf: extern "C" fn(*mut c_void, *mut c_void, NSRect) =
+            std::mem::transmute(objc_msgSend as *const ());
+        f_sf(content, sel(b"setFrame:\0"), cv_rect);
+
+        // Reposition waveform at top.
+        let view = VIEW_PTR.load(Ordering::Acquire);
+        if !view.is_null() {
+            let wf_rect = NSRect { x: 0.0, y: new_h - waveform_h, w: win_frame.w, h: waveform_h };
+            f_sf(view, sel(b"setFrame:\0"), wf_rect);
+        }
+
+        // Reposition label below waveform.
+        let label_rect = NSRect { x: 10.0, y: 4.0, w: win_frame.w - 20.0, h: new_h - waveform_h - 8.0 };
+        f_sf(label, sel(b"setFrame:\0"), label_rect);
     }
 }

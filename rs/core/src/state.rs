@@ -33,17 +33,35 @@ pub struct ClxConfig {
     pub use_scroll_lock: bool,
     pub use_ralt:        bool,
     pub speed:           SpeedConfig,
+    /// STT engine: "sherpa" or "whisper"
+    pub stt_engine:          String,
+    /// Brainstorm API origin URL.
+    pub brainstorm_origin:   String,
+    /// Brainstorm API key.
+    pub brainstorm_api_key:  String,
+    /// LLM API key for STT correction + brainstorm direct mode.
+    pub llm_api_key:         String,
+    /// LLM model name (auto-detected provider from key prefix).
+    pub llm_model:           String,
+    /// Enable LLM-based STT correction.
+    pub stt_correction:      bool,
 }
 
 impl Default for ClxConfig {
     fn default() -> Self {
         Self {
-            use_capslock:    true,
-            use_space:       true,
-            use_insert:      false,
-            use_scroll_lock: false,
-            use_ralt:        false,
-            speed:           SpeedConfig::default(),
+            use_capslock:       true,
+            use_space:          true,
+            use_insert:         false,
+            use_scroll_lock:    false,
+            use_ralt:           false,
+            speed:              SpeedConfig::default(),
+            stt_engine:         "sherpa".to_string(),
+            brainstorm_origin:  "https://brainstorm.snomiao.com".to_string(),
+            brainstorm_api_key: "FREE".to_string(),
+            llm_api_key:        String::new(),
+            llm_model:          String::new(),
+            stt_correction:     false,
         }
     }
 }

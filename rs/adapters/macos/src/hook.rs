@@ -30,15 +30,12 @@ use crate::output::MacPlatform;
 
 pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
-    let config = ClxConfig {
-        speed: SpeedConfig {
-            // Using PIXEL scroll units — 1 unit = 1 pixel, so use the
-            // default speed (720). Scroll action multiplies by 3, giving
-            // ~2160 px/s at full acceleration which feels similar to trackpad.
-            ..SpeedConfig::default()
-        },
-        ..ClxConfig::default()
-    };
+    // Load saved config, fall back to defaults.
+    let saved = crate::config_store::load();
+    let config = saved.into_clx_config();
+    eprintln!("[CLX] config loaded: stt={}, correction={}, llm_model={}",
+        config.stt_engine, config.stt_correction,
+        if config.llm_model.is_empty() { "(auto)" } else { &config.llm_model });
     ClxEngine::with_config(platform, config)
 });
 

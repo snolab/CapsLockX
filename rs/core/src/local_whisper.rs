@@ -256,8 +256,8 @@ impl LocalWhisper {
     }
 }
 
-/// Known Whisper hallucinations and noise artifacts to filter out.
-fn is_noise_artifact(text: &str) -> bool {
+/// Known STT hallucinations and noise artifacts to filter out.
+pub fn is_noise_artifact(text: &str) -> bool {
     let t = text.to_lowercase();
     // Bracketed annotations like (clicking), [BLANK_AUDIO], (keyboard clicking)
     if t.starts_with('(') && t.ends_with(')') { return true; }

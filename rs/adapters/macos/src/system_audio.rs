@@ -39,10 +39,11 @@ extern "C" {
     fn dispatch_semaphore_create(value: isize) -> *mut c_void;
     fn dispatch_semaphore_wait(dsema: *mut c_void, timeout: u64) -> isize;
     fn dispatch_semaphore_signal(dsema: *mut c_void) -> isize;
-    fn CFArrayGetCount(array: *mut c_void) -> isize;
-    fn CFArrayGetValueAtIndex(array: *mut c_void, idx: isize) -> *mut c_void;
+    fn CFArrayGetCount(array: *const c_void) -> isize;
+    fn CFArrayGetValueAtIndex(array: *const c_void, idx: isize) -> *const c_void;
 }
 
+#[allow(dead_code)]
 const DISPATCH_TIME_FOREVER: u64 = !0;
 
 // Block runtime — _NSConcreteGlobalBlock is in libSystem
@@ -246,7 +247,8 @@ fn register_output_handler_class() {
 
 pub struct SystemAudioCapture {
     stream: *mut c_void, // SCStream
-    handler: *mut c_void, // CLXAudioOutputHandler instance
+    #[allow(dead_code)]
+    handler: *mut c_void, // CLXAudioOutputHandler instance (retained for lifetime)
 }
 
 // SCStream is accessed from main thread, the handler callback runs on a dispatch queue
