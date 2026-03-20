@@ -1019,7 +1019,7 @@ fn stt_worker_loop(
 
                     // Transcribe when enough new samples have accumulated.
                     if mic_pending_since >= STREAMING_CHUNK_SAMPLES {
-                        let committed = process_mic_streaming(
+                        let result = process_mic_streaming(
                             &mic_pending_buf, timestamp_secs,
                             &mut engine, &mut corrector, platform,
                             note_active, input_active, has_sys,
@@ -1030,15 +1030,27 @@ fn stt_worker_loop(
                             &mut note_srt, &mut srt_index,
                         );
                         mic_pending_since = 0;
-                        if committed {
-                            mic_pending_buf.clear();
-                        } else {
-                            // No commit (nospeech/silence): keep only last 2s as context.
-                            // Prevents the buffer growing indefinitely on VAD false-holds.
-                            const MIC_CONTEXT_KEEP: usize = 32_000; // 2s at 16kHz
-                            if mic_pending_buf.len() > MIC_CONTEXT_KEEP {
-                                let drain = mic_pending_buf.len() - MIC_CONTEXT_KEEP;
-                                mic_pending_buf.drain(..drain);
+                        match result {
+                            Some(true) => {
+                                // Committed — start fresh.
+                                mic_pending_buf.clear();
+                            }
+                            Some(false) => {
+                                // Speech detected but not yet stable — keep accumulating context.
+                                // Safety cap: trim to 5s to prevent runaway growth.
+                                const MIC_SPEECH_MAX: usize = 80_000; // 5s at 16kHz
+                                if mic_pending_buf.len() > MIC_SPEECH_MAX {
+                                    let drain = mic_pending_buf.len() - MIC_SPEECH_MAX / 2;
+                                    mic_pending_buf.drain(..drain);
+                                }
+                            }
+                            None => {
+                                // Nospeech/silence — trim to 1s to avoid noise contamination.
+                                const MIC_CONTEXT_KEEP: usize = 16_000; // 1s at 16kHz
+                                if mic_pending_buf.len() > MIC_CONTEXT_KEEP {
+                                    let drain = mic_pending_buf.len() - MIC_CONTEXT_KEEP;
+                                    mic_pending_buf.drain(..drain);
+                                }
                             }
                         }
                     }
@@ -1105,8 +1117,10 @@ fn stt_worker_loop(
         }
         // Push subtitle update when sys track changed but mic didn't trigger one.
         if sys_subtitle_dirty {
-            let mic_display = format!("{}{}", mic_committed, mic_whisper_pending);
-            let sys_display = format!("{}{}", sys_committed, sys_whisper_pending);
+            let mic_raw = format!("{}{}", mic_committed, mic_whisper_pending);
+            let sys_raw = format!("{}{}", sys_committed, sys_whisper_pending);
+            let mic_display = last_n_chars(&mic_raw, 200);
+            let sys_display = last_n_chars(&sys_raw, 200);
             let mut parts = Vec::new();
             if !mic_display.is_empty() { parts.push(format!("\u{1F3A4} {}", mic_display)); }
             if !sys_display.is_empty() { parts.push(format!("\u{1F50A} {}", sys_display)); }
@@ -1164,10 +1178,10 @@ fn process_mic_streaming(
     sys_whisper_pending: &str,
     note_srt: &mut String,
     srt_index: &mut usize,
-) -> bool {
+) -> Option<bool> {
     let new_text = transcribe_local(pending_buf, engine);
     if new_text.is_empty() {
-        return false;
+        return None; // nospeech — caller should trim context window
     }
     *mic_whisper_pending = new_text.clone();
 
@@ -1182,15 +1196,17 @@ fn process_mic_streaming(
 
     // Update overlay subtitle with speaker labels.
     let display_pending = if is_input { mic_typed_pending.as_str() } else { mic_whisper_pending.as_str() };
-    let mic_text = format!("{}{}", mic_committed, display_pending);
+    let mic_raw = format!("{}{}", mic_committed, display_pending);
     let subtitle = if has_sys {
-        let sys_text = format!("{}{}", sys_committed, sys_whisper_pending);
+        let sys_raw = format!("{}{}", sys_committed, sys_whisper_pending);
+        let mic_text = last_n_chars(&mic_raw, 200);
+        let sys_text = last_n_chars(&sys_raw, 200);
         let mut parts = Vec::new();
         if !mic_text.is_empty() { parts.push(format!("\u{1F3A4} {}", mic_text)); }
         if !sys_text.is_empty() { parts.push(format!("\u{1F50A} {}", sys_text)); }
         parts.join("\n")
     } else {
-        mic_text.clone()
+        last_n_chars(&mic_raw, 200).to_string()
     };
     platform.update_voice_subtitle(&subtitle);
 
@@ -1198,7 +1214,7 @@ fn process_mic_streaming(
     {
         use std::io::Write;
         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
-            let _ = writeln!(f, "{}", mic_text);
+            let _ = writeln!(f, "{}", last_n_chars(&mic_raw, 200));
         }
     }
 
@@ -1211,7 +1227,8 @@ fn process_mic_streaming(
     *mic_prev_whisper = mic_whisper_pending.clone();
 
     // Commit when stable or forced at 5s.
-    let should_commit = (*mic_stable >= 2 && pending_buf.len() > 32_000)
+    // Lower threshold (1s) vs sys (2s) since mic context window is only 500ms.
+    let should_commit = (*mic_stable >= 2 && pending_buf.len() > 16_000)
         || pending_buf.len() > 80_000;
     if should_commit {
         // Apply LLM correction if enabled.
@@ -1245,9 +1262,9 @@ fn process_mic_streaming(
         mic_typed_pending.clear();
         mic_prev_whisper.clear();
         *mic_stable = 0;
-        return true;
+        return Some(true);
     }
-    false
+    Some(false) // speech detected but not yet stable
 }
 
 /// Process mic speech end (finalize and commit).
@@ -1426,6 +1443,16 @@ fn chrono_timestamp() -> String {
     let mon = doy / 30 + 1;
     let day = doy % 30 + 1;
     format!("{y:04}-{mon:02}-{day:02}T{h:02}{m:02}{s:02}")
+}
+
+/// Keep only the last `max_chars` characters of a string (char-boundary safe).
+/// Used to cap each subtitle track to ~4 lines of display text.
+fn last_n_chars(s: &str, max_chars: usize) -> &str {
+    let total = s.chars().count();
+    if total <= max_chars { return s; }
+    let skip = total - max_chars;
+    let byte_pos = s.char_indices().nth(skip).map(|(i, _)| i).unwrap_or(0);
+    &s[byte_pos..]
 }
 
 /// Format seconds as SRT timestamp: HH:MM:SS,mmm
