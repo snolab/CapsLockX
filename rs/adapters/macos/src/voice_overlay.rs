@@ -65,6 +65,10 @@ extern "C" {
 #[derive(Clone, Copy)]
 struct NSRect { x: f64, y: f64, w: f64, h: f64 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+struct NSSize { w: f64, h: f64 }
+
 const RTLD_DEFAULT: *mut c_void = -2isize as *mut c_void;
 
 unsafe fn sel(name: &[u8]) -> *mut c_void { sel_registerName(name.as_ptr() as *const _) }
@@ -719,9 +723,18 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
         }
         // Update subtitle label.
         let label = LABEL_PTR.load(Ordering::Acquire);
+        static DBG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let dbg_n = DBG.fetch_add(1, Ordering::Relaxed);
+        if dbg_n < 5 || dbg_n % 200 == 0 {
+            eprintln!("[overlay] trigger_redraw #{}: label={:?}", dbg_n, !label.is_null());
+        }
         if !label.is_null() {
             let text = {
                 let g = WAVEFORM_DATA.lock().unwrap();
+                if dbg_n < 5 || dbg_n % 200 == 0 {
+                    let preview: String = g.subtitle.chars().take(60).collect();
+                    eprintln!("[overlay] subtitle={:?}", preview);
+                }
                 if g.subtitle.is_empty() {
                     match (g.mic_vad, g.sys_vad) {
                         (true, true) => "🎤 Speaking... 🔊 Playing...".to_string(),
@@ -763,19 +776,18 @@ unsafe fn auto_resize_overlay(label: *mut c_void) {
     let win_frame = f_frame(win, sel(b"frame\0"));
 
     // Measure label's preferred height for current width.
-    // Use sizeThatFits: to get the natural size.
     let label_w = win_frame.w - 20.0; // 10px padding each side
-    let fit_size: NSRect = {
-        let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> NSRect =
+    let fit_size: NSSize = {
+        let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> NSSize =
             std::mem::transmute(objc_msgSend as *const ());
-        // fittingSize returns just (w, h) in the first two fields
-        let constraint = NSRect { x: label_w, y: 10000.0, w: 0.0, h: 0.0 };
+        // cellSizeForBounds: returns NSSize {width, height}.
+        let constraint = NSRect { x: 0.0, y: 0.0, w: label_w, h: 10000.0 };
         let cell = msg0(label, sel(b"cell\0"));
         if cell.is_null() { return; }
         f(cell, sel(b"cellSizeForBounds:\0"), constraint)
     };
 
-    let text_h = fit_size.x; // cellSizeForBounds returns size in (w, h) = (x, y) of NSRect
+    let text_h = fit_size.h; // NSSize.h = height the text needs
     let waveform_h = 40.0_f64;
     let padding = 12.0_f64;
     let min_h = 80.0_f64;

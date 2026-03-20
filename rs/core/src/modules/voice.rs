@@ -185,9 +185,9 @@ const SPEECH_START_PROB: f32 = 0.7;
 /// Speech probability threshold below which silence is counted.
 const SPEECH_END_PROB: f32 = 0.4;
 /// Consecutive speech frames to trigger speech start (more = less sensitive).
-const SPEECH_START_FRAMES: usize = 4;
+const SPEECH_START_FRAMES: usize = 8;   // 128ms — filters ambient noise / fan hum
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
-const SILENCE_END_FRAMES: usize = 15;
+const SILENCE_END_FRAMES: usize = 25;  // 400ms — prevents rapid re-trigger on pauses
 /// Streaming interval: transcribe after this many new samples accumulate.
 /// Whisper inference is ~constant time regardless of audio length (~450ms
 /// for base model), so the real cadence is limited by inference speed,
@@ -354,6 +354,14 @@ impl VoiceModule {
     }
 
     // ── Internal: audio lifecycle ─────────────────────────────────────────────
+
+    /// Start the pipeline immediately (always-on mode).
+    /// Used by standalone voice binaries that don't have a key trigger.
+    pub fn start_always_on(&self, with_sys: bool) {
+        self.with_system_audio.store(with_sys, Ordering::Relaxed);
+        self.note_active.store(true, Ordering::Relaxed);
+        self.ensure_pipeline_running();
+    }
 
     /// Spawn the background thread eagerly so the Whisper model loads at startup.
     pub fn preload(&self) {
@@ -545,6 +553,14 @@ fn voice_bg_persistent(
         // ── System audio VAD (audio loop only runs VAD, worker handles transcription) ──
         let mut sys_vad = if sys_capture.is_some() { Some(VadState::new()) } else { None };
 
+        // Pre-send accumulators: batch audio before sending to the STT worker.
+        // Mic: 200ms batches for low latency.  Sys: 500ms batches — background audio
+        // doesn't need to be as responsive, and this keeps mic getting priority.
+        const MIC_SEND_THRESHOLD: usize = 3_200;  // 200ms at 16kHz
+        const SYS_SEND_THRESHOLD: usize = 8_000;  // 500ms at 16kHz
+        let mut mic_send_buf: Vec<f32> = Vec::new();
+        let mut sys_send_buf: Vec<f32> = Vec::new();
+
         let note_start_time = std::time::Instant::now();
 
         // ffmpeg pipe for streaming WebM — lazily started when note_active becomes true.
@@ -701,23 +717,44 @@ fn voice_bg_persistent(
             let _chunks = vad.feed(samples_16k);
 
             if vad.in_speech {
-                // Always send new audio to the worker (it accumulates internally).
-                let cmd = SttCommand::AudioChunk {
-                    source: SttSource::Mic,
-                    samples: samples_16k.to_vec(),
-                    timestamp_secs: note_start_time.elapsed().as_secs_f64(),
-                };
-                if stt_tx.try_send(cmd).is_err() {
-                    eprintln!("[CLX] voice: STT channel full, dropping mic chunk");
+                // Accumulate locally; only send once SEND_THRESHOLD reached.
+                mic_send_buf.extend_from_slice(samples_16k);
+                if mic_send_buf.len() >= MIC_SEND_THRESHOLD {
+                    let cmd = SttCommand::AudioChunk {
+                        source: SttSource::Mic,
+                        samples: mic_send_buf.clone(),
+                        timestamp_secs: note_start_time.elapsed().as_secs_f64(),
+                    };
+                    if stt_tx.try_send(cmd).is_ok() {
+                        mic_send_buf.clear();
+                    } else {
+                        // Channel full: drop oldest half, keep newest audio.
+                        let keep = mic_send_buf.len() / 2;
+                        mic_send_buf.drain(..mic_send_buf.len() - keep);
+                    }
                 }
-            } else if was_in_speech {
-                // Speech ended — tell the worker to finalize.
-                let cmd = SttCommand::SpeechEnd {
-                    source: SttSource::Mic,
-                    timestamp_secs: note_start_time.elapsed().as_secs_f64(),
-                };
-                if stt_tx.try_send(cmd).is_err() {
-                    eprintln!("[CLX] voice: STT channel full, dropping mic speech-end");
+            } else {
+                if was_in_speech {
+                    // Flush any remaining accumulated audio on speech end.
+                    if !mic_send_buf.is_empty() {
+                        let cmd = SttCommand::AudioChunk {
+                            source: SttSource::Mic,
+                            samples: mic_send_buf.clone(),
+                            timestamp_secs: note_start_time.elapsed().as_secs_f64(),
+                        };
+                        let _ = stt_tx.try_send(cmd);
+                        mic_send_buf.clear();
+                    }
+                    // Speech ended — tell the worker to finalize.
+                    let cmd = SttCommand::SpeechEnd {
+                        source: SttSource::Mic,
+                        timestamp_secs: note_start_time.elapsed().as_secs_f64(),
+                    };
+                    if stt_tx.try_send(cmd).is_err() {
+                        eprintln!("[CLX] voice: STT channel full, dropping mic speech-end");
+                    }
+                } else {
+                    mic_send_buf.clear(); // discard stale samples when not in speech
                 }
             }
 
@@ -727,16 +764,33 @@ fn voice_bg_persistent(
                     let sys_was_speech = sys_was_speech_before;
 
                     if svad.in_speech {
-                        // Always send new sys audio to the worker.
-                        let cmd = SttCommand::AudioChunk {
-                            source: SttSource::Sys,
-                            samples: sys_16k.clone(),
-                            timestamp_secs: note_start_time.elapsed().as_secs_f64(),
-                        };
-                        if stt_tx.try_send(cmd).is_err() {
-                            eprintln!("[CLX] voice: STT channel full, dropping sys chunk");
+                        // Accumulate locally; only send once SEND_THRESHOLD reached.
+                        sys_send_buf.extend_from_slice(&sys_16k);
+                        if sys_send_buf.len() >= SYS_SEND_THRESHOLD {
+                            let cmd = SttCommand::AudioChunk {
+                                source: SttSource::Sys,
+                                samples: sys_send_buf.clone(),
+                                timestamp_secs: note_start_time.elapsed().as_secs_f64(),
+                            };
+                            if stt_tx.try_send(cmd).is_ok() {
+                                sys_send_buf.clear();
+                            } else {
+                                // Channel full: drop oldest half.
+                                let keep = sys_send_buf.len() / 2;
+                                sys_send_buf.drain(..sys_send_buf.len() - keep);
+                            }
                         }
                     } else if sys_was_speech {
+                        // Flush remaining on speech end.
+                        if !sys_send_buf.is_empty() {
+                            let cmd = SttCommand::AudioChunk {
+                                source: SttSource::Sys,
+                                samples: sys_send_buf.clone(),
+                                timestamp_secs: note_start_time.elapsed().as_secs_f64(),
+                            };
+                            let _ = stt_tx.try_send(cmd);
+                            sys_send_buf.clear();
+                        }
                         // Sys speech ended.
                         let cmd = SttCommand::SpeechEnd {
                             source: SttSource::Sys,
@@ -944,6 +998,25 @@ fn stt_worker_loop(
                     mic_pending_buf.extend_from_slice(&samples);
                     mic_pending_since += samples.len();
 
+                    // Hard cap: if mic buffer exceeds 10s, it's a VAD false-hold.
+                    // Force-finalize so we don't waste CPU on ever-growing nospeech.
+                    const MIC_PENDING_MAX: usize = 160_000; // 10s at 16kHz
+                    if mic_pending_buf.len() > MIC_PENDING_MAX {
+                        eprintln!("[CLX] stt-worker: mic pending >10s — forcing finalize");
+                        process_mic_speech_end(
+                            &mic_pending_buf, timestamp_secs,
+                            &mut engine, &mut corrector, platform,
+                            note_active, input_active, has_sys,
+                            &mut mic_committed, &mut mic_whisper_pending,
+                            &mut mic_typed_pending, &mut mic_prev_whisper,
+                            &mut mic_stable,
+                            &sys_committed, &sys_whisper_pending,
+                            &mut note_srt, &mut srt_index,
+                        );
+                        mic_pending_buf.clear();
+                        mic_pending_since = 0;
+                    }
+
                     // Transcribe when enough new samples have accumulated.
                     if mic_pending_since >= STREAMING_CHUNK_SAMPLES {
                         let committed = process_mic_streaming(
@@ -959,6 +1032,14 @@ fn stt_worker_loop(
                         mic_pending_since = 0;
                         if committed {
                             mic_pending_buf.clear();
+                        } else {
+                            // No commit (nospeech/silence): keep only last 2s as context.
+                            // Prevents the buffer growing indefinitely on VAD false-holds.
+                            const MIC_CONTEXT_KEEP: usize = 32_000; // 2s at 16kHz
+                            if mic_pending_buf.len() > MIC_CONTEXT_KEEP {
+                                let drain = mic_pending_buf.len() - MIC_CONTEXT_KEEP;
+                                mic_pending_buf.drain(..drain);
+                            }
                         }
                     }
                 }
@@ -981,6 +1062,7 @@ fn stt_worker_loop(
         }
 
         // Then process sys commands.
+        let mut sys_subtitle_dirty = false;
         for cmd in sys_cmds {
             match cmd {
                 SttCommand::AudioChunk { samples, timestamp_secs, .. } => {
@@ -999,6 +1081,7 @@ fn stt_worker_loop(
                             &mut note_srt, &mut srt_index,
                         );
                         sys_pending_since = 0;
+                        sys_subtitle_dirty = true;
                         if committed {
                             sys_pending_buf.clear();
                         }
@@ -1015,8 +1098,23 @@ fn stt_worker_loop(
                     );
                     sys_pending_buf.clear();
                     sys_pending_since = 0;
+                    sys_subtitle_dirty = true;
                 }
                 _ => {}
+            }
+        }
+        // Push subtitle update when sys track changed but mic didn't trigger one.
+        if sys_subtitle_dirty {
+            let mic_display = format!("{}{}", mic_committed, mic_whisper_pending);
+            let sys_display = format!("{}{}", sys_committed, sys_whisper_pending);
+            let mut parts = Vec::new();
+            if !mic_display.is_empty() { parts.push(format!("\u{1F3A4} {}", mic_display)); }
+            if !sys_display.is_empty() { parts.push(format!("\u{1F50A} {}", sys_display)); }
+            if !parts.is_empty() {
+                let subtitle = parts.join("\n");
+                let preview: String = subtitle.chars().take(60).collect();
+                eprintln!("[CLX] stt-worker: pushing sys subtitle ({} chars): {:?}", subtitle.chars().count(), preview);
+                platform.update_voice_subtitle(&subtitle);
             }
         }
 
@@ -1257,6 +1355,13 @@ fn process_sys_streaming(
         }
         if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
         sys_committed.push_str(sys_whisper_pending);
+        // Cap committed buffer to last 200 chars (char boundary safe).
+        const MAX_COMMITTED: usize = 200;
+        if sys_committed.chars().count() > MAX_COMMITTED {
+            let drop = sys_committed.chars().count() - MAX_COMMITTED;
+            let byte_pos = sys_committed.char_indices().nth(drop).map(|(i, _)| i).unwrap_or(0);
+            sys_committed.drain(..byte_pos);
+        }
         eprintln!("[CLX] stt-worker: sys committed {:?}", sys_whisper_pending);
         sys_whisper_pending.clear();
         sys_prev_whisper.clear();
@@ -1293,6 +1398,12 @@ fn process_sys_speech_end(
     }
     if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
     sys_committed.push_str(sys_whisper_pending);
+    const MAX_COMMITTED_END: usize = 200;
+    if sys_committed.chars().count() > MAX_COMMITTED_END {
+        let drop = sys_committed.chars().count() - MAX_COMMITTED_END;
+        let byte_pos = sys_committed.char_indices().nth(drop).map(|(i, _)| i).unwrap_or(0);
+        sys_committed.drain(..byte_pos);
+    }
     eprintln!("[CLX] stt-worker: sys utterance: {:?}", sys_whisper_pending);
     sys_whisper_pending.clear();
     sys_prev_whisper.clear();
