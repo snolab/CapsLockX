@@ -33,9 +33,10 @@ pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     // Load saved config, fall back to defaults.
     let saved = crate::config_store::load();
     let config = saved.into_clx_config();
-    eprintln!("[CLX] config loaded: stt={}, correction={}, llm_model={}",
+    let (best_key, _) = config.best_llm_key_and_model();
+    eprintln!("[CLX] config loaded: stt={}, correction={}, llm_key={}...",
         config.stt_engine, config.stt_correction,
-        if config.llm_model.is_empty() { "(auto)" } else { &config.llm_model });
+        &best_key[..best_key.len().min(10)]);
     ClxEngine::with_config(platform, config)
 });
 

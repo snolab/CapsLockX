@@ -1556,7 +1556,7 @@ fn polish_stt_with_chain(
 
     for stage in chain.split(',').map(|s| s.trim()) {
         match stage {
-            "mlx" => {
+            s if s.starts_with("mlx") => {
                 if has_enough_free_memory(2_000) {
                     if let Ok(polished) = polish_via_local_llm(raw_text) {
                         if !polished.is_empty() {
@@ -1566,7 +1566,7 @@ fn polish_stt_with_chain(
                     }
                 }
             }
-            "gemini" => {
+            s if s.starts_with("gemini") => {
                 let gemini_key = read_gemini_key();
                 if !gemini_key.is_empty() {
                     match crate::cloud_stt::transcribe_gemini(audio_samples, &gemini_key) {
@@ -1578,7 +1578,7 @@ fn polish_stt_with_chain(
                     }
                 }
             }
-            "llm" => {
+            "llm-corrector" | "llm" => {
                 if let Some(ref mut c) = corrector {
                     let corrected = c.correct(raw_text);
                     if corrected != raw_text {

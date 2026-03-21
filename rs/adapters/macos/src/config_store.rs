@@ -20,6 +20,15 @@ pub struct FullConfig {
     #[serde(default = "default_brainstorm_key")]
     pub brainstorm_api_key:  String,
     #[serde(default)]
+    pub gemini_api_key:      String,
+    #[serde(default)]
+    pub openai_api_key:      String,
+    #[serde(default)]
+    pub anthropic_api_key:   String,
+    #[serde(default)]
+    pub elevenlabs_api_key:  String,
+    /// Backwards compat: old single key migrates to gemini/openai based on prefix.
+    #[serde(default)]
     pub llm_api_key:         String,
     #[serde(default)]
     pub llm_model:           String,
@@ -36,8 +45,8 @@ pub struct FullConfig {
 fn default_stt_engine() -> String { "sherpa".to_string() }
 fn default_brainstorm_origin() -> String { "https://brainstorm.snomiao.com".to_string() }
 fn default_brainstorm_key() -> String { "FREE".to_string() }
-fn default_tts_chain() -> String { "elevenlabs,gemini,openai,msedge,native".to_string() }
-fn default_stt_polish_chain() -> String { "mlx,gemini,llm,raw".to_string() }
+fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
+fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
 
 impl Default for FullConfig {
     fn default() -> Self {
@@ -53,6 +62,10 @@ impl Default for FullConfig {
             stt_engine:      "sherpa".to_string(),
             brainstorm_origin: "https://brainstorm.snomiao.com".to_string(),
             brainstorm_api_key: "FREE".to_string(),
+            gemini_api_key: String::new(),
+            openai_api_key: String::new(),
+            anthropic_api_key: String::new(),
+            elevenlabs_api_key: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
             stt_correction: false,
@@ -76,8 +89,12 @@ impl FullConfig {
             stt_engine:        cfg.stt_engine.clone(),
             brainstorm_origin: cfg.brainstorm_origin.clone(),
             brainstorm_api_key: cfg.brainstorm_api_key.clone(),
-            llm_api_key: cfg.llm_api_key.clone(),
-            llm_model: cfg.llm_model.clone(),
+            gemini_api_key: cfg.gemini_api_key.clone(),
+            openai_api_key: cfg.openai_api_key.clone(),
+            anthropic_api_key: cfg.anthropic_api_key.clone(),
+            elevenlabs_api_key: cfg.elevenlabs_api_key.clone(),
+            llm_api_key: String::new(),
+            llm_model: String::new(),
             stt_correction: cfg.stt_correction,
             tts_chain: cfg.tts_chain.clone(),
             stt_polish_chain: cfg.stt_polish_chain.clone(),
@@ -99,8 +116,17 @@ impl FullConfig {
             stt_engine:         self.stt_engine,
             brainstorm_origin:  self.brainstorm_origin,
             brainstorm_api_key: self.brainstorm_api_key,
-            llm_api_key:        self.llm_api_key,
-            llm_model:          self.llm_model,
+            // Migrate old single llm_api_key to per-provider keys.
+            gemini_api_key:     if !self.gemini_api_key.is_empty() { self.gemini_api_key }
+                                else if self.llm_api_key.starts_with("AIza") { self.llm_api_key.clone() }
+                                else { String::new() },
+            openai_api_key:     if !self.openai_api_key.is_empty() { self.openai_api_key }
+                                else if self.llm_api_key.starts_with("sk-") && !self.llm_api_key.starts_with("sk-ant-") { self.llm_api_key.clone() }
+                                else { String::new() },
+            anthropic_api_key:  if !self.anthropic_api_key.is_empty() { self.anthropic_api_key }
+                                else if self.llm_api_key.starts_with("sk-ant-") { self.llm_api_key.clone() }
+                                else { String::new() },
+            elevenlabs_api_key: self.elevenlabs_api_key,
             stt_correction:     self.stt_correction,
             tts_chain:          self.tts_chain,
             stt_polish_chain:   self.stt_polish_chain,

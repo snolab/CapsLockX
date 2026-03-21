@@ -189,20 +189,29 @@
   </section>
 
   <section>
-    <h2>LLM / AI</h2>
+    <h2>API Keys</h2>
     <div class="sl-row">
-      <label for="llm_api_key">API Key</label>
-      <input type="password" id="llm_api_key" placeholder="sk-... or AIza..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <label for="gemini_api_key">Gemini</label>
+      <input type="password" id="gemini_api_key" placeholder="AIza..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
       <span></span>
     </div>
     <div class="sl-row">
-      <label for="llm_model">Model</label>
-      <input type="text" id="llm_model" placeholder="auto (gpt-4o-mini / claude / gemini)" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <label for="openai_api_key">OpenAI</label>
+      <input type="password" id="openai_api_key" placeholder="sk-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div class="sl-row">
+      <label for="anthropic_api_key">Anthropic</label>
+      <input type="password" id="anthropic_api_key" placeholder="sk-ant-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div class="sl-row">
+      <label for="elevenlabs_api_key">ElevenLabs</label>
+      <input type="password" id="elevenlabs_api_key" placeholder="xi-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
       <span></span>
     </div>
     <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
-      Used for STT correction and <b>Space+B</b> brainstorm.<br>
-      Supports: OpenAI (sk-...), Anthropic (sk-ant-...), Gemini (AIza...).
+      Set keys for each provider. Used for brainstorm, TTS, and STT correction.
     </div>
   </section>
 
@@ -229,17 +238,17 @@
 
     // ── Chain list UI ──
     var TTS_PROVIDERS = {
-      elevenlabs: 'ElevenLabs (API key)',
-      gemini: 'Gemini TTS (API key)',
-      openai: 'OpenAI TTS (API key)',
-      msedge: 'Edge TTS (free)',
-      native: 'System native (macOS say)'
+      'elevenlabs:rachel':        'ElevenLabs — Rachel voice',
+      'gemini-2.5-flash-preview-tts': 'Gemini TTS',
+      'openai:tts-1':             'OpenAI — tts-1',
+      'msedge':                   'Edge TTS (free, no key)',
+      'native':                   'System native (macOS say)'
     };
     var STT_PROVIDERS = {
-      mlx: 'MLX local LLM (port 8321)',
-      gemini: 'Gemini cloud re-transcribe',
-      llm: 'LLM text corrector',
-      raw: 'Raw (no correction)'
+      'mlx:qwen2.5-3b':          'MLX local LLM (port 8321)',
+      'gemini-2.5-flash':        'Gemini cloud re-transcribe',
+      'llm-corrector':           'LLM text corrector (uses first available key)',
+      'raw':                     'Raw (no correction)'
     };
 
     function populateChain(listId, allProviders, chainStr) {
@@ -304,8 +313,10 @@
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
         stt_engine:      document.getElementById('stt_engine').value,
         stt_correction:  document.getElementById('stt_correction').checked,
-        llm_api_key:     document.getElementById('llm_api_key').value,
-        llm_model:       document.getElementById('llm_model').value,
+        gemini_api_key:    document.getElementById('gemini_api_key').value,
+        openai_api_key:    document.getElementById('openai_api_key').value,
+        anthropic_api_key: document.getElementById('anthropic_api_key').value,
+        elevenlabs_api_key: document.getElementById('elevenlabs_api_key').value,
         tts_chain:       collectChain('tts_chain_list'),
         stt_polish_chain: collectChain('stt_polish_chain_list'),
       };
@@ -322,8 +333,10 @@
       setSlider('scroll_speed', cfg.scroll_speed);
       if (cfg.stt_engine) document.getElementById('stt_engine').value = cfg.stt_engine;
       document.getElementById('stt_correction').checked = cfg.stt_correction || false;
-      if (cfg.llm_api_key) document.getElementById('llm_api_key').value = cfg.llm_api_key;
-      if (cfg.llm_model) document.getElementById('llm_model').value = cfg.llm_model;
+      if (cfg.gemini_api_key) document.getElementById('gemini_api_key').value = cfg.gemini_api_key;
+      if (cfg.openai_api_key) document.getElementById('openai_api_key').value = cfg.openai_api_key;
+      if (cfg.anthropic_api_key) document.getElementById('anthropic_api_key').value = cfg.anthropic_api_key;
+      if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
       populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs,gemini,openai,msedge,native');
       populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx,gemini,llm,raw');
     }

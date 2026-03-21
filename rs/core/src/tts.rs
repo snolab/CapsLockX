@@ -16,18 +16,21 @@ pub fn speak(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, ope
 pub fn speak_with_chain(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, openai_key: &str, chain: &str) -> Result<(), String> {
     if text.trim().is_empty() { return Ok(()); }
 
-    for provider in chain.split(',').map(|s| s.trim()) {
-        let result = match provider {
-            "elevenlabs" if !elevenlabs_key.is_empty() => speak_elevenlabs(text, lang, elevenlabs_key),
-            "gemini" if !gemini_key.is_empty() => speak_gemini(text, lang, gemini_key),
-            "openai" if !openai_key.is_empty() => speak_openai(text, lang, openai_key),
+    for model in chain.split(',').map(|s| s.trim()) {
+        let result = match model {
+            m if m.starts_with("elevenlabs") && !elevenlabs_key.is_empty() =>
+                speak_elevenlabs(text, lang, elevenlabs_key),
+            m if (m.starts_with("gemini") || m.contains("-tts")) && !gemini_key.is_empty() =>
+                speak_gemini(text, lang, gemini_key),
+            m if m.starts_with("openai") || m == "tts-1" || m == "tts-1-hd" =>
+                if !openai_key.is_empty() { speak_openai(text, lang, openai_key) } else { continue },
             "msedge" => speak_msedge(text, lang),
             "native" => return speak_native(text, lang),
-            _ => continue, // skip unknown or key-less providers
+            _ => continue,
         };
         match result {
             Ok(()) => return Ok(()),
-            Err(e) => eprintln!("[CLX] tts: {} failed: {}, trying next", provider, e),
+            Err(e) => eprintln!("[CLX] tts: {} failed: {}, trying next", model, e),
         }
     }
 
