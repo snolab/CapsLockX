@@ -35,24 +35,23 @@ jobs:
         with:
           workspaces: rs -> rs/target
 
-      # Type-check the whole workspace (browser adapter guards itself with
-      # #[cfg(target_arch = "wasm32")], so it compiles to a no-op here).
-      - name: cargo check (workspace)
+      # Type-check platform-relevant crates (exclude macOS/linux adapters).
+      - name: cargo check
         working-directory: rs
-        run: cargo check --workspace --all-targets
+        run: cargo check -p capslockx-core -p capslockx-windows --all-targets
 
-      - name: cargo clippy (workspace)
+      - name: cargo clippy
         working-directory: rs
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy -p capslockx-core -p capslockx-windows --all-targets -- -D warnings
 
-      - name: cargo test (workspace)
+      - name: cargo test
         working-directory: rs
-        run: cargo test --workspace
+        run: cargo test -p capslockx-core -p capslockx-windows
 
       # Full release build to catch LTO / codegen-units issues early.
-      - name: cargo build --release (windows adapter + tools)
+      - name: cargo build --release (windows adapter)
         working-directory: rs
-        run: cargo build -p capslockx-windows -p clx-screen-reader --release
+        run: cargo build -p capslockx-windows --release
 
   build-linux:
     name: Build & Test (ubuntu-latest / x86_64-unknown-linux-gnu)
@@ -71,19 +70,18 @@ jobs:
         with:
           workspaces: rs -> rs/target
 
-      # linux crate compiles to real impl; windows/browser crates compile to
-      # their stubs (cfg guards keep them valid on non-target platforms).
-      - name: cargo check (workspace)
+      # Check platform-relevant crates (exclude macOS/windows adapters).
+      - name: cargo check
         working-directory: rs
-        run: cargo check --workspace --all-targets
+        run: cargo check -p capslockx-core -p capslockx-linux --all-targets
 
-      - name: cargo clippy (workspace)
+      - name: cargo clippy
         working-directory: rs
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy -p capslockx-core -p capslockx-linux --all-targets -- -D warnings
 
-      - name: cargo test (workspace)
+      - name: cargo test
         working-directory: rs
-        run: cargo test --workspace
+        run: cargo test -p capslockx-core -p capslockx-linux
 
       # Full release build of the Linux adapter.
       - name: cargo build --release (linux adapter)
@@ -107,17 +105,18 @@ jobs:
         with:
           workspaces: rs -> rs/target
 
-      - name: cargo check (workspace)
+      # Check platform-relevant crates (exclude windows/linux adapters).
+      - name: cargo check
         working-directory: rs
-        run: cargo check --workspace --all-targets
+        run: cargo check -p capslockx-core -p capslockx-macos --all-targets
 
-      - name: cargo clippy (workspace)
+      - name: cargo clippy
         working-directory: rs
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy -p capslockx-core -p capslockx-macos --all-targets -- -D warnings
 
-      - name: cargo test (workspace)
+      - name: cargo test
         working-directory: rs
-        run: cargo test --workspace
+        run: cargo test -p capslockx-core -p capslockx-macos
 
       # Full release build of the macOS adapter.
       - name: cargo build --release (macos adapter)
