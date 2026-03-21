@@ -252,13 +252,20 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
             let code = cg_keycode_to_keycode(cg_keycode);
             let pressed = is_modifier_pressed(cg_keycode, flags);
 
-            let _resp = ENGINE.on_key_event(code, pressed);
+            let resp = ENGINE.on_key_event(code, pressed);
             update_tray_on_edge();
 
-            // Always pass through modifier FlagsChanged events — suppressing
-            // them breaks system shortcuts (Cmd+Space, Shift+Space) because
-            // macOS needs to see the actual modifier key-down at the OS level.
-            Some(())
+            // Suppress CapsLock if the engine says so (prevents real CapsLock
+            // toggling). Other modifiers (Cmd, Shift, Ctrl, Alt) must always
+            // pass through — suppressing them breaks system shortcuts.
+            if cg_keycode == 0x39 {
+                match resp {
+                    CoreResponse::Suppress => None,
+                    CoreResponse::PassThrough => Some(()),
+                }
+            } else {
+                Some(())
+            }
         }
         _ => Some(()),
     }

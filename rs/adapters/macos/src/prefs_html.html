@@ -246,7 +246,7 @@
       }, 300);
     }
 
-    document.querySelectorAll('input').forEach(function(el) {
+    document.querySelectorAll('input, select').forEach(function(el) {
       el.addEventListener('change', scheduleSave);
       el.addEventListener('input',  scheduleSave);
     });

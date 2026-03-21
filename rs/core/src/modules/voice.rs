@@ -219,9 +219,14 @@ pub struct VoiceModule {
     with_system_audio: Arc<AtomicBool>,
     /// Signal to flush pending buffer (new input session starts).
     flush_pending: Arc<AtomicBool>,
-    /// STT engine preference: "sherpa" or "whisper".
-    stt_engine_pref: String,
-    /// LLM config for STT correction.
+    /// Live config — behind Mutex so prefs changes take effect without restart.
+    live_config: Arc<std::sync::Mutex<VoiceLiveConfig>>,
+}
+
+/// Config that can be hot-reloaded from preferences.
+#[derive(Clone)]
+struct VoiceLiveConfig {
+    stt_engine: String,
     llm_api_key: String,
     llm_model: String,
     stt_correction: bool,
@@ -245,18 +250,33 @@ impl VoiceModule {
             bg_wake: Arc::new((std::sync::Mutex::new(false), std::sync::Condvar::new())),
             with_system_audio: Arc::new(AtomicBool::new(false)),
             flush_pending: Arc::new(AtomicBool::new(false)),
-            stt_engine_pref: stt_engine,
-            llm_api_key: String::new(),
-            llm_model: String::new(),
-            stt_correction: false,
+            live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
+                stt_engine,
+                llm_api_key: String::new(),
+                llm_model: String::new(),
+                stt_correction: false,
+            })),
         }
     }
 
-    pub fn with_llm_config(mut self, api_key: String, model: String, correction: bool) -> Self {
-        self.llm_api_key = api_key;
-        self.llm_model = model;
-        self.stt_correction = correction;
+    pub fn with_llm_config(self, api_key: String, model: String, correction: bool) -> Self {
+        {
+            let mut cfg = self.live_config.lock().unwrap();
+            cfg.llm_api_key = api_key;
+            cfg.llm_model = model;
+            cfg.stt_correction = correction;
+        }
         self
+    }
+
+    /// Hot-reload config from preferences (takes effect on next voice session).
+    pub fn update_config(&self, stt_engine: String, api_key: String, model: String, correction: bool) {
+        let mut cfg = self.live_config.lock().unwrap();
+        cfg.stt_engine = stt_engine;
+        cfg.llm_api_key = api_key;
+        cfg.llm_model = model;
+        cfg.stt_correction = correction;
+        eprintln!("[CLX] voice: config hot-reloaded (engine={}, correction={})", cfg.stt_engine, cfg.stt_correction);
     }
 
     pub fn on_key_down(&self, key: KeyCode) -> bool {
@@ -382,15 +402,13 @@ impl VoiceModule {
         let platform = Arc::clone(&self.platform);
 
         let server_url = resolve_server_url();
-        let stt_engine = self.stt_engine_pref.clone();
-        let llm_key = self.llm_api_key.clone();
-        let llm_model = self.llm_model.clone();
-        let stt_correction = self.stt_correction;
+        let live_config = Arc::clone(&self.live_config);
+        let cfg_snap = live_config.lock().unwrap().clone();
 
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &server_url, &stt_engine, &llm_key, &llm_model, stt_correction);
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &server_url, &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model, cfg_snap.stt_correction);
             })
             .expect("failed to spawn voice bg thread");
 

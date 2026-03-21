@@ -10,7 +10,7 @@
 /// Each interaction appends to the history, giving the LLM full context.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering};
 use std::sync::Mutex;
 
 use crate::key_code::{KeyCode, Modifiers};
@@ -37,12 +37,14 @@ pub struct BrainstormModule {
     platform: Arc<dyn Platform>,
     state: AtomicU8,
     cancel: Arc<AtomicBool>,
+    /// Generation counter — incremented on each new turn, so old turns stop.
+    generation: AtomicU32,
     /// In-memory chat history for the current session.
     history: Mutex<Vec<Message>>,
     /// Last response for re-show.
     last_response: Mutex<String>,
-    /// LLM config.
-    llm_config: Option<LlmConfig>,
+    /// LLM config (behind Mutex for hot-reload from prefs).
+    llm_config: Mutex<Option<LlmConfig>>,
     /// Web UI origin.
     origin: String,
     /// Whether "keep history" is checked (persists across restarts).
@@ -146,12 +148,24 @@ impl BrainstormModule {
             platform,
             state: AtomicU8::new(STATE_IDLE),
             cancel: Arc::new(AtomicBool::new(false)),
+            generation: AtomicU32::new(0),
             history: Mutex::new(history),
             last_response: Mutex::new(String::new()),
-            llm_config,
+            llm_config: Mutex::new(llm_config),
             origin: if origin.is_empty() { DEFAULT_ORIGIN.to_string() } else { origin },
             keep_history: AtomicBool::new(keep),
         }
+    }
+
+    /// Hot-reload LLM config from preferences.
+    pub fn update_llm_config(&self, api_key: &str, model: &str) {
+        let new_config = if api_key.is_empty() {
+            None
+        } else {
+            Some(LlmConfig::from_key_and_model(api_key, model))
+        };
+        *self.llm_config.lock().unwrap() = new_config;
+        eprintln!("[CLX] brainstorm: LLM config hot-reloaded");
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
@@ -198,22 +212,27 @@ impl BrainstormModule {
         let mut hist = self.history.lock().unwrap();
         hist.truncate(1); // keep system prompt
         *self.last_response.lock().unwrap() = String::new();
+        clear_persistent_history();
         self.platform.show_brainstorm_overlay("Chat history cleared.");
         self.state.store(STATE_DONE, Ordering::Relaxed);
-        eprintln!("[CLX] brainstorm: history cleared");
+        eprintln!("[CLX] brainstorm: history cleared (memory + disk)");
     }
 
     fn start_turn(&self) {
-        if self.llm_config.is_none() {
-            self.platform.show_brainstorm_overlay(
-                "No LLM API key configured.\nSet one in Preferences → LLM → API Key."
-            );
-            self.state.store(STATE_DONE, Ordering::Relaxed);
-            return;
-        }
+        let config = match self.llm_config.lock().unwrap().clone() {
+            Some(c) => c,
+            None => {
+                self.platform.show_brainstorm_overlay(
+                    "No LLM API key configured.\nSet one in Preferences → LLM → API Key."
+                );
+                self.state.store(STATE_DONE, Ordering::Relaxed);
+                return;
+            }
+        };
 
-        // Cancel any ongoing request.
+        // Cancel any ongoing request and bump generation so old threads stop.
         self.cancel.store(true, Ordering::Relaxed);
+        let gen = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
 
         // Capture selected text NOW (on event tap thread) before focus changes.
         let selected_text = self.platform.get_selected_text();
@@ -222,15 +241,26 @@ impl BrainstormModule {
         // Everything else on background thread.
         let platform = Arc::clone(&self.platform);
         let cancel = Arc::clone(&self.cancel);
-        let config = self.llm_config.clone().unwrap();
         let history_ptr = &self.history as *const Mutex<Vec<Message>> as usize;
         let state_ptr = &self.state as *const AtomicU8 as usize;
         let last_resp_ptr = &self.last_response as *const Mutex<String> as usize;
         let keep_ptr = &self.keep_history as *const AtomicBool as usize;
+        let gen_ptr = &self.generation as *const AtomicU32 as usize;
 
         std::thread::Builder::new()
             .name("clx-brainstorm".into())
             .spawn(move || {
+                // Wait briefly for previous thread to observe cancel.
+                std::thread::sleep(std::time::Duration::from_millis(50));
+
+                let gen_ref = unsafe { &*(gen_ptr as *const AtomicU32) };
+                // If generation advanced again, a newer turn superseded us.
+                if gen_ref.load(Ordering::SeqCst) != gen {
+                    return;
+                }
+                // Reset cancel for this turn.
+                cancel.store(false, Ordering::SeqCst);
+
                 let history_ref = unsafe { &*(history_ptr as *const Mutex<Vec<Message>>) };
                 let state_ref = unsafe { &*(state_ptr as *const AtomicU8) };
                 let last_resp_ref = unsafe { &*(last_resp_ptr as *const Mutex<String>) };
@@ -327,7 +357,6 @@ fn agent_turn(
     }
 
     // 5. Stream LLM response.
-    cancel.store(false, Ordering::Relaxed);
     state.store(STATE_STREAMING, Ordering::Relaxed);
     platform.show_brainstorm_overlay("Thinking...");
 

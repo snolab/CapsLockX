@@ -9,7 +9,7 @@ pub mod window_manager;
 use std::sync::Arc;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
-use crate::state::{ClxState, SpeedConfig};
+use crate::state::{ClxConfig, ClxState, SpeedConfig};
 
 use brainstorm::BrainstormModule;
 use edit::EditModule;
@@ -93,6 +93,17 @@ impl Modules {
     pub fn apply_speeds(&self, s: &SpeedConfig) {
         self.edit .apply_speeds(s);
         self.mouse.apply_speeds(s);
+    }
+
+    /// Hot-reload voice/brainstorm config from updated preferences.
+    pub fn apply_config(&self, cfg: &ClxConfig) {
+        self.voice.update_config(
+            cfg.stt_engine.clone(),
+            cfg.llm_api_key.clone(),
+            cfg.llm_model.clone(),
+            cfg.stt_correction,
+        );
+        self.brainstorm.update_llm_config(&cfg.llm_api_key, &cfg.llm_model);
     }
 
     /// Advance all AccModel physics by one step (WASM adapter tick loop).
