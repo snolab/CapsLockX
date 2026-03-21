@@ -768,19 +768,9 @@ impl Platform for MacPlatform {
     }
 
     /// Ctrl+key — set CGEventFlagControl on the event itself.
-    fn key_tap_ctrl(&self, key: KeyCode) {
+    fn key_tap_cmd_or_ctrl(&self, key: KeyCode) {
         if let Some(cg_key) = keycode_to_cg_keycode(key) {
             Self::tap_with_flags(cg_key, CGEventFlags::CGEventFlagControl);
-        }
-    }
-
-    /// Ctrl+Shift+key — set both flags on the event itself.
-    fn key_tap_ctrl_shifted(&self, key: KeyCode) {
-        if let Some(cg_key) = keycode_to_cg_keycode(key) {
-            Self::tap_with_flags(
-                cg_key,
-                CGEventFlags::CGEventFlagControl | CGEventFlags::CGEventFlagShift,
-            );
         }
     }
 
@@ -1083,6 +1073,54 @@ impl Platform for MacPlatform {
     }
     fn update_voice_subtitle(&self, text: &str) {
         crate::voice_overlay::push_audio_levels_with_text(&[], false, Some(text));
+    }
+
+    fn get_selected_text(&self) -> String {
+        unsafe {
+            // Get the focused app's AXUIElement, then read AXSelectedText.
+            let sys_wide = AXUIElementCreateApplication(0); // system-wide element
+            // Actually, use AXUIElementCreateSystemWide for the focused element.
+            extern "C" {
+                fn AXUIElementCreateSystemWide() -> AXUIElementRef;
+            }
+            let sys = AXUIElementCreateSystemWide();
+            if sys.is_null() { return String::new(); }
+
+            // Get focused element.
+            let attr_focused = CFString::new("AXFocusedUIElement");
+            let mut focused: *mut std::ffi::c_void = std::ptr::null_mut();
+            let err = AXUIElementCopyAttributeValue(
+                sys,
+                attr_focused.as_concrete_TypeRef() as CFStringRefRaw,
+                &mut focused,
+            );
+            CFRelease(sys as *const _);
+            if err != 0 || focused.is_null() { return String::new(); }
+
+            // Get selected text from focused element.
+            let attr_sel = CFString::new("AXSelectedText");
+            let mut value: *mut std::ffi::c_void = std::ptr::null_mut();
+            let err = AXUIElementCopyAttributeValue(
+                focused as AXUIElementRef,
+                attr_sel.as_concrete_TypeRef() as CFStringRefRaw,
+                &mut value,
+            );
+            CFRelease(focused as *const _);
+            if err != 0 || value.is_null() { return String::new(); }
+
+            // Convert NSString to Rust string.
+            let sel_utf8 = sel_registerName(b"UTF8String\0".as_ptr() as *const _);
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *const std::ffi::c_char
+                = std::mem::transmute(objc_msgSend as *const ());
+            let cstr = f(value, sel_utf8);
+            let result = if !cstr.is_null() {
+                std::ffi::CStr::from_ptr(cstr).to_string_lossy().into_owned()
+            } else {
+                String::new()
+            };
+            CFRelease(value as *const _);
+            result
+        }
     }
 
     fn get_clipboard_text(&self) -> String {

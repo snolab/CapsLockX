@@ -18,6 +18,7 @@ whisper-rs   = "0.13"
 sherpa-rs    = "0.6"
 ten-vad-rs = "0.1"
 serde_json   = "1"
+# JS engine: rquickjs (native, fast) + boa (WASM fallback)
 boa_engine   = "0.21"
 boa_gc       = "0.21"
 woxi         = "0.1"
@@ -26,6 +27,8 @@ mp3lame-encoder = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq         = "2"
+msedge-tts   = "0.3"
+rquickjs     = { version = "0.11", features = ["bindgen"] }
 
 # web-time provides a wasm32-compatible Instant (via performance.now()).
 # On native targets this dep is unused.

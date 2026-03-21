@@ -152,9 +152,9 @@ impl Platform for WebPlatform {
         // No reliable way to inject mouse button events in browsers.
     }
 
-    // close_tab: default uses key_tap_ctrl(W), which dispatches Ctrl+W.
+    // close_tab: default uses key_tap_cmd_or_ctrl(W), which dispatches Ctrl+W.
     fn close_tab(&self) {
-        self.key_tap_ctrl(KeyCode::W);
+        self.key_tap_cmd_or_ctrl(KeyCode::W);
     }
 
     // All window management methods use the inherited no-op defaults.

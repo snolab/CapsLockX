@@ -7,6 +7,8 @@ pub mod llm_client;
 pub mod local_sherpa;
 pub mod local_whisper;
 pub mod stt_corrector;
+pub mod task_manager;
+pub mod tts;
 pub mod modules;
 pub mod platform;
 pub mod state;

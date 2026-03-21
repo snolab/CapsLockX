@@ -210,7 +210,7 @@ impl Platform for LinuxPlatform {
 
     fn cycle_windows(&self, _dir: i32) {}
     fn arrange_windows(&self, _mode: ArrangeMode) {}
-    fn close_tab(&self) { self.key_tap_ctrl(KeyCode::W); }
+    fn close_tab(&self) { self.key_tap_cmd_or_ctrl(KeyCode::W); }
     fn close_window(&self) {}
     fn kill_window(&self) {}
     fn set_window_transparent(&self, _alpha: u8) {}

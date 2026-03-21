@@ -124,10 +124,12 @@ unsafe fn ensure_window() {
         f(panel, init_sel, rect, style, 2/*buffered*/, false)
     };
 
-    // Configure panel
+    // Configure panel — non-focusable, click-through (like voice overlay).
     msg1(panel, sel(b"setTitle:\0"), nsstring("CapsLockX Brainstorm"));
     set_f64(panel, sel(b"setAlphaValue:\0"), 0.92);
     set_bool(panel, sel(b"setOpaque:\0"), false);
+    set_bool(panel, sel(b"setIgnoresMouseEvents:\0"), true);
+    set_bool(panel, sel(b"setHidesOnDeactivate:\0"), false);
 
     // Dark background
     let bg_color = {
@@ -261,6 +263,7 @@ unsafe fn hide_window() {
 
 static PROMPT_WINDOW_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static PROMPT_TV_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
+static PROMPT_CHECKBOX_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static PROMPT_RESULT: Mutex<Option<std::sync::mpsc::Sender<Option<String>>>> = Mutex::new(None);
 
 /// Show a non-modal prompt input panel. Returns user's text or None if cancelled.
@@ -269,14 +272,14 @@ pub fn show_prompt_panel(title: &str, message: &str, prefill: &str) -> Option<St
     let (tx, rx) = std::sync::mpsc::channel::<Option<String>>();
     *PROMPT_RESULT.lock().unwrap() = Some(tx);
 
-    // Format: clipboard text at top, then "\n\n>\n\n=" with cursor between > and =.
+    // Format: clipboard text at top, then "\n---\n\n===" with cursor between --- and ===.
     let formatted = if prefill.is_empty() {
-        ">\n\n=".to_string()
+        "---\n\n===".to_string()
     } else {
-        format!("{}\n\n>\n\n=", prefill)
+        format!("{}\n---\n\n===", prefill)
     };
-    // Cursor goes on the blank line between ">" and "="
-    let cursor_pos = formatted.rfind("\n\n=").map(|p| p + 1).unwrap_or(formatted.len());
+    // Cursor goes on the blank line between "---" and "==="
+    let cursor_pos = formatted.rfind("\n\n===").map(|p| p + 1).unwrap_or(formatted.len());
 
     // Store data for the main-thread callback.
     static PROMPT_DATA: Mutex<Option<(String, String, String, usize)>> = Mutex::new(None);
@@ -369,8 +372,10 @@ pub fn show_prompt_panel(title: &str, message: &str, prefill: &str) -> Option<St
             let rect = NSRect { x: (sf.w - pw) / 2.0, y: (sf.h - ph) / 2.0 + 100.0, w: pw, h: ph };
 
             // NSPanel: titled + closable + non-activating
-            let style: u64 = 1 | 2 | (1 << 4);
-            let panel = msg0(cls(b"NSPanel\0"), sel(b"alloc\0"));
+            // Use NSWindow (not NSPanel) so Cmd+A/C/V/Z work properly.
+            // titled(1) + closable(2) + resizable(8)
+            let style: u64 = 1 | 2 | 8;
+            let panel = msg0(cls(b"NSWindow\0"), sel(b"alloc\0"));
             let panel: *mut c_void = {
                 let f: extern "C" fn(*mut c_void, *mut c_void, NSRect, u64, u64, bool) -> *mut c_void
                     = std::mem::transmute(objc_msgSend as *const ());
@@ -478,6 +483,35 @@ pub fn show_prompt_panel(title: &str, message: &str, prefill: &str) -> Option<St
             msg1(container, sel(b"addSubview:\0"), send_btn);
             msg1(container, sel(b"addSubview:\0"), cancel_btn);
 
+            // "Clear history" checkbox — checked by default.
+            let cb_rect = NSRect { x: 12.0, y: btn_y + 2.0, w: 140.0, h: btn_h };
+            let checkbox = msg0(cls(b"NSButton\0"), sel(b"alloc\0"));
+            let checkbox: *mut c_void = {
+                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+                f(checkbox, sel(b"initWithFrame:\0"), cb_rect)
+            };
+            // Label shows history count. State loaded from persistent pref.
+            let hist_count = {
+                let path = dirs::config_dir().unwrap_or_default().join("CapsLockX").join("brainstorm_history.json");
+                std::fs::read_to_string(&path).ok()
+                    .and_then(|d| serde_json::from_str::<Vec<serde_json::Value>>(&d).ok())
+                    .map(|v| v.len()).unwrap_or(0)
+            };
+            let keep_pref = dirs::config_dir().unwrap_or_default()
+                .join("CapsLockX").join("brainstorm_keep_history").exists();
+
+            msg1(checkbox, sel(b"setTitle:\0"), nsstring(&format!("Keep histories ({})", hist_count)));
+            {
+                let f: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
+                f(checkbox, sel(b"setButtonType:\0"), 3); // NSSwitchButton
+            }
+            {
+                let f: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
+                f(checkbox, sel(b"setState:\0"), if keep_pref { 1 } else { 0 });
+            }
+            msg1(container, sel(b"addSubview:\0"), checkbox);
+            PROMPT_CHECKBOX_PTR.store(checkbox, Ordering::Release);
+
             // ScrollView + TextView (between info and buttons)
             let tv_rect = NSRect { x: 12.0, y: btn_y + btn_h + 8.0, w: pw - 24.0, h: cv_rect.h - 50.0 - btn_h - 24.0 };
             let scroll = msg0(cls(b"NSScrollView\0"), sel(b"alloc\0"));
@@ -557,8 +591,24 @@ pub fn prompt_send() {
             let f: extern "C" fn(*mut c_void, *mut c_void) -> *const std::ffi::c_char = std::mem::transmute(objc_msgSend as *const ());
             f(ns_str, sel(b"UTF8String\0"))
         };
+
+        // Check if "Keep histories" is checked.
+        let keep_history = {
+            let cb = PROMPT_CHECKBOX_PTR.load(Ordering::Acquire);
+            if !cb.is_null() {
+                let f: extern "C" fn(*mut c_void, *mut c_void) -> i64 = std::mem::transmute(objc_msgSend as *const ());
+                f(cb, sel(b"state\0")) == 1 // NSControlStateValueOn
+            } else {
+                false // default: don't keep
+            }
+        };
+
         let text = if !cstr.is_null() {
-            Some(std::ffi::CStr::from_ptr(cstr).to_string_lossy().into_owned())
+            let mut t = std::ffi::CStr::from_ptr(cstr).to_string_lossy().into_owned();
+            if keep_history {
+                t = format!("[KEEP]\n{}", t);
+            }
+            Some(t)
         } else {
             None
         };

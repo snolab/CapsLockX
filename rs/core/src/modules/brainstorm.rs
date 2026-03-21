@@ -25,7 +25,11 @@ const STATE_DONE: u8 = 2;
 const SYSTEM_PROMPT: &str = "\
 You are CapsLockX Brainstorm, a helpful assistant embedded in a desktop productivity tool. \
 Answer concisely and helpfully. Use the same language as the user's input. \
-If given code or text, help with it. You can see the conversation history for context.";
+If given code or text, help with it. You can see the conversation history for context. \
+IMPORTANT: When translating text or teaching language, ALWAYS use the speak tool to read the result aloud. \
+Speak each phrase separately (max 32 chars), using wait() between calls to avoid overlap.";
+
+const HISTORY_FILENAME: &str = "brainstorm_history.json";
 
 const DEFAULT_ORIGIN: &str = "https://brainstorm.snomiao.com";
 
@@ -33,7 +37,7 @@ pub struct BrainstormModule {
     platform: Arc<dyn Platform>,
     state: AtomicU8,
     cancel: Arc<AtomicBool>,
-    /// Persistent chat history — survives across CLX+B presses.
+    /// In-memory chat history for the current session.
     history: Mutex<Vec<Message>>,
     /// Last response for re-show.
     last_response: Mutex<String>,
@@ -41,6 +45,75 @@ pub struct BrainstormModule {
     llm_config: Option<LlmConfig>,
     /// Web UI origin.
     origin: String,
+    /// Whether "keep history" is checked (persists across restarts).
+    keep_history: AtomicBool,
+}
+
+fn history_path() -> std::path::PathBuf {
+    dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("CapsLockX")
+        .join(HISTORY_FILENAME)
+}
+
+fn load_persistent_history() -> Vec<Message> {
+    let path = history_path();
+    let data = match std::fs::read_to_string(&path) {
+        Ok(d) => d,
+        Err(_) => return Vec::new(),
+    };
+    let arr: Vec<serde_json::Value> = match serde_json::from_str(&data) {
+        Ok(a) => a,
+        Err(_) => return Vec::new(),
+    };
+    arr.iter().filter_map(|v| {
+        Some(Message {
+            role: v["role"].as_str()?.to_string(),
+            content: v["content"].as_str()?.to_string(),
+        })
+    }).collect()
+}
+
+fn save_persistent_history(messages: &[Message]) {
+    let path = history_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    // Skip system prompt (index 0) when saving.
+    let arr: Vec<serde_json::Value> = messages.iter()
+        .filter(|m| m.role != "system")
+        .map(|m| serde_json::json!({"role": m.role, "content": m.content}))
+        .collect();
+    let json = serde_json::to_string_pretty(&arr).unwrap_or_default();
+    let _ = std::fs::write(path, json);
+}
+
+fn count_persistent_history() -> usize {
+    load_persistent_history().len()
+}
+
+fn clear_persistent_history() {
+    let _ = std::fs::remove_file(history_path());
+}
+
+fn load_keep_history_pref() -> bool {
+    let path = dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("CapsLockX")
+        .join("brainstorm_keep_history");
+    path.exists()
+}
+
+fn save_keep_history_pref(keep: bool) {
+    let path = dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("CapsLockX")
+        .join("brainstorm_keep_history");
+    if keep {
+        let _ = std::fs::write(&path, "1");
+    } else {
+        let _ = std::fs::remove_file(&path);
+    }
 }
 
 impl BrainstormModule {
@@ -56,9 +129,18 @@ impl BrainstormModule {
             Some(LlmConfig::from_key_and_model(&llm_api_key, &llm_model))
         };
 
-        let history = vec![
+        let keep = load_keep_history_pref();
+        let mut history = vec![
             Message { role: "system".into(), content: SYSTEM_PROMPT.into() },
         ];
+        // Load persistent history if preference is set.
+        if keep {
+            let saved = load_persistent_history();
+            if !saved.is_empty() {
+                history.extend(saved);
+                eprintln!("[CLX] brainstorm: loaded {} saved history messages", history.len() - 1);
+            }
+        }
 
         Self {
             platform,
@@ -68,6 +150,7 @@ impl BrainstormModule {
             last_response: Mutex::new(String::new()),
             llm_config,
             origin: if origin.is_empty() { DEFAULT_ORIGIN.to_string() } else { origin },
+            keep_history: AtomicBool::new(keep),
         }
     }
 
@@ -139,6 +222,7 @@ impl BrainstormModule {
         let history_ptr = &self.history as *const Mutex<Vec<Message>> as usize;
         let state_ptr = &self.state as *const AtomicU8 as usize;
         let last_resp_ptr = &self.last_response as *const Mutex<String> as usize;
+        let keep_ptr = &self.keep_history as *const AtomicBool as usize;
 
         std::thread::Builder::new()
             .name("clx-brainstorm".into())
@@ -146,8 +230,9 @@ impl BrainstormModule {
                 let history_ref = unsafe { &*(history_ptr as *const Mutex<Vec<Message>>) };
                 let state_ref = unsafe { &*(state_ptr as *const AtomicU8) };
                 let last_resp_ref = unsafe { &*(last_resp_ptr as *const Mutex<String>) };
+                let keep_ref = unsafe { &*(keep_ptr as *const AtomicBool) };
 
-                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref);
+                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref, keep_ref);
             })
             .ok();
     }
@@ -167,23 +252,25 @@ fn agent_turn(
     history: &Mutex<Vec<Message>>,
     state: &AtomicU8,
     last_response: &Mutex<String>,
+    keep_history: &AtomicBool,
 ) {
-    // 1. Copy selection.
-    platform.key_tap_ctrl(KeyCode::C);
-    std::thread::sleep(std::time::Duration::from_millis(150));
-    let clipboard = platform.get_clipboard_text();
-
-    // 2. Format prefill: clipboard at top, then prompt area.
-    let prefill = if clipboard.trim().is_empty() {
-        String::new()
+    // 1. Get selected text — try AX API first (no clipboard pollution), fall back to Cmd+C.
+    let selected = platform.get_selected_text();
+    let prefill = if !selected.is_empty() {
+        selected
     } else {
-        clipboard
+        platform.key_tap_cmd_or_ctrl(KeyCode::C);
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        platform.get_clipboard_text()
     };
 
-    // 3. Show prompt panel (non-modal, blocks this thread only).
-    let question = match platform.show_prompt_input(
+    let hist_count = count_persistent_history();
+    let keep_checked = keep_history.load(Ordering::Relaxed);
+
+    // 2. Show prompt panel. The [KEEP:0/1] prefix carries checkbox state.
+    let raw_input = match platform.show_prompt_input(
         "CapsLockX Brainstorm",
-        "Chat with AI. History is preserved across turns.",
+        &format!("Chat with AI. Check 'Keep histories' to accumulate context. ({} saved)", hist_count),
         &prefill,
     ) {
         Some(q) if !q.trim().is_empty() => q,
@@ -193,15 +280,38 @@ fn agent_turn(
         }
     };
 
-    // 4. Append user message to history.
+    // Parse [KEEP] prefix from checkbox.
+    let (wants_keep, question) = if let Some(rest) = raw_input.strip_prefix("[KEEP]\n") {
+        (true, rest.to_string())
+    } else {
+        (false, raw_input)
+    };
+
+    if question.trim().is_empty() {
+        eprintln!("[CLX] brainstorm: empty question");
+        return;
+    }
+
+    // Persist the checkbox preference.
+    if wants_keep != keep_checked {
+        keep_history.store(wants_keep, Ordering::Relaxed);
+        save_keep_history_pref(wants_keep);
+        eprintln!("[CLX] brainstorm: keep_history changed to {}", wants_keep);
+    }
+
+    // 3. Manage history based on checkbox.
     {
         let mut hist = history.lock().unwrap();
+        if !wants_keep {
+            // Not keeping → start fresh every time, clear saved file.
+            hist.truncate(1);
+            clear_persistent_history();
+        }
         hist.push(Message { role: "user".into(), content: question.clone() });
 
-        // Show turn count in log.
         let turns = hist.iter().filter(|m| m.role == "user").count();
-        eprintln!("[CLX] brainstorm: turn {} ({} chars, {} history msgs)",
-            turns, question.len(), hist.len());
+        eprintln!("[CLX] brainstorm: turn {} ({} chars, {} msgs, keep={})",
+            turns, question.len(), hist.len(), wants_keep);
     }
 
     // 5. Stream LLM response.
@@ -246,10 +356,21 @@ fn agent_turn(
                     }
                 }
 
+                // Save to persistent file if keep_history is on.
+                if keep_history.load(Ordering::Relaxed) {
+                    let hist = history.lock().unwrap();
+                    save_persistent_history(&hist);
+                    eprintln!("[CLX] brainstorm: saved {} messages to history file", hist.len() - 1);
+                }
+
                 platform.set_clipboard_text(&response);
                 *last_response.lock().unwrap() = response.clone();
+                let keep = keep_history.load(Ordering::Relaxed);
+                let saved = if keep { count_persistent_history() } else { 0 };
                 platform.show_brainstorm_overlay(&format!(
-                    "{}\n\n— Copied. Space+B to continue, ESC to dismiss.", response
+                    "{}\n\n— Copied. Space+B to continue. {}",
+                    response,
+                    if keep { format!("({} history records saved)", saved) } else { "ESC to dismiss.".to_string() }
                 ));
                 eprintln!("[CLX] brainstorm: response {} chars", response.len());
             }

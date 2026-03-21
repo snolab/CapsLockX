@@ -6,9 +6,13 @@
 ///   3. Execute tools, append results
 ///   4. Repeat until LLM gives a final text response (max 10 iterations)
 
-use crate::llm_client::{LlmConfig, LlmProvider, Message};
+use crate::llm_client::{LlmConfig, LlmProvider, Message, stream_chat};
 
 const MAX_TOOL_ITERATIONS: usize = 10;
+/// Max chars for inline tool result. Larger outputs saved to file.
+const INLINE_RESULT_LIMIT: usize = 2000;
+/// Max total chars across all messages before triggering compaction.
+const COMPACTION_THRESHOLD: usize = 60_000; // ~15k tokens
 
 /// Tool definitions shared across providers.
 struct ToolDef {
@@ -30,18 +34,23 @@ const TOOLS: &[ToolDef] = &[
     },
     ToolDef {
         name: "js_eval",
-        description: "Execute JavaScript code in a sandboxed engine (Boa). No filesystem/network access. Use for calculations, data transformations, JSON parsing, string manipulation. Returns the result of the last expression.",
-        params_json: r#"{"type":"object","properties":{"code":{"type":"string","description":"JavaScript code to execute"}},"required":["code"]}"#,
+        description: "Execute JavaScript code in a sandboxed engine. No filesystem/network access. Use for calculations, data transformations, JSON parsing. If execution exceeds timeout, it moves to a background task — use task_status/task_output to check results.",
+        params_json: r#"{"type":"object","properties":{"code":{"type":"string","description":"JavaScript code to execute"},"timeout":{"type":"integer","description":"Timeout in seconds (default 5)"}},"required":["code"]}"#,
     },
     ToolDef {
         name: "math_eval",
-        description: "Evaluate a Wolfram Language / Mathematica expression (via Woxi). Use for symbolic math, calculus, algebra, number theory, equation solving. Examples: 'Integrate[x^2, x]', 'Solve[x^2 - 4 == 0, x]', 'Factor[x^4 - 1]', 'N[Pi, 50]'.",
-        params_json: r#"{"type":"object","properties":{"expr":{"type":"string","description":"Wolfram Language expression"}},"required":["expr"]}"#,
+        description: "Evaluate a Wolfram Language expression (Woxi v0.1, limited). Supports: arithmetic, Prime[n], Sin/Cos/Tan. Does NOT support D[], Integrate[], Solve[]. Use js_eval for unsupported ops. Auto-moves to background if timeout exceeded.",
+        params_json: r#"{"type":"object","properties":{"expr":{"type":"string","description":"Wolfram Language expression"},"timeout":{"type":"integer","description":"Timeout in seconds (default 5)"}},"required":["expr"]}"#,
     },
     ToolDef {
         name: "screenshot",
         description: "Take a screenshot of the current screen. Returns image metadata. Use read_screen for text.",
         params_json: r#"{"type":"object","properties":{}}"#,
+    },
+    ToolDef {
+        name: "read_file_range",
+        description: "Read a portion of a file by line range. Use this to read large tool outputs that were saved to files. Returns the requested lines.",
+        params_json: r#"{"type":"object","properties":{"path":{"type":"string","description":"File path"},"start_line":{"type":"integer","description":"Starting line (1-based, default 1)"},"num_lines":{"type":"integer","description":"Number of lines to read (default 50)"}},"required":["path"]}"#,
     },
     ToolDef {
         name: "read_screen",
@@ -52,6 +61,36 @@ const TOOLS: &[ToolDef] = &[
         name: "read_clipboard",
         description: "Read the current clipboard text content.",
         params_json: r#"{"type":"object","properties":{}}"#,
+    },
+    ToolDef {
+        name: "task_status",
+        description: "Check the status of a background task by ID. Returns whether it's running, completed, killed, or failed.",
+        params_json: r#"{"type":"object","properties":{"id":{"type":"integer","description":"Task ID"}},"required":["id"]}"#,
+    },
+    ToolDef {
+        name: "task_output",
+        description: "Read output from a background task. Specify start position and max chars to read.",
+        params_json: r#"{"type":"object","properties":{"id":{"type":"integer","description":"Task ID"},"start":{"type":"integer","description":"Start char position (default 0)"},"max_chars":{"type":"integer","description":"Max chars to read (default 2000)"}},"required":["id"]}"#,
+    },
+    ToolDef {
+        name: "task_kill",
+        description: "Kill a running background task.",
+        params_json: r#"{"type":"object","properties":{"id":{"type":"integer","description":"Task ID"}},"required":["id"]}"#,
+    },
+    ToolDef {
+        name: "task_list",
+        description: "List all background tasks with their status.",
+        params_json: r#"{"type":"object","properties":{}}"#,
+    },
+    ToolDef {
+        name: "speak",
+        description: "Speak text aloud (max 128 chars per call). Speeches are queued and play in order — no need to wait between calls. Always auto-speak translations and language learning content.",
+        params_json: r#"{"type":"object","properties":{"text":{"type":"string","description":"Text to speak (max 128 chars)"},"lang":{"type":"string","description":"Language code: en, ja, zh, ko, etc."}},"required":["text","lang"]}"#,
+    },
+    ToolDef {
+        name: "wait",
+        description: "Wait for a specified number of seconds. Use between speak calls to avoid overlap.",
+        params_json: r#"{"type":"object","properties":{"seconds":{"type":"number","description":"Seconds to wait"}},"required":["seconds"]}"#,
     },
 ];
 
@@ -64,26 +103,58 @@ pub fn agent_chat(
     on_token: &mut dyn FnMut(&str),
     on_status: &mut dyn FnMut(&str),
 ) -> Result<String, String> {
+    let mut file_counter: u32 = 0;
+
     for iteration in 0..MAX_TOOL_ITERATIONS {
+        // Compact context if too long.
+        maybe_compact(config, messages, on_status);
+
+        if iteration > 0 {
+            on_status("Thinking...");
+        }
         let result = match config.provider {
             LlmProvider::Gemini => gemini_turn(config, messages, on_token)?,
-            LlmProvider::OpenAI => openai_turn(config, messages, on_token)?,
+            LlmProvider::OpenAI | LlmProvider::Ollama => openai_turn(config, messages, on_token)?,
             LlmProvider::Anthropic => anthropic_turn(config, messages, on_token)?,
         };
 
         match result {
             TurnResult::Text(text) => return Ok(text),
             TurnResult::ToolCalls(calls) => {
+                // Deduplicate consecutive identical tool calls (LLM sometimes repeats).
+                let mut prev_sig = String::new();
                 for call in calls {
+                    let sig = format!("{}:{}", call.name, call.args);
+                    if sig == prev_sig {
+                        eprintln!("[CLX] agent: skipping duplicate tool call: {}", call.name);
+                        continue;
+                    }
+                    prev_sig = sig;
+
                     on_status(&format!("Running {}({})...", call.name,
                         call.args.chars().take(40).collect::<String>()));
                     eprintln!("[CLX] agent: tool call #{}: {}({})",
                         iteration + 1, call.name, call.args.chars().take(80).collect::<String>());
 
-                    let result = execute_tool(&call.name, &call.args);
+                    let mut result = execute_tool(&call.name, &call.args);
                     eprintln!("[CLX] agent: tool result: {} chars", result.len());
+                    on_status(&format!("✓ {} done", call.name));
 
-                    // Append tool result to messages (format varies by provider).
+                    // Save large outputs to file, return path instead.
+                    if result.len() > INLINE_RESULT_LIMIT {
+                        file_counter += 1;
+                        let path = format!("/tmp/clx-agent-output-{}.txt", file_counter);
+                        let total_lines = result.lines().count();
+                        let _ = std::fs::write(&path, &result);
+                        // Return a summary + file path for the agent to read_file_range.
+                        let preview: String = result.lines().take(20).collect::<Vec<_>>().join("\n");
+                        result = format!(
+                            "[Output too large ({} chars, {} lines). Saved to: {}\nFirst 20 lines:\n{}\n\n... use read_file_range(path=\"{}\", start_line=21) to read more]",
+                            result.len(), total_lines, path, preview, path
+                        );
+                        eprintln!("[CLX] agent: saved large output to {}", path);
+                    }
+
                     append_tool_result(config, messages, &call, &result);
                 }
             }
@@ -118,25 +189,105 @@ fn execute_tool(name: &str, args_json: &str) -> String {
             fetch_url(url)
         }
         "js_eval" => {
-            let code = args["code"].as_str().unwrap_or("");
-            js_eval(code)
+            let code = args["code"].as_str().unwrap_or("").to_string();
+            let timeout = args["timeout"].as_u64().unwrap_or(5);
+            run_with_timeout_tool("js_eval", timeout, move || js_eval(&code))
         }
         "math_eval" => {
-            let expr = args["expr"].as_str().unwrap_or("");
-            math_eval(expr)
+            let expr = args["expr"].as_str().unwrap_or("").to_string();
+            let timeout = args["timeout"].as_u64().unwrap_or(5);
+            run_with_timeout_tool("math_eval", timeout, move || math_eval(&expr))
+        }
+        "read_file_range" => {
+            let path = args["path"].as_str().unwrap_or("");
+            let start = args["start_line"].as_u64().unwrap_or(1) as usize;
+            let num = args["num_lines"].as_u64().unwrap_or(50) as usize;
+            read_file_range(path, start, num)
         }
         "screenshot" => take_screenshot_and_describe(),
         "read_screen" => read_screen_text(),
         "read_clipboard" => read_clipboard(),
+        "task_status" => {
+            let id = args["id"].as_u64().unwrap_or(0) as u32;
+            crate::task_manager::task_status(id)
+        }
+        "task_output" => {
+            let id = args["id"].as_u64().unwrap_or(0) as u32;
+            let start = args["start"].as_u64().unwrap_or(0) as usize;
+            let max = args["max_chars"].as_u64().unwrap_or(2000) as usize;
+            crate::task_manager::task_output(id, start, max)
+        }
+        "task_kill" => {
+            let id = args["id"].as_u64().unwrap_or(0) as u32;
+            crate::task_manager::task_kill(id)
+        }
+        "task_list" => crate::task_manager::task_list(),
+        "speak" => {
+            let text = args["text"].as_str().unwrap_or("");
+            let lang = args["lang"].as_str().unwrap_or("en");
+            let text: String = text.chars().take(128).collect();
+            // Queue speech — plays serially in a background thread.
+            // Agent doesn't need to wait; speeches queue up and play in order.
+            speech_queue(&text, lang);
+            "Queued. Speeches play in order automatically, no need to wait.".to_string()
+        }
+        "wait" => {
+            let secs = args["seconds"].as_f64().unwrap_or(1.0).min(30.0).max(0.1);
+            std::thread::sleep(std::time::Duration::from_secs_f64(secs));
+            format!("Waited {:.1}s.", secs)
+        }
         _ => format!("Unknown tool: {}", name),
     }
 }
 
-/// Execute JavaScript in sandboxed Boa engine. No I/O, no network, no filesystem.
+/// Execute JavaScript in a sandboxed engine. No I/O, no network, no filesystem.
+/// Native: rquickjs (8x faster, 97% ES conformance).
+/// WASM: boa_engine (pure Rust, compiles to wasm32).
+#[cfg(not(target_arch = "wasm32"))]
+fn js_eval(code: &str) -> String {
+    use rquickjs::{Runtime, Context};
+
+    eprintln!("[CLX] agent: js_eval({} chars) [rquickjs]", code.len());
+
+    let rt = match Runtime::new() {
+        Ok(r) => r,
+        Err(e) => return format!("JS runtime error: {:?}", e),
+    };
+
+    // Set interrupt handler — checks a deadline to abort long-running scripts.
+    // Use 4s internal deadline (slightly less than the 5s task_manager timeout)
+    // so QuickJS cleanly returns an error before the task manager forces background.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
+    rt.set_interrupt_handler(Some(Box::new(move || {
+        std::time::Instant::now() > deadline
+    })));
+
+    let ctx = match Context::full(&rt) {
+        Ok(c) => c,
+        Err(e) => return format!("JS context error: {:?}", e),
+    };
+
+    ctx.with(|ctx| {
+        let wrapped = format!("String(eval({}))", serde_json::json!(code));
+        match ctx.eval::<String, _>(wrapped.as_bytes()) {
+            Ok(s) => s,
+            Err(e) => {
+                let err = format!("{:?}", e);
+                if err.contains("interrupted") || err.contains("InternalError") {
+                    "Execution timed out after 4s. The code ran too long. Try a smaller computation, or break it into smaller steps.".to_string()
+                } else {
+                    format!("JS error: {}", err)
+                }
+            }
+        }
+    })
+}
+
+#[cfg(target_arch = "wasm32")]
 fn js_eval(code: &str) -> String {
     use boa_engine::{Context, Source};
 
-    eprintln!("[CLX] agent: js_eval({} chars)", code.len());
+    eprintln!("[CLX] agent: js_eval({} chars) [boa]", code.len());
     let mut context = Context::default();
 
     match context.eval(Source::from_bytes(code)) {
@@ -308,6 +459,138 @@ fn list_files(path: &str) -> String {
         }
         Ok(o) => format!("ls error: {}", String::from_utf8_lossy(&o.stderr)),
         Err(e) => format!("Failed to list files: {}", e),
+    }
+}
+
+/// Serial speech queue — speaks one at a time, no overlap.
+fn speech_queue(text: &str, lang: &str) {
+    use std::sync::mpsc;
+    static SPEECH_TX: std::sync::Mutex<Option<mpsc::Sender<(String, String)>>> = std::sync::Mutex::new(None);
+
+    let mut tx_guard = SPEECH_TX.lock().unwrap();
+    if tx_guard.is_none() {
+        let (tx, rx) = mpsc::channel::<(String, String)>();
+        *tx_guard = Some(tx);
+        std::thread::Builder::new()
+            .name("clx-speech-queue".into())
+            .spawn(move || {
+                for (text, lang) in rx {
+                    let _ = speak_text(&text, &lang);
+                }
+            })
+            .ok();
+    }
+    if let Some(ref tx) = *tx_guard {
+        let _ = tx.send((text.to_string(), lang.to_string()));
+    }
+}
+
+/// Run a tool function with timeout. Returns inline result or background task message.
+fn run_with_timeout_tool<F>(name: &str, timeout_secs: u64, func: F) -> String
+where
+    F: FnOnce() -> String + Send + 'static,
+{
+    use crate::task_manager::{run_with_timeout, ToolResult};
+    match run_with_timeout(name, timeout_secs, func) {
+        ToolResult::Inline(result) => result,
+        ToolResult::Background { message, .. } => message,
+    }
+}
+
+/// Speak text aloud via the TTS fallback chain.
+fn speak_text(text: &str, lang: &str) -> String {
+    eprintln!("[CLX] agent: speak({:?}, lang={})", text.chars().take(40).collect::<String>(), lang);
+    let el_key = std::env::var("ELEVENLABS_API_KEY").unwrap_or_default();
+    let gemini_key = std::env::var("GEMINI_API_KEY").unwrap_or_default();
+    let openai_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
+    match crate::tts::speak(text, lang, &el_key, &gemini_key, &openai_key) {
+        Ok(()) => format!("Spoke aloud: {:?} (lang={})", text.chars().take(50).collect::<String>(), lang),
+        Err(e) => format!("TTS error: {}", e),
+    }
+}
+
+/// Read a range of lines from a file.
+fn read_file_range(path: &str, start_line: usize, num_lines: usize) -> String {
+    eprintln!("[CLX] agent: read_file_range({:?}, start={}, n={})", path, start_line, num_lines);
+    match std::fs::read_to_string(path) {
+        Ok(content) => {
+            let lines: Vec<&str> = content.lines().collect();
+            let total = lines.len();
+            let start = (start_line.max(1) - 1).min(total);
+            let end = (start + num_lines).min(total);
+            let selected: Vec<String> = lines[start..end].iter()
+                .enumerate()
+                .map(|(i, l)| format!("{:>5}: {}", start + i + 1, l))
+                .collect();
+            format!("Lines {}-{} of {} total:\n{}", start + 1, end, total, selected.join("\n"))
+        }
+        Err(e) => format!("Failed to read {}: {}", path, e),
+    }
+}
+
+// ── Context compaction ───────────────────────────────────────────────────────
+
+/// Compact conversation history when it exceeds the threshold.
+/// Preserves: system prompt, last 4 messages (verbatim), summary of the rest.
+#[cfg(not(target_arch = "wasm32"))]
+fn maybe_compact(
+    config: &LlmConfig,
+    messages: &mut Vec<Message>,
+    on_status: &mut dyn FnMut(&str),
+) {
+    let total_chars: usize = messages.iter().map(|m| m.content.len()).sum();
+    if total_chars < COMPACTION_THRESHOLD || messages.len() < 8 {
+        return;
+    }
+
+    eprintln!("[CLX] agent: compacting context ({} chars, {} messages)", total_chars, messages.len());
+    on_status("Compacting conversation history...");
+
+    // Keep system prompt (index 0) and last 4 messages.
+    let system = messages[0].clone();
+    let keep_tail = 4.min(messages.len() - 1);
+    let tail: Vec<Message> = messages[messages.len() - keep_tail..].to_vec();
+    let to_summarize: Vec<&Message> = messages[1..messages.len() - keep_tail].iter().collect();
+
+    if to_summarize.is_empty() { return; }
+
+    // Build summary request.
+    let summary_text: String = to_summarize.iter().map(|m| {
+        let role = &m.role;
+        let content: String = m.content.chars().take(500).collect();
+        format!("[{}]: {}", role, content)
+    }).collect::<Vec<_>>().join("\n");
+
+    let summary_prompt = vec![
+        Message {
+            role: "system".into(),
+            content: "Summarize this conversation excerpt concisely. Preserve: key decisions, current task, important facts, file paths, tool results. Omit: greetings, repetition, verbose tool output. Return only the summary, 200 words max.".into(),
+        },
+        Message { role: "user".into(), content: summary_text },
+    ];
+
+    let mut summary = String::new();
+    match stream_chat(config, &summary_prompt, &mut |token| {
+        summary.push_str(token);
+    }) {
+        Ok(_) => {
+            eprintln!("[CLX] agent: compacted {} messages → {} char summary", to_summarize.len(), summary.len());
+            // Rebuild: system + summary + tail
+            *messages = vec![system];
+            messages.push(Message {
+                role: "assistant".into(),
+                content: format!("[Conversation summary]\n{}", summary),
+            });
+            messages.extend(tail);
+        }
+        Err(e) => {
+            eprintln!("[CLX] agent: compaction failed: {}, falling back to truncation", e);
+            // Fallback: just keep system + last 6 messages.
+            let keep = 6.min(messages.len() - 1);
+            let tail: Vec<Message> = messages[messages.len() - keep..].to_vec();
+            *messages = vec![system];
+            messages.extend(tail);
+        }
     }
 }
 
@@ -543,11 +826,14 @@ fn openai_turn(
         "tools": tool_defs,
     });
 
-    let resp = ureq::post("https://api.openai.com/v1/chat/completions")
-        .set("Authorization", &format!("Bearer {}", config.api_key))
-        .set("Content-Type", "application/json")
-        .send_string(&body.to_string())
-        .map_err(|e| format!("OpenAI: {}", e))?;
+    let base = config.base_url.as_deref().unwrap_or("https://api.openai.com");
+    let url = format!("{}/v1/chat/completions", base);
+    let mut req = ureq::post(&url).set("Content-Type", "application/json");
+    if !config.api_key.is_empty() {
+        req = req.set("Authorization", &format!("Bearer {}", config.api_key));
+    }
+    let resp = req.send_string(&body.to_string())
+        .map_err(|e| format!("OpenAI/Ollama: {}", e))?;
 
     let result: serde_json::Value = serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?).map_err(|e| format!("parse: {}", e))?;
     let choice = &result["choices"][0];
@@ -655,8 +941,8 @@ fn append_tool_result(config: &LlmConfig, messages: &mut Vec<Message>, call: &To
                 content: response_json.to_string(),
             });
         }
-        LlmProvider::OpenAI => {
-            // OpenAI: assistant message with tool_calls, then tool role.
+        LlmProvider::OpenAI | LlmProvider::Ollama => {
+            // OpenAI/Ollama: assistant message with tool_calls, then tool role.
             messages.push(Message {
                 role: "assistant".into(),
                 content: format!("[called {}]", call.name),

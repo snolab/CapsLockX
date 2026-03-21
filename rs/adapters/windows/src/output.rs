@@ -209,7 +209,7 @@ impl Platform for WinPlatform {
     }
 
     fn close_tab(&self) {
-        self.key_tap_ctrl(KeyCode::W);
+        self.key_tap_cmd_or_ctrl(KeyCode::W);
     }
 
     fn close_window(&self) {
