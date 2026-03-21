@@ -337,8 +337,8 @@
       if (cfg.openai_api_key) document.getElementById('openai_api_key').value = cfg.openai_api_key;
       if (cfg.anthropic_api_key) document.getElementById('anthropic_api_key').value = cfg.anthropic_api_key;
       if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
-      populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs,gemini,openai,msedge,native');
-      populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx,gemini,llm,raw');
+      populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native');
+      populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx:qwen2.5-3b,llm-corrector,raw');
     }
 
     function setSlider(id, value) {

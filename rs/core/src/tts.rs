@@ -8,7 +8,7 @@
 /// `lang` is a BCP-47 hint like "en", "ja", "zh", "ko".
 #[cfg(not(target_arch = "wasm32"))]
 pub fn speak(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, openai_key: &str) -> Result<(), String> {
-    speak_with_chain(text, lang, elevenlabs_key, gemini_key, openai_key, "elevenlabs,gemini,openai,msedge,native")
+    speak_with_chain(text, lang, elevenlabs_key, gemini_key, openai_key, "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native")
 }
 
 /// Speak with a configurable fallback chain.

@@ -257,8 +257,8 @@ impl VoiceModule {
                 llm_api_key: String::new(),
                 llm_model: String::new(),
                 stt_correction: false,
-                tts_chain: "elevenlabs,gemini,openai,msedge,native".to_string(),
-                stt_polish_chain: "mlx,gemini,llm,raw".to_string(),
+                tts_chain: "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
+                stt_polish_chain: "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
             })),
         }
     }
@@ -949,6 +949,8 @@ fn stt_worker_loop(
     // This avoids holding the mutex during transcription.
     let mut engine = engine_lock.lock().unwrap().take();
     let mut corrector = corrector_lock.lock().unwrap().take();
+    // Snapshot polish chain once at session start (avoids Mutex lock on every speech event).
+    let polish_chain = live_config.lock().unwrap().stt_polish_chain.clone();
     // ── Mic track state ──
     let mut mic_pending_buf: Vec<f32> = Vec::new();
     let mut mic_pending_since: usize = 0;
@@ -1038,7 +1040,6 @@ fn stt_worker_loop(
                     const MIC_PENDING_MAX: usize = 160_000; // 10s at 16kHz
                     if mic_pending_buf.len() > MIC_PENDING_MAX {
                         eprintln!("[CLX] stt-worker: mic pending >10s — forcing finalize");
-                        let pc = live_config.lock().unwrap().stt_polish_chain.clone();
                         process_mic_speech_end(
                             &mic_pending_buf, timestamp_secs,
                             &mut engine, &mut corrector, platform,
@@ -1048,7 +1049,7 @@ fn stt_worker_loop(
                             &mut mic_stable,
                             &sys_committed, &sys_whisper_pending,
                             &mut note_srt, &mut srt_index,
-                            &pc,
+                            &polish_chain,
                         );
                         mic_pending_buf.clear();
                         mic_pending_since = 0;
@@ -1368,7 +1369,7 @@ fn process_mic_speech_end(
         let raw_text = transcribe_local(pending_buf, engine);
 
         let mut final_text = polish_stt_result(
-            &raw_text, pending_buf, engine, corrector, polish_chain,
+            &raw_text, pending_buf, corrector, polish_chain,
         );
 
         if !final_text.is_empty() {
@@ -1536,7 +1537,6 @@ fn last_n_chars(s: &str, max_chars: usize) -> &str {
 fn polish_stt_result(
     raw_text: &str,
     audio_samples: &[f32],
-    _engine: &mut Option<SttEngine>,
     corrector: &mut Option<crate::stt_corrector::SttCorrector>,
     chain: &str,
 ) -> String {
