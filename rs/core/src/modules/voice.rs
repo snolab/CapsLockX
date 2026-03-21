@@ -131,29 +131,6 @@ const STATE_STOPPING: u8 = 2;
 /// Hold threshold: if V is held longer than this, releasing V stops listening.
 const HOLD_THRESHOLD_MS: u128 = 300;
 
-/// Default server URL for voice transcription.
-const DEFAULT_SERVER_URL: &str = "https://brainstorm.snomiao.com/api/voice-transcribe";
-
-/// Read voice_server URL from config file, then env var, then default.
-fn resolve_server_url() -> String {
-    // 1. Try config file
-    if let Some(config_dir) = dirs::config_dir() {
-        let path = config_dir.join("CapsLockX").join("config.json");
-        if let Ok(data) = std::fs::read_to_string(&path) {
-            if let Some(url) = extract_json_text_for_key(&data, "voice_server") {
-                if !url.is_empty() {
-                    return url;
-                }
-            }
-        }
-    }
-    // 2. Try env var
-    if let Ok(url) = std::env::var("CLX_VOICE_SERVER") {
-        return url;
-    }
-    // 3. Default
-    DEFAULT_SERVER_URL.to_string()
-}
 
 /// Extract a string value for a given key from a JSON object.
 fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
@@ -407,14 +384,13 @@ impl VoiceModule {
         let flush_pending = Arc::clone(&self.flush_pending);
         let platform = Arc::clone(&self.platform);
 
-        let server_url = resolve_server_url();
         let live_config = Arc::clone(&self.live_config);
         let cfg_snap = live_config.lock().unwrap().clone();
 
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &server_url, &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model, cfg_snap.stt_correction, live_config);
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model, cfg_snap.stt_correction, live_config);
             })
             .expect("failed to spawn voice bg thread");
 
@@ -461,7 +437,6 @@ fn voice_bg_persistent(
     input_active: Arc<AtomicBool>,
     flush_pending: Arc<AtomicBool>,
     platform: Arc<dyn Platform>,
-    _server_url: &str,
     stt_engine_pref: &str,
     llm_api_key: &str,
     llm_model: &str,

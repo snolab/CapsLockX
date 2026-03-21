@@ -31,8 +31,6 @@ Speak each phrase separately (max 32 chars), using wait() between calls to avoid
 
 const HISTORY_FILENAME: &str = "brainstorm_history.json";
 
-const DEFAULT_ORIGIN: &str = "https://brainstorm.snomiao.com";
-
 pub struct BrainstormModule {
     platform: Arc<dyn Platform>,
     state: AtomicU8,
@@ -45,8 +43,6 @@ pub struct BrainstormModule {
     last_response: Mutex<String>,
     /// LLM config (behind Mutex for hot-reload from prefs).
     llm_config: Mutex<Option<LlmConfig>>,
-    /// Web UI origin.
-    origin: String,
     /// Whether "keep history" is checked (persists across restarts).
     keep_history: AtomicBool,
 }
@@ -121,7 +117,6 @@ fn save_keep_history_pref(keep: bool) {
 impl BrainstormModule {
     pub fn new(
         platform: Arc<dyn Platform>,
-        origin: String,
         llm_api_key: String,
         llm_model: String,
     ) -> Self {
@@ -152,7 +147,6 @@ impl BrainstormModule {
             history: Mutex::new(history),
             last_response: Mutex::new(String::new()),
             llm_config: Mutex::new(llm_config),
-            origin: if origin.is_empty() { DEFAULT_ORIGIN.to_string() } else { origin },
             keep_history: AtomicBool::new(keep),
         }
     }
@@ -171,9 +165,7 @@ impl BrainstormModule {
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
         match key {
             KeyCode::B => {
-                if mods.ctrl {
-                    self.open_web_ui();
-                } else if mods.shift {
+                if mods.shift {
                     self.clear_history();
                 } else {
                     self.start_turn();
@@ -196,16 +188,6 @@ impl BrainstormModule {
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         matches!(key, KeyCode::B)
-    }
-
-    fn open_web_ui(&self) {
-        let url = format!("{}/", self.origin);
-        #[cfg(target_os = "macos")]
-        { let _ = std::process::Command::new("open").arg(&url).spawn(); }
-        #[cfg(target_os = "windows")]
-        { let _ = std::process::Command::new("cmd").args(["/c", "start", &url]).spawn(); }
-        #[cfg(target_os = "linux")]
-        { let _ = std::process::Command::new("xdg-open").arg(&url).spawn(); }
     }
 
     fn clear_history(&self) {

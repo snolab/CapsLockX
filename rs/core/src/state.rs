@@ -35,10 +35,6 @@ pub struct ClxConfig {
     pub speed:           SpeedConfig,
     /// STT engine: "sherpa" or "whisper"
     pub stt_engine:          String,
-    /// Brainstorm API origin URL.
-    pub brainstorm_origin:   String,
-    /// Brainstorm API key.
-    pub brainstorm_api_key:  String,
     /// Per-provider API keys.
     pub gemini_api_key:      String,
     pub openai_api_key:      String,
@@ -62,8 +58,6 @@ impl Default for ClxConfig {
             use_ralt:           false,
             speed:              SpeedConfig::default(),
             stt_engine:         "sherpa".to_string(),
-            brainstorm_origin:  "https://brainstorm.snomiao.com".to_string(),
-            brainstorm_api_key: "FREE".to_string(),
             gemini_api_key:     String::new(),
             openai_api_key:     String::new(),
             anthropic_api_key:  String::new(),
