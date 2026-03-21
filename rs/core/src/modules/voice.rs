@@ -183,7 +183,7 @@ fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
 /// YouTube/background audio from laptop speakers.
 const SPEECH_START_PROB: f32 = 0.7;
 /// Speech probability threshold below which silence is counted.
-const SPEECH_END_PROB: f32 = 0.4;
+const SPEECH_END_PROB: f32 = 0.5;
 /// Consecutive speech frames to trigger speech start (more = less sensitive).
 const SPEECH_START_FRAMES: usize = 8;   // 128ms — filters ambient noise / fan hum
 /// Consecutive silence frames to end speech (~480ms at 32ms/frame).
@@ -556,7 +556,7 @@ fn voice_bg_persistent(
         // Pre-send accumulators: batch audio before sending to the STT worker.
         // Mic: 200ms batches for low latency.  Sys: 500ms batches — background audio
         // doesn't need to be as responsive, and this keeps mic getting priority.
-        const MIC_SEND_THRESHOLD: usize = 3_200;  // 200ms at 16kHz
+        const MIC_SEND_THRESHOLD: usize = 1_600;  // 100ms at 16kHz
         const SYS_SEND_THRESHOLD: usize = 8_000;  // 500ms at 16kHz
         let mut mic_send_buf: Vec<f32> = Vec::new();
         let mut sys_send_buf: Vec<f32> = Vec::new();
@@ -719,6 +719,12 @@ fn voice_bg_persistent(
             if vad.in_speech {
                 // Accumulate locally; only send once SEND_THRESHOLD reached.
                 mic_send_buf.extend_from_slice(samples_16k);
+                static SPEECH_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                let n = SPEECH_LOG.fetch_add(1, Ordering::Relaxed);
+                if n < 3 || n % 100 == 0 {
+                    eprintln!("[CLX] voice: speech buf={} threshold={} samples_16k={}",
+                        mic_send_buf.len(), MIC_SEND_THRESHOLD, samples_16k.len());
+                }
                 if mic_send_buf.len() >= MIC_SEND_THRESHOLD {
                     let cmd = SttCommand::AudioChunk {
                         source: SttSource::Mic,
@@ -975,8 +981,8 @@ fn stt_worker_loop(
         if flush {
             // Commit whatever was pending to note (if active).
             if !mic_whisper_pending.is_empty() {
-                if !mic_committed.is_empty() && !mic_committed.ends_with(' ') {
-                    mic_committed.push(' ');
+                if !mic_committed.is_empty() && !mic_committed.ends_with('\n') {
+                    mic_committed.push('\n');
                 }
                 mic_committed.push_str(&mic_whisper_pending);
             }
@@ -1211,19 +1217,33 @@ fn process_mic_streaming(
         }
     }
 
-    // Update overlay subtitle with speaker labels.
+    // Update overlay subtitle — show last few lines, current pending on last line.
     let display_pending = if is_input { mic_typed_pending.as_str() } else { mic_whisper_pending.as_str() };
-    let mic_raw = format!("{}{}", mic_committed, display_pending);
+
+    // Build multiline subtitle: committed lines + current pending line.
+    let mut lines: Vec<&str> = mic_committed.lines().collect();
+    if !display_pending.is_empty() {
+        // pending is shown as the last line (still being typed)
+        lines.push(display_pending);
+    }
+    // Keep only the last 5 lines to fit the overlay.
+    let max_lines = 5;
+    let start = lines.len().saturating_sub(max_lines);
+    let visible: Vec<&str> = lines[start..].to_vec();
+
     let subtitle = if has_sys {
-        let sys_raw = format!("{}{}", sys_committed, sys_whisper_pending);
-        let mic_text = last_n_chars(&mic_raw, 200);
-        let sys_text = last_n_chars(&sys_raw, 200);
+        let sys_text = format!("{}{}", sys_committed, sys_whisper_pending);
+        let sys_last: String = sys_text.lines().last().unwrap_or("").chars().take(80).collect();
         let mut parts = Vec::new();
-        if !mic_text.is_empty() { parts.push(format!("\u{1F3A4} {}", mic_text)); }
-        if !sys_text.is_empty() { parts.push(format!("\u{1F50A} {}", sys_text)); }
+        for l in &visible {
+            parts.push(format!("🎤 {}", l));
+        }
+        if !sys_last.is_empty() {
+            parts.push(format!("🔊 {}", sys_last));
+        }
         parts.join("\n")
     } else {
-        last_n_chars(&mic_raw, 200).to_string()
+        visible.join("\n")
     };
     platform.update_voice_subtitle(&subtitle);
 
@@ -1231,7 +1251,7 @@ fn process_mic_streaming(
     {
         use std::io::Write;
         if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
-            let _ = writeln!(f, "{}", last_n_chars(&mic_raw, 200));
+            let _ = writeln!(f, "{}", subtitle);
         }
     }
 
@@ -1268,8 +1288,8 @@ fn process_mic_streaming(
         if input_active.load(Ordering::Relaxed) && *mic_typed_pending != *mic_whisper_pending {
             type_replace(mic_typed_pending, mic_whisper_pending, platform);
         }
-        if !mic_committed.is_empty() && !mic_committed.ends_with(' ') && !mic_committed.ends_with('\n') {
-            mic_committed.push(' ');
+        if !mic_committed.is_empty() && !mic_committed.ends_with('\n') {
+            mic_committed.push('\n');
         }
         mic_committed.push_str(mic_whisper_pending);
         // Add SRT entry for voice note.
@@ -1311,41 +1331,17 @@ fn process_mic_speech_end(
     note_srt: &mut String,
     srt_index: &mut usize,
 ) {
-    // Final transcription: try Gemini cloud re-transcription first (higher accuracy),
-    // fall back to local SenseVoice + LLM correction.
+    // Final polishing cascade:
+    //   1. MLX local LLM (if server running + enough free RAM)
+    //   2. Gemini cloud re-transcription (if API key)
+    //   3. SenseVoice + LLM text correction
+    //   4. Raw SenseVoice
     if pending_buf.len() > 4800 {
-        let gemini_key = std::env::var("GEMINI_API_KEY")
-            .or_else(|_| {
-                // Try reading from .env.local
-                for dir in &[".", &format!("{}/CapsLockX", std::env::var("HOME").unwrap_or_default())] {
-                    let path = std::path::Path::new(dir).join(".env.local");
-                    if let Ok(content) = std::fs::read_to_string(path) {
-                        if let Some(val) = content.lines().find_map(|l| l.strip_prefix("GEMINI_API_KEY=")) {
-                            return Ok(val.to_string());
-                        }
-                    }
-                }
-                Err(std::env::VarError::NotPresent)
-            })
-            .unwrap_or_default();
-        let mut final_text = if !gemini_key.is_empty() {
-            // Gemini cloud re-transcription (100% JA accuracy vs 95% local).
-            match crate::cloud_stt::transcribe_gemini(pending_buf, &gemini_key) {
-                Ok(text) if !text.is_empty() => {
-                    eprintln!("[CLX] stt-worker: Gemini cloud re-transcription: {:?}", text);
-                    text
-                }
-                Ok(_) | Err(_) => {
-                    // Fallback to local.
-                    let t = transcribe_local(pending_buf, engine);
-                    if let Some(ref mut c) = corrector { c.correct(&t) } else { t }
-                }
-            }
-        } else {
-            // No Gemini key — use local + LLM correction.
-            let t = transcribe_local(pending_buf, engine);
-            if let Some(ref mut c) = corrector { c.correct(&t) } else { t }
-        };
+        let raw_text = transcribe_local(pending_buf, engine);
+
+        let mut final_text = polish_stt_result(
+            &raw_text, pending_buf, engine, corrector,
+        );
 
         if !final_text.is_empty() {
             // At speech end, accept rewrites (input mode only).
@@ -1356,8 +1352,8 @@ fn process_mic_speech_end(
         }
     }
 
-    if !mic_committed.is_empty() && !mic_committed.ends_with(' ') && !mic_committed.ends_with('\n') {
-        mic_committed.push(' ');
+    if !mic_committed.is_empty() && !mic_committed.ends_with('\n') {
+        mic_committed.push('\n');
     }
     mic_committed.push_str(mic_whisper_pending);
     // Add SRT entry for the utterance end.
@@ -1505,6 +1501,143 @@ fn last_n_chars(s: &str, max_chars: usize) -> &str {
     let skip = total - max_chars;
     let byte_pos = s.char_indices().nth(skip).map(|(i, _)| i).unwrap_or(0);
     &s[byte_pos..]
+}
+
+/// Polish STT output using the best available method.
+/// Cascade: MLX local (if running + enough RAM) → Gemini cloud → LLM corrector → raw.
+fn polish_stt_result(
+    raw_text: &str,
+    audio_samples: &[f32],
+    engine: &mut Option<SttEngine>,
+    corrector: &mut Option<crate::stt_corrector::SttCorrector>,
+) -> String {
+    if raw_text.trim().is_empty() { return raw_text.to_string(); }
+
+    // 1. Try MLX local LLM (port 8321) — free, fast, no cloud.
+    if has_enough_free_memory(2_000) { // need ~2GB free for 3B model
+        if let Ok(polished) = polish_via_local_llm(raw_text) {
+            if !polished.is_empty() {
+                eprintln!("[CLX] stt-polish: MLX local: {:?} → {:?}", raw_text, polished);
+                return polished;
+            }
+        }
+    }
+
+    // 2. Try Gemini cloud re-transcription (from audio, higher accuracy).
+    let gemini_key = read_gemini_key();
+    if !gemini_key.is_empty() {
+        match crate::cloud_stt::transcribe_gemini(audio_samples, &gemini_key) {
+            Ok(text) if !text.is_empty() => {
+                eprintln!("[CLX] stt-polish: Gemini cloud: {:?}", text);
+                return text;
+            }
+            _ => {}
+        }
+    }
+
+    // 3. LLM text corrector (if configured).
+    if let Some(ref mut c) = corrector {
+        let corrected = c.correct(raw_text);
+        if corrected != raw_text {
+            eprintln!("[CLX] stt-polish: LLM corrector: {:?} → {:?}", raw_text, corrected);
+            return corrected;
+        }
+    }
+
+    // 4. Raw SenseVoice output.
+    raw_text.to_string()
+}
+
+/// Polish raw STT text via local MLX LLM server (OpenAI-compat at port 8321).
+#[cfg(not(target_arch = "wasm32"))]
+fn polish_via_local_llm(raw_text: &str) -> Result<String, String> {
+    // Quick check: is MLX server running?
+    let base = "http://localhost:8321";
+    if ureq::get(&format!("{}/v1/models", base)).call().is_err() {
+        return Err("MLX server not running".into());
+    }
+
+    let body = serde_json::json!({
+        "model": "mlx-community/Qwen2.5-3B-Instruct-4bit",
+        "messages": [
+            {"role": "system", "content": "You correct speech-to-text errors. Fix obvious mistakes. Keep the original language. Return ONLY the corrected text, nothing else."},
+            {"role": "user", "content": raw_text}
+        ],
+        "stream": false,
+        "max_tokens": 200,
+        "temperature": 0.0
+    });
+
+    let resp = ureq::post(&format!("{}/v1/chat/completions", base))
+        .set("Content-Type", "application/json")
+        .send_string(&body.to_string())
+        .map_err(|e| format!("MLX: {}", e))?;
+
+    let result: serde_json::Value = serde_json::from_str(
+        &resp.into_string().map_err(|e| format!("read: {}", e))?
+    ).map_err(|e| format!("parse: {}", e))?;
+
+    let text = result["choices"][0]["message"]["content"]
+        .as_str()
+        .unwrap_or("")
+        .trim()
+        .trim_end_matches("<|im_end|>") // strip Qwen stop token
+        .trim()
+        .to_string();
+
+    Ok(text)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn polish_via_local_llm(_raw_text: &str) -> Result<String, String> {
+    Err("not on wasm".into())
+}
+
+/// Check if the system has enough free memory (in MB).
+fn has_enough_free_memory(required_mb: u64) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        // Use vm_stat to check free + inactive pages.
+        if let Ok(output) = std::process::Command::new("vm_stat").output() {
+            let text = String::from_utf8_lossy(&output.stdout);
+            let page_size: u64 = 16384; // macOS ARM page size
+            let mut free: u64 = 0;
+            let mut inactive: u64 = 0;
+            for line in text.lines() {
+                if line.contains("Pages free") {
+                    if let Some(n) = line.split(':').nth(1) {
+                        free = n.trim().trim_end_matches('.').parse().unwrap_or(0);
+                    }
+                }
+                if line.contains("Pages inactive") {
+                    if let Some(n) = line.split(':').nth(1) {
+                        inactive = n.trim().trim_end_matches('.').parse().unwrap_or(0);
+                    }
+                }
+            }
+            let available_mb = (free + inactive) * page_size / 1024 / 1024;
+            return available_mb > required_mb;
+        }
+    }
+    // Default: assume enough.
+    true
+}
+
+/// Read Gemini API key from env or .env.local.
+fn read_gemini_key() -> String {
+    std::env::var("GEMINI_API_KEY")
+        .or_else(|_| {
+            for dir in &[".", &format!("{}/CapsLockX", std::env::var("HOME").unwrap_or_default())] {
+                let path = std::path::Path::new(dir).join(".env.local");
+                if let Ok(content) = std::fs::read_to_string(path) {
+                    if let Some(val) = content.lines().find_map(|l| l.strip_prefix("GEMINI_API_KEY=")) {
+                        return Ok(val.to_string());
+                    }
+                }
+            }
+            Err(std::env::VarError::NotPresent)
+        })
+        .unwrap_or_default()
 }
 
 /// Format seconds as SRT timestamp: HH:MM:SS,mmm

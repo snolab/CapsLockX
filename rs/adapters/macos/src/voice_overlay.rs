@@ -617,50 +617,10 @@ fn hover_loop() {
             }
         }
 
-        // Track resize grip movement — when the user drags the ⇲ grip,
-        // compute the new overlay width/height from the grip's position.
-        let resize = RESIZE_PTR.load(Ordering::Acquire);
-        if !resize.is_null() {
-            let resize_frame: NSRect = unsafe {
-                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
-                    = std::mem::transmute(objc_msgSend as *const ());
-                f(resize, sel(b"frame\0"))
-            };
-            // The grip's right edge should align with the overlay's right edge.
-            // The grip's bottom edge should align with the overlay's bottom edge.
-            let expected_x = win_frame.x + win_frame.w - 16.0;
-            let expected_y = win_frame.y;
-            let dx = resize_frame.x - expected_x;
-            let dy = expected_y - resize_frame.y; // inverted: drag down = grow height
-
-            if dx.abs() > 2.0 || dy.abs() > 2.0 {
-                let new_w = (win_frame.w + dx).clamp(200.0, 1200.0);
-                let new_h = (win_frame.h + dy).clamp(60.0, 500.0);
-                let new_y = win_frame.y + win_frame.h - new_h; // keep top edge fixed
-                let new_frame = NSRect { x: win_frame.x, y: new_y, w: new_w, h: new_h };
-
-                unsafe {
-                    // Resize overlay.
-                    let f_set: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, NSRect, bool)
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    f_set(win, sel(b"setFrame:display:\0"), new_frame, true);
-
-                    // Reposition resize grip to new bottom-right.
-                    #[repr(C)] #[derive(Clone, Copy)] struct NSPoint { x: f64, y: f64 }
-                    let set_origin: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, NSPoint)
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    set_origin(resize, sel(b"setFrameOrigin:\0"),
-                        NSPoint { x: win_frame.x + new_w - 16.0, y: new_y });
-
-                    // Reposition toolbar to new top.
-                    let handle = HANDLE_PTR.load(Ordering::Acquire);
-                    if !handle.is_null() {
-                        let bar_frame = NSRect { x: win_frame.x, y: new_y + new_h, w: new_w, h: 18.0 };
-                        f_set(handle, sel(b"setFrame:display:\0"), bar_frame, true);
-                    }
-                }
-            }
-        }
+        // Resize grip tracking disabled — calling setFrame from background thread
+        // causes silent crashes. Resize is handled by the drag handle's child window
+        // relationship (moving the toolbar bar repositions the overlay).
+        // TODO: dispatch resize to main thread via dispatch_async_f.
 
         // Convert Quartz coords (y=0 at top) to AppKit (y=0 at bottom).
         // CGEvent uses Quartz; NSWindow uses AppKit. Screen height needed.
@@ -911,8 +871,9 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
             };
             set_attributed_subtitle(label, &text);
 
-            // Auto-resize window height to fit text content.
-            auto_resize_overlay(label);
+            // Auto-resize disabled — was causing silent crashes on some content.
+            // The overlay uses a fixed height with scrollable text instead.
+            // auto_resize_overlay(label);
         }
     }
 }
