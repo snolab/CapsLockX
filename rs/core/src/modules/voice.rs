@@ -923,6 +923,7 @@ fn stt_worker_loop(
     let mut mic_typed_pending = String::new();
     let mut mic_prev_whisper = String::new();
     let mut mic_stable: usize = 0;
+    let mut mic_new_samples_since_commit: usize = 0; // reset on commit; prevents context re-transcription from triggering stability
 
     // ── System audio track state ──
     let mut sys_pending_buf: Vec<f32> = Vec::new();
@@ -1019,6 +1020,7 @@ fn stt_worker_loop(
 
                     // Transcribe when enough new samples have accumulated.
                     if mic_pending_since >= STREAMING_CHUNK_SAMPLES {
+                        mic_new_samples_since_commit += STREAMING_CHUNK_SAMPLES;
                         let result = process_mic_streaming(
                             &mic_pending_buf, timestamp_secs,
                             &mut engine, &mut corrector, platform,
@@ -1026,14 +1028,21 @@ fn stt_worker_loop(
                             &mut mic_committed, &mut mic_whisper_pending,
                             &mut mic_typed_pending, &mut mic_prev_whisper,
                             &mut mic_stable,
+                            mic_new_samples_since_commit,
                             &sys_committed, &sys_whisper_pending,
                             &mut note_srt, &mut srt_index,
                         );
                         mic_pending_since = 0;
                         match result {
                             Some(true) => {
-                                // Committed — start fresh.
-                                mic_pending_buf.clear();
+                                // Committed — keep last 1s as context so display stays live
+                                // (same rolling-window behaviour as the sys track).
+                                const MIC_CONTEXT_KEEP: usize = 16_000; // 1s at 16kHz
+                                if mic_pending_buf.len() > MIC_CONTEXT_KEEP {
+                                    let drain = mic_pending_buf.len() - MIC_CONTEXT_KEEP;
+                                    mic_pending_buf.drain(..drain);
+                                }
+                                mic_new_samples_since_commit = 0;
                             }
                             Some(false) => {
                                 // Speech detected but not yet stable — keep accumulating context.
@@ -1066,8 +1075,15 @@ fn stt_worker_loop(
                         &sys_committed, &sys_whisper_pending,
                         &mut note_srt, &mut srt_index,
                     );
-                    mic_pending_buf.clear();
+                    // Keep last 1s as rolling context so the display stays live
+                    // across brief pauses, matching sys-track behaviour.
+                    const MIC_CONTEXT_KEEP_END: usize = 16_000; // 1s at 16kHz
+                    if mic_pending_buf.len() > MIC_CONTEXT_KEEP_END {
+                        let drain = mic_pending_buf.len() - MIC_CONTEXT_KEEP_END;
+                        mic_pending_buf.drain(..drain);
+                    }
                     mic_pending_since = 0;
+                    mic_new_samples_since_commit = 0;
                 }
                 _ => {}
             }
@@ -1174,6 +1190,7 @@ fn process_mic_streaming(
     mic_typed_pending: &mut String,
     mic_prev_whisper: &mut String,
     mic_stable: &mut usize,
+    mic_new_samples: usize,
     sys_committed: &str,
     sys_whisper_pending: &str,
     note_srt: &mut String,
@@ -1218,18 +1235,24 @@ fn process_mic_streaming(
         }
     }
 
-    // Stability tracking.
-    if *mic_whisper_pending == *mic_prev_whisper && !mic_whisper_pending.is_empty() {
+    // Stability tracking: compare only the tail of the text so that appending
+    // new words at the end (continuous speech) doesn't reset the counter.
+    let tail_len = 30; // chars — enough to detect meaningful overlap
+    let cur_tail: String = mic_whisper_pending.chars().rev().take(tail_len).collect();
+    let prev_tail: String = mic_prev_whisper.chars().rev().take(tail_len).collect();
+    if cur_tail == prev_tail && !mic_whisper_pending.is_empty() {
         *mic_stable += 1;
     } else {
         *mic_stable = 0;
     }
     *mic_prev_whisper = mic_whisper_pending.clone();
 
-    // Commit when stable or forced at 5s.
-    // Lower threshold (1s) vs sys (2s) since mic context window is only 500ms.
-    let should_commit = (*mic_stable >= 2 && pending_buf.len() > 16_000)
-        || pending_buf.len() > 80_000;
+    // Commit when stable (tail unchanged once = sentence end detected) or forced at 2s.
+    // Use mic_new_samples (not pending_buf.len()) for the stability gate so that the
+    // 1s rolling context — which re-transcribes already-committed audio — cannot
+    // immediately re-trigger a duplicate stability commit after each flush.
+    let should_commit = (*mic_stable >= 1 && mic_new_samples > 16_000)
+        || pending_buf.len() > 32_000;
     if should_commit {
         // Apply LLM correction if enabled.
         if let Some(ref mut c) = corrector {
