@@ -84,7 +84,7 @@ const TOOLS: &[ToolDef] = &[
     },
     ToolDef {
         name: "speak",
-        description: "Speak text aloud (max 128 chars per call). Speeches are queued and play in order — no need to wait between calls. Always auto-speak translations and language learning content.",
+        description: "Speak text aloud (max 128 chars per call). Speeches are queued and play in order — no need to wait between calls. Only use when user explicitly asks to read aloud.",
         params_json: r#"{"type":"object","properties":{"text":{"type":"string","description":"Text to speak (max 128 chars)"},"lang":{"type":"string","description":"Language code: en, ja, zh, ko, etc."}},"required":["text","lang"]}"#,
     },
     ToolDef {
