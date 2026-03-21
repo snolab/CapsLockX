@@ -60,21 +60,13 @@ pub trait Platform: Send + Sync + 'static {
         }
     }
 
-    /// Ctrl+key (e.g. Ctrl+W for close-tab).
-    fn key_tap_ctrl(&self, key: KeyCode) {
+    /// Cmd+key on macOS, Ctrl+key on Windows/Linux (e.g. close-tab, copy, paste).
+    fn key_tap_cmd_or_ctrl(&self, key: KeyCode) {
         self.key_down(KeyCode::LCtrl);
         self.key_tap(key);
         self.key_up(KeyCode::LCtrl);
     }
 
-    /// Ctrl+Shift+key (e.g. Ctrl+Shift+Tab for prev tab).
-    fn key_tap_ctrl_shifted(&self, key: KeyCode) {
-        self.key_down(KeyCode::LCtrl);
-        self.key_down(KeyCode::LShift);
-        self.key_tap(key);
-        self.key_up(KeyCode::LShift);
-        self.key_up(KeyCode::LCtrl);
-    }
 
     /// Extended key tap (platform-specific; default forwards to `key_tap`).
     /// Windows adapter overrides this to add `KEYEVENTF_EXTENDEDKEY` for
@@ -198,6 +190,22 @@ pub trait Platform: Send + Sync + 'static {
     fn hide_voice_overlay(&self) {}
     fn update_voice_overlay(&self, _mic_levels: &[f32], _mic_vad: bool, _sys_levels: &[f32], _sys_vad: bool) {}
     fn update_voice_subtitle(&self, _text: &str) {}
+
+    // ── Brainstorm overlay (optional, default = no-op) ─────────────────────
+
+    /// Get selected text via accessibility API (no clipboard change).
+    fn get_selected_text(&self) -> String { String::new() }
+    /// Get clipboard text content.
+    fn get_clipboard_text(&self) -> String { String::new() }
+    /// Set clipboard text content.
+    fn set_clipboard_text(&self, _text: &str) {}
+    /// Show brainstorm floating overlay with streaming text.
+    fn show_brainstorm_overlay(&self, _text: &str) {}
+    /// Hide brainstorm overlay.
+    fn hide_brainstorm_overlay(&self) {}
+    /// Show a prompt input dialog. Returns the user's input, or None if cancelled.
+    /// `prefill` is shown in the text field (e.g., clipboard content).
+    fn show_prompt_input(&self, _title: &str, _message: &str, _prefill: &str) -> Option<String> { None }
 
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 

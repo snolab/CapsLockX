@@ -126,6 +126,14 @@ fn mouse_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
 
 fn scroll_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() || phase != "MOVE" { return; }
-    if dy != 0 { p.scroll_v(-dy * 3); }
+    if s.is_shift_held() {
+        // Shift+R/F → horizontal scroll.
+        if dy != 0 { p.scroll_h(dy * 3); }
+        if dx != 0 { p.scroll_h(dx * 3); }
+    } else {
+        // R/F → vertical scroll.
+        if dy != 0 { p.scroll_v(-dy * 3); }
+        if dx != 0 { p.scroll_h(dx * 3); }
+    }
     if dx != 0 { p.scroll_h(dx * 3); }
 }

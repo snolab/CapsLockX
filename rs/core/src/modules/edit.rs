@@ -195,12 +195,12 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
         // Ctrl held → Ctrl+Tab (next page) / Ctrl+Shift+Tab (prev page).
         if dy < 0 {
             for _ in 0..(-dy).min(128) {
-                p.key_tap_ctrl_shifted(KeyCode::Tab);
+                p.key_tap_with_mods(KeyCode::Tab, &[KeyCode::LCtrl, KeyCode::LShift], 1);
             }
         }
         if dy > 0 {
             for _ in 0..dy.min(128) {
-                p.key_tap_ctrl(KeyCode::Tab);
+                p.key_tap_cmd_or_ctrl(KeyCode::Tab);
             }
         }
     } else {

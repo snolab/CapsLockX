@@ -1,4 +1,4 @@
-﻿; #Requires AutoHotkey v1.1.33
+; #Requires AutoHotkey v1.1.33
 #Include ./Modules/Lib/AHK-GDIp-Library-Compilation/ahk-v1-1/Gdip_All.ahk ; https://github.com/marius-sucan/AHK-GDIp-Library-Compilation
 
 ; Note: This module uses Msxml2.XMLHTTP for HTTP requests
@@ -7,13 +7,15 @@
 
 global brainstorming := false
 global brainstormed := false
+global brainstorm_voice_recording := false
 global brainstorm_origin := CLX_Config("BrainStorm", "Website", "https://brainstorm.snomiao.com")
 global brainstormApiKey := CLX_Config("BrainStorm", "Key", "FREE", t("CLX BrainStorm 的功能激活碼，填FREE使用免費版本"))
 global brainstormLastQuestion := CLX_Config("BrainStorm", "LastQuestion", "", t("Brainstorm 上次提问"))
 global brainstormStagedAnswer := ""
 global brainstormClipType
+global brainstormAudioPath := A_Temp "\capslockx-voice-recording.wav"
+global brainstormFilePath := A_Temp "\capslockx-clipboard-image.jpg"
 
-global brainstormFilePath := A_Temp "\capslockx-clipboard-image.jpg" ; Adjust as needed
 SplitPath brainstormFilePath,, dir, ext, fnBare
 old := dir "\" fnBare "-OLD" "." ext
 FileRecycle % old
@@ -23,18 +25,27 @@ OnClipboardChange("clipChanged")
 
 return
 
+; ── Hotkeys ──────────────────────────────────────────────────────────
+
 #if CapsLockXMode
 
-    ; Brainstorm
-
-    b:: brainstorm_prompt()
-    +b:: brainstorm_quick_capture()
-    !b:: brainstorm_prompt("no-prompt")
-    +!b:: brainstorm_quick_capture("no-prompt")
+    b:: brainstorm_ask("copy")
+    +b:: brainstorm_ask("window")
+    !b:: brainstorm_ask("copy", true)
+    +!b:: brainstorm_ask("window", true)
     ^b:: brainstorm_show()
-    ; ^b:: brainstorm_set_key()
 
-    m:: brainstorm_quick_capture("no-prompt")
+    m:: brainstorm_ask("window", true)
+
+#if CapsLockXMode && !brainstorm_voice_recording
+
+    v:: brainstorm_voice()
+
+#if brainstorm_voice_recording
+
+    v:: brainstorm_voice_send()
+    esc:: brainstorm_voice_stop()
+    `:: brainstorm_voice_stop()
 
 #if brainstorming
 
@@ -48,41 +59,40 @@ return
 
 #if
 
-; Calculate display width considering CJK characters (count as 2 width)
+; ── Tooltip / Text Wrapping ──────────────────────────────────────────
+
+brainstorm_Tooltip(Text) {
+    global brainstormed
+    ToolTip, % WrapTextWithWidth(Text, 80), , , 20
+    brainstormed := true
+}
+
 GetDisplayWidth(str) {
     width := 0
     Loop, Parse, str
     {
-        ; Check if character is CJK (Chinese, Japanese, Korean)
-        ; Unicode ranges: CJK Unified (4E00-9FFF), Hiragana/Katakana (3040-30FF), Hangul (AC00-D7AF)
         code := Ord(A_LoopField)
         if ((code >= 0x4E00 && code <= 0x9FFF)
-         || (code >= 0x3040 && code <= 0x30FF)
-         || (code >= 0xAC00 && code <= 0xD7AF)
-         || (code >= 0xFF00 && code <= 0xFFEF)) {
-            width += 2  ; CJK characters count as 2
-        } else {
-            width += 1  ; ASCII and other characters count as 1
-        }
+            || (code >= 0x3040 && code <= 0x30FF)
+            || (code >= 0xAC00 && code <= 0xD7AF)
+            || (code >= 0xFF00 && code <= 0xFFEF))
+            width += 2
+        else
+            width += 1
     }
     return width
 }
 
-; Wrap text considering different character widths
 WrapTextWithWidth(text, maxWidth := 80) {
     result := ""
     currentLine := ""
-    words := StrSplit(text, " ")
-
-    for index, word in words {
+    for index, word in StrSplit(text, " ") {
         testLine := currentLine ? currentLine . " " . word : word
         if (GetDisplayWidth(testLine) <= maxWidth) {
             currentLine := testLine
         } else {
-            if (currentLine != "") {
+            if (currentLine != "")
                 result .= currentLine . "`n"
-            }
-            ; If single word is too long, break it
             if (GetDisplayWidth(word) > maxWidth) {
                 chars := ""
                 Loop, Parse, word
@@ -101,123 +111,91 @@ WrapTextWithWidth(text, maxWidth := 80) {
             }
         }
     }
-    if (currentLine != "") {
+    if (currentLine != "")
         result .= currentLine
-    }
     return result
 }
 
-brainstorm_Tooltip(Text){
-    global brainstormed
-    TOOLTIP_ID_BRAINSTORM := 20
-    WrappedText := WrapTextWithWidth(Text, 80)
-    ToolTip, % WrappedText, , , TOOLTIP_ID_BRAINSTORM
-    brainstormed := true
-}
-brainstorm_show()
-{
-    static BrainStormSite
-    if (!BrainStormSite) {
-        Gui BrainStorm:Destroy
-        Gui BrainStorm:Add, ActiveX, xm w980 h640 vBrainStormSite, Shell.Explorer
-        BrainStormSite.Silent := True
-    }
-    content := brainstorm_copy()
-    BrainStormSite.Navigate(brainstorm_origin . "/?q=" . brainstorm_EncodeDecodeURI(content))
-    Gui, BrainStorm:Show, , CapsLockX BrainStorm
-}
+; ── State Control ────────────────────────────────────────────────────
 
-stop_brainstorm()
-{
+stop_brainstorm() {
     global brainstorming
     brainstorming := false
-    ; traytip brainstorming stopped
 }
-stop_brainstormed()
-{
+
+stop_brainstormed() {
     global brainstormed
     brainstorm_Tooltip("")
     brainstormed := false
 }
-brainstorm_set_key()
-{
-    msg := t("訪問官方網站来取得激活碼，在此輸入，或者填 FREE 使用免費版，網址如下：")
-    InputBox, key, % t("激活碼輸入"), % msg "`n" brainstorm_origin
-    if (ErrorLevel == 1) {
-        Return
-    }
-    CLX_ConfigSet("BrainStorm", "Key", key)
+
+; ── Content Capture ──────────────────────────────────────────────────
+
+brainstorm_capture(mode) {
+    if (mode == "window")
+        return brainstorm_capture_window()
+    if (mode == "both")
+        return brainstorm_capture_both()
+    return brainstorm_capture_copy()
 }
-brainstorm_copy()
-{
+
+brainstorm_capture_copy() {
     originalClipboard := ClipboardAll
-    imagePathBeforeCopy := save_clipboard_image()
+    imagePathBefore := save_clipboard_image()
 
     Clipboard=
     SendEvent, ^c
-    ; ClipWait, 3 ; wait for 3 seconds
-    ; content := Clipboard
+    ClipWait, 1, 1
 
-    ClipWait, 1, 1 ; wait for 1 seconds, wait for anytype, use with ClipboardAll
-    imagePath := save_clipboard_image()
-    ; prefix with image path if imagePathBeforeCopy or imagePath
-    if (imagePathBeforeCopy != "" ) {
-        content := "![](" . "image.jpg" . ")" . "`n" . Clipboard
-    } else if (imagePath != "") {
-        content := "![](" . "image.jpg" . ")" . "`n" . Clipboard
-    } else {
-        content := Clipboard
-    }
+    imagePath := imagePathBefore != "" ? imagePathBefore : save_clipboard_image()
+    content := imagePath != "" ? "![](" . "image.jpg" . ")`n" . Clipboard : Clipboard
 
     Clipboard := originalClipboard
-    return { question: content, imagePath: imagePathBeforeCopy != "" ? imagePathBeforeCopy : imagePath != "" ? imagePath : "" }
+    return { question: content, imagePath: imagePath }
 }
-brainstorm_capture_window()
-{
-    ;     originalClipboard := ClipboardAll
 
-    ; Clipboard=
-    ; SendEvent !{PrintScreen}
-    ; ClipWait, 3 ; wait for 3 seconds
-    ; content := Clipboard
-
-    ; ClipWait, 3, 1 ; wait for 1 seconds, wait for anytype, use with ClipboardAll
+brainstorm_capture_window() {
     imagePath := save_active_window_image()
-    if (imagePath != "") {
-        content := "![](" . "image.jpg" . ")" . "`n" . ""
-    } else {
-        content := ""
-    }
-
-    ; Clipboard := originalClipboard
-    return { question: content, imagePath: imagePath != "" ? imagePath : "" }
+    content := imagePath != "" ? "![](" . "image.jpg" . ")`n" : ""
+    return { question: content, imagePath: imagePath }
 }
-brainstorm_quick_capture(skip_prompt:=false, defaultPrompt:="")
-{
+
+brainstorm_capture_both() {
+    ; grab selected text via clipboard
+    originalClipboard := ClipboardAll
+    Clipboard=
+    SendEvent, ^c
+    ClipWait, 1, 1
+    selectedText := Clipboard
+    Clipboard := originalClipboard
+
+    ; grab window screenshot
+    imagePath := save_active_window_image()
+    content := (imagePath != "" ? "![](" . "image.jpg" . ")`n" : "") . selectedText
+    return { question: content, imagePath: imagePath }
+}
+
+; ── Main Entry Points ────────────────────────────────────────────────
+
+brainstorm_ask(captureMode := "copy", skip_prompt := false, defaultPrompt := "") {
+    global brainstorm_origin, brainstormLastQuestion, brainstorming, brainstormed
+
     ; heat up
-    global brainstorm_origin
-    endpoint := brainstorm_origin . "/ai/chat?ret=polling"
-    xhrHeatUp := ComObjCreate("Msxml2.XMLHTTP")
-    xhrHeatUp.Open("PUT", endpoint)
-    xhrHeatUp.onreadystatechange := Func("BS_heatUp_onReadyStateChange").Bind(xhrHeatUp)
-    xhrHeatUp.Send("")
+    brainstorm_heatup()
 
-    clipboardContent := brainstorm_capture_window()
-    content := clipboardContent.question
-    imagePath := clipboardContent.imagePath
+    captured := brainstorm_capture(captureMode)
+    content := captured.question
+    imagePath := captured.imagePath
 
-    ; use ">>>" as default prompt if brainstormLastQuestion is empty
-    global brainstormLastQuestion
-    if (brainstormLastQuestion == "") {
-        brainstormLastQuestion := ">>> this is screenshot, plz help user solve the problem (in the language of in screenshot)"
-    }
-    if(skip_prompt) {
-        if(defaultPrompt != ""){
-            cmd := defaultPrompt
-        }else{
-            cmd := brainstormLastQuestion
-        }
-    }else{
+    ; default prompt depends on capture mode
+    if (brainstormLastQuestion == "")
+        brainstormLastQuestion := captureMode == "window"
+            ? ">>> this is screenshot, plz help user solve the problem (in the language of in screenshot)"
+            : ">>>"
+
+    if (skip_prompt) {
+        cmd := defaultPrompt != "" ? defaultPrompt : brainstormLastQuestion
+    } else {
         prompt := ""
         prompt .= t("回邮件：选中一段邮件，输入 >> Reply this email") . "`n"
         prompt .= t("翻译：选中一段文字，输入 >> Translate to English/翻译到繁体中文/简体中文") . "`n"
@@ -225,217 +203,234 @@ brainstorm_quick_capture(skip_prompt:=false, defaultPrompt:="")
         prompt .= t("提问：选中一段文字，输入 >> Question") . "`n"
         prompt .= "--- " . t("以下为提問内容") . " ---`n" . content
         InputBox, cmd, % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
-    }
 
-    ; if escape
-    if (ErrorLevel == 1) {
-        Return
-    }
-
-    if(!skip_prompt){
-        global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
+        if (ErrorLevel == 1)
+            return
+        brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
     }
 
     msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
 
-    brainstorm_Tooltip( t("Going to Ask AI"))
-
-    global brainstorming
+    brainstorm_Tooltip(t("Going to Ask AI"))
     brainstorming := true
+    brainstormed := true
     brainstorm_questionPost(msg, imagePath)
-    brainstorm_Tooltip( t("Asking AI"))
-    global brainstormed
-    brainstormed := true
-
+    brainstorm_Tooltip(t("Asking AI"))
 }
 
-brainstorm_prompt(skip_prompt:=false, defaultPrompt:="")
-{
-    ; heat up
-    global brainstorm_origin
-    endpoint := brainstorm_origin . "/ai/chat?ret=polling"
-    xhrHeatUp := ComObjCreate("Msxml2.XMLHTTP")
-    xhrHeatUp.Open("PUT", endpoint)
-    xhrHeatUp.onreadystatechange := Func("BS_heatUp_onReadyStateChange").Bind(xhrHeatUp)
-    xhrHeatUp.Send("")
-
-    clipboardContent := brainstorm_copy()
-    content := clipboardContent.question
-    imagePath := clipboardContent.imagePath
-
-    prompt := ""
-    prompt .= t("回邮件：选中一段邮件，输入 >> Reply this email") . "`n"
-    prompt .= t("翻译：选中一段文字，输入 >> Translate to English/翻译到繁体中文/简体中文") . "`n"
-    prompt .= t("总结：选中一段文字，输入 >> Summary") . "`n"
-    prompt .= t("提问：选中一段文字，输入 >> Question") . "`n"
-    prompt .= "--- " . t("以下为提問内容") . " ---`n" . content
-
-    ; use ">>>" as default prompt if brainstormLastQuestion is empty
-    if (brainstormLastQuestion == "") {
-        brainstormLastQuestion := ">>>"
+brainstorm_show() {
+    static BrainStormSite
+    if (!BrainStormSite) {
+        Gui BrainStorm:Destroy
+        Gui BrainStorm:Add, ActiveX, xm w980 h640 vBrainStormSite, Shell.Explorer
+        BrainStormSite.Silent := True
     }
-    if(skip_prompt){
-        if(defaultPrompt != ""){
-            cmd := defaultPrompt
-        }else{
-            cmd := brainstormLastQuestion
-        }
-    }else{
-        InputBox, cmd, % t("请輸入文本指令"), %prompt%, , 500, 600,,,,,% brainstormLastQuestion
-    }
-
-    ; if escape
-    if (ErrorLevel == 1) {
-        Return
-    }
-
-    if(!skip_prompt){
-        global brainstormLastQuestion := CLX_ConfigSet("BrainStorm", "LastQuestion", cmd)
-    }
-
-    msg := Trim(content . "`n`n" . cmd, OmitChars = " `t`n")
-
-    brainstorm_Tooltip( t("Going to Ask AI") )
-    global brainstormed
-    brainstormed := true
-
-    global brainstorming
-    brainstorming := true
-    brainstorm_questionPost(msg, imagePath)
-    brainstorm_Tooltip( t("Asking AI") )
-
-    global brainstormed
-    brainstormed := true
-}
-BS_heatUp_onReadyStateChange(xhr){
-    xhr.Close()
-    brainstorm_Tooltip( t("Ready to Ask AI") )
-    ; xhr heatup done
+    content := brainstorm_capture("copy")
+    BrainStormSite.Navigate(brainstorm_origin . "/?q=" . brainstorm_EncodeDecodeURI(content))
+    Gui, BrainStorm:Show, , CapsLockX BrainStorm
 }
 
-brainstorm_questionPost(question, imagePath)
-{
-    global brainstorm_origin
-    endpoint := brainstorm_origin . "/ai/chat?ret=polling"
-    xhr := ComObjCreate("Msxml2.XMLHTTP")
-    xhr.Open("POST", endpoint)
-    xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
-    global brainstorming
-    if (!brainstorming) {
-        xhr.Close()
+brainstorm_set_key() {
+    msg := t("訪問官方網站来取得激活碼，在此輸入，或者填 FREE 使用免費版，網址如下：")
+    InputBox, key, % t("激活碼輸入"), % msg "`n" brainstorm_origin
+    if (ErrorLevel == 1)
         return
-    }
+    CLX_ConfigSet("BrainStorm", "Key", key)
+}
+
+; ── API Communication ────────────────────────────────────────────────
+
+brainstorm_heatup() {
+    global brainstorm_origin
+    xhr := ComObjCreate("Msxml2.XMLHTTP")
+    xhr.Open("PUT", brainstorm_origin . "/ai/chat?ret=polling")
+    xhr.onreadystatechange := Func("BS_heatUp_onReadyStateChange").Bind(xhr)
+    xhr.Send("")
+}
+
+BS_heatUp_onReadyStateChange(xhr) {
+    xhr.Close()
+    brainstorm_Tooltip(t("Ready to Ask AI"))
+}
+
+brainstorm_questionPost(question, imagePath, audioPath := "") {
+    global brainstorm_origin, brainstormApiKey, brainstorming
+    if (!brainstorming)
+        return
+
+    xhr := ComObjCreate("Msxml2.XMLHTTP")
+    xhr.Open("POST", brainstorm_origin . "/ai/chat?ret=polling")
+    xhr.setRequestHeader("Authorization", "Bearer " . brainstormApiKey)
     xhr.onreadystatechange := Func("BS_questionPost_onReadyStateChange").Bind(xhr)
-    if (imagePath != "") {
-        formObj := { question: question, image: [imagePath] }
-    } else {
-        formObj := { question: question }
-    }
+
+    formObj := { question: question }
+    if (imagePath != "")
+        formObj.image := [imagePath]
+    if (audioPath != "")
+        formObj.audio := [audioPath]
+
     contentType := ""
-    CreateFormData(PostData, contentType, formObj) ; convert imagePath to formData dkj
+    CreateFormData(PostData, contentType, formObj)
     xhr.setRequestHeader("Content-Type", contentType)
     xhr.setRequestHeader("Origin", brainstorm_origin)
     xhr.Send(PostData)
 }
-BS_questionPost_onReadyStateChange(xhr)
-{
-    global brainstorming
+
+BS_questionPost_onReadyStateChange(xhr) {
+    global brainstorming, brainstormed, brainstormStagedAnswer, questionId
     if (!brainstorming)
         return
-    if (xhr.readyState != 4){
-        ; brainstorm_Tooltip(  "Ready " . xhr.readyState)
+    if (xhr.readyState != 4)
         return
-    }
     if (xhr.status != 200) {
         if (xhr.status == 403) {
             MsgBox, % xhr.responseText . " " . t("请检查激活码是否正确")
             brainstorm_set_key()
         } else if (xhr.status == 429) {
             MsgBox, % xhr.responseText . " " . t("请等待一段时间后再试")
-        } else if (xhr.status == 500) {
-            ; ignore 500 error
-
-            return
         }
-        ; ignore unknown error
-        ; brainstorm_Tooltip( xhr.status . " " xhr.responseText . " " . t("Unknown Error") )
         return
     }
-    global questionId := xhr.responseText
+    questionId := xhr.responseText
     if (!questionId) {
-        ; ignore error
-        brainstorm_Tooltip( t("Fail to ask ai"))
+        brainstorm_Tooltip(t("Fail to ask ai"))
         return
     }
-
-    brainstorm_Tooltip( t("Waiting Answer...") )
-    global brainstormed
+    brainstorm_Tooltip(t("Waiting Answer..."))
     brainstormed := true
-    ; tooltip askAiSucc with question %questionId%
-
-    global brainstormStagedAnswer
     brainstormStagedAnswer := ""
     tokenAppend(questionId)
 }
-tokenAppend(questionId)
-{
-    global brainstorming
-    if(!brainstorming)
+
+tokenAppend(questionId) {
+    global brainstorming, brainstorm_origin
+    if (!brainstorming)
         return
-    global brainstorm_origin
-    endpoint := brainstorm_origin "/ai/" questionId
     xhra := ComObjCreate("Msxml2.XMLHTTP")
-    xhra.open("GET", endpoint)
+    xhra.open("GET", brainstorm_origin "/ai/" questionId)
     xhra.onreadystatechange := Func("tokenAppend_onReadyStateChange").Bind(xhra)
     xhra.Send()
 }
-tokenAppend_onReadyStateChange(xhra)
-{
-    global brainstormStagedAnswer
-    global brainstorming
-    if (!brainstorming){
+
+tokenAppend_onReadyStateChange(xhra) {
+    global brainstormStagedAnswer, brainstorming, questionId
+    if (!brainstorming) {
         Clipboard := brainstormStagedAnswer
-        brainstorm_Tooltip( brainstormStagedAnswer . "`n`n" . t("Chat streaming stopped, Copied to Clipboard, Press [ESC] to hide.") )
+        brainstorm_Tooltip(brainstormStagedAnswer . "`n`n" . t("Chat streaming stopped, Copied to Clipboard, Press [ESC] to hide."))
         return
     }
-    global questionId
-    ; global brainstorm_response
-    if (xhra.readyState != 4) {
+    if (xhra.readyState != 4)
         return
-    }
-    ; drain
     if (xhra.status != 200) {
-        ; ToolTip
-        ; TrayTip AI Response copied, %brainstorm_response%
-        ; Clipboard:=brainstorm_response
         brainstorming := false
         Clipboard := brainstormStagedAnswer
-        brainstorm_Tooltip( brainstormStagedAnswer . "`n`n" . t("Copied to Clipboard, Press [ESC] to hide.") )
+        brainstorm_Tooltip(brainstormStagedAnswer . "`n`n" . t("Copied to Clipboard, Press [ESC] to hide."))
         return
     }
-
     token := xhra.responseText
-    if (!token){
-        ; HEART BEAT，continue
+    if (!token) {
         tokenAppend(questionId)
-
         return
     }
-    ; brainstorm_response .= token
-    ; ToolTip response %brainstorm_response%%brainstorm_response%
     brainstormStagedAnswer .= token
-
-    brainstorm_Tooltip( brainstormStagedAnswer . "`n`n" . t("Press [ESC] to stop.") )
-
+    brainstorm_Tooltip(brainstormStagedAnswer . "`n`n" . t("Press [ESC] to stop."))
     Clipboard := brainstormStagedAnswer
-
-    ; SetKeyDelay, 0, 0
-    ; SendEvent {text}%token%
     tokenAppend(questionId)
 }
 
-brainstorm_EncodeDecodeURI(str, encode := true, component := true)
-{
+; ── Voice Recording ──────────────────────────────────────────────────
+
+mciSendString(cmd) {
+    return DllCall("winmm\mciSendStringW", "WStr", cmd, "Ptr", 0, "UInt", 0, "Ptr", 0)
+}
+
+brainstorm_get_default_mic_name() {
+    ; WAVEINCAPSW: wMid(2) + wPid(2) + vDriverVersion(4) + szPname(32*2=64) + dwFormats(4) + wChannels(2) + wReserved1(2) = 80
+    VarSetCapacity(caps, 80, 0)
+    result := DllCall("winmm\waveInGetDevCapsW", "UInt", 0xFFFFFFFF, "Ptr", &caps, "UInt", 80)
+    if (result != 0)
+        return t("Unknown")
+    return StrGet(&caps + 8, 32, "UTF-16")
+}
+
+brainstorm_voice() {
+    global brainstorm_voice_recording, brainstormAudioPath
+    if (brainstorm_voice_recording)
+        return
+
+    FileRecycle % brainstormAudioPath
+    FileDelete % brainstormAudioPath
+
+    mciSendString("close clxmic")
+    mciSendString("open new type waveaudio alias clxmic")
+    mciSendString("record clxmic")
+
+    brainstorm_voice_recording := true
+    micName := brainstorm_get_default_mic_name()
+    brainstorm_Tooltip(t("Recording voice... Press [V] to send, [ESC] to cancel.") . "`n" . t("Mic: ") . micName)
+    SetTimer, brainstorm_voice_auto_send, -60000
+}
+
+brainstorm_voice_auto_send:
+    if (brainstorm_voice_recording)
+        brainstorm_voice_send()
+return
+
+brainstorm_voice_stop() {
+    global brainstorm_voice_recording, brainstormAudioPath
+    if (!brainstorm_voice_recording)
+        return
+
+    SetTimer, brainstorm_voice_auto_send, Off
+    mciSendString("stop clxmic")
+    mciSendString("close clxmic")
+    brainstorm_voice_recording := false
+
+    FileDelete % brainstormAudioPath
+    brainstorm_Tooltip(t("Voice recording cancelled."))
+    SetTimer, brainstorm_clear_cancel_tooltip, -2000
+}
+
+brainstorm_clear_cancel_tooltip:
+    brainstorm_Tooltip("")
+    brainstormed := false
+return
+
+brainstorm_voice_send() {
+    global brainstorm_voice_recording, brainstormAudioPath
+    global brainstorm_origin, brainstormLastQuestion, brainstorming, brainstormed
+    if (!brainstorm_voice_recording)
+        return
+
+    SetTimer, brainstorm_voice_auto_send, Off
+    mciSendString("stop clxmic")
+    mciSendString("save clxmic " . brainstormAudioPath)
+    mciSendString("close clxmic")
+    brainstorm_voice_recording := false
+
+    if (!FileExist(brainstormAudioPath)) {
+        brainstorm_Tooltip(t("Voice recording failed."))
+        return
+    }
+
+    brainstorm_Tooltip(t("Sending voice..."))
+    brainstorm_heatup()
+
+    captured := brainstorm_capture_window()
+    if (brainstormLastQuestion == "")
+        brainstormLastQuestion := ">>> this is screenshot with voice message, plz help user (in the language of in screenshot)"
+
+    msg := Trim(captured.question . "`n`n" . brainstormLastQuestion, OmitChars = " `t`n")
+
+    brainstorming := true
+    brainstormed := true
+    brainstorm_questionPost(msg, captured.imagePath, brainstormAudioPath)
+    brainstorm_Tooltip(t("Asking AI"))
+}
+
+; ── Utilities ────────────────────────────────────────────────────────
+
+brainstorm_EncodeDecodeURI(str, encode := true, component := true) {
     ; https://www.autohotkey.com/boards/viewtopic.php?t=84825
     static Doc, JS
     if !Doc {
@@ -455,16 +450,13 @@ CreateFormData(ByRef retData, ByRef retHeader, objParam) {
 Class CreateFormData {
 
 	__New(ByRef retData, ByRef retHeader, objParam) {
-
 		Local CRLF := "`r`n", i, k, v, str, pvData
-  ; Create a random Boundary
 		Local Boundary := this.RandomBoundary()
 		Local BoundaryLine := "------------------------------" . Boundary
 
-    this.Len := 0 ; GMEM_ZEROINIT|GMEM_FIXED = 0x40
-    this.Ptr := DllCall( "GlobalAlloc", "UInt",0x40, "UInt",1, "Ptr"  )          ; allocate global memory
+    this.Len := 0
+    this.Ptr := DllCall( "GlobalAlloc", "UInt",0x40, "UInt",1, "Ptr"  )
 
-  ; Loop input paramters
 		For k, v in objParam
 		{
 			If IsObject(v) {
@@ -487,26 +479,24 @@ Class CreateFormData {
 
 		this.StrPutUTF8( BoundaryLine . "--" . CRLF )
 
-    ; Create a bytearray and copy data in to it.
-    retData := ComObjArray( 0x11, this.Len ) ; Create SAFEARRAY = VT_ARRAY|VT_UI1
+    retData := ComObjArray( 0x11, this.Len )
     pvData  := NumGet( ComObjValue( retData ) + 8 + A_PtrSize )
     DllCall( "RtlMoveMemory", "Ptr",pvData, "Ptr",this.Ptr, "Ptr",this.Len )
-
-    this.Ptr := DllCall( "GlobalFree", "Ptr",this.Ptr, "Ptr" )                   ; free global memory
+    this.Ptr := DllCall( "GlobalFree", "Ptr",this.Ptr, "Ptr" )
 
     retHeader := "multipart/form-data; boundary=----------------------------" . Boundary
 	}
 
   StrPutUTF8( str ) {
     Local ReqSz := StrPut( str, "utf-8" ) - 1
-    this.Len += ReqSz                                  ; GMEM_ZEROINIT|GMEM_MOVEABLE = 0x42
+    this.Len += ReqSz
     this.Ptr := DllCall( "GlobalReAlloc", "Ptr",this.Ptr, "UInt",this.len + 1, "UInt", 0x42 )
     StrPut( str, this.Ptr + this.len - ReqSz, ReqSz, "utf-8" )
   }
 
   LoadFromFile( Filename ) {
     Local objFile := FileOpen( FileName, "r" )
-    this.Len += objFile.Length                     ; GMEM_ZEROINIT|GMEM_MOVEABLE = 0x42
+    this.Len += objFile.Length
     this.Ptr := DllCall( "GlobalReAlloc", "Ptr",this.Ptr, "UInt",this.len, "UInt", 0x42 )
     objFile.RawRead( this.Ptr + this.Len - objFile.length, objFile.length )
     objFile.Close()
@@ -520,6 +510,11 @@ Class CreateFormData {
 	}
 
 	MimeType(FileName) {
+		SplitPath, FileName,,, ext
+		if (ext = "wav")
+			return "audio/wav"
+		if (ext = "mp3")
+			return "audio/mpeg"
 		n := FileOpen(FileName, "r").ReadUInt()
 		Return (n        = 0x474E5089) ? "image/png"
 		     : (n        = 0x38464947) ? "image/gif"
@@ -529,23 +524,18 @@ Class CreateFormData {
 		     : (n&0xFFFF = 0x4D4D    ) ? "image/tiff"
 		     : "application/octet-stream"
 	}
-
 }
 
-; Save clipboard image to file
+; ── Image Capture ────────────────────────────────────────────────────
+
 save_clipboard_image() {
     global brainstormFilePath
     If (brainstormClipType = "" || brainstormClipType = NONTEXT := 2) {
         FileRecycle % brainstormFilePath
         clipboardToImageFile(brainstormFilePath)
-        If FileExist(brainstormFilePath){
-            ; preview image
-            ; Run % brainstormFilePath
+        If FileExist(brainstormFilePath)
             return brainstormFilePath
-        }
-        ; silent fail
     }
-    ; silent fail
     Return ""
 }
 
@@ -553,26 +543,23 @@ save_active_window_image() {
     global brainstormFilePath
     FileRecycle % brainstormFilePath
     activeWindowToImageFile(brainstormFilePath)
-    If FileExist(brainstormFilePath){
-        ; preview image
-        ; Run % brainstormFilePath
+    If FileExist(brainstormFilePath)
         return brainstormFilePath
-    }
-    ; silent fail
     Return ""
 }
 
 clipboardToImageFile(filePath) {
     pToken := Gdip_Startup()
-    pBitmap := Gdip_CreateBitmapFromClipboard() ; Clipboard -> bitmap
-    Gdip_SaveBitmapToFile(pBitmap, filePath) ; Bitmap    -> file
+    pBitmap := Gdip_CreateBitmapFromClipboard()
+    Gdip_SaveBitmapToFile(pBitmap, filePath)
     Gdip_DisposeImage(pBitmap), Gdip_Shutdown(pToken)
 }
+
 activeWindowToImageFile(filePath) {
     pToken := Gdip_Startup()
     WinGetPos, x, y, w, h, A
-    pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h) ; Screen -> bitmap
-    Gdip_SaveBitmapToFile(pBitmap, filePath) ; Bitmap    -> file
+    pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
+    Gdip_SaveBitmapToFile(pBitmap, filePath)
     Gdip_DisposeImage(pBitmap), Gdip_Shutdown(pToken)
 }
 
