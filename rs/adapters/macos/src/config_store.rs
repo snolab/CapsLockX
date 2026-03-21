@@ -15,10 +15,6 @@ pub struct FullConfig {
     /// STT engine: "sherpa" (SenseVoice) or "whisper"
     #[serde(default = "default_stt_engine")]
     pub stt_engine:          String,
-    #[serde(default = "default_brainstorm_origin")]
-    pub brainstorm_origin:   String,
-    #[serde(default = "default_brainstorm_key")]
-    pub brainstorm_api_key:  String,
     #[serde(default)]
     pub gemini_api_key:      String,
     #[serde(default)]
@@ -43,8 +39,6 @@ pub struct FullConfig {
 }
 
 fn default_stt_engine() -> String { "sherpa".to_string() }
-fn default_brainstorm_origin() -> String { "https://brainstorm.snomiao.com".to_string() }
-fn default_brainstorm_key() -> String { "FREE".to_string() }
 fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
 fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
 
@@ -60,8 +54,6 @@ impl Default for FullConfig {
             mouse_speed:     360.0,
             scroll_speed:    720.0,
             stt_engine:      "sherpa".to_string(),
-            brainstorm_origin: "https://brainstorm.snomiao.com".to_string(),
-            brainstorm_api_key: "FREE".to_string(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
             anthropic_api_key: String::new(),
@@ -87,8 +79,6 @@ impl FullConfig {
             mouse_speed:       cfg.speed.mouse_speed,
             scroll_speed:      cfg.speed.scroll_speed,
             stt_engine:        cfg.stt_engine.clone(),
-            brainstorm_origin: cfg.brainstorm_origin.clone(),
-            brainstorm_api_key: cfg.brainstorm_api_key.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
             openai_api_key: cfg.openai_api_key.clone(),
             anthropic_api_key: cfg.anthropic_api_key.clone(),
@@ -114,8 +104,6 @@ impl FullConfig {
                 scroll_speed: self.scroll_speed,
             },
             stt_engine:         self.stt_engine,
-            brainstorm_origin:  self.brainstorm_origin,
-            brainstorm_api_key: self.brainstorm_api_key,
             // Migrate old single llm_api_key to per-provider keys.
             gemini_api_key:     if !self.gemini_api_key.is_empty() { self.gemini_api_key }
                                 else if self.llm_api_key.starts_with("AIza") { self.llm_api_key.clone() }

@@ -37,7 +37,6 @@ impl Modules {
         let s = Self {
             brainstorm:      BrainstormModule::new(
                 Arc::clone(&platform),
-                cfg.brainstorm_origin.clone(),
                 best_key.clone(),
                 best_model.clone(),
             ),
