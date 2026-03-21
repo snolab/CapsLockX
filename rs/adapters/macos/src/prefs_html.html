@@ -91,6 +91,23 @@
       font-size: 13px;
     }
 
+    /* Sortable chain list */
+    .chain-list { list-style: none; padding: 0; margin: 4px 0; }
+    .chain-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 8px; margin: 2px 0;
+      background: var(--surface0); border-radius: 4px;
+      font-size: 13px;
+    }
+    .chain-item input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--blue); flex-shrink: 0; }
+    .chain-item .chain-label { flex: 1; }
+    .chain-item .chain-desc { color: var(--overlay1); font-size: 11px; }
+    .chain-btn {
+      background: none; border: none; color: var(--subtext0); cursor: pointer;
+      font-size: 14px; padding: 0 2px; line-height: 1;
+    }
+    .chain-btn:hover { color: var(--blue); }
+
     /* Status bar */
     #status {
       font-size: 12px;
@@ -191,20 +208,16 @@
 
   <section>
     <h2>Fallback Chains</h2>
-    <div class="sl-row">
-      <label for="tts_chain">TTS</label>
-      <input type="text" id="tts_chain" placeholder="elevenlabs,gemini,openai,msedge,native" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
-      <span></span>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;">TTS (text-to-speech)</label>
+      <ul id="tts_chain_list" class="chain-list"></ul>
     </div>
-    <div class="sl-row">
-      <label for="stt_polish_chain">STT Polish</label>
-      <input type="text" id="stt_polish_chain" placeholder="mlx,gemini,llm,raw" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
-      <span></span>
+    <div>
+      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;">STT Polish (speech correction)</label>
+      <ul id="stt_polish_chain_list" class="chain-list"></ul>
     </div>
-    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
-      Comma-separated provider order. Remove or reorder to customize.<br>
-      <b>TTS:</b> elevenlabs, gemini, openai, msedge, native<br>
-      <b>STT Polish:</b> mlx (local LLM), gemini (cloud re-transcribe), llm (text corrector), raw
+    <div style="color:var(--overlay1);font-size:11px;padding:6px 0 0;">
+      Toggle providers on/off. Use arrows to reorder. First enabled provider that succeeds wins.
     </div>
   </section>
 
@@ -213,6 +226,71 @@
   <script>
     const status = document.getElementById('status');
     let debounce = null;
+
+    // ── Chain list UI ──
+    var TTS_PROVIDERS = {
+      elevenlabs: 'ElevenLabs (API key)',
+      gemini: 'Gemini TTS (API key)',
+      openai: 'OpenAI TTS (API key)',
+      msedge: 'Edge TTS (free)',
+      native: 'System native (macOS say)'
+    };
+    var STT_PROVIDERS = {
+      mlx: 'MLX local LLM (port 8321)',
+      gemini: 'Gemini cloud re-transcribe',
+      llm: 'LLM text corrector',
+      raw: 'Raw (no correction)'
+    };
+
+    function populateChain(listId, allProviders, chainStr) {
+      var list = document.getElementById(listId);
+      list.innerHTML = '';
+      var enabled = chainStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      var all = Object.keys(allProviders);
+      // Build ordered list: enabled first (in order), then disabled ones
+      var ordered = [];
+      enabled.forEach(function(p) { if (allProviders[p]) ordered.push({id: p, on: true}); });
+      all.forEach(function(p) { if (enabled.indexOf(p) === -1) ordered.push({id: p, on: false}); });
+      ordered.forEach(function(item, i) {
+        var li = document.createElement('li');
+        li.className = 'chain-item';
+        li.dataset.provider = item.id;
+        li.innerHTML =
+          '<input type="checkbox"' + (item.on ? ' checked' : '') + '>' +
+          '<span class="chain-label">' + item.id + '</span>' +
+          '<span class="chain-desc">' + allProviders[item.id] + '</span>' +
+          '<button class="chain-btn" data-dir="up" title="Move up">\u25B2</button>' +
+          '<button class="chain-btn" data-dir="down" title="Move down">\u25BC</button>';
+        list.appendChild(li);
+      });
+      // Wire events
+      list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+        cb.addEventListener('change', scheduleSave);
+      });
+      list.querySelectorAll('.chain-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var li = btn.closest('.chain-item');
+          var dir = btn.dataset.dir;
+          if (dir === 'up' && li.previousElementSibling) {
+            li.parentNode.insertBefore(li, li.previousElementSibling);
+          } else if (dir === 'down' && li.nextElementSibling) {
+            li.parentNode.insertBefore(li.nextElementSibling, li);
+          }
+          scheduleSave();
+        });
+      });
+    }
+
+    function collectChain(listId) {
+      var items = document.getElementById(listId).querySelectorAll('.chain-item');
+      var result = [];
+      items.forEach(function(li) {
+        if (li.querySelector('input[type=checkbox]').checked) {
+          result.push(li.dataset.provider);
+        }
+      });
+      return result.join(',');
+    }
 
     function collectForm() {
       return {
@@ -228,8 +306,8 @@
         stt_correction:  document.getElementById('stt_correction').checked,
         llm_api_key:     document.getElementById('llm_api_key').value,
         llm_model:       document.getElementById('llm_model').value,
-        tts_chain:       document.getElementById('tts_chain').value,
-        stt_polish_chain: document.getElementById('stt_polish_chain').value,
+        tts_chain:       collectChain('tts_chain_list'),
+        stt_polish_chain: collectChain('stt_polish_chain_list'),
       };
     }
 
@@ -246,8 +324,8 @@
       document.getElementById('stt_correction').checked = cfg.stt_correction || false;
       if (cfg.llm_api_key) document.getElementById('llm_api_key').value = cfg.llm_api_key;
       if (cfg.llm_model) document.getElementById('llm_model').value = cfg.llm_model;
-      if (cfg.tts_chain) document.getElementById('tts_chain').value = cfg.tts_chain;
-      if (cfg.stt_polish_chain) document.getElementById('stt_polish_chain').value = cfg.stt_polish_chain;
+      populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs,gemini,openai,msedge,native');
+      populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx,gemini,llm,raw');
     }
 
     function setSlider(id, value) {
