@@ -102,6 +102,8 @@ impl Modules {
             cfg.llm_api_key.clone(),
             cfg.llm_model.clone(),
             cfg.stt_correction,
+            cfg.tts_chain.clone(),
+            cfg.stt_polish_chain.clone(),
         );
         self.brainstorm.update_llm_config(&cfg.llm_api_key, &cfg.llm_model);
     }

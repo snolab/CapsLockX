@@ -3,43 +3,35 @@
 ///
 /// All backends output audio to the system default output device.
 
-/// Speak text aloud. Tries each backend in order until one succeeds.
+/// Speak text aloud. Tries each backend in `chain` order until one succeeds.
+/// `chain` is a comma-separated list: "elevenlabs,gemini,openai,msedge,native".
 /// `lang` is a BCP-47 hint like "en", "ja", "zh", "ko".
 #[cfg(not(target_arch = "wasm32"))]
 pub fn speak(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, openai_key: &str) -> Result<(), String> {
+    speak_with_chain(text, lang, elevenlabs_key, gemini_key, openai_key, "elevenlabs,gemini,openai,msedge,native")
+}
+
+/// Speak with a configurable fallback chain.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn speak_with_chain(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, openai_key: &str, chain: &str) -> Result<(), String> {
     if text.trim().is_empty() { return Ok(()); }
 
-    // Tier 1: ElevenLabs
-    if !elevenlabs_key.is_empty() {
-        match speak_elevenlabs(text, lang, elevenlabs_key) {
+    for provider in chain.split(',').map(|s| s.trim()) {
+        let result = match provider {
+            "elevenlabs" if !elevenlabs_key.is_empty() => speak_elevenlabs(text, lang, elevenlabs_key),
+            "gemini" if !gemini_key.is_empty() => speak_gemini(text, lang, gemini_key),
+            "openai" if !openai_key.is_empty() => speak_openai(text, lang, openai_key),
+            "msedge" => speak_msedge(text, lang),
+            "native" => return speak_native(text, lang),
+            _ => continue, // skip unknown or key-less providers
+        };
+        match result {
             Ok(()) => return Ok(()),
-            Err(e) => eprintln!("[CLX] tts: ElevenLabs failed: {}, trying next", e),
+            Err(e) => eprintln!("[CLX] tts: {} failed: {}, trying next", provider, e),
         }
     }
 
-    // Tier 2: Gemini TTS
-    if !gemini_key.is_empty() {
-        match speak_gemini(text, lang, gemini_key) {
-            Ok(()) => return Ok(()),
-            Err(e) => eprintln!("[CLX] tts: Gemini failed: {}, trying next", e),
-        }
-    }
-
-    // Tier 3: OpenAI TTS
-    if !openai_key.is_empty() {
-        match speak_openai(text, lang, openai_key) {
-            Ok(()) => return Ok(()),
-            Err(e) => eprintln!("[CLX] tts: OpenAI failed: {}, trying next", e),
-        }
-    }
-
-    // Tier 4: msedge-tts (free, needs internet)
-    match speak_msedge(text, lang) {
-        Ok(()) => return Ok(()),
-        Err(e) => eprintln!("[CLX] tts: msedge-tts failed: {}, trying native", e),
-    }
-
-    // Tier 5: Native (macOS say)
+    // If chain is empty or all failed, try native as ultimate fallback.
     speak_native(text, lang)
 }
 

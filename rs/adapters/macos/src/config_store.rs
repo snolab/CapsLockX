@@ -25,11 +25,19 @@ pub struct FullConfig {
     pub llm_model:           String,
     #[serde(default)]
     pub stt_correction:      bool,
+    /// TTS fallback chain (comma-separated provider names).
+    #[serde(default = "default_tts_chain")]
+    pub tts_chain:           String,
+    /// STT polishing fallback chain (comma-separated stage names).
+    #[serde(default = "default_stt_polish_chain")]
+    pub stt_polish_chain:    String,
 }
 
 fn default_stt_engine() -> String { "sherpa".to_string() }
 fn default_brainstorm_origin() -> String { "https://brainstorm.snomiao.com".to_string() }
 fn default_brainstorm_key() -> String { "FREE".to_string() }
+fn default_tts_chain() -> String { "elevenlabs,gemini,openai,msedge,native".to_string() }
+fn default_stt_polish_chain() -> String { "mlx,gemini,llm,raw".to_string() }
 
 impl Default for FullConfig {
     fn default() -> Self {
@@ -48,6 +56,8 @@ impl Default for FullConfig {
             llm_api_key: String::new(),
             llm_model: String::new(),
             stt_correction: false,
+            tts_chain: default_tts_chain(),
+            stt_polish_chain: default_stt_polish_chain(),
         }
     }
 }
@@ -69,6 +79,8 @@ impl FullConfig {
             llm_api_key: cfg.llm_api_key.clone(),
             llm_model: cfg.llm_model.clone(),
             stt_correction: cfg.stt_correction,
+            tts_chain: cfg.tts_chain.clone(),
+            stt_polish_chain: cfg.stt_polish_chain.clone(),
         }
     }
 
@@ -90,6 +102,8 @@ impl FullConfig {
             llm_api_key:        self.llm_api_key,
             llm_model:          self.llm_model,
             stt_correction:     self.stt_correction,
+            tts_chain:          self.tts_chain,
+            stt_polish_chain:   self.stt_polish_chain,
         }
     }
 }

@@ -45,6 +45,10 @@ pub struct ClxConfig {
     pub llm_model:           String,
     /// Enable LLM-based STT correction.
     pub stt_correction:      bool,
+    /// TTS fallback chain order (comma-separated: elevenlabs,gemini,openai,msedge,native).
+    pub tts_chain:           String,
+    /// STT polish fallback chain order (comma-separated: mlx,gemini,llm,raw).
+    pub stt_polish_chain:    String,
 }
 
 impl Default for ClxConfig {
@@ -62,6 +66,8 @@ impl Default for ClxConfig {
             llm_api_key:        String::new(),
             llm_model:          String::new(),
             stt_correction:     false,
+            tts_chain:          "elevenlabs,gemini,openai,msedge,native".to_string(),
+            stt_polish_chain:   "mlx,gemini,llm,raw".to_string(),
         }
     }
 }

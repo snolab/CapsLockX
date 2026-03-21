@@ -189,6 +189,25 @@
     </div>
   </section>
 
+  <section>
+    <h2>Fallback Chains</h2>
+    <div class="sl-row">
+      <label for="tts_chain">TTS</label>
+      <input type="text" id="tts_chain" placeholder="elevenlabs,gemini,openai,msedge,native" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div class="sl-row">
+      <label for="stt_polish_chain">STT Polish</label>
+      <input type="text" id="stt_polish_chain" placeholder="mlx,gemini,llm,raw" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
+      Comma-separated provider order. Remove or reorder to customize.<br>
+      <b>TTS:</b> elevenlabs, gemini, openai, msedge, native<br>
+      <b>STT Polish:</b> mlx (local LLM), gemini (cloud re-transcribe), llm (text corrector), raw
+    </div>
+  </section>
+
   <div id="status">Loading...</div>
 
   <script>
@@ -209,6 +228,8 @@
         stt_correction:  document.getElementById('stt_correction').checked,
         llm_api_key:     document.getElementById('llm_api_key').value,
         llm_model:       document.getElementById('llm_model').value,
+        tts_chain:       document.getElementById('tts_chain').value,
+        stt_polish_chain: document.getElementById('stt_polish_chain').value,
       };
     }
 
@@ -225,6 +246,8 @@
       document.getElementById('stt_correction').checked = cfg.stt_correction || false;
       if (cfg.llm_api_key) document.getElementById('llm_api_key').value = cfg.llm_api_key;
       if (cfg.llm_model) document.getElementById('llm_model').value = cfg.llm_model;
+      if (cfg.tts_chain) document.getElementById('tts_chain').value = cfg.tts_chain;
+      if (cfg.stt_polish_chain) document.getElementById('stt_polish_chain').value = cfg.stt_polish_chain;
     }
 
     function setSlider(id, value) {
