@@ -215,7 +215,11 @@ impl BrainstormModule {
         // Cancel any ongoing request.
         self.cancel.store(true, Ordering::Relaxed);
 
-        // Everything on background thread.
+        // Capture selected text NOW (on event tap thread) before focus changes.
+        let selected_text = self.platform.get_selected_text();
+        eprintln!("[CLX] brainstorm: selected text via AX: {} chars", selected_text.len());
+
+        // Everything else on background thread.
         let platform = Arc::clone(&self.platform);
         let cancel = Arc::clone(&self.cancel);
         let config = self.llm_config.clone().unwrap();
@@ -232,7 +236,7 @@ impl BrainstormModule {
                 let last_resp_ref = unsafe { &*(last_resp_ptr as *const Mutex<String>) };
                 let keep_ref = unsafe { &*(keep_ptr as *const AtomicBool) };
 
-                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref, keep_ref);
+                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref, keep_ref, &selected_text);
             })
             .ok();
     }
@@ -253,15 +257,23 @@ fn agent_turn(
     state: &AtomicU8,
     last_response: &Mutex<String>,
     keep_history: &AtomicBool,
+    pre_selected: &str,
 ) {
-    // 1. Get selected text — try AX API first (no clipboard pollution), fall back to Cmd+C.
-    let selected = platform.get_selected_text();
-    let prefill = if !selected.is_empty() {
-        selected
+    // 1. Use pre-captured selected text (from event tap thread).
+    //    Fall back to Cmd+C with clipboard save/restore if AX returned empty.
+    let prefill = if !pre_selected.is_empty() {
+        pre_selected.to_string()
     } else {
+        // Save current clipboard, copy selection, read it, restore clipboard.
+        let old_clipboard = platform.get_clipboard_text();
         platform.key_tap_cmd_or_ctrl(KeyCode::C);
         std::thread::sleep(std::time::Duration::from_millis(150));
-        platform.get_clipboard_text()
+        let selected = platform.get_clipboard_text();
+        // Restore old clipboard if we actually got something new.
+        if selected != old_clipboard && !old_clipboard.is_empty() {
+            platform.set_clipboard_text(&old_clipboard);
+        }
+        selected
     };
 
     let hist_count = count_persistent_history();

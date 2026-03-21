@@ -310,7 +310,10 @@ pub fn show_prompt_panel(title: &str, message: &str, prefill: &str) -> Option<St
         let flags = f_u64(event, sel(b"modifierFlags\0"));
         let shift = flags & (1 << 17) != 0;
 
-        if key_code == 36 && !shift {
+        if key_code == 53 {
+            // ESC → Cancel
+            prompt_cancel();
+        } else if key_code == 36 && !shift {
             // Enter without Shift → Send
             prompt_send();
         } else {

@@ -51,7 +51,17 @@ impl LlmConfig {
         } else {
             model.to_string()
         };
-        Self { provider, api_key: api_key.to_string(), model, base_url: None }
+        let base_url = if provider == LlmProvider::Ollama {
+            // Try MLX server first (port 8321), fall back to Ollama (port 11434).
+            if ureq::get("http://localhost:8321/v1/models").call().is_ok() {
+                Some("http://localhost:8321".to_string())
+            } else {
+                Some("http://localhost:11434".to_string())
+            }
+        } else {
+            None
+        };
+        Self { provider, api_key: api_key.to_string(), model, base_url }
     }
 
     /// Build a quality-first fallback chain from available API keys.
@@ -166,18 +176,26 @@ fn discover_openai(api_key: &str) -> Option<String> {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn discover_ollama() -> Option<String> {
+    // Try MLX server first (port 8321).
+    if let Ok(resp) = ureq::get("http://localhost:8321/v1/models").call() {
+        if let Ok(body) = resp.into_string() {
+            // MLX server uses the model name from startup.
+            eprintln!("[CLX] llm: discovered MLX server at :8321");
+            // MLX requires full HF model name.
+            return Some("mlx-community/Qwen2.5-3B-Instruct-4bit".to_string());
+        }
+    }
+
+    // Fall back to Ollama (port 11434).
     let resp = ureq::get("http://localhost:11434/api/tags").call().ok()?;
     let body: serde_json::Value = serde_json::from_str(&resp.into_string().ok()?).ok()?;
     let models = body["models"].as_array()?;
 
     if models.is_empty() { return None; }
 
-    // Preference: largest model available (by parameter count in name).
-    // Ollama model names: "qwen3:32b", "llama3.3:8b", etc.
     let mut best: Option<(String, u64)> = None;
     for m in models {
         let name = m["name"].as_str().unwrap_or("");
-        // Extract size hint from name (e.g., "32b" → 32).
         let size: u64 = name.split(':').last().unwrap_or("")
             .trim_end_matches('b').trim_end_matches('B')
             .parse().unwrap_or(0);
@@ -190,7 +208,6 @@ fn discover_ollama() -> Option<String> {
         eprintln!("[CLX] llm: discovered Ollama model: {}", name);
         Some(name)
     } else {
-        // Just use the first available model.
         let name = models[0]["name"].as_str().unwrap_or("qwen3:32b");
         eprintln!("[CLX] llm: discovered Ollama model (first): {}", name);
         Some(name.to_string())
