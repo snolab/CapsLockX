@@ -156,7 +156,9 @@ impl ClxEngine {
 
     pub fn update_config(&self, new_cfg: ClxConfig) {
         let speed = new_cfg.speed.clone();
-        *self.state.config.write().unwrap() = new_cfg;
+        // Write canonical state first so readers always see consistent config.
+        *self.state.config.write().unwrap() = new_cfg.clone();
+        self.modules.apply_config(&new_cfg);
         self.modules.apply_speeds(&speed);
     }
 

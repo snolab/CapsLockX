@@ -219,12 +219,19 @@ pub struct VoiceModule {
     with_system_audio: Arc<AtomicBool>,
     /// Signal to flush pending buffer (new input session starts).
     flush_pending: Arc<AtomicBool>,
-    /// STT engine preference: "sherpa" or "whisper".
-    stt_engine_pref: String,
-    /// LLM config for STT correction.
+    /// Live config — behind Mutex so prefs changes take effect without restart.
+    live_config: Arc<std::sync::Mutex<VoiceLiveConfig>>,
+}
+
+/// Config that can be hot-reloaded from preferences.
+#[derive(Clone)]
+struct VoiceLiveConfig {
+    stt_engine: String,
     llm_api_key: String,
     llm_model: String,
     stt_correction: bool,
+    tts_chain: String,
+    stt_polish_chain: String,
 }
 
 impl VoiceModule {
@@ -245,18 +252,37 @@ impl VoiceModule {
             bg_wake: Arc::new((std::sync::Mutex::new(false), std::sync::Condvar::new())),
             with_system_audio: Arc::new(AtomicBool::new(false)),
             flush_pending: Arc::new(AtomicBool::new(false)),
-            stt_engine_pref: stt_engine,
-            llm_api_key: String::new(),
-            llm_model: String::new(),
-            stt_correction: false,
+            live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
+                stt_engine,
+                llm_api_key: String::new(),
+                llm_model: String::new(),
+                stt_correction: false,
+                tts_chain: "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
+                stt_polish_chain: "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
+            })),
         }
     }
 
-    pub fn with_llm_config(mut self, api_key: String, model: String, correction: bool) -> Self {
-        self.llm_api_key = api_key;
-        self.llm_model = model;
-        self.stt_correction = correction;
+    pub fn with_llm_config(self, api_key: String, model: String, correction: bool) -> Self {
+        {
+            let mut cfg = self.live_config.lock().unwrap();
+            cfg.llm_api_key = api_key;
+            cfg.llm_model = model;
+            cfg.stt_correction = correction;
+        }
         self
+    }
+
+    /// Hot-reload config from preferences (takes effect on next voice session).
+    pub fn update_config(&self, stt_engine: String, api_key: String, model: String, correction: bool, tts_chain: String, stt_polish_chain: String) {
+        let mut cfg = self.live_config.lock().unwrap();
+        cfg.stt_engine = stt_engine;
+        cfg.llm_api_key = api_key;
+        cfg.llm_model = model;
+        cfg.stt_correction = correction;
+        cfg.tts_chain = tts_chain;
+        cfg.stt_polish_chain = stt_polish_chain;
+        eprintln!("[CLX] voice: config hot-reloaded (engine={}, correction={})", cfg.stt_engine, cfg.stt_correction);
     }
 
     pub fn on_key_down(&self, key: KeyCode) -> bool {
@@ -382,15 +408,13 @@ impl VoiceModule {
         let platform = Arc::clone(&self.platform);
 
         let server_url = resolve_server_url();
-        let stt_engine = self.stt_engine_pref.clone();
-        let llm_key = self.llm_api_key.clone();
-        let llm_model = self.llm_model.clone();
-        let stt_correction = self.stt_correction;
+        let live_config = Arc::clone(&self.live_config);
+        let cfg_snap = live_config.lock().unwrap().clone();
 
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &server_url, &stt_engine, &llm_key, &llm_model, stt_correction);
+                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, platform, &server_url, &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model, cfg_snap.stt_correction, live_config);
             })
             .expect("failed to spawn voice bg thread");
 
@@ -442,6 +466,7 @@ fn voice_bg_persistent(
     llm_api_key: &str,
     llm_model: &str,
     stt_correction: bool,
+    live_config: Arc<std::sync::Mutex<VoiceLiveConfig>>,
 ) {
     // Load STT engine based on preference.
     let mut local_whisper = SttEngine::new_with_preference(stt_engine_pref);
@@ -531,6 +556,7 @@ fn voice_bg_persistent(
         let shared_corrector: Arc<Mutex<Option<crate::stt_corrector::SttCorrector>>> = Arc::new(Mutex::new(corrector.take()));
         let worker_engine = Arc::clone(&shared_engine);
         let worker_corrector = Arc::clone(&shared_corrector);
+        let worker_live_config = Arc::clone(&live_config);
 
         let stt_worker = std::thread::Builder::new()
             .name("clx-stt-worker".into())
@@ -543,6 +569,7 @@ fn voice_bg_persistent(
                     &worker_note_active,
                     &worker_input_active,
                     worker_has_sys,
+                    &worker_live_config,
                 )
             })
             .expect("failed to spawn STT worker thread");
@@ -916,11 +943,14 @@ fn stt_worker_loop(
     note_active: &Arc<AtomicBool>,
     input_active: &Arc<AtomicBool>,
     has_sys: bool,
+    live_config: &Arc<std::sync::Mutex<VoiceLiveConfig>>,
 ) -> SttWorkerResult {
     // Take ownership of engine/corrector from the shared locks for the session.
     // This avoids holding the mutex during transcription.
     let mut engine = engine_lock.lock().unwrap().take();
     let mut corrector = corrector_lock.lock().unwrap().take();
+    // Snapshot polish chain once at session start (avoids Mutex lock on every speech event).
+    let polish_chain = live_config.lock().unwrap().stt_polish_chain.clone();
     // ── Mic track state ──
     let mut mic_pending_buf: Vec<f32> = Vec::new();
     let mut mic_pending_since: usize = 0;
@@ -1019,6 +1049,7 @@ fn stt_worker_loop(
                             &mut mic_stable,
                             &sys_committed, &sys_whisper_pending,
                             &mut note_srt, &mut srt_index,
+                            &polish_chain,
                         );
                         mic_pending_buf.clear();
                         mic_pending_since = 0;
@@ -1071,6 +1102,7 @@ fn stt_worker_loop(
                     }
                 }
                 SttCommand::SpeechEnd { timestamp_secs, .. } => {
+                    let pc = live_config.lock().unwrap().stt_polish_chain.clone();
                     process_mic_speech_end(
                         &mic_pending_buf, timestamp_secs,
                         &mut engine, &mut corrector, platform,
@@ -1080,6 +1112,7 @@ fn stt_worker_loop(
                         &mut mic_stable,
                         &sys_committed, &sys_whisper_pending,
                         &mut note_srt, &mut srt_index,
+                        &pc,
                     );
                     // Keep last 1s as rolling context so the display stays live
                     // across brief pauses, matching sys-track behaviour.
@@ -1330,17 +1363,13 @@ fn process_mic_speech_end(
     _sys_whisper_pending: &str,
     note_srt: &mut String,
     srt_index: &mut usize,
+    polish_chain: &str,
 ) {
-    // Final polishing cascade:
-    //   1. MLX local LLM (if server running + enough free RAM)
-    //   2. Gemini cloud re-transcription (if API key)
-    //   3. SenseVoice + LLM text correction
-    //   4. Raw SenseVoice
     if pending_buf.len() > 4800 {
         let raw_text = transcribe_local(pending_buf, engine);
 
         let mut final_text = polish_stt_result(
-            &raw_text, pending_buf, engine, corrector,
+            &raw_text, pending_buf, corrector, polish_chain,
         );
 
         if !final_text.is_empty() {
@@ -1508,43 +1537,61 @@ fn last_n_chars(s: &str, max_chars: usize) -> &str {
 fn polish_stt_result(
     raw_text: &str,
     audio_samples: &[f32],
-    engine: &mut Option<SttEngine>,
     corrector: &mut Option<crate::stt_corrector::SttCorrector>,
+    chain: &str,
+) -> String {
+    let chain = if chain.is_empty() { "mlx,gemini,llm,raw" } else { chain };
+    polish_stt_with_chain(raw_text, audio_samples, corrector, chain)
+}
+
+/// Polish STT result using a configurable fallback chain.
+/// `chain` is comma-separated: "mlx,gemini,llm,raw".
+fn polish_stt_with_chain(
+    raw_text: &str,
+    audio_samples: &[f32],
+    corrector: &mut Option<crate::stt_corrector::SttCorrector>,
+    chain: &str,
 ) -> String {
     if raw_text.trim().is_empty() { return raw_text.to_string(); }
 
-    // 1. Try MLX local LLM (port 8321) — free, fast, no cloud.
-    if has_enough_free_memory(2_000) { // need ~2GB free for 3B model
-        if let Ok(polished) = polish_via_local_llm(raw_text) {
-            if !polished.is_empty() {
-                eprintln!("[CLX] stt-polish: MLX local: {:?} → {:?}", raw_text, polished);
-                return polished;
+    for stage in chain.split(',').map(|s| s.trim()) {
+        match stage {
+            s if s.starts_with("mlx") => {
+                if has_enough_free_memory(2_000) {
+                    if let Ok(polished) = polish_via_local_llm(raw_text) {
+                        if !polished.is_empty() {
+                            eprintln!("[CLX] stt-polish: MLX local: {:?} → {:?}", raw_text, polished);
+                            return polished;
+                        }
+                    }
+                }
             }
-        }
-    }
-
-    // 2. Try Gemini cloud re-transcription (from audio, higher accuracy).
-    let gemini_key = read_gemini_key();
-    if !gemini_key.is_empty() {
-        match crate::cloud_stt::transcribe_gemini(audio_samples, &gemini_key) {
-            Ok(text) if !text.is_empty() => {
-                eprintln!("[CLX] stt-polish: Gemini cloud: {:?}", text);
-                return text;
+            s if s.starts_with("gemini") => {
+                let gemini_key = read_gemini_key();
+                if !gemini_key.is_empty() {
+                    match crate::cloud_stt::transcribe_gemini(audio_samples, &gemini_key) {
+                        Ok(text) if !text.is_empty() => {
+                            eprintln!("[CLX] stt-polish: Gemini cloud: {:?}", text);
+                            return text;
+                        }
+                        _ => {}
+                    }
+                }
             }
+            "llm-corrector" | "llm" => {
+                if let Some(ref mut c) = corrector {
+                    let corrected = c.correct(raw_text);
+                    if corrected != raw_text {
+                        eprintln!("[CLX] stt-polish: LLM corrector: {:?} → {:?}", raw_text, corrected);
+                        return corrected;
+                    }
+                }
+            }
+            "raw" => return raw_text.to_string(),
             _ => {}
         }
     }
 
-    // 3. LLM text corrector (if configured).
-    if let Some(ref mut c) = corrector {
-        let corrected = c.correct(raw_text);
-        if corrected != raw_text {
-            eprintln!("[CLX] stt-polish: LLM corrector: {:?} → {:?}", raw_text, corrected);
-            return corrected;
-        }
-    }
-
-    // 4. Raw SenseVoice output.
     raw_text.to_string()
 }
 

@@ -9,7 +9,7 @@ pub mod window_manager;
 use std::sync::Arc;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
-use crate::state::{ClxState, SpeedConfig};
+use crate::state::{ClxConfig, ClxState, SpeedConfig};
 
 use brainstorm::BrainstormModule;
 use edit::EditModule;
@@ -33,12 +33,13 @@ pub struct Modules {
 impl Modules {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
         let cfg = state.config.read().unwrap();
+        let (best_key, best_model) = cfg.best_llm_key_and_model();
         let s = Self {
             brainstorm:      BrainstormModule::new(
                 Arc::clone(&platform),
                 cfg.brainstorm_origin.clone(),
-                cfg.llm_api_key.clone(),
-                cfg.llm_model.clone(),
+                best_key.clone(),
+                best_model.clone(),
             ),
             edit:            EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
             mouse:           MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
@@ -48,8 +49,8 @@ impl Modules {
                 Arc::clone(&platform),
                 cfg.stt_engine.clone(),
             ).with_llm_config(
-                cfg.llm_api_key.clone(),
-                cfg.llm_model.clone(),
+                best_key,
+                best_model,
                 cfg.stt_correction,
             ),
             window_manager:  WindowManagerModule::new(Arc::clone(&platform)),
@@ -93,6 +94,20 @@ impl Modules {
     pub fn apply_speeds(&self, s: &SpeedConfig) {
         self.edit .apply_speeds(s);
         self.mouse.apply_speeds(s);
+    }
+
+    /// Hot-reload voice/brainstorm config from updated preferences.
+    pub fn apply_config(&self, cfg: &ClxConfig) {
+        let (best_key, best_model) = cfg.best_llm_key_and_model();
+        self.voice.update_config(
+            cfg.stt_engine.clone(),
+            best_key.clone(),
+            best_model.clone(),
+            cfg.stt_correction,
+            cfg.tts_chain.clone(),
+            cfg.stt_polish_chain.clone(),
+        );
+        self.brainstorm.update_llm_config(&best_key, &best_model);
     }
 
     /// Advance all AccModel physics by one step (WASM adapter tick loop).

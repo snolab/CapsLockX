@@ -91,6 +91,23 @@
       font-size: 13px;
     }
 
+    /* Sortable chain list */
+    .chain-list { list-style: none; padding: 0; margin: 4px 0; }
+    .chain-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 8px; margin: 2px 0;
+      background: var(--surface0); border-radius: 4px;
+      font-size: 13px;
+    }
+    .chain-item input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--blue); flex-shrink: 0; }
+    .chain-item .chain-label { flex: 1; }
+    .chain-item .chain-desc { color: var(--overlay1); font-size: 11px; }
+    .chain-btn {
+      background: none; border: none; color: var(--subtext0); cursor: pointer;
+      font-size: 14px; padding: 0 2px; line-height: 1;
+    }
+    .chain-btn:hover { color: var(--blue); }
+
     /* Status bar */
     #status {
       font-size: 12px;
@@ -172,20 +189,44 @@
   </section>
 
   <section>
-    <h2>LLM / AI</h2>
+    <h2>API Keys</h2>
     <div class="sl-row">
-      <label for="llm_api_key">API Key</label>
-      <input type="password" id="llm_api_key" placeholder="sk-... or AIza..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <label for="gemini_api_key">Gemini</label>
+      <input type="password" id="gemini_api_key" placeholder="AIza..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
       <span></span>
     </div>
     <div class="sl-row">
-      <label for="llm_model">Model</label>
-      <input type="text" id="llm_model" placeholder="auto (gpt-4o-mini / claude / gemini)" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <label for="openai_api_key">OpenAI</label>
+      <input type="password" id="openai_api_key" placeholder="sk-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div class="sl-row">
+      <label for="anthropic_api_key">Anthropic</label>
+      <input type="password" id="anthropic_api_key" placeholder="sk-ant-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
+      <span></span>
+    </div>
+    <div class="sl-row">
+      <label for="elevenlabs_api_key">ElevenLabs</label>
+      <input type="password" id="elevenlabs_api_key" placeholder="xi-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
       <span></span>
     </div>
     <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
-      Used for STT correction and <b>Space+B</b> brainstorm.<br>
-      Supports: OpenAI (sk-...), Anthropic (sk-ant-...), Gemini (AIza...).
+      Set keys for each provider. Used for brainstorm, TTS, and STT correction.
+    </div>
+  </section>
+
+  <section>
+    <h2>Fallback Chains</h2>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;">TTS (text-to-speech)</label>
+      <ul id="tts_chain_list" class="chain-list"></ul>
+    </div>
+    <div>
+      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;">STT Polish (speech correction)</label>
+      <ul id="stt_polish_chain_list" class="chain-list"></ul>
+    </div>
+    <div style="color:var(--overlay1);font-size:11px;padding:6px 0 0;">
+      Toggle providers on/off. Use arrows to reorder. First enabled provider that succeeds wins.
     </div>
   </section>
 
@@ -194,6 +235,71 @@
   <script>
     const status = document.getElementById('status');
     let debounce = null;
+
+    // ── Chain list UI ──
+    var TTS_PROVIDERS = {
+      'elevenlabs:rachel':        'ElevenLabs — Rachel voice',
+      'gemini-2.5-flash-preview-tts': 'Gemini TTS',
+      'openai:tts-1':             'OpenAI — tts-1',
+      'msedge':                   'Edge TTS (free, no key)',
+      'native':                   'System native (macOS say)'
+    };
+    var STT_PROVIDERS = {
+      'mlx:qwen2.5-3b':          'MLX local LLM (port 8321)',
+      'gemini-2.5-flash':        'Gemini cloud re-transcribe',
+      'llm-corrector':           'LLM text corrector (uses first available key)',
+      'raw':                     'Raw (no correction)'
+    };
+
+    function populateChain(listId, allProviders, chainStr) {
+      var list = document.getElementById(listId);
+      list.innerHTML = '';
+      var enabled = chainStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      var all = Object.keys(allProviders);
+      // Build ordered list: enabled first (in order), then disabled ones
+      var ordered = [];
+      enabled.forEach(function(p) { if (allProviders[p]) ordered.push({id: p, on: true}); });
+      all.forEach(function(p) { if (enabled.indexOf(p) === -1) ordered.push({id: p, on: false}); });
+      ordered.forEach(function(item, i) {
+        var li = document.createElement('li');
+        li.className = 'chain-item';
+        li.dataset.provider = item.id;
+        li.innerHTML =
+          '<input type="checkbox"' + (item.on ? ' checked' : '') + '>' +
+          '<span class="chain-label">' + item.id + '</span>' +
+          '<span class="chain-desc">' + allProviders[item.id] + '</span>' +
+          '<button class="chain-btn" data-dir="up" title="Move up">\u25B2</button>' +
+          '<button class="chain-btn" data-dir="down" title="Move down">\u25BC</button>';
+        list.appendChild(li);
+      });
+      // Wire events
+      list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+        cb.addEventListener('change', scheduleSave);
+      });
+      list.querySelectorAll('.chain-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var li = btn.closest('.chain-item');
+          var dir = btn.dataset.dir;
+          if (dir === 'up' && li.previousElementSibling) {
+            li.parentNode.insertBefore(li, li.previousElementSibling);
+          } else if (dir === 'down' && li.nextElementSibling) {
+            li.parentNode.insertBefore(li.nextElementSibling, li);
+          }
+          scheduleSave();
+        });
+      });
+    }
+
+    function collectChain(listId) {
+      var items = document.getElementById(listId).querySelectorAll('.chain-item');
+      var result = [];
+      items.forEach(function(li) {
+        if (li.querySelector('input[type=checkbox]').checked) {
+          result.push(li.dataset.provider);
+        }
+      });
+      return result.join(',');
+    }
 
     function collectForm() {
       return {
@@ -207,8 +313,12 @@
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
         stt_engine:      document.getElementById('stt_engine').value,
         stt_correction:  document.getElementById('stt_correction').checked,
-        llm_api_key:     document.getElementById('llm_api_key').value,
-        llm_model:       document.getElementById('llm_model').value,
+        gemini_api_key:    document.getElementById('gemini_api_key').value,
+        openai_api_key:    document.getElementById('openai_api_key').value,
+        anthropic_api_key: document.getElementById('anthropic_api_key').value,
+        elevenlabs_api_key: document.getElementById('elevenlabs_api_key').value,
+        tts_chain:       collectChain('tts_chain_list'),
+        stt_polish_chain: collectChain('stt_polish_chain_list'),
       };
     }
 
@@ -223,8 +333,12 @@
       setSlider('scroll_speed', cfg.scroll_speed);
       if (cfg.stt_engine) document.getElementById('stt_engine').value = cfg.stt_engine;
       document.getElementById('stt_correction').checked = cfg.stt_correction || false;
-      if (cfg.llm_api_key) document.getElementById('llm_api_key').value = cfg.llm_api_key;
-      if (cfg.llm_model) document.getElementById('llm_model').value = cfg.llm_model;
+      if (cfg.gemini_api_key) document.getElementById('gemini_api_key').value = cfg.gemini_api_key;
+      if (cfg.openai_api_key) document.getElementById('openai_api_key').value = cfg.openai_api_key;
+      if (cfg.anthropic_api_key) document.getElementById('anthropic_api_key').value = cfg.anthropic_api_key;
+      if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
+      populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native');
+      populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx:qwen2.5-3b,llm-corrector,raw');
     }
 
     function setSlider(id, value) {
@@ -246,7 +360,7 @@
       }, 300);
     }
 
-    document.querySelectorAll('input').forEach(function(el) {
+    document.querySelectorAll('input, select').forEach(function(el) {
       el.addEventListener('change', scheduleSave);
       el.addEventListener('input',  scheduleSave);
     });

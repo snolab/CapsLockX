@@ -39,12 +39,17 @@ pub struct ClxConfig {
     pub brainstorm_origin:   String,
     /// Brainstorm API key.
     pub brainstorm_api_key:  String,
-    /// LLM API key for STT correction + brainstorm direct mode.
-    pub llm_api_key:         String,
-    /// LLM model name (auto-detected provider from key prefix).
-    pub llm_model:           String,
+    /// Per-provider API keys.
+    pub gemini_api_key:      String,
+    pub openai_api_key:      String,
+    pub anthropic_api_key:   String,
+    pub elevenlabs_api_key:  String,
     /// Enable LLM-based STT correction.
     pub stt_correction:      bool,
+    /// TTS fallback chain (comma-separated model names).
+    pub tts_chain:           String,
+    /// STT polish fallback chain (comma-separated model names).
+    pub stt_polish_chain:    String,
 }
 
 impl Default for ClxConfig {
@@ -59,10 +64,32 @@ impl Default for ClxConfig {
             stt_engine:         "sherpa".to_string(),
             brainstorm_origin:  "https://brainstorm.snomiao.com".to_string(),
             brainstorm_api_key: "FREE".to_string(),
-            llm_api_key:        String::new(),
-            llm_model:          String::new(),
+            gemini_api_key:     String::new(),
+            openai_api_key:     String::new(),
+            anthropic_api_key:  String::new(),
+            elevenlabs_api_key: String::new(),
             stt_correction:     false,
+            tts_chain:          "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
+            stt_polish_chain:   "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
         }
+    }
+}
+
+impl ClxConfig {
+    /// Return the best available LLM API key and model for brainstorm/correction.
+    /// Priority: Gemini > OpenAI > Anthropic > Ollama (local, no key).
+    pub fn best_llm_key_and_model(&self) -> (String, String) {
+        if !self.gemini_api_key.is_empty() {
+            return (self.gemini_api_key.clone(), String::new());
+        }
+        if !self.openai_api_key.is_empty() {
+            return (self.openai_api_key.clone(), String::new());
+        }
+        if !self.anthropic_api_key.is_empty() {
+            return (self.anthropic_api_key.clone(), String::new());
+        }
+        // Ollama (local, no key needed).
+        ("ollama".to_string(), String::new())
     }
 }
 

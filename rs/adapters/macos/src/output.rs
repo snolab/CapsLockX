@@ -767,10 +767,10 @@ impl Platform for MacPlatform {
         }
     }
 
-    /// Ctrl+key — set CGEventFlagControl on the event itself.
+    /// Cmd+key on macOS (Command, not Control).
     fn key_tap_cmd_or_ctrl(&self, key: KeyCode) {
         if let Some(cg_key) = keycode_to_cg_keycode(key) {
-            Self::tap_with_flags(cg_key, CGEventFlags::CGEventFlagControl);
+            Self::tap_with_flags(cg_key, CGEventFlags::CGEventFlagCommand);
         }
     }
 
