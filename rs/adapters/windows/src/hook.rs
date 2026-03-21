@@ -150,6 +150,7 @@ unsafe extern "system" fn keyboard_proc(
     }
 }
 
+#[allow(dead_code)]
 fn debug_log(msg: &str) {
     use std::io::Write as _;
     if let Ok(tmp) = std::env::var("TEMP") {
