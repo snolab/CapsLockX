@@ -3,6 +3,7 @@ pub mod audio_capture;
 pub mod engine;
 pub mod key_code;
 pub mod agent;
+pub mod cloud_stt;
 pub mod llm_client;
 pub mod local_sherpa;
 pub mod local_whisper;
