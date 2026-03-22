@@ -42,7 +42,8 @@ fn main() {
             println!("CapsLockX — keyboard productivity tool + LLM agent");
             println!();
             println!("USAGE:");
-            println!("  clx                         Start CapsLockX (keyboard hook + tray icon)");
+            println!("  clx                         Start CapsLockX (forks to background)");
+            println!("  clx -f                      Start in foreground (blocks shell)");
             println!("  clx agent --tree            Dump accessibility tree of frontmost app");
             println!("  clx agent --exec            Execute CLX commands from stdin");
             println!("  clx agent --prompt \"task\"    Run LLM agent to perform a task");
@@ -63,9 +64,26 @@ fn main() {
         _ => {}
     }
 
+    // --foreground / -f: run in foreground (block the shell).
+    let foreground = args.iter().any(|a| a == "--foreground" || a == "-f");
+
+    if !foreground {
+        // Fork into background so `clx` returns immediately.
+        extern "C" { fn fork() -> i32; }
+        let pid = unsafe { fork() };
+        if pid < 0 {
+            eprintln!("[CLX] fork failed, running in foreground");
+        } else if pid > 0 {
+            // Parent: print PID and exit.
+            eprintln!("[CLX] started (pid {})", pid);
+            return;
+        }
+        // Child continues below.
+    }
+
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
-    eprintln!("[CLX] send SIGINT (Ctrl+C) to exit");
+    eprintln!("[CLX] send SIGINT (Ctrl+C) or `pkill clx` to exit");
 
     // Install the menu bar icon and voice overlay class before entering the run loop.
     tray::setup_tray();

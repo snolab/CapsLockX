@@ -18,13 +18,34 @@ type CFStringRef = *mut c_void;
 type CFArrayRef = *mut c_void;
 type CFTypeRef = *mut c_void;
 
-#[link(name = "ApplicationServices", kind = "framework")]
+// ApplicationServices linked lazily — only used when AX permission is confirmed.
+// The #[link] attribute causes dyld to resolve symbols at load time,
+// which can trigger AX subsystem init and hang without permission.
+// So we use dlsym for lazy loading instead.
 extern "C" {
-    fn AXUIElementCreateSystemWide() -> AXUIElementRef;
-    fn AXUIElementCreateApplication(pid: i32) -> AXUIElementRef;
-    fn AXUIElementCopyAttributeValue(
-        element: AXUIElementRef, attribute: CFStringRef, value: *mut CFTypeRef,
-    ) -> i32;
+    fn dlsym(handle: *mut c_void, symbol: *const std::ffi::c_char) -> *mut c_void;
+}
+
+type AXUIElementCreateApplicationFn = unsafe extern "C" fn(pid: i32) -> AXUIElementRef;
+type AXUIElementCopyAttributeValueFn = unsafe extern "C" fn(
+    element: AXUIElementRef, attribute: CFStringRef, value: *mut CFTypeRef,
+) -> i32;
+
+// RTLD_DEFAULT
+const RTLD_DEFAULT: *mut c_void = -2isize as *mut c_void;
+
+unsafe fn ax_create_app(pid: i32) -> AXUIElementRef {
+    let sym = dlsym(RTLD_DEFAULT, b"AXUIElementCreateApplication\0".as_ptr() as *const _);
+    if sym.is_null() { return std::ptr::null_mut(); }
+    let f: AXUIElementCreateApplicationFn = std::mem::transmute(sym);
+    f(pid)
+}
+
+unsafe fn ax_copy_attr(element: AXUIElementRef, attribute: CFStringRef, value: *mut CFTypeRef) -> i32 {
+    let sym = dlsym(RTLD_DEFAULT, b"AXUIElementCopyAttributeValue\0".as_ptr() as *const _);
+    if sym.is_null() { return -1; }
+    let f: AXUIElementCopyAttributeValueFn = std::mem::transmute(sym);
+    f(element, attribute, value)
 }
 
 #[link(name = "CoreFoundation", kind = "framework")]
@@ -90,7 +111,7 @@ unsafe fn cfstring_to_string(cf: CFStringRef) -> Option<String> {
 unsafe fn ax_attr_string(elem: AXUIElementRef, attr: &str) -> Option<String> {
     let attr_cf = cfstr(attr);
     let mut val: CFTypeRef = std::ptr::null_mut();
-    let err = AXUIElementCopyAttributeValue(elem, attr_cf, &mut val);
+    let err = ax_copy_attr(elem, attr_cf, &mut val);
     CFRelease(attr_cf);
     if err != 0 || val.is_null() { return None; }
     let type_id = CFGetTypeID(val);
@@ -106,7 +127,7 @@ unsafe fn ax_attr_string(elem: AXUIElementRef, attr: &str) -> Option<String> {
 unsafe fn ax_attr_ref(elem: AXUIElementRef, attr: &str) -> Option<CFTypeRef> {
     let attr_cf = cfstr(attr);
     let mut val: CFTypeRef = std::ptr::null_mut();
-    let err = AXUIElementCopyAttributeValue(elem, attr_cf, &mut val);
+    let err = ax_copy_attr(elem, attr_cf, &mut val);
     CFRelease(attr_cf);
     if err != 0 || val.is_null() { None } else { Some(val) }
 }
@@ -121,14 +142,17 @@ unsafe fn ax_attr_array(elem: AXUIElementRef, attr: &str) -> Option<(CFArrayRef,
     Some((val, count))
 }
 
-extern "C" {
-    fn AXValueGetValue(value: CFTypeRef, value_type: i32, value_ptr: *mut c_void) -> bool;
+unsafe fn ax_value_get(value: CFTypeRef, value_type: i32, value_ptr: *mut c_void) -> bool {
+    let sym = dlsym(RTLD_DEFAULT, b"AXValueGetValue\0".as_ptr() as *const _);
+    if sym.is_null() { return false; }
+    let f: unsafe extern "C" fn(CFTypeRef, i32, *mut c_void) -> bool = std::mem::transmute(sym);
+    f(value, value_type, value_ptr)
 }
 
 unsafe fn ax_attr_point(elem: AXUIElementRef, attr: &str) -> Option<CGPoint> {
     let val = ax_attr_ref(elem, attr)?;
     let mut point = CGPoint { x: 0.0, y: 0.0 };
-    let ok = AXValueGetValue(val, 1, &mut point as *mut _ as *mut c_void);
+    let ok = ax_value_get(val, 1, &mut point as *mut _ as *mut c_void);
     CFRelease(val);
     if ok { Some(point) } else { None }
 }
@@ -136,7 +160,7 @@ unsafe fn ax_attr_point(elem: AXUIElementRef, attr: &str) -> Option<CGPoint> {
 unsafe fn ax_attr_size(elem: AXUIElementRef, attr: &str) -> Option<CGSize> {
     let val = ax_attr_ref(elem, attr)?;
     let mut size = CGSize { w: 0.0, h: 0.0 };
-    let ok = AXValueGetValue(val, 2, &mut size as *mut _ as *mut c_void);
+    let ok = ax_value_get(val, 2, &mut size as *mut _ as *mut c_void);
     CFRelease(val);
     if ok { Some(size) } else { None }
 }
@@ -253,29 +277,79 @@ unsafe fn read_ax_tree(elem: AXUIElementRef, depth: usize, out: &mut String, max
     }
 }
 
-fn check_ax_permission() -> bool {
-    extern "C" {
-        fn AXIsProcessTrusted() -> bool;
-    }
-    unsafe { AXIsProcessTrusted() }
-}
-
 fn get_frontmost_ax_tree() -> String {
-    if !check_ax_permission() {
-        return "[AX] ERROR: Accessibility permission not granted.\n\
-                Grant permission in: System Settings → Privacy & Security → Accessibility\n\
-                Add this binary: clx-agent\n".to_string();
-    }
+    // Use osascript (System Events) to read UI — never calls AX APIs directly.
+    // Direct AX calls hang in kernel (UE) when Accessibility permission is
+    // missing or revoked after binary rebuild. osascript is safe because
+    // System Events has its own permission.
+    let script = r#"
+tell application "System Events"
+    set fp to first application process whose frontmost is true
+    set appName to name of fp
+    set res to "[AX] app=" & quoted form of appName & linefeed
+    try
+        repeat with w in (windows of fp)
+            set wName to name of w
+            set wPos to position of w
+            set wSz to size of w
+            set cx to (item 1 of wPos) + ((item 1 of wSz) / 2) as integer
+            set cy to (item 2 of wPos) + ((item 2 of wSz) / 2) as integer
+            set res to res & "  window \"" & wName & "\" @" & cx & "," & cy & linefeed
+            try
+                repeat with e in (UI elements of w)
+                    try
+                        set eRole to role of e
+                        set eTitle to ""
+                        try
+                            set eTitle to title of e
+                        end try
+                        if eTitle is "" then try
+                            set eTitle to description of e
+                        end try
+                        if eTitle is "" then try
+                            set v to value of e
+                            if (length of v) < 80 then set eTitle to v
+                        end try
+                        set ePos to position of e
+                        set eSz to size of e
+                        set ecx to (item 1 of ePos) + ((item 1 of eSz) / 2) as integer
+                        set ecy to (item 2 of ePos) + ((item 2 of eSz) / 2) as integer
+                        set sr to eRole
+                        if eRole is "AXButton" then set sr to "btn"
+                        if eRole is "AXStaticText" then set sr to "txt"
+                        if eRole is "AXTextField" then set sr to "field"
+                        if eRole is "AXLink" then set sr to "link"
+                        if eRole is "AXImage" then set sr to "img"
+                        if eRole is "AXGroup" then set sr to "group"
+                        if eRole is "AXToolbar" then set sr to "toolbar"
+                        if eRole is "AXScrollArea" then set sr to "scroll"
+                        if eRole is "AXWebArea" then set sr to "web"
+                        if eRole is "AXTabGroup" then set sr to "tabs"
+                        if eRole is "AXCheckBox" then set sr to "checkbox"
+                        if eRole is "AXPopUpButton" then set sr to "popup"
+                        if eRole is "AXTextArea" then set sr to "textarea"
+                        if eTitle is not "" then
+                            if (length of eTitle) > 60 then set eTitle to text 1 thru 60 of eTitle
+                            set res to res & "    " & sr & " \"" & eTitle & "\" @" & ecx & "," & ecy & linefeed
+                        end if
+                    end try
+                end repeat
+            end try
+        end repeat
+    end try
+    return res
+end tell
+"#;
 
-    // Run AX tree reading with a timeout to prevent hanging.
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        let tree = get_frontmost_ax_tree_inner();
-        let _ = tx.send(tree);
-    });
-    match rx.recv_timeout(std::time::Duration::from_secs(5)) {
-        Ok(tree) => tree,
-        Err(_) => "[AX] ERROR: Accessibility tree read timed out (5s).\n".to_string(),
+    match std::process::Command::new("osascript").arg("-e").arg(script).output() {
+        Ok(out) if out.status.success() => {
+            String::from_utf8_lossy(&out.stdout).into_owned()
+        }
+        Ok(out) => {
+            let err = String::from_utf8_lossy(&out.stderr);
+            format!("[AX] WARN: osascript: {}\n[AX] app=Unknown\n", err.trim())
+        }
+        Err(e) => format!("[AX] ERROR: {}\n", e),
     }
 }
 
@@ -309,7 +383,7 @@ fn get_frontmost_ax_tree_inner() -> String {
             }
         };
 
-        let app_elem = AXUIElementCreateApplication(pid);
+        let app_elem = ax_create_app(pid);
         let mut tree = format!("[AX] app=\"{}\" pid={}\n", app_name, pid);
         read_ax_tree(app_elem, 0, &mut tree, 6);
         CFRelease(app_elem);
