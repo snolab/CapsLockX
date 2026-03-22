@@ -1,13 +1,14 @@
 /// CLX Agent — LLM-driven computer control via clx-agent subprocess.
 ///
 /// Keybindings:
-///   CLX+M       — Prompt for task, launch clx-agent
+///   CLX+M       — Prompt for task, launch clx-agent with overlay log
 ///   CLX+Shift+M — Kill running agent
 ///   ESC         — Kill running agent (when active)
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use std::io::{BufRead, BufReader};
 
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
@@ -93,37 +94,73 @@ impl AgentModule {
 
                 eprintln!("[CLX] agent: launching with prompt: {}", &prompt[..prompt.len().min(80)]);
 
-                // Spawn `clx agent --prompt "..."` (uses clx's own binary,
-                // inheriting its Accessibility permission).
+                // Show overlay immediately with initial status.
+                platform.show_brainstorm_overlay(&format!("Agent: {}\n\nStarting...", prompt));
+
+                // Spawn `clx agent --prompt "..."` with stderr piped for overlay.
                 let clx_bin = std::env::current_exe().unwrap_or_else(|_| "clx".into());
 
                 match std::process::Command::new(&clx_bin)
                     .arg("agent")
                     .arg("--prompt")
                     .arg(&prompt)
-                    .stderr(std::process::Stdio::inherit()) // show logs
+                    .stderr(std::process::Stdio::piped())
                     .stdout(std::process::Stdio::null())
                     .spawn()
                 {
-                    Ok(child) => {
+                    Ok(mut child) => {
                         let pid = child.id();
-                        eprintln!("[CLX] agent: spawned clx-agent pid={}", pid);
+                        eprintln!("[CLX] agent: spawned pid={}", pid);
                         running_ref.store(true, Ordering::Relaxed);
+
+                        // Take stderr before storing child (borrow checker).
+                        let stderr = child.stderr.take();
                         *child_ref.lock().unwrap() = Some(child);
 
-                        // Wait for it to finish.
+                        // Stream stderr lines to the overlay in real-time.
+                        let mut log = format!("Agent: {}\n", prompt);
+                        if let Some(stderr) = stderr {
+                            let reader = BufReader::new(stderr);
+                            for line in reader.lines() {
+                                let line = match line {
+                                    Ok(l) => l,
+                                    Err(_) => break,
+                                };
+                                eprintln!("[CLX] agent: {}", line);
+
+                                // Append to log, keep last ~2000 chars for overlay.
+                                log.push_str(&line);
+                                log.push('\n');
+                                if log.len() > 2000 {
+                                    let start = log.len() - 1500;
+                                    log = format!("...{}", &log[start..]);
+                                }
+                                platform.show_brainstorm_overlay(&log);
+                            }
+                        }
+
+                        // Wait for child to finish.
                         if let Some(ref mut c) = *child_ref.lock().unwrap() {
                             match c.wait() {
-                                Ok(status) => eprintln!("[CLX] agent: exited with {}", status),
-                                Err(e) => eprintln!("[CLX] agent: wait error: {}", e),
+                                Ok(status) => {
+                                    log.push_str(&format!("\n— Done ({}). ESC to dismiss.", status));
+                                    platform.show_brainstorm_overlay(&log);
+                                }
+                                Err(e) => {
+                                    log.push_str(&format!("\n— Error: {}", e));
+                                    platform.show_brainstorm_overlay(&log);
+                                }
                             }
                         }
                         running_ref.store(false, Ordering::Relaxed);
                         *child_ref.lock().unwrap() = None;
                     }
                     Err(e) => {
-                        eprintln!("[CLX] agent: failed to spawn clx agent: {}", e);
-                        eprintln!("[CLX] agent: binary: {:?}", clx_bin);
+                        eprintln!("[CLX] agent: failed to spawn: {}", e);
+                        platform.show_brainstorm_overlay(&format!(
+                            "Agent error: failed to spawn clx agent\n{}\nBinary: {:?}",
+                            e, clx_bin
+                        ));
                     }
                 }
             })
@@ -132,9 +169,10 @@ impl AgentModule {
 
     fn kill_agent(&self) {
         if let Some(ref mut child) = *self.child.lock().unwrap() {
-            eprintln!("[CLX] agent: killing clx-agent pid={}", child.id());
+            eprintln!("[CLX] agent: killing pid={}", child.id());
             let _ = child.kill();
         }
         self.running.store(false, Ordering::Relaxed);
+        self.platform.hide_brainstorm_overlay();
     }
 }
