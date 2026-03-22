@@ -1007,7 +1007,7 @@ fn capture_screenshot_base64_region(region: Option<(i32, i32, i32, i32)>) -> Opt
 
     // Resize to max 512px wide for token efficiency.
     let _ = std::process::Command::new("sips")
-        .args(["--resampleWidth", "512", tmp, "--out", tmp])
+        .args(["--resampleWidth", "256", tmp, "--out", tmp])
         .stderr(std::process::Stdio::null()).output();
 
     let data = std::fs::read(tmp).ok()?;
@@ -1055,10 +1055,22 @@ fn run_agent_loop(prompt: &str) {
 
     tlog(&format!("LLM: {:?} model={}", config.provider, config.model));
 
-    // Read initial AX tree.
+    // Read initial AX tree (trimmed — skip deep menu items for performance).
     tlog("reading accessibility tree...");
-    let mut last_ax_tree = get_frontmost_ax_tree();
-    tlog(&format!("AX tree: {} lines, {} bytes", last_ax_tree.lines().count(), last_ax_tree.len()));
+    let full_ax_tree = get_frontmost_ax_tree();
+    // Trim: keep only lines with depth ≤2 (at most 4 leading spaces) to reduce tokens.
+    let mut last_ax_tree: String = full_ax_tree.lines()
+        .filter(|l| {
+            let indent = l.len() - l.trim_start().len();
+            indent <= 4 // keep top 2 levels
+        })
+        .take(50) // max 50 lines
+        .collect::<Vec<_>>()
+        .join("\n");
+    if full_ax_tree.lines().count() > 50 {
+        last_ax_tree.push_str(&format!("\n... ({} more lines trimmed)", full_ax_tree.lines().count() - 50));
+    }
+    tlog(&format!("AX tree: {} lines (from {})", last_ax_tree.lines().count(), full_ax_tree.lines().count()));
 
     // Capture initial screenshot.
     tlog("capturing screenshot...");
@@ -1088,7 +1100,18 @@ fn run_agent_loop(prompt: &str) {
     // Multi-turn loop: LLM acts → screenshot → diff → LLM continues.
     const MAX_TURNS: usize = 10;
     for turn in 0..MAX_TURNS {
-        tlog(&format!("turn {}/{} — streaming from LLM...", turn + 1, MAX_TURNS));
+        // Truncate conversation to last 6 messages to prevent context bloat.
+        // Keep the first user message (task description) + last 3 turns.
+        if conversation.len() > 8 {
+            let first = conversation[0].clone(); // initial task + screenshot
+            let tail: Vec<_> = conversation[conversation.len()-6..].to_vec();
+            conversation.clear();
+            conversation.push(first);
+            conversation.extend(tail);
+            tlog(&format!("truncated conversation to {} messages", conversation.len()));
+        }
+
+        tlog(&format!("turn {}/{} — streaming ({} msgs)...", turn + 1, MAX_TURNS, conversation.len()));
 
         let mut llm_output = String::new();
         let mut echo_lines: Vec<String> = Vec::new();
