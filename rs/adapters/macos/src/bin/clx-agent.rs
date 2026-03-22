@@ -918,8 +918,48 @@ fn ax_tree_diff(old: &str, new: &str) -> String {
     diff
 }
 
+/// Capture a screenshot as JPEG base64 string.
+/// Uses macOS `screencapture` CLI for simplicity and reliability.
+fn capture_screenshot_base64() -> Option<String> {
+    let tmp = "/tmp/clx-agent-screenshot.jpg";
+    let status = std::process::Command::new("screencapture")
+        .args(["-x", "-t", "jpg", "-o", tmp]) // -x = no sound, -o = no shadow
+        .status()
+        .ok()?;
+    if !status.success() { return None; }
+
+    // Resize to 512px wide for token efficiency (sips is built into macOS).
+    let _ = std::process::Command::new("sips")
+        .args(["--resampleWidth", "512", tmp, "--out", tmp])
+        .output();
+
+    let data = std::fs::read(tmp).ok()?;
+    let _ = std::fs::remove_file(tmp);
+
+    use std::io::Read;
+    // Base64 encode
+    let b64 = base64_encode(&data);
+    Some(b64)
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(data.len() * 4 / 3 + 4);
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(CHARS[((n >> 18) & 0x3F) as usize] as char);
+        out.push(CHARS[((n >> 12) & 0x3F) as usize] as char);
+        if chunk.len() > 1 { out.push(CHARS[((n >> 6) & 0x3F) as usize] as char); } else { out.push('='); }
+        if chunk.len() > 2 { out.push(CHARS[(n & 0x3F) as usize] as char); } else { out.push('='); }
+    }
+    out
+}
+
 fn run_agent_loop(prompt: &str) {
-    use capslockx_core::llm_client::{stream_chat, Message};
+    use capslockx_core::llm_client::{stream_chat, LlmConfig, Message};
 
     init_logging();
     tlog(&format!("=== new session: {} ===", prompt));
@@ -940,19 +980,32 @@ fn run_agent_loop(prompt: &str) {
     let mut last_ax_tree = get_frontmost_ax_tree();
     tlog(&format!("AX tree: {} lines, {} bytes", last_ax_tree.lines().count(), last_ax_tree.len()));
 
-    let system_prompt = load_system_prompt();
-    let mut messages = vec![
-        Message { role: "system".into(), content: system_prompt },
-        Message {
-            role: "user".into(),
-            content: format!(
-                "## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
-                last_ax_tree.trim(), prompt
-            ),
-        },
-    ];
+    // Capture initial screenshot.
+    tlog("capturing screenshot...");
+    let mut last_screenshot = capture_screenshot_base64();
+    tlog(&format!("screenshot: {} bytes base64", last_screenshot.as_ref().map(|s| s.len()).unwrap_or(0)));
 
-    // Multi-turn loop: LLM acts → we observe changes → LLM continues.
+    let system_prompt = load_system_prompt();
+
+    // We'll build Gemini requests manually to support inline images.
+    // The generic stream_chat doesn't support images.
+    let mut conversation: Vec<serde_json::Value> = Vec::new();
+
+    // First user message: AX tree + screenshot + task.
+    let mut first_parts = vec![
+        serde_json::json!({"text": format!(
+            "## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
+            last_ax_tree.trim(), prompt
+        )}),
+    ];
+    if let Some(ref img) = last_screenshot {
+        first_parts.push(serde_json::json!({
+            "inlineData": { "mimeType": "image/jpeg", "data": img }
+        }));
+    }
+    conversation.push(serde_json::json!({"role": "user", "parts": first_parts}));
+
+    // Multi-turn loop: LLM acts → screenshot → diff → LLM continues.
     const MAX_TURNS: usize = 10;
     for turn in 0..MAX_TURNS {
         tlog(&format!("turn {}/{} — streaming from LLM...", turn + 1, MAX_TURNS));
@@ -962,7 +1015,8 @@ fn run_agent_loop(prompt: &str) {
         let mut line_buf = String::new();
         let mut had_action = false;
 
-        let result = stream_chat(&config, &messages, &mut |token| {
+        // Stream from Gemini with vision support (direct API call).
+        let result = stream_gemini_vision(&config, &system_prompt, &conversation, &mut |token| {
             llm_output.push_str(token);
             line_buf.push_str(token);
 
@@ -1005,45 +1059,95 @@ fn run_agent_loop(prompt: &str) {
             break;
         }
 
-        // Add LLM's response to conversation history.
+        // Add LLM's response to conversation.
         if !llm_output.trim().is_empty() {
-            messages.push(Message { role: "assistant".into(), content: llm_output.clone() });
+            conversation.push(serde_json::json!({
+                "role": "model",
+                "parts": [{"text": llm_output.clone()}]
+            }));
         }
 
-        // If no action was taken, LLM is done (or confused).
         if !had_action {
             tlog("no actions in this turn — done.");
             break;
         }
 
-        // Wait for UI to settle after actions.
+        // Wait for UI to settle, then capture new screenshot + AX tree.
         std::thread::sleep(std::time::Duration::from_millis(300));
 
-        // Re-read AX tree and compute diff.
-        tlog("re-reading AX tree...");
+        tlog("re-reading AX tree + screenshot...");
         let new_ax_tree = get_frontmost_ax_tree();
         let diff = ax_tree_diff(&last_ax_tree, &new_ax_tree);
+        let new_screenshot = capture_screenshot_base64();
 
-        if diff.is_empty() {
-            let feedback = format!(
-                "## Result\nCommands executed:\n{}\n\nScreen unchanged. Try a different approach or output nothing if task is done.",
-                echo_lines.join("\n")
-            );
+        // Build feedback message with screenshot.
+        let feedback_text = if diff.is_empty() {
             tlog("AX tree unchanged");
-            messages.push(Message { role: "user".into(), content: feedback });
+            format!(
+                "## Result\nCommands executed:\n{}\n\nScreen may have changed (see screenshot). Continue or output nothing if done.",
+                echo_lines.join("\n")
+            )
         } else {
             tlog(&format!("AX tree changed:\n{}", diff.trim()));
-            let feedback = format!(
-                "## Result\nCommands executed:\n{}\n\n## Screen Changes\n```\n{}\n```\n\n## Current Screen\n```\n{}\n```\n\nContinue or output nothing if done.",
-                echo_lines.join("\n"), diff.trim(), new_ax_tree.trim()
-            );
-            messages.push(Message { role: "user".into(), content: feedback });
+            format!(
+                "## Result\nCommands executed:\n{}\n\n## Screen Changes\n```\n{}\n```\n\nContinue or output nothing if done.",
+                echo_lines.join("\n"), diff.trim()
+            )
+        };
+
+        let mut feedback_parts = vec![serde_json::json!({"text": feedback_text})];
+        if let Some(ref img) = new_screenshot {
+            feedback_parts.push(serde_json::json!({
+                "inlineData": { "mimeType": "image/jpeg", "data": img }
+            }));
         }
+        conversation.push(serde_json::json!({"role": "user", "parts": feedback_parts}));
 
         last_ax_tree = new_ax_tree;
+        last_screenshot = new_screenshot;
     }
 
     tlog("done.");
+}
+
+/// Stream from Gemini API with inline image support.
+/// This bypasses the generic stream_chat which doesn't handle images.
+fn stream_gemini_vision(
+    config: &capslockx_core::llm_client::LlmConfig,
+    system_prompt: &str,
+    conversation: &[serde_json::Value],
+    on_token: &mut dyn FnMut(&str),
+) -> Result<String, String> {
+    use std::io::{BufRead, BufReader};
+
+    let mut body = serde_json::json!({ "contents": conversation });
+    body["systemInstruction"] = serde_json::json!({"parts": [{"text": system_prompt}]});
+
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse&key={}",
+        config.model, config.api_key
+    );
+
+    let resp = ureq::post(&url)
+        .set("Content-Type", "application/json")
+        .send_string(&body.to_string())
+        .map_err(|e| format!("Gemini request: {}", e))?;
+
+    let reader = BufReader::new(resp.into_reader());
+    let mut full = String::new();
+
+    for line in reader.lines() {
+        let line = line.map_err(|e| format!("read: {}", e))?;
+        if let Some(data) = line.strip_prefix("data: ") {
+            if let Ok(chunk) = serde_json::from_str::<serde_json::Value>(data) {
+                if let Some(text) = chunk["candidates"][0]["content"]["parts"][0]["text"].as_str() {
+                    full.push_str(text);
+                    on_token(text);
+                }
+            }
+        }
+    }
+    Ok(full)
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────────
