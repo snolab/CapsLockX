@@ -443,13 +443,9 @@ unsafe fn read_ax_tree(elem: AXUIElementRef, depth: usize, out: &mut String, max
 }
 
 fn get_frontmost_ax_tree() -> String {
-    // Try native AX API first (deeper tree, more detail).
-    // Falls back to osascript if native fails (e.g. permission issue).
-    let native = get_frontmost_ax_tree_inner();
-    if !native.is_empty() && !native.starts_with("[AX] ERROR") {
-        return native;
-    }
-    eprintln!("[clx-agent] native AX failed, falling back to osascript");
+    // Always use osascript — native AX API calls hang in kernel (UE)
+    // when Accessibility permission is missing/revoked after rebuild.
+    // osascript delegates to System Events which has its own permission.
     get_frontmost_ax_tree_osascript()
 }
 
@@ -668,7 +664,9 @@ static SCAN_RULES: once_cell::sync::Lazy<Arc<StdMutex<Vec<ScanRule>>>> =
 static SCAN_RUNNING: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
-/// Read pixels from a screen region. Returns Vec<(r,g,b)>.
+/// Read pixels from a screen region via CGWindowListCreateImage.
+/// Fast (~1ms) but requires Screen Recording permission.
+/// Returns empty vec if capture fails.
 fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
     unsafe {
         let rect = CGRect {
@@ -676,20 +674,22 @@ fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
             size: CGRectSize { width: w as f64, height: h as f64 },
         };
         // kCGWindowListOptionOnScreenOnly = 1, kCGNullWindowID = 0
-        // kCGWindowImageBoundsIgnoreFraming = 1
-        let image = CGWindowListCreateImage(rect, 1, 0, 1);
+        // kCGWindowImageDefault = 0
+        let image = CGWindowListCreateImage(rect, 1, 0, 0);
         if image.is_null() { return Vec::new(); }
 
         let iw = CGImageGetWidth(image);
         let ih = CGImageGetHeight(image);
         if iw == 0 || ih == 0 { CFRelease(image); return Vec::new(); }
 
-        let bpr = iw * 4; // 4 bytes per pixel (RGBA)
+        let bpr = iw * 4;
         let mut buf = vec![0u8; bpr * ih];
         let cs = CGColorSpaceCreateDeviceRGB();
-        // kCGImageAlphaPremultipliedLast = 1, kCGBitmapByteOrder32Big = (2 << 12)
+        // kCGImageAlphaPremultipliedFirst = 2, kCGBitmapByteOrder32Little = (2 << 12)
+        // This gives BGRA layout which is native on macOS.
         let ctx = CGBitmapContextCreate(
-            buf.as_mut_ptr(), iw, ih, 8, bpr, cs, 1 | (2 << 12),
+            buf.as_mut_ptr(), iw, ih, 8, bpr, cs,
+            2 | (2 << 12), // premultiplied first + 32-bit little endian = BGRA
         );
         if !ctx.is_null() {
             let draw_rect = CGRect {
@@ -702,12 +702,12 @@ fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
         CGColorSpaceRelease(cs);
         CFRelease(image);
 
-        // Extract RGB from RGBA buffer.
+        // Extract RGB from BGRA buffer.
         let mut pixels = Vec::with_capacity(iw * ih);
         for i in 0..(iw * ih) {
             let off = i * 4;
             if off + 2 < buf.len() {
-                pixels.push((buf[off], buf[off + 1], buf[off + 2]));
+                pixels.push((buf[off + 2], buf[off + 1], buf[off])); // BGRA → RGB
             }
         }
         pixels
@@ -761,6 +761,16 @@ fn start_scan_thread() {
                     let pixels = read_pixels(rule.x, rule.y, rule.w, rule.h);
                     let dark = count_dark_pixels(&pixels, rule.brightness_max);
 
+                    // Debug: log pixel counts every ~2s (120 frames).
+                    static mut DEBUG_COUNTER: u32 = 0;
+                    unsafe {
+                        DEBUG_COUNTER += 1;
+                        if DEBUG_COUNTER % 120 == 1 {
+                            eprintln!("[scan] '{}': pixels={} dark={}/{} (bright<{})",
+                                rule.id, pixels.len(), dark, rule.threshold, rule.brightness_max);
+                        }
+                    }
+
                     if dark > rule.threshold {
                         // TRIGGER! Press the key.
                         if rule.action_flags != 0 {
@@ -812,7 +822,7 @@ fn parse_scan_rule(args: &str) -> Option<ScanRule> {
     let h: i32 = parts[4].parse().ok()?;
 
     let mut threshold: u32 = 20;
-    let mut brightness_max: u8 = 80;
+    let mut brightness_max: u8 = 128; // below 128 = "dark" (mid-gray)
     let mut cooldown_ms: u64 = 300;
 
     for part in &parts[5..] {
