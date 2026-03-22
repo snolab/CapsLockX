@@ -17,6 +17,10 @@ path = "src/bin/voice-standalone.rs"
 name = "clx-prompt"
 path = "src/bin/clx-prompt.rs"
 
+[[bin]]
+name = "clx-agent"
+path = "src/bin/clx-agent.rs"
+
 [dependencies]
 capslockx-core = { path = "../../core" }
 once_cell = "1.19"
