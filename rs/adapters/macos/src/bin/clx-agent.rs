@@ -1582,6 +1582,217 @@ fn stream_gemini_vision(
     Ok(full)
 }
 
+// ── Dino Game Auto-Player ─────────────────────────────────────────────────────
+
+/// Find Chrome window bounds by parsing CGWindowListCopyWindowInfo.
+fn find_chrome_window_bounds() -> Option<(i32, i32, i32, i32)> {
+    // Use osascript to get Chrome window position (avoids direct CG API issues).
+    let script = r#"
+tell application "System Events"
+    set chromeProc to first application process whose name is "Google Chrome"
+    set frontWin to first window of chromeProc
+    set winPos to position of frontWin
+    set winSize to size of frontWin
+    return (item 1 of winPos) & "," & (item 2 of winPos) & "," & (item 1 of winSize) & "," & (item 2 of winSize)
+end tell
+"#;
+    let out = std::process::Command::new("osascript")
+        .arg("-e").arg(script).output().ok()?;
+    if !out.status.success() { return None; }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    let nums: Vec<i32> = text.split(',').filter_map(|s| s.trim().parse().ok()).collect();
+    if nums.len() == 4 { Some((nums[0], nums[1], nums[2], nums[3])) } else { None }
+}
+
+/// Auto-calibrate the game area by scanning pixels for the ground line.
+fn calibrate_dino_game(wx: i32, wy: i32, ww: i32, wh: i32) -> Option<(i32, i32, i32)> {
+    // Chrome content area starts ~80px below window top (title bar + tab bar + address bar).
+    let content_y = wy + 80;
+    let content_h = wh - 80;
+
+    eprintln!("[dino] window: ({},{}) {}x{}", wx, wy, ww, wh);
+    eprintln!("[dino] content area starts at y={}, h={}", content_y, content_h);
+
+    // Scan the lower half for the ground line.
+    // The ground is a thin horizontal dark line.
+    let scan_start = content_y + (content_h * 60 / 100);
+    let scan_end = content_y + (content_h * 90 / 100);
+
+    let mut ground_y = 0;
+    for y in scan_start..scan_end {
+        let pixels = read_pixels(wx + 50, y, ww - 100, 1);
+        let dark = count_dark_pixels(&pixels, 120);
+        if dark > (pixels.len() as u32 / 4) {
+            ground_y = y;
+            eprintln!("[dino] found ground line at y={} (dark={}/{})", y, dark, pixels.len());
+            break;
+        }
+    }
+
+    if ground_y == 0 {
+        eprintln!("[dino] ERROR: could not find ground line. Is the game visible?");
+        // Fallback: guess ground at 75% of content height.
+        ground_y = content_y + (content_h * 75 / 100);
+        eprintln!("[dino] using fallback ground_y={}", ground_y);
+    }
+
+    // The dino is approximately 50px from the left edge of the game canvas.
+    // The game canvas is centered in the page.
+    // Scan for the leftmost dark pixels near the ground to find the dino.
+    let mut dino_x = wx + ww / 4; // default: quarter from left
+    let dino_scan = read_pixels(wx, ground_y - 40, ww / 2, 30);
+    // Find first column with dark pixels (that's the dino).
+    let scan_w = (ww / 2) as usize;
+    'outer: for x_off in 0..scan_w {
+        for row in 0..30usize {
+            let idx = row * scan_w + x_off;
+            if idx < dino_scan.len() {
+                let (r, g, b) = dino_scan[idx];
+                let brightness = (r as u16 + g as u16 + b as u16) / 3;
+                if brightness < 120 {
+                    dino_x = wx + x_off as i32;
+                    eprintln!("[dino] found dino at x={}", dino_x);
+                    break 'outer;
+                }
+            }
+        }
+    }
+
+    Some((dino_x, ground_y, ww))
+}
+
+fn run_dino_mode() {
+    init_logging();
+    tlog("=== DINO MODE ===");
+
+    // Step 1: Find Chrome.
+    tlog("finding Chrome window...");
+    let (wx, wy, ww, wh) = match find_chrome_window_bounds() {
+        Some(b) => b,
+        None => {
+            tlog("ERROR: Chrome not found. Open https://chromedino.com first.");
+            return;
+        }
+    };
+    tlog(&format!("Chrome window: ({},{}) {}x{}", wx, wy, ww, wh));
+
+    // Activate Chrome.
+    if let Some(pid) = find_pid_by_name("Chrome") {
+        unsafe { TARGET_PID = pid; }
+        activate_pid(pid);
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        tlog(&format!("Chrome activated (pid={})", pid));
+    }
+
+    // Step 2: Test screen capture permission.
+    if !test_screen_capture() {
+        tlog("ERROR: Screen Recording permission needed. Grant it in System Settings.");
+        return;
+    }
+    tlog("screen capture OK");
+
+    // Step 3: Press Space to start the game (or restart if game over).
+    tlog("pressing Space to start game...");
+    key_tap(0x31); // Space
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    // Step 4: Calibrate game area.
+    tlog("calibrating game area...");
+    let (dino_x, ground_y, _canvas_w) = match calibrate_dino_game(wx, wy, ww, wh) {
+        Some(c) => c,
+        None => {
+            tlog("ERROR: calibration failed");
+            return;
+        }
+    };
+
+    // Step 5: Set up scan rules.
+    // Jump: scan ahead of dino at ground level.
+    let scan_ahead = 80; // pixels ahead of dino to scan
+    let jump_rule = ScanRule {
+        x: dino_x + scan_ahead,
+        y: ground_y - 30,
+        w: 150,
+        h: 25,
+        threshold: 15,
+        brightness_max: 128,
+        action_keycode: 0x31, // Space (jump)
+        action_flags: 0,
+        cooldown_ms: 350,
+        enabled: true,
+        id: "dino-jump".into(),
+    };
+
+    // Duck: scan at bird height (higher up).
+    let duck_rule = ScanRule {
+        x: dino_x + scan_ahead - 20,
+        y: ground_y - 60,
+        w: 120,
+        h: 20,
+        threshold: 10,
+        brightness_max: 128,
+        action_keycode: 0x7D, // Down arrow (duck)
+        action_flags: 0,
+        cooldown_ms: 400,
+        enabled: true,
+        id: "dino-duck".into(),
+    };
+
+    tlog(&format!("jump rule: scan @{},{} {}x{} dark>{} cooldown={}ms",
+        jump_rule.x, jump_rule.y, jump_rule.w, jump_rule.h, jump_rule.threshold, jump_rule.cooldown_ms));
+    tlog(&format!("duck rule: scan @{},{} {}x{} dark>{} cooldown={}ms",
+        duck_rule.x, duck_rule.y, duck_rule.w, duck_rule.h, duck_rule.threshold, duck_rule.cooldown_ms));
+
+    SCAN_RULES.lock().unwrap().push(jump_rule);
+    SCAN_RULES.lock().unwrap().push(duck_rule);
+    start_scan_thread();
+
+    tlog("scan reflex running at 60fps — watching for obstacles...");
+    tlog("press Ctrl+C to stop");
+
+    // Step 6: Monitor — run until game over or user stops.
+    // Check for game over every 2 seconds (dark pixel cluster in center = "GAME OVER" text).
+    let game_over_x = wx + ww / 2 - 50;
+    let game_over_y = ground_y - (ground_y - wy) / 2; // mid-screen
+    let start_time = std::time::Instant::now();
+
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        let elapsed = start_time.elapsed().as_secs();
+        tlog(&format!("playing... {}s elapsed", elapsed));
+
+        // Check for game over: big cluster of dark pixels in center.
+        let center_pixels = read_pixels(game_over_x, game_over_y, 100, 30);
+        let dark_center = count_dark_pixels(&center_pixels, 128);
+        let total = center_pixels.len() as u32;
+
+        if total > 0 && dark_center > total / 3 {
+            tlog(&format!("GAME OVER detected (dark={}/{} at center)", dark_center, total));
+
+            // Wait a moment, then restart.
+            std::thread::sleep(std::time::Duration::from_millis(1000));
+
+            if elapsed > 15 {
+                tlog("likely scored 100+! stopping.");
+                break;
+            } else {
+                tlog("restarting...");
+                key_tap(0x31); // Space to restart
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
+        }
+
+        // Safety: stop after 120 seconds.
+        if elapsed > 120 {
+            tlog("120s timeout — stopping.");
+            break;
+        }
+    }
+
+    stop_scan_thread();
+    tlog("dino mode complete.");
+}
+
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 fn agent_main(args: &[String]) {
@@ -1608,6 +1819,12 @@ fn agent_main(args: &[String]) {
                 }
             }
         }
+    }
+
+    // --dino / dino: play Chrome Dinosaur game automatically.
+    if args.iter().any(|a| a == "--dino" || a == "dino") {
+        run_dino_mode();
+        return;
     }
 
     // --tree: dump AX tree and exit.

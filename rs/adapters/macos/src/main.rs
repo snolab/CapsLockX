@@ -38,6 +38,10 @@ fn main() {
             agent_cmd::main(&args[2..]);
             return;
         }
+        Some("dino") => {
+            agent_cmd::main(&["dino".to_string()]);
+            return;
+        }
         Some("--help") | Some("-h") | Some("help") => {
             println!("CapsLockX — keyboard productivity tool + LLM agent");
             println!();
