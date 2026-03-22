@@ -756,44 +756,35 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
 
 // ── System Prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT: &str = r#"You are CLX Agent on macOS. You control the computer by outputting CLX commands.
-Commands execute IMMEDIATELY as you stream them. Each line runs instantly.
-This is macOS — use Cmd (w-) for shortcuts, not Ctrl (c-).
+/// Load the system prompt from skills/clx-agent/SKILL.md at runtime.
+/// Falls back to a minimal built-in prompt if the file is missing.
+fn load_system_prompt() -> String {
+    // Search relative to the binary, then CWD, then common locations.
+    let search_paths = [
+        // Next to the binary (e.g. /Users/snomiao/CapsLockX/skills/clx-agent/SKILL.md)
+        std::env::current_exe().ok()
+            .and_then(|e| e.parent().map(|p| p.join("../skills/clx-agent/SKILL.md"))),
+        std::env::current_exe().ok()
+            .and_then(|e| e.parent().map(|p| p.join("../../skills/clx-agent/SKILL.md"))),
+        // CWD
+        Some(std::path::PathBuf::from("skills/clx-agent/SKILL.md")),
+        // Absolute fallback
+        Some(std::path::PathBuf::from("/Users/snomiao/CapsLockX/skills/clx-agent/SKILL.md")),
+    ];
 
-## Commands
-k a          tap key 'a'
-k A          tap Shift+A (uppercase = shift)
-k ret        tap Enter
-k esc        tap Escape
-k tab        tap Tab
-k space      tap Space
-k bksp       tap Backspace
-k c-c        Ctrl+C (c=ctrl, s=shift, a=alt, w=cmd)
-k w-c        Cmd+C (copy on macOS)
-k w-v        Cmd+V (paste on macOS)
-k w-a        Cmd+A (select all on macOS)
-k w-p        Cmd+P (quick open in VSCode on macOS)
-k w-space    Cmd+Space (Spotlight)
-k "text"     type string (supports \n \t \" \\)
-m 400 300    move mouse to (400,300)
-m 400 300 c  move to (400,300) and click
-w 200ms      wait 200 milliseconds
-w 1s         wait 1 second
-wf "text" 3s wait until "text" appears in AX tree (polls every 200ms, 3s timeout)
-wf !"text" 5s wait until "text" disappears from AX tree
+    for path in search_paths.iter().flatten() {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            tlog(&format!("loaded SKILL.md from {:?}", path));
+            return content;
+        }
+    }
 
-## Rules
-1. Output ONLY CLX commands. No explanations, no prose, no markdown.
-2. After commands execute, you see screen changes (AX tree diff).
-3. Use @x,y positions from the accessibility tree to click elements.
-4. Keep commands minimal — fewer lines = faster execution.
-5. Errors: # ERR: ...  Timeouts: [TIMEOUT wf] ...
-6. If screen unchanged, try a different approach.
-7. Output nothing (empty) when task is complete.
-8. Use w 200ms for short pauses between actions. wf for waiting on UI changes.
-9. For wf queries, use English text from the AX tree (even if system menus are in other languages).
-10. Common macOS shortcuts: w-p (Cmd+P), w-s (Cmd+S), w-o (Cmd+O), w-tab (Cmd+Tab).
-"#;
+    tlog("WARN: SKILL.md not found, using built-in fallback prompt");
+    "You are CLX Agent on macOS. Output CLX commands only.\n\
+     k a = tap key, m 400 300 = mouse move, m 400 300 c = click, w 200ms = wait.\n\
+     w- = Cmd modifier. Use w-p for Cmd+P, w-s for Cmd+S.\n\
+     Output nothing when done.".to_string()
+}
 
 // ── LLM Loop ─────────────────────────────────────────────────────────────────
 
@@ -874,8 +865,9 @@ fn run_agent_loop(prompt: &str) {
     let mut last_ax_tree = get_frontmost_ax_tree();
     tlog(&format!("AX tree: {} lines, {} bytes", last_ax_tree.lines().count(), last_ax_tree.len()));
 
+    let system_prompt = load_system_prompt();
     let mut messages = vec![
-        Message { role: "system".into(), content: SYSTEM_PROMPT.to_string() },
+        Message { role: "system".into(), content: system_prompt },
         Message {
             role: "user".into(),
             content: format!(
