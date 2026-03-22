@@ -18,5 +18,7 @@ real-time: keyboard, mouse, gamepad sticks, MIDI, and more.
 | [PARSER.md](./PARSER.md) | Streaming parser design and technology choice |
 | [PREPROCESSING.md](./PREPROCESSING.md) | YOLO/STT/OCR preprocessing vs native LLM input |
 | [INPUT.md](./INPUT.md) | Input injection APIs (keyboard, mouse, gamepad, MIDI) |
+| [GAMES.md](./GAMES.md) | Multi-channel agent swarm architecture for games |
+| [GAMES-INPUT-PATTERNS.md](./GAMES-INPUT-PATTERNS.md) | Input patterns for all game genres |
 | [STREAMING-OUTPUT.md](./STREAMING-OUTPUT.md) | Async command queue design for streaming execution |
 | [ROADMAP.md](./ROADMAP.md) | Implementation phases and milestones |
