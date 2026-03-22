@@ -104,9 +104,12 @@ impl ClxEngine {
             return CoreResponse::Suppress;
         }
 
-        // ── 3b. Bare ESC dismisses brainstorm overlay (no trigger needed) ────
+        // ── 3b. Bare ESC dismisses overlays / kills agent (no trigger needed) ──
         if code == KeyCode::Escape && pressed && !is_repeat {
             let mods = self.compute_mods();
+            if self.modules.agent.on_key_down(code, &mods) {
+                return CoreResponse::Suppress;
+            }
             if self.modules.brainstorm.on_key_down(code, &mods) {
                 return CoreResponse::Suppress;
             }

@@ -1,3 +1,4 @@
+pub mod agent;
 pub mod brainstorm;
 pub mod edit;
 pub mod media;
@@ -11,6 +12,7 @@ use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
 use crate::state::{ClxConfig, ClxState, SpeedConfig};
 
+use agent::AgentModule;
 use brainstorm::BrainstormModule;
 use edit::EditModule;
 use media::MediaModule;
@@ -20,6 +22,7 @@ use voice::VoiceModule;
 use window_manager::WindowManagerModule;
 
 pub struct Modules {
+    pub agent:       AgentModule,
     pub brainstorm:  BrainstormModule,
     edit:            EditModule,
     mouse:           MouseModule,
@@ -35,6 +38,7 @@ impl Modules {
         let cfg = state.config.read().unwrap();
         let (best_key, best_model) = cfg.best_llm_key_and_model();
         let s = Self {
+            agent:           AgentModule::new(Arc::clone(&platform)),
             brainstorm:      BrainstormModule::new(
                 Arc::clone(&platform),
                 best_key.clone(),
@@ -62,7 +66,8 @@ impl Modules {
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
-        self.brainstorm.on_key_down(key, mods)
+        self.agent.on_key_down(key, mods)
+            || self.brainstorm.on_key_down(key, mods)
             || self.edit.on_key_down(key, &*self.platform)
             || self.mouse.on_key_down(key)
             || self.media.on_key_down(key)
@@ -72,7 +77,8 @@ impl Modules {
     }
 
     pub fn on_key_up(&self, key: KeyCode) -> bool {
-        self.brainstorm.on_key_up(key)
+        self.agent.on_key_up(key)
+            || self.brainstorm.on_key_up(key)
             || self.edit.on_key_up(key)
             || self.mouse.on_key_up(key)
             || self.media.on_key_up(key)
@@ -81,7 +87,8 @@ impl Modules {
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
-        self.brainstorm.is_mapped_key(key)
+        self.agent.is_mapped_key(key)
+            || self.brainstorm.is_mapped_key(key)
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
