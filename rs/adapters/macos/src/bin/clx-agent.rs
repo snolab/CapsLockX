@@ -483,7 +483,8 @@ fn parse_line(line: &str) -> Cmd {
     }
 }
 
-fn execute_cmd(cmd: &Cmd) -> String {
+/// Execute a command. Returns the original command text as echo (for LLM history).
+fn execute_cmd(cmd: &Cmd, line: &str) -> String {
     match cmd {
         Cmd::KeyTap { keycode, flags } => {
             if *flags != 0 {
@@ -491,28 +492,174 @@ fn execute_cmd(cmd: &Cmd) -> String {
             } else {
                 key_tap(*keycode);
             }
-            format!("[OK] k (code=0x{:02X})", keycode)
+            line.to_string() // echo as-is: "k a" or "k c-s"
         }
         Cmd::TypeString(text) => {
             type_text(text);
-            format!("[OK] k \"{}\"", text.chars().take(20).collect::<String>())
+            line.to_string()
         }
         Cmd::MouseMove { x, y } => {
             mouse_move_abs(*x, *y);
-            format!("[OK] m {} {}", *x as i32, *y as i32)
+            format!("m {} {}", *x as i32, *y as i32)
         }
         Cmd::MouseClick { x, y } => {
             mouse_move_abs(*x, *y);
             std::thread::sleep(std::time::Duration::from_millis(30));
             mouse_click(*x, *y);
-            format!("[OK] m {} {} c", *x as i32, *y as i32)
+            format!("m {} {} c", *x as i32, *y as i32)
         }
         Cmd::Wait(d) => {
             std::thread::sleep(*d);
-            format!("[OK] w {}ms", d.as_millis())
+            format!("w {}ms", d.as_millis())
         }
-        Cmd::Comment(s) => format!("[--] {}", s),
-        Cmd::Unknown(s) => format!("[ERR] unknown: {}", s),
+        Cmd::Comment(_) => String::new(),
+        Cmd::Unknown(s) => format!("# ERR: {}", s),
+    }
+}
+
+// ── System Prompt ────────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT: &str = r#"You are CLX Agent. You control the computer by outputting CLX commands.
+Commands execute IMMEDIATELY as you stream them. Each line runs instantly.
+
+## Commands
+k a          tap key 'a'
+k A          tap Shift+A (uppercase = shift)
+k ret        tap Enter
+k esc        tap Escape
+k tab        tap Tab
+k space      tap Space
+k bksp       tap Backspace
+k c-c        Ctrl+C (c=ctrl, s=shift, a=alt, w=cmd)
+k c-a        Ctrl+A (select all)
+k w-space    Cmd+Space
+k "text"     type string
+m 400 300    move mouse to (400,300)
+m 400 300 c  move to (400,300) and click
+w 200ms      wait 200 milliseconds
+w 1s         wait 1 second
+
+## Rules
+1. Output ONLY CLX commands. No explanations, no prose, no markdown.
+2. After clicking, add: w 200ms (wait for UI response).
+3. Use @x,y positions from the accessibility tree to click elements.
+4. Keep commands minimal — fewer lines = faster execution.
+5. You will see your executed commands echoed back. Errors show as: # ERR: ...
+6. After key actions, you may see [AX] updates showing new focus/state.
+"#;
+
+// ── LLM Loop ─────────────────────────────────────────────────────────────────
+
+fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
+    // Try config file first.
+    let cfg_path = dirs::config_dir()?.join("CapsLockX").join("config.json");
+    let data = std::fs::read_to_string(&cfg_path).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&data).ok()?;
+
+    // Extract best API key.
+    let api_key = v.get("llm_api_key").and_then(|k| k.as_str()).unwrap_or("").to_string();
+    let model = v.get("llm_model").and_then(|k| k.as_str()).unwrap_or("").to_string();
+
+    // Also check env vars.
+    let api_key = if api_key.is_empty() {
+        std::env::var("GEMINI_API_KEY")
+            .or_else(|_| std::env::var("OPENAI_API_KEY"))
+            .or_else(|_| std::env::var("GROQ_API_KEY"))
+            .unwrap_or_default()
+    } else {
+        api_key
+    };
+
+    if api_key.is_empty() {
+        return None;
+    }
+
+    Some(capslockx_core::llm_client::LlmConfig::from_key_and_model(&api_key, &model))
+}
+
+fn run_agent_loop(prompt: &str) {
+    use capslockx_core::llm_client::{stream_chat, Message};
+
+    let config = match load_llm_config() {
+        Some(c) => c,
+        None => {
+            eprintln!("[clx-agent] ERROR: No LLM API key found.");
+            eprintln!("[clx-agent] Set GEMINI_API_KEY, OPENAI_API_KEY, or configure in CapsLockX prefs.");
+            return;
+        }
+    };
+
+    eprintln!("[clx-agent] LLM: {:?} model={}", config.provider, config.model);
+
+    // Read AX tree of the frontmost app.
+    eprintln!("[clx-agent] reading accessibility tree...");
+    let ax_tree = get_frontmost_ax_tree();
+    eprintln!("{}", ax_tree);
+
+    // Build messages.
+    let mut messages = vec![
+        Message { role: "system".into(), content: SYSTEM_PROMPT.to_string() },
+        Message {
+            role: "user".into(),
+            content: format!(
+                "## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
+                ax_tree.trim(), prompt
+            ),
+        },
+    ];
+
+    // Accumulate the LLM's full response + our echo history for multi-turn.
+    let mut llm_output = String::new();
+    let mut echo_history = String::new();
+    let mut line_buf = String::new();
+
+    eprintln!("[clx-agent] streaming from LLM...\n");
+
+    let result = stream_chat(&config, &messages, &mut |token| {
+        // Accumulate tokens into lines, execute each complete line.
+        llm_output.push_str(token);
+        line_buf.push_str(token);
+
+        // Process complete lines.
+        while let Some(nl_pos) = line_buf.find('\n') {
+            let line = line_buf[..nl_pos].to_string();
+            line_buf.drain(..=nl_pos);
+
+            let trimmed = line.trim();
+            if trimmed.is_empty() { continue; }
+
+            // Parse and execute.
+            let cmd = parse_line(trimmed);
+            let echo = execute_cmd(&cmd, trimmed);
+
+            if !echo.is_empty() {
+                eprintln!("  > {}", echo);
+                echo_history.push_str(&echo);
+                echo_history.push('\n');
+            }
+        }
+    });
+
+    // Execute any remaining partial line.
+    let remaining = line_buf.trim().to_string();
+    if !remaining.is_empty() {
+        let cmd = parse_line(&remaining);
+        let echo = execute_cmd(&cmd, &remaining);
+        if !echo.is_empty() {
+            eprintln!("  > {}", echo);
+            echo_history.push_str(&echo);
+            echo_history.push('\n');
+        }
+    }
+
+    match result {
+        Ok(_) => eprintln!("\n[clx-agent] done."),
+        Err(e) => eprintln!("\n[clx-agent] LLM error: {}", e),
+    }
+
+    // If there were errors, we could do a follow-up turn here.
+    if echo_history.contains("# ERR:") {
+        eprintln!("[clx-agent] some commands had errors — a follow-up turn could retry.");
     }
 }
 
@@ -521,14 +668,14 @@ fn execute_cmd(cmd: &Cmd) -> String {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    // If --tree flag, just dump the AX tree and exit.
+    // --tree: dump AX tree and exit.
     if args.iter().any(|a| a == "--tree") {
         let tree = get_frontmost_ax_tree();
         print!("{}", tree);
         return;
     }
 
-    // If --exec, read CLX commands from stdin and execute them.
+    // --exec: read CLX commands from stdin and execute.
     if args.iter().any(|a| a == "--exec") {
         eprintln!("[clx-agent] exec mode — reading CLX commands from stdin");
         let stdin = io::stdin();
@@ -538,28 +685,45 @@ fn main() {
                 Err(_) => break,
             };
             let cmd = parse_line(&line);
-            let echo = execute_cmd(&cmd);
-            eprintln!("{}", echo);
+            let echo = execute_cmd(&cmd, &line);
+            if !echo.is_empty() {
+                eprintln!("{}", echo);
+            }
         }
         return;
     }
 
-    // Default: interactive mode — show AX tree, then read commands.
-    eprintln!("[clx-agent] reading accessibility tree...");
-    let tree = get_frontmost_ax_tree();
-    eprintln!("{}", tree);
-    eprintln!("[clx-agent] ready — type CLX commands (k/m/w), Ctrl+D to quit");
-
-    let stdin = io::stdin();
-    for line in stdin.lock().lines() {
-        let line = match line {
-            Ok(l) => l,
-            Err(_) => break,
-        };
-        if line.trim().is_empty() { continue; }
-        let cmd = parse_line(&line);
-        let echo = execute_cmd(&cmd);
-        println!("{}", echo);
-        io::stdout().flush().ok();
+    // --prompt "do something": run the LLM agent loop with a prompt.
+    let prompt_idx = args.iter().position(|a| a == "--prompt");
+    if let Some(idx) = prompt_idx {
+        let prompt = args.get(idx + 1).cloned().unwrap_or_else(|| {
+            eprintln!("Usage: clx-agent --prompt \"click on the Issues tab\"");
+            std::process::exit(1);
+        });
+        run_agent_loop(&prompt);
+        return;
     }
+
+    // No flags: interactive mode — read prompt from stdin or args.
+    let prompt = if args.len() > 1 && !args[1].starts_with('-') {
+        // clx-agent "click on Issues"
+        args[1..].join(" ")
+    } else {
+        // Read from stdin.
+        eprint!("[clx-agent] Enter task: ");
+        io::stderr().flush().ok();
+        let mut p = String::new();
+        io::stdin().read_line(&mut p).ok();
+        p.trim().to_string()
+    };
+
+    if prompt.is_empty() {
+        eprintln!("Usage: clx-agent --prompt \"task description\"");
+        eprintln!("       clx-agent \"task description\"");
+        eprintln!("       clx-agent --tree    (dump accessibility tree)");
+        eprintln!("       clx-agent --exec    (execute CLX commands from stdin)");
+        return;
+    }
+
+    run_agent_loop(&prompt);
 }
