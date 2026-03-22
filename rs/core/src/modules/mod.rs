@@ -20,7 +20,7 @@ use voice::VoiceModule;
 use window_manager::WindowManagerModule;
 
 pub struct Modules {
-    brainstorm:      BrainstormModule,
+    pub brainstorm:  BrainstormModule,
     edit:            EditModule,
     mouse:           MouseModule,
     media:           MediaModule,

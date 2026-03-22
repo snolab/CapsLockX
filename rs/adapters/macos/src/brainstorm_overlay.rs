@@ -259,385 +259,50 @@ unsafe fn hide_window() {
     msg1(w, sel(b"orderOut:\0"), std::ptr::null_mut());
 }
 
-// ── Non-modal prompt input panel ─────────────────────────────────────────────
+// ── Subprocess-based prompt input ────────────────────────────────────────────
 
-static PROMPT_WINDOW_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
-static PROMPT_TV_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
-static PROMPT_CHECKBOX_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
-static PROMPT_RESULT: Mutex<Option<std::sync::mpsc::Sender<Option<String>>>> = Mutex::new(None);
-
-/// Show a non-modal prompt input panel. Returns user's text or None if cancelled.
-/// Does NOT block the main run loop — voice overlay keeps updating.
+/// Show a prompt input dialog via a subprocess (`clx-prompt`).
+/// The subprocess has no CGEventTap, so keyboard input works normally.
 pub fn show_prompt_panel(title: &str, message: &str, prefill: &str) -> Option<String> {
-    let (tx, rx) = std::sync::mpsc::channel::<Option<String>>();
-    *PROMPT_RESULT.lock().unwrap() = Some(tx);
+    use std::process::Command;
 
-    // Format: clipboard text at top, then "\n---\n\n===" with cursor between --- and ===.
-    let formatted = if prefill.is_empty() {
-        "---\n\n===".to_string()
-    } else {
-        format!("{}\n---\n\n===", prefill)
+    // Find the clx-prompt binary next to the main binary.
+    let prompt_bin = {
+        let exe = std::env::current_exe().unwrap_or_default();
+        let dir = exe.parent().unwrap_or(std::path::Path::new("."));
+        dir.join("clx-prompt")
     };
-    // Cursor goes on the blank line between "---" and "==="
-    let cursor_pos = formatted.rfind("\n\n===").map(|p| p + 1).unwrap_or(formatted.len());
 
-    // Store data for the main-thread callback.
-    static PROMPT_DATA: Mutex<Option<(String, String, String, usize)>> = Mutex::new(None);
-    *PROMPT_DATA.lock().unwrap() = Some((title.to_string(), message.to_string(), formatted, cursor_pos));
+    // Fall back to looking in the cargo target directory.
+    let prompt_bin = if prompt_bin.exists() {
+        prompt_bin
+    } else {
+        // Try relative to CWD or in PATH.
+        std::path::PathBuf::from("clx-prompt")
+    };
 
-    // Register CLXPromptTextView (Enter=Send, Shift+Enter=newline) and action target.
-    static PROMPT_CLASSES_REGISTERED: std::sync::Once = std::sync::Once::new();
-    #[allow(unused)]
-    static PROMPT_ACTION_REGISTERED: std::sync::Once = std::sync::Once::new();
+    eprintln!("[CLX] launching prompt subprocess: {:?}", prompt_bin);
 
-    unsafe extern "C" fn cancel_action(_this: *mut c_void, _cmd: *mut c_void, _sender: *mut c_void) {
-        prompt_cancel();
-    }
+    let output = Command::new(&prompt_bin)
+        .arg(title)
+        .arg(message)
+        .arg(prefill)
+        .output();
 
-    unsafe extern "C" fn send_action(_this: *mut c_void, _cmd: *mut c_void, _sender: *mut c_void) {
-        prompt_send();
-    }
-
-    // keyDown: handler for CLXPromptTextView — Enter=Send, Shift+Enter=newline.
-    unsafe extern "C" fn prompt_tv_key_down(
-        this: *mut c_void, _cmd: *mut c_void, event: *mut c_void,
-    ) {
-        let f_u16: extern "C" fn(*mut c_void, *mut c_void) -> u16
-            = std::mem::transmute(objc_msgSend as *const ());
-        let key_code = f_u16(event, sel(b"keyCode\0"));
-        let f_u64: extern "C" fn(*mut c_void, *mut c_void) -> u64
-            = std::mem::transmute(objc_msgSend as *const ());
-        let flags = f_u64(event, sel(b"modifierFlags\0"));
-        let shift = flags & (1 << 17) != 0;
-
-        if key_code == 53 {
-            // ESC → Cancel
-            prompt_cancel();
-        } else if key_code == 36 && !shift {
-            // Enter without Shift → Send
-            prompt_send();
-        } else {
-            // Forward to super (NSTextView).
-            extern "C" { fn objc_msgSendSuper(sup: *mut c_void, sel: *mut c_void, ...) -> *mut c_void; }
-            #[repr(C)] struct ObjcSuper { receiver: *mut c_void, super_class: *mut c_void }
-            let mut sup = ObjcSuper { receiver: this, super_class: cls(b"NSTextView\0") };
-            let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void
-                = std::mem::transmute(objc_msgSendSuper as *const ());
-            f(&mut sup as *mut _ as *mut _, sel(b"keyDown:\0"), event);
-        }
-    }
-
-    extern "C" fn create_prompt(_: *mut c_void) {
-        unsafe {
-            // Register both CLXPromptTextView and CLXPromptAction classes (once).
-            PROMPT_CLASSES_REGISTERED.call_once(|| {
-                extern "C" {
-                    fn objc_allocateClassPair(sup: *mut c_void, name: *const std::ffi::c_char, extra: usize) -> *mut c_void;
-                    fn objc_registerClassPair(cls_ptr: *mut c_void);
-                    fn class_addMethod(cls_ptr: *mut c_void, sel: *mut c_void, imp: *const c_void, types: *const std::ffi::c_char) -> bool;
-                }
-
-                // CLXPromptTextView: NSTextView subclass with Enter=Send.
-                let tv_super = cls(b"NSTextView\0");
-                let tv_cls = objc_allocateClassPair(tv_super, b"CLXPromptTextView\0".as_ptr() as *const _, 0);
-                if !tv_cls.is_null() {
-                    class_addMethod(tv_cls, sel(b"keyDown:\0"), prompt_tv_key_down as *const c_void, b"v@:@\0".as_ptr() as *const _);
-                    objc_registerClassPair(tv_cls);
-                }
-
-                // CLXPromptAction: button action target.
-                let obj_super = cls(b"NSObject\0");
-                let act_cls = objc_allocateClassPair(obj_super, b"CLXPromptAction\0".as_ptr() as *const _, 0);
-                if !act_cls.is_null() {
-                    class_addMethod(act_cls, sel(b"cancelPrompt:\0"), cancel_action as *const c_void, b"v@:@\0".as_ptr() as *const _);
-                    class_addMethod(act_cls, sel(b"sendPrompt:\0"), send_action as *const c_void, b"v@:@\0".as_ptr() as *const _);
-                    objc_registerClassPair(act_cls);
-                }
-            });
-            let (title, message, formatted, cursor_pos) = {
-                let guard = PROMPT_DATA.lock().unwrap();
-                guard.as_ref().unwrap().clone()
-            };
-
-            // Close existing prompt if any.
-            let existing = PROMPT_WINDOW_PTR.load(Ordering::Acquire);
-            if !existing.is_null() {
-                msg1(existing, sel(b"orderOut:\0"), std::ptr::null_mut());
-            }
-
-            let screen = msg0(cls(b"NSScreen\0"), sel(b"mainScreen\0"));
-            let sf: NSRect = {
-                let f: extern "C" fn(*mut c_void, *mut c_void) -> NSRect = std::mem::transmute(objc_msgSend as *const ());
-                f(screen, sel(b"frame\0"))
-            };
-            let pw = 520.0_f64;
-            let ph = 320.0_f64;
-            let rect = NSRect { x: (sf.w - pw) / 2.0, y: (sf.h - ph) / 2.0 + 100.0, w: pw, h: ph };
-
-            // NSPanel: titled + closable + non-activating
-            // Use NSWindow (not NSPanel) so Cmd+A/C/V/Z work properly.
-            // titled(1) + closable(2) + resizable(8)
-            let style: u64 = 1 | 2 | 8;
-            let panel = msg0(cls(b"NSWindow\0"), sel(b"alloc\0"));
-            let panel: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect, u64, u64, bool) -> *mut c_void
-                    = std::mem::transmute(objc_msgSend as *const ());
-                f(panel, sel(b"initWithContentRect:styleMask:backing:defer:\0"), rect, style, 2, false)
-            };
-
-            msg1(panel, sel(b"setTitle:\0"), nsstring(&title));
-            set_f64(panel, sel(b"setAlphaValue:\0"), 0.95);
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
-                f(panel, sel(b"setLevel:\0"), 8); // NSModalPanelWindowLevel
-            }
-            set_bool(panel, sel(b"setHidesOnDeactivate:\0"), false);
-            set_bool(panel, sel(b"setReleasedWhenClosed:\0"), false);
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
-                f(panel, sel(b"setSharingType:\0"), 0);
-            }
-
-            // Dark background
-            let bg = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void
-                    = std::mem::transmute(objc_msgSend as *const ());
-                f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.12, 0.12, 0.18, 0.98)
-            };
-            msg1(panel, sel(b"setBackgroundColor:\0"), bg);
-
-            // Container view
-            let cv_rect = NSRect { x: 0.0, y: 0.0, w: pw, h: ph - 28.0 };
-            let container = msg0(cls(b"NSView\0"), sel(b"alloc\0"));
-            let container: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(container, sel(b"initWithFrame:\0"), cv_rect)
-            };
-
-            // Info label at top
-            let info_rect = NSRect { x: 12.0, y: cv_rect.h - 50.0, w: pw - 24.0, h: 44.0 };
-            let info_label = msg0(cls(b"NSTextField\0"), sel(b"alloc\0"));
-            let info_label: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(info_label, sel(b"initWithFrame:\0"), info_rect)
-            };
-            msg1(info_label, sel(b"setStringValue:\0"), nsstring(&format!("{}\nEnter = Send | Shift+Enter = new line", message)));
-            set_bool(info_label, sel(b"setBezeled:\0"), false);
-            set_bool(info_label, sel(b"setDrawsBackground:\0"), false);
-            set_bool(info_label, sel(b"setEditable:\0"), false);
-            set_bool(info_label, sel(b"setSelectable:\0"), false);
-            let text_color = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void
-                    = std::mem::transmute(objc_msgSend as *const ());
-                f(cls(b"NSColor\0"), sel(b"colorWithRed:green:blue:alpha:\0"), 0.7, 0.7, 0.8, 1.0)
-            };
-            msg1(info_label, sel(b"setTextColor:\0"), text_color);
-            let small_font = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(cls(b"NSFont\0"), sel(b"systemFontOfSize:\0"), 11.0)
-            };
-            msg1(info_label, sel(b"setFont:\0"), small_font);
-            msg1(container, sel(b"addSubview:\0"), info_label);
-
-            // Buttons at bottom (40px)
-            let btn_y = 8.0_f64;
-            let btn_h = 28.0_f64;
-
-            // Send button
-            let send_rect = NSRect { x: pw - 100.0, y: btn_y, w: 80.0, h: btn_h };
-            let send_btn = msg0(cls(b"NSButton\0"), sel(b"alloc\0"));
-            let send_btn: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(send_btn, sel(b"initWithFrame:\0"), send_rect)
-            };
-            msg1(send_btn, sel(b"setTitle:\0"), nsstring("Send"));
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
-                f(send_btn, sel(b"setBezelStyle:\0"), 1); // NSBezelStyleRounded
-            }
-            msg1(send_btn, sel(b"setKeyEquivalent:\0"), nsstring("")); // Enter handled by text view
-
-            // Create action target for buttons.
-            let action_cls = cls(b"CLXPromptAction\0");
-            let action_target = if !action_cls.is_null() {
-                let t = msg0(msg0(action_cls, sel(b"alloc\0")), sel(b"init\0"));
-                msg0(t, sel(b"retain\0"));
-                t
-            } else { std::ptr::null_mut() };
-
-            msg1(send_btn, sel(b"setTarget:\0"), action_target);
-            msg1(send_btn, sel(b"setAction:\0"), sel(b"sendPrompt:\0"));
-
-            // Cancel button
-            let cancel_rect = NSRect { x: pw - 190.0, y: btn_y, w: 80.0, h: btn_h };
-            let cancel_btn = msg0(cls(b"NSButton\0"), sel(b"alloc\0"));
-            let cancel_btn: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(cancel_btn, sel(b"initWithFrame:\0"), cancel_rect)
-            };
-            msg1(cancel_btn, sel(b"setTitle:\0"), nsstring("Cancel"));
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
-                f(cancel_btn, sel(b"setBezelStyle:\0"), 1);
-            }
-            msg1(cancel_btn, sel(b"setTarget:\0"), action_target);
-            msg1(cancel_btn, sel(b"setAction:\0"), sel(b"cancelPrompt:\0"));
-
-            msg1(container, sel(b"addSubview:\0"), send_btn);
-            msg1(container, sel(b"addSubview:\0"), cancel_btn);
-
-            // "Clear history" checkbox — checked by default.
-            let cb_rect = NSRect { x: 12.0, y: btn_y + 2.0, w: 140.0, h: btn_h };
-            let checkbox = msg0(cls(b"NSButton\0"), sel(b"alloc\0"));
-            let checkbox: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(checkbox, sel(b"initWithFrame:\0"), cb_rect)
-            };
-            // Label shows history count. State loaded from persistent pref.
-            let hist_count = {
-                let path = dirs::config_dir().unwrap_or_default().join("CapsLockX").join("brainstorm_history.json");
-                std::fs::read_to_string(&path).ok()
-                    .and_then(|d| serde_json::from_str::<Vec<serde_json::Value>>(&d).ok())
-                    .map(|v| v.len()).unwrap_or(0)
-            };
-            let keep_pref = dirs::config_dir().unwrap_or_default()
-                .join("CapsLockX").join("brainstorm_keep_history").exists();
-
-            msg1(checkbox, sel(b"setTitle:\0"), nsstring(&format!("Keep histories ({})", hist_count)));
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
-                f(checkbox, sel(b"setButtonType:\0"), 3); // NSSwitchButton
-            }
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, i64) = std::mem::transmute(objc_msgSend as *const ());
-                f(checkbox, sel(b"setState:\0"), if keep_pref { 1 } else { 0 });
-            }
-            msg1(container, sel(b"addSubview:\0"), checkbox);
-            PROMPT_CHECKBOX_PTR.store(checkbox, Ordering::Release);
-
-            // ScrollView + TextView (between info and buttons)
-            let tv_rect = NSRect { x: 12.0, y: btn_y + btn_h + 8.0, w: pw - 24.0, h: cv_rect.h - 50.0 - btn_h - 24.0 };
-            let scroll = msg0(cls(b"NSScrollView\0"), sel(b"alloc\0"));
-            let scroll: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(scroll, sel(b"initWithFrame:\0"), tv_rect)
-            };
-            set_bool(scroll, sel(b"setHasVerticalScroller:\0"), true);
-
-            // Use CLXPromptTextView if registered, else NSTextView
-            let tv_cls = {
-                let c = cls(b"CLXPromptTextView\0");
-                if c.is_null() { cls(b"NSTextView\0") } else { c }
-            };
-            let text_view = msg0(tv_cls, sel(b"alloc\0"));
-            let inner_rect = NSRect { x: 0.0, y: 0.0, w: tv_rect.w, h: tv_rect.h };
-            let text_view: *mut c_void = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(text_view, sel(b"initWithFrame:\0"), inner_rect)
-            };
-            set_bool(text_view, sel(b"setEditable:\0"), true);
-            set_bool(text_view, sel(b"setRichText:\0"), false);
-
-            // Set text and cursor
-            msg1(text_view, sel(b"setString:\0"), nsstring(&formatted));
-            {
-                #[repr(C)] #[derive(Clone, Copy)] struct NSRange { location: usize, length: usize }
-                let range = NSRange { location: cursor_pos, length: 0 };
-                let f: extern "C" fn(*mut c_void, *mut c_void, NSRange) = std::mem::transmute(objc_msgSend as *const ());
-                f(text_view, sel(b"setSelectedRange:\0"), range);
-                f(text_view, sel(b"scrollRangeToVisible:\0"), range);
-            }
-
-            // Font
-            let font = {
-                let f: extern "C" fn(*mut c_void, *mut c_void, f64) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-                f(cls(b"NSFont\0"), sel(b"systemFontOfSize:\0"), 13.0)
-            };
-            msg1(text_view, sel(b"setFont:\0"), font);
-
-            msg1(scroll, sel(b"setDocumentView:\0"), text_view);
-            msg1(container, sel(b"addSubview:\0"), scroll);
-            msg1(panel, sel(b"setContentView:\0"), container);
-
-            // Show and focus
-            msg0(panel, sel(b"retain\0"));
-            msg1(panel, sel(b"makeKeyAndOrderFront:\0"), std::ptr::null_mut());
-            msg1(panel, sel(b"makeFirstResponder:\0"), text_view);
-
-            // Activate app
-            let nsapp = msg0(cls(b"NSApplication\0"), sel(b"sharedApplication\0"));
-            {
-                let f: extern "C" fn(*mut c_void, *mut c_void, i64) -> bool = std::mem::transmute(objc_msgSend as *const ());
-                f(nsapp, sel(b"activateIgnoringOtherApps:\0"), 1);
-            }
-
-            PROMPT_WINDOW_PTR.store(panel, Ordering::Release);
-            PROMPT_TV_PTR.store(text_view, Ordering::Release);
-        }
-    }
-
-    unsafe { dispatch_async_f(main_queue(), std::ptr::null_mut(), create_prompt); }
-
-    // Block the calling thread (NOT main thread) until user clicks Send or Cancel.
-    rx.recv().ok().flatten()
-}
-
-/// Called from CLXPromptTextView.keyDown: when Enter is pressed (Send).
-pub fn prompt_send() {
-    unsafe {
-        let tv = PROMPT_TV_PTR.load(Ordering::Acquire);
-        if tv.is_null() { return; }
-
-        // Get text from text view.
-        let ns_str = msg0(tv, sel(b"string\0"));
-        let cstr: *const std::ffi::c_char = {
-            let f: extern "C" fn(*mut c_void, *mut c_void) -> *const std::ffi::c_char = std::mem::transmute(objc_msgSend as *const ());
-            f(ns_str, sel(b"UTF8String\0"))
-        };
-
-        // Check if "Keep histories" is checked.
-        let keep_history = {
-            let cb = PROMPT_CHECKBOX_PTR.load(Ordering::Acquire);
-            if !cb.is_null() {
-                let f: extern "C" fn(*mut c_void, *mut c_void) -> i64 = std::mem::transmute(objc_msgSend as *const ());
-                f(cb, sel(b"state\0")) == 1 // NSControlStateValueOn
+    match output {
+        Ok(out) => {
+            if out.status.success() {
+                let text = String::from_utf8_lossy(&out.stdout).into_owned();
+                if text.is_empty() { None } else { Some(text) }
             } else {
-                false // default: don't keep
+                eprintln!("[CLX] prompt cancelled (exit code {:?})", out.status.code());
+                None
             }
-        };
-
-        let text = if !cstr.is_null() {
-            let mut t = std::ffi::CStr::from_ptr(cstr).to_string_lossy().into_owned();
-            if keep_history {
-                t = format!("[KEEP]\n{}", t);
-            }
-            Some(t)
-        } else {
+        }
+        Err(e) => {
+            eprintln!("[CLX] failed to launch clx-prompt: {}", e);
             None
-        };
-
-        // Hide panel.
-        let panel = PROMPT_WINDOW_PTR.load(Ordering::Acquire);
-        if !panel.is_null() {
-            msg1(panel, sel(b"orderOut:\0"), std::ptr::null_mut());
-        }
-
-        // Send result.
-        if let Some(tx) = PROMPT_RESULT.lock().unwrap().take() {
-            let _ = tx.send(text);
         }
     }
 }
 
-/// Called when Cancel is pressed or window closed.
-pub fn prompt_cancel() {
-    unsafe {
-        let panel = PROMPT_WINDOW_PTR.load(Ordering::Acquire);
-        if !panel.is_null() {
-            msg1(panel, sel(b"orderOut:\0"), std::ptr::null_mut());
-        }
-        if let Some(tx) = PROMPT_RESULT.lock().unwrap().take() {
-            let _ = tx.send(None);
-        }
-    }
-}

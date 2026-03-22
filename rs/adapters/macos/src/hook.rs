@@ -223,6 +223,7 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
         return Some(());
     }
 
+
     match event_type {
         CGEventType::KeyDown | CGEventType::KeyUp => {
             let cg_keycode =

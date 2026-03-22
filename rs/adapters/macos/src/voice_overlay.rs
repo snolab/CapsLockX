@@ -403,6 +403,8 @@ extern "C" fn show_main(_: *mut c_void) {
                 f_bool(lbl, sel(b"setDrawsBackground:\0"), false);
                 f_bool(lbl, sel(b"setEditable:\0"), false);
                 f_bool(lbl, sel(b"setSelectable:\0"), false);
+                // Let mouse events pass through to window background so dragging works.
+                f_bool(lbl, sel(b"setIgnoresMouseEvents:\0"), true);
                 msg1_ptr(lbl, sel(b"setTextColor:\0"), grip_color);
                 msg1_ptr(lbl, sel(b"setFont:\0"), small_font);
                 f_u64_2(lbl, sel(b"setAlignment:\0"), 1); // center
