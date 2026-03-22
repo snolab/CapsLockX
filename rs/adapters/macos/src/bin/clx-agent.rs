@@ -1343,10 +1343,24 @@ fn run_agent_loop(prompt: &str) {
     // The generic stream_chat doesn't support images.
     let mut conversation: Vec<serde_json::Value> = Vec::new();
 
+    // Get display resolution via CGMainDisplayID.
+    let (display_w, display_h) = unsafe {
+        extern "C" {
+            fn CGMainDisplayID() -> u32;
+            fn CGDisplayPixelsWide(display: u32) -> usize;
+            fn CGDisplayPixelsHigh(display: u32) -> usize;
+        }
+        let main = CGMainDisplayID();
+        (CGDisplayPixelsWide(main) as i32, CGDisplayPixelsHigh(main) as i32)
+    };
+    tlog(&format!("display: {}x{}", display_w, display_h));
+
     // First user message: AX tree + screenshot + task.
     let mut first_parts = vec![
         serde_json::json!({"text": format!(
-            "## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
+            "## Display\nResolution: {}x{} (screenshots resized to 256px wide, multiply positions by {:.1})\n\n## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
+            display_w, display_h,
+            display_w as f64 / 256.0,
             last_ax_tree.trim(), prompt
         )}),
     ];

@@ -46,6 +46,10 @@ Strategy: use screenshots to understand the game layout, then set up
 scan rules for reflexes. The scan runs locally at 60fps — you don't
 need to see every frame, just set the right scan position + threshold.
 
+IMPORTANT: Screenshots are resized to 256px wide. Multiply pixel
+positions from the screenshot by (actual_width/256) to get real screen
+coordinates. The display info is shown in the AX tree header.
+
 ## Vision (you can see the screen!)
 S screen region x y w h   set capture region (only see this area — saves tokens)
 S screen full             capture full screen
