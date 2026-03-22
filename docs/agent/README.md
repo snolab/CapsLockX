@@ -20,5 +20,6 @@ real-time: keyboard, mouse, gamepad sticks, MIDI, and more.
 | [INPUT.md](./INPUT.md) | Input injection APIs (keyboard, mouse, gamepad, MIDI) |
 | [GAMES.md](./GAMES.md) | Multi-channel agent swarm architecture for games |
 | [GAMES-INPUT-PATTERNS.md](./GAMES-INPUT-PATTERNS.md) | Input patterns for all game genres |
+| [DEMO-TARGETS.md](./DEMO-TARGETS.md) | Free real-time games for agent demo showcase |
 | [STREAMING-OUTPUT.md](./STREAMING-OUTPUT.md) | Async command queue design for streaming execution |
 | [ROADMAP.md](./ROADMAP.md) | Implementation phases and milestones |
