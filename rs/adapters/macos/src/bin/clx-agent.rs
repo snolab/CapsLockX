@@ -637,6 +637,8 @@ enum Cmd {
     MouseClick { x: f64, y: f64 },
     Wait(std::time::Duration),
     WaitFor { query: String, negate: bool, timeout_ms: u64 },
+    Query(String),           // ? screen, ? mouse, etc.
+    SenseControl(String),    // S screen region 0 0 800 300, etc.
     Comment(String),
     Unknown(String),
 }
@@ -763,9 +765,14 @@ fn parse_line(line: &str) -> Cmd {
 
             Cmd::WaitFor { query, negate, timeout_ms }
         }
+        "?" => Cmd::Query(rest.to_string()),
+        "S" => Cmd::SenseControl(rest.to_string()),
         _ => Cmd::Unknown(line.to_string()),
     }
 }
+
+// Screen capture region state (set by `S screen region x y w h`).
+static mut SCREEN_REGION: Option<(i32, i32, i32, i32)> = None;
 
 /// Execute a command. Returns the original command text as echo (for LLM history).
 fn execute_cmd(cmd: &Cmd, line: &str) -> String {
@@ -822,6 +829,59 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
                 }
 
                 std::thread::sleep(poll_interval);
+            }
+        }
+        Cmd::Query(q) => {
+            let q = q.trim();
+            if q == "screen" || q.starts_with("screen") {
+                // ? screen — one-shot capture, returns [IMG] marker
+                let region = if q.starts_with("screen region") {
+                    // ? screen region x y w h
+                    let nums: Vec<i32> = q["screen region".len()..].split_whitespace()
+                        .filter_map(|s| s.parse().ok()).collect();
+                    if nums.len() == 4 { Some((nums[0], nums[1], nums[2], nums[3])) }
+                    else { unsafe { SCREEN_REGION } }
+                } else {
+                    unsafe { SCREEN_REGION }
+                };
+                // Capture is handled by the loop — we just set a flag here.
+                // The echo triggers the loop to attach a screenshot to the next feedback.
+                format!("[CAPTURE] region={:?}", region)
+            } else if q == "mouse" {
+                // TODO: get mouse position
+                "[QUERY] mouse position not implemented yet".to_string()
+            } else if q == "app" {
+                let tree = get_frontmost_ax_tree();
+                let first_line = tree.lines().next().unwrap_or("unknown");
+                format!("[QUERY] {}", first_line)
+            } else {
+                format!("[QUERY] unknown: {}", q)
+            }
+        }
+        Cmd::SenseControl(s) => {
+            let parts: Vec<&str> = s.split_whitespace().collect();
+            if parts.first() == Some(&"screen") {
+                if parts.get(1) == Some(&"region") {
+                    // S screen region x y w h
+                    let nums: Vec<i32> = parts[2..].iter()
+                        .filter_map(|s| s.parse().ok()).collect();
+                    if nums.len() == 4 {
+                        unsafe { SCREEN_REGION = Some((nums[0], nums[1], nums[2], nums[3])); }
+                        format!("[OK S] screen region set to {},{} {}x{}", nums[0], nums[1], nums[2], nums[3])
+                    } else {
+                        "[ERR S] usage: S screen region x y w h".to_string()
+                    }
+                } else if parts.get(1) == Some(&"off") {
+                    unsafe { SCREEN_REGION = None; }
+                    "[OK S] screen capture off".to_string()
+                } else if parts.get(1) == Some(&"full") {
+                    unsafe { SCREEN_REGION = None; } // None = full screen
+                    "[OK S] screen capture full".to_string()
+                } else {
+                    format!("[OK S] screen: {}", s)
+                }
+            } else {
+                format!("[OK S] {}", s)
             }
         }
         Cmd::Comment(_) => String::new(),
@@ -919,27 +979,36 @@ fn ax_tree_diff(old: &str, new: &str) -> String {
 }
 
 /// Capture a screenshot as JPEG base64 string.
-/// Uses macOS `screencapture` CLI for simplicity and reliability.
-fn capture_screenshot_base64() -> Option<String> {
+/// `region`: optional (x, y, w, h) to capture only a portion.
+fn capture_screenshot_base64_region(region: Option<(i32, i32, i32, i32)>) -> Option<String> {
     let tmp = "/tmp/clx-agent-screenshot.jpg";
+    let mut args = vec!["-x".to_string(), "-t".to_string(), "jpg".to_string(), "-o".to_string()];
+    if let Some((x, y, w, h)) = region {
+        args.push("-R".to_string());
+        args.push(format!("{},{},{},{}", x, y, w, h));
+    }
+    args.push(tmp.to_string());
+
     let status = std::process::Command::new("screencapture")
-        .args(["-x", "-t", "jpg", "-o", tmp]) // -x = no sound, -o = no shadow
+        .args(&args)
         .status()
         .ok()?;
     if !status.success() { return None; }
 
-    // Resize to 512px wide for token efficiency (sips is built into macOS).
+    // Resize to max 512px wide for token efficiency.
     let _ = std::process::Command::new("sips")
         .args(["--resampleWidth", "512", tmp, "--out", tmp])
         .output();
 
     let data = std::fs::read(tmp).ok()?;
     let _ = std::fs::remove_file(tmp);
+    Some(base64_encode(&data))
+}
 
-    use std::io::Read;
-    // Base64 encode
-    let b64 = base64_encode(&data);
-    Some(b64)
+/// Full screen capture (convenience wrapper).
+/// Full screen capture (convenience wrapper).
+fn capture_screenshot_base64() -> Option<String> {
+    capture_screenshot_base64_region(None)
 }
 
 fn base64_encode(data: &[u8]) -> String {
@@ -982,7 +1051,7 @@ fn run_agent_loop(prompt: &str) {
 
     // Capture initial screenshot.
     tlog("capturing screenshot...");
-    let mut last_screenshot = capture_screenshot_base64();
+    let mut last_screenshot = capture_screenshot_base64_region(unsafe { SCREEN_REGION });
     tlog(&format!("screenshot: {} bytes base64", last_screenshot.as_ref().map(|s| s.len()).unwrap_or(0)));
 
     let system_prompt = load_system_prompt();
@@ -1078,7 +1147,7 @@ fn run_agent_loop(prompt: &str) {
         tlog("re-reading AX tree + screenshot...");
         let new_ax_tree = get_frontmost_ax_tree();
         let diff = ax_tree_diff(&last_ax_tree, &new_ax_tree);
-        let new_screenshot = capture_screenshot_base64();
+        let new_screenshot = capture_screenshot_base64_region(unsafe { SCREEN_REGION });
 
         // Build feedback message with screenshot.
         let feedback_text = if diff.is_empty() {
