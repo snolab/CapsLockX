@@ -278,6 +278,17 @@ unsafe fn read_ax_tree(elem: AXUIElementRef, depth: usize, out: &mut String, max
 }
 
 fn get_frontmost_ax_tree() -> String {
+    // Try native AX API first (deeper tree, more detail).
+    // Falls back to osascript if native fails (e.g. permission issue).
+    let native = get_frontmost_ax_tree_inner();
+    if !native.is_empty() && !native.starts_with("[AX] ERROR") {
+        return native;
+    }
+    eprintln!("[clx-agent] native AX failed, falling back to osascript");
+    get_frontmost_ax_tree_osascript()
+}
+
+fn get_frontmost_ax_tree_osascript() -> String {
     // Use osascript (System Events) to read UI — never calls AX APIs directly.
     // Direct AX calls hang in kernel (UE) when Accessibility permission is
     // missing or revoked after binary rebuild. osascript is safe because
@@ -682,8 +693,9 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
 
 // ── System Prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT: &str = r#"You are CLX Agent. You control the computer by outputting CLX commands.
+const SYSTEM_PROMPT: &str = r#"You are CLX Agent on macOS. You control the computer by outputting CLX commands.
 Commands execute IMMEDIATELY as you stream them. Each line runs instantly.
+This is macOS — use Cmd (w-) for shortcuts, not Ctrl (c-).
 
 ## Commands
 k a          tap key 'a'
@@ -694,8 +706,11 @@ k tab        tap Tab
 k space      tap Space
 k bksp       tap Backspace
 k c-c        Ctrl+C (c=ctrl, s=shift, a=alt, w=cmd)
-k c-a        Ctrl+A (select all)
-k w-space    Cmd+Space
+k w-c        Cmd+C (copy on macOS)
+k w-v        Cmd+V (paste on macOS)
+k w-a        Cmd+A (select all on macOS)
+k w-p        Cmd+P (quick open in VSCode on macOS)
+k w-space    Cmd+Space (Spotlight)
 k "text"     type string
 m 400 300    move mouse to (400,300)
 m 400 300 c  move to (400,300) and click
