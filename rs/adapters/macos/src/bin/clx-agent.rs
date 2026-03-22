@@ -982,30 +982,41 @@ fn ax_tree_diff(old: &str, new: &str) -> String {
 /// `region`: optional (x, y, w, h) to capture only a portion.
 fn capture_screenshot_base64_region(region: Option<(i32, i32, i32, i32)>) -> Option<String> {
     let tmp = "/tmp/clx-agent-screenshot.jpg";
-    let mut args = vec!["-x".to_string(), "-t".to_string(), "jpg".to_string(), "-o".to_string()];
-    if let Some((x, y, w, h)) = region {
-        args.push("-R".to_string());
-        args.push(format!("{},{},{},{}", x, y, w, h));
-    }
-    args.push(tmp.to_string());
+    // -R x,y,w,h must be a single arg with comma-separated values.
+    // -o suppresses shadow — but skip it, it causes issues on some macOS versions.
+    let status = if let Some((x, y, w, h)) = region {
+        std::process::Command::new("screencapture")
+            .args(["-x", "-t", "jpg", "-R", &format!("{},{},{},{}", x, y, w, h), tmp])
+            .status()
+    } else {
+        std::process::Command::new("screencapture")
+            .args(["-x", "-t", "jpg", tmp])
+            .status()
+    };
 
-    let status = std::process::Command::new("screencapture")
-        .args(&args)
-        .status()
-        .ok()?;
-    if !status.success() { return None; }
+    match status {
+        Ok(s) if s.success() => {}
+        Ok(_) if region.is_some() => {
+            // Region capture failed — fall back to full screen.
+            tlog("region capture failed, falling back to full screen");
+            let _ = std::process::Command::new("screencapture")
+                .args(["-x", "-t", "jpg", tmp]).status();
+        }
+        _ => { tlog("screencapture failed"); return None; }
+    }
 
     // Resize to max 512px wide for token efficiency.
     let _ = std::process::Command::new("sips")
         .args(["--resampleWidth", "512", tmp, "--out", tmp])
-        .output();
+        .stderr(std::process::Stdio::null()).output();
 
     let data = std::fs::read(tmp).ok()?;
     let _ = std::fs::remove_file(tmp);
+    if data.is_empty() { return None; }
+    tlog(&format!("screenshot: {} bytes", data.len()));
     Some(base64_encode(&data))
 }
 
-/// Full screen capture (convenience wrapper).
 /// Full screen capture (convenience wrapper).
 fn capture_screenshot_base64() -> Option<String> {
     capture_screenshot_base64_region(None)
