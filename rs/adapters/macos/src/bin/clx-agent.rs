@@ -642,11 +642,13 @@ w 1s         wait 1 second
 
 ## Rules
 1. Output ONLY CLX commands. No explanations, no prose, no markdown.
-2. After clicking, add: w 200ms (wait for UI response).
+2. After your commands execute, you will see what changed on screen.
 3. Use @x,y positions from the accessibility tree to click elements.
 4. Keep commands minimal — fewer lines = faster execution.
-5. You will see your executed commands echoed back. Errors show as: # ERR: ...
-6. After key actions, you may see [AX] updates showing new focus/state.
+5. Errors show as: # ERR: ...
+6. If the screen didn't change, try a different approach.
+7. Output nothing (empty response) when the task is complete.
+8. Add w 200ms after clicks to let UI respond before your next action.
 "#;
 
 // ── LLM Loop ─────────────────────────────────────────────────────────────────
@@ -678,6 +680,34 @@ fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
     Some(capslockx_core::llm_client::LlmConfig::from_key_and_model(&api_key, &model))
 }
 
+/// Compute a compact diff between two AX trees.
+/// Returns empty string if no changes.
+fn ax_tree_diff(old: &str, new: &str) -> String {
+    if old.trim() == new.trim() { return String::new(); }
+
+    let old_lines: std::collections::HashSet<&str> = old.lines().collect();
+    let new_lines: std::collections::HashSet<&str> = new.lines().collect();
+
+    let mut diff = String::new();
+    // Removed lines
+    for line in old.lines() {
+        if !new_lines.contains(line) && !line.trim().is_empty() {
+            diff.push_str("- ");
+            diff.push_str(line.trim());
+            diff.push('\n');
+        }
+    }
+    // Added lines
+    for line in new.lines() {
+        if !old_lines.contains(line) && !line.trim().is_empty() {
+            diff.push_str("+ ");
+            diff.push_str(line.trim());
+            diff.push('\n');
+        }
+    }
+    diff
+}
+
 fn run_agent_loop(prompt: &str) {
     use capslockx_core::llm_client::{stream_chat, Message};
 
@@ -692,76 +722,117 @@ fn run_agent_loop(prompt: &str) {
 
     eprintln!("[clx-agent] LLM: {:?} model={}", config.provider, config.model);
 
-    // Read AX tree of the frontmost app.
+    // Read initial AX tree.
     eprintln!("[clx-agent] reading accessibility tree...");
-    let ax_tree = get_frontmost_ax_tree();
-    eprintln!("{}", ax_tree);
+    let mut last_ax_tree = get_frontmost_ax_tree();
+    eprintln!("{}", last_ax_tree);
 
-    // Build messages.
     let mut messages = vec![
         Message { role: "system".into(), content: SYSTEM_PROMPT.to_string() },
         Message {
             role: "user".into(),
             content: format!(
                 "## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
-                ax_tree.trim(), prompt
+                last_ax_tree.trim(), prompt
             ),
         },
     ];
 
-    // Accumulate the LLM's full response + our echo history for multi-turn.
-    let mut llm_output = String::new();
-    let mut echo_history = String::new();
-    let mut line_buf = String::new();
+    // Multi-turn loop: LLM acts → we observe changes → LLM continues.
+    const MAX_TURNS: usize = 10;
+    for turn in 0..MAX_TURNS {
+        eprintln!("[clx-agent] turn {}/{} — streaming from LLM...\n", turn + 1, MAX_TURNS);
 
-    eprintln!("[clx-agent] streaming from LLM...\n");
+        let mut llm_output = String::new();
+        let mut echo_lines: Vec<String> = Vec::new();
+        let mut line_buf = String::new();
+        let mut had_action = false;
 
-    let result = stream_chat(&config, &messages, &mut |token| {
-        // Accumulate tokens into lines, execute each complete line.
-        llm_output.push_str(token);
-        line_buf.push_str(token);
+        let result = stream_chat(&config, &messages, &mut |token| {
+            llm_output.push_str(token);
+            line_buf.push_str(token);
 
-        // Process complete lines.
-        while let Some(nl_pos) = line_buf.find('\n') {
-            let line = line_buf[..nl_pos].to_string();
-            line_buf.drain(..=nl_pos);
+            while let Some(nl_pos) = line_buf.find('\n') {
+                let line = line_buf[..nl_pos].to_string();
+                line_buf.drain(..=nl_pos);
 
-            let trimmed = line.trim();
-            if trimmed.is_empty() { continue; }
+                let trimmed = line.trim();
+                if trimmed.is_empty() { continue; }
 
-            // Parse and execute.
-            let cmd = parse_line(trimmed);
-            let echo = execute_cmd(&cmd, trimmed);
+                let cmd = parse_line(trimmed);
+                let echo = execute_cmd(&cmd, trimmed);
 
+                if !echo.is_empty() {
+                    eprintln!("  > {}", echo);
+                    echo_lines.push(echo);
+                    if !matches!(cmd, Cmd::Comment(_) | Cmd::Wait(_)) {
+                        had_action = true;
+                    }
+                }
+            }
+        });
+
+        // Execute remaining partial line.
+        let remaining = line_buf.trim().to_string();
+        if !remaining.is_empty() {
+            let cmd = parse_line(&remaining);
+            let echo = execute_cmd(&cmd, &remaining);
             if !echo.is_empty() {
                 eprintln!("  > {}", echo);
-                echo_history.push_str(&echo);
-                echo_history.push('\n');
+                echo_lines.push(echo);
+                if !matches!(cmd, Cmd::Comment(_) | Cmd::Wait(_)) {
+                    had_action = true;
+                }
             }
         }
-    });
 
-    // Execute any remaining partial line.
-    let remaining = line_buf.trim().to_string();
-    if !remaining.is_empty() {
-        let cmd = parse_line(&remaining);
-        let echo = execute_cmd(&cmd, &remaining);
-        if !echo.is_empty() {
-            eprintln!("  > {}", echo);
-            echo_history.push_str(&echo);
-            echo_history.push('\n');
+        if let Err(e) = result {
+            eprintln!("\n[clx-agent] LLM error: {}", e);
+            break;
         }
+
+        // Add LLM's response to conversation history.
+        if !llm_output.trim().is_empty() {
+            messages.push(Message { role: "assistant".into(), content: llm_output.clone() });
+        }
+
+        // If no action was taken, LLM is done (or confused).
+        if !had_action {
+            eprintln!("[clx-agent] no actions in this turn — done.");
+            break;
+        }
+
+        // Wait for UI to settle after actions.
+        std::thread::sleep(std::time::Duration::from_millis(500));
+
+        // Re-read AX tree and compute diff.
+        let new_ax_tree = get_frontmost_ax_tree();
+        let diff = ax_tree_diff(&last_ax_tree, &new_ax_tree);
+
+        if diff.is_empty() {
+            // No visible change — tell the LLM.
+            let feedback = format!(
+                "## Result\nCommands executed:\n{}\n\nScreen unchanged — the actions may not have had visible effect. The app might need different actions, or you may need to wait longer. Try a different approach or confirm the task is done.",
+                echo_lines.join("\n")
+            );
+            eprintln!("[clx-agent] AX tree unchanged after actions");
+            eprintln!("{}", feedback);
+            messages.push(Message { role: "user".into(), content: feedback });
+        } else {
+            // Show the diff to the LLM so it sees what changed.
+            let feedback = format!(
+                "## Result\nCommands executed:\n{}\n\n## Screen Changes\n```\n{}\n```\n\n## Current Screen\n```\n{}\n```\n\nContinue with the task, or output nothing if done.",
+                echo_lines.join("\n"), diff.trim(), new_ax_tree.trim()
+            );
+            eprintln!("[clx-agent] AX tree changed:");
+            eprintln!("{}", diff);
+            messages.push(Message { role: "user".into(), content: feedback });
+        }
+
+        last_ax_tree = new_ax_tree;
     }
 
-    match result {
-        Ok(_) => eprintln!("\n[clx-agent] done."),
-        Err(e) => eprintln!("\n[clx-agent] LLM error: {}", e),
-    }
-
-    // If there were errors, we could do a follow-up turn here.
-    if echo_history.contains("# ERR:") {
-        eprintln!("[clx-agent] some commands had errors — a follow-up turn could retry.");
-    }
+    eprintln!("\n[clx-agent] done.");
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────────
