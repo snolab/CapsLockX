@@ -724,10 +724,26 @@ fn count_dark_pixels(pixels: &[(u8, u8, u8)], brightness_max: u8) -> u32 {
         .count() as u32
 }
 
+/// Test if screen capture works (Screen Recording permission).
+fn test_screen_capture() -> bool {
+    let pixels = read_pixels(0, 0, 2, 2);
+    if pixels.is_empty() {
+        eprintln!("[scan] WARNING: screen capture returned 0 pixels.");
+        eprintln!("[scan] Grant Screen Recording permission: System Settings → Privacy → Screen Recording → add clx");
+        false
+    } else {
+        true
+    }
+}
+
 /// Start the scan reflex thread (runs at ~60fps).
 fn start_scan_thread() {
     if SCAN_RUNNING.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return; // already running
+    }
+    if !test_screen_capture() {
+        SCAN_RUNNING.store(false, std::sync::atomic::Ordering::Relaxed);
+        return;
     }
     let rules = Arc::clone(&SCAN_RULES);
     std::thread::Builder::new()
