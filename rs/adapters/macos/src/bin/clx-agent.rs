@@ -15,18 +15,33 @@ use std::io::{self, Write, BufRead};
 
 static mut SESSION_START: Option<std::time::Instant> = None;
 static mut LOG_FILE: Option<std::sync::Mutex<std::fs::File>> = None;
+static mut LIVE_FILE: Option<std::sync::Mutex<std::fs::File>> = None;
+
+/// Get the project root directory (where clx binary lives, or CWD).
+fn project_root() -> std::path::PathBuf {
+    std::env::current_exe().ok()
+        .and_then(|e| e.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| ".".into()))
+}
+
+/// Path to the live overlay file — the running clx daemon watches this.
+fn live_log_path() -> std::path::PathBuf {
+    project_root().join("tmp").join("agent-live.log")
+}
 
 fn init_logging() {
     unsafe {
         SESSION_START = Some(std::time::Instant::now());
-        let log_dir = dirs::config_dir()
-            .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("CapsLockX")
-            .join("logs");
-        let _ = std::fs::create_dir_all(&log_dir);
-        let log_path = log_dir.join("agent.log");
+        let tmp_dir = project_root().join("tmp");
+        let _ = std::fs::create_dir_all(&tmp_dir);
+        let log_path = tmp_dir.join("agent.log");
         if let Ok(f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
             LOG_FILE = Some(std::sync::Mutex::new(f));
+        }
+        // Live file: truncated each session, watched by main clx for overlay.
+        let live_path = tmp_dir.join("agent-live.log");
+        if let Ok(f) = std::fs::OpenOptions::new().create(true).write(true).truncate(true).open(&live_path) {
+            LIVE_FILE = Some(std::sync::Mutex::new(f));
         }
     }
 }
@@ -39,7 +54,7 @@ fn elapsed_ms() -> u64 {
     }
 }
 
-/// Log with timestamp to both stderr and log file.
+/// Log with timestamp to stderr, log file, and live overlay file.
 fn tlog(msg: &str) {
     let ts = elapsed_ms();
     let line = format!("[{:>8}ms] {}", ts, msg);
@@ -48,6 +63,12 @@ fn tlog(msg: &str) {
         if let Some(ref f) = LOG_FILE {
             if let Ok(mut f) = f.lock() {
                 let _ = writeln!(f, "{}", line);
+            }
+        }
+        if let Some(ref f) = LIVE_FILE {
+            if let Ok(mut f) = f.lock() {
+                let _ = writeln!(f, "{}", line);
+                let _ = f.flush();
             }
         }
     }
@@ -1184,8 +1205,13 @@ fn load_system_prompt() -> String {
 // ── LLM Loop ─────────────────────────────────────────────────────────────────
 
 fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
-    // Try config file first.
-    let cfg_path = dirs::config_dir()?.join("CapsLockX").join("config.json");
+    // Try local config first, then system config.
+    let local_cfg = project_root().join("config.json");
+    let cfg_path = if local_cfg.exists() {
+        local_cfg
+    } else {
+        dirs::config_dir()?.join("CapsLockX").join("config.json")
+    };
     let data = std::fs::read_to_string(&cfg_path).ok()?;
     let v: serde_json::Value = serde_json::from_str(&data).ok()?;
 
@@ -1241,7 +1267,10 @@ fn ax_tree_diff(old: &str, new: &str) -> String {
 /// Capture a screenshot as JPEG base64 string.
 /// `region`: optional (x, y, w, h) to capture only a portion.
 fn capture_screenshot_base64_region(region: Option<(i32, i32, i32, i32)>) -> Option<String> {
-    let tmp = "/tmp/clx-agent-screenshot.jpg";
+    let tmp_dir = project_root().join("tmp");
+    let _ = std::fs::create_dir_all(&tmp_dir);
+    let tmp_path = tmp_dir.join("agent-screenshot.jpg");
+    let tmp = tmp_path.to_str().unwrap_or("tmp/agent-screenshot.jpg");
     // -R x,y,w,h must be a single arg with comma-separated values.
     // -o suppresses shadow — but skip it, it causes issues on some macOS versions.
     let status = if let Some((x, y, w, h)) = region {

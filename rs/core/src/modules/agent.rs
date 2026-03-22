@@ -19,13 +19,73 @@ pub struct AgentModule {
     child: Mutex<Option<std::process::Child>>,
 }
 
+/// Path to the live overlay file (shared with clx-agent).
+/// Uses ./tmp/ relative to the binary location.
+fn live_log_path() -> std::path::PathBuf {
+    std::env::current_exe().ok()
+        .and_then(|e| e.parent().map(|p| p.join("tmp").join("agent-live.log")))
+        .unwrap_or_else(|| std::path::PathBuf::from("tmp/agent-live.log"))
+}
+
 impl AgentModule {
     pub fn new(platform: Arc<dyn Platform>) -> Self {
-        Self {
+        let s = Self {
             platform,
             running: AtomicBool::new(false),
             child: Mutex::new(None),
-        }
+        };
+        // Start file watcher for live overlay — shows agent log even
+        // when agent is launched from CLI, not just CLX+M.
+        s.start_live_watcher();
+        s
+    }
+
+    /// Watch agent-live.log and show changes in the brainstorm overlay.
+    fn start_live_watcher(&self) {
+        let platform = Arc::clone(&self.platform);
+        std::thread::Builder::new()
+            .name("clx-agent-live-watcher".into())
+            .spawn(move || {
+                let path = live_log_path();
+                let mut last_size: u64 = 0;
+                let mut last_content = String::new();
+
+                loop {
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+
+                    let meta = match std::fs::metadata(&path) {
+                        Ok(m) => m,
+                        Err(_) => { last_size = 0; continue; }
+                    };
+                    let size = meta.len();
+
+                    // File was truncated (new session) or grown.
+                    if size != last_size {
+                        if size < last_size {
+                            // New session — file was truncated.
+                            last_content.clear();
+                        }
+                        last_size = size;
+
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if content != last_content && !content.trim().is_empty() {
+                                // Keep last ~2000 chars for overlay.
+                                let display = if content.len() > 2000 {
+                                    format!("...{}", &content[content.len() - 1500..])
+                                } else {
+                                    content.clone()
+                                };
+                                platform.show_brainstorm_overlay(&display);
+                                last_content = content;
+                            }
+                        }
+                    }
+
+                    // If file hasn't changed for 10s and content is non-empty,
+                    // the agent likely finished. Keep showing until dismissed.
+                }
+            })
+            .ok();
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {

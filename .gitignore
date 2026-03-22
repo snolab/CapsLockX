@@ -5,6 +5,9 @@
 # rust build output
 rs/target/
 
+# executable stub, can be replaced by built in each platform
+/clx*
+
 # generated
 *.nupkg
 node_modules
@@ -56,3 +59,4 @@ bun.lockb
 # Playwright
 test-results/
 .playwright-mcp/
+tmp/
