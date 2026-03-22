@@ -4,5 +4,5 @@ set -e
 cd "$(dirname "$0")/rs"
 cargo build -p capslockx-macos --release
 cp target/release/capslockx ../clx
-codesign -s - --force ../clx
+codesign -s - --force --identifier "com.snomiao.capslockx" ../clx
 echo "[build] done — ./clx is signed and ready"
