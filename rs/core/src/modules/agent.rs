@@ -93,16 +93,12 @@ impl AgentModule {
 
                 eprintln!("[CLX] agent: launching with prompt: {}", &prompt[..prompt.len().min(80)]);
 
-                // Find clx-agent binary next to the main binary.
-                let agent_bin = {
-                    let exe = std::env::current_exe().unwrap_or_default();
-                    let dir = exe.parent().unwrap_or(std::path::Path::new("."));
-                    let bin = dir.join("clx-agent");
-                    if bin.exists() { bin } else { std::path::PathBuf::from("clx-agent") }
-                };
+                // Spawn `clx agent --prompt "..."` (uses clx's own binary,
+                // inheriting its Accessibility permission).
+                let clx_bin = std::env::current_exe().unwrap_or_else(|_| "clx".into());
 
-                // Spawn clx-agent --prompt "..."
-                match std::process::Command::new(&agent_bin)
+                match std::process::Command::new(&clx_bin)
+                    .arg("agent")
                     .arg("--prompt")
                     .arg(&prompt)
                     .stderr(std::process::Stdio::inherit()) // show logs
@@ -126,8 +122,8 @@ impl AgentModule {
                         *child_ref.lock().unwrap() = None;
                     }
                     Err(e) => {
-                        eprintln!("[CLX] agent: failed to spawn clx-agent: {}", e);
-                        eprintln!("[CLX] agent: looked for binary at {:?}", agent_bin);
+                        eprintln!("[CLX] agent: failed to spawn clx agent: {}", e);
+                        eprintln!("[CLX] agent: binary: {:?}", clx_bin);
                     }
                 }
             })

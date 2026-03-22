@@ -1,11 +1,12 @@
-//! clx-agent — standalone LLM-driven computer control agent.
-//!
-//! Reads the accessibility tree + voice input, sends to LLM, streams
-//! CLX commands, parses and executes them, echoes results back.
-//!
-//! Usage: clx-agent [--prompt "do something"] [--model gemini-2.0-flash]
-//!
-//! Or launched by CapsLockX main process via CLX+M hotkey.
+// clx-agent — standalone LLM-driven computer control agent.
+//
+// Reads the accessibility tree + voice input, sends to LLM, streams
+// CLX commands, parses and executes them, echoes results back.
+//
+// Usage: clx-agent [--prompt "do something"] [--model gemini-2.0-flash]
+//        clx agent [--prompt "do something"]  (as clx subcommand)
+//
+// Or launched by CapsLockX main process via CLX+M hotkey.
 
 use std::ffi::c_void;
 use std::io::{self, Write, BufRead};
@@ -252,7 +253,33 @@ unsafe fn read_ax_tree(elem: AXUIElementRef, depth: usize, out: &mut String, max
     }
 }
 
+fn check_ax_permission() -> bool {
+    extern "C" {
+        fn AXIsProcessTrusted() -> bool;
+    }
+    unsafe { AXIsProcessTrusted() }
+}
+
 fn get_frontmost_ax_tree() -> String {
+    if !check_ax_permission() {
+        return "[AX] ERROR: Accessibility permission not granted.\n\
+                Grant permission in: System Settings → Privacy & Security → Accessibility\n\
+                Add this binary: clx-agent\n".to_string();
+    }
+
+    // Run AX tree reading with a timeout to prevent hanging.
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let tree = get_frontmost_ax_tree_inner();
+        let _ = tx.send(tree);
+    });
+    match rx.recv_timeout(std::time::Duration::from_secs(5)) {
+        Ok(tree) => tree,
+        Err(_) => "[AX] ERROR: Accessibility tree read timed out (5s).\n".to_string(),
+    }
+}
+
+fn get_frontmost_ax_tree_inner() -> String {
     unsafe {
         // Get frontmost app PID via NSWorkspace
         extern "C" {
@@ -663,10 +690,9 @@ fn run_agent_loop(prompt: &str) {
     }
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// ── Entry point ──────────────────────────────────────────────────────────────
 
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
+fn agent_main(args: &[String]) {
 
     // --tree: dump AX tree and exit.
     if args.iter().any(|a| a == "--tree") {
@@ -726,4 +752,9 @@ fn main() {
     }
 
     run_agent_loop(&prompt);
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    agent_main(&args);
 }

@@ -26,9 +26,43 @@ mod system_audio;
 mod voice_capture;
 #[cfg(target_os = "macos")]
 mod brainstorm_overlay;
+#[cfg(target_os = "macos")]
+mod agent_cmd;
 
 #[cfg(target_os = "macos")]
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    match args.get(1).map(|s| s.as_str()) {
+        Some("agent") => {
+            agent_cmd::main(&args[2..]);
+            return;
+        }
+        Some("--help") | Some("-h") | Some("help") => {
+            println!("CapsLockX — keyboard productivity tool + LLM agent");
+            println!();
+            println!("USAGE:");
+            println!("  clx                         Start CapsLockX (keyboard hook + tray icon)");
+            println!("  clx agent --tree            Dump accessibility tree of frontmost app");
+            println!("  clx agent --exec            Execute CLX commands from stdin");
+            println!("  clx agent --prompt \"task\"    Run LLM agent to perform a task");
+            println!("  clx agent \"task\"             Shorthand for --prompt");
+            println!("  clx --help                  Show this help");
+            println!();
+            println!("CLX AGENT COMMANDS:");
+            println!("  k a          tap key 'a'       m 400 300    move mouse");
+            println!("  k c-c        Ctrl+C            m 400 300 c  move + click");
+            println!("  k \"text\"     type string       w 200ms      wait 200ms");
+            println!();
+            println!("HOTKEYS (while CapsLock or Space held):");
+            println!("  HJKL         cursor movement    WASD        mouse movement");
+            println!("  B            brainstorm (AI)    M           agent (AI control)");
+            println!("  V            voice input        1-9         virtual desktops");
+            return;
+        }
+        _ => {}
+    }
+
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) to exit");
