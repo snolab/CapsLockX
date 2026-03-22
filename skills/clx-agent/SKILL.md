@@ -24,6 +24,28 @@ w 1s         wait 1 second
 wf "text" 3s wait until "text" appears in AX tree (polls every 200ms, 3s timeout)
 wf !"text" 5s wait until "text" disappears from AX tree
 
+## Reflex Scan (local, 60fps, no LLM needed)
+scan ID x y w h dark>N { k keyname }
+  Set up a pixel-scan reflex rule. Runs at 60fps locally.
+  Scans a region for dark pixels. If count > N, presses key.
+  Reaction time: ~16ms (superhuman).
+
+  scan jump 120 350 200 4 dark>20 { k space }
+    "Scan 200x4 strip at (120,350). If >20 dark pixels, press Space."
+
+  scan duck 120 300 200 4 dark>15 { k down }
+    "Duck when obstacle is high."
+
+  Options: dark>N (threshold), bright<M (darkness level, default 80),
+           cooldown300 (ms between triggers, default 300)
+
+scan_stop ID     stop a specific rule
+scan_stop all    stop all rules
+
+Strategy: use screenshots to understand the game layout, then set up
+scan rules for reflexes. The scan runs locally at 60fps — you don't
+need to see every frame, just set the right scan position + threshold.
+
 ## Vision (you can see the screen!)
 S screen region x y w h   set capture region (only see this area — saves tokens)
 S screen full             capture full screen

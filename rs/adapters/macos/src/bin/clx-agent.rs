@@ -118,7 +118,34 @@ extern "C" {
     fn CGEventSetFlags(event: *mut c_void, flags: u64);
     fn CGEventSetIntegerValueField(event: *mut c_void, field: u32, value: i64);
     fn CGEventKeyboardSetUnicodeString(event: *mut c_void, len: u32, chars: *const u16);
+    // Fast pixel capture — no file I/O, returns CGImage directly.
+    fn CGWindowListCreateImage(
+        bounds: CGRect, list_option: u32, window_id: u32, image_option: u32,
+    ) -> *mut c_void; // CGImageRef
+    fn CGImageGetWidth(image: *mut c_void) -> usize;
+    fn CGImageGetHeight(image: *mut c_void) -> usize;
+    fn CGImageGetBytesPerRow(image: *mut c_void) -> usize;
 }
+
+// CGBitmapContext for reading pixels from CGImage.
+extern "C" {
+    fn CGColorSpaceCreateDeviceRGB() -> *mut c_void;
+    fn CGColorSpaceRelease(cs: *mut c_void);
+    fn CGBitmapContextCreate(
+        data: *mut u8, width: usize, height: usize, bits_per_component: usize,
+        bytes_per_row: usize, color_space: *mut c_void, bitmap_info: u32,
+    ) -> *mut c_void;
+    fn CGContextDrawImage(ctx: *mut c_void, rect: CGRect, image: *mut c_void);
+    fn CGContextRelease(ctx: *mut c_void);
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+struct CGRect { origin: CGPoint, size: CGRectSize }
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+struct CGRectSize { width: f64, height: f64 }
 
 // ── Target process ───────────────────────────────────────────────────────────
 
@@ -593,6 +620,203 @@ fn type_text(text: &str) {
     }
 }
 
+// ── Pixel Scan Reflex Engine ──────────────────────────────────────────────────
+//
+// The LLM sets up scan rules; a local thread runs them at 60fps.
+// Reaction time: ~16ms (1 frame at 60fps). No LLM in the loop.
+//
+// Usage: scan x=120 y=350 w=200 h=4 dark>20 { k space }
+//   "Scan 200x4 pixels at (120,350). If >20 dark pixels, press Space."
+
+use std::sync::{Arc, Mutex as StdMutex};
+
+#[derive(Clone, Debug)]
+struct ScanRule {
+    x: i32, y: i32, w: i32, h: i32,
+    threshold: u32,         // number of "dark" pixels to trigger
+    brightness_max: u8,     // pixel brightness below this = "dark" (default 80)
+    action_keycode: u16,    // key to press when triggered
+    action_flags: u64,      // modifier flags
+    cooldown_ms: u64,       // min ms between triggers (default 300)
+    enabled: bool,
+    id: String,             // rule name for tell/kill
+}
+
+static SCAN_RULES: once_cell::sync::Lazy<Arc<StdMutex<Vec<ScanRule>>>> =
+    once_cell::sync::Lazy::new(|| Arc::new(StdMutex::new(Vec::new())));
+static SCAN_RUNNING: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Read pixels from a screen region. Returns Vec<(r,g,b)>.
+fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
+    unsafe {
+        let rect = CGRect {
+            origin: CGPoint { x: x as f64, y: y as f64 },
+            size: CGRectSize { width: w as f64, height: h as f64 },
+        };
+        // kCGWindowListOptionOnScreenOnly = 1, kCGNullWindowID = 0
+        // kCGWindowImageBoundsIgnoreFraming = 1
+        let image = CGWindowListCreateImage(rect, 1, 0, 1);
+        if image.is_null() { return Vec::new(); }
+
+        let iw = CGImageGetWidth(image);
+        let ih = CGImageGetHeight(image);
+        if iw == 0 || ih == 0 { CFRelease(image); return Vec::new(); }
+
+        let bpr = iw * 4; // 4 bytes per pixel (RGBA)
+        let mut buf = vec![0u8; bpr * ih];
+        let cs = CGColorSpaceCreateDeviceRGB();
+        // kCGImageAlphaPremultipliedLast = 1, kCGBitmapByteOrder32Big = (2 << 12)
+        let ctx = CGBitmapContextCreate(
+            buf.as_mut_ptr(), iw, ih, 8, bpr, cs, 1 | (2 << 12),
+        );
+        if !ctx.is_null() {
+            let draw_rect = CGRect {
+                origin: CGPoint { x: 0.0, y: 0.0 },
+                size: CGRectSize { width: iw as f64, height: ih as f64 },
+            };
+            CGContextDrawImage(ctx, draw_rect, image);
+            CGContextRelease(ctx);
+        }
+        CGColorSpaceRelease(cs);
+        CFRelease(image);
+
+        // Extract RGB from RGBA buffer.
+        let mut pixels = Vec::with_capacity(iw * ih);
+        for i in 0..(iw * ih) {
+            let off = i * 4;
+            if off + 2 < buf.len() {
+                pixels.push((buf[off], buf[off + 1], buf[off + 2]));
+            }
+        }
+        pixels
+    }
+}
+
+/// Count "dark" pixels in a region.
+fn count_dark_pixels(pixels: &[(u8, u8, u8)], brightness_max: u8) -> u32 {
+    pixels.iter()
+        .filter(|(r, g, b)| {
+            let brightness = (*r as u16 + *g as u16 + *b as u16) / 3;
+            brightness < brightness_max as u16
+        })
+        .count() as u32
+}
+
+/// Start the scan reflex thread (runs at ~60fps).
+fn start_scan_thread() {
+    if SCAN_RUNNING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return; // already running
+    }
+    let rules = Arc::clone(&SCAN_RULES);
+    std::thread::Builder::new()
+        .name("clx-scan-reflex".into())
+        .spawn(move || {
+            eprintln!("[scan] reflex thread started (60fps)");
+            let mut last_trigger: std::collections::HashMap<String, std::time::Instant> =
+                std::collections::HashMap::new();
+
+            loop {
+                if !SCAN_RUNNING.load(std::sync::atomic::Ordering::Relaxed) { break; }
+
+                let rules_snapshot = rules.lock().unwrap().clone();
+                if rules_snapshot.is_empty() {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    continue;
+                }
+
+                for rule in &rules_snapshot {
+                    if !rule.enabled { continue; }
+
+                    // Check cooldown.
+                    let now = std::time::Instant::now();
+                    if let Some(last) = last_trigger.get(&rule.id) {
+                        if now.duration_since(*last).as_millis() < rule.cooldown_ms as u128 {
+                            continue;
+                        }
+                    }
+
+                    // Read pixels and check threshold.
+                    let pixels = read_pixels(rule.x, rule.y, rule.w, rule.h);
+                    let dark = count_dark_pixels(&pixels, rule.brightness_max);
+
+                    if dark > rule.threshold {
+                        // TRIGGER! Press the key.
+                        if rule.action_flags != 0 {
+                            key_tap_with_flags(rule.action_keycode, rule.action_flags);
+                        } else {
+                            key_tap(rule.action_keycode);
+                        }
+                        last_trigger.insert(rule.id.clone(), now);
+                        eprintln!("[scan] triggered '{}': dark={} > threshold={}", rule.id, dark, rule.threshold);
+                    }
+                }
+
+                // ~60fps = 16ms per frame
+                std::thread::sleep(std::time::Duration::from_millis(16));
+            }
+            eprintln!("[scan] reflex thread stopped");
+        })
+        .ok();
+}
+
+/// Stop all scan rules.
+fn stop_scan_thread() {
+    SCAN_RUNNING.store(false, std::sync::atomic::Ordering::Relaxed);
+    SCAN_RULES.lock().unwrap().clear();
+}
+
+/// Parse a scan command: scan id x y w h dark>N [bright<M] [cooldown Cms] { k keyname }
+fn parse_scan_rule(args: &str) -> Option<ScanRule> {
+    // Format: scan jump 120 350 200 4 dark>20 cooldown 300 { k space }
+    let args = args.trim();
+
+    // Extract action block { k space }
+    let (params, action) = if let Some(brace_start) = args.find('{') {
+        let brace_end = args.rfind('}')?;
+        let action = args[brace_start + 1..brace_end].trim();
+        let params = args[..brace_start].trim();
+        (params, action)
+    } else {
+        return None;
+    };
+
+    let parts: Vec<&str> = params.split_whitespace().collect();
+    if parts.len() < 6 { return None; }
+
+    let id = parts[0].to_string();
+    let x: i32 = parts[1].parse().ok()?;
+    let y: i32 = parts[2].parse().ok()?;
+    let w: i32 = parts[3].parse().ok()?;
+    let h: i32 = parts[4].parse().ok()?;
+
+    let mut threshold: u32 = 20;
+    let mut brightness_max: u8 = 80;
+    let mut cooldown_ms: u64 = 300;
+
+    for part in &parts[5..] {
+        if let Some(val) = part.strip_prefix("dark>") {
+            threshold = val.parse().unwrap_or(20);
+        } else if let Some(val) = part.strip_prefix("bright<") {
+            brightness_max = val.parse().unwrap_or(80);
+        } else if let Some(val) = part.strip_prefix("cooldown") {
+            cooldown_ms = val.parse().unwrap_or(300);
+        }
+    }
+
+    // Parse action: "k space" or "k c-a" etc.
+    let action_parts: Vec<&str> = action.split_whitespace().collect();
+    if action_parts.len() >= 2 && action_parts[0] == "k" {
+        let (keycode, flags) = parse_mods_and_key(action_parts[1])?;
+        Some(ScanRule {
+            x, y, w, h, threshold, brightness_max, action_keycode: keycode,
+            action_flags: flags, cooldown_ms, enabled: true, id,
+        })
+    } else {
+        None
+    }
+}
+
 // ── Key name → macOS keycode mapping ─────────────────────────────────────────
 
 fn keyname_to_code(name: &str) -> Option<u16> {
@@ -637,6 +861,8 @@ enum Cmd {
     MouseClick { x: f64, y: f64 },
     Wait(std::time::Duration),
     WaitFor { query: String, negate: bool, timeout_ms: u64 },
+    Scan(String),            // scan jump 120 350 200 4 dark>20 { k space }
+    ScanStop(String),        // scan_stop jump | scan_stop all
     Query(String),           // ? screen, ? mouse, etc.
     SenseControl(String),    // S screen region 0 0 800 300, etc.
     Comment(String),
@@ -765,6 +991,8 @@ fn parse_line(line: &str) -> Cmd {
 
             Cmd::WaitFor { query, negate, timeout_ms }
         }
+        "scan" => Cmd::Scan(rest.to_string()),
+        "scan_stop" => Cmd::ScanStop(rest.to_string()),
         "?" => Cmd::Query(rest.to_string()),
         "S" => Cmd::SenseControl(rest.to_string()),
         _ => Cmd::Unknown(line.to_string()),
@@ -829,6 +1057,38 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
                 }
 
                 std::thread::sleep(poll_interval);
+            }
+        }
+        Cmd::Scan(args) => {
+            match parse_scan_rule(args) {
+                Some(rule) => {
+                    let id = rule.id.clone();
+                    let desc = format!("scan {} @{},{} {}x{} dark>{} → k 0x{:02X}",
+                        id, rule.x, rule.y, rule.w, rule.h, rule.threshold, rule.action_keycode);
+                    SCAN_RULES.lock().unwrap().push(rule);
+                    start_scan_thread();
+                    tlog(&format!("[OK scan] {}", desc));
+                    format!("[OK scan] {}", desc)
+                }
+                None => {
+                    format!("# ERR scan: bad format. Use: scan ID x y w h dark>N {{ k keyname }}")
+                }
+            }
+        }
+        Cmd::ScanStop(id) => {
+            let id = id.trim();
+            if id == "all" {
+                stop_scan_thread();
+                "[OK scan_stop] all rules cleared".to_string()
+            } else {
+                let mut rules = SCAN_RULES.lock().unwrap();
+                let before = rules.len();
+                rules.retain(|r| r.id != id);
+                if rules.len() < before {
+                    format!("[OK scan_stop] removed '{}'", id)
+                } else {
+                    format!("# ERR scan_stop: '{}' not found", id)
+                }
             }
         }
         Cmd::Query(q) => {
