@@ -1,0 +1,5 @@
+#!/bin/bash
+# CLX launcher — sets library path for onnxruntime
+DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.."
+export DYLD_LIBRARY_PATH="${DIR}/rs/target/release:${DYLD_LIBRARY_PATH}"
+exec "${DIR}/clx" "$@"
