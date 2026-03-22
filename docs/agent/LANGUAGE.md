@@ -102,6 +102,54 @@ w 16f                # wait 16 frames (at current fps)
 w 1s                 # wait 1 second
 ```
 
+### Wait For — `wf` (wait for condition, like Playwright)
+
+Blocks until a condition is met on the AX tree, with timeout.
+Returns the matched element info. Essential for reliable automation —
+never guess timing, always wait for the actual UI state.
+
+```
+wf "Quick Open" 3s           # wait until "Quick Open" appears in AX tree, 3s timeout
+wf btn "Save" 5s             # wait for a button labeled "Save"
+wf field "Search" 2s         # wait for a text field labeled "Search"
+wf window "Untitled" 5s      # wait for a window with title containing "Untitled"
+wf !loading 10s              # wait until "loading" disappears (! = not present)
+wf txt "Success" 5s          # wait for static text containing "Success"
+```
+
+**Behavior:**
+- Polls AX tree every 200ms until condition matches or timeout
+- On match: returns `[OK wf] matched: btn "Save" @400,300` (with position!)
+- On timeout: returns `[TIMEOUT wf] "Save" not found after 5s`
+- The matched position can be used in the next command
+
+**Examples in context:**
+```
+# Reliable file open (instead of guessing wait times)
+k w-p
+wf field "Search" 2s         # wait for Quick Open to actually appear
+k "test-cycle.rs"
+wf txt "test-cycle" 2s       # wait for search results
+k ret
+wf window "test-cycle" 3s    # wait for file to actually open
+
+# Click a button that might take time to appear
+m 400 300 c
+wf btn "Confirm" 5s          # wait for confirmation dialog
+m @last c                    # click the matched element (@last = last wf result)
+
+# Wait for page load
+k ret
+wf !txt "Loading" 10s        # wait until "Loading" text disappears
+wf txt "Dashboard" 5s        # then wait for Dashboard to appear
+```
+
+**Why this is better than `w 2000ms`:**
+- Precise: acts immediately when ready (not after fixed delay)
+- Reliable: doesn't fail if UI is slow (waits up to timeout)
+- Informative: tells the LLM exactly what appeared and where
+- Token-efficient: replaces multi-turn retry loops with one command
+
 ### Repeat — `r` (repeat)
 
 ```

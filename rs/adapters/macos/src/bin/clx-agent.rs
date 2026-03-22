@@ -508,6 +508,7 @@ enum Cmd {
     MouseMove { x: f64, y: f64 },
     MouseClick { x: f64, y: f64 },
     Wait(std::time::Duration),
+    WaitFor { query: String, negate: bool, timeout_ms: u64 },
     Comment(String),
     Unknown(String),
 }
@@ -580,6 +581,39 @@ fn parse_line(line: &str) -> Cmd {
             };
             Cmd::Wait(std::time::Duration::from_millis(ms))
         }
+        "wf" => {
+            // wf "Quick Open" 3s
+            // wf !loading 10s
+            // wf btn "Save" 5s
+            let negate = rest.starts_with('!');
+            let rest = if negate { &rest[1..] } else { rest };
+
+            // Parse timeout from last arg (e.g. "3s", "5000ms")
+            let parts: Vec<&str> = rest.rsplitn(2, ' ').collect();
+            let (query_part, timeout_str) = if parts.len() == 2 {
+                (parts[1].trim(), parts[0].trim())
+            } else {
+                (rest.trim(), "5s") // default 5s timeout
+            };
+
+            let timeout_ms = if timeout_str.ends_with("ms") {
+                timeout_str.trim_end_matches("ms").parse::<u64>().unwrap_or(5000)
+            } else if timeout_str.ends_with('s') {
+                timeout_str.trim_end_matches('s').parse::<f64>().unwrap_or(5.0) as u64 * 1000
+            } else {
+                // Last arg isn't a duration — it's part of the query.
+                5000
+            };
+
+            // If timeout parse consumed the last arg, use query_part; otherwise whole rest is query.
+            let query = if timeout_ms != 5000 || timeout_str.ends_with('s') || timeout_str.ends_with("ms") {
+                query_part.trim_matches('"').to_string()
+            } else {
+                rest.trim_matches('"').to_string()
+            };
+
+            Cmd::WaitFor { query, negate, timeout_ms }
+        }
         _ => Cmd::Unknown(line.to_string()),
     }
 }
@@ -613,6 +647,34 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
             std::thread::sleep(*d);
             format!("w {}ms", d.as_millis())
         }
+        Cmd::WaitFor { query, negate, timeout_ms } => {
+            let start = std::time::Instant::now();
+            let timeout = std::time::Duration::from_millis(*timeout_ms);
+            let poll_interval = std::time::Duration::from_millis(200);
+
+            loop {
+                let tree = get_frontmost_ax_tree();
+                let found = tree.to_lowercase().contains(&query.to_lowercase());
+                let condition_met = if *negate { !found } else { found };
+
+                if condition_met {
+                    // Find the matching line to extract position
+                    let matched_line = tree.lines()
+                        .find(|l| l.to_lowercase().contains(&query.to_lowercase()))
+                        .unwrap_or("")
+                        .trim();
+                    let elapsed = start.elapsed().as_millis();
+                    break format!("[OK wf] matched after {}ms: {}", elapsed, matched_line);
+                }
+
+                if start.elapsed() > timeout {
+                    let prefix = if *negate { "still present" } else { "not found" };
+                    break format!("[TIMEOUT wf] \"{}\" {} after {}ms", query, prefix, timeout_ms);
+                }
+
+                std::thread::sleep(poll_interval);
+            }
+        }
         Cmd::Comment(_) => String::new(),
         Cmd::Unknown(s) => format!("# ERR: {}", s),
     }
@@ -639,16 +701,19 @@ m 400 300    move mouse to (400,300)
 m 400 300 c  move to (400,300) and click
 w 200ms      wait 200 milliseconds
 w 1s         wait 1 second
+wf "text" 3s wait until "text" appears in UI (polls AX tree, 3s timeout)
+wf !"text" 5s wait until "text" disappears
 
 ## Rules
 1. Output ONLY CLX commands. No explanations, no prose, no markdown.
 2. After your commands execute, you will see what changed on screen.
 3. Use @x,y positions from the accessibility tree to click elements.
 4. Keep commands minimal — fewer lines = faster execution.
-5. Errors show as: # ERR: ...
+5. Errors show as: # ERR: ...  Timeouts show as: [TIMEOUT wf] ...
 6. If the screen didn't change, try a different approach.
 7. Output nothing (empty response) when the task is complete.
-8. Add w 200ms after clicks to let UI respond before your next action.
+8. Use wf instead of w when waiting for UI to change — it's more reliable.
+   Example: k w-p then wf "Search" 3s (instead of w 200ms).
 "#;
 
 // ── LLM Loop ─────────────────────────────────────────────────────────────────
