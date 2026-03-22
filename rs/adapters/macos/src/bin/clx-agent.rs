@@ -11,6 +11,48 @@
 use std::ffi::c_void;
 use std::io::{self, Write, BufRead};
 
+// ── Timestamp + File Logging ─────────────────────────────────────────────────
+
+static mut SESSION_START: Option<std::time::Instant> = None;
+static mut LOG_FILE: Option<std::sync::Mutex<std::fs::File>> = None;
+
+fn init_logging() {
+    unsafe {
+        SESSION_START = Some(std::time::Instant::now());
+        let log_dir = dirs::config_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("CapsLockX")
+            .join("logs");
+        let _ = std::fs::create_dir_all(&log_dir);
+        let log_path = log_dir.join("agent.log");
+        if let Ok(f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+            LOG_FILE = Some(std::sync::Mutex::new(f));
+        }
+    }
+}
+
+fn elapsed_ms() -> u64 {
+    unsafe {
+        SESSION_START.as_ref()
+            .map(|s| s.elapsed().as_millis() as u64)
+            .unwrap_or(0)
+    }
+}
+
+/// Log with timestamp to both stderr and log file.
+fn tlog(msg: &str) {
+    let ts = elapsed_ms();
+    let line = format!("[{:>8}ms] {}", ts, msg);
+    eprintln!("{}", line);
+    unsafe {
+        if let Some(ref f) = LOG_FILE {
+            if let Ok(mut f) = f.lock() {
+                let _ = writeln!(f, "{}", line);
+            }
+        }
+    }
+}
+
 // ── macOS FFI ────────────────────────────────────────────────────────────────
 
 type AXUIElementRef = *mut c_void;
@@ -544,6 +586,27 @@ fn parse_mods_and_key(s: &str) -> Option<(u16, u64)> {
     None
 }
 
+fn unescape_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('n') => out.push('\n'),
+                Some('t') => out.push('\t'),
+                Some('r') => out.push('\r'),
+                Some('\\') => out.push('\\'),
+                Some('"') => out.push('"'),
+                Some(other) => { out.push('\\'); out.push(other); }
+                None => out.push('\\'),
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 fn parse_line(line: &str) -> Cmd {
     let line = line.trim();
     if line.is_empty() || line.starts_with('#') {
@@ -556,7 +619,7 @@ fn parse_line(line: &str) -> Cmd {
     match verb {
         "k" => {
             if rest.starts_with('"') && rest.ends_with('"') && rest.len() >= 2 {
-                return Cmd::TypeString(rest[1..rest.len()-1].to_string());
+                return Cmd::TypeString(unescape_string(&rest[1..rest.len()-1]));
             }
             if let Some((keycode, flags)) = parse_mods_and_key(rest) {
                 Cmd::KeyTap { keycode, flags }
@@ -711,24 +774,25 @@ k w-v        Cmd+V (paste on macOS)
 k w-a        Cmd+A (select all on macOS)
 k w-p        Cmd+P (quick open in VSCode on macOS)
 k w-space    Cmd+Space (Spotlight)
-k "text"     type string
+k "text"     type string (supports \n \t \" \\)
 m 400 300    move mouse to (400,300)
 m 400 300 c  move to (400,300) and click
 w 200ms      wait 200 milliseconds
 w 1s         wait 1 second
-wf "text" 3s wait until "text" appears in UI (polls AX tree, 3s timeout)
-wf !"text" 5s wait until "text" disappears
+wf "text" 3s wait until "text" appears in AX tree (polls every 200ms, 3s timeout)
+wf !"text" 5s wait until "text" disappears from AX tree
 
 ## Rules
 1. Output ONLY CLX commands. No explanations, no prose, no markdown.
-2. After your commands execute, you will see what changed on screen.
+2. After commands execute, you see screen changes (AX tree diff).
 3. Use @x,y positions from the accessibility tree to click elements.
 4. Keep commands minimal — fewer lines = faster execution.
-5. Errors show as: # ERR: ...  Timeouts show as: [TIMEOUT wf] ...
-6. If the screen didn't change, try a different approach.
-7. Output nothing (empty response) when the task is complete.
-8. Use wf instead of w when waiting for UI to change — it's more reliable.
-   Example: k w-p then wf "Search" 3s (instead of w 200ms).
+5. Errors: # ERR: ...  Timeouts: [TIMEOUT wf] ...
+6. If screen unchanged, try a different approach.
+7. Output nothing (empty) when task is complete.
+8. Use w 200ms for short pauses between actions. wf for waiting on UI changes.
+9. For wf queries, use English text from the AX tree (even if system menus are in other languages).
+10. Common macOS shortcuts: w-p (Cmd+P), w-s (Cmd+S), w-o (Cmd+O), w-tab (Cmd+Tab).
 "#;
 
 // ── LLM Loop ─────────────────────────────────────────────────────────────────
@@ -791,21 +855,24 @@ fn ax_tree_diff(old: &str, new: &str) -> String {
 fn run_agent_loop(prompt: &str) {
     use capslockx_core::llm_client::{stream_chat, Message};
 
+    init_logging();
+    tlog(&format!("=== new session: {} ===", prompt));
+
     let config = match load_llm_config() {
         Some(c) => c,
         None => {
-            eprintln!("[clx-agent] ERROR: No LLM API key found.");
-            eprintln!("[clx-agent] Set GEMINI_API_KEY, OPENAI_API_KEY, or configure in CapsLockX prefs.");
+            tlog("ERROR: No LLM API key found.");
+            tlog("Set GEMINI_API_KEY, OPENAI_API_KEY, or configure in CapsLockX prefs.");
             return;
         }
     };
 
-    eprintln!("[clx-agent] LLM: {:?} model={}", config.provider, config.model);
+    tlog(&format!("LLM: {:?} model={}", config.provider, config.model));
 
     // Read initial AX tree.
-    eprintln!("[clx-agent] reading accessibility tree...");
+    tlog("reading accessibility tree...");
     let mut last_ax_tree = get_frontmost_ax_tree();
-    eprintln!("{}", last_ax_tree);
+    tlog(&format!("AX tree: {} lines, {} bytes", last_ax_tree.lines().count(), last_ax_tree.len()));
 
     let mut messages = vec![
         Message { role: "system".into(), content: SYSTEM_PROMPT.to_string() },
@@ -821,7 +888,7 @@ fn run_agent_loop(prompt: &str) {
     // Multi-turn loop: LLM acts → we observe changes → LLM continues.
     const MAX_TURNS: usize = 10;
     for turn in 0..MAX_TURNS {
-        eprintln!("[clx-agent] turn {}/{} — streaming from LLM...\n", turn + 1, MAX_TURNS);
+        tlog(&format!("turn {}/{} — streaming from LLM...", turn + 1, MAX_TURNS));
 
         let mut llm_output = String::new();
         let mut echo_lines: Vec<String> = Vec::new();
@@ -843,7 +910,7 @@ fn run_agent_loop(prompt: &str) {
                 let echo = execute_cmd(&cmd, trimmed);
 
                 if !echo.is_empty() {
-                    eprintln!("  > {}", echo);
+                    tlog(&format!("  > {}", echo));
                     echo_lines.push(echo);
                     if !matches!(cmd, Cmd::Comment(_) | Cmd::Wait(_)) {
                         had_action = true;
@@ -858,7 +925,7 @@ fn run_agent_loop(prompt: &str) {
             let cmd = parse_line(&remaining);
             let echo = execute_cmd(&cmd, &remaining);
             if !echo.is_empty() {
-                eprintln!("  > {}", echo);
+                tlog(&format!("  > {}", echo));
                 echo_lines.push(echo);
                 if !matches!(cmd, Cmd::Comment(_) | Cmd::Wait(_)) {
                     had_action = true;
@@ -867,7 +934,7 @@ fn run_agent_loop(prompt: &str) {
         }
 
         if let Err(e) = result {
-            eprintln!("\n[clx-agent] LLM error: {}", e);
+            tlog(&format!("LLM error: {}", e));
             break;
         }
 
@@ -878,41 +945,38 @@ fn run_agent_loop(prompt: &str) {
 
         // If no action was taken, LLM is done (or confused).
         if !had_action {
-            eprintln!("[clx-agent] no actions in this turn — done.");
+            tlog("no actions in this turn — done.");
             break;
         }
 
         // Wait for UI to settle after actions.
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Re-read AX tree and compute diff.
+        tlog("re-reading AX tree...");
         let new_ax_tree = get_frontmost_ax_tree();
         let diff = ax_tree_diff(&last_ax_tree, &new_ax_tree);
 
         if diff.is_empty() {
-            // No visible change — tell the LLM.
             let feedback = format!(
-                "## Result\nCommands executed:\n{}\n\nScreen unchanged — the actions may not have had visible effect. The app might need different actions, or you may need to wait longer. Try a different approach or confirm the task is done.",
+                "## Result\nCommands executed:\n{}\n\nScreen unchanged. Try a different approach or output nothing if task is done.",
                 echo_lines.join("\n")
             );
-            eprintln!("[clx-agent] AX tree unchanged after actions");
-            eprintln!("{}", feedback);
+            tlog("AX tree unchanged");
             messages.push(Message { role: "user".into(), content: feedback });
         } else {
-            // Show the diff to the LLM so it sees what changed.
+            tlog(&format!("AX tree changed:\n{}", diff.trim()));
             let feedback = format!(
-                "## Result\nCommands executed:\n{}\n\n## Screen Changes\n```\n{}\n```\n\n## Current Screen\n```\n{}\n```\n\nContinue with the task, or output nothing if done.",
+                "## Result\nCommands executed:\n{}\n\n## Screen Changes\n```\n{}\n```\n\n## Current Screen\n```\n{}\n```\n\nContinue or output nothing if done.",
                 echo_lines.join("\n"), diff.trim(), new_ax_tree.trim()
             );
-            eprintln!("[clx-agent] AX tree changed:");
-            eprintln!("{}", diff);
             messages.push(Message { role: "user".into(), content: feedback });
         }
 
         last_ax_tree = new_ax_tree;
     }
 
-    eprintln!("\n[clx-agent] done.");
+    tlog("done.");
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────────
