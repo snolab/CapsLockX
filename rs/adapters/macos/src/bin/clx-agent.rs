@@ -116,7 +116,82 @@ extern "C" {
         source: *mut c_void, keycode: u16, key_down: bool,
     ) -> *mut c_void;
     fn CGEventSetFlags(event: *mut c_void, flags: u64);
+    fn CGEventSetIntegerValueField(event: *mut c_void, field: u32, value: i64);
     fn CGEventKeyboardSetUnicodeString(event: *mut c_void, len: u32, chars: *const u16);
+}
+
+// ── Target process ───────────────────────────────────────────────────────────
+
+static mut TARGET_PID: i32 = 0; // 0 = global (all apps), >0 = specific process
+
+/// Post a CGEvent, targeting a specific process if --target was set.
+unsafe fn post_event(event: *mut c_void) {
+    if event.is_null() { return; }
+    let pid = TARGET_PID;
+    if pid > 0 {
+        // Field 40 = kCGEventTargetUnixProcessID — routes event to specific app.
+        // Zero overhead vs CGEventPost, no focus switch needed.
+        CGEventSetIntegerValueField(event, 40, pid as i64);
+    }
+    CGEventPost(0, event);
+}
+
+/// Find PID of a running app by name (case-insensitive substring match).
+fn find_pid_by_name(name: &str) -> Option<i32> {
+    unsafe {
+        extern "C" {
+            fn objc_getClass(name: *const std::ffi::c_char) -> *mut c_void;
+            fn sel_registerName(name: *const std::ffi::c_char) -> *mut c_void;
+            fn objc_msgSend(receiver: *mut c_void, sel: *mut c_void, ...) -> *mut c_void;
+        }
+
+        let ws_cls = objc_getClass(b"NSWorkspace\0".as_ptr() as *const _);
+        let f0: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let ws = f0(ws_cls, sel_registerName(b"sharedWorkspace\0".as_ptr() as *const _));
+        let apps = f0(ws, sel_registerName(b"runningApplications\0".as_ptr() as *const _));
+
+        let count = CFArrayGetCount(apps);
+        let name_lower = name.to_lowercase();
+
+        for i in 0..count {
+            let app = CFArrayGetValueAtIndex(apps, i);
+            if app.is_null() { continue; }
+
+            let ns_name = f0(app, sel_registerName(b"localizedName\0".as_ptr() as *const _));
+            if ns_name.is_null() { continue; }
+
+            if let Some(app_name) = cfstring_to_string(ns_name) {
+                if app_name.to_lowercase().contains(&name_lower) {
+                    let fi: extern "C" fn(*mut c_void, *mut c_void) -> i32 =
+                        std::mem::transmute(objc_msgSend as *const ());
+                    let pid = fi(app, sel_registerName(b"processIdentifier\0".as_ptr() as *const _));
+                    return Some(pid);
+                }
+            }
+        }
+        None
+    }
+}
+
+/// Activate (bring to front) the target app by PID.
+fn activate_pid(pid: i32) {
+    unsafe {
+        extern "C" {
+            fn objc_getClass(name: *const std::ffi::c_char) -> *mut c_void;
+            fn sel_registerName(name: *const std::ffi::c_char) -> *mut c_void;
+            fn objc_msgSend(receiver: *mut c_void, sel: *mut c_void, ...) -> *mut c_void;
+        }
+        let cls = objc_getClass(b"NSRunningApplication\0".as_ptr() as *const _);
+        let fi: extern "C" fn(*mut c_void, *mut c_void, i32) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let app = fi(cls, sel_registerName(b"runningApplicationWithProcessIdentifier:\0".as_ptr() as *const _), pid);
+        if !app.is_null() {
+            let fa: extern "C" fn(*mut c_void, *mut c_void, u64) -> bool =
+                std::mem::transmute(objc_msgSend as *const ());
+            fa(app, sel_registerName(b"activateWithOptions:\0".as_ptr() as *const _), 3); // NSApplicationActivateIgnoringOtherApps
+        }
+    }
 }
 
 #[repr(C)]
@@ -452,7 +527,7 @@ fn mouse_move_abs(x: f64, y: f64) {
         // kCGEventMouseMoved = 5, kCGMouseButtonLeft = 0
         let event = CGEventCreateMouseEvent(std::ptr::null_mut(), 5, point, 0);
         if !event.is_null() {
-            CGEventPost(0, event); // kCGHIDEventTap = 0
+            post_event(event);
             CFRelease(event);
         }
     }
@@ -464,9 +539,9 @@ fn mouse_click(x: f64, y: f64) {
         // kCGEventLeftMouseDown = 1, kCGEventLeftMouseUp = 2
         let down = CGEventCreateMouseEvent(std::ptr::null_mut(), 1, point, 0);
         let up = CGEventCreateMouseEvent(std::ptr::null_mut(), 2, point, 0);
-        if !down.is_null() { CGEventPost(0, down); CFRelease(down); }
+        if !down.is_null() { post_event(down); CFRelease(down); }
         std::thread::sleep(std::time::Duration::from_millis(30));
-        if !up.is_null() { CGEventPost(0, up); CFRelease(up); }
+        if !up.is_null() { post_event(up); CFRelease(up); }
     }
 }
 
@@ -474,8 +549,8 @@ fn key_tap(keycode: u16) {
     unsafe {
         let down = CGEventCreateKeyboardEvent(std::ptr::null_mut(), keycode, true);
         let up = CGEventCreateKeyboardEvent(std::ptr::null_mut(), keycode, false);
-        if !down.is_null() { CGEventPost(0, down); CFRelease(down); }
-        if !up.is_null() { CGEventPost(0, up); CFRelease(up); }
+        if !down.is_null() { post_event(down); CFRelease(down); }
+        if !up.is_null() { post_event(up); CFRelease(up); }
     }
 }
 
@@ -485,12 +560,12 @@ fn key_tap_with_flags(keycode: u16, flags: u64) {
         let up = CGEventCreateKeyboardEvent(std::ptr::null_mut(), keycode, false);
         if !down.is_null() {
             CGEventSetFlags(down, flags);
-            CGEventPost(0, down);
+            post_event(down);
             CFRelease(down);
         }
         if !up.is_null() {
             CGEventSetFlags(up, flags);
-            CGEventPost(0, up);
+            post_event(up);
             CFRelease(up);
         }
     }
@@ -505,12 +580,12 @@ fn type_text(text: &str) {
             let up = CGEventCreateKeyboardEvent(std::ptr::null_mut(), 0, false);
             if !down.is_null() {
                 CGEventKeyboardSetUnicodeString(down, utf16.len() as u32, utf16.as_ptr());
-                CGEventPost(0, down);
+                post_event(down);
                 CFRelease(down);
             }
             if !up.is_null() {
                 CGEventKeyboardSetUnicodeString(up, utf16.len() as u32, utf16.as_ptr());
-                CGEventPost(0, up);
+                post_event(up);
                 CFRelease(up);
             }
             std::thread::sleep(std::time::Duration::from_millis(5));
@@ -974,6 +1049,30 @@ fn run_agent_loop(prompt: &str) {
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 fn agent_main(args: &[String]) {
+
+    // --target "App Name": send events to a specific app (not global).
+    if let Some(idx) = args.iter().position(|a| a == "--target") {
+        if let Some(target_name) = args.get(idx + 1) {
+            match find_pid_by_name(target_name) {
+                Some(pid) => {
+                    unsafe { TARGET_PID = pid; }
+                    eprintln!("[clx-agent] targeting: {} (pid={})", target_name, pid);
+                    // Activate the target app so it receives events.
+                    activate_pid(pid);
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+                }
+                None => {
+                    eprintln!("[clx-agent] ERROR: app '{}' not found. Running apps:", target_name);
+                    // List running apps for debugging.
+                    let script = r#"tell application "System Events" to get name of every application process whose background only is false"#;
+                    if let Ok(out) = std::process::Command::new("osascript").arg("-e").arg(script).output() {
+                        eprintln!("  {}", String::from_utf8_lossy(&out.stdout).trim());
+                    }
+                    return;
+                }
+            }
+        }
+    }
 
     // --tree: dump AX tree and exit.
     if args.iter().any(|a| a == "--tree") {
