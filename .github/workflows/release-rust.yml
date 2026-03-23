@@ -6,15 +6,40 @@ on:
     tags:
       - "v*"
 
-jobs:
-  build-windows:
-    name: Build Windows (x86_64-pc-windows-msvc)
-    runs-on: windows-latest
-    if: github.repository == 'snolab/CapsLockX'
+env:
+  IS_PRERELEASE: ${{ contains(github.ref_name, '-') }}
 
+jobs:
+  # Create the release first, then all builds upload to it
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: github.repository == 'snolab/CapsLockX'
     permissions:
       contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FLAGS="--generate-notes"
+          if [[ "${{ github.ref_name }}" == *"-"* ]]; then
+            FLAGS="$FLAGS --prerelease"
+          fi
+          gh release create "${{ github.ref_name }}" $FLAGS || \
+          gh release edit "${{ github.ref_name }}" $FLAGS
+
+  build-windows:
+    name: Build Windows (x86_64-pc-windows-msvc)
+    needs: create-release
+    runs-on: windows-latest
+    if: github.repository == 'snolab/CapsLockX'
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,29 +78,24 @@ jobs:
           git push origin main
 
       - name: Upload Windows binaries
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          fail_on_unmatched_files: false
-          files: |
-            clx-rust.exe
-            clx-screen-reader.exe
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" clx-rust.exe clx-screen-reader.exe --clobber
 
   build-linux:
     name: Build Linux (x86_64-unknown-linux-gnu)
+    needs: create-release
     runs-on: ubuntu-latest
     if: github.repository == 'snolab/CapsLockX'
-
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -93,24 +113,17 @@ jobs:
         run: cp rs/target/release/capslockx capslockx-linux-x86_64
 
       - name: Upload Linux binary
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          fail_on_unmatched_files: false
-          files: |
-            capslockx-linux-x86_64
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" capslockx-linux-x86_64 --clobber
 
   build-macos:
     name: Build macOS (aarch64-apple-darwin)
+    needs: create-release
     runs-on: macos-latest
     if: github.repository == 'snolab/CapsLockX'
-
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -145,12 +158,6 @@ jobs:
           git push origin main
 
       - name: Upload macOS binary
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          fail_on_unmatched_files: false
-          files: |
-            capslockx-macos-arm64
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" capslockx-macos-arm64 --clobber
