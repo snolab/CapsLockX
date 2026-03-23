@@ -725,14 +725,51 @@ fn count_dark_pixels(pixels: &[(u8, u8, u8)], brightness_max: u8) -> u32 {
 }
 
 /// Test if screen capture works (Screen Recording permission).
+/// Runs the test in a child process to avoid UE hang if permission is missing.
 fn test_screen_capture() -> bool {
-    let pixels = read_pixels(0, 0, 2, 2);
-    if pixels.is_empty() {
-        eprintln!("[scan] WARNING: screen capture returned 0 pixels.");
-        eprintln!("[scan] Grant Screen Recording permission: System Settings → Privacy → Screen Recording → add clx");
-        false
-    } else {
-        true
+    // Fork a child to test CGWindowListCreateImage.
+    // If it hangs (UE), we kill the child after 2s. Parent never hangs.
+    extern "C" { fn fork() -> i32; fn _exit(status: i32) -> !; }
+    unsafe {
+        let pid = fork();
+        if pid == 0 {
+            // Child: try screen capture, exit with 0 if ok, 1 if not.
+            let pixels = read_pixels(0, 0, 2, 2);
+            _exit(if pixels.is_empty() { 1 } else { 0 });
+        } else if pid > 0 {
+            // Parent: wait up to 2s for child.
+            let start = std::time::Instant::now();
+            loop {
+                let mut status: i32 = 0;
+                extern "C" { fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32; }
+                let r = waitpid(pid, &mut status, 1); // WNOHANG = 1
+                if r > 0 {
+                    // Child exited.
+                    let exit_code = (status >> 8) & 0xFF;
+                    if exit_code == 0 {
+                        eprintln!("[scan] screen capture permission OK");
+                        return true;
+                    } else {
+                        eprintln!("[scan] WARNING: screen capture returned 0 pixels.");
+                        eprintln!("[scan] Grant Screen Recording: System Settings → Privacy → Screen Recording → add clx");
+                        return false;
+                    }
+                }
+                if start.elapsed().as_secs() >= 2 {
+                    // Child hung (UE) — kill it.
+                    extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
+                    kill(pid, 9); // SIGKILL
+                    waitpid(pid, &mut status, 0); // reap
+                    eprintln!("[scan] WARNING: screen capture timed out (UE). No Screen Recording permission.");
+                    eprintln!("[scan] Grant permission: System Settings → Privacy → Screen Recording → add clx");
+                    return false;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+        } else {
+            eprintln!("[scan] fork failed, skipping screen capture test");
+            return false;
+        }
     }
 }
 
