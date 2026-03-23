@@ -1183,41 +1183,66 @@ impl Platform for MacPlatform {
 
         let (ax, ay, aw, ah) = visible_work_area_for_display(current_display);
 
+        // Phase 1: Compute all target frames (pure math, instant).
+        let mut frames: Vec<(AXUIElementRef, f64, f64, f64, f64)> = Vec::with_capacity(n);
+
+        match mode {
+            ArrangeMode::Stacked => {
+                let dx = 48.0_f64.min(aw / n as f64);
+                let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
+                let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
+                let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
+                for (k, win) in windows.iter().enumerate() {
+                    let x = ax + dx * k as f64;
+                    let y = ay + dy * (n - k - 1) as f64;
+                    frames.push((*win, x, y, w, h));
+                }
+            }
+            ArrangeMode::SideBySide => {
+                let cols = if aw <= ah {
+                    let c = (n as f64).sqrt() as usize;
+                    c.max(1)
+                } else {
+                    let r = (n as f64).sqrt() as usize;
+                    let r = r.max(1);
+                    (n + r - 1) / r
+                };
+                let rows = (n + cols - 1) / cols;
+                let cell_w = aw / cols as f64;
+                let cell_h = ah / rows as f64;
+                for (k, win) in windows.iter().enumerate() {
+                    let col = k % cols;
+                    let row = k / cols;
+                    let x = ax + col as f64 * cell_w;
+                    let y = ay + row as f64 * cell_h;
+                    frames.push((*win, x, y, cell_w, cell_h));
+                }
+            }
+        }
+
+        // Phase 2: Resize all windows in PARALLEL (each window is independent).
+        // AX resize is slow (~20-50ms per window). Parallel = total time ≈ one window.
+        {
+            let handles: Vec<_> = frames.iter().map(|&(win, x, y, w, h)| {
+                let win = win as usize; // cast to usize to make it Send
+                std::thread::spawn(move || {
+                    unsafe { ax_set_window_frame(win as *mut std::ffi::c_void, x, y, w, h); }
+                })
+            }).collect();
+            for h in handles { let _ = h.join(); }
+        }
+
+        // Phase 3: Z-order — raise windows in reverse order (last = frontmost).
+        // Must be sequential (each depends on previous z-position).
         unsafe {
-            match mode {
-                ArrangeMode::Stacked => {
-                    // Cascade: offset each window by ~48px, sized to fill most of work area.
-                    let dx = 48.0_f64.min(aw / n as f64);
-                    let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64); // 32px — denser stacking
-                    let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
-                    let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
-                    for (k, win) in windows.iter().enumerate() {
-                        let x = ax + dx * k as f64;
-                        let y = ay + dy * (n - k - 1) as f64;
-                        ax_set_window_frame(*win, x, y, w, h);
-                    }
-                }
-                ArrangeMode::SideBySide => {
-                    // Grid: sqrt-based columns/rows like the Windows adapter.
-                    let cols = if aw <= ah {
-                        let c = (n as f64).sqrt() as usize;
-                        c.max(1)
-                    } else {
-                        let r = (n as f64).sqrt() as usize;
-                        let r = r.max(1);
-                        (n + r - 1) / r
-                    };
-                    let rows = (n + cols - 1) / cols;
-                    let cell_w = aw / cols as f64;
-                    let cell_h = ah / rows as f64;
-                    for (k, win) in windows.iter().enumerate() {
-                        let col = k % cols;
-                        let row = k / cols;
-                        let x = ax + col as f64 * cell_w;
-                        let y = ay + row as f64 * cell_h;
-                        ax_set_window_frame(*win, x, y, cell_w, cell_h);
-                    }
-                }
+            for &(win, _, _, _, _) in frames.iter().rev() {
+                let attr = CFString::new("AXMain");
+                AXUIElementSetAttributeValue(
+                    win,
+                    attr.as_concrete_TypeRef() as CFStringRefRaw,
+                    core_foundation::boolean::CFBoolean::true_value().as_CFTypeRef(),
+                );
+                AXUIElementPerformAction(win, CFString::new("AXRaise").as_concrete_TypeRef() as CFStringRefRaw);
             }
 
             // Release all retained refs.
@@ -1226,8 +1251,7 @@ impl Platform for MacPlatform {
             }
         }
 
-        // Restore focus to the window that was active before arrange,
-        // so clx+z continues from the same position.
+        // Restore focus to the window that was active before arrange.
         if let Some(ref entry) = restore_entry {
             activate_window(entry);
         }
