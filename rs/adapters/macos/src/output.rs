@@ -93,6 +93,7 @@ struct WindowEntry {
     window_id: u32, // CGWindowID — stable across z-order changes
     window_index: usize,
     title: String,
+    display_id: u32, // CGDirectDisplayID of the screen this window is on
 }
 
 /// Get the CGWindowID of the frontmost (topmost layer-0) window.
@@ -186,9 +187,75 @@ unsafe fn ax_window_title(win: *mut std::ffi::c_void) -> String {
     title
 }
 
+/// Determine which display contains the given point (center of a window).
+/// Returns the CGDirectDisplayID, falling back to the main display.
+fn display_for_point(cx: f64, cy: f64) -> u32 {
+    let displays = CGDisplay::active_displays().unwrap_or_default();
+    for id in &displays {
+        let r = CGDisplay::new(*id).bounds();
+        if cx >= r.origin.x && cx < r.origin.x + r.size.width
+            && cy >= r.origin.y && cy < r.origin.y + r.size.height
+        {
+            return *id;
+        }
+    }
+    CGDisplay::main().id
+}
+
+/// Build a map from CGWindowID → (center_x, center_y) using CGWindowList bounds.
+fn build_window_bounds_map() -> std::collections::HashMap<u32, (f64, f64)> {
+    unsafe {
+        extern "C" {
+            fn CFArrayGetCount(arr: CFArrayRef) -> isize;
+            fn CFArrayGetValueAtIndex(arr: CFArrayRef, idx: isize) -> *const std::ffi::c_void;
+            fn CFDictionaryGetValue(dict: *const std::ffi::c_void, key: *const std::ffi::c_void) -> *const std::ffi::c_void;
+            fn CFNumberGetValue(number: *const std::ffi::c_void, the_type: i32, value_ptr: *mut std::ffi::c_void) -> bool;
+            fn CGRectMakeWithDictionaryRepresentation(dict: *const std::ffi::c_void, rect: *mut [f64; 4]) -> bool;
+        }
+
+        let mut map = std::collections::HashMap::new();
+        let opts: u32 = (1 << 0) | (1 << 4); // OnScreenOnly | ExcludeDesktopElements
+        let list_ref = CGWindowListCopyWindowInfo(opts, 0);
+        if list_ref.is_null() { return map; }
+
+        let count = CFArrayGetCount(list_ref);
+        let key_wid = CFString::new("kCGWindowNumber");
+        let key_bounds = CFString::new("kCGWindowBounds");
+        let key_layer = CFString::new("kCGWindowLayer");
+
+        for i in 0..count {
+            let dict = CFArrayGetValueAtIndex(list_ref, i);
+            if dict.is_null() { continue; }
+            let layer_ref = CFDictionaryGetValue(dict, key_layer.as_concrete_TypeRef() as *const _);
+            if layer_ref.is_null() { continue; }
+            let mut layer: i64 = 0;
+            CFNumberGetValue(layer_ref, 4, &mut layer as *mut _ as *mut _);
+            if layer != 0 { continue; }
+
+            let wid_ref = CFDictionaryGetValue(dict, key_wid.as_concrete_TypeRef() as *const _);
+            if wid_ref.is_null() { continue; }
+            let mut wid: i64 = 0;
+            CFNumberGetValue(wid_ref, 4, &mut wid as *mut _ as *mut _);
+
+            let bounds_ref = CFDictionaryGetValue(dict, key_bounds.as_concrete_TypeRef() as *const _);
+            if bounds_ref.is_null() { continue; }
+            let mut rect = [0.0f64; 4]; // x, y, w, h
+            if CGRectMakeWithDictionaryRepresentation(bounds_ref, &mut rect) {
+                let cx = rect[0] + rect[2] / 2.0;
+                let cy = rect[1] + rect[3] / 2.0;
+                map.insert(wid as u32, (cx, cy));
+            }
+        }
+        CFRelease(list_ref);
+        map
+    }
+}
+
 /// List all individual windows across all GUI apps, in z-order (on-screen first)
 /// then by app launch order for off-screen apps. Each window is a separate entry.
 fn list_all_windows() -> Vec<WindowEntry> {
+    let bounds_map = build_window_bounds_map();
+    let main_display = CGDisplay::main().id;
     unsafe {
         let mut entries = Vec::new();
         let mut seen_pids = std::collections::HashSet::new();
@@ -329,9 +396,16 @@ fn list_all_windows() -> Vec<WindowEntry> {
                         // onscreen_wids has all CGWindowIDs with isOnscreen=true.
                         // This filters out minimized windows and (on some macOS
                         // versions) windows on other Spaces.
-                        let on_current_space = wid == 0 || onscreen_wids.contains(&wid);
+                        // Skip wid==0 windows — they can't be reliably matched
+                        // or activated, causing phantom "skips" during cycling.
+                        let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
                         if on_current_space {
-                            entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title });
+                            let display_id = if wid != 0 {
+                                if let Some(&(cx, cy)) = bounds_map.get(&wid) {
+                                    display_for_point(cx, cy)
+                                } else { main_display }
+                            } else { main_display };
+                            entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title, display_id });
                         }
                     }
                 }
@@ -413,17 +487,18 @@ unsafe fn find_ax_window(arr: CFArrayRef, count: usize, entry: &WindowEntry) -> 
     std::ptr::null()
 }
 
-/// Collect AXUIElementRef handles for all titled windows across all GUI apps,
-/// sorted by window_id for stable ordering (same order as cycle_windows).
+/// Collect AXUIElementRef handles for all titled windows on the given display,
+/// sorted by (pid, window_id) for stable ordering (same order as cycle_windows).
 /// The returned refs are retained — caller must CFRelease each one.
-fn get_all_ax_window_refs_stable() -> Vec<AXUIElementRef> {
+fn get_all_ax_window_refs_stable(display_id: u32) -> Vec<AXUIElementRef> {
     unsafe {
         extern "C" {
             fn CFRetain(cf: *const std::ffi::c_void) -> *const std::ffi::c_void;
         }
 
         let mut entries = list_all_windows();
-        entries.sort_by_key(|w| w.window_id);
+        entries.retain(|w| w.display_id == display_id);
+        entries.sort_by_key(|w| (w.pid, w.window_id));
 
         let mut refs: Vec<AXUIElementRef> = Vec::new();
 
@@ -445,6 +520,7 @@ fn get_all_ax_window_refs_stable() -> Vec<AXUIElementRef> {
 
 /// Activate a specific window: bring the app to front, then raise the specific window.
 fn activate_window(entry: &WindowEntry) {
+    eprintln!("[cycle] activating wid={} pid={} {:?}", entry.window_id, entry.pid, entry.title);
     unsafe {
         // 1. Activate the app
         let cls = objc_getClass(b"NSRunningApplication\0".as_ptr() as *const _);
@@ -467,6 +543,7 @@ fn activate_window(entry: &WindowEntry) {
             f(app, sel_activate, 3);
         }
 
+        eprintln!("[cycle] app activated, now raising window via AX...");
         // 2. Raise the specific window via AXUIElement — match by window_id (CGWindowID).
         if let Some((app_ref, arr, count)) = ax_windows_for_pid(entry.pid as i32) {
             let target = find_ax_window(arr as CFArrayRef, count, entry);
@@ -618,6 +695,113 @@ fn visible_work_area() -> (f64, f64, f64, f64) {
         //     quartz_x, quartz_y, vis.w, vis.h, full.w, full.h);
 
         (quartz_x, quartz_y, vis.w, vis.h)
+    }
+}
+
+/// Get the visible work area for a specific display (by CGDirectDisplayID).
+/// Iterates NSScreen.screens to find the matching screen, falls back to mainScreen.
+fn visible_work_area_for_display(target_display_id: u32) -> (f64, f64, f64, f64) {
+    unsafe {
+        let cls = objc_getClass(b"NSScreen\0".as_ptr() as *const _);
+        if cls.is_null() { return visible_work_area(); }
+
+        let sel_screens = sel_registerName(b"screens\0".as_ptr() as *const _);
+        let screens_arr: *mut std::ffi::c_void = {
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(cls, sel_screens)
+        };
+        if screens_arr.is_null() { return visible_work_area(); }
+
+        let sel_count = sel_registerName(b"count\0".as_ptr() as *const _);
+        let sel_obj_at = sel_registerName(b"objectAtIndex:\0".as_ptr() as *const _);
+        let sel_desc = sel_registerName(b"deviceDescription\0".as_ptr() as *const _);
+        let sel_obj_for_key = sel_registerName(b"objectForKey:\0".as_ptr() as *const _);
+        let sel_uint = sel_registerName(b"unsignedIntValue\0".as_ptr() as *const _);
+
+        let n: usize = {
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> usize
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(screens_arr, sel_count)
+        };
+
+        let key_screen_number = CFString::new("NSScreenNumber");
+
+        for idx in 0..n {
+            let screen: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, usize) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screens_arr, sel_obj_at, idx)
+            };
+            if screen.is_null() { continue; }
+
+            // Get deviceDescription dictionary
+            let desc: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screen, sel_desc)
+            };
+            if desc.is_null() { continue; }
+
+            // Get NSScreenNumber from deviceDescription
+            let num_obj: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, *const std::ffi::c_void) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(desc, sel_obj_for_key, key_screen_number.as_concrete_TypeRef() as *const _)
+            };
+            if num_obj.is_null() { continue; }
+
+            let display_id: u32 = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u32
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(num_obj, sel_uint)
+            };
+
+            if display_id != target_display_id { continue; }
+
+            // Found the matching screen — get its visibleFrame and frame.
+            let sel_frame = sel_registerName(b"frame\0".as_ptr() as *const _);
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            struct NSRect { x: f64, y: f64, w: f64, h: f64 }
+
+            #[cfg(target_arch = "aarch64")]
+            let full: NSRect = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screen, sel_frame)
+            };
+            #[cfg(target_arch = "x86_64")]
+            let full: NSRect = {
+                extern "C" {
+                    fn objc_msgSend_stret(ret: *mut NSRect, receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
+                }
+                let mut r = NSRect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 };
+                objc_msgSend_stret(&mut r, screen, sel_frame);
+                r
+            };
+
+            let sel_visible = sel_registerName(b"visibleFrame\0".as_ptr() as *const _);
+            #[cfg(target_arch = "aarch64")]
+            let vis: NSRect = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screen, sel_visible)
+            };
+            #[cfg(target_arch = "x86_64")]
+            let vis: NSRect = {
+                let mut r = NSRect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 };
+                objc_msgSend_stret(&mut r, screen, sel_visible);
+                r
+            };
+
+            let quartz_x = vis.x;
+            let quartz_y = (full.y + full.h) - vis.y - vis.h;
+            return (quartz_x, quartz_y, vis.w, vis.h);
+        }
+
+        // Fallback if display not found in NSScreen list.
+        visible_work_area()
     }
 }
 
@@ -888,11 +1072,22 @@ impl Platform for MacPlatform {
         if stale {
             let mut windows = list_all_windows();
             if windows.is_empty() { return; }
-            // Sort by window_id for stable ordering independent of z-order.
-            windows.sort_by_key(|w| w.window_id);
+
+            // Determine which screen to cycle on: use the frontmost window's screen.
+            let front_wid = frontmost_window_id();
+            let current_display = windows.iter()
+                .find(|w| w.window_id == front_wid)
+                .map(|w| w.display_id)
+                .unwrap_or_else(|| CGDisplay::main().id);
+
+            // Filter to only windows on the current screen.
+            windows.retain(|w| w.display_id == current_display);
+            if windows.is_empty() { return; }
+
+            // Sort by (pid, window_id) — group by app first, then stable window order.
+            windows.sort_by_key(|w| (w.pid, w.window_id));
 
             // Try to find the currently focused window in the new list.
-            let front_wid = frontmost_window_id();
             let prev_wid = guard.as_ref().map_or(0, |s| s.last_activated_wid);
             let anchor_wid = if prev_wid != 0 { prev_wid } else { front_wid };
             let start_idx = windows.iter()
@@ -900,13 +1095,11 @@ impl Platform for MacPlatform {
                 .or_else(|| windows.iter().position(|w| w.window_id == front_wid))
                 .unwrap_or(0);
 
-            if cfg!(debug_assertions) {
                 eprintln!("[cycle] FRESH snapshot ({} windows), anchor_wid={} front_wid={} start_idx={}",
-                    windows.len(), anchor_wid, front_wid, start_idx);
-                for (i, w) in windows.iter().enumerate() {
-                    eprintln!("[cycle]   [{}] wid={} {:?}{}", i, w.window_id, w.title,
-                        if i == start_idx { " <-- anchor" } else { "" });
-                }
+                windows.len(), anchor_wid, front_wid, start_idx);
+            for (i, w) in windows.iter().enumerate() {
+                eprintln!("[cycle]   [{}] wid={} {:?}{}", i, w.window_id, w.title,
+                    if i == start_idx { " <-- anchor" } else { "" });
             }
 
             *guard = Some(CycleState {
@@ -922,12 +1115,18 @@ impl Platform for MacPlatform {
         let len = state.windows.len();
         if len == 0 { return; }
 
-        // Always detect current frontmost window instead of trusting stored index.
-        // This handles the user switching windows via mouse click, Cmd+Tab, etc.
+        // Detect current frontmost window to handle external switches
+        // (mouse click, Cmd+Tab, etc.).  BUT if the frontmost window is
+        // still the one we last activated, trust our stored index — macOS
+        // may not have finished raising the window yet, so re-querying
+        // would re-anchor to the *previous* position and skip a window.
         let front_wid = frontmost_window_id();
-        let current_idx = if front_wid != 0 {
-            state.windows.iter().position(|w| w.window_id == front_wid)
-                .unwrap_or(state.index)
+        let current_idx = if front_wid != 0
+            && front_wid != state.last_activated_wid
+            && state.windows.iter().any(|w| w.window_id == front_wid)
+        {
+            // User switched windows externally — re-anchor to that window.
+            state.windows.iter().position(|w| w.window_id == front_wid).unwrap()
         } else {
             state.index
         };
@@ -944,9 +1143,7 @@ impl Platform for MacPlatform {
         let entry = state.windows[idx].clone();
         drop(guard);
 
-        if cfg!(debug_assertions) {
-            eprintln!("[cycle] idx={} wid={} title={:?}", idx, entry.window_id, entry.title);
-        }
+        eprintln!("[cycle] idx={} wid={} pid={} title={:?}", idx, entry.window_id, entry.pid, entry.title);
         activate_window(&entry);
     }
 
@@ -962,18 +1159,26 @@ impl Platform for MacPlatform {
             } else { None }
         } else { None };
 
-        let windows = get_all_ax_window_refs_stable();
+        // Determine which screen to arrange on: use the frontmost window's screen.
+        let all_windows = list_all_windows();
+        let front_wid = frontmost_window_id();
+        let current_display = all_windows.iter()
+            .find(|w| w.window_id == front_wid)
+            .map(|w| w.display_id)
+            .unwrap_or_else(|| CGDisplay::main().id);
+
+        let windows = get_all_ax_window_refs_stable(current_display);
         let n = windows.len();
         if n == 0 { return; }
 
-        let (ax, ay, aw, ah) = visible_work_area();
+        let (ax, ay, aw, ah) = visible_work_area_for_display(current_display);
 
         unsafe {
             match mode {
                 ArrangeMode::Stacked => {
                     // Cascade: offset each window by ~48px, sized to fill most of work area.
                     let dx = 48.0_f64.min(aw / n as f64);
-                    let dy = 48.0_f64.min(ah / n as f64);
+                    let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64); // 32px — denser stacking
                     let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
                     let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
                     for (k, win) in windows.iter().enumerate() {
