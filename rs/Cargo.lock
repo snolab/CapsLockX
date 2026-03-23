@@ -816,6 +816,7 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
+ "ureq 2.12.1",
 ]
 
 [[package]]

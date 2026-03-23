@@ -50,8 +50,8 @@ fn main() {
 
     for (id, prompt, expected_tool) in &tests {
         let mut messages = vec![
-            Message { role: "system".into(), content: SYSTEM_PROMPT.into() },
-            Message { role: "user".into(), content: prompt.to_string() },
+            Message { role: "system".into(), content: SYSTEM_PROMPT.into(), image_base64: None },
+            Message { role: "user".into(), content: prompt.to_string(), image_base64: None },
         ];
 
         let mut tools_used = Vec::new();

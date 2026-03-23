@@ -30,10 +30,8 @@
     "Tools",
     "docs",
     "CapsLockX*",
-    "clx-rust.exe",
+    "clx.exe",
     "clx-screen-reader.exe",
-    "capslockx-macos-*",
-    "capslockx-linux-*",
     "*.txt",
     "*.md"
   ],
