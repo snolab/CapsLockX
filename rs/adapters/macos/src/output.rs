@@ -1073,19 +1073,11 @@ impl Platform for MacPlatform {
             let mut windows = list_all_windows();
             if windows.is_empty() { return; }
 
-            // Determine which screen to cycle on: use the frontmost window's screen.
             let front_wid = frontmost_window_id();
-            let current_display = windows.iter()
-                .find(|w| w.window_id == front_wid)
-                .map(|w| w.display_id)
-                .unwrap_or_else(|| CGDisplay::main().id);
 
-            // Filter to only windows on the current screen.
-            windows.retain(|w| w.display_id == current_display);
-            if windows.is_empty() { return; }
-
-            // Sort by (pid, window_id) — group by app first, then stable window order.
-            windows.sort_by_key(|w| (w.pid, w.window_id));
+            // Cycle ALL on-screen windows across all monitors.
+            // Sort by (display, pid, window_id) — group by monitor, then app.
+            windows.sort_by_key(|w| (w.display_id, w.pid, w.window_id));
 
             // Try to find the currently focused window in the new list.
             let prev_wid = guard.as_ref().map_or(0, |s| s.last_activated_wid);
@@ -1132,12 +1124,30 @@ impl Platform for MacPlatform {
         };
 
         // Advance from detected position.
-        let idx = if dir > 0 {
-            (current_idx + 1) % len
+        let next_idx = if dir > 0 {
+            current_idx + 1
         } else {
-            (current_idx + len - 1) % len
+            current_idx.wrapping_sub(1)
         };
 
+        // Check if we've hit a boundary (past first/last window).
+        if next_idx >= len || (dir < 0 && current_idx == 0) {
+            // At boundary — switch to next/prev Space on the focused monitor,
+            // then re-enumerate on next press.
+            // Inject Ctrl+Right/Left to trigger macOS Space switching.
+            drop(guard);
+            eprintln!("[cycle] boundary reached — switching Space (dir={})", dir);
+            let arrow_key: u16 = if dir > 0 { 0x7C } else { 0x7B }; // Right : Left
+            let flags = core_graphics::event::CGEventFlags::CGEventFlagControl;
+            Self::tap_with_flags(arrow_key, flags);
+            // Invalidate the cached snapshot so next press re-enumerates.
+            if let Ok(mut g) = CYCLE.lock() {
+                *g = None;
+            }
+            return;
+        }
+
+        let idx = next_idx;
         state.index = idx;
         state.last_activated_wid = state.windows[idx].window_id;
         let entry = state.windows[idx].clone();
