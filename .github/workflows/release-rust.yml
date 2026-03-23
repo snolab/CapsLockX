@@ -1,7 +1,6 @@
 name: release-rust
 
-# Trigger: any "v*" tag created by `npm run release` (standard-version).
-# The tag push is the canonical signal that a release has been cut.
+# Trigger: any "v*" tag push.
 on:
   push:
     tags:
@@ -9,20 +8,18 @@ on:
 
 jobs:
   build-windows:
-    name: Build & publish capslockx-windows (x86_64-pc-windows-msvc)
+    name: Build Windows (x86_64-pc-windows-msvc)
     runs-on: windows-latest
     if: github.repository == 'snolab/CapsLockX'
 
     permissions:
-      contents: write   # create release + upload assets + push binaries
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main   # check out main so we can push binaries back
+          ref: ${{ github.ref }}
 
-      # Stable MSVC toolchain – link.exe and the Windows SDK are already
-      # present on windows-latest; no cross-compilation needed.
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -33,33 +30,33 @@ jobs:
         with:
           workspaces: rs -> rs/target
 
-      # [profile.release] in rs/Cargo.toml: opt-level=3, lto=true, codegen-units=1
       - name: Build all Windows binaries --release
         working-directory: rs
         run: cargo build -p capslockx-windows -p clx-screen-reader --release
 
-      # Copy binaries to repo root (as users would see them after unzip).
       - name: Stage release binaries
         shell: pwsh
         run: |
           Copy-Item rs\target\release\clx-rust.exe  clx-rust.exe
           Copy-Item rs\target\release\clx-screen-reader.exe clx-screen-reader.exe
 
-      # Commit built binaries to main so zip-downloaders get them.
+      # Commit binaries back to main only for stable releases
       - name: Commit binaries to main
+        if: "!contains(github.ref_name, '-')"
         run: |
+          git fetch origin main
+          git checkout main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add clx-rust.exe clx-screen-reader.exe
           git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
           git push origin main
 
-      # Create (or update) the GitHub Release for this tag and attach binaries.
-      - name: Create GitHub Release and upload assets
+      - name: Upload Windows binaries
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           fail_on_unmatched_files: false
           files: |
             clx-rust.exe
@@ -67,8 +64,47 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-linux:
+    name: Build Linux (x86_64-unknown-linux-gnu)
+    runs-on: ubuntu-latest
+    if: github.repository == 'snolab/CapsLockX'
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      - name: Build Linux binary --release
+        working-directory: rs
+        run: cargo build -p capslockx-linux --release
+
+      - name: Stage Linux binary
+        run: cp rs/target/release/capslockx capslockx-linux-x86_64
+
+      - name: Upload Linux binary
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: |
+            capslockx-linux-x86_64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-macos:
-    name: Build & publish capslockx-macos (aarch64-apple-darwin)
+    name: Build macOS (aarch64-apple-darwin)
     runs-on: macos-latest
     if: github.repository == 'snolab/CapsLockX'
 
@@ -77,6 +113,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -93,9 +131,12 @@ jobs:
       - name: Stage macOS binary
         run: cp rs/target/release/capslockx capslockx-macos-arm64
 
-      # Commit binary to main so npm package includes it.
+      # Commit binary to main only for stable releases
       - name: Commit macOS binary to main
+        if: "!contains(github.ref_name, '-')"
         run: |
+          git fetch origin main
+          git checkout main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin main --rebase
@@ -103,11 +144,11 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: update macOS binary for ${{ github.ref_name }}"
           git push origin main
 
-      - name: Upload macOS binary to GitHub Release
+      - name: Upload macOS binary
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           fail_on_unmatched_files: false
           files: |
             capslockx-macos-arm64
