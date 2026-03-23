@@ -72,17 +72,24 @@ fn main() {
     let foreground = args.iter().any(|a| a == "--foreground" || a == "-f");
 
     if !foreground {
-        // Fork into background so `clx` returns immediately.
-        extern "C" { fn fork() -> i32; }
-        let pid = unsafe { fork() };
-        if pid < 0 {
-            eprintln!("[CLX] fork failed, running in foreground");
-        } else if pid > 0 {
-            // Parent: print PID and exit.
-            eprintln!("[CLX] started (pid {})", pid);
-            return;
+        // Spawn a new process (not fork — fork + ObjC/AppKit = crash).
+        // The new process runs with -f (foreground) so it doesn't re-spawn.
+        let exe = std::env::current_exe().unwrap_or_else(|_| "clx".into());
+        match std::process::Command::new(&exe)
+            .arg("-f")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit())
+            .spawn()
+        {
+            Ok(child) => {
+                eprintln!("[CLX] started (pid {})", child.id());
+                return;
+            }
+            Err(e) => {
+                eprintln!("[CLX] spawn failed ({}), running in foreground", e);
+            }
         }
-        // Child continues below.
     }
 
     // Kill any existing clx daemon instance (deduplicate).

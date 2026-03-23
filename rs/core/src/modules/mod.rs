@@ -21,6 +21,25 @@ use virtual_desktop::VirtualDesktopModule;
 use voice::VoiceModule;
 use window_manager::WindowManagerModule;
 
+/// Call a module function with panic isolation. If the module panics,
+/// log the error and return false — the core keyboard/mouse keeps working.
+fn safe_call(module: &str, f: impl FnOnce() -> bool) -> bool {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(result) => result,
+        Err(e) => {
+            let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = e.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "unknown panic".to_string()
+            };
+            eprintln!("[CLX] PANIC in {} module (isolated, core unaffected): {}", module, msg);
+            false
+        }
+    }
+}
+
 pub struct Modules {
     pub agent:       AgentModule,
     pub brainstorm:  BrainstormModule,
@@ -66,35 +85,42 @@ impl Modules {
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
-        self.agent.on_key_down(key, mods)
-            || self.brainstorm.on_key_down(key, mods)
-            || self.edit.on_key_down(key, &*self.platform)
-            || self.mouse.on_key_down(key)
-            || self.media.on_key_down(key)
-            || self.virtual_desktop.on_key_down(key, mods)
-            || self.voice.on_key_down(key)
-            || self.window_manager.on_key_down(key, mods)
+        // Core modules (keyboard/mouse) — must NEVER crash. Run directly.
+        if self.edit.on_key_down(key, &*self.platform) { return true; }
+        if self.mouse.on_key_down(key) { return true; }
+        if self.media.on_key_down(key) { return true; }
+        if self.virtual_desktop.on_key_down(key, mods) { return true; }
+        if self.window_manager.on_key_down(key, mods) { return true; }
+
+        // Heavy modules (LLM/voice/agent) — isolated with catch_unwind.
+        // A panic here logs an error but does NOT crash the core.
+        if safe_call("agent", || self.agent.on_key_down(key, mods)) { return true; }
+        if safe_call("brainstorm", || self.brainstorm.on_key_down(key, mods)) { return true; }
+        if safe_call("voice", || self.voice.on_key_down(key)) { return true; }
+        false
     }
 
     pub fn on_key_up(&self, key: KeyCode) -> bool {
-        self.agent.on_key_up(key)
-            || self.brainstorm.on_key_up(key)
-            || self.edit.on_key_up(key)
-            || self.mouse.on_key_up(key)
-            || self.media.on_key_up(key)
-            || self.voice.on_key_up(key)
-            || self.window_manager.on_key_up(key)
+        if self.edit.on_key_up(key) { return true; }
+        if self.mouse.on_key_up(key) { return true; }
+        if self.media.on_key_up(key) { return true; }
+        if self.window_manager.on_key_up(key) { return true; }
+
+        if safe_call("agent", || self.agent.on_key_up(key)) { return true; }
+        if safe_call("brainstorm", || self.brainstorm.on_key_up(key)) { return true; }
+        if safe_call("voice", || self.voice.on_key_up(key)) { return true; }
+        false
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
-        self.agent.is_mapped_key(key)
-            || self.brainstorm.is_mapped_key(key)
-            || self.edit.is_mapped_key(key)
+        self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
             || self.virtual_desktop.is_mapped_key(key)
-            || self.voice.is_mapped_key(key)
             || self.window_manager.is_mapped_key(key)
+            || self.agent.is_mapped_key(key)
+            || self.brainstorm.is_mapped_key(key)
+            || self.voice.is_mapped_key(key)
     }
 
     pub fn apply_speeds(&self, s: &SpeedConfig) {

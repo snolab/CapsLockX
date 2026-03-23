@@ -266,6 +266,7 @@ impl VoiceModule {
         if key != KeyCode::V {
             return false;
         }
+        eprintln!("[CLX] voice: V key pressed, activating...");
 
         *self.press_time.lock().unwrap() = Some(Instant::now());
 

@@ -48,7 +48,7 @@ fn main() {
     eprintln!("Type your message, press Enter to send. Ctrl+D to exit.\n");
 
     let mut history = vec![
-        Message { role: "system".into(), content: SYSTEM_PROMPT.into() },
+        Message { role: "system".into(), content: SYSTEM_PROMPT.into(), image_base64: None },
     ];
 
     let stdin = std::io::stdin();
@@ -78,7 +78,7 @@ fn main() {
             continue;
         }
 
-        history.push(Message { role: "user".into(), content: input.to_string() });
+        history.push(Message { role: "user".into(), content: input.to_string(), image_base64: None });
 
         match agent_chat(&config, &mut history, &mut |token| {
             print!("{}", token);

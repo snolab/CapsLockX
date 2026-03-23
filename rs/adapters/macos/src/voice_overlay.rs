@@ -8,6 +8,17 @@ use std::ffi::c_void;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
+/// Wrap a closure in catch_unwind for use inside extern "C" fn callbacks.
+/// Panics inside extern "C" fn cause abort() — this prevents that.
+fn catch_ffi_panic(name: &str, f: impl FnOnce() + std::panic::UnwindSafe) {
+    if let Err(e) = std::panic::catch_unwind(f) {
+        let msg = if let Some(s) = e.downcast_ref::<&str>() { s.to_string() }
+                  else if let Some(s) = e.downcast_ref::<String>() { s.clone() }
+                  else { "unknown".to_string() };
+        eprintln!("[CLX] PANIC in voice_overlay::{} (caught, not crashing): {}", name, msg);
+    }
+}
+
 // ── Global shared waveform state ─────────────────────────────────────────────
 
 struct WaveformData {
@@ -121,6 +132,9 @@ fn save_pos(x: f64, y: f64) {
 // ── drawRect: callback ───────────────────────────────────────────────────────
 
 extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
+    catch_ffi_panic("draw_rect", || draw_rect_inner(this));
+}
+fn draw_rect_inner(this: *mut c_void) {
     unsafe {
         let ns_gfx = cls(b"NSGraphicsContext\0");
         let ctx_obj = msg0(ns_gfx, sel(b"currentContext\0"));
@@ -222,6 +236,10 @@ pub fn show_overlay() {
 }
 
 extern "C" fn show_main(_: *mut c_void) {
+    catch_ffi_panic("show_main", || show_main_inner());
+}
+
+fn show_main_inner() {
     unsafe {
         let existing = WINDOW_PTR.load(Ordering::Acquire);
         if !existing.is_null() {
@@ -685,6 +703,9 @@ pub fn hide_overlay() {
 }
 
 extern "C" fn hide_main(_: *mut c_void) {
+    catch_ffi_panic("hide_main", || hide_main_inner());
+}
+fn hide_main_inner() {
     unsafe {
         let win = WINDOW_PTR.load(Ordering::Acquire);
         if !win.is_null() {
@@ -829,6 +850,9 @@ unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
 }
 
 extern "C" fn trigger_redraw(_: *mut c_void) {
+    catch_ffi_panic("trigger_redraw", || trigger_redraw_inner());
+}
+fn trigger_redraw_inner() {
     unsafe {
         let view = VIEW_PTR.load(Ordering::Acquire);
         if !view.is_null() {

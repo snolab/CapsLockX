@@ -49,6 +49,8 @@ impl AgentModule {
                 let path = live_log_path();
                 let mut last_size: u64 = 0;
                 let mut last_content = String::new();
+                // Only show content written AFTER clx started.
+                let start_time = std::time::SystemTime::now();
 
                 loop {
                     std::thread::sleep(std::time::Duration::from_millis(200));
@@ -58,6 +60,12 @@ impl AgentModule {
                         Err(_) => { last_size = 0; continue; }
                     };
                     let size = meta.len();
+
+                    // Skip stale files from previous sessions.
+                    let modified = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+                    if modified < start_time && last_size == 0 {
+                        continue; // file predates this clx session
+                    }
 
                     // File was truncated (new session) or grown.
                     if size != last_size {

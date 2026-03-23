@@ -16,10 +16,10 @@ const root = join(__dirname, "..");
 
 // Map (platform, arch) → binary info.
 const BINARIES = {
-  "win32-x64": { name: "clx-rust.exe", pkg: "capslockx-windows" },
-  "darwin-arm64": { name: "capslockx-macos-arm64", pkg: "capslockx-macos" },
-  "darwin-x64": { name: "capslockx-macos-x64", pkg: "capslockx-macos" },
-  "linux-x64": { name: "capslockx-linux-x64", pkg: "capslockx-linux" },
+  "win32-x64": { name: "clx.exe", pkg: "capslockx-windows" },
+  "darwin-arm64": { name: "clx", pkg: "capslockx-macos" },
+  "darwin-x64": { name: "clx", pkg: "capslockx-macos" },
+  "linux-x64": { name: "clx", pkg: "capslockx-linux" },
 };
 
 const key = `${process.platform}-${process.arch}`;
@@ -37,8 +37,7 @@ if (!info) {
 
 // Look for the binary in several locations.
 const candidates = [
-  join(root, info.name), // repo root (committed or downloaded)
-  join(root, "rs", "target", "release", info.name.replace(/-macos-arm64$/, "").replace(/-macos-x64$/, "").replace(/-linux-x64$/, "")), // local cargo build
+  join(root, info.name), // repo root (built or downloaded)
 ];
 
 let binary = candidates.find((p) => existsSync(p));

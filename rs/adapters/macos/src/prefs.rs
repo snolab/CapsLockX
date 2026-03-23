@@ -261,6 +261,27 @@ unsafe extern "C" fn action_open_prefs(
     open_preferences();
 }
 
+/// Action handler for "Restart" menu item — re-exec the current binary.
+unsafe extern "C" fn action_restart(
+    _this: *mut c_void,
+    _cmd: *mut c_void,
+    _sender: *mut c_void,
+) {
+    eprintln!("[CLX] restart requested via tray menu");
+    let exe = std::env::current_exe().unwrap_or_default();
+    let exe_c = CString::new(exe.to_string_lossy().as_bytes()).unwrap();
+    let args = std::env::args()
+        .map(|a| CString::new(a).unwrap())
+        .collect::<Vec<_>>();
+    let mut argv: Vec<*const std::ffi::c_char> = args.iter().map(|a| a.as_ptr()).collect();
+    argv.push(std::ptr::null());
+    extern "C" { fn execv(path: *const std::ffi::c_char, argv: *const *const std::ffi::c_char) -> std::ffi::c_int; }
+    execv(exe_c.as_ptr(), argv.as_ptr());
+    // If execv returns, it failed — log and exit.
+    eprintln!("[CLX] execv failed: {}", std::io::Error::last_os_error());
+    std::process::exit(1);
+}
+
 /// Register the CLXPrefsActionTarget class at runtime (once).
 unsafe fn ensure_action_class() {
     ACTION_CLASS_REGISTERED.call_once(|| {
@@ -284,6 +305,17 @@ unsafe fn ensure_action_class() {
         );
         if !added {
             eprintln!("[CLX] prefs: failed to add openPrefs: method");
+        }
+
+        let sel_restart = sel(b"restartApp:\0");
+        let added = class_addMethod(
+            new_cls,
+            sel_restart,
+            action_restart as *const c_void,
+            b"v@:@\0".as_ptr() as *const _,
+        );
+        if !added {
+            eprintln!("[CLX] prefs: failed to add restartApp: method");
         }
 
         objc_registerClassPair(new_cls);
