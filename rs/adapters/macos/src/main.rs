@@ -85,6 +85,16 @@ fn main() {
         // Child continues below.
     }
 
+    // Kill any existing clx daemon instance (deduplicate).
+    {
+        let my_pid = std::process::id().to_string();
+        let _ = std::process::Command::new("sh")
+            .args(["-c", &format!(
+                "pgrep -f 'CapsLockX/clx' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
+            )])
+            .status();
+    }
+
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) or `pkill clx` to exit");
