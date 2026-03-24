@@ -102,6 +102,21 @@ fn main() {
             .status();
     }
 
+    // Install panic hook to log panic messages before abort.
+    std::panic::set_hook(Box::new(|info| {
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() { s.to_string() }
+                  else if let Some(s) = info.payload().downcast_ref::<String>() { s.clone() }
+                  else { "unknown".to_string() };
+        let loc = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_default();
+        eprintln!("[CLX] PANIC: {} at {}", msg, loc);
+        // Also write to a crash file for post-mortem.
+        let crash_path = std::env::current_exe().ok()
+            .and_then(|e| e.parent().map(|p| p.join("tmp/last-panic.txt")));
+        if let Some(p) = crash_path {
+            let _ = std::fs::write(&p, format!("{} at {}\n", msg, loc));
+        }
+    }));
+
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) or `pkill clx` to exit");

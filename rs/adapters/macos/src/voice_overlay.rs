@@ -107,7 +107,13 @@ unsafe fn main_queue() -> *mut c_void {
     dlsym(RTLD_DEFAULT, b"_dispatch_main_q\0".as_ptr() as *const _)
 }
 unsafe fn nsstring(s: &str) -> *mut c_void {
-    let cstr = std::ffi::CString::new(s).unwrap();
+    let cstr = match std::ffi::CString::new(s) {
+        Ok(c) => c,
+        Err(_) => {
+            eprintln!("[CLX] voice_overlay: nsstring got null byte in: {:?}", &s[..s.len().min(50)]);
+            std::ffi::CString::new("(invalid)").unwrap()
+        }
+    };
     let f: extern "C" fn(*mut c_void, *mut c_void, *const std::ffi::c_char) -> *mut c_void =
         std::mem::transmute(objc_msgSend as *const ());
     f(cls(b"NSString\0"), sel(b"stringWithUTF8String:\0"), cstr.as_ptr())
@@ -170,7 +176,7 @@ fn draw_rect_inner(this: *mut c_void) {
 
         let (w, h) = (bounds.w, bounds.h);
         let (mic_levels, sys_levels, mic_vad, sys_vad) = {
-            let g = WAVEFORM_DATA.lock().unwrap();
+            let g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
             (g.mic_levels.clone(), g.sys_levels.clone(), g.mic_vad, g.sys_vad)
         };
 
@@ -259,10 +265,18 @@ extern "C" fn show_main(_: *mut c_void) {
 }
 
 extern "C" fn show_main_inner_c(_: *mut c_void) {
-    // NO catch_unwind here — it aborts on ObjC exceptions ("foreign exception").
-    // ObjC exceptions are caught by objc_try_catch (@try/@catch) in the caller.
-    // Rust panics in show_main_inner will propagate as C++ exceptions and
-    // also be caught by @catch(id) in objc_try_catch.
+    // We need to catch BOTH Rust panics AND ObjC exceptions.
+    // Problem: catch_unwind aborts on ObjC exceptions, @try/@catch doesn't see Rust panics.
+    // Solution: set a custom panic hook that logs + aborts gracefully,
+    // then let the outer @try/@catch handle ObjC exceptions.
+    //
+    // Actually: just use set_hook to log the panic, then call show_main_inner
+    // without catch_unwind. If it's a Rust panic, the hook logs it before abort.
+    // If it's an ObjC exception, @try/@catch catches it.
+    // The process still dies on Rust panic, but at least we know WHY.
+    //
+    // For true isolation: we'd need to run voice overlay in a subprocess.
+    // For now, log the panic reason so we can fix the root cause.
     show_main_inner();
 }
 
@@ -635,7 +649,10 @@ fn hover_loop() {
         // Get mouse position (screen coords, y=0 at bottom on macOS).
         let mouse = unsafe {
             if let Ok(event) = CGEvent::new(
-                CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap()
+                match CGEventSource::new(CGEventSourceStateID::HIDSystemState) {
+                    Ok(s) => s,
+                    Err(_) => { continue; }
+                }
             ) {
                 let loc = event.location();
                 (loc.x, loc.y)
@@ -774,7 +791,7 @@ pub fn push_audio_levels_with_text(levels: &[f32], vad_active: bool, subtitle: O
 
 pub fn push_dual_audio_levels(mic_levels: &[f32], mic_vad: bool, sys_levels: &[f32], sys_vad: bool, subtitle: Option<&str>) {
     {
-        let mut g = WAVEFORM_DATA.lock().unwrap();
+        let mut g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
         if !mic_levels.is_empty() {
             g.mic_levels.extend_from_slice(mic_levels);
             if g.mic_levels.len() > 100 { let e = g.mic_levels.len() - 100; g.mic_levels.drain(..e); }
@@ -903,7 +920,7 @@ fn trigger_redraw_inner() {
         }
         if !label.is_null() {
             let text = {
-                let g = WAVEFORM_DATA.lock().unwrap();
+                let g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
                 if dbg_n < 5 || dbg_n % 200 == 0 {
                     let preview: String = g.subtitle.chars().take(60).collect();
                     eprintln!("[overlay] subtitle={:?}", preview);
