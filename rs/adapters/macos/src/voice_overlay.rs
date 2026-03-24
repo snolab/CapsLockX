@@ -148,9 +148,7 @@ extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
     if r != 0 { eprintln!("[CLX] ObjC exception in draw_rect (caught)"); }
 }
 extern "C" fn draw_rect_c(_: *mut c_void) {
-    let this = unsafe { DRAW_RECT_THIS };
-    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| draw_rect_inner(this)))
-        .map_err(|_| eprintln!("[CLX] Rust panic in draw_rect (caught)"));
+    draw_rect_inner(unsafe { DRAW_RECT_THIS });
 }
 fn draw_rect_inner(this: *mut c_void) {
     unsafe {
@@ -261,10 +259,11 @@ extern "C" fn show_main(_: *mut c_void) {
 }
 
 extern "C" fn show_main_inner_c(_: *mut c_void) {
-    // catch_unwind for Rust panics (objc_try_catch handles ObjC exceptions).
-    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        show_main_inner();
-    })).map_err(|_| eprintln!("[CLX] Rust panic in show_main_inner (caught)"));
+    // NO catch_unwind here — it aborts on ObjC exceptions ("foreign exception").
+    // ObjC exceptions are caught by objc_try_catch (@try/@catch) in the caller.
+    // Rust panics in show_main_inner will propagate as C++ exceptions and
+    // also be caught by @catch(id) in objc_try_catch.
+    show_main_inner();
 }
 
 fn show_main_inner() {
@@ -735,8 +734,7 @@ extern "C" fn hide_main(_: *mut c_void) {
     if r != 0 { eprintln!("[CLX] ObjC exception in hide_main (caught)"); }
 }
 extern "C" fn hide_main_c(_: *mut c_void) {
-    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hide_main_inner()))
-        .map_err(|_| eprintln!("[CLX] Rust panic in hide_main (caught)"));
+    hide_main_inner();
 }
 fn hide_main_inner() {
     unsafe {
@@ -887,8 +885,7 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
     if r != 0 { eprintln!("[CLX] ObjC exception in trigger_redraw (caught)"); }
 }
 extern "C" fn trigger_redraw_c(_: *mut c_void) {
-    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| trigger_redraw_inner()))
-        .map_err(|_| eprintln!("[CLX] Rust panic in trigger_redraw (caught)"));
+    trigger_redraw_inner();
 }
 fn trigger_redraw_inner() {
     unsafe {
