@@ -36,11 +36,8 @@ impl WindowManagerModule {
                 }
                 true
             }
-            KeyCode::V => {
-                if mods.shift { self.platform.toggle_window_topmost() }
-                else          { self.platform.set_window_transparent(100) }
-                true
-            }
+            // V is owned by voice module (Space+V = voice input).
+            // Window transparency removed — was conflicting with voice.
             KeyCode::Period => {
                 self.platform.restart();
                 true
@@ -49,15 +46,11 @@ impl WindowManagerModule {
         }
     }
 
-    pub fn on_key_up(&self, key: KeyCode) -> bool {
-        if key == KeyCode::V {
-            self.platform.restore_window();
-            return true;
-        }
+    pub fn on_key_up(&self, _key: KeyCode) -> bool {
         false
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
-        matches!(key, KeyCode::Z | KeyCode::X | KeyCode::C | KeyCode::V | KeyCode::Period)
+        matches!(key, KeyCode::Z | KeyCode::X | KeyCode::C | KeyCode::Period)
     }
 }
