@@ -50,6 +50,19 @@ pub fn evdev_key_to_keycode(key: Key) -> KeyCode {
         47 => KeyCode::V,  17 => KeyCode::W,  45 => KeyCode::X,
         21 => KeyCode::Y,  44 => KeyCode::Z,
 
+        // ── Digits (0–9) ─────────────────────────────────────────────────────
+        11 => KeyCode::D0,  2 => KeyCode::D1,  3 => KeyCode::D2,
+         4 => KeyCode::D3,  5 => KeyCode::D4,  6 => KeyCode::D5,
+         7 => KeyCode::D6,  8 => KeyCode::D7,  9 => KeyCode::D8,
+        10 => KeyCode::D9,
+
+        // ── Punctuation / OEM ────────────────────────────────────────────────
+        1   => KeyCode::Escape,
+        26  => KeyCode::BracketLeft,
+        27  => KeyCode::BracketRight,
+        43  => KeyCode::Backslash,
+        52  => KeyCode::Period,
+
         // ── Function keys ─────────────────────────────────────────────────────
         59 => KeyCode::F1,  60 => KeyCode::F2,  61 => KeyCode::F3,
         62 => KeyCode::F4,  63 => KeyCode::F5,  64 => KeyCode::F6,
@@ -114,6 +127,19 @@ pub fn keycode_to_evdev_key(key: KeyCode) -> Option<Key> {
         KeyCode::S => 31,  KeyCode::T => 20,  KeyCode::U => 22,
         KeyCode::V => 47,  KeyCode::W => 17,  KeyCode::X => 45,
         KeyCode::Y => 21,  KeyCode::Z => 44,
+
+        // ── Digits (0–9) ─────────────────────────────────────────────────────
+        KeyCode::D0 => 11,  KeyCode::D1 => 2,   KeyCode::D2 => 3,
+        KeyCode::D3 => 4,   KeyCode::D4 => 5,   KeyCode::D5 => 6,
+        KeyCode::D6 => 7,   KeyCode::D7 => 8,   KeyCode::D8 => 9,
+        KeyCode::D9 => 10,
+
+        // ── Punctuation / OEM ────────────────────────────────────────────────
+        KeyCode::Escape       => 1,
+        KeyCode::BracketLeft  => 26,
+        KeyCode::BracketRight => 27,
+        KeyCode::Backslash    => 43,
+        KeyCode::Period       => 52,
 
         // ── Function keys ─────────────────────────────────────────────────────
         KeyCode::F1  => 59,  KeyCode::F2  => 60,  KeyCode::F3  => 61,
