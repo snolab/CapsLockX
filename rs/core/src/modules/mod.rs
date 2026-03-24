@@ -75,7 +75,7 @@ impl Modules {
                 best_model,
                 cfg.stt_correction,
             ),
-            window_manager:  WindowManagerModule::new(Arc::clone(&platform)),
+            window_manager:  WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
             platform,
         };
         drop(cfg);
@@ -126,6 +126,7 @@ impl Modules {
     pub fn apply_speeds(&self, s: &SpeedConfig) {
         self.edit .apply_speeds(s);
         self.mouse.apply_speeds(s);
+        self.window_manager.apply_speeds(s);
     }
 
     /// Hot-reload voice/brainstorm config from updated preferences.
@@ -146,12 +147,14 @@ impl Modules {
     pub fn tick(&self) {
         self.edit.tick();
         self.mouse.tick();
+        self.window_manager.tick();
     }
 
     /// Stop all ongoing AccModel physics (called when CLX mode exits).
     pub fn stop_all(&self) {
         self.edit.stop();
         self.mouse.stop();
+        self.window_manager.stop();
         self.voice.stop();
     }
 }

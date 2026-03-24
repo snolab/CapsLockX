@@ -1,25 +1,55 @@
-/// CLX-WindowManager – window cycling, tiling, close/kill, transparency.
+/// CLX-WindowManager – window cycling (AccModel), tiling, close/kill.
 ///
-/// This module only dispatches to the platform's window-management methods.
-/// All actual Win32 / OS calls live in the adapter's `output.rs`.
+/// Z uses AccModel2D for accelerating window cycling — hold Z to cycle
+/// faster and faster, like HJKL cursor movement.
 use std::sync::Arc;
+use crate::acc_model::AccModel2D;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::{ArrangeMode, Platform};
+use crate::state::{ClxState, SpeedConfig};
 
 pub struct WindowManagerModule {
     platform: Arc<dyn Platform>,
+    cycle: AccModel2D,
 }
 
 impl WindowManagerModule {
-    pub fn new(platform: Arc<dyn Platform>) -> Self {
-        Self { platform }
+    pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
+        let speed = state.config.read().unwrap().speed.clone();
+        let p = Arc::clone(&platform);
+        let cycle = AccModel2D::new(
+            Arc::new(move |dx, _dy, phase| {
+                if phase == "MOVE" {
+                    // dx > 0 = forward, dx < 0 = backward
+                    for _ in 0..dx.abs() {
+                        p.cycle_windows(if dx > 0 { 1 } else { -1 });
+                    }
+                }
+            }),
+            speed.cursor_speed * 0.5, // slower than cursor — windows are heavier
+            speed.cursor_speed * 0.5,
+            250.0,
+        );
+        Self { platform, cycle }
+    }
+
+    pub fn apply_speeds(&self, s: &SpeedConfig) {
+        self.cycle.set_ratios(s.cursor_speed * 0.5, s.cursor_speed * 0.5, 250.0);
+    }
+
+    pub fn stop(&self) {
+        self.cycle.stop();
+    }
+
+    pub fn tick(&self) {
+        self.cycle.tick_once();
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
         match key {
             KeyCode::Z => {
-                if mods.shift { self.platform.cycle_windows(-1) }
-                else          { self.platform.cycle_windows(1)  }
+                if mods.shift { self.cycle.press_left() }  // backward
+                else          { self.cycle.press_right() } // forward
                 true
             }
             KeyCode::X => {
@@ -36,8 +66,6 @@ impl WindowManagerModule {
                 }
                 true
             }
-            // V is owned by voice module (Space+V = voice input).
-            // Window transparency removed — was conflicting with voice.
             KeyCode::Period => {
                 self.platform.restart();
                 true
@@ -46,8 +74,11 @@ impl WindowManagerModule {
         }
     }
 
-    pub fn on_key_up(&self, _key: KeyCode) -> bool {
-        false
+    pub fn on_key_up(&self, key: KeyCode) -> bool {
+        match key {
+            KeyCode::Z => { self.cycle.stop(); true }
+            _ => false,
+        }
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
