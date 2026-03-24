@@ -141,8 +141,14 @@ fn save_pos(x: f64, y: f64) {
 
 // ── drawRect: callback ───────────────────────────────────────────────────────
 
+static mut DRAW_RECT_THIS: *mut c_void = std::ptr::null_mut();
 extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
-    catch_ffi_panic("draw_rect", || draw_rect_inner(this));
+    unsafe { DRAW_RECT_THIS = this; }
+    let r = unsafe { objc_try_catch(draw_rect_c, std::ptr::null_mut()) };
+    if r != 0 { eprintln!("[CLX] ObjC exception in draw_rect (caught)"); }
+}
+extern "C" fn draw_rect_c(_: *mut c_void) {
+    draw_rect_inner(unsafe { DRAW_RECT_THIS });
 }
 fn draw_rect_inner(this: *mut c_void) {
     unsafe {
@@ -246,7 +252,14 @@ pub fn show_overlay() {
 }
 
 extern "C" fn show_main(_: *mut c_void) {
-    catch_ffi_panic("show_main", || show_main_inner());
+    let result = unsafe { objc_try_catch(show_main_inner_c, std::ptr::null_mut()) };
+    if result != 0 {
+        eprintln!("[CLX] ObjC exception in voice_overlay::show_main (caught, not crashing)");
+    }
+}
+
+extern "C" fn show_main_inner_c(_: *mut c_void) {
+    show_main_inner();
 }
 
 fn show_main_inner() {
@@ -713,8 +726,10 @@ pub fn hide_overlay() {
 }
 
 extern "C" fn hide_main(_: *mut c_void) {
-    catch_ffi_panic("hide_main", || hide_main_inner());
+    let r = unsafe { objc_try_catch(hide_main_c, std::ptr::null_mut()) };
+    if r != 0 { eprintln!("[CLX] ObjC exception in hide_main (caught)"); }
 }
+extern "C" fn hide_main_c(_: *mut c_void) { hide_main_inner(); }
 fn hide_main_inner() {
     unsafe {
         let win = WINDOW_PTR.load(Ordering::Acquire);
@@ -860,8 +875,10 @@ unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
 }
 
 extern "C" fn trigger_redraw(_: *mut c_void) {
-    catch_ffi_panic("trigger_redraw", || trigger_redraw_inner());
+    let r = unsafe { objc_try_catch(trigger_redraw_c, std::ptr::null_mut()) };
+    if r != 0 { eprintln!("[CLX] ObjC exception in trigger_redraw (caught)"); }
 }
+extern "C" fn trigger_redraw_c(_: *mut c_void) { trigger_redraw_inner(); }
 fn trigger_redraw_inner() {
     unsafe {
         let view = VIEW_PTR.load(Ordering::Acquire);
