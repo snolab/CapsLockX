@@ -1,5 +1,30 @@
 #!/bin/bash
-# CLX launcher — sets library path for onnxruntime
+# CLX launcher — sets library path + auto-restarts on crash (watchdog).
 DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.."
 export DYLD_LIBRARY_PATH="${DIR}/rs/target/release:${DYLD_LIBRARY_PATH}"
-exec "${DIR}/clx" "$@"
+
+# If args are passed (agent, dino, --help, etc.), run directly — no watchdog.
+if [ $# -gt 0 ]; then
+    exec "${DIR}/clx" "$@"
+fi
+
+# Daemon mode: watchdog loop restarts on crash (max 10 restarts, 2s cooldown).
+MAX_RESTARTS=10
+COOLDOWN=2
+restarts=0
+
+while [ $restarts -lt $MAX_RESTARTS ]; do
+    "${DIR}/clx" -f
+    exit_code=$?
+    if [ $exit_code -eq 0 ] || [ $exit_code -eq 130 ]; then
+        # Clean exit (0) or Ctrl+C (130) — don't restart.
+        break
+    fi
+    restarts=$((restarts + 1))
+    echo "[CLX] crashed (exit $exit_code), restarting ($restarts/$MAX_RESTARTS)..." >&2
+    sleep $COOLDOWN
+done
+
+if [ $restarts -ge $MAX_RESTARTS ]; then
+    echo "[CLX] too many crashes ($MAX_RESTARTS), giving up." >&2
+fi

@@ -246,33 +246,7 @@ pub fn show_overlay() {
 }
 
 extern "C" fn show_main(_: *mut c_void) {
-    // ObjC exceptions inside dispatch callbacks = instant abort.
-    // catch_unwind can't catch foreign (ObjC) exceptions.
-    // Safest approach: if show_main_inner has crashed before, skip it.
-    static FAILED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-    if FAILED.load(std::sync::atomic::Ordering::Relaxed) {
-        return; // overlay is broken, don't retry
-    }
-
-    // Set a flag BEFORE calling — if we crash, the flag stays true
-    // and we won't retry on next call. (This doesn't prevent the first crash,
-    // but prevents crash loops.)
-    static ENTERED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-    if ENTERED.swap(true, std::sync::atomic::Ordering::SeqCst) {
-        // Re-entrant call — something went wrong.
-        return;
-    }
-
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        show_main_inner();
-    }));
-
-    ENTERED.store(false, std::sync::atomic::Ordering::SeqCst);
-
-    if result.is_err() {
-        FAILED.store(true, std::sync::atomic::Ordering::Relaxed);
-        eprintln!("[CLX] voice overlay show_main failed — overlay disabled for this session");
-    }
+    catch_ffi_panic("show_main", || show_main_inner());
 }
 
 fn show_main_inner() {
