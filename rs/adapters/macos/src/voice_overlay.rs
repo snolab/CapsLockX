@@ -148,7 +148,9 @@ extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
     if r != 0 { eprintln!("[CLX] ObjC exception in draw_rect (caught)"); }
 }
 extern "C" fn draw_rect_c(_: *mut c_void) {
-    draw_rect_inner(unsafe { DRAW_RECT_THIS });
+    let this = unsafe { DRAW_RECT_THIS };
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| draw_rect_inner(this)))
+        .map_err(|_| eprintln!("[CLX] Rust panic in draw_rect (caught)"));
 }
 fn draw_rect_inner(this: *mut c_void) {
     unsafe {
@@ -259,7 +261,10 @@ extern "C" fn show_main(_: *mut c_void) {
 }
 
 extern "C" fn show_main_inner_c(_: *mut c_void) {
-    show_main_inner();
+    // catch_unwind for Rust panics (objc_try_catch handles ObjC exceptions).
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        show_main_inner();
+    })).map_err(|_| eprintln!("[CLX] Rust panic in show_main_inner (caught)"));
 }
 
 fn show_main_inner() {
@@ -729,7 +734,10 @@ extern "C" fn hide_main(_: *mut c_void) {
     let r = unsafe { objc_try_catch(hide_main_c, std::ptr::null_mut()) };
     if r != 0 { eprintln!("[CLX] ObjC exception in hide_main (caught)"); }
 }
-extern "C" fn hide_main_c(_: *mut c_void) { hide_main_inner(); }
+extern "C" fn hide_main_c(_: *mut c_void) {
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hide_main_inner()))
+        .map_err(|_| eprintln!("[CLX] Rust panic in hide_main (caught)"));
+}
 fn hide_main_inner() {
     unsafe {
         let win = WINDOW_PTR.load(Ordering::Acquire);
@@ -878,7 +886,10 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
     let r = unsafe { objc_try_catch(trigger_redraw_c, std::ptr::null_mut()) };
     if r != 0 { eprintln!("[CLX] ObjC exception in trigger_redraw (caught)"); }
 }
-extern "C" fn trigger_redraw_c(_: *mut c_void) { trigger_redraw_inner(); }
+extern "C" fn trigger_redraw_c(_: *mut c_void) {
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| trigger_redraw_inner()))
+        .map_err(|_| eprintln!("[CLX] Rust panic in trigger_redraw (caught)"));
+}
 fn trigger_redraw_inner() {
     unsafe {
         let view = VIEW_PTR.load(Ordering::Acquire);
