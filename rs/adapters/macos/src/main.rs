@@ -93,11 +93,29 @@ fn main() {
     }
 
     // Kill any existing clx daemon instance (deduplicate).
+    // Match by executable path — works regardless of how clx was invoked.
     {
-        let my_pid = std::process::id().to_string();
+        let my_pid = std::process::id();
+        let exe = std::env::current_exe().unwrap_or_default();
+        let exe_str = exe.to_string_lossy();
+        eprintln!("[CLX] dedup: my_pid={} exe={}", my_pid, exe_str);
+
+        // Use pgrep to find processes with the same executable name.
+        if let Ok(output) = std::process::Command::new("pgrep").arg("-x").arg("clx").output() {
+            let pids = String::from_utf8_lossy(&output.stdout);
+            for line in pids.lines() {
+                if let Ok(pid) = line.trim().parse::<u32>() {
+                    if pid != my_pid {
+                        eprintln!("[CLX] dedup: killing old instance pid={}", pid);
+                        let _ = std::process::Command::new("kill").arg("-9").arg(pid.to_string()).status();
+                    }
+                }
+            }
+        }
+        // Also try matching by path pattern for when launched as ./clx or /path/to/clx
         let _ = std::process::Command::new("sh")
             .args(["-c", &format!(
-                "pgrep -f 'CapsLockX/clx' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
+                "pgrep -f '/clx\\b|/capslockx\\b' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
             )])
             .status();
     }
