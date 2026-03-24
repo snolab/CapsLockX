@@ -8,14 +8,24 @@ use std::ffi::c_void;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
-/// Wrap a closure in catch_unwind for use inside extern "C" fn callbacks.
-/// Panics inside extern "C" fn cause abort() — this prevents that.
-fn catch_ffi_panic(name: &str, f: impl FnOnce() + std::panic::UnwindSafe) {
-    if let Err(e) = std::panic::catch_unwind(f) {
-        let msg = if let Some(s) = e.downcast_ref::<&str>() { s.to_string() }
-                  else if let Some(s) = e.downcast_ref::<String>() { s.clone() }
-                  else { "unknown".to_string() };
-        eprintln!("[CLX] PANIC in voice_overlay::{} (caught, not crashing): {}", name, msg);
+// ObjC exception catcher (compiled from objc_try.m).
+extern "C" {
+    fn objc_try_catch(fn_ptr: extern "C" fn(*mut c_void), context: *mut c_void) -> i32;
+}
+
+/// Wrap a closure for use inside dispatch callbacks.
+/// Catches BOTH Rust panics AND ObjC exceptions (foreign exceptions).
+fn catch_ffi_panic(_name: &str, f: impl FnOnce()) {
+    extern "C" fn trampoline(ctx: *mut c_void) {
+        let boxed: Box<Box<dyn FnOnce()>> = unsafe { Box::from_raw(ctx as *mut _) };
+        boxed();
+    }
+
+    let boxed: Box<Box<dyn FnOnce()>> = Box::new(Box::new(f));
+    let ctx = Box::into_raw(boxed) as *mut c_void;
+    let result = unsafe { objc_try_catch(trampoline, ctx) };
+    if result != 0 {
+        eprintln!("[CLX] ObjC EXCEPTION in voice_overlay (caught, not crashing)");
     }
 }
 
@@ -236,7 +246,33 @@ pub fn show_overlay() {
 }
 
 extern "C" fn show_main(_: *mut c_void) {
-    catch_ffi_panic("show_main", || show_main_inner());
+    // ObjC exceptions inside dispatch callbacks = instant abort.
+    // catch_unwind can't catch foreign (ObjC) exceptions.
+    // Safest approach: if show_main_inner has crashed before, skip it.
+    static FAILED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if FAILED.load(std::sync::atomic::Ordering::Relaxed) {
+        return; // overlay is broken, don't retry
+    }
+
+    // Set a flag BEFORE calling — if we crash, the flag stays true
+    // and we won't retry on next call. (This doesn't prevent the first crash,
+    // but prevents crash loops.)
+    static ENTERED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if ENTERED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        // Re-entrant call — something went wrong.
+        return;
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        show_main_inner();
+    }));
+
+    ENTERED.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    if result.is_err() {
+        FAILED.store(true, std::sync::atomic::Ordering::Relaxed);
+        eprintln!("[CLX] voice overlay show_main failed — overlay disabled for this session");
+    }
 }
 
 fn show_main_inner() {
