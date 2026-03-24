@@ -79,6 +79,15 @@ impl Platform for VoicePlatform {
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 fn main() {
+    // Capture the FIRST panic message before panic_cannot_unwind swallows it.
+    std::panic::set_hook(Box::new(|info| {
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() { s.to_string() }
+                  else if let Some(s) = info.payload().downcast_ref::<String>() { s.clone() }
+                  else { "unknown".to_string() };
+        let loc = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_default();
+        eprintln!("\n[PANIC] >>> {} at {} <<<\n", msg, loc);
+    }));
+
     eprintln!("[voice-standalone] CLX Voice Standalone");
     eprintln!("[voice-standalone] Dual capture: mic (AEC) + system audio");
     eprintln!("[voice-standalone] Ctrl+C to quit\n");

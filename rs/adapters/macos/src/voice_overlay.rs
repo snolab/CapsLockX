@@ -258,30 +258,29 @@ pub fn show_overlay() {
 }
 
 extern "C" fn show_main(_: *mut c_void) {
+    // Use objc_try_catch to catch ObjC exceptions.
+    // show_main_inner_c is extern "C" — Rust panics there = abort.
+    // But we've eliminated all unwrap() calls, so only ObjC exceptions should happen.
+    static DISABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if DISABLED.load(std::sync::atomic::Ordering::Relaxed) { return; }
+
     let result = unsafe { objc_try_catch(show_main_inner_c, std::ptr::null_mut()) };
     if result != 0 {
-        eprintln!("[CLX] ObjC exception in voice_overlay::show_main (caught, not crashing)");
+        eprintln!("[CLX] ObjC exception in show_main — disabling voice overlay for this session");
+        DISABLED.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
 extern "C" fn show_main_inner_c(_: *mut c_void) {
-    // We need to catch BOTH Rust panics AND ObjC exceptions.
-    // Problem: catch_unwind aborts on ObjC exceptions, @try/@catch doesn't see Rust panics.
-    // Solution: set a custom panic hook that logs + aborts gracefully,
-    // then let the outer @try/@catch handle ObjC exceptions.
-    //
-    // Actually: just use set_hook to log the panic, then call show_main_inner
-    // without catch_unwind. If it's a Rust panic, the hook logs it before abort.
-    // If it's an ObjC exception, @try/@catch catches it.
-    // The process still dies on Rust panic, but at least we know WHY.
-    //
-    // For true isolation: we'd need to run voice overlay in a subprocess.
-    // For now, log the panic reason so we can fix the root cause.
     show_main_inner();
 }
 
 fn show_main_inner() {
+    eprintln!("[CLX] show_main_inner: entered");
     unsafe {
+        // Autorelease pool — required for ObjC autoreleased objects (NSString, etc.)
+        let pool = msg0(msg0(cls(b"NSAutoreleasePool\0"), sel(b"alloc\0")), sel(b"init\0"));
+
         let existing = WINDOW_PTR.load(Ordering::Acquire);
         if !existing.is_null() {
             let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
@@ -307,6 +306,7 @@ fn show_main_inner() {
         // Position at top-center (AppKit coords: y=0 is bottom, so top = screen_h - oh - margin)
         let rect = NSRect { x: (sf.w - ow) / 2.0, y: sf.h - oh - 40.0, w: ow, h: oh };
 
+        eprintln!("[CLX] show_main_inner: screen size ok, creating window...");
         // Create window
         let alloc = msg0(cls(b"NSWindow\0"), sel(b"alloc\0"));
         let win: *mut c_void = {
@@ -314,7 +314,8 @@ fn show_main_inner() {
                 std::mem::transmute(objc_msgSend as *const ());
             f(alloc, sel(b"initWithContentRect:styleMask:backing:defer:\0"), rect, 0u64, 2u64, false)
         };
-        if win.is_null() { return; }
+        if win.is_null() { eprintln!("[CLX] show_main_inner: window is null!"); return; }
+        eprintln!("[CLX] show_main_inner: window created, configuring...");
 
         // Configure — fully transparent window, text has its own background.
         let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
@@ -330,6 +331,7 @@ fn show_main_inner() {
         let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
         f_u64(win, sel(b"setCollectionBehavior:\0"), 1 | 16); // allSpaces + stationary
 
+        eprintln!("[CLX] show_main_inner: window configured, creating view...");
         // Create view
         let view_cls = cls(b"CLXWaveformView\0");
         if view_cls.is_null() { return; }
@@ -360,6 +362,7 @@ fn show_main_inner() {
         };
         msg1_ptr(container, sel(b"addSubview:\0"), wf_view);
 
+        eprintln!("[CLX] show_main_inner: view created, creating label...");
         // Subtitle label: bottom 65px (3 lines)
         let label_cls = cls(b"NSTextField\0");
         let label_alloc = msg0(label_cls, sel(b"alloc\0"));
@@ -386,21 +389,29 @@ fn show_main_inner() {
                 f_i64(cell, sel(b"setLineBreakMode:\0"), 0); // word wrap
                 f_bool(cell, sel(b"setWraps:\0"), true);
             }
+            eprintln!("[CLX] show_main_inner: label configured, setting attributed subtitle...");
             // Set initial attributed text with per-character background.
             set_attributed_subtitle(label, "🎤 Listening...");
+            eprintln!("[CLX] show_main_inner: subtitle set OK");
 
             msg1_ptr(container, sel(b"addSubview:\0"), label);
             LABEL_PTR.store(label, Ordering::Release);
         }
 
+        eprintln!("[CLX] show_main_inner: setting content view...");
         msg1_ptr(win, sel(b"setContentView:\0"), container);
+        eprintln!("[CLX] show_main_inner: showing window...");
         let f_show: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
         f_show(win, sel(b"orderFront:\0"), std::ptr::null_mut());
 
         VIEW_PTR.store(wf_view, Ordering::Release);
         WINDOW_PTR.store(win, Ordering::Release);
+        eprintln!("[CLX] show_main_inner: window shown. Skipping toolbar handle (was crashing).");
+        msg0(pool, sel(b"drain\0"));
+        return;
 
-        // Create toolbar handle — horizontal bar above the overlay with ⠿ Move, ✕ Close.
+        // DISABLED: Create toolbar handle — was causing ObjC exception crash.
+        // TODO: investigate why NSTextField setStringValue crashes in toolbar panel.
         // Appears on hover, hidden by default. Dragging moves the overlay.
         let bar_h = 18.0_f64;
         let bar_rect = NSRect { x: rect.x, y: rect.y + oh, w: ow, h: bar_h };
@@ -413,7 +424,9 @@ fn show_main_inner() {
             f(handle_alloc, sel(b"initWithContentRect:styleMask:backing:defer:\0"),
               bar_rect, handle_style, 2u64, false)
         };
+        eprintln!("[CLX] show_main_inner: handle alloc={:?}", handle);
         if !handle.is_null() {
+            eprintln!("[CLX] show_main_inner: configuring handle...");
             let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
             f_bool(handle, sel(b"setOpaque:\0"), false);
             f_bool(handle, sel(b"setIgnoresMouseEvents:\0"), false);
@@ -435,6 +448,7 @@ fn show_main_inner() {
             };
             msg1_ptr(handle, sel(b"setBackgroundColor:\0"), handle_bg);
 
+            eprintln!("[CLX] show_main_inner: handle configured, getting content view...");
             let content_view = msg0(handle, sel(b"contentView\0"));
             let grip_color = {
                 let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void
@@ -450,14 +464,21 @@ fn show_main_inner() {
 
             // Helper to create a label in the bar.
             let make_label = |x: f64, w: f64, text: &str| -> *mut c_void {
+                eprintln!("[CLX] make_label: alloc NSTextField...");
                 let lbl = msg0(cls(b"NSTextField\0"), sel(b"alloc\0"));
+                eprintln!("[CLX] make_label: initWithFrame...");
                 let r = NSRect { x, y: 0.0, w, h: bar_h };
                 let lbl: *mut c_void = {
                     let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                         std::mem::transmute(objc_msgSend as *const ());
                     f(lbl, sel(b"initWithFrame:\0"), r)
                 };
-                msg1_ptr(lbl, sel(b"setStringValue:\0"), nsstring(text));
+                eprintln!("[CLX] make_label: lbl={:?} setStringValue {:?}...", lbl, text);
+                if lbl.is_null() { eprintln!("[CLX] make_label: lbl is NULL!"); return std::ptr::null_mut(); }
+                let ns = nsstring(text);
+                eprintln!("[CLX] make_label: ns={:?}", ns);
+                if ns.is_null() { eprintln!("[CLX] make_label: nsstring returned NULL!"); return std::ptr::null_mut(); }
+                msg1_ptr(lbl, sel(b"setStringValue:\0"), ns);
                 f_bool(lbl, sel(b"setBezeled:\0"), false);
                 f_bool(lbl, sel(b"setDrawsBackground:\0"), false);
                 f_bool(lbl, sel(b"setEditable:\0"), false);
@@ -472,7 +493,8 @@ fn show_main_inner() {
             };
 
             // Layout: [⠿ Move] [model info] [✕]
-            make_label(4.0, 50.0, "⠿ Move");
+            eprintln!("[CLX] show_main_inner: calling make_label(Move)...");
+            make_label(4.0, 50.0, "Move");  // removed braille char to test
 
             // Show active models in center of toolbar.
             let stt_engine = std::env::var("CLX_STT_ENGINE").unwrap_or_else(|_| "SenseVoice".into());
@@ -485,6 +507,7 @@ fn show_main_inner() {
             make_label(60.0, ow - 90.0, &model_info);
             // ✕ label is just visual — actual close button overlays it below.
 
+            eprintln!("[CLX] show_main_inner: labels created, adding close button...");
             // Add a close button (actual NSButton for click handling).
             {
                 // Register close action class once.
@@ -528,6 +551,7 @@ fn show_main_inner() {
                 }
             }
 
+            eprintln!("[CLX] show_main_inner: close button done, linking toolbar...");
             // Link toolbar as child window — moving the bar moves the overlay.
             let f_add_child: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, u64) =
                 std::mem::transmute(objc_msgSend as *const ());
@@ -625,6 +649,7 @@ fn show_main_inner() {
                 hover_loop();
             }).ok();
         }
+        msg0(pool, sel(b"drain\0"));
     }
 }
 
