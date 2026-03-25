@@ -54,17 +54,7 @@ Z-order: current window topmost, neighbors behind, farthest at back.
 
 Visual result (5 windows, current = window 3):
 
-                              ┌─── Window 5 (back, top-right)
-                           ┌──┤
-                     ╔═════╪══╪═══╗
-                     ║     │  │   ║ Window 3 (CURRENT, topmost)
-                  ┌──╫─────┘  │   ║
-               ┌──┤  ║        └───╢ Window 4 (behind current)
-               │  └──╫────────────╢
-               │     ║            ║
-               │     ╚════════════╝
-               │  Window 2 (behind current, bottom-left edge visible)
-               └─── Window 1 (back, bottom-left)
+![Card Deck Z-Order](card-deck-zorder.svg)
 
 The cascade goes bottom-left → top-right. The current window is
 like the center card in a fanned hand. Windows before it (lower index)
