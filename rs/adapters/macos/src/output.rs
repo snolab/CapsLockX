@@ -1188,7 +1188,7 @@ impl Platform for MacPlatform {
 
         match mode {
             ArrangeMode::Stacked => {
-                let dx = 48.0_f64.min(aw / n as f64);
+                let dx = 96.0_f64.min(aw / n as f64); // 2x wider cascade offset
                 let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
                 let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
                 let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
