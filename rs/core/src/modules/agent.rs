@@ -1,7 +1,7 @@
-/// CLX Agent — LLM-driven computer control via clx-agent subprocess.
+/// CLX Agent — LLM-driven computer control via voice input.
 ///
 /// Keybindings:
-///   CLX+M       — Prompt for task, launch clx-agent with overlay log
+///   CLX+M       — Listen to mic → STT → send to agent → execute → loop
 ///   CLX+Shift+M — Kill running agent
 ///   ESC         — Kill running agent (when active)
 
@@ -12,6 +12,76 @@ use std::io::{BufRead, BufReader};
 
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
+
+/// Record a short voice prompt via macOS mic and run STT.
+/// Returns the transcribed text, or None if no speech detected.
+fn record_voice_prompt() -> Option<String> {
+    // Use sox/rec to capture 5s of audio, then run whisper/sensevoice via clx.
+    // Simplest approach: use `say` for feedback + `rec` for recording.
+
+    // Check if sox is available for recording.
+    let has_sox = std::process::Command::new("which").arg("rec")
+        .output().map(|o| o.status.success()).unwrap_or(false);
+
+    let audio_path = std::env::current_exe().ok()
+        .and_then(|e| e.parent().map(|p| p.join("tmp").join("agent-voice.wav")))
+        .unwrap_or_else(|| "tmp/agent-voice.wav".into());
+    let _ = std::fs::create_dir_all(audio_path.parent().unwrap_or(std::path::Path::new(".")));
+
+    if has_sox {
+        eprintln!("[CLX] agent: recording 5s via sox...");
+        // Record 5 seconds, mono, 16kHz (optimal for whisper/sensevoice).
+        let status = std::process::Command::new("rec")
+            .args([
+                audio_path.to_str().unwrap_or("tmp/agent-voice.wav"),
+                "rate", "16000", "channels", "1",
+                "trim", "0", "5",  // 5 seconds max
+            ])
+            .stderr(std::process::Stdio::null())
+            .status();
+        if status.map(|s| s.success()).unwrap_or(false) {
+            return run_stt_on_file(&audio_path);
+        }
+    }
+
+    // Fallback: use osascript to ask for text input (old behavior).
+    eprintln!("[CLX] agent: sox not available, falling back to text input");
+    let output = std::process::Command::new("osascript")
+        .args(["-e", r#"display dialog "Agent command:" default answer "" with title "CLX Agent""#])
+        .output().ok()?;
+    if !output.status.success() { return None; }
+    let text = String::from_utf8_lossy(&output.stdout);
+    // osascript returns "button returned:OK, text returned:THE_TEXT"
+    text.split("text returned:").nth(1).map(|s| s.trim().to_string())
+}
+
+/// Run STT on an audio file using the clx binary's SenseVoice/Whisper engine.
+fn run_stt_on_file(path: &std::path::Path) -> Option<String> {
+    // Use the clx binary to run STT (it has the ONNX runtime loaded).
+    let clx_bin = std::env::current_exe().ok()?;
+    // For now, use a simpler approach: call whisper CLI if available.
+    let has_whisper = std::process::Command::new("which").arg("whisper")
+        .output().map(|o| o.status.success()).unwrap_or(false);
+
+    if has_whisper {
+        let output = std::process::Command::new("whisper")
+            .args(["--model", "tiny", "--language", "auto", "--output_format", "txt",
+                   path.to_str().unwrap_or("")])
+            .output().ok()?;
+        if output.status.success() {
+            let txt_path = path.with_extension("txt");
+            return std::fs::read_to_string(&txt_path).ok();
+        }
+    }
+
+    // Fallback: read the file size — if > 1KB, something was recorded but we can't transcribe.
+    let meta = std::fs::metadata(path).ok()?;
+    if meta.len() > 1024 {
+        eprintln!("[CLX] agent: audio recorded ({} bytes) but no STT engine available", meta.len());
+        eprintln!("[CLX] agent: install sox (`brew install sox`) and whisper (`pip install openai-whisper`)");
+    }
+    None
+}
 
 pub struct AgentModule {
     platform: Arc<dyn Platform>,
@@ -128,9 +198,6 @@ impl AgentModule {
         // Kill any existing agent first.
         self.kill_agent();
 
-        // Capture selected text for context.
-        let selected_text = self.platform.get_selected_text();
-
         let platform = Arc::clone(&self.platform);
         let running = &self.running as *const AtomicBool as usize;
         let child_ptr = &self.child as *const Mutex<Option<std::process::Child>> as usize;
@@ -141,29 +208,28 @@ impl AgentModule {
                 let running_ref = unsafe { &*(running as *const AtomicBool) };
                 let child_ref = unsafe { &*(child_ptr as *const Mutex<Option<std::process::Child>>) };
 
-                // Show prompt dialog (subprocess — keyboard works normally).
-                let prefill = if selected_text.is_empty() {
-                    String::new()
-                } else {
-                    selected_text
-                };
+                // Voice input loop: listen → STT → agent → repeat.
+                running_ref.store(true, Ordering::Relaxed);
 
-                let prompt = match platform.show_prompt_input(
-                    "CLX Agent",
-                    "What should the agent do? It will control your keyboard and mouse.",
-                    &prefill,
-                ) {
-                    Some(p) if !p.trim().is_empty() => p.trim().to_string(),
-                    _ => {
-                        eprintln!("[CLX] agent: cancelled");
-                        return;
-                    }
-                };
+                loop {
+                    if !running_ref.load(Ordering::Relaxed) { break; }
 
-                eprintln!("[CLX] agent: launching with prompt: {}", &prompt[..prompt.len().min(80)]);
+                    platform.show_brainstorm_overlay("🎤 Agent listening... speak your command.\n\nESC to stop.");
+                    eprintln!("[CLX] agent: listening...");
 
-                // Show overlay immediately with initial status.
-                platform.show_brainstorm_overlay(&format!("Agent: {}\n\nStarting...", prompt));
+                    let prompt = match record_voice_prompt() {
+                        Some(p) if !p.trim().is_empty() => p.trim().to_string(),
+                        _ => {
+                            // No speech — keep listening.
+                            eprintln!("[CLX] agent: no speech, retrying...");
+                            continue;
+                        }
+                    };
+
+                    if !running_ref.load(Ordering::Relaxed) { break; }
+
+                    eprintln!("[CLX] agent: voice prompt: {}", &prompt[..prompt.len().min(80)]);
+                    platform.show_brainstorm_overlay(&format!("🎤 \"{}\"\n\nRunning agent...", prompt));
 
                 // Spawn `clx agent --prompt "..."` with stderr piped for overlay.
                 let clx_bin = std::env::current_exe().unwrap_or_else(|_| "clx".into());
@@ -220,17 +286,20 @@ impl AgentModule {
                                 }
                             }
                         }
-                        running_ref.store(false, Ordering::Relaxed);
                         *child_ref.lock().unwrap() = None;
                     }
                     Err(e) => {
                         eprintln!("[CLX] agent: failed to spawn: {}", e);
                         platform.show_brainstorm_overlay(&format!(
-                            "Agent error: failed to spawn clx agent\n{}\nBinary: {:?}",
-                            e, clx_bin
+                            "Agent error: {}\n\n🎤 Listening for next command...", e
                         ));
                     }
                 }
+
+                } // end loop
+
+                running_ref.store(false, Ordering::Relaxed);
+                platform.hide_brainstorm_overlay();
             })
             .ok();
     }
