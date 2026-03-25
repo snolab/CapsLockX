@@ -56,18 +56,15 @@ jobs:
         working-directory: rs
         run: cargo build -p capslockx-windows -p clx-screen-reader --release
 
-      - name: Package Windows installer zip
+      - name: Package Windows zip
         shell: pwsh
         run: |
-          $VERSION = "${{ github.ref_name }}"
           $STAGE = "CapsLockX"
           New-Item -ItemType Directory -Force -Path $STAGE
           Copy-Item rs\target\release\clx-rust.exe  "$STAGE\clx.exe"
           Copy-Item rs\target\release\clx-screen-reader.exe "$STAGE\clx-screen-reader.exe"
           Copy-Item scripts\install.ps1 "$STAGE\install.ps1"
-          # Create uninstaller
           @"
-          # CapsLockX uninstaller
           `$InstallDir = "`$env:LOCALAPPDATA\CapsLockX"
           `$StartMenu = [Environment]::GetFolderPath("StartMenu")
           Remove-Item -Recurse -Force `$InstallDir -ErrorAction SilentlyContinue
@@ -79,9 +76,29 @@ jobs:
           "@ | Out-File -Encoding utf8 "$STAGE\uninstall.ps1"
           Compress-Archive -Path "$STAGE\*" -DestinationPath "CapsLockX-windows-x86_64.zip"
 
+      - name: Build NSIS setup.exe
+        shell: pwsh
+        run: |
+          # Stage binaries for NSIS
+          Copy-Item rs\target\release\clx-rust.exe clx.exe
+          Copy-Item rs\target\release\clx-screen-reader.exe clx-screen-reader.exe
+          # Install NSIS + EnVar plugin
+          choco install nsis -y --no-progress
+          $NSIS_DIR = "C:\Program Files (x86)\NSIS"
+          # Download EnVar plugin for PATH manipulation
+          Invoke-WebRequest -Uri "https://nsis.sourceforge.io/mediawiki/images/7/7f/EnVar_plugin.zip" `
+            -OutFile envar.zip
+          Expand-Archive envar.zip -DestinationPath envar -Force
+          Copy-Item envar\Plugins\x86-unicode\EnVar.dll "$NSIS_DIR\Plugins\x86-unicode\" -Force
+          # Build installer
+          $VERSION = "${{ github.ref_name }}".TrimStart("v")
+          & "$NSIS_DIR\makensis.exe" /DVERSION=$VERSION scripts\installer.nsi
+          Move-Item scripts\CapsLockX-setup-x86_64.exe CapsLockX-setup-x86_64.exe
+
       # Commit binaries back to main only for stable releases
       - name: Commit binaries to main
         if: "!contains(github.ref_name, '-')"
+        shell: pwsh
         run: |
           git fetch origin main
           git checkout main
@@ -92,12 +109,15 @@ jobs:
           git add clx-rust.exe clx-screen-reader.exe
           git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
           git push origin main
-        shell: pwsh
 
-      - name: Upload Windows package
+      - name: Upload Windows packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" CapsLockX-windows-x86_64.zip --clobber
+        run: |
+          gh release upload "${{ github.ref_name }}" ^
+            CapsLockX-windows-x86_64.zip ^
+            CapsLockX-setup-x86_64.exe ^
+            --clobber
 
   build-linux:
     name: Build Linux (x86_64-unknown-linux-gnu)
@@ -139,16 +159,15 @@ jobs:
       - name: Package .deb
         run: |
           VERSION="${{ github.ref_name }}"
-          # Strip leading 'v' and any pre-release suffix for deb version
           DEB_VERSION="${VERSION#v}"
           PKG="capslockx_${DEB_VERSION}_amd64"
           mkdir -p "$PKG/DEBIAN"
           mkdir -p "$PKG/usr/local/bin"
           cp rs/target/release/capslockx "$PKG/usr/local/bin/clx"
           chmod 755 "$PKG/usr/local/bin/clx"
-          cat > "$PKG/DEBIAN/control" <<EOF
+          cat > "$PKG/DEBIAN/control" << 'CTRL'
           Package: capslockx
-          Version: ${DEB_VERSION}
+          Version: DEB_VERSION_PLACEHOLDER
           Section: utils
           Priority: optional
           Architecture: amd64
@@ -157,9 +176,9 @@ jobs:
            Uses CapsLock and Space as trigger keys for hotkey combos.
            Vim-style cursor, mouse control, window management, voice input, and AI agent.
           Homepage: https://github.com/snolab/CapsLockX
-          EOF
-          # Remove leading spaces from control file (heredoc indentation)
+          CTRL
           sed -i 's/^          //' "$PKG/DEBIAN/control"
+          sed -i "s/DEB_VERSION_PLACEHOLDER/${DEB_VERSION}/" "$PKG/DEBIAN/control"
           dpkg-deb --build --root-owner-group "$PKG"
           mv "${PKG}.deb" "CapsLockX-linux-x86_64.deb"
 
@@ -209,6 +228,30 @@ jobs:
           chmod +x "$STAGE/clx" "$STAGE/install.sh"
           tar czf "CapsLockX-macos-arm64.tar.gz" "$STAGE"
 
+      - name: Create .dmg
+        run: |
+          brew install create-dmg
+          VERSION="${{ github.ref_name }}"
+          # Create app-like directory structure for DMG
+          APP_DIR="CapsLockX"
+          mkdir -p "$APP_DIR"
+          cp rs/target/release/capslockx "$APP_DIR/clx"
+          cp scripts/install.sh "$APP_DIR/install.sh"
+          chmod +x "$APP_DIR/clx" "$APP_DIR/install.sh"
+          # Create DMG
+          create-dmg \
+            --volname "CapsLockX ${VERSION}" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 80 \
+            --hide-extension "clx" \
+            --no-internet-enable \
+            "CapsLockX-macos-arm64.dmg" \
+            "$APP_DIR/" \
+          || true
+          # create-dmg returns 2 if no icon set — dmg is still valid
+          test -f CapsLockX-macos-arm64.dmg
+
       # Commit binary to main only for stable releases
       - name: Commit macOS binary to main
         if: "!contains(github.ref_name, '-')"
@@ -223,10 +266,11 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: update macOS binary for ${{ github.ref_name }}"
           git push origin main
 
-      - name: Upload macOS package
+      - name: Upload macOS packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
             CapsLockX-macos-arm64.tar.gz \
+            CapsLockX-macos-arm64.dmg \
             --clobber
