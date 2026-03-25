@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 560" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="560" rx="12" fill="#0f0f1a"/>
+
+  <!-- Title -->
+  <text x="410" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#e8e8e8">
+    CapsLockX — Card Deck Window Stacking
+  </text>
+  <text x="410" y="52" text-anchor="middle" font-size="12" fill="#888">
+    Space+C · Hold Space, press C to arrange · Works on macOS &amp; Windows
+  </text>
+
+  <!-- Platform badge -->
+  <g>
+    <rect x="280" y="62" width="70" height="20" rx="10" fill="#333" stroke="#666" stroke-width="0.5"/>
+    <text x="315" y="76" text-anchor="middle" font-size="10" fill="#ccc"> macOS</text>
+    <rect x="358" y="62" width="70" height="20" rx="10" fill="#333" stroke="#666" stroke-width="0.5"/>
+    <text x="393" y="76" text-anchor="middle" font-size="10" fill="#0078d4">⊞ Windows</text>
+    <rect x="436" y="62" width="55" height="20" rx="10" fill="#333" stroke="#666" stroke-width="0.5"/>
+    <text x="463" y="76" text-anchor="middle" font-size="10" fill="#f5a623">🐧 Linux</text>
+  </g>
+
+  <!-- === ANIMATION: Windows slide in from scattered to cascade === -->
+
+  <!-- Window 1 — back, bottom-left -->
+  <g filter="url(#shadow)">
+    <rect rx="8" fill="#252540" stroke="#444" stroke-width="1" opacity="0.75">
+      <animate attributeName="x" values="30;-200;30" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="310;400;310" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="150;150;150" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <rect rx="8" fill="#353555" opacity="0.75">
+      <animate attributeName="x" values="30;-200;30" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="310;400;310" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="22;22;22" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <text font-size="10" fill="#777">
+      <animate attributeName="x" values="46;-184;46" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="325;415;325" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      Window 1 — Terminal
+    </text>
+  </g>
+
+  <!-- Window 5 — back, top-right -->
+  <g filter="url(#shadow)">
+    <rect rx="8" fill="#252540" stroke="#444" stroke-width="1" opacity="0.75">
+      <animate attributeName="x" values="310;900;310" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="150;80;150" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="150;150;150" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <rect rx="8" fill="#353555" opacity="0.75">
+      <animate attributeName="x" values="310;900;310" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="150;80;150" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="22;22;22" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <text font-size="10" fill="#777">
+      <animate attributeName="x" values="326;916;326" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="165;95;165" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      Window 5 — Notes
+    </text>
+  </g>
+
+  <!-- Window 2 — neighbor -->
+  <g filter="url(#shadow)">
+    <rect rx="8" fill="#1e1e40" stroke="#5a67d8" stroke-width="1.2" opacity="0.85">
+      <animate attributeName="x" values="100;-100;100" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="270;350;270" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="150;150;150" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <rect rx="8" fill="#2a2a60" opacity="0.85">
+      <animate attributeName="x" values="100;-100;100" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="270;350;270" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="22;22;22" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <text font-size="10" fill="#aab">
+      <animate attributeName="x" values="116;-84;116" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="285;365;285" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      Window 2 — Safari
+    </text>
+  </g>
+
+  <!-- Window 4 — neighbor -->
+  <g filter="url(#shadow)">
+    <rect rx="8" fill="#1e1e40" stroke="#5a67d8" stroke-width="1.2" opacity="0.85">
+      <animate attributeName="x" values="240;700;240" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="200;120;200" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="150;150;150" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <rect rx="8" fill="#2a2a60" opacity="0.85">
+      <animate attributeName="x" values="240;700;240" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="200;120;200" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="22;22;22" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <text font-size="10" fill="#aab">
+      <animate attributeName="x" values="256;716;256" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="215;135;215" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      Window 4 — Slack
+    </text>
+  </g>
+
+  <!-- Window 3 — CURRENT, topmost -->
+  <g filter="url(#shadow)">
+    <rect rx="8" fill="#0e2a1a" stroke="#48bb78" stroke-width="2.5">
+      <animate attributeName="x" values="170;300;170" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="235;230;235" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="150;150;150" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <rect rx="8" fill="#1a4a2a">
+      <animate attributeName="x" values="170;300;170" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="235;230;235" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="width" values="460;460;460" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="height" values="22;22;22" dur="8s" repeatCount="indefinite"/>
+    </rect>
+    <text font-size="11" font-weight="bold" fill="#68d391">
+      <animate attributeName="x" values="186;316;186" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animate attributeName="y" values="250;245;250" dur="8s" repeatCount="indefinite" keyTimes="0;0.15;0.4" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      ★ Window 3 — VS Code (CURRENT)
+    </text>
+  </g>
+
+  <!-- Animated instruction -->
+  <text x="410" y="510" text-anchor="middle" font-size="13" fill="#48bb78">
+    <animate attributeName="opacity" values="1;0.3;1" dur="3s" repeatCount="indefinite"/>
+    Hold Space + press C to arrange windows
+  </text>
+
+  <!-- Z-order info -->
+  <text x="410" y="535" text-anchor="middle" font-size="11" fill="#555">
+    Z-order: current → neighbors → far  ·  Cross-platform: macOS · Windows · Linux
+  </text>
+</svg>
