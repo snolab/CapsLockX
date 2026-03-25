@@ -2024,7 +2024,11 @@ fn transcribe_and_type(
         match stt.transcribe(&samples_16k) {
             Ok(rough) if !rough.is_empty() => {
                 eprintln!("[CLX] voice: local rough: {:?}", rough);
-                platform.type_text(&rough);
+                if crate::modules::agent::is_agent_mode() {
+                    // In agent mode, don't type rough — wait for polished.
+                } else {
+                    platform.type_text(&rough);
+                }
                 rough_len = rough.chars().count();
             }
             Ok(_) => {}
@@ -2048,8 +2052,13 @@ fn transcribe_and_type(
                 platform.key_tap(KeyCode::Backspace);
             }
         }
-        eprintln!("[CLX] voice: typing polished: {:?}", polished);
-        platform.type_text(&polished);
+        if crate::modules::agent::is_agent_mode() {
+            eprintln!("[CLX] voice: → agent (polished): {:?}", polished);
+            crate::modules::agent::on_voice_transcript(&polished, platform.as_ref());
+        } else {
+            eprintln!("[CLX] voice: typing polished: {:?}", polished);
+            platform.type_text(&polished);
+        }
     } else if rough_len == 0 {
         eprintln!("[CLX] voice: no text from server either, skipping");
     }
@@ -2174,8 +2183,13 @@ fn send_chunk_and_type(
                     }
 
                     if !final_text.is_empty() {
-                        eprintln!("[CLX] voice: typing: {:?}", final_text);
-                        platform.type_text(&final_text);
+                        if crate::modules::agent::is_agent_mode() {
+                            eprintln!("[CLX] voice: → agent: {:?}", final_text);
+                            crate::modules::agent::on_voice_transcript(&final_text, platform.as_ref());
+                        } else {
+                            eprintln!("[CLX] voice: typing: {:?}", final_text);
+                            platform.type_text(&final_text);
+                        }
                     } else {
                         eprintln!("[CLX] voice: no text in response: {body_text}");
                     }
