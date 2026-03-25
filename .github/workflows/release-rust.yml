@@ -6,9 +6,6 @@ on:
     tags:
       - "v*"
 
-env:
-  IS_PRERELEASE: ${{ contains(github.ref_name, '-') }}
-
 jobs:
   # Create the release first, then all builds upload to it
   create-release:
@@ -59,11 +56,28 @@ jobs:
         working-directory: rs
         run: cargo build -p capslockx-windows -p clx-screen-reader --release
 
-      - name: Stage release binaries
+      - name: Package Windows installer zip
         shell: pwsh
         run: |
-          Copy-Item rs\target\release\clx-rust.exe  clx-rust.exe
-          Copy-Item rs\target\release\clx-screen-reader.exe clx-screen-reader.exe
+          $VERSION = "${{ github.ref_name }}"
+          $STAGE = "CapsLockX"
+          New-Item -ItemType Directory -Force -Path $STAGE
+          Copy-Item rs\target\release\clx-rust.exe  "$STAGE\clx.exe"
+          Copy-Item rs\target\release\clx-screen-reader.exe "$STAGE\clx-screen-reader.exe"
+          Copy-Item scripts\install.ps1 "$STAGE\install.ps1"
+          # Create uninstaller
+          @"
+          # CapsLockX uninstaller
+          `$InstallDir = "`$env:LOCALAPPDATA\CapsLockX"
+          `$StartMenu = [Environment]::GetFolderPath("StartMenu")
+          Remove-Item -Recurse -Force `$InstallDir -ErrorAction SilentlyContinue
+          Remove-Item (Join-Path `$StartMenu "CapsLockX.lnk") -ErrorAction SilentlyContinue
+          `$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+          `$NewPath = (`$UserPath -split ";" | Where-Object { `$_ -ne `$InstallDir }) -join ";"
+          [Environment]::SetEnvironmentVariable("Path", `$NewPath, "User")
+          Write-Host "CapsLockX uninstalled."
+          "@ | Out-File -Encoding utf8 "$STAGE\uninstall.ps1"
+          Compress-Archive -Path "$STAGE\*" -DestinationPath "CapsLockX-windows-x86_64.zip"
 
       # Commit binaries back to main only for stable releases
       - name: Commit binaries to main
@@ -73,14 +87,17 @@ jobs:
           git checkout main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          Copy-Item CapsLockX\clx.exe clx-rust.exe
+          Copy-Item CapsLockX\clx-screen-reader.exe clx-screen-reader.exe
           git add clx-rust.exe clx-screen-reader.exe
           git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
           git push origin main
+        shell: pwsh
 
-      - name: Upload Windows binaries
+      - name: Upload Windows package
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" clx-rust.exe clx-screen-reader.exe --clobber
+        run: gh release upload "${{ github.ref_name }}" CapsLockX-windows-x86_64.zip --clobber
 
   build-linux:
     name: Build Linux (x86_64-unknown-linux-gnu)
@@ -109,13 +126,51 @@ jobs:
         working-directory: rs
         run: cargo build -p capslockx-linux --release
 
-      - name: Stage Linux binary
-        run: cp rs/target/release/capslockx capslockx-linux-x86_64
+      - name: Package tar.gz
+        run: |
+          VERSION="${{ github.ref_name }}"
+          STAGE="CapsLockX-${VERSION}-linux-x86_64"
+          mkdir -p "$STAGE"
+          cp rs/target/release/capslockx "$STAGE/clx"
+          cp scripts/install.sh "$STAGE/install.sh"
+          chmod +x "$STAGE/clx" "$STAGE/install.sh"
+          tar czf "CapsLockX-linux-x86_64.tar.gz" "$STAGE"
 
-      - name: Upload Linux binary
+      - name: Package .deb
+        run: |
+          VERSION="${{ github.ref_name }}"
+          # Strip leading 'v' and any pre-release suffix for deb version
+          DEB_VERSION="${VERSION#v}"
+          PKG="capslockx_${DEB_VERSION}_amd64"
+          mkdir -p "$PKG/DEBIAN"
+          mkdir -p "$PKG/usr/local/bin"
+          cp rs/target/release/capslockx "$PKG/usr/local/bin/clx"
+          chmod 755 "$PKG/usr/local/bin/clx"
+          cat > "$PKG/DEBIAN/control" <<EOF
+          Package: capslockx
+          Version: ${DEB_VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: snomiao <snomiao@gmail.com>
+          Description: CapsLockX — keyboard productivity tool + LLM agent
+           Uses CapsLock and Space as trigger keys for hotkey combos.
+           Vim-style cursor, mouse control, window management, voice input, and AI agent.
+          Homepage: https://github.com/snolab/CapsLockX
+          EOF
+          # Remove leading spaces from control file (heredoc indentation)
+          sed -i 's/^          //' "$PKG/DEBIAN/control"
+          dpkg-deb --build --root-owner-group "$PKG"
+          mv "${PKG}.deb" "CapsLockX-linux-x86_64.deb"
+
+      - name: Upload Linux packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" capslockx-linux-x86_64 --clobber
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            CapsLockX-linux-x86_64.tar.gz \
+            CapsLockX-linux-x86_64.deb \
+            --clobber
 
   build-macos:
     name: Build macOS (aarch64-apple-darwin)
@@ -141,8 +196,18 @@ jobs:
         working-directory: rs
         run: cargo build -p capslockx-macos --release
 
-      - name: Stage macOS binary
-        run: cp rs/target/release/capslockx capslockx-macos-arm64
+      - name: Code sign binary
+        run: codesign -s - --force --identifier "com.snomiao.capslockx" rs/target/release/capslockx
+
+      - name: Package tar.gz
+        run: |
+          VERSION="${{ github.ref_name }}"
+          STAGE="CapsLockX-${VERSION}-macos-arm64"
+          mkdir -p "$STAGE"
+          cp rs/target/release/capslockx "$STAGE/clx"
+          cp scripts/install.sh "$STAGE/install.sh"
+          chmod +x "$STAGE/clx" "$STAGE/install.sh"
+          tar czf "CapsLockX-macos-arm64.tar.gz" "$STAGE"
 
       # Commit binary to main only for stable releases
       - name: Commit macOS binary to main
@@ -153,11 +218,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin main --rebase
+          cp rs/target/release/capslockx capslockx-macos-arm64
           git add capslockx-macos-arm64
           git diff --cached --quiet || git commit -m "chore: update macOS binary for ${{ github.ref_name }}"
           git push origin main
 
-      - name: Upload macOS binary
+      - name: Upload macOS package
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" capslockx-macos-arm64 --clobber
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            CapsLockX-macos-arm64.tar.gz \
+            --clobber
