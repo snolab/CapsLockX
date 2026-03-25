@@ -46,17 +46,23 @@ Current:           ^3
 
 Z-order (top to bottom): 3 → 4 → 2 → 5 → 1
 
-Visual result:
-  ┌─────────────┐ ← Window 1 (farthest back)
-  │ ┌───────────┤
-  │ │ ┌─────────┤ ← Window 5
-  │ │ │ ┌───────┤
-  │ │ │ │ ┌─────┤ ← Window 2
-  │ │ │ │ │ ┌───┤
-  │ │ │ │ │ │   │ ← Window 4
-  │ │ │ │ │ │ ┌─┤
-  │ │ │ │ │ │ │ │ ← Window 3 (current, topmost)
-  └─┴─┴─┴─┴─┴─┴─┘
+Position: cascade from top-left (window 1) to bottom-right (window 5).
+Z-order: current window topmost, neighbors behind, farthest at back.
+
+Visual result (current = window 3):
+
+  ┌──── Window 1 (back, top-left edge visible)
+  │┌─── Window 2 (behind current, top-left edge visible)
+  ││┌══════════════╗ Window 3 (CURRENT, fully visible, topmost)
+  │││              ║
+  │││              ║
+  ╚╬╬══════════════╝
+   │╚── Window 4 (behind current, bottom-right edge visible)
+    ╚── Window 5 (back, bottom-right edge visible)
+
+The current window is like the center card in a fanned hand of cards.
+Windows before it peek from the top-left, windows after peek from
+the bottom-right. The further from current, the deeper in the stack.
 ```
 
 Algorithm: sort by distance from current index (descending). Farthest
