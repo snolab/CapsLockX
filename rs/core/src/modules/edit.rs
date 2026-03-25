@@ -192,7 +192,8 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
     let ctrl = p.is_key_physically_down(KeyCode::LCtrl)
             || p.is_key_physically_down(KeyCode::RCtrl);
     if ctrl {
-        // Ctrl held → Ctrl+Tab (next page) / Ctrl+Shift+Tab (prev page).
+        // Ctrl held → Ctrl+Tab (next tab) / Ctrl+Shift+Tab (prev tab).
+        // On macOS: Ctrl+Tab switches tabs in browsers (NOT Cmd+Tab which is app switcher).
         if dy < 0 {
             for _ in 0..(-dy).min(128) {
                 p.key_tap_with_mods(KeyCode::Tab, &[KeyCode::LCtrl, KeyCode::LShift], 1);
@@ -200,7 +201,7 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
         }
         if dy > 0 {
             for _ in 0..dy.min(128) {
-                p.key_tap_cmd_or_ctrl(KeyCode::Tab);
+                p.key_tap_with_mods(KeyCode::Tab, &[KeyCode::LCtrl], 1);
             }
         }
     } else {
