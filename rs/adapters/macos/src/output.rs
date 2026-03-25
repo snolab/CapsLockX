@@ -1232,10 +1232,43 @@ impl Platform for MacPlatform {
             for h in handles { let _ = h.join(); }
         }
 
-        // Phase 3: Z-order — raise windows in reverse order (last = frontmost).
-        // Must be sequential (each depends on previous z-position).
+        // Phase 3: Z-order — card deck fan-out from current window.
+        // Current window = topmost, then alternating next/prev neighbors.
+        // Example: windows [0,1,2,3,4], current=2 → raise order: 0,4,1,3,2 (2 raised last = top)
+        //
+        // Find current window from cycle state.
+        let current_idx = restore_entry.as_ref()
+            .and_then(|e| frames.iter().position(|&(_, x, y, _, _)| {
+                // Match by position index in the frame list
+                let _ = (x, y);
+                false
+            }))
+            .or_else(|| {
+                // Match by frontmost window
+                let front_wid = frontmost_window_id();
+                // We need to correlate frames with entries — use the cycle state index
+                if let Ok(guard) = CYCLE.lock() {
+                    if let Some(ref s) = *guard {
+                        if s.index < n { return Some(s.index); }
+                    }
+                }
+                // Fallback: first window
+                Some(0)
+            })
+            .unwrap_or(0);
+
+        // Build raise order: farthest from current first, current last (topmost).
+        // Distance = |idx - current_idx|, raise in descending distance order.
+        let mut z_order: Vec<usize> = (0..n).collect();
+        z_order.sort_by(|&a, &b| {
+            let da = (a as isize - current_idx as isize).unsigned_abs();
+            let db = (b as isize - current_idx as isize).unsigned_abs();
+            db.cmp(&da) // farthest first (raised first = bottom), closest last (raised last = top)
+        });
+
         unsafe {
-            for &(win, _, _, _, _) in frames.iter().rev() {
+            for &idx in &z_order {
+                let (win, _, _, _, _) = frames[idx];
                 let attr = CFString::new("AXMain");
                 AXUIElementSetAttributeValue(
                     win,

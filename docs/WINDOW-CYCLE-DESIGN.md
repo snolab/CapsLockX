@@ -35,6 +35,37 @@ Monitor 1, current Space windows
    current Space), cycle first window there
 3. **Last Space on last monitor** → wrap to first monitor, first Space
 
+## Card Deck Z-Order (Space+C Stacked Mode)
+
+When arranging windows in stacked/cascade mode, the z-order follows a
+**card deck fan-out** pattern centered on the current window:
+
+```
+Windows:  [1] [2] [3] [4] [5]
+Current:           ^3
+
+Z-order (top to bottom): 3 → 4 → 2 → 5 → 1
+
+Visual result:
+  ┌─────────────┐ ← Window 1 (farthest back)
+  │ ┌───────────┤
+  │ │ ┌─────────┤ ← Window 5
+  │ │ │ ┌───────┤
+  │ │ │ │ ┌─────┤ ← Window 2
+  │ │ │ │ │ ┌───┤
+  │ │ │ │ │ │   │ ← Window 4
+  │ │ │ │ │ │ ┌─┤
+  │ │ │ │ │ │ │ │ ← Window 3 (current, topmost)
+  └─┴─┴─┴─┴─┴─┴─┘
+```
+
+Algorithm: sort by distance from current index (descending). Farthest
+windows are raised first (bottom of stack), current window raised last
+(top of stack). This creates a beautiful card deck effect where you can
+see the edges of all nearby windows fanning out from the active one.
+
+Implemented on both macOS (AXRaise) and Windows (SetWindowPos).
+
 ### Implementation:
 - Remove `windows.retain(|w| w.display_id == current_display)` filter
 - Cycle all on-screen windows across all monitors (`kCGWindowListOptionOnScreenOnly`)
