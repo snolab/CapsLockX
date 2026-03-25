@@ -46,23 +46,30 @@ Current:           ^3
 
 Z-order (top to bottom): 3 → 4 → 2 → 5 → 1
 
-Position: cascade from top-left (window 1) to bottom-right (window 5).
+Position: cascade from bottom-left (window 1) to top-right (window 5).
+Each window is offset +dx right and -dy up from the previous one.
+(AXPosition uses Quartz coords: y=0 at top, y increases downward.)
+
 Z-order: current window topmost, neighbors behind, farthest at back.
 
-Visual result (current = window 3):
+Visual result (5 windows, current = window 3):
 
-  ┌──── Window 1 (back, top-left edge visible)
-  │┌─── Window 2 (behind current, top-left edge visible)
-  ││┌══════════════╗ Window 3 (CURRENT, fully visible, topmost)
-  │││              ║
-  │││              ║
-  ╚╬╬══════════════╝
-   │╚── Window 4 (behind current, bottom-right edge visible)
-    ╚── Window 5 (back, bottom-right edge visible)
+                              ┌─── Window 5 (back, top-right)
+                           ┌──┤
+                     ╔═════╪══╪═══╗
+                     ║     │  │   ║ Window 3 (CURRENT, topmost)
+                  ┌──╫─────┘  │   ║
+               ┌──┤  ║        └───╢ Window 4 (behind current)
+               │  └──╫────────────╢
+               │     ║            ║
+               │     ╚════════════╝
+               │  Window 2 (behind current, bottom-left edge visible)
+               └─── Window 1 (back, bottom-left)
 
-The current window is like the center card in a fanned hand of cards.
-Windows before it peek from the top-left, windows after peek from
-the bottom-right. The further from current, the deeper in the stack.
+The cascade goes bottom-left → top-right. The current window is
+like the center card in a fanned hand. Windows before it (lower index)
+peek from the bottom-left, windows after (higher index) peek from
+the top-right. Further from current = deeper in z-stack.
 ```
 
 Algorithm: sort by distance from current index (descending). Farthest
