@@ -79,9 +79,9 @@ jobs:
       - name: Build NSIS setup.exe
         shell: pwsh
         run: |
-          # Stage binaries for NSIS
-          Copy-Item rs\target\release\clx-rust.exe clx.exe
-          Copy-Item rs\target\release\clx-screen-reader.exe clx-screen-reader.exe
+          # Stage binaries next to .nsi file (NSIS resolves File relative to script)
+          Copy-Item rs\target\release\clx-rust.exe scripts\clx.exe
+          Copy-Item rs\target\release\clx-screen-reader.exe scripts\clx-screen-reader.exe
           # Install NSIS + EnVar plugin
           choco install nsis -y --no-progress
           $NSIS_DIR = "C:\Program Files (x86)\NSIS"
@@ -113,10 +113,11 @@ jobs:
       - name: Upload Windows packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          gh release upload "${{ github.ref_name }}" ^
-            CapsLockX-windows-x86_64.zip ^
-            CapsLockX-setup-x86_64.exe ^
+          gh release upload "${{ github.ref_name }}" \
+            CapsLockX-windows-x86_64.zip \
+            CapsLockX-setup-x86_64.exe \
             --clobber
 
   build-linux:
