@@ -301,8 +301,8 @@ fn show_main_inner() {
         #[cfg(target_arch = "x86_64")]
         let sf = NSRect { x: 0.0, y: 0.0, w: 1920.0, h: 1080.0 };
 
-        let ow = 600.0_f64;
-        let oh = 100.0_f64; // thin waveform (20px) + 3 lines of text (~70px) + padding
+        let ow = 900.0_f64;
+        let oh = 300.0_f64;
         // Position at top-center (AppKit coords: y=0 is bottom, so top = screen_h - oh - margin)
         let rect = NSRect { x: (sf.w - ow) / 2.0, y: sf.h - oh - 40.0, w: ow, h: oh };
 
@@ -354,7 +354,7 @@ fn show_main_inner() {
         };
 
         // Waveform view: dual waveform strip at top (40px)
-        let wf_rect = NSRect { x: 0.0, y: oh - 40.0, w: ow, h: 40.0 };
+        let wf_rect = NSRect { x: 0.0, y: oh - 60.0, w: ow, h: 60.0 };
         let wf_view: *mut c_void = {
             let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                 std::mem::transmute(objc_msgSend as *const ());
@@ -366,7 +366,7 @@ fn show_main_inner() {
         // Subtitle label: bottom 65px (3 lines)
         let label_cls = cls(b"NSTextField\0");
         let label_alloc = msg0(label_cls, sel(b"alloc\0"));
-        let label_rect = NSRect { x: 10.0, y: 4.0, w: ow - 20.0, h: oh - 28.0 };
+        let label_rect = NSRect { x: 10.0, y: 4.0, w: ow - 20.0, h: oh - 68.0 };
         let label: *mut c_void = {
             let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                 std::mem::transmute(objc_msgSend as *const ());
