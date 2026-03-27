@@ -28,6 +28,10 @@ mod voice_capture;
 mod brainstorm_overlay;
 #[cfg(target_os = "macos")]
 mod agent_cmd;
+#[cfg(target_os = "macos")]
+mod mic_mode;
+#[cfg(target_os = "macos")]
+mod audio_tap;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -142,6 +146,9 @@ fn main() {
     // Install the menu bar icon and voice overlay class before entering the run loop.
     tray::setup_tray();
     voice_overlay::init_overlay();
+
+    // Prompt user to enable Voice Isolation if not active.
+    mic_mode::ensure_voice_isolation();
 
     // Install CGEventTap and block on CFRunLoop.
     hook::install_and_run();

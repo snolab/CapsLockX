@@ -36,11 +36,30 @@ pub struct FullConfig {
     /// STT polishing fallback chain (comma-separated stage names).
     #[serde(default = "default_stt_polish_chain")]
     pub stt_polish_chain:    String,
+    // Advanced voice/AEC thresholds
+    #[serde(default = "default_aec_gain")]
+    pub aec_gain:            f32,
+    #[serde(default = "default_noise_gate")]
+    pub noise_gate:          f32,
+    #[serde(default = "default_speech_start_prob")]
+    pub speech_start_prob:   f32,
+    #[serde(default = "default_speech_end_prob")]
+    pub speech_end_prob:     f32,
+    #[serde(default = "default_speech_start_frames")]
+    pub speech_start_frames: usize,
+    #[serde(default = "default_silence_end_frames")]
+    pub silence_end_frames:  usize,
 }
 
 fn default_stt_engine() -> String { "sherpa".to_string() }
 fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
 fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
+fn default_aec_gain() -> f32 { 15.0 }
+fn default_noise_gate() -> f32 { 0.003 }
+fn default_speech_start_prob() -> f32 { 0.8 }
+fn default_speech_end_prob() -> f32 { 0.6 }
+fn default_speech_start_frames() -> usize { 10 }
+fn default_silence_end_frames() -> usize { 20 }
 
 impl Default for FullConfig {
     fn default() -> Self {
@@ -63,6 +82,12 @@ impl Default for FullConfig {
             stt_correction: false,
             tts_chain: default_tts_chain(),
             stt_polish_chain: default_stt_polish_chain(),
+            aec_gain: default_aec_gain(),
+            noise_gate: default_noise_gate(),
+            speech_start_prob: default_speech_start_prob(),
+            speech_end_prob: default_speech_end_prob(),
+            speech_start_frames: default_speech_start_frames(),
+            silence_end_frames: default_silence_end_frames(),
         }
     }
 }
@@ -88,6 +113,12 @@ impl FullConfig {
             stt_correction: cfg.stt_correction,
             tts_chain: cfg.tts_chain.clone(),
             stt_polish_chain: cfg.stt_polish_chain.clone(),
+            aec_gain: cfg.aec_gain,
+            noise_gate: cfg.noise_gate,
+            speech_start_prob: cfg.speech_start_prob,
+            speech_end_prob: cfg.speech_end_prob,
+            speech_start_frames: cfg.speech_start_frames,
+            silence_end_frames: cfg.silence_end_frames,
         }
     }
 
@@ -118,6 +149,12 @@ impl FullConfig {
             stt_correction:     self.stt_correction,
             tts_chain:          self.tts_chain,
             stt_polish_chain:   self.stt_polish_chain,
+            aec_gain:            self.aec_gain,
+            noise_gate:          self.noise_gate,
+            speech_start_prob:   self.speech_start_prob,
+            speech_end_prob:     self.speech_end_prob,
+            speech_start_frames: self.speech_start_frames,
+            silence_end_frames:  self.silence_end_frames,
         }
     }
 }

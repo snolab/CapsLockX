@@ -23,6 +23,7 @@ boa_engine   = "0.21"
 boa_gc       = "0.21"
 woxi         = "0.1"
 libc         = "0.2"
+aec3         = "0.1"
 mp3lame-encoder = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

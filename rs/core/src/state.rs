@@ -46,6 +46,13 @@ pub struct ClxConfig {
     pub tts_chain:           String,
     /// STT polish fallback chain (comma-separated model names).
     pub stt_polish_chain:    String,
+    // Advanced voice/AEC thresholds
+    pub aec_gain:            f32,
+    pub noise_gate:          f32,
+    pub speech_start_prob:   f32,
+    pub speech_end_prob:     f32,
+    pub speech_start_frames: usize,
+    pub silence_end_frames:  usize,
 }
 
 impl Default for ClxConfig {
@@ -65,6 +72,12 @@ impl Default for ClxConfig {
             stt_correction:     false,
             tts_chain:          "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
             stt_polish_chain:   "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
+            aec_gain:            15.0,
+            noise_gate:          0.003,
+            speech_start_prob:   0.8,
+            speech_end_prob:     0.6,
+            speech_start_frames: 10,
+            silence_end_frames:  20,
         }
     }
 }

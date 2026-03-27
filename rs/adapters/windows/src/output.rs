@@ -192,9 +192,9 @@ impl Platform for WinPlatform {
                     // Normal: activate adjacent window on the same desktop.
                     unsafe { let _ = SetForegroundWindow(windows[new_idx as usize]); }
                 } else {
-                    // At the boundary: switch to the next/prev virtual desktop.
-                    // Run synchronously on the hook thread (which has COM/message-pump)
-                    // rather than a spawned thread (which does not).
+                    // TODO: wrap around with modulo instead of switching desktop.
+                    // Match macOS behavior: cycle through all windows, wrap E→A.
+                    // For now, keep the desktop-switching behavior.
                     switch_desktop_step(dir);
                 }
             }

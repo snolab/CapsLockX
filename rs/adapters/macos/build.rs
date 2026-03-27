@@ -5,6 +5,7 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=ScreenCaptureKit");
     println!("cargo:rustc-link-lib=framework=CoreMedia");
     println!("cargo:rustc-link-lib=framework=AudioToolbox");
+    println!("cargo:rustc-link-lib=framework=AVFoundation");
 
     // Compile ObjC exception catcher (for catching ObjC exceptions from Rust).
     cc::Build::new()

@@ -48,7 +48,7 @@ impl LocalSherpa {
             model: model_str,
             tokens: tokens_str,
             language: "auto".into(),
-            use_itn: false,
+            use_itn: true,
             provider: None, // default CPU
             num_threads: Some(4),
             debug: false,

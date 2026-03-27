@@ -139,6 +139,12 @@ impl Modules {
             cfg.stt_correction,
             cfg.tts_chain.clone(),
             cfg.stt_polish_chain.clone(),
+            cfg.aec_gain,
+            cfg.noise_gate,
+            cfg.speech_start_prob,
+            cfg.speech_end_prob,
+            cfg.speech_start_frames,
+            cfg.silence_end_frames,
         );
         self.brainstorm.update_llm_config(&best_key, &best_model);
     }

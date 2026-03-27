@@ -189,6 +189,44 @@
   </section>
 
   <section>
+    <h2>Advanced Voice</h2>
+    <div class="sl-row">
+      <label for="aec_gain">AEC Gain</label>
+      <input type="range" id="aec_gain" min="1" max="50" step="0.5">
+      <span id="aec_gain_val">15</span>
+    </div>
+    <div class="sl-row">
+      <label for="noise_gate">Noise Gate</label>
+      <input type="range" id="noise_gate" min="0.0005" max="0.1" step="0.0005">
+      <span id="noise_gate_val">0.003</span>
+    </div>
+    <div class="sl-row">
+      <label for="speech_start_prob">Speech Start Prob</label>
+      <input type="range" id="speech_start_prob" min="0.3" max="1.0" step="0.05">
+      <span id="speech_start_prob_val">0.8</span>
+    </div>
+    <div class="sl-row">
+      <label for="speech_end_prob">Speech End Prob</label>
+      <input type="range" id="speech_end_prob" min="0.2" max="0.9" step="0.05">
+      <span id="speech_end_prob_val">0.6</span>
+    </div>
+    <div class="sl-row">
+      <label for="speech_start_frames">Start Frames</label>
+      <input type="range" id="speech_start_frames" min="1" max="30" step="1">
+      <span id="speech_start_frames_val">10</span>
+    </div>
+    <div class="sl-row">
+      <label for="silence_end_frames">Silence Frames</label>
+      <input type="range" id="silence_end_frames" min="5" max="60" step="1">
+      <span id="silence_end_frames_val">20</span>
+    </div>
+    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
+      Tune AEC and VAD. Changes apply on next voice session (Space+V).<br>
+      1 frame ≈ 16ms. Higher gain = louder mic. Higher gate = more silence filtering.
+    </div>
+  </section>
+
+  <section>
     <h2>API Keys</h2>
     <div class="sl-row">
       <label for="gemini_api_key">Gemini</label>
@@ -319,6 +357,12 @@
         elevenlabs_api_key: document.getElementById('elevenlabs_api_key').value,
         tts_chain:       collectChain('tts_chain_list'),
         stt_polish_chain: collectChain('stt_polish_chain_list'),
+        aec_gain:           parseFloat(document.getElementById('aec_gain').value),
+        noise_gate:         parseFloat(document.getElementById('noise_gate').value),
+        speech_start_prob:  parseFloat(document.getElementById('speech_start_prob').value),
+        speech_end_prob:    parseFloat(document.getElementById('speech_end_prob').value),
+        speech_start_frames: parseInt(document.getElementById('speech_start_frames').value),
+        silence_end_frames:  parseInt(document.getElementById('silence_end_frames').value),
       };
     }
 
@@ -339,6 +383,12 @@
       if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
       populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native');
       populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx:qwen2.5-3b,llm-corrector,raw');
+      setSlider('aec_gain', cfg.aec_gain || 15);
+      setSlider('noise_gate', cfg.noise_gate || 0.003);
+      setSlider('speech_start_prob', cfg.speech_start_prob || 0.8);
+      setSlider('speech_end_prob', cfg.speech_end_prob || 0.6);
+      setSlider('speech_start_frames', cfg.speech_start_frames || 10);
+      setSlider('silence_end_frames', cfg.silence_end_frames || 20);
     }
 
     function setSlider(id, value) {
@@ -347,7 +397,9 @@
     }
 
     // Live label update while dragging
-    ['cursor_speed', 'mouse_speed', 'scroll_speed'].forEach(function(id) {
+    ['cursor_speed', 'mouse_speed', 'scroll_speed',
+     'aec_gain', 'noise_gate', 'speech_start_prob', 'speech_end_prob',
+     'speech_start_frames', 'silence_end_frames'].forEach(function(id) {
       document.getElementById(id).addEventListener('input', function(e) {
         document.getElementById(id + '_val').textContent = e.target.value;
       });

@@ -83,6 +83,10 @@ Binary: `rs/target/release/clx-rust.exe`
 ./build.sh && pkill -f "CapsLockX/clx" || true; clx
 ```
 
+## Voice Module Rules
+- **NEVER suppress or gate mic STT** — both mic and sys tracks must always run and produce output, even if system audio is playing. The user wants to see both transcriptions simultaneously.
+- Echo/bleed in the mic track is acceptable; do NOT add energy gates, mic suppression, or silence-feeding to VAD when sys audio is active.
+
 ## Key Design Decisions
 
 ### macOS Permission Hazard

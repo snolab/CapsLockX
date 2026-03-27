@@ -1123,29 +1123,12 @@ impl Platform for MacPlatform {
             state.index
         };
 
-        // Advance from detected position.
+        // Advance from detected position, wrapping around at boundaries.
         let next_idx = if dir > 0 {
-            current_idx + 1
+            (current_idx + 1) % len
         } else {
-            current_idx.wrapping_sub(1)
+            if current_idx == 0 { len - 1 } else { current_idx - 1 }
         };
-
-        // Check if we've hit a boundary (past first/last window).
-        if next_idx >= len || (dir < 0 && current_idx == 0) {
-            // At boundary — switch to next/prev Space on the focused monitor,
-            // then re-enumerate on next press.
-            // Inject Ctrl+Right/Left to trigger macOS Space switching.
-            drop(guard);
-            eprintln!("[cycle] boundary reached — switching Space (dir={})", dir);
-            let arrow_key: u16 = if dir > 0 { 0x7C } else { 0x7B }; // Right : Left
-            let flags = core_graphics::event::CGEventFlags::CGEventFlagControl;
-            Self::tap_with_flags(arrow_key, flags);
-            // Invalidate the cached snapshot so next press re-enumerates.
-            if let Ok(mut g) = CYCLE.lock() {
-                *g = None;
-            }
-            return;
-        }
 
         let idx = next_idx;
         state.index = idx;
@@ -1329,6 +1312,17 @@ impl Platform for MacPlatform {
     }
 
     fn start_system_audio(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
+        // Try Core Audio Taps first (macOS 14.2+, cleaner digital reference signal).
+        match crate::audio_tap::AudioTapCapture::new() {
+            Ok(cap) => {
+                eprintln!("[CLX] system audio: using Core Audio Tap (digital reference)");
+                return Some(Box::new(cap));
+            }
+            Err(e) => {
+                eprintln!("[CLX] system audio: Core Audio Tap unavailable ({e}), falling back to ScreenCaptureKit");
+            }
+        }
+        // Fallback: ScreenCaptureKit (macOS 12.3+).
         match crate::system_audio::SystemAudioCapture::new() {
             Ok(cap) => Some(Box::new(cap)),
             Err(e) => {
