@@ -32,6 +32,8 @@ mod agent_cmd;
 mod mic_mode;
 #[cfg(target_os = "macos")]
 mod audio_tap;
+#[cfg(target_os = "macos")]
+mod observe_cmd;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -46,6 +48,10 @@ fn main() {
             agent_cmd::main(&["dino".to_string()]);
             return;
         }
+        Some("observe") => {
+            observe_cmd::main(&args[2..].to_vec());
+            return;
+        }
         Some("--help") | Some("-h") | Some("help") => {
             println!("CapsLockX — keyboard productivity tool + LLM agent");
             println!();
@@ -56,6 +62,8 @@ fn main() {
             println!("  clx agent --exec            Execute CLX commands from stdin");
             println!("  clx agent --prompt \"task\"    Run LLM agent to perform a task");
             println!("  clx agent \"task\"             Shorthand for --prompt");
+            println!("  clx observe                  Capture screen + Gemini vision description");
+            println!("  clx observe --help           Show observe options");
             println!("  clx --help                  Show this help");
             println!();
             println!("CLX AGENT COMMANDS:");

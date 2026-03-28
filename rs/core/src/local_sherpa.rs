@@ -64,6 +64,12 @@ impl LocalSherpa {
 
     /// Transcribe f32 samples (must be 16 kHz mono).
     pub fn transcribe(&mut self, samples: &[f32]) -> Result<String, String> {
+        let r = self.transcribe_tagged(samples)?;
+        Ok(r.text)
+    }
+
+    /// Transcribe and return both cleaned text and whether music/humming was detected.
+    pub fn transcribe_tagged(&mut self, samples: &[f32]) -> Result<SttOutput, String> {
         let t0 = std::time::Instant::now();
         let audio_dur = samples.len() as f64 / 16000.0;
 
@@ -74,16 +80,32 @@ impl LocalSherpa {
         eprintln!("[CLX] sherpa[sensevoice]: {:.1}s audio → {:.0}ms ({:.1}x realtime, lang={})",
             audio_dur, inference_ms, realtime_ratio, result.lang);
 
-        let text = result.text.trim().to_string();
-        if is_noise_artifact(&text) {
-            return Ok(String::new());
+        let raw = result.text.trim().to_string();
+        let raw_lower = raw.to_lowercase();
+        let is_music = raw_lower.contains("[music]")
+            || raw_lower.contains("[humming]")
+            || raw_lower.contains("[singing]")
+            || raw_lower.contains("(music)")
+            || raw_lower.contains("(humming)")
+            || raw_lower.contains("(singing)");
+
+        if is_music {
+            eprintln!("[CLX] sherpa: music/humming detected in raw output: {:?}", raw);
         }
-        Ok(text)
+
+        let text = if is_noise_artifact(&raw) { String::new() } else { raw };
+        Ok(SttOutput { text, is_music })
     }
 
     pub fn tier_name(&self) -> &str {
         "sensevoice"
     }
+}
+
+/// STT output with metadata about detected audio events.
+pub struct SttOutput {
+    pub text: String,
+    pub is_music: bool,
 }
 
 /// Download the model archive and extract it.

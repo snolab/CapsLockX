@@ -49,6 +49,9 @@ pub struct FullConfig {
     pub speech_start_frames: usize,
     #[serde(default = "default_silence_end_frames")]
     pub silence_end_frames:  usize,
+    /// Allow overlay to be visible in screenshots/screen sharing.
+    #[serde(default)]
+    pub overlay_sharing:     bool,
 }
 
 fn default_stt_engine() -> String { "sherpa".to_string() }
@@ -88,6 +91,7 @@ impl Default for FullConfig {
             speech_end_prob: default_speech_end_prob(),
             speech_start_frames: default_speech_start_frames(),
             silence_end_frames: default_silence_end_frames(),
+            overlay_sharing: false,
         }
     }
 }
@@ -119,6 +123,7 @@ impl FullConfig {
             speech_end_prob: cfg.speech_end_prob,
             speech_start_frames: cfg.speech_start_frames,
             silence_end_frames: cfg.silence_end_frames,
+            overlay_sharing: false, // not in ClxConfig, default false
         }
     }
 

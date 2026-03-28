@@ -99,6 +99,15 @@ impl SttEngine {
         }
     }
 
+    /// Transcribe and return music detection flag alongside text.
+    fn transcribe_tagged(&mut self, samples: &[f32]) -> Result<crate::local_sherpa::SttOutput, String> {
+        match self {
+            SttEngine::Sherpa(s) => s.transcribe_tagged(samples),
+            // Whisper doesn't output music tags — just wrap normal result.
+            SttEngine::Whisper(w) => w.transcribe(samples).map(|text| crate::local_sherpa::SttOutput { text, is_music: false }),
+        }
+    }
+
     fn check_pending_upgrade(&mut self) {
         if let SttEngine::Whisper(w) = self {
             let mut swap: Option<LocalWhisper> = None;
@@ -292,8 +301,21 @@ impl VoiceModule {
             cfg.stt_engine, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate);
     }
 
-    /// Check if voice-standalone is running and return its PID if so.
+    /// Check if voice-standalone is running via PID file (fast) or pgrep (fallback).
     fn voice_standalone_pid() -> Option<u32> {
+        // Fast path: check PID file.
+        if let Ok(pid_str) = std::fs::read_to_string("/tmp/clx-voice-standalone.pid") {
+            if let Ok(pid) = pid_str.trim().parse::<u32>() {
+                // Verify process is alive.
+                let alive = std::process::Command::new("kill")
+                    .arg("-0").arg(pid.to_string())
+                    .output()
+                    .map(|o| o.status.success())
+                    .unwrap_or(false);
+                if alive { return Some(pid); }
+            }
+        }
+        // Fallback: pgrep.
         let output = std::process::Command::new("pgrep")
             .arg("-x").arg("voice-standalone")
             .output().ok()?;
@@ -317,6 +339,8 @@ impl VoiceModule {
         // Delegate to voice-standalone if it's running (avoids duplicate overlay).
         if let Some(pid) = Self::voice_standalone_pid() {
             eprintln!("[CLX] voice: delegating V key_down to voice-standalone (pid={})", pid);
+            self.platform.hide_voice_overlay(); // hide CLX's own overlay
+            self.stop_pipeline(); // stop CLX's pipeline if running
             *self.press_time.lock().unwrap() = Some(Instant::now());
             Self::send_signal(pid, 10); // SIGUSR1
             self.v_held.store(true, Ordering::Relaxed);
@@ -327,10 +351,9 @@ impl VoiceModule {
 
         *self.press_time.lock().unwrap() = Some(Instant::now());
 
-        // Default = mic only. Shift+V = dual capture (mic+system).
-        let shift_held = self.platform.is_key_physically_down(KeyCode::LShift)
-            || self.platform.is_key_physically_down(KeyCode::RShift);
-        self.with_system_audio.store(shift_held, Ordering::Relaxed);
+        // Always enable dual capture (mic+system) for both tracks.
+        // Shift+V is no longer needed — system audio is always captured.
+        self.with_system_audio.store(true, Ordering::Relaxed);
 
         // Audio pipeline starts immediately so we capture from the beginning.
         self.ensure_pipeline_running();
@@ -431,7 +454,8 @@ impl VoiceModule {
     pub fn start_always_on(&self, with_sys: bool) {
         self.with_system_audio.store(with_sys, Ordering::Relaxed);
         self.note_active.store(true, Ordering::Relaxed);
-        self.ensure_pipeline_running();
+        // Bypass standalone check — we ARE the standalone.
+        self.ensure_pipeline_running_force();
     }
 
     /// Spawn the background thread eagerly so the Whisper model loads at startup.
@@ -468,6 +492,16 @@ impl VoiceModule {
 
     /// Ensure the audio pipeline bg thread is running and capturing.
     fn ensure_pipeline_running(&self) {
+        // If voice-standalone is running, don't start our own pipeline.
+        if Self::voice_standalone_pid().is_some() {
+            eprintln!("[CLX] voice: voice-standalone running, skipping internal pipeline");
+            self.stop_pipeline();
+            return;
+        }
+        self.ensure_pipeline_running_force();
+    }
+
+    fn ensure_pipeline_running_force(&self) {
         eprintln!("[CLX] voice: ensuring pipeline running");
 
         // Spawn the bg thread once — it stays alive and waits between sessions.
@@ -683,8 +717,20 @@ fn voice_bg_persistent(
         let _ = std::fs::write("/tmp/clx-voice.log", "");
 
         // Record loop until bg_stop is set.
+        let mut standalone_check_counter: u32 = 0;
         while !bg_stop.load(Ordering::Relaxed) {
             std::thread::sleep(std::time::Duration::from_millis(50));
+
+            // Periodically check if voice-standalone started — yield to it.
+            standalone_check_counter += 1;
+            if standalone_check_counter % 100 == 0 { // every ~5 seconds
+                if VoiceModule::voice_standalone_pid().is_some() {
+                    eprintln!("[CLX] voice: voice-standalone detected, stopping internal pipeline");
+                    platform.hide_voice_overlay();
+                    bg_stop.store(true, Ordering::Relaxed);
+                    break;
+                }
+            }
             let samples = if let Some(ref aec) = aec_mic { aec.take_samples() } else { ac.as_ref().unwrap().take_samples() };
             if samples.is_empty() {
                 platform.update_voice_overlay(&[], vad.in_speech, &[], false);
@@ -1093,9 +1139,15 @@ fn stt_worker_loop(
     let mut mic_prev_whisper = String::new();
     let mut mic_stable: usize = 0;
     let mut mic_new_samples_since_commit: usize = 0; // reset on commit; prevents context re-transcription from triggering stability
+    // ── Humming track state ──
+    let mut hum_pending = String::new();
     // Tracks the total text typed into the input box during this input session.
     // Used by FinalPolish to know how many chars to backspace before typing polished text.
     let mut session_input_typed = String::new();
+
+    // ── Speech speed detection ──
+    let mut mic_syl_detector = SyllableRateDetector::new();
+    let mut sys_syl_detector = SyllableRateDetector::new();
 
     // ── System audio track state ──
     let mut sys_pending_buf: Vec<f32> = Vec::new();
@@ -1108,6 +1160,9 @@ fn stt_worker_loop(
     // ── SRT state ──
     let mut note_srt = String::new();
     let mut srt_index: usize = 0;
+
+    // ── Unified subtitle state — rebuilt after any track update ──
+    let mut subtitle_dirty = false;
 
     eprintln!("[CLX] stt-worker: started");
 
@@ -1153,8 +1208,8 @@ fn stt_worker_loop(
         if flush {
             // Commit whatever was pending to note (if active).
             if !mic_whisper_pending.is_empty() {
-                if !mic_committed.is_empty() && !mic_committed.ends_with('\n') {
-                    mic_committed.push('\n');
+                if !mic_committed.is_empty() && !mic_committed.ends_with(' ') {
+                    mic_committed.push(' ');
                 }
                 mic_committed.push_str(&mic_whisper_pending);
             }
@@ -1177,6 +1232,7 @@ fn stt_worker_loop(
                 SttCommand::AudioChunk { samples, timestamp_secs, .. } => {
                     mic_pending_buf.extend_from_slice(&samples);
                     mic_pending_since += samples.len();
+                    mic_syl_detector.push_chunk(&samples, timestamp_secs);
 
                     // Hard cap: if mic buffer exceeds 10s, it's a VAD false-hold.
                     // Force-finalize so we don't waste CPU on ever-growing nospeech.
@@ -1212,8 +1268,11 @@ fn stt_worker_loop(
                             &mut session_input_typed,
                             &sys_committed, &sys_whisper_pending,
                             &mut note_srt, &mut srt_index,
+                            &mut hum_pending,
+                            mic_syl_detector.speed_factor(4.5), // 4.5 syl/s = normal English
                         );
                         mic_pending_since = 0;
+                        subtitle_dirty = true; // mic text changed
                         match result {
                             Some(true) => {
                                 // Clear buffer on commit to prevent re-transcribing
@@ -1270,6 +1329,7 @@ fn stt_worker_loop(
                 SttCommand::AudioChunk { samples, timestamp_secs, .. } => {
                     sys_pending_buf.extend_from_slice(&samples);
                     sys_pending_since += samples.len();
+                    sys_syl_detector.push_chunk(&samples, timestamp_secs);
 
                     // Use larger streaming interval for sys (3x slower than mic).
                     const SYS_STREAMING_INTERVAL: usize = STREAMING_CHUNK_SAMPLES * 3;
@@ -1281,6 +1341,7 @@ fn stt_worker_loop(
                             &mut sys_prev_whisper, &mut sys_stable,
                             note_active, has_sys,
                             &mut note_srt, &mut srt_index,
+                            sys_syl_detector.speed_factor(5.5), // ~5.5 syl/s avg (mixed lang)
                         );
                         sys_pending_since = 0;
                         sys_subtitle_dirty = true;
@@ -1297,6 +1358,7 @@ fn stt_worker_loop(
                         &mut sys_prev_whisper, &mut sys_stable,
                         note_active, has_sys,
                         &mut note_srt, &mut srt_index,
+                        sys_syl_detector.speed_factor(5.5),
                     );
                     sys_pending_buf.clear();
                     sys_pending_since = 0;
@@ -1305,15 +1367,24 @@ fn stt_worker_loop(
                 _ => {}
             }
         }
-        // Push subtitle update when sys track changed but mic didn't trigger one.
-        if sys_subtitle_dirty {
-            let mic_raw = format!("{}{}", mic_committed, mic_whisper_pending);
+        // Unified subtitle update — triggered by ANY track change (mic, sys, or hum).
+        if sys_subtitle_dirty || subtitle_dirty {
+            subtitle_dirty = false;
             let sys_raw = format!("{}{}", sys_committed, sys_whisper_pending);
-            let mic_display = last_n_chars(&mic_raw, 200);
             let sys_display = last_n_chars(&sys_raw, 200);
+            // Only show mic text if there's active pending speech (not stale committed text).
+            let mic_raw_tmp;
+            let mic_display = if !mic_whisper_pending.is_empty() {
+                mic_raw_tmp = format!("{}{}", mic_committed, mic_whisper_pending);
+                last_n_chars(&mic_raw_tmp, 80)
+            } else {
+                ""
+            };
+            let hum_display = last_n_chars(&hum_pending, 80);
             let mut parts = Vec::new();
             if !mic_display.is_empty() { parts.push(format!("\u{1F3A4} {}", mic_display)); }
             if !sys_display.is_empty() { parts.push(format!("\u{1F50A} {}", sys_display)); }
+            if !hum_display.is_empty() { parts.push(format!("\u{1F3B5} {}", hum_display)); }
             if !parts.is_empty() {
                 let subtitle = parts.join("\n");
                 let preview: String = subtitle.chars().take(60).collect();
@@ -1412,8 +1483,51 @@ fn process_mic_streaming(
     sys_whisper_pending: &str,
     note_srt: &mut String,
     srt_index: &mut usize,
+    hum_pending: &mut String,
+    speed_factor: f32,
 ) -> Option<bool> {
-    let new_text = transcribe_local(pending_buf, engine);
+    // Time-stretch audio if speech speed > 1.2x (e.g., 2x playback).
+    let stretched;
+    let buf = if speed_factor > 1.2 {
+        eprintln!("[CLX] stt-worker: mic time-stretch {:.1}x → 1x", speed_factor);
+        stretched = time_stretch(pending_buf, speed_factor);
+        &stretched[..]
+    } else {
+        pending_buf
+    };
+    let (new_text, is_music_tag) = transcribe_local_tagged(buf, engine);
+
+    // Always run pitch detection — it's cheap (McLeod on 2048 samples).
+    let pitch_result = detect_pitch(pending_buf);
+
+    // Detect humming: SenseVoice tagged [music], OR pitch found with no/short text.
+    // Humming often transcribes as short noise like "嗯", "Mmm", "Hmm", etc.
+    let text_is_noise = new_text.is_empty() || new_text.chars().count() <= 4;
+    let is_humming = pitch_result.is_some() && (is_music_tag || text_is_noise);
+
+    if pitch_result.is_some() {
+        eprintln!("[CLX] voice: pitch={:?} text={:?} music_tag={} → humming={}",
+            pitch_result, new_text, is_music_tag, is_humming);
+    }
+
+    // If music/humming detected, fork audio to pitch detection instead of mic text.
+    if is_humming {
+        if let Some(note) = pitch_result {
+            if !hum_pending.is_empty() { hum_pending.push(' '); }
+            hum_pending.push_str(&note);
+            // Log to hum file.
+            {
+                use std::io::Write;
+                use std::time::SystemTime;
+                let secs = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs_f64();
+                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).create(true).open("/tmp/clx-voice-hum.log") {
+                    let _ = writeln!(f, "[{:.3}] {}", secs, note);
+                }
+            }
+        }
+        return None; // don't update mic text path — subtitle updated by caller
+    }
+
     if new_text.is_empty() {
         return None; // nospeech — caller should trim context window
     }
@@ -1442,7 +1556,7 @@ fn process_mic_streaming(
     } else {
         let last_committed = mic_committed.chars().last().unwrap_or(' ');
         if matches!(last_committed, '.' | '?' | '!' | '。' | '？' | '！') {
-            "\n"
+            " "
         } else if last_committed == ' ' || display_pending.starts_with(' ') {
             ""
         } else {
@@ -1468,7 +1582,7 @@ fn process_mic_streaming(
     } else {
         visible.join("\n")
     };
-    platform.update_voice_subtitle(&subtitle);
+    // Subtitle update removed — handled by unified path in stt_worker_loop.
 
     // Log combined + separate mic/sys logs for debugging.
     {
@@ -1565,7 +1679,7 @@ fn process_mic_streaming(
             if !mic_committed.is_empty() {
                 let last_char = mic_committed.chars().last().unwrap_or(' ');
                 if matches!(last_char, '.' | '?' | '!' | '。' | '？' | '！') {
-                    mic_committed.push('\n');
+                    mic_committed.push(' ');
                 } else if !mic_committed.ends_with(' ') && !commit_text.starts_with(' ') {
                     mic_committed.push(' ');
                 }
@@ -1640,8 +1754,8 @@ fn process_mic_speech_end(
         }
     }
 
-    if !mic_committed.is_empty() && !mic_committed.ends_with('\n') {
-        mic_committed.push('\n');
+    if !mic_committed.is_empty() && !mic_committed.ends_with(' ') {
+        mic_committed.push(' ');
     }
     mic_committed.push_str(mic_whisper_pending);
     // Add SRT entry for the utterance end.
@@ -1684,8 +1798,17 @@ fn process_sys_streaming(
     has_sys: bool,
     note_srt: &mut String,
     srt_index: &mut usize,
+    speed_factor: f32,
 ) -> bool {
-    let text = transcribe_local(pending_buf, engine);
+    let stretched;
+    let buf = if speed_factor > 1.2 {
+        eprintln!("[CLX] stt-worker: sys time-stretch {:.1}x → 1x", speed_factor);
+        stretched = time_stretch(pending_buf, speed_factor);
+        &stretched[..]
+    } else {
+        pending_buf
+    };
+    let text = transcribe_local(buf, engine);
     if !text.is_empty() {
         *sys_whisper_pending = text;
     }
@@ -1738,9 +1861,17 @@ fn process_sys_speech_end(
     has_sys: bool,
     note_srt: &mut String,
     srt_index: &mut usize,
+    speed_factor: f32,
 ) {
     if pending_buf.len() > 4800 {
-        let text = transcribe_local(pending_buf, engine);
+        let stretched;
+        let buf = if speed_factor > 1.2 {
+            stretched = time_stretch(pending_buf, speed_factor);
+            &stretched[..]
+        } else {
+            pending_buf
+        };
+        let text = transcribe_local(buf, engine);
         if !text.is_empty() { *sys_whisper_pending = text; }
     }
     if note_active.load(Ordering::Relaxed) && !sys_whisper_pending.is_empty() && has_sys {
@@ -1958,8 +2089,30 @@ fn format_srt_time(secs: f64) -> String {
 
 // ── Streaming diff helpers ────────────────────────────────────────────────────
 
+/// Time-stretch audio by a factor (e.g., 2.0 = slow down to half speed).
+/// Uses linear interpolation resampling. Factor > 1 = slow down (more samples).
+fn time_stretch(samples: &[f32], factor: f32) -> Vec<f32> {
+    if (factor - 1.0).abs() < 0.1 || samples.is_empty() { return samples.to_vec(); }
+    let out_len = (samples.len() as f64 * factor as f64) as usize;
+    let mut out = Vec::with_capacity(out_len);
+    for i in 0..out_len {
+        let src = i as f64 / factor as f64;
+        let idx = src as usize;
+        let frac = (src - idx as f64) as f32;
+        let s0 = samples.get(idx).copied().unwrap_or(0.0);
+        let s1 = samples.get(idx + 1).copied().unwrap_or(s0);
+        out.push(s0 + (s1 - s0) * frac);
+    }
+    out
+}
+
 /// Transcribe audio locally (sherpa or whisper). Returns text or empty.
 fn transcribe_local(samples: &[f32], engine: &mut Option<SttEngine>) -> String {
+    transcribe_local_tagged(samples, engine).0
+}
+
+/// Transcribe and also return whether music/humming was detected.
+fn transcribe_local_tagged(samples: &[f32], engine: &mut Option<SttEngine>) -> (String, bool) {
     // Pad to 1s minimum if needed; avoid cloning when not padding.
     let padded;
     let samples = if samples.len() < 16000 {
@@ -1974,18 +2127,18 @@ fn transcribe_local(samples: &[f32], engine: &mut Option<SttEngine>) -> String {
     };
 
     if let Some(ref mut stt) = engine {
-        match stt.transcribe(samples) {
-            Ok(text) => {
+        match stt.transcribe_tagged(samples) {
+            Ok(output) => {
                 stt.check_pending_upgrade();
-                text
+                (output.text, output.is_music)
             }
             Err(e) => {
                 eprintln!("[CLX] voice: STT error: {e}");
-                String::new()
+                (String::new(), false)
             }
         }
     } else {
-        String::new()
+        (String::new(), false)
     }
 }
 
@@ -2035,6 +2188,207 @@ fn type_replace(old: &str, new: &str, platform: &Arc<dyn Platform>) {
 }
 
 // NLMS removed — replaced by WebRTC AEC3 (aec3 crate).
+
+// ── Syllable Rate Detector (speech speed estimation) ─────────────────────────
+/// Estimates speech speed by counting syllable nuclei via zero-crossings
+/// on high-pass filtered RMS energy. ~4.5 syl/s = normal English, ~7 = Japanese.
+struct SyllableRateDetector {
+    prev_rms: f32,
+    filtered: f32,
+    prev_positive: bool,
+    last_crossing_t: f64,
+    crossing_times: std::collections::VecDeque<f64>,
+}
+
+impl SyllableRateDetector {
+    fn new() -> Self {
+        Self {
+            prev_rms: 0.0,
+            filtered: 0.0,
+            prev_positive: false,
+            last_crossing_t: 0.0,
+            crossing_times: std::collections::VecDeque::new(),
+        }
+    }
+
+    /// Feed an audio chunk. `timestamp` = seconds since session start.
+    fn push_chunk(&mut self, samples: &[f32], timestamp: f64) {
+        if samples.is_empty() { return; }
+        let rms = (samples.iter().map(|s| s * s).sum::<f32>() / samples.len() as f32).sqrt();
+
+        // High-pass filter: keeps 2-10 Hz syllable-rate modulation.
+        const ALPHA: f32 = 0.9;
+        self.filtered = ALPHA * (self.filtered + rms - self.prev_rms);
+        self.prev_rms = rms;
+
+        // Detect positive-going zero-crossing with minimum 70ms interval.
+        let positive = self.filtered > 0.0;
+        if positive && !self.prev_positive && (timestamp - self.last_crossing_t) > 0.070 {
+            self.crossing_times.push_back(timestamp);
+            self.last_crossing_t = timestamp;
+            // Keep only last 5 seconds.
+            while self.crossing_times.front().map_or(false, |&t| timestamp - t > 5.0) {
+                self.crossing_times.pop_front();
+            }
+        }
+        self.prev_positive = positive;
+    }
+
+    /// Syllables per second over the last `window` seconds.
+    fn syllables_per_sec(&self, window: f64) -> f32 {
+        if self.crossing_times.len() < 2 { return 0.0; }
+        let now = self.crossing_times.back().copied().unwrap_or(0.0);
+        let count = self.crossing_times.iter()
+            .filter(|&&t| now - t <= window)
+            .count();
+        if count < 2 { return 0.0; }
+        count as f32 / window as f32
+    }
+
+    /// Estimate speed factor relative to expected syllable rate.
+    /// Returns 1.0 for normal speed, 2.0 for double speed, etc.
+    fn speed_factor(&self, expected_syl_per_sec: f32) -> f32 {
+        let measured = self.syllables_per_sec(3.0);
+        if measured < 1.0 || expected_syl_per_sec < 1.0 { return 1.0; }
+        (measured / expected_syl_per_sec).clamp(0.5, 4.0)
+    }
+}
+
+// ── Chord / Pitch Detection (humming → chord names or note names) ────────────
+
+const NOTE_NAMES: [&str; 12] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+/// Convert frequency in Hz to note name (e.g., 440.0 → "A4").
+fn hz_to_note(freq: f32) -> String {
+    let midi = 69.0 + 12.0 * (freq / 440.0).log2();
+    let note_i = (midi.round() as i32).rem_euclid(12) as usize;
+    let octave = (midi.round() as i32) / 12 - 1;
+    format!("{}{}", NOTE_NAMES[note_i], octave)
+}
+
+/// Chord templates: (name_suffix, intervals from root).
+/// Each chord type is defined by its intervals in semitones.
+const CHORD_TEMPLATES: &[(&str, &[usize])] = &[
+    ("",     &[0, 4, 7]),       // major
+    ("m",    &[0, 3, 7]),       // minor
+    ("7",    &[0, 4, 7, 10]),   // dominant 7th
+    ("m7",   &[0, 3, 7, 10]),   // minor 7th
+    ("maj7", &[0, 4, 7, 11]),   // major 7th
+    ("dim",  &[0, 3, 6]),       // diminished
+    ("aug",  &[0, 4, 8]),       // augmented
+    ("sus4", &[0, 5, 7]),       // suspended 4th
+    ("sus2", &[0, 2, 7]),       // suspended 2nd
+    ("5",    &[0, 7]),          // power chord
+];
+
+/// Compute 12-bin chroma vector from audio using FFT.
+/// Each bin = total energy for that pitch class (C=0, C#=1, ... B=11).
+fn compute_chroma(samples: &[f32], sample_rate: u32) -> [f32; 12] {
+    let n = samples.len().next_power_of_two();
+    let mut padded = vec![0.0f32; n];
+    padded[..samples.len()].copy_from_slice(samples);
+
+    // Apply Hann window.
+    for i in 0..samples.len() {
+        let w = 0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / samples.len() as f32).cos());
+        padded[i] *= w;
+    }
+
+    // Compute chroma by targeting specific musical frequencies directly.
+    // Instead of full DFT, compute Goertzel magnitude for each semitone
+    // across octaves 2-6 (C2=65Hz to B6=1976Hz). Much faster than full DFT.
+    let mut chroma = [0.0f32; 12];
+
+    for octave in 2..=6 {
+        for pitch_class in 0..12 {
+            // Frequency of this note: C2=65.41, C#2=69.30, ...
+            let midi = (octave + 1) * 12 + pitch_class as i32; // C2 = MIDI 36
+            let freq = 440.0 * 2.0f32.powf((midi as f32 - 69.0) / 12.0);
+            if freq < 50.0 || freq > 2500.0 { continue; }
+
+            // Goertzel algorithm: O(N) for single frequency bin.
+            let k = (freq * n as f32 / sample_rate as f32).round();
+            let w = 2.0 * std::f32::consts::PI * k / n as f32;
+            let coeff = 2.0 * w.cos();
+            let (mut s0, mut s1, mut s2) = (0.0f32, 0.0f32, 0.0f32);
+            for &x in &padded {
+                s0 = x + coeff * s1 - s2;
+                s2 = s1;
+                s1 = s0;
+            }
+            let mag = (s1 * s1 + s2 * s2 - coeff * s1 * s2).sqrt();
+            chroma[pitch_class as usize] += mag;
+        }
+    }
+
+    // Normalize.
+    let max = chroma.iter().cloned().fold(0.0f32, f32::max);
+    if max > 0.0 {
+        for c in &mut chroma { *c /= max; }
+    }
+    chroma
+}
+
+/// Match a chroma vector against chord templates. Returns chord name (e.g. "Am7").
+fn match_chord(chroma: &[f32; 12]) -> Option<String> {
+    let mut best_score = 0.0f32;
+    let mut best_name = String::new();
+
+    for root in 0..12 {
+        for &(suffix, intervals) in CHORD_TEMPLATES {
+            // Build template: 1.0 at chord tones, 0.0 elsewhere.
+            let mut template = [0.0f32; 12];
+            for &interval in intervals {
+                template[(root + interval) % 12] = 1.0;
+            }
+
+            // Cosine similarity.
+            let dot: f32 = chroma.iter().zip(template.iter()).map(|(a, b)| a * b).sum();
+            let norm_a: f32 = chroma.iter().map(|x| x * x).sum::<f32>().sqrt();
+            let norm_b: f32 = template.iter().map(|x| x * x).sum::<f32>().sqrt();
+            let score = if norm_a > 0.0 && norm_b > 0.0 { dot / (norm_a * norm_b) } else { 0.0 };
+
+            if score > best_score {
+                best_score = score;
+                best_name = format!("{}{}", NOTE_NAMES[root], suffix);
+            }
+        }
+    }
+
+    // Require minimum confidence.
+    if best_score > 0.6 { Some(best_name) } else { None }
+}
+
+/// Detect chord or single pitch from audio samples.
+/// Tries chord detection first, falls back to single note via McLeod.
+fn detect_pitch(samples: &[f32]) -> Option<String> {
+    if samples.len() < 2048 { return None; }
+
+    // Try chord detection via chroma.
+    let start = samples.len().saturating_sub(4096).max(0);
+    let chunk = &samples[start..];
+    let chroma = compute_chroma(chunk, 16000);
+
+    // Check if there's enough energy for detection.
+    let energy: f32 = chroma.iter().sum();
+    if energy < 0.5 { return None; }
+
+    if let Some(chord) = match_chord(&chroma) {
+        return Some(chord);
+    }
+
+    // Fallback: single note via McLeod pitch detector.
+    use pitch_detection::detector::{mcleod::McLeodDetector, PitchDetector};
+    let start = samples.len().saturating_sub(2048);
+    let chunk = &samples[start..start + 2048];
+    let mut detector = McLeodDetector::<f32>::new(2048, 1024);
+    let result = detector.get_pitch(chunk, 16000, 0.15, 0.5)?;
+    if result.frequency >= 80.0 && result.frequency <= 1000.0 && result.clarity > 0.5 {
+        Some(hz_to_note(result.frequency))
+    } else {
+        None
+    }
+}
 
 // ── Resampling ───────────────────────────────────────────────────────────────
 
@@ -2502,6 +2856,10 @@ fn extract_json_text(json: &str) -> Option<String> {
         Some(result)
     }
 }
+
+#[cfg(test)]
+#[path = "voice_e2e_test.rs"]
+mod voice_e2e_test;
 
 #[cfg(test)]
 mod tests {

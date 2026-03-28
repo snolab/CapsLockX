@@ -129,6 +129,31 @@ fn main() {
         }
     }
 
+    // Write PID file so CLX core can detect us and stop its own voice pipeline.
+    let pid_file = "/tmp/clx-voice-standalone.pid";
+    std::fs::write(pid_file, std::process::id().to_string()).ok();
+    // Clean up PID file on exit (Ctrl+C).
+    {
+        let _ = unsafe {
+            libc::signal(libc::SIGINT, {
+                extern "C" fn cleanup(_: i32) {
+                    let _ = std::fs::remove_file("/tmp/clx-voice-standalone.pid");
+                    std::process::exit(0);
+                }
+                cleanup as libc::sighandler_t
+            })
+        };
+        let _ = unsafe {
+            libc::signal(libc::SIGTERM, {
+                extern "C" fn cleanup(_: i32) {
+                    let _ = std::fs::remove_file("/tmp/clx-voice-standalone.pid");
+                    std::process::exit(0);
+                }
+                cleanup as libc::sighandler_t
+            })
+        };
+    }
+
     eprintln!("[voice-standalone] CLX Voice Standalone");
     eprintln!("[voice-standalone] Dual capture: mic (AEC) + system audio");
     eprintln!("[voice-standalone] Ctrl+C to quit\n");
@@ -141,6 +166,32 @@ fn main() {
 
     let platform = Arc::new(VoicePlatform);
     let voice = VoiceModule::new(Arc::clone(&platform) as Arc<dyn Platform>);
+
+    // Load config and apply voice thresholds.
+    {
+        let cfg_path = dirs::config_dir()
+            .map(|d| d.join("CapsLockX").join("config.json"));
+        if let Some(path) = cfg_path {
+            if let Ok(data) = std::fs::read_to_string(&path) {
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(&data) {
+                    let aec_gain = v.get("aec_gain").and_then(|v| v.as_f64()).unwrap_or(15.0) as f32;
+                    let noise_gate = v.get("noise_gate").and_then(|v| v.as_f64()).unwrap_or(0.003) as f32;
+                    let speech_start_prob = v.get("speech_start_prob").and_then(|v| v.as_f64()).unwrap_or(0.8) as f32;
+                    let speech_end_prob = v.get("speech_end_prob").and_then(|v| v.as_f64()).unwrap_or(0.6) as f32;
+                    let speech_start_frames = v.get("speech_start_frames").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+                    let silence_end_frames = v.get("silence_end_frames").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
+                    eprintln!("[voice-standalone] config: aec_gain={} noise_gate={} start_prob={} end_prob={} start_frames={} silence_frames={}",
+                        aec_gain, noise_gate, speech_start_prob, speech_end_prob, speech_start_frames, silence_end_frames);
+                    voice.update_config(
+                        "sherpa".into(), String::new(), String::new(), false,
+                        String::new(), String::new(),
+                        aec_gain, noise_gate, speech_start_prob, speech_end_prob,
+                        speech_start_frames, silence_end_frames,
+                    );
+                }
+            }
+        }
+    }
 
     // Start immediately with both mic and system audio.
     voice.start_always_on(true);

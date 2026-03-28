@@ -8,6 +8,23 @@ use std::ffi::c_void;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
+/// Check if overlay screen sharing is enabled in config.
+fn overlay_sharing_enabled() -> bool {
+    let cfg_path = dirs::config_dir()
+        .map(|d| d.join("CapsLockX").join("config.json"));
+    if let Some(path) = cfg_path {
+        if let Ok(data) = std::fs::read_to_string(&path) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&data) {
+                let val = v.get("overlay_sharing").and_then(|v| v.as_bool()).unwrap_or(false);
+                eprintln!("[CLX] overlay_sharing: config={}, path={:?}", val, path);
+                return val;
+            }
+        }
+    }
+    eprintln!("[CLX] overlay_sharing: not found in config, default=false");
+    false // default: not shared
+}
+
 // ObjC exception catcher (compiled from objc_try.m).
 extern "C" {
     fn objc_try_catch(fn_ptr: extern "C" fn(*mut c_void), context: *mut c_void) -> i32;
@@ -326,8 +343,11 @@ fn show_main_inner() {
         f_bool(win, sel(b"setIgnoresMouseEvents:\0"), true);
         f_bool(win, sel(b"setHasShadow:\0"), false);
         let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
-        // Hide from screen sharing / screenshots (NSWindowSharingNone = 0)
-        f_u64(win, sel(b"setSharingType:\0"), 0);
+        // NSWindowSharingNone = 0 (hidden from screenshots/screen sharing) — default.
+        // NSWindowSharingReadOnly = 1 (visible in screenshots) — set via prefs.
+        // Read preference from config file.
+        let sharing_type: u64 = if overlay_sharing_enabled() { 1 } else { 0 };
+        f_u64(win, sel(b"setSharingType:\0"), sharing_type);
         let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
         f_u64(win, sel(b"setCollectionBehavior:\0"), 1 | 16); // allSpaces + stationary
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <title>CapsLockX Preferences</title>
   <style>
-    /* Catppuccin Mocha palette */
+    /* Catppuccin Mocha (dark) — default */
     :root {
       --base:     #1e1e2e;
       --mantle:   #181825;
@@ -15,6 +15,20 @@
       --blue:     #89b4fa;
       --green:    #a6e3a1;
       --red:      #f38ba8;
+    }
+    /* Catppuccin Latte (light) — follows system preference */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --base:     #eff1f5;
+        --mantle:   #e6e9ef;
+        --surface0: #ccd0da;
+        --overlay1: #8c8fa1;
+        --text:     #4c4f69;
+        --subtext0: #6c6f85;
+        --blue:     #1e66f5;
+        --green:    #40a02b;
+        --red:      #d20f39;
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -220,9 +234,14 @@
       <input type="range" id="silence_end_frames" min="5" max="60" step="1">
       <span id="silence_end_frames_val">20</span>
     </div>
+    <div class="cb-row">
+      <input type="checkbox" id="overlay_sharing">
+      <label for="overlay_sharing">Overlay visible in screenshots / screen sharing</label>
+    </div>
     <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
       Tune AEC and VAD. Changes apply on next voice session (Space+V).<br>
-      1 frame ≈ 16ms. Higher gain = louder mic. Higher gate = more silence filtering.
+      1 frame ≈ 16ms. Higher gain = louder mic. Higher gate = more silence filtering.<br>
+      Overlay sharing requires restart to take effect.
     </div>
   </section>
 
@@ -363,6 +382,7 @@
         speech_end_prob:    parseFloat(document.getElementById('speech_end_prob').value),
         speech_start_frames: parseInt(document.getElementById('speech_start_frames').value),
         silence_end_frames:  parseInt(document.getElementById('silence_end_frames').value),
+        overlay_sharing:     document.getElementById('overlay_sharing').checked,
       };
     }
 
@@ -389,6 +409,7 @@
       setSlider('speech_end_prob', cfg.speech_end_prob || 0.6);
       setSlider('speech_start_frames', cfg.speech_start_frames || 10);
       setSlider('silence_end_frames', cfg.silence_end_frames || 20);
+      document.getElementById('overlay_sharing').checked = cfg.overlay_sharing || false;
     }
 
     function setSlider(id, value) {

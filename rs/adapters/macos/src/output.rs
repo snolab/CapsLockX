@@ -388,10 +388,13 @@ fn list_all_windows() -> Vec<WindowEntry> {
                     let win = CFArrayGetValueAtIndex(arr as CFArrayRef, wi as isize);
                     if win.is_null() { continue; }
                     let title = ax_window_title(win as *mut _);
-                    if !title.is_empty() {
-                        // Get CGWindowID directly from AXUIElement (private API, reliable).
-                        let mut wid: u32 = 0;
-                        _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
+                    let mut wid: u32 = 0;
+                    _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
+                    if title.is_empty() {
+                        eprintln!("[list_windows] pid={} wi={} wid={} SKIPPED (empty title)", pid, wi, wid);
+                        continue;
+                    }
+                    {
                         // Only include windows on the current Space.
                         // onscreen_wids has all CGWindowIDs with isOnscreen=true.
                         // This filters out minimized windows and (on some macOS
@@ -399,6 +402,9 @@ fn list_all_windows() -> Vec<WindowEntry> {
                         // Skip wid==0 windows — they can't be reliably matched
                         // or activated, causing phantom "skips" during cycling.
                         let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
+                        if !on_current_space {
+                            eprintln!("[list_windows] pid={} wi={} wid={} SKIPPED (not on screen) title={:?}", pid, wi, wid, &title[..title.len().min(40)]);
+                        }
                         if on_current_space {
                             let display_id = if wid != 0 {
                                 if let Some(&(cx, cy)) = bounds_map.get(&wid) {
@@ -407,7 +413,7 @@ fn list_all_windows() -> Vec<WindowEntry> {
                             } else { main_display };
                             entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title, display_id });
                         }
-                    }
+                    } // on_current_space block
                 }
                 CFRelease(arr as *const _);
                 CFRelease(app_ref as *const _);
@@ -1332,6 +1338,7 @@ impl Platform for MacPlatform {
         }
     }
 
+    fn open_preferences(&self) { crate::prefs::open_preferences(); }
     fn show_voice_overlay(&self) { crate::voice_overlay::show_overlay(); }
     fn hide_voice_overlay(&self) { crate::voice_overlay::hide_overlay(); }
     fn update_voice_overlay(&self, mic_levels: &[f32], mic_vad: bool, sys_levels: &[f32], sys_vad: bool) {

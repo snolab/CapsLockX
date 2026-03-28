@@ -85,6 +85,12 @@ impl Modules {
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
+        // Space+Comma → open preferences (like AHK implementation).
+        if key == KeyCode::Comma {
+            self.platform.open_preferences();
+            return true;
+        }
+
         // Core modules (keyboard/mouse) — must NEVER crash. Run directly.
         if self.edit.on_key_down(key, &*self.platform) { return true; }
         if self.mouse.on_key_down(key) { return true; }
@@ -113,7 +119,8 @@ impl Modules {
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
-        self.edit.is_mapped_key(key)
+        key == KeyCode::Comma  // Space+Comma = preferences
+            || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
             || self.virtual_desktop.is_mapped_key(key)
