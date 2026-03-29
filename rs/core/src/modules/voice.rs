@@ -1899,16 +1899,28 @@ fn chrono_timestamp() -> String {
     use std::time::SystemTime;
     let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
     let secs = d.as_secs();
-    // Simple UTC timestamp without chrono crate.
     let s = secs % 60;
     let m = (secs / 60) % 60;
     let h = (secs / 3600) % 24;
-    let days = secs / 86400;
-    // Approximate date (good enough for filenames).
-    let y = 1970 + days / 365;
-    let doy = days % 365;
-    let mon = doy / 30 + 1;
-    let day = doy % 30 + 1;
+    let mut days = (secs / 86400) as i64;
+    // Civil date from days since 1970-01-01 (Rata Die algorithm).
+    let mut y: i64 = 1970;
+    loop {
+        let ylen: i64 = if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) { 366 } else { 365 };
+        if days < ylen { break; }
+        days -= ylen;
+        y += 1;
+    }
+    let leap = y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
+    let mdays: [i64; 12] = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let mut mon: i64 = 0;
+    for md in &mdays {
+        if days < *md { break; }
+        days -= *md;
+        mon += 1;
+    }
+    let day = days + 1;
+    let mon = mon + 1;
     format!("{y:04}-{mon:02}-{day:02}T{h:02}{m:02}{s:02}")
 }
 

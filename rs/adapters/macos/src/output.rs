@@ -391,7 +391,6 @@ fn list_all_windows() -> Vec<WindowEntry> {
                     let mut wid: u32 = 0;
                     _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
                     if title.is_empty() {
-                        eprintln!("[list_windows] pid={} wi={} wid={} SKIPPED (empty title)", pid, wi, wid);
                         continue;
                     }
                     {
@@ -402,9 +401,6 @@ fn list_all_windows() -> Vec<WindowEntry> {
                         // Skip wid==0 windows — they can't be reliably matched
                         // or activated, causing phantom "skips" during cycling.
                         let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
-                        if !on_current_space {
-                            eprintln!("[list_windows] pid={} wi={} wid={} SKIPPED (not on screen) title={:?}", pid, wi, wid, &title[..title.len().min(40)]);
-                        }
                         if on_current_space {
                             let display_id = if wid != 0 {
                                 if let Some(&(cx, cy)) = bounds_map.get(&wid) {

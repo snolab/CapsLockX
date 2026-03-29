@@ -132,13 +132,60 @@ fn main() {
             .status();
     }
 
+    // Tee stderr to /tmp/clx-debug.log (truncated on each start) so the log
+    // file is always populated regardless of how CLX was launched.
+    {
+        use std::os::unix::io::{AsRawFd, FromRawFd};
+        extern "C" {
+            fn dup(fd: i32) -> i32;
+            fn dup2(old: i32, new: i32) -> i32;
+            fn pipe(fds: *mut i32) -> i32;
+            fn close(fd: i32) -> i32;
+        }
+        let log_path = "/tmp/clx-debug.log";
+        if let Ok(log_file) = std::fs::File::create(log_path) {
+            let stderr_fd = std::io::stderr().as_raw_fd();
+            let orig_copy = unsafe { dup(stderr_fd) };
+            let log_fd = log_file.as_raw_fd();
+            let mut pipe_fds = [0i32; 2];
+            if unsafe { pipe(pipe_fds.as_mut_ptr()) } == 0 {
+                unsafe { dup2(pipe_fds[1], stderr_fd); }
+                unsafe { close(pipe_fds[1]); }
+                let reader_fd = pipe_fds[0];
+                let log_fd_copy = unsafe { dup(log_fd) };
+                std::thread::Builder::new().name("clx-log-tee".into()).spawn(move || {
+                    let mut reader = unsafe { std::fs::File::from_raw_fd(reader_fd) };
+                    let mut orig_w = unsafe { std::fs::File::from_raw_fd(orig_copy) };
+                    let mut log_w = unsafe { std::fs::File::from_raw_fd(log_fd_copy) };
+                    let mut buf = [0u8; 4096];
+                    loop {
+                        use std::io::Read;
+                        match reader.read(&mut buf) {
+                            Ok(0) | Err(_) => break,
+                            Ok(n) => {
+                                let _ = std::io::Write::write_all(&mut orig_w, &buf[..n]);
+                                let _ = std::io::Write::write_all(&mut log_w, &buf[..n]);
+                            }
+                        }
+                    }
+                }).ok();
+            }
+        }
+    }
+
     // Install panic hook to log panic messages before abort.
+    // IMPORTANT: Do NOT use eprintln! here — if stderr is a broken pipe,
+    // eprintln! panics, causing a double-panic → abort with no diagnostics.
     std::panic::set_hook(Box::new(|info| {
         let msg = if let Some(s) = info.payload().downcast_ref::<&str>() { s.to_string() }
                   else if let Some(s) = info.payload().downcast_ref::<String>() { s.clone() }
                   else { "unknown".to_string() };
         let loc = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_default();
-        eprintln!("[CLX] PANIC: {} at {}", msg, loc);
+        // Try stderr but ignore errors (broken pipe safe).
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            format!("[CLX] PANIC: {} at {}\n", msg, loc).as_bytes(),
+        );
         // Also write to a crash file for post-mortem.
         let crash_path = std::env::current_exe().ok()
             .and_then(|e| e.parent().map(|p| p.join("tmp/last-panic.txt")));

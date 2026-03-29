@@ -214,6 +214,23 @@ pub fn setup_tray() {
         }
         msg1_ptr(menu, sel(b"addItem:\0"), restart_item);
 
+        // ── "Voice Recordings…" menu item ───────────────────────────────
+        let voice_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
+        let voice_title = nsstring("Voice Recordings\u{2026}");
+        let voice_action = sel(b"openVoiceFolder:\0");
+        let voice_key = nsstring("");
+        let voice_item: *mut c_void = {
+            let f: extern "C" fn(
+                *mut c_void, *mut c_void,
+                *mut c_void, *mut c_void, *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            f(voice_alloc, sel_init_item, voice_title, voice_action, voice_key)
+        };
+        if !action_target.is_null() {
+            msg1_ptr(voice_item, sel(b"setTarget:\0"), action_target);
+        }
+        msg1_ptr(menu, sel(b"addItem:\0"), voice_item);
+
         // ── Separator ───────────────────────────────────────────────────
         let separator = msg0(menuitem_cls, sel(b"separatorItem\0"));
         msg1_ptr(menu, sel(b"addItem:\0"), separator);
