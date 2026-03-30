@@ -433,13 +433,17 @@ impl VoiceModule {
         key == KeyCode::V
     }
 
-    /// Called when CLX mode deactivates.
-    /// Stop voice input (hold mode), but keep voice note running.
+    /// Called when CLX mode deactivates (Space released).
+    /// If voice input was active, trigger final polish before stopping.
     pub fn stop(&self) {
-        let was_input = self.input_active.swap(false, Ordering::Relaxed);
-        // Only stop pipeline if input was active AND note is not running.
-        if was_input && !self.note_active.load(Ordering::Relaxed) {
-            self.stop_pipeline();
+        if self.input_active.load(Ordering::Relaxed) {
+            // Input was active — request final polish (same as hold-release path).
+            // Keep input_active=true so the worker can type the polished result.
+            self.final_polish_requested.store(true, Ordering::Relaxed);
+            eprintln!("[CLX] voice: CLX deactivated while input active → final polish requested");
+            if !self.note_active.load(Ordering::Relaxed) {
+                self.stop_pipeline();
+            }
         }
     }
 

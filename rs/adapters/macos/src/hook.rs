@@ -99,7 +99,7 @@ unsafe extern "C" fn raw_callback(
     if etype_raw == TAP_DISABLED_BY_TIMEOUT || etype_raw == TAP_DISABLED_BY_USER {
         let tap = TAP_REF.load(Ordering::Relaxed);
         if !tap.is_null() {
-            eprintln!("[CLX] CGEventTap was disabled (secure input?) – re-enabling…");
+            eprintln!("[CLX] CGEventTap was disabled (secure input?) - re-enabling");
             CGEventTapEnable(tap as CFMachPortRef, true);
         }
         return event;
@@ -109,9 +109,20 @@ unsafe extern "C" fn raw_callback(
     // ManuallyDrop ensures we don't free the event (the OS still owns it).
     let cg_event = std::mem::ManuallyDrop::new(CGEvent::from_ptr(event as *mut _));
 
-    match handle_event(etype, &cg_event) {
-        Some(_) => event,       // pass through: return original pointer
-        None    => ptr::null_mut(),  // suppress: return NULL
+    // catch_unwind prevents panics from unwinding across the FFI boundary
+    // (which is instant abort). Instead, log and pass the event through.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        handle_event(etype, &cg_event)
+    })) {
+        Ok(Some(_)) => event,          // pass through
+        Ok(None)    => ptr::null_mut(), // suppress
+        Err(_)      => {
+            let _ = std::io::Write::write_all(
+                &mut std::io::stderr(),
+                b"[CLX] PANIC in CGEventTap callback - event passed through\n",
+            );
+            event // pass through on panic — don't break keyboard
+        }
     }
 }
 

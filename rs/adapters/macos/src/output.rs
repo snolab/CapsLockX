@@ -1154,53 +1154,53 @@ impl Platform for MacPlatform {
             } else { None }
         } else { None };
 
-        // Determine which screen to arrange on: use the frontmost window's screen.
+        // Group windows by display so each display arranges independently.
         let all_windows = list_all_windows();
-        let front_wid = frontmost_window_id();
-        let current_display = all_windows.iter()
-            .find(|w| w.window_id == front_wid)
-            .map(|w| w.display_id)
-            .unwrap_or_else(|| CGDisplay::main().id);
+        let mut displays: std::collections::HashMap<u32, Vec<&WindowEntry>> = std::collections::HashMap::new();
+        for w in &all_windows {
+            displays.entry(w.display_id).or_default().push(w);
+        }
 
-        let windows = get_all_ax_window_refs_stable(current_display);
-        let n = windows.len();
-        if n == 0 { return; }
+        let mut frames: Vec<(AXUIElementRef, f64, f64, f64, f64)> = Vec::new();
 
-        let (ax, ay, aw, ah) = visible_work_area_for_display(current_display);
+        for (&display_id, _display_windows) in &displays {
+            let windows = get_all_ax_window_refs_stable(display_id);
+            let n = windows.len();
+            if n == 0 { continue; }
 
-        // Phase 1: Compute all target frames (pure math, instant).
-        let mut frames: Vec<(AXUIElementRef, f64, f64, f64, f64)> = Vec::with_capacity(n);
+            let (ax, ay, aw, ah) = visible_work_area_for_display(display_id);
 
-        match mode {
-            ArrangeMode::Stacked => {
-                let dx = 72.0_f64.min(aw / n as f64);
-                let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
-                let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
-                let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
-                for (k, win) in windows.iter().enumerate() {
-                    let x = ax + dx * k as f64;
-                    let y = ay + dy * (n - k - 1) as f64;
-                    frames.push((*win, x, y, w, h));
+            match mode {
+                ArrangeMode::Stacked => {
+                    let dx = 72.0_f64.min(aw / n as f64);
+                    let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
+                    let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
+                    let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
+                    for (k, win) in windows.iter().enumerate() {
+                        let x = ax + dx * k as f64;
+                        let y = ay + dy * (n - k - 1) as f64;
+                        frames.push((*win, x, y, w, h));
+                    }
                 }
-            }
-            ArrangeMode::SideBySide => {
-                let cols = if aw <= ah {
-                    let c = (n as f64).sqrt() as usize;
-                    c.max(1)
-                } else {
-                    let r = (n as f64).sqrt() as usize;
-                    let r = r.max(1);
-                    (n + r - 1) / r
-                };
-                let rows = (n + cols - 1) / cols;
-                let cell_w = aw / cols as f64;
-                let cell_h = ah / rows as f64;
-                for (k, win) in windows.iter().enumerate() {
-                    let col = k % cols;
-                    let row = k / cols;
-                    let x = ax + col as f64 * cell_w;
-                    let y = ay + row as f64 * cell_h;
-                    frames.push((*win, x, y, cell_w, cell_h));
+                ArrangeMode::SideBySide => {
+                    let cols = if aw <= ah {
+                        let c = (n as f64).sqrt() as usize;
+                        c.max(1)
+                    } else {
+                        let r = (n as f64).sqrt() as usize;
+                        let r = r.max(1);
+                        (n + r - 1) / r
+                    };
+                    let rows = (n + cols - 1) / cols;
+                    let cell_w = aw / cols as f64;
+                    let cell_h = ah / rows as f64;
+                    for (k, win) in windows.iter().enumerate() {
+                        let col = k % cols;
+                        let row = k / cols;
+                        let x = ax + col as f64 * cell_w;
+                        let y = ay + row as f64 * cell_h;
+                        frames.push((*win, x, y, cell_w, cell_h));
+                    }
                 }
             }
         }
@@ -1222,23 +1222,16 @@ impl Platform for MacPlatform {
         // Example: windows [0,1,2,3,4], current=2 → raise order: 0,4,1,3,2 (2 raised last = top)
         //
         // Find current window from cycle state.
+        let n = frames.len();
         let current_idx = restore_entry.as_ref()
-            .and_then(|e| frames.iter().position(|&(_, x, y, _, _)| {
-                // Match by position index in the frame list
-                let _ = (x, y);
-                false
-            }))
-            .or_else(|| {
-                // Match by frontmost window
-                let front_wid = frontmost_window_id();
-                // We need to correlate frames with entries — use the cycle state index
+            .and_then(|_e| {
+                // Use the cycle state index if valid
                 if let Ok(guard) = CYCLE.lock() {
                     if let Some(ref s) = *guard {
                         if s.index < n { return Some(s.index); }
                     }
                 }
-                // Fallback: first window
-                Some(0)
+                None
             })
             .unwrap_or(0);
 
@@ -1264,8 +1257,8 @@ impl Platform for MacPlatform {
             }
 
             // Release all retained refs.
-            for win in &windows {
-                CFRelease(*win as *const _);
+            for &(win, _, _, _, _) in &frames {
+                CFRelease(win as *const _);
             }
         }
 
