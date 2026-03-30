@@ -99,7 +99,11 @@ unsafe extern "C" fn raw_callback(
     if etype_raw == TAP_DISABLED_BY_TIMEOUT || etype_raw == TAP_DISABLED_BY_USER {
         let tap = TAP_REF.load(Ordering::Relaxed);
         if !tap.is_null() {
-            eprintln!("[CLX] CGEventTap was disabled (secure input?) - re-enabling");
+            eprintln!("[CLX] CGEventTap was disabled (secure input?) - releasing all keys + re-enabling");
+            // Emergency stop: release all held keys and stop all modules.
+            // Without this, AccModel keeps running (tabs/mouse) because we
+            // never received the key-up events while the tap was disabled.
+            ENGINE.emergency_stop();
             CGEventTapEnable(tap as CFMachPortRef, true);
         }
         return event;

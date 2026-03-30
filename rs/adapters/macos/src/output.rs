@@ -1069,7 +1069,7 @@ impl Platform for MacPlatform {
         let mut guard = CYCLE.lock().unwrap();
 
         let now = Instant::now();
-        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_secs() > 5);
+        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_millis() > 1000);
 
         if stale {
             let mut windows = list_all_windows();
@@ -1265,6 +1265,11 @@ impl Platform for MacPlatform {
         // Restore focus to the window that was active before arrange.
         if let Some(ref entry) = restore_entry {
             activate_window(entry);
+        }
+
+        // Invalidate the cycle snapshot so Space+Z picks up new window positions.
+        if let Ok(mut g) = CYCLE.lock() {
+            *g = None;
         }
     }
 

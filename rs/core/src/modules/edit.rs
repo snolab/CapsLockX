@@ -205,6 +205,6 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
 
 fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
     if !s.is_clx_active() || phase != "MOVE" { return; }
-    if dy < 0 { p.key_tap_n(KeyCode::Enter,  -dy); }  // G
-    if dy > 0 { p.key_tap_n(KeyCode::Delete,  dy); }  // T
+    if dy < 0 { tap_with_held_mods(p, KeyCode::Enter,  -dy); }  // G (preserves Ctrl/Shift/etc.)
+    if dy > 0 { tap_with_held_mods(p, KeyCode::Delete,  dy); }  // T
 }

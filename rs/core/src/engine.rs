@@ -141,6 +141,17 @@ impl ClxEngine {
         self.held_keys.lock().unwrap().insert(code);
     }
 
+    /// Emergency stop: clear all held keys, exit CLX mode, stop all modules.
+    /// Called when CGEventTap is disabled (secure input / password fields) so
+    /// AccModel doesn't keep running with phantom held keys.
+    pub fn emergency_stop(&self) {
+        self.held_keys.lock().unwrap().clear();
+        self.state.exit_clx_mode();
+        self.state.exit_fn_mode();
+        self.modules.stop_all();
+        eprintln!("[CLX] emergency_stop: all keys released, CLX mode off");
+    }
+
     /// Returns true if `code` is a mapped key (used by adapters to decide
     /// whether to eagerly route the event, though calling `on_key_event` for
     /// every key is also correct).
