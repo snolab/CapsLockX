@@ -522,7 +522,7 @@ fn get_all_ax_window_refs_stable(display_id: u32) -> Vec<AXUIElementRef> {
 
 /// Activate a specific window: bring the app to front, then raise the specific window.
 fn activate_window(entry: &WindowEntry) {
-    eprintln!("[cycle] activating wid={} pid={} {:?}", entry.window_id, entry.pid, entry.title);
+    // No eprintln here — called from CGEventTap callback; blocking stderr deadlocks the event tap.
     unsafe {
         // 1. Activate the app
         let cls = objc_getClass(b"NSRunningApplication\0".as_ptr() as *const _);
@@ -545,7 +545,7 @@ fn activate_window(entry: &WindowEntry) {
             f(app, sel_activate, 3);
         }
 
-        eprintln!("[cycle] app activated, now raising window via AX...");
+        // (no eprintln in CGEventTap callback path)
         // 2. Raise the specific window via AXUIElement — match by window_id (CGWindowID).
         if let Some((app_ref, arr, count)) = ax_windows_for_pid(entry.pid as i32) {
             let target = find_ax_window(arr as CFArrayRef, count, entry);
@@ -813,6 +813,8 @@ pub struct MacPlatform;
 
 impl MacPlatform {
     pub fn new() -> Self {
+        // Pre-spawn clx-prompt daemon so the Tauri WebView is warm before first Space+B.
+        std::thread::spawn(|| crate::brainstorm_overlay::spawn_prompt_daemon());
         Self
     }
 
@@ -830,6 +832,11 @@ impl MacPlatform {
     /// Post a key tap (down+up) with explicit modifier flags on the event.
     /// On macOS, modifier flags must be embedded in the CGEvent itself —
     /// sending separate key_down(Shift) + key_tap(Tab) doesn't work reliably.
+    ///
+    /// After the tap, post a flag-reset event so any synthetic modifier flags
+    /// (e.g. shift added for P=Shift+Tab even when user isn't holding shift)
+    /// don't leak into the OS's persistent modifier state. Without this reset,
+    /// subsequent user keystrokes can be incorrectly interpreted as Shift+key.
     fn tap_with_flags(cg_key: u16, flags: CGEventFlags) {
         let source = Self::source();
         if let Ok(event) = CGEvent::new_keyboard_event(source, cg_key, true) {
@@ -843,6 +850,46 @@ impl MacPlatform {
             Self::tag(&event);
             event.post(CGEventTapLocation::HID);
         }
+        // Reset modifier state to match the user's actual physical modifier
+        // keys. We post one more key-up of the same key (a no-op since the key
+        // is already up) carrying the real physical modifier flags. macOS uses
+        // each event's flags to update its persistent modifier state, so this
+        // clears any leaked synthetic modifiers.
+        let real_flags = Self::physical_mod_flags();
+        if real_flags != flags {
+            let source = Self::source();
+            if let Ok(event) = CGEvent::new_keyboard_event(source, cg_key, false) {
+                event.set_flags(real_flags);
+                Self::tag(&event);
+                event.post(CGEventTapLocation::HID);
+            }
+        }
+    }
+
+    /// Compute CGEventFlags reflecting which modifier keys the user is
+    /// physically holding right now (independent of any synthetic state).
+    fn physical_mod_flags() -> CGEventFlags {
+        let mut flags = CGEventFlags::CGEventFlagNull;
+        unsafe {
+            let s = CGEventSourceStateID::CombinedSessionState;
+            // Shift: 0x38 left, 0x3C right
+            if CGEventSourceKeyState(s, 0x38) || CGEventSourceKeyState(s, 0x3C) {
+                flags = flags | CGEventFlags::CGEventFlagShift;
+            }
+            // Control: 0x3B left, 0x3E right
+            if CGEventSourceKeyState(s, 0x3B) || CGEventSourceKeyState(s, 0x3E) {
+                flags = flags | CGEventFlags::CGEventFlagControl;
+            }
+            // Option/Alt: 0x3A left, 0x3D right
+            if CGEventSourceKeyState(s, 0x3A) || CGEventSourceKeyState(s, 0x3D) {
+                flags = flags | CGEventFlags::CGEventFlagAlternate;
+            }
+            // Command: 0x37 left, 0x36 right
+            if CGEventSourceKeyState(s, 0x37) || CGEventSourceKeyState(s, 0x36) {
+                flags = flags | CGEventFlags::CGEventFlagCommand;
+            }
+        }
+        flags
     }
 }
 
@@ -1089,12 +1136,7 @@ impl Platform for MacPlatform {
                 .or_else(|| windows.iter().position(|w| w.window_id == front_wid))
                 .unwrap_or(0);
 
-                eprintln!("[cycle] FRESH snapshot ({} windows), anchor_wid={} front_wid={} start_idx={}",
-                windows.len(), anchor_wid, front_wid, start_idx);
-            for (i, w) in windows.iter().enumerate() {
-                eprintln!("[cycle]   [{}] wid={} {:?}{}", i, w.window_id, w.title,
-                    if i == start_idx { " <-- anchor" } else { "" });
-            }
+                eprintln!("[cycle] snap {} wins anchor={} start={}", windows.len(), anchor_wid, start_idx);
 
             *guard = Some(CycleState {
                 windows,
