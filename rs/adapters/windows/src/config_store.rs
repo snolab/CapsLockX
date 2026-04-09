@@ -138,6 +138,7 @@ impl FullConfig {
             stt_correction:     self.stt_correction,
             tts_chain:          self.tts_chain,
             stt_polish_chain:   self.stt_polish_chain,
+            ..ClxConfig::default()
         }
     }
 }

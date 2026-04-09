@@ -102,7 +102,11 @@ impl SharedState {
     /// Create the named quit event. Returns a handle the caller can wait on.
     pub fn create_quit_event() -> Option<HANDLE> {
         unsafe {
-            CreateEventW(None, true, false, w!("CapsLockX_Quit")).ok()
+            let h = CreateEventW(None, true, false, w!("CapsLockX_Quit")).ok()?;
+            // Reset in case a previous instance left it signaled.
+            use windows::Win32::System::Threading::ResetEvent;
+            let _ = ResetEvent(h);
+            Some(h)
         }
     }
 
