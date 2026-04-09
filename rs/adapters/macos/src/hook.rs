@@ -99,7 +99,25 @@ unsafe extern "C" fn raw_callback(
     if etype_raw == TAP_DISABLED_BY_TIMEOUT || etype_raw == TAP_DISABLED_BY_USER {
         let tap = TAP_REF.load(Ordering::Relaxed);
         if !tap.is_null() {
-            eprintln!("[CLX] CGEventTap was disabled (secure input?) - releasing all keys + re-enabling");
+            // Rate-limit logging: only log first event in a burst, and at most
+            // once per 5s. The previous version spammed 583k lines into the
+            // watchdog log over a few days.
+            use std::sync::atomic::AtomicU64;
+            use std::time::{SystemTime, UNIX_EPOCH};
+            static LAST_LOG_SEC: AtomicU64 = AtomicU64::new(0);
+            static DISABLE_COUNT: AtomicU64 = AtomicU64::new(0);
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+            let last = LAST_LOG_SEC.load(Ordering::Relaxed);
+            let n = DISABLE_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+            if now.saturating_sub(last) >= 5 {
+                LAST_LOG_SEC.store(now, Ordering::Relaxed);
+                let cause = if etype_raw == TAP_DISABLED_BY_TIMEOUT {
+                    "timeout (handler too slow → key drops/lag)"
+                } else {
+                    "user (secure input field)"
+                };
+                eprintln!("[CLX] CGEventTap disabled — {} (total disables: {}) — re-enabling", cause, n);
+            }
             // Emergency stop: release all held keys and stop all modules.
             // Without this, AccModel keeps running (tabs/mouse) because we
             // never received the key-up events while the tap was disabled.

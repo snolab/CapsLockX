@@ -3,9 +3,23 @@
 DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.."
 export DYLD_LIBRARY_PATH="${DIR}/rs/target/release:${DYLD_LIBRARY_PATH}"
 
-# If args are passed (agent, dino, --help, etc.), run directly — no watchdog.
-if [ $# -gt 0 ]; then
+# If args are passed (agent, dino, --help, -f, etc.), run directly — no watchdog.
+if [ $# -gt 0 ] && [ "$1" != "--watchdog" ]; then
     exec "${DIR}/clx" "$@"
+fi
+
+# Fork watchdog to background unless already running as watchdog.
+if [ "$1" != "--watchdog" ]; then
+    mkdir -p "${DIR}/tmp"
+    # Rotate watchdog log if it exceeds 5 MB so it can't grow unbounded
+    # (previously hit 56 MB / 583k lines from CGEventTap-disabled spam).
+    LOG="${DIR}/tmp/clx-watchdog.log"
+    if [ -f "$LOG" ] && [ "$(stat -f%z "$LOG" 2>/dev/null || stat -c%s "$LOG" 2>/dev/null || echo 0)" -gt 5242880 ]; then
+        mv -f "$LOG" "${LOG}.1"
+    fi
+    nohup "$0" --watchdog </dev/null >>"$LOG" 2>&1 &
+    echo "[CLX] started (pid $!)" >&2
+    exit 0
 fi
 
 # Daemon mode: watchdog with exponential backoff.

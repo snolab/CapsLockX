@@ -259,48 +259,108 @@ unsafe fn hide_window() {
     msg1(w, sel(b"orderOut:\0"), std::ptr::null_mut());
 }
 
-// ── Subprocess-based prompt input ────────────────────────────────────────────
+// ── Daemon-based prompt input (zero cold-start) ──────────────────────────────
 
-/// Show a prompt input dialog via a subprocess (`clx-prompt`).
-/// The subprocess has no CGEventTap, so keyboard input works normally.
-pub fn show_prompt_panel(title: &str, message: &str, prefill: &str) -> Option<String> {
-    use std::process::Command;
+use std::io::{BufRead, BufReader, Write};
+use std::process::{Child, ChildStdin, ChildStdout, Stdio};
+use std::sync::OnceLock;
 
-    // Find the clx-prompt binary next to the main binary.
-    let prompt_bin = {
-        let exe = std::env::current_exe().unwrap_or_default();
-        let dir = exe.parent().unwrap_or(std::path::Path::new("."));
-        dir.join("clx-prompt")
-    };
+struct PromptDaemon {
+    _child: Child,
+    stdin:  ChildStdin,
+    stdout: BufReader<ChildStdout>,
+}
 
-    // Fall back to looking in the cargo target directory.
-    let prompt_bin = if prompt_bin.exists() {
-        prompt_bin
-    } else {
-        // Try relative to CWD or in PATH.
-        std::path::PathBuf::from("clx-prompt")
-    };
+impl Drop for PromptDaemon {
+    fn drop(&mut self) {
+        // Kill the child explicitly so it doesn't outlive us as an orphan.
+        // Without this, repeated clx restarts (watchdog) leak clx-prompt
+        // processes (each ~74 MB) until the user reboots.
+        let _ = self._child.kill();
+        let _ = self._child.wait();
+    }
+}
 
-    eprintln!("[CLX] launching prompt subprocess: {:?}", prompt_bin);
+static DAEMON: OnceLock<Mutex<PromptDaemon>> = OnceLock::new();
 
-    let output = Command::new(&prompt_bin)
-        .arg(title)
-        .arg(message)
-        .arg(prefill)
-        .output();
-
-    match output {
-        Ok(out) => {
-            if out.status.success() {
-                let text = String::from_utf8_lossy(&out.stdout).into_owned();
-                if text.is_empty() { None } else { Some(text) }
-            } else {
-                eprintln!("[CLX] prompt cancelled (exit code {:?})", out.status.code());
-                None
+fn prompt_bin_path() -> std::path::PathBuf {
+    let exe = std::env::current_exe().unwrap_or_default();
+    let dir = exe.parent().unwrap_or(std::path::Path::new("."));
+    // Check same dir as binary, then bin/ subdir (where build.sh deploys it).
+    for candidate in [dir.join("clx-prompt"), dir.join("bin").join("clx-prompt")] {
+        if candidate.exists() {
+            // Verify it's the Tauri build, not an old AppKit binary.
+            if let Ok(bytes) = std::fs::read(&candidate) {
+                if bytes.windows(5).any(|w| w == b"tauri") {
+                    return candidate;
+                }
+                eprintln!("[CLX] skipping non-Tauri clx-prompt at {:?}", candidate);
             }
         }
-        Err(e) => {
-            eprintln!("[CLX] failed to launch clx-prompt: {}", e);
+    }
+    std::path::PathBuf::from("clx-prompt")
+}
+
+/// Pre-spawn the clx-prompt daemon so the window is warm before first use.
+/// Call this at CLX startup. Safe to call multiple times.
+pub fn spawn_prompt_daemon() {
+    DAEMON.get_or_init(|| {
+        let bin = prompt_bin_path();
+        eprintln!("[CLX] spawning clx-prompt daemon: {:?}", bin);
+        let mut child = std::process::Command::new(&bin)
+            .arg("--daemon")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .expect("failed to spawn clx-prompt --daemon");
+
+        let stdin  = child.stdin.take().expect("no stdin");
+        let stdout = BufReader::new(child.stdout.take().expect("no stdout"));
+
+        let mut daemon = PromptDaemon { _child: child, stdin, stdout };
+
+        // Wait for {"type":"ready"} line before returning.
+        let mut line = String::new();
+        let _ = daemon.stdout.read_line(&mut line);
+        eprintln!("[CLX] clx-prompt daemon ready: {}", line.trim());
+
+        Mutex::new(daemon)
+    });
+}
+
+/// Show the prompt dialog. Blocks until user submits or cancels.
+/// Returns the prompt text (with optional "[KEEP]\n" prefix), or None if cancelled.
+pub fn show_prompt_panel(title: &str, context: &str, last_prompt: &str) -> Option<String> {
+    // Ensure daemon is running (lazy fallback if spawn_prompt_daemon wasn't called at startup).
+    spawn_prompt_daemon();
+
+    let daemon_lock = DAEMON.get()?;
+    let mut d = daemon_lock.lock().ok()?;
+
+    // Send show command.
+    let cmd = serde_json::json!({
+        "cmd": "show",
+        "title": title,
+        "context": context,
+        "last_prompt": last_prompt,
+    });
+    writeln!(d.stdin, "{cmd}").ok()?;
+    d.stdin.flush().ok()?;
+
+    // Block until we get a result line.
+    let mut line = String::new();
+    d.stdout.read_line(&mut line).ok()?;
+    let msg: serde_json::Value = serde_json::from_str(line.trim()).ok()?;
+
+    match msg["type"].as_str()? {
+        "submit" => {
+            let text = msg["text"].as_str()?.to_string();
+            let keep = msg["keep"].as_bool().unwrap_or(false);
+            Some(if keep { format!("[KEEP]\n{text}") } else { text })
+        }
+        _ => {
+            eprintln!("[CLX] prompt cancelled");
             None
         }
     }
