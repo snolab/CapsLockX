@@ -1116,7 +1116,10 @@ impl Platform for MacPlatform {
         let mut guard = CYCLE.lock().unwrap();
 
         let now = Instant::now();
-        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_millis() > 1000);
+        // Snapshot is expensive (~hundreds of ms with many AX windows on Chrome).
+        // 5s TTL means casual cycling keeps reusing the cache and doesn't stall
+        // the AccModel ticker thread → no CGEventTap timeout.
+        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_millis() > 5000);
 
         if stale {
             let mut windows = list_all_windows();
@@ -1136,7 +1139,10 @@ impl Platform for MacPlatform {
                 .or_else(|| windows.iter().position(|w| w.window_id == front_wid))
                 .unwrap_or(0);
 
-                eprintln!("[cycle] snap {} wins anchor={} start={}", windows.len(), anchor_wid, start_idx);
+            // No eprintln here — cycle runs on AccModel ticker thread, but
+            // stderr is tee'd to a file and bursty writes can stall the
+            // process while CGEventTap is waiting (causes "handler too slow"
+            // disables and the laggy feel during rapid Z cycling).
 
             *guard = Some(CycleState {
                 windows,
@@ -1180,7 +1186,7 @@ impl Platform for MacPlatform {
         let entry = state.windows[idx].clone();
         drop(guard);
 
-        eprintln!("[cycle] idx={} wid={} pid={} title={:?}", idx, entry.window_id, entry.pid, entry.title);
+        // Verbose per-step log removed — see comment above.
         activate_window(&entry);
     }
 
