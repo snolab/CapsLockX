@@ -186,6 +186,7 @@ pub trait Platform: Send + Sync + 'static {
     /// Default returns None (falls back to cpal AudioCapture).
     fn start_aec_mic(&self) -> Option<Box<dyn SystemAudioStream>> { None }
 
+    fn open_preferences(&self) {}
     fn show_voice_overlay(&self) {}
     fn hide_voice_overlay(&self) {}
     fn update_voice_overlay(&self, _mic_levels: &[f32], _mic_vad: bool, _sys_levels: &[f32], _sys_vad: bool) {}

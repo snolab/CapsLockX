@@ -117,13 +117,19 @@ fn discover_gemini(api_key: &str) -> Option<String> {
 
     // Preference order: flash (fast+cheap) > pro > ultra.
     // Pick the latest version of the best tier.
-    let preference = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
+    let preference = [
+        "gemini-3-flash",        // Best vision + speed, free tier (preview)
+        "gemini-3.1-flash-lite", // Fastest TTFT, cheapest (preview)
+        "gemini-2.5-flash",      // Stable fallback
+        "gemini-3.1-pro",        // Best reasoning (preview)
+        "gemini-2.5-pro",        // Stable pro fallback
+    ];
     for pref in &preference {
         for m in models {
             let name = m["name"].as_str().unwrap_or("");
             // name is like "models/gemini-2.5-flash"
             let short = name.strip_prefix("models/").unwrap_or(name);
-            if short == *pref {
+            if short == *pref || short.starts_with(*pref) {
                 eprintln!("[CLX] llm: discovered Gemini model: {}", short);
                 return Some(short.to_string());
             }

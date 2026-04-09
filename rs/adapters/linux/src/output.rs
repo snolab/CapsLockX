@@ -99,8 +99,9 @@ pub fn init() {
         .build()
         .expect("failed to build VirtualDevice");
 
-    VDEV.set(Mutex::new(vdev))
-        .expect("output::init() called more than once");
+    if VDEV.set(Mutex::new(vdev)).is_err() {
+        panic!("output::init() called more than once");
+    }
 
     eprintln!("[CLX] uinput virtual device ready");
 }

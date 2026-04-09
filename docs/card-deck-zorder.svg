@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="520" rx="12" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="410" y="35" text-anchor="middle" font-size="17" font-weight="bold" fill="#e0e0e0">
+    Card Deck Z-Order — Space+C Stacked Mode
+  </text>
+  <text x="410" y="55" text-anchor="middle" font-size="12" fill="#888">
+    5 windows, current = Window 3 · Cascade: bottom-left → top-right
+  </text>
+
+  <!-- Draw in z-order: back (farthest) first, current (topmost) last -->
+  <!-- SVG paints later elements on top, so this order = correct z-stacking -->
+
+  <!-- Window 1 — back, bottom-left (farthest from current=3, distance=2) -->
+  <rect x="30" y="290" width="480" height="160" rx="10" fill="#2d2d44" stroke="#444" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="30" y="290" width="480" height="24" rx="10" fill="#3d3d5c"/>
+  <circle cx="46" cy="302" r="5" fill="#ff5f57"/><circle cx="62" cy="302" r="5" fill="#febc2e"/><circle cx="78" cy="302" r="5" fill="#28c840"/>
+  <text x="100" y="306" font-size="11" fill="#777">Window 1 — Terminal</text>
+
+  <!-- Window 5 — back, top-right (farthest from current=3, distance=2) -->
+  <rect x="318" y="130" width="480" height="160" rx="10" fill="#2d2d44" stroke="#444" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="318" y="130" width="480" height="24" rx="10" fill="#3d3d5c"/>
+  <circle cx="334" cy="142" r="5" fill="#ff5f57"/><circle cx="350" cy="142" r="5" fill="#febc2e"/><circle cx="366" cy="142" r="5" fill="#28c840"/>
+  <text x="388" y="146" font-size="11" fill="#777">Window 5 — Notes</text>
+
+  <!-- Window 2 — mid, one step from current (distance=1) -->
+  <rect x="102" y="258" width="480" height="160" rx="10" fill="#2a2a4a" stroke="#5a67d8" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="102" y="258" width="480" height="24" rx="10" fill="#3a3a6a"/>
+  <circle cx="118" cy="270" r="5" fill="#ff5f57"/><circle cx="134" cy="270" r="5" fill="#febc2e"/><circle cx="150" cy="270" r="5" fill="#28c840"/>
+  <text x="172" y="274" font-size="11" fill="#aab">Window 2 — Safari</text>
+
+  <!-- Window 4 — mid, one step from current (distance=1) -->
+  <rect x="246" y="194" width="480" height="160" rx="10" fill="#2a2a4a" stroke="#5a67d8" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="246" y="194" width="480" height="24" rx="10" fill="#3a3a6a"/>
+  <circle cx="262" cy="206" r="5" fill="#ff5f57"/><circle cx="278" cy="206" r="5" fill="#febc2e"/><circle cx="294" cy="206" r="5" fill="#28c840"/>
+  <text x="316" y="210" font-size="11" fill="#aab">Window 4 — Slack</text>
+
+  <!-- Window 3 — CURRENT, topmost (distance=0, drawn last = on top in SVG) -->
+  <rect x="174" y="226" width="480" height="160" rx="10" fill="#1e3a2a" stroke="#48bb78" stroke-width="2.5" filter="url(#shadow)"/>
+  <rect x="174" y="226" width="480" height="24" rx="10" fill="#276749"/>
+  <circle cx="190" cy="238" r="5" fill="#ff5f57"/><circle cx="206" cy="238" r="5" fill="#febc2e"/><circle cx="222" cy="238" r="5" fill="#28c840"/>
+  <text x="244" y="242" font-size="11" font-weight="bold" fill="#68d391">★ Window 3 — VSCode (CURRENT)</text>
+  <text x="190" y="320" font-size="22" fill="#48bb7844" font-weight="bold">Active Window</text>
+
+  <!-- Legend -->
+  <text x="30" y="490" font-size="11" fill="#666">Z-order (top → bottom):  3 → 4 → 2 → 5 → 1</text>
+  <text x="30" y="506" font-size="11" fill="#666">Position (cascade):  1=bottom-left · 2 · 3 · 4 · 5=top-right</text>
+
+  <!-- Color key -->
+  <rect x="530" y="478" width="12" height="12" rx="2" fill="#1e3a2a" stroke="#48bb78" stroke-width="1.5"/>
+  <text x="548" y="489" font-size="11" fill="#888">Current</text>
+  <rect x="610" y="478" width="12" height="12" rx="2" fill="#2a2a4a" stroke="#5a67d8" stroke-width="1"/>
+  <text x="628" y="489" font-size="11" fill="#888">Neighbor</text>
+  <rect x="700" y="478" width="12" height="12" rx="2" fill="#2d2d44" stroke="#444" stroke-width="1"/>
+  <text x="718" y="489" font-size="11" fill="#888">Far</text>
+</svg>

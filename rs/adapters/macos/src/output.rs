@@ -93,6 +93,7 @@ struct WindowEntry {
     window_id: u32, // CGWindowID — stable across z-order changes
     window_index: usize,
     title: String,
+    display_id: u32, // CGDirectDisplayID of the screen this window is on
 }
 
 /// Get the CGWindowID of the frontmost (topmost layer-0) window.
@@ -186,9 +187,75 @@ unsafe fn ax_window_title(win: *mut std::ffi::c_void) -> String {
     title
 }
 
+/// Determine which display contains the given point (center of a window).
+/// Returns the CGDirectDisplayID, falling back to the main display.
+fn display_for_point(cx: f64, cy: f64) -> u32 {
+    let displays = CGDisplay::active_displays().unwrap_or_default();
+    for id in &displays {
+        let r = CGDisplay::new(*id).bounds();
+        if cx >= r.origin.x && cx < r.origin.x + r.size.width
+            && cy >= r.origin.y && cy < r.origin.y + r.size.height
+        {
+            return *id;
+        }
+    }
+    CGDisplay::main().id
+}
+
+/// Build a map from CGWindowID → (center_x, center_y) using CGWindowList bounds.
+fn build_window_bounds_map() -> std::collections::HashMap<u32, (f64, f64)> {
+    unsafe {
+        extern "C" {
+            fn CFArrayGetCount(arr: CFArrayRef) -> isize;
+            fn CFArrayGetValueAtIndex(arr: CFArrayRef, idx: isize) -> *const std::ffi::c_void;
+            fn CFDictionaryGetValue(dict: *const std::ffi::c_void, key: *const std::ffi::c_void) -> *const std::ffi::c_void;
+            fn CFNumberGetValue(number: *const std::ffi::c_void, the_type: i32, value_ptr: *mut std::ffi::c_void) -> bool;
+            fn CGRectMakeWithDictionaryRepresentation(dict: *const std::ffi::c_void, rect: *mut [f64; 4]) -> bool;
+        }
+
+        let mut map = std::collections::HashMap::new();
+        let opts: u32 = (1 << 0) | (1 << 4); // OnScreenOnly | ExcludeDesktopElements
+        let list_ref = CGWindowListCopyWindowInfo(opts, 0);
+        if list_ref.is_null() { return map; }
+
+        let count = CFArrayGetCount(list_ref);
+        let key_wid = CFString::new("kCGWindowNumber");
+        let key_bounds = CFString::new("kCGWindowBounds");
+        let key_layer = CFString::new("kCGWindowLayer");
+
+        for i in 0..count {
+            let dict = CFArrayGetValueAtIndex(list_ref, i);
+            if dict.is_null() { continue; }
+            let layer_ref = CFDictionaryGetValue(dict, key_layer.as_concrete_TypeRef() as *const _);
+            if layer_ref.is_null() { continue; }
+            let mut layer: i64 = 0;
+            CFNumberGetValue(layer_ref, 4, &mut layer as *mut _ as *mut _);
+            if layer != 0 { continue; }
+
+            let wid_ref = CFDictionaryGetValue(dict, key_wid.as_concrete_TypeRef() as *const _);
+            if wid_ref.is_null() { continue; }
+            let mut wid: i64 = 0;
+            CFNumberGetValue(wid_ref, 4, &mut wid as *mut _ as *mut _);
+
+            let bounds_ref = CFDictionaryGetValue(dict, key_bounds.as_concrete_TypeRef() as *const _);
+            if bounds_ref.is_null() { continue; }
+            let mut rect = [0.0f64; 4]; // x, y, w, h
+            if CGRectMakeWithDictionaryRepresentation(bounds_ref, &mut rect) {
+                let cx = rect[0] + rect[2] / 2.0;
+                let cy = rect[1] + rect[3] / 2.0;
+                map.insert(wid as u32, (cx, cy));
+            }
+        }
+        CFRelease(list_ref);
+        map
+    }
+}
+
 /// List all individual windows across all GUI apps, in z-order (on-screen first)
 /// then by app launch order for off-screen apps. Each window is a separate entry.
 fn list_all_windows() -> Vec<WindowEntry> {
+    let bounds_map = build_window_bounds_map();
+    let main_display = CGDisplay::main().id;
     unsafe {
         let mut entries = Vec::new();
         let mut seen_pids = std::collections::HashSet::new();
@@ -321,19 +388,28 @@ fn list_all_windows() -> Vec<WindowEntry> {
                     let win = CFArrayGetValueAtIndex(arr as CFArrayRef, wi as isize);
                     if win.is_null() { continue; }
                     let title = ax_window_title(win as *mut _);
-                    if !title.is_empty() {
-                        // Get CGWindowID directly from AXUIElement (private API, reliable).
-                        let mut wid: u32 = 0;
-                        _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
+                    let mut wid: u32 = 0;
+                    _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
+                    if title.is_empty() {
+                        continue;
+                    }
+                    {
                         // Only include windows on the current Space.
                         // onscreen_wids has all CGWindowIDs with isOnscreen=true.
                         // This filters out minimized windows and (on some macOS
                         // versions) windows on other Spaces.
-                        let on_current_space = wid == 0 || onscreen_wids.contains(&wid);
+                        // Skip wid==0 windows — they can't be reliably matched
+                        // or activated, causing phantom "skips" during cycling.
+                        let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
                         if on_current_space {
-                            entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title });
+                            let display_id = if wid != 0 {
+                                if let Some(&(cx, cy)) = bounds_map.get(&wid) {
+                                    display_for_point(cx, cy)
+                                } else { main_display }
+                            } else { main_display };
+                            entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title, display_id });
                         }
-                    }
+                    } // on_current_space block
                 }
                 CFRelease(arr as *const _);
                 CFRelease(app_ref as *const _);
@@ -413,17 +489,18 @@ unsafe fn find_ax_window(arr: CFArrayRef, count: usize, entry: &WindowEntry) -> 
     std::ptr::null()
 }
 
-/// Collect AXUIElementRef handles for all titled windows across all GUI apps,
-/// sorted by window_id for stable ordering (same order as cycle_windows).
+/// Collect AXUIElementRef handles for all titled windows on the given display,
+/// sorted by (pid, window_id) for stable ordering (same order as cycle_windows).
 /// The returned refs are retained — caller must CFRelease each one.
-fn get_all_ax_window_refs_stable() -> Vec<AXUIElementRef> {
+fn get_all_ax_window_refs_stable(display_id: u32) -> Vec<AXUIElementRef> {
     unsafe {
         extern "C" {
             fn CFRetain(cf: *const std::ffi::c_void) -> *const std::ffi::c_void;
         }
 
         let mut entries = list_all_windows();
-        entries.sort_by_key(|w| w.window_id);
+        entries.retain(|w| w.display_id == display_id);
+        entries.sort_by_key(|w| (w.pid, w.window_id));
 
         let mut refs: Vec<AXUIElementRef> = Vec::new();
 
@@ -445,6 +522,7 @@ fn get_all_ax_window_refs_stable() -> Vec<AXUIElementRef> {
 
 /// Activate a specific window: bring the app to front, then raise the specific window.
 fn activate_window(entry: &WindowEntry) {
+    // No eprintln here — called from CGEventTap callback; blocking stderr deadlocks the event tap.
     unsafe {
         // 1. Activate the app
         let cls = objc_getClass(b"NSRunningApplication\0".as_ptr() as *const _);
@@ -467,6 +545,7 @@ fn activate_window(entry: &WindowEntry) {
             f(app, sel_activate, 3);
         }
 
+        // (no eprintln in CGEventTap callback path)
         // 2. Raise the specific window via AXUIElement — match by window_id (CGWindowID).
         if let Some((app_ref, arr, count)) = ax_windows_for_pid(entry.pid as i32) {
             let target = find_ax_window(arr as CFArrayRef, count, entry);
@@ -621,12 +700,121 @@ fn visible_work_area() -> (f64, f64, f64, f64) {
     }
 }
 
+/// Get the visible work area for a specific display (by CGDirectDisplayID).
+/// Iterates NSScreen.screens to find the matching screen, falls back to mainScreen.
+fn visible_work_area_for_display(target_display_id: u32) -> (f64, f64, f64, f64) {
+    unsafe {
+        let cls = objc_getClass(b"NSScreen\0".as_ptr() as *const _);
+        if cls.is_null() { return visible_work_area(); }
+
+        let sel_screens = sel_registerName(b"screens\0".as_ptr() as *const _);
+        let screens_arr: *mut std::ffi::c_void = {
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(cls, sel_screens)
+        };
+        if screens_arr.is_null() { return visible_work_area(); }
+
+        let sel_count = sel_registerName(b"count\0".as_ptr() as *const _);
+        let sel_obj_at = sel_registerName(b"objectAtIndex:\0".as_ptr() as *const _);
+        let sel_desc = sel_registerName(b"deviceDescription\0".as_ptr() as *const _);
+        let sel_obj_for_key = sel_registerName(b"objectForKey:\0".as_ptr() as *const _);
+        let sel_uint = sel_registerName(b"unsignedIntValue\0".as_ptr() as *const _);
+
+        let n: usize = {
+            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> usize
+                = std::mem::transmute(objc_msgSend as *const ());
+            f(screens_arr, sel_count)
+        };
+
+        let key_screen_number = CFString::new("NSScreenNumber");
+
+        for idx in 0..n {
+            let screen: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, usize) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screens_arr, sel_obj_at, idx)
+            };
+            if screen.is_null() { continue; }
+
+            // Get deviceDescription dictionary
+            let desc: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screen, sel_desc)
+            };
+            if desc.is_null() { continue; }
+
+            // Get NSScreenNumber from deviceDescription
+            let num_obj: *mut std::ffi::c_void = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, *const std::ffi::c_void) -> *mut std::ffi::c_void
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(desc, sel_obj_for_key, key_screen_number.as_concrete_TypeRef() as *const _)
+            };
+            if num_obj.is_null() { continue; }
+
+            let display_id: u32 = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u32
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(num_obj, sel_uint)
+            };
+
+            if display_id != target_display_id { continue; }
+
+            // Found the matching screen — get its visibleFrame and frame.
+            let sel_frame = sel_registerName(b"frame\0".as_ptr() as *const _);
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            struct NSRect { x: f64, y: f64, w: f64, h: f64 }
+
+            #[cfg(target_arch = "aarch64")]
+            let full: NSRect = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screen, sel_frame)
+            };
+            #[cfg(target_arch = "x86_64")]
+            let full: NSRect = {
+                extern "C" {
+                    fn objc_msgSend_stret(ret: *mut NSRect, receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
+                }
+                let mut r = NSRect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 };
+                objc_msgSend_stret(&mut r, screen, sel_frame);
+                r
+            };
+
+            let sel_visible = sel_registerName(b"visibleFrame\0".as_ptr() as *const _);
+            #[cfg(target_arch = "aarch64")]
+            let vis: NSRect = {
+                let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> NSRect
+                    = std::mem::transmute(objc_msgSend as *const ());
+                f(screen, sel_visible)
+            };
+            #[cfg(target_arch = "x86_64")]
+            let vis: NSRect = {
+                let mut r = NSRect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 };
+                objc_msgSend_stret(&mut r, screen, sel_visible);
+                r
+            };
+
+            let quartz_x = vis.x;
+            let quartz_y = (full.y + full.h) - vis.y - vis.h;
+            return (quartz_x, quartz_y, vis.w, vis.h);
+        }
+
+        // Fallback if display not found in NSScreen list.
+        visible_work_area()
+    }
+}
+
 // ── MacPlatform ──────────────────────────────────────────────────────────────
 
 pub struct MacPlatform;
 
 impl MacPlatform {
     pub fn new() -> Self {
+        // Pre-spawn clx-prompt daemon so the Tauri WebView is warm before first Space+B.
+        std::thread::spawn(|| crate::brainstorm_overlay::spawn_prompt_daemon());
         Self
     }
 
@@ -644,6 +832,11 @@ impl MacPlatform {
     /// Post a key tap (down+up) with explicit modifier flags on the event.
     /// On macOS, modifier flags must be embedded in the CGEvent itself —
     /// sending separate key_down(Shift) + key_tap(Tab) doesn't work reliably.
+    ///
+    /// After the tap, post a flag-reset event so any synthetic modifier flags
+    /// (e.g. shift added for P=Shift+Tab even when user isn't holding shift)
+    /// don't leak into the OS's persistent modifier state. Without this reset,
+    /// subsequent user keystrokes can be incorrectly interpreted as Shift+key.
     fn tap_with_flags(cg_key: u16, flags: CGEventFlags) {
         let source = Self::source();
         if let Ok(event) = CGEvent::new_keyboard_event(source, cg_key, true) {
@@ -657,6 +850,46 @@ impl MacPlatform {
             Self::tag(&event);
             event.post(CGEventTapLocation::HID);
         }
+        // Reset modifier state to match the user's actual physical modifier
+        // keys. We post one more key-up of the same key (a no-op since the key
+        // is already up) carrying the real physical modifier flags. macOS uses
+        // each event's flags to update its persistent modifier state, so this
+        // clears any leaked synthetic modifiers.
+        let real_flags = Self::physical_mod_flags();
+        if real_flags != flags {
+            let source = Self::source();
+            if let Ok(event) = CGEvent::new_keyboard_event(source, cg_key, false) {
+                event.set_flags(real_flags);
+                Self::tag(&event);
+                event.post(CGEventTapLocation::HID);
+            }
+        }
+    }
+
+    /// Compute CGEventFlags reflecting which modifier keys the user is
+    /// physically holding right now (independent of any synthetic state).
+    fn physical_mod_flags() -> CGEventFlags {
+        let mut flags = CGEventFlags::CGEventFlagNull;
+        unsafe {
+            let s = CGEventSourceStateID::CombinedSessionState;
+            // Shift: 0x38 left, 0x3C right
+            if CGEventSourceKeyState(s, 0x38) || CGEventSourceKeyState(s, 0x3C) {
+                flags = flags | CGEventFlags::CGEventFlagShift;
+            }
+            // Control: 0x3B left, 0x3E right
+            if CGEventSourceKeyState(s, 0x3B) || CGEventSourceKeyState(s, 0x3E) {
+                flags = flags | CGEventFlags::CGEventFlagControl;
+            }
+            // Option/Alt: 0x3A left, 0x3D right
+            if CGEventSourceKeyState(s, 0x3A) || CGEventSourceKeyState(s, 0x3D) {
+                flags = flags | CGEventFlags::CGEventFlagAlternate;
+            }
+            // Command: 0x37 left, 0x36 right
+            if CGEventSourceKeyState(s, 0x37) || CGEventSourceKeyState(s, 0x36) {
+                flags = flags | CGEventFlags::CGEventFlagCommand;
+            }
+        }
+        flags
     }
 }
 
@@ -883,16 +1116,19 @@ impl Platform for MacPlatform {
         let mut guard = CYCLE.lock().unwrap();
 
         let now = Instant::now();
-        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_secs() > 5);
+        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_millis() > 1000);
 
         if stale {
             let mut windows = list_all_windows();
             if windows.is_empty() { return; }
-            // Sort by window_id for stable ordering independent of z-order.
-            windows.sort_by_key(|w| w.window_id);
+
+            let front_wid = frontmost_window_id();
+
+            // Cycle ALL on-screen windows across all monitors.
+            // Sort by (display, pid, window_id) — group by monitor, then app.
+            windows.sort_by_key(|w| (w.display_id, w.pid, w.window_id));
 
             // Try to find the currently focused window in the new list.
-            let front_wid = frontmost_window_id();
             let prev_wid = guard.as_ref().map_or(0, |s| s.last_activated_wid);
             let anchor_wid = if prev_wid != 0 { prev_wid } else { front_wid };
             let start_idx = windows.iter()
@@ -900,14 +1136,7 @@ impl Platform for MacPlatform {
                 .or_else(|| windows.iter().position(|w| w.window_id == front_wid))
                 .unwrap_or(0);
 
-            if cfg!(debug_assertions) {
-                eprintln!("[cycle] FRESH snapshot ({} windows), anchor_wid={} front_wid={} start_idx={}",
-                    windows.len(), anchor_wid, front_wid, start_idx);
-                for (i, w) in windows.iter().enumerate() {
-                    eprintln!("[cycle]   [{}] wid={} {:?}{}", i, w.window_id, w.title,
-                        if i == start_idx { " <-- anchor" } else { "" });
-                }
-            }
+                eprintln!("[cycle] snap {} wins anchor={} start={}", windows.len(), anchor_wid, start_idx);
 
             *guard = Some(CycleState {
                 windows,
@@ -922,31 +1151,36 @@ impl Platform for MacPlatform {
         let len = state.windows.len();
         if len == 0 { return; }
 
-        // Always detect current frontmost window instead of trusting stored index.
-        // This handles the user switching windows via mouse click, Cmd+Tab, etc.
+        // Detect current frontmost window to handle external switches
+        // (mouse click, Cmd+Tab, etc.).  BUT if the frontmost window is
+        // still the one we last activated, trust our stored index — macOS
+        // may not have finished raising the window yet, so re-querying
+        // would re-anchor to the *previous* position and skip a window.
         let front_wid = frontmost_window_id();
-        let current_idx = if front_wid != 0 {
-            state.windows.iter().position(|w| w.window_id == front_wid)
-                .unwrap_or(state.index)
+        let current_idx = if front_wid != 0
+            && front_wid != state.last_activated_wid
+            && state.windows.iter().any(|w| w.window_id == front_wid)
+        {
+            // User switched windows externally — re-anchor to that window.
+            state.windows.iter().position(|w| w.window_id == front_wid).unwrap()
         } else {
             state.index
         };
 
-        // Advance from detected position.
-        let idx = if dir > 0 {
+        // Advance from detected position, wrapping around at boundaries.
+        let next_idx = if dir > 0 {
             (current_idx + 1) % len
         } else {
-            (current_idx + len - 1) % len
+            if current_idx == 0 { len - 1 } else { current_idx - 1 }
         };
 
+        let idx = next_idx;
         state.index = idx;
         state.last_activated_wid = state.windows[idx].window_id;
         let entry = state.windows[idx].clone();
         drop(guard);
 
-        if cfg!(debug_assertions) {
-            eprintln!("[cycle] idx={} wid={} title={:?}", idx, entry.window_id, entry.title);
-        }
+        eprintln!("[cycle] idx={} wid={} pid={} title={:?}", idx, entry.window_id, entry.pid, entry.title);
         activate_window(&entry);
     }
 
@@ -962,28 +1196,35 @@ impl Platform for MacPlatform {
             } else { None }
         } else { None };
 
-        let windows = get_all_ax_window_refs_stable();
-        let n = windows.len();
-        if n == 0 { return; }
+        // Group windows by display so each display arranges independently.
+        let all_windows = list_all_windows();
+        let mut displays: std::collections::HashMap<u32, Vec<&WindowEntry>> = std::collections::HashMap::new();
+        for w in &all_windows {
+            displays.entry(w.display_id).or_default().push(w);
+        }
 
-        let (ax, ay, aw, ah) = visible_work_area();
+        let mut frames: Vec<(AXUIElementRef, f64, f64, f64, f64)> = Vec::new();
 
-        unsafe {
+        for (&display_id, _display_windows) in &displays {
+            let windows = get_all_ax_window_refs_stable(display_id);
+            let n = windows.len();
+            if n == 0 { continue; }
+
+            let (ax, ay, aw, ah) = visible_work_area_for_display(display_id);
+
             match mode {
                 ArrangeMode::Stacked => {
-                    // Cascade: offset each window by ~48px, sized to fill most of work area.
-                    let dx = 48.0_f64.min(aw / n as f64);
-                    let dy = 48.0_f64.min(ah / n as f64);
+                    let dx = 72.0_f64.min(aw / n as f64);
+                    let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
                     let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
                     let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
                     for (k, win) in windows.iter().enumerate() {
                         let x = ax + dx * k as f64;
                         let y = ay + dy * (n - k - 1) as f64;
-                        ax_set_window_frame(*win, x, y, w, h);
+                        frames.push((*win, x, y, w, h));
                     }
                 }
                 ArrangeMode::SideBySide => {
-                    // Grid: sqrt-based columns/rows like the Windows adapter.
                     let cols = if aw <= ah {
                         let c = (n as f64).sqrt() as usize;
                         c.max(1)
@@ -1000,21 +1241,77 @@ impl Platform for MacPlatform {
                         let row = k / cols;
                         let x = ax + col as f64 * cell_w;
                         let y = ay + row as f64 * cell_h;
-                        ax_set_window_frame(*win, x, y, cell_w, cell_h);
+                        frames.push((*win, x, y, cell_w, cell_h));
                     }
                 }
             }
+        }
+
+        // Phase 2: Resize all windows in PARALLEL (each window is independent).
+        // AX resize is slow (~20-50ms per window). Parallel = total time ≈ one window.
+        {
+            let handles: Vec<_> = frames.iter().map(|&(win, x, y, w, h)| {
+                let win = win as usize; // cast to usize to make it Send
+                std::thread::spawn(move || {
+                    unsafe { ax_set_window_frame(win as *mut std::ffi::c_void, x, y, w, h); }
+                })
+            }).collect();
+            for h in handles { let _ = h.join(); }
+        }
+
+        // Phase 3: Z-order — card deck fan-out from current window.
+        // Current window = topmost, then alternating next/prev neighbors.
+        // Example: windows [0,1,2,3,4], current=2 → raise order: 0,4,1,3,2 (2 raised last = top)
+        //
+        // Find current window from cycle state.
+        let n = frames.len();
+        let current_idx = restore_entry.as_ref()
+            .and_then(|_e| {
+                // Use the cycle state index if valid
+                if let Ok(guard) = CYCLE.lock() {
+                    if let Some(ref s) = *guard {
+                        if s.index < n { return Some(s.index); }
+                    }
+                }
+                None
+            })
+            .unwrap_or(0);
+
+        // Build raise order: farthest from current first, current last (topmost).
+        // Distance = |idx - current_idx|, raise in descending distance order.
+        let mut z_order: Vec<usize> = (0..n).collect();
+        z_order.sort_by(|&a, &b| {
+            let da = (a as isize - current_idx as isize).unsigned_abs();
+            let db = (b as isize - current_idx as isize).unsigned_abs();
+            db.cmp(&da) // farthest first (raised first = bottom), closest last (raised last = top)
+        });
+
+        unsafe {
+            for &idx in &z_order {
+                let (win, _, _, _, _) = frames[idx];
+                let attr = CFString::new("AXMain");
+                AXUIElementSetAttributeValue(
+                    win,
+                    attr.as_concrete_TypeRef() as CFStringRefRaw,
+                    core_foundation::boolean::CFBoolean::true_value().as_CFTypeRef(),
+                );
+                AXUIElementPerformAction(win, CFString::new("AXRaise").as_concrete_TypeRef() as CFStringRefRaw);
+            }
 
             // Release all retained refs.
-            for win in &windows {
-                CFRelease(*win as *const _);
+            for &(win, _, _, _, _) in &frames {
+                CFRelease(win as *const _);
             }
         }
 
-        // Restore focus to the window that was active before arrange,
-        // so clx+z continues from the same position.
+        // Restore focus to the window that was active before arrange.
         if let Some(ref entry) = restore_entry {
             activate_window(entry);
+        }
+
+        // Invalidate the cycle snapshot so Space+Z picks up new window positions.
+        if let Ok(mut g) = CYCLE.lock() {
+            *g = None;
         }
     }
 
@@ -1057,6 +1354,17 @@ impl Platform for MacPlatform {
     }
 
     fn start_system_audio(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
+        // Try Core Audio Taps first (macOS 14.2+, cleaner digital reference signal).
+        match crate::audio_tap::AudioTapCapture::new() {
+            Ok(cap) => {
+                eprintln!("[CLX] system audio: using Core Audio Tap (digital reference)");
+                return Some(Box::new(cap));
+            }
+            Err(e) => {
+                eprintln!("[CLX] system audio: Core Audio Tap unavailable ({e}), falling back to ScreenCaptureKit");
+            }
+        }
+        // Fallback: ScreenCaptureKit (macOS 12.3+).
         match crate::system_audio::SystemAudioCapture::new() {
             Ok(cap) => Some(Box::new(cap)),
             Err(e) => {
@@ -1066,6 +1374,7 @@ impl Platform for MacPlatform {
         }
     }
 
+    fn open_preferences(&self) { crate::prefs::open_preferences(); }
     fn show_voice_overlay(&self) { crate::voice_overlay::show_overlay(); }
     fn hide_voice_overlay(&self) { crate::voice_overlay::hide_overlay(); }
     fn update_voice_overlay(&self, mic_levels: &[f32], mic_vad: bool, sys_levels: &[f32], sys_vad: bool) {
@@ -1198,249 +1507,11 @@ impl Platform for MacPlatform {
 
 }
 
+// Legacy modal prompt removed — now uses subprocess (clx-prompt).
 #[allow(dead_code)]
-fn _show_prompt_input_modal_legacy(title: &str, message: &str, prefill: &str) -> Option<String> {
-        // Legacy modal NSAlert approach — blocks the main run loop.
-        use std::sync::mpsc;
-        let (tx, rx) = mpsc::channel::<Option<String>>();
+fn _show_prompt_input_modal_legacy(title: &str, _message: &str, _prefill: &str) -> Option<String> {
+    eprintln!("[CLX] legacy prompt not available, use clx-prompt subprocess");
+    let _ = title;
+    None
+}
 
-        let title = title.to_string();
-        let message = message.to_string();
-        let prefill = prefill.to_string();
-
-        unsafe {
-            // Box the closure data to pass through dispatch_async_f.
-            struct PromptCtx {
-                title: String,
-                message: String,
-                prefill: String,
-                tx: mpsc::Sender<Option<String>>,
-            }
-
-            // Register custom NSTextView subclass once — Enter sends, Shift+Enter = newline.
-            static PROMPT_TV_REGISTERED: std::sync::Once = std::sync::Once::new();
-
-            unsafe extern "C" fn prompt_tv_key_down(
-                this: *mut std::ffi::c_void,
-                _cmd: *mut std::ffi::c_void,
-                event: *mut std::ffi::c_void,
-            ) {
-                // Check keyCode == 36 (Return) and no Shift modifier.
-                let f_u16: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u16
-                    = std::mem::transmute(objc_msgSend as *const ());
-                let key_code = f_u16(event, sel_registerName(b"keyCode\0".as_ptr() as *const _));
-                let f_u64: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u64
-                    = std::mem::transmute(objc_msgSend as *const ());
-                let flags = f_u64(event, sel_registerName(b"modifierFlags\0".as_ptr() as *const _));
-                let shift = flags & (1 << 17) != 0; // NSEventModifierFlagShift
-
-                if key_code == 36 && !shift {
-                    // Enter without Shift → Send
-                    crate::brainstorm_overlay::prompt_send();
-                } else {
-                    // Forward to super (NSTextView) for normal key handling.
-                    // objc_msgSendSuper
-                    extern "C" { fn objc_msgSendSuper(sup: *mut std::ffi::c_void, sel: *mut std::ffi::c_void, ...) -> *mut std::ffi::c_void; }
-                    #[repr(C)]
-                    struct ObjcSuper { receiver: *mut std::ffi::c_void, super_class: *mut std::ffi::c_void }
-                    let super_cls = objc_getClass(b"NSTextView\0".as_ptr() as *const _);
-                    let mut sup = ObjcSuper { receiver: this, super_class: super_cls };
-                    let f_super: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                        = std::mem::transmute(objc_msgSendSuper as *const ());
-                    f_super(&mut sup as *mut _ as *mut _, sel_registerName(b"keyDown:\0".as_ptr() as *const _), event);
-                }
-            }
-
-            extern "C" fn run_prompt(ctx_ptr: *mut std::ffi::c_void) {
-                unsafe {
-                    let ctx = Box::from_raw(ctx_ptr as *mut PromptCtx);
-
-                    // Register custom text view class (once).
-                    PROMPT_TV_REGISTERED.call_once(|| {
-                        extern "C" {
-                            fn objc_allocateClassPair(sup: *mut std::ffi::c_void, name: *const std::ffi::c_char, extra: usize) -> *mut std::ffi::c_void;
-                            fn objc_registerClassPair(cls: *mut std::ffi::c_void);
-                            fn class_addMethod(cls: *mut std::ffi::c_void, sel: *mut std::ffi::c_void, imp: *const std::ffi::c_void, types: *const std::ffi::c_char) -> bool;
-                        }
-                        let super_cls = objc_getClass(b"NSTextView\0".as_ptr() as *const _);
-                        let new_cls = objc_allocateClassPair(super_cls, b"CLXPromptTextView\0".as_ptr() as *const _, 0);
-                        if !new_cls.is_null() {
-                            class_addMethod(new_cls,
-                                sel_registerName(b"keyDown:\0".as_ptr() as *const _),
-                                prompt_tv_key_down as *const std::ffi::c_void,
-                                b"v@:@\0".as_ptr() as *const _);
-                            objc_registerClassPair(new_cls);
-                        }
-                    });
-
-                    let cls_alert = objc_getClass(b"NSAlert\0".as_ptr() as *const _);
-                    let alert = {
-                        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        let alloc = f(cls_alert, sel_registerName(b"alloc\0".as_ptr() as *const _));
-                        f(alloc, sel_registerName(b"init\0".as_ptr() as *const _))
-                    };
-
-                    let ns_cls = objc_getClass(b"NSString\0".as_ptr() as *const _);
-                    let sel_utf8 = sel_registerName(b"stringWithUTF8String:\0".as_ptr() as *const _);
-                    let make_ns = |s: &str| -> *mut std::ffi::c_void {
-                        let cs = std::ffi::CString::new(s).unwrap();
-                        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, *const std::ffi::c_char) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        f(ns_cls, sel_utf8, cs.as_ptr())
-                    };
-
-                    let f1: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, *mut std::ffi::c_void)
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    f1(alert, sel_registerName(b"setMessageText:\0".as_ptr() as *const _), make_ns(&ctx.title));
-                    // Hide the large default app icon — use a tiny transparent image.
-                    {
-                        let img_cls = objc_getClass(b"NSImage\0".as_ptr() as *const _);
-                        let f_alloc: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        let img = f_alloc(img_cls, sel_registerName(b"alloc\0".as_ptr() as *const _));
-                        #[repr(C)] #[derive(Clone, Copy)] struct NSSize { w: f64, h: f64 }
-                        let f_init: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, NSSize) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        let img = f_init(img, sel_registerName(b"initWithSize:\0".as_ptr() as *const _), NSSize { w: 1.0, h: 1.0 });
-                        f1(alert, sel_registerName(b"setIcon:\0".as_ptr() as *const _), img);
-                    }
-                    let info = format!("{}\n\nEnter = Send | Shift+Enter = new line", ctx.message);
-                    f1(alert, sel_registerName(b"setInformativeText:\0".as_ptr() as *const _), make_ns(&info));
-                    f1(alert, sel_registerName(b"addButtonWithTitle:\0".as_ptr() as *const _), make_ns("Send (Enter)"));
-                    f1(alert, sel_registerName(b"addButtonWithTitle:\0".as_ptr() as *const _), make_ns("Cancel"));
-
-                    // Create ScrollView + custom TextView.
-                    let cls_sv = objc_getClass(b"NSScrollView\0".as_ptr() as *const _);
-                    let cls_tv = objc_getClass(b"CLXPromptTextView\0".as_ptr() as *const _);
-                    let cls_tv = if cls_tv.is_null() { objc_getClass(b"NSTextView\0".as_ptr() as *const _) } else { cls_tv };
-
-                    #[repr(C)]
-                    #[derive(Clone, Copy)]
-                    struct NSRect { x: f64, y: f64, w: f64, h: f64 }
-
-                    let rect = NSRect { x: 0.0, y: 0.0, w: 500.0, h: 200.0 };
-
-                    let scroll = {
-                        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        let alloc = f(cls_sv, sel_registerName(b"alloc\0".as_ptr() as *const _));
-                        let f2: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, NSRect) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        f2(alloc, sel_registerName(b"initWithFrame:\0".as_ptr() as *const _), rect)
-                    };
-                    let fb: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, bool)
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    fb(scroll, sel_registerName(b"setHasVerticalScroller:\0".as_ptr() as *const _), true);
-
-                    let text_view = {
-                        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        let alloc = f(cls_tv, sel_registerName(b"alloc\0".as_ptr() as *const _));
-                        let f2: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, NSRect) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        f2(alloc, sel_registerName(b"initWithFrame:\0".as_ptr() as *const _), rect)
-                    };
-                    fb(text_view, sel_registerName(b"setEditable:\0".as_ptr() as *const _), true);
-                    fb(text_view, sel_registerName(b"setRichText:\0".as_ptr() as *const _), false);
-
-                    // Format prefill: "> clipboard text\n\n=" with cursor on the blank line.
-                    let formatted = if ctx.prefill.is_empty() {
-                        String::new()
-                    } else {
-                        let quoted = ctx.prefill.lines()
-                            .map(|l| format!("> {}", l))
-                            .collect::<Vec<_>>()
-                            .join("\n");
-                        format!("{}\n\n=", quoted)
-                    };
-                    f1(text_view, sel_registerName(b"setString:\0".as_ptr() as *const _), make_ns(&formatted));
-
-                    // Place cursor on the blank line between quoted text and "=".
-                    {
-                        #[repr(C)]
-                        #[derive(Clone, Copy)]
-                        struct NSRange { location: usize, length: usize }
-
-                        let cursor_pos = if formatted.is_empty() {
-                            0
-                        } else {
-                            // Find the position after the first \n\n (the blank line before "=")
-                            formatted.find("\n\n=").map(|p| p + 1).unwrap_or(formatted.len())
-                        };
-                        let range = NSRange { location: cursor_pos, length: 0 };
-                        let fsr: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, NSRange)
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        fsr(text_view, sel_registerName(b"setSelectedRange:\0".as_ptr() as *const _), range);
-                        fsr(text_view, sel_registerName(b"scrollRangeToVisible:\0".as_ptr() as *const _), range);
-                    }
-
-                    // Set font.
-                    let font = {
-                        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, f64) -> *mut std::ffi::c_void
-                            = std::mem::transmute(objc_msgSend as *const ());
-                        f(objc_getClass(b"NSFont\0".as_ptr() as *const _),
-                          sel_registerName(b"systemFontOfSize:\0".as_ptr() as *const _), 13.0)
-                    };
-                    f1(text_view, sel_registerName(b"setFont:\0".as_ptr() as *const _), font);
-
-                    f1(scroll, sel_registerName(b"setDocumentView:\0".as_ptr() as *const _), text_view);
-                    f1(alert, sel_registerName(b"setAccessoryView:\0".as_ptr() as *const _), scroll);
-
-                    // Enter is handled by CLXPromptTextView.keyDown: → stopModalWithCode:1000
-                    // No button key equivalent needed.
-
-                    // Activate app so alert is visible.
-                    let nsapp_cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
-                    let f0: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    let nsapp = f0(nsapp_cls, sel_registerName(b"sharedApplication\0".as_ptr() as *const _));
-                    let fa: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void, i64) -> bool
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    fa(nsapp, sel_registerName(b"activateIgnoringOtherApps:\0".as_ptr() as *const _), 1);
-
-                    // Focus the text view: use setInitialFirstResponder so it takes
-                    // effect after the modal session starts (makeFirstResponder
-                    // before runModal is too early).
-                    let alert_window = f0(alert, sel_registerName(b"window\0".as_ptr() as *const _));
-                    f1(alert_window, sel_registerName(b"setInitialFirstResponder:\0".as_ptr() as *const _), text_view);
-
-                    // Run modal.
-                    let fi: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> i64
-                        = std::mem::transmute(objc_msgSend as *const ());
-                    let response = fi(alert, sel_registerName(b"runModal\0".as_ptr() as *const _));
-
-                    // NSAlertFirstButtonReturn = 1000
-                    if response == 1000 {
-                        // Get text from text view.
-                        let ns_str = f0(text_view, sel_registerName(b"string\0".as_ptr() as *const _));
-                        let cstr: *const std::ffi::c_char = {
-                            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *const std::ffi::c_char
-                                = std::mem::transmute(objc_msgSend as *const ());
-                            f(ns_str, sel_registerName(b"UTF8String\0".as_ptr() as *const _))
-                        };
-                        if !cstr.is_null() {
-                            let text = std::ffi::CStr::from_ptr(cstr).to_string_lossy().into_owned();
-                            let _ = ctx.tx.send(Some(text));
-                        } else {
-                            let _ = ctx.tx.send(None);
-                        }
-                    } else {
-                        let _ = ctx.tx.send(None);
-                    }
-                }
-            }
-
-            extern "C" {
-                fn dispatch_async_f(queue: *mut std::ffi::c_void, context: *mut std::ffi::c_void, work: extern "C" fn(*mut std::ffi::c_void));
-                fn dlsym(handle: *mut std::ffi::c_void, symbol: *const std::ffi::c_char) -> *mut std::ffi::c_void;
-            }
-            let queue = dlsym(-2isize as *mut std::ffi::c_void, b"_dispatch_main_q\0".as_ptr() as *const _);
-
-            let ctx = Box::new(PromptCtx { title, message, prefill, tx });
-            dispatch_async_f(queue, Box::into_raw(ctx) as *mut _, run_prompt);
-        }
-
-        // Block until the alert is dismissed.
-        rx.recv().ok().flatten()
-    }

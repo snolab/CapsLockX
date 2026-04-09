@@ -8,6 +8,44 @@ use std::ffi::c_void;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
+/// Check if overlay screen sharing is enabled in config.
+fn overlay_sharing_enabled() -> bool {
+    let cfg_path = dirs::config_dir()
+        .map(|d| d.join("CapsLockX").join("config.json"));
+    if let Some(path) = cfg_path {
+        if let Ok(data) = std::fs::read_to_string(&path) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&data) {
+                let val = v.get("overlay_sharing").and_then(|v| v.as_bool()).unwrap_or(false);
+                eprintln!("[CLX] overlay_sharing: config={}, path={:?}", val, path);
+                return val;
+            }
+        }
+    }
+    eprintln!("[CLX] overlay_sharing: not found in config, default=false");
+    false // default: not shared
+}
+
+// ObjC exception catcher (compiled from objc_try.m).
+extern "C" {
+    fn objc_try_catch(fn_ptr: extern "C" fn(*mut c_void), context: *mut c_void) -> i32;
+}
+
+/// Wrap a closure for use inside dispatch callbacks.
+/// Catches BOTH Rust panics AND ObjC exceptions (foreign exceptions).
+fn catch_ffi_panic(_name: &str, f: impl FnOnce()) {
+    extern "C" fn trampoline(ctx: *mut c_void) {
+        let boxed: Box<Box<dyn FnOnce()>> = unsafe { Box::from_raw(ctx as *mut _) };
+        boxed();
+    }
+
+    let boxed: Box<Box<dyn FnOnce()>> = Box::new(Box::new(f));
+    let ctx = Box::into_raw(boxed) as *mut c_void;
+    let result = unsafe { objc_try_catch(trampoline, ctx) };
+    if result != 0 {
+        eprintln!("[CLX] ObjC EXCEPTION in voice_overlay (caught, not crashing)");
+    }
+}
+
 // ── Global shared waveform state ─────────────────────────────────────────────
 
 struct WaveformData {
@@ -86,7 +124,13 @@ unsafe fn main_queue() -> *mut c_void {
     dlsym(RTLD_DEFAULT, b"_dispatch_main_q\0".as_ptr() as *const _)
 }
 unsafe fn nsstring(s: &str) -> *mut c_void {
-    let cstr = std::ffi::CString::new(s).unwrap();
+    let cstr = match std::ffi::CString::new(s) {
+        Ok(c) => c,
+        Err(_) => {
+            eprintln!("[CLX] voice_overlay: nsstring got null byte in: {:?}", &s[..s.len().min(50)]);
+            std::ffi::CString::new("(invalid)").unwrap()
+        }
+    };
     let f: extern "C" fn(*mut c_void, *mut c_void, *const std::ffi::c_char) -> *mut c_void =
         std::mem::transmute(objc_msgSend as *const ());
     f(cls(b"NSString\0"), sel(b"stringWithUTF8String:\0"), cstr.as_ptr())
@@ -120,7 +164,16 @@ fn save_pos(x: f64, y: f64) {
 
 // ── drawRect: callback ───────────────────────────────────────────────────────
 
+static mut DRAW_RECT_THIS: *mut c_void = std::ptr::null_mut();
 extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
+    unsafe { DRAW_RECT_THIS = this; }
+    let r = unsafe { objc_try_catch(draw_rect_c, std::ptr::null_mut()) };
+    if r != 0 { eprintln!("[CLX] ObjC exception in draw_rect (caught)"); }
+}
+extern "C" fn draw_rect_c(_: *mut c_void) {
+    draw_rect_inner(unsafe { DRAW_RECT_THIS });
+}
+fn draw_rect_inner(this: *mut c_void) {
     unsafe {
         let ns_gfx = cls(b"NSGraphicsContext\0");
         let ctx_obj = msg0(ns_gfx, sel(b"currentContext\0"));
@@ -140,7 +193,7 @@ extern "C" fn draw_rect(this: *mut c_void, _cmd: *mut c_void, _dirty: NSRect) {
 
         let (w, h) = (bounds.w, bounds.h);
         let (mic_levels, sys_levels, mic_vad, sys_vad) = {
-            let g = WAVEFORM_DATA.lock().unwrap();
+            let g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
             (g.mic_levels.clone(), g.sys_levels.clone(), g.mic_vad, g.sys_vad)
         };
 
@@ -222,7 +275,29 @@ pub fn show_overlay() {
 }
 
 extern "C" fn show_main(_: *mut c_void) {
+    // Use objc_try_catch to catch ObjC exceptions.
+    // show_main_inner_c is extern "C" — Rust panics there = abort.
+    // But we've eliminated all unwrap() calls, so only ObjC exceptions should happen.
+    static DISABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if DISABLED.load(std::sync::atomic::Ordering::Relaxed) { return; }
+
+    let result = unsafe { objc_try_catch(show_main_inner_c, std::ptr::null_mut()) };
+    if result != 0 {
+        eprintln!("[CLX] ObjC exception in show_main — disabling voice overlay for this session");
+        DISABLED.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+extern "C" fn show_main_inner_c(_: *mut c_void) {
+    show_main_inner();
+}
+
+fn show_main_inner() {
+    eprintln!("[CLX] show_main_inner: entered");
     unsafe {
+        // Autorelease pool — required for ObjC autoreleased objects (NSString, etc.)
+        let pool = msg0(msg0(cls(b"NSAutoreleasePool\0"), sel(b"alloc\0")), sel(b"init\0"));
+
         let existing = WINDOW_PTR.load(Ordering::Acquire);
         if !existing.is_null() {
             let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
@@ -243,11 +318,12 @@ extern "C" fn show_main(_: *mut c_void) {
         #[cfg(target_arch = "x86_64")]
         let sf = NSRect { x: 0.0, y: 0.0, w: 1920.0, h: 1080.0 };
 
-        let ow = 600.0_f64;
-        let oh = 100.0_f64; // thin waveform (20px) + 3 lines of text (~70px) + padding
+        let ow = 900.0_f64;
+        let oh = 300.0_f64;
         // Position at top-center (AppKit coords: y=0 is bottom, so top = screen_h - oh - margin)
         let rect = NSRect { x: (sf.w - ow) / 2.0, y: sf.h - oh - 40.0, w: ow, h: oh };
 
+        eprintln!("[CLX] show_main_inner: screen size ok, creating window...");
         // Create window
         let alloc = msg0(cls(b"NSWindow\0"), sel(b"alloc\0"));
         let win: *mut c_void = {
@@ -255,7 +331,8 @@ extern "C" fn show_main(_: *mut c_void) {
                 std::mem::transmute(objc_msgSend as *const ());
             f(alloc, sel(b"initWithContentRect:styleMask:backing:defer:\0"), rect, 0u64, 2u64, false)
         };
-        if win.is_null() { return; }
+        if win.is_null() { eprintln!("[CLX] show_main_inner: window is null!"); return; }
+        eprintln!("[CLX] show_main_inner: window created, configuring...");
 
         // Configure — fully transparent window, text has its own background.
         let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
@@ -266,11 +343,15 @@ extern "C" fn show_main(_: *mut c_void) {
         f_bool(win, sel(b"setIgnoresMouseEvents:\0"), true);
         f_bool(win, sel(b"setHasShadow:\0"), false);
         let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
-        // Hide from screen sharing / screenshots (NSWindowSharingNone = 0)
-        f_u64(win, sel(b"setSharingType:\0"), 0);
+        // NSWindowSharingNone = 0 (hidden from screenshots/screen sharing) — default.
+        // NSWindowSharingReadOnly = 1 (visible in screenshots) — set via prefs.
+        // Read preference from config file.
+        let sharing_type: u64 = if overlay_sharing_enabled() { 1 } else { 0 };
+        f_u64(win, sel(b"setSharingType:\0"), sharing_type);
         let f_u64: extern "C" fn(*mut c_void, *mut c_void, u64) = std::mem::transmute(objc_msgSend as *const ());
         f_u64(win, sel(b"setCollectionBehavior:\0"), 1 | 16); // allSpaces + stationary
 
+        eprintln!("[CLX] show_main_inner: window configured, creating view...");
         // Create view
         let view_cls = cls(b"CLXWaveformView\0");
         if view_cls.is_null() { return; }
@@ -293,7 +374,7 @@ extern "C" fn show_main(_: *mut c_void) {
         };
 
         // Waveform view: dual waveform strip at top (40px)
-        let wf_rect = NSRect { x: 0.0, y: oh - 40.0, w: ow, h: 40.0 };
+        let wf_rect = NSRect { x: 0.0, y: oh - 60.0, w: ow, h: 60.0 };
         let wf_view: *mut c_void = {
             let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                 std::mem::transmute(objc_msgSend as *const ());
@@ -301,10 +382,11 @@ extern "C" fn show_main(_: *mut c_void) {
         };
         msg1_ptr(container, sel(b"addSubview:\0"), wf_view);
 
+        eprintln!("[CLX] show_main_inner: view created, creating label...");
         // Subtitle label: bottom 65px (3 lines)
         let label_cls = cls(b"NSTextField\0");
         let label_alloc = msg0(label_cls, sel(b"alloc\0"));
-        let label_rect = NSRect { x: 10.0, y: 4.0, w: ow - 20.0, h: oh - 28.0 };
+        let label_rect = NSRect { x: 10.0, y: 4.0, w: ow - 20.0, h: oh - 68.0 };
         let label: *mut c_void = {
             let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                 std::mem::transmute(objc_msgSend as *const ());
@@ -327,21 +409,29 @@ extern "C" fn show_main(_: *mut c_void) {
                 f_i64(cell, sel(b"setLineBreakMode:\0"), 0); // word wrap
                 f_bool(cell, sel(b"setWraps:\0"), true);
             }
+            eprintln!("[CLX] show_main_inner: label configured, setting attributed subtitle...");
             // Set initial attributed text with per-character background.
             set_attributed_subtitle(label, "🎤 Listening...");
+            eprintln!("[CLX] show_main_inner: subtitle set OK");
 
             msg1_ptr(container, sel(b"addSubview:\0"), label);
             LABEL_PTR.store(label, Ordering::Release);
         }
 
+        eprintln!("[CLX] show_main_inner: setting content view...");
         msg1_ptr(win, sel(b"setContentView:\0"), container);
+        eprintln!("[CLX] show_main_inner: showing window...");
         let f_show: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = std::mem::transmute(objc_msgSend as *const ());
         f_show(win, sel(b"orderFront:\0"), std::ptr::null_mut());
 
         VIEW_PTR.store(wf_view, Ordering::Release);
         WINDOW_PTR.store(win, Ordering::Release);
+        eprintln!("[CLX] show_main_inner: window shown. Skipping toolbar handle (was crashing).");
+        msg0(pool, sel(b"drain\0"));
+        return;
 
-        // Create toolbar handle — horizontal bar above the overlay with ⠿ Move, ✕ Close.
+        // DISABLED: Create toolbar handle — was causing ObjC exception crash.
+        // TODO: investigate why NSTextField setStringValue crashes in toolbar panel.
         // Appears on hover, hidden by default. Dragging moves the overlay.
         let bar_h = 18.0_f64;
         let bar_rect = NSRect { x: rect.x, y: rect.y + oh, w: ow, h: bar_h };
@@ -354,7 +444,9 @@ extern "C" fn show_main(_: *mut c_void) {
             f(handle_alloc, sel(b"initWithContentRect:styleMask:backing:defer:\0"),
               bar_rect, handle_style, 2u64, false)
         };
+        eprintln!("[CLX] show_main_inner: handle alloc={:?}", handle);
         if !handle.is_null() {
+            eprintln!("[CLX] show_main_inner: configuring handle...");
             let f_bool: extern "C" fn(*mut c_void, *mut c_void, bool) = std::mem::transmute(objc_msgSend as *const ());
             f_bool(handle, sel(b"setOpaque:\0"), false);
             f_bool(handle, sel(b"setIgnoresMouseEvents:\0"), false);
@@ -376,6 +468,7 @@ extern "C" fn show_main(_: *mut c_void) {
             };
             msg1_ptr(handle, sel(b"setBackgroundColor:\0"), handle_bg);
 
+            eprintln!("[CLX] show_main_inner: handle configured, getting content view...");
             let content_view = msg0(handle, sel(b"contentView\0"));
             let grip_color = {
                 let f: extern "C" fn(*mut c_void, *mut c_void, f64, f64, f64, f64) -> *mut c_void
@@ -391,18 +484,27 @@ extern "C" fn show_main(_: *mut c_void) {
 
             // Helper to create a label in the bar.
             let make_label = |x: f64, w: f64, text: &str| -> *mut c_void {
+                eprintln!("[CLX] make_label: alloc NSTextField...");
                 let lbl = msg0(cls(b"NSTextField\0"), sel(b"alloc\0"));
+                eprintln!("[CLX] make_label: initWithFrame...");
                 let r = NSRect { x, y: 0.0, w, h: bar_h };
                 let lbl: *mut c_void = {
                     let f: extern "C" fn(*mut c_void, *mut c_void, NSRect) -> *mut c_void =
                         std::mem::transmute(objc_msgSend as *const ());
                     f(lbl, sel(b"initWithFrame:\0"), r)
                 };
-                msg1_ptr(lbl, sel(b"setStringValue:\0"), nsstring(text));
+                eprintln!("[CLX] make_label: lbl={:?} setStringValue {:?}...", lbl, text);
+                if lbl.is_null() { eprintln!("[CLX] make_label: lbl is NULL!"); return std::ptr::null_mut(); }
+                let ns = nsstring(text);
+                eprintln!("[CLX] make_label: ns={:?}", ns);
+                if ns.is_null() { eprintln!("[CLX] make_label: nsstring returned NULL!"); return std::ptr::null_mut(); }
+                msg1_ptr(lbl, sel(b"setStringValue:\0"), ns);
                 f_bool(lbl, sel(b"setBezeled:\0"), false);
                 f_bool(lbl, sel(b"setDrawsBackground:\0"), false);
                 f_bool(lbl, sel(b"setEditable:\0"), false);
                 f_bool(lbl, sel(b"setSelectable:\0"), false);
+                // Let mouse events pass through to window background so dragging works.
+                f_bool(lbl, sel(b"setIgnoresMouseEvents:\0"), true);
                 msg1_ptr(lbl, sel(b"setTextColor:\0"), grip_color);
                 msg1_ptr(lbl, sel(b"setFont:\0"), small_font);
                 f_u64_2(lbl, sel(b"setAlignment:\0"), 1); // center
@@ -411,7 +513,8 @@ extern "C" fn show_main(_: *mut c_void) {
             };
 
             // Layout: [⠿ Move] [model info] [✕]
-            make_label(4.0, 50.0, "⠿ Move");
+            eprintln!("[CLX] show_main_inner: calling make_label(Move)...");
+            make_label(4.0, 50.0, "Move");  // removed braille char to test
 
             // Show active models in center of toolbar.
             let stt_engine = std::env::var("CLX_STT_ENGINE").unwrap_or_else(|_| "SenseVoice".into());
@@ -424,6 +527,7 @@ extern "C" fn show_main(_: *mut c_void) {
             make_label(60.0, ow - 90.0, &model_info);
             // ✕ label is just visual — actual close button overlays it below.
 
+            eprintln!("[CLX] show_main_inner: labels created, adding close button...");
             // Add a close button (actual NSButton for click handling).
             {
                 // Register close action class once.
@@ -467,6 +571,7 @@ extern "C" fn show_main(_: *mut c_void) {
                 }
             }
 
+            eprintln!("[CLX] show_main_inner: close button done, linking toolbar...");
             // Link toolbar as child window — moving the bar moves the overlay.
             let f_add_child: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, u64) =
                 std::mem::transmute(objc_msgSend as *const ());
@@ -564,6 +669,7 @@ extern "C" fn show_main(_: *mut c_void) {
                 hover_loop();
             }).ok();
         }
+        msg0(pool, sel(b"drain\0"));
     }
 }
 
@@ -588,7 +694,10 @@ fn hover_loop() {
         // Get mouse position (screen coords, y=0 at bottom on macOS).
         let mouse = unsafe {
             if let Ok(event) = CGEvent::new(
-                CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap()
+                match CGEventSource::new(CGEventSourceStateID::HIDSystemState) {
+                    Ok(s) => s,
+                    Err(_) => { continue; }
+                }
             ) {
                 let loc = event.location();
                 (loc.x, loc.y)
@@ -683,6 +792,13 @@ pub fn hide_overlay() {
 }
 
 extern "C" fn hide_main(_: *mut c_void) {
+    let r = unsafe { objc_try_catch(hide_main_c, std::ptr::null_mut()) };
+    if r != 0 { eprintln!("[CLX] ObjC exception in hide_main (caught)"); }
+}
+extern "C" fn hide_main_c(_: *mut c_void) {
+    hide_main_inner();
+}
+fn hide_main_inner() {
     unsafe {
         let win = WINDOW_PTR.load(Ordering::Acquire);
         if !win.is_null() {
@@ -720,7 +836,7 @@ pub fn push_audio_levels_with_text(levels: &[f32], vad_active: bool, subtitle: O
 
 pub fn push_dual_audio_levels(mic_levels: &[f32], mic_vad: bool, sys_levels: &[f32], sys_vad: bool, subtitle: Option<&str>) {
     {
-        let mut g = WAVEFORM_DATA.lock().unwrap();
+        let mut g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
         if !mic_levels.is_empty() {
             g.mic_levels.extend_from_slice(mic_levels);
             if g.mic_levels.len() > 100 { let e = g.mic_levels.len() - 100; g.mic_levels.drain(..e); }
@@ -827,6 +943,13 @@ unsafe fn set_attributed_subtitle(label: *mut c_void, text: &str) {
 }
 
 extern "C" fn trigger_redraw(_: *mut c_void) {
+    let r = unsafe { objc_try_catch(trigger_redraw_c, std::ptr::null_mut()) };
+    if r != 0 { eprintln!("[CLX] ObjC exception in trigger_redraw (caught)"); }
+}
+extern "C" fn trigger_redraw_c(_: *mut c_void) {
+    trigger_redraw_inner();
+}
+fn trigger_redraw_inner() {
     unsafe {
         let view = VIEW_PTR.load(Ordering::Acquire);
         if !view.is_null() {
@@ -842,7 +965,7 @@ extern "C" fn trigger_redraw(_: *mut c_void) {
         }
         if !label.is_null() {
             let text = {
-                let g = WAVEFORM_DATA.lock().unwrap();
+                let g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
                 if dbg_n < 5 || dbg_n % 200 == 0 {
                     let preview: String = g.subtitle.chars().take(60).collect();
                     eprintln!("[overlay] subtitle={:?}", preview);

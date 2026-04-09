@@ -261,6 +261,48 @@ unsafe extern "C" fn action_open_prefs(
     open_preferences();
 }
 
+/// Action handler for "Voice Recordings" menu item — open the recordings folder in Finder.
+unsafe extern "C" fn action_open_voice_folder(
+    _this: *mut c_void,
+    _cmd: *mut c_void,
+    _sender: *mut c_void,
+) {
+    eprintln!("[CLX] opening voice recordings folder");
+    if let Some(dir) = dirs::home_dir().map(|h| h.join(".capslockx").join("voice")) {
+        let _ = std::fs::create_dir_all(&dir);
+        let _ = std::process::Command::new("open").arg(&dir).spawn();
+    }
+}
+
+/// Action handler for "Restart" menu item — spawn new process and exit.
+/// Using spawn+exit instead of execv so macOS properly cleans up the old
+/// NSStatusItem (execv leaves a ghost/transparent icon in the menu bar).
+unsafe extern "C" fn action_restart(
+    _this: *mut c_void,
+    _cmd: *mut c_void,
+    _sender: *mut c_void,
+) {
+    eprintln!("[CLX] restart requested via tray menu");
+    let exe = std::env::current_exe().unwrap_or_default();
+    let args: Vec<String> = std::env::args().collect();
+    match std::process::Command::new(&exe)
+        .args(&args[1..])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .spawn()
+    {
+        Ok(child) => {
+            eprintln!("[CLX] restart: spawned new instance pid={}", child.id());
+            // Exit cleanly so the OS removes the old NSStatusItem.
+            std::process::exit(0);
+        }
+        Err(e) => {
+            eprintln!("[CLX] restart: spawn failed ({})", e);
+        }
+    }
+}
+
 /// Register the CLXPrefsActionTarget class at runtime (once).
 unsafe fn ensure_action_class() {
     ACTION_CLASS_REGISTERED.call_once(|| {
@@ -284,6 +326,28 @@ unsafe fn ensure_action_class() {
         );
         if !added {
             eprintln!("[CLX] prefs: failed to add openPrefs: method");
+        }
+
+        let sel_restart = sel(b"restartApp:\0");
+        let added = class_addMethod(
+            new_cls,
+            sel_restart,
+            action_restart as *const c_void,
+            b"v@:@\0".as_ptr() as *const _,
+        );
+        if !added {
+            eprintln!("[CLX] prefs: failed to add restartApp: method");
+        }
+
+        let sel_voice = sel(b"openVoiceFolder:\0");
+        let added = class_addMethod(
+            new_cls,
+            sel_voice,
+            action_open_voice_folder as *const c_void,
+            b"v@:@\0".as_ptr() as *const _,
+        );
+        if !added {
+            eprintln!("[CLX] prefs: failed to add openVoiceFolder: method");
         }
 
         objc_registerClassPair(new_cls);

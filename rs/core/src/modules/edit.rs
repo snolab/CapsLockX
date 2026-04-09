@@ -189,29 +189,22 @@ fn page_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
 
 fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
     if !s.is_clx_active() || phase != "MOVE" { return; }
-    let ctrl = p.is_key_physically_down(KeyCode::LCtrl)
-            || p.is_key_physically_down(KeyCode::RCtrl);
-    if ctrl {
-        // Ctrl held → Ctrl+Tab (next page) / Ctrl+Shift+Tab (prev page).
-        if dy < 0 {
-            for _ in 0..(-dy).min(128) {
-                p.key_tap_with_mods(KeyCode::Tab, &[KeyCode::LCtrl, KeyCode::LShift], 1);
-            }
-        }
-        if dy > 0 {
-            for _ in 0..dy.min(128) {
-                p.key_tap_cmd_or_ctrl(KeyCode::Tab);
-            }
-        }
-    } else {
-        // No Ctrl → plain Tab / Shift+Tab.
-        if dy < 0 { p.key_tap_shifted_n(KeyCode::Tab, -dy); }
-        if dy > 0 { p.key_tap_n(KeyCode::Tab,          dy); }
+    // N (dy>0) = Tab forward, P (dy<0) = Tab backward (Shift+Tab).
+    // Any held modifiers (Ctrl, Alt, Cmd) pass through automatically.
+    // So Ctrl+N = Ctrl+Tab (next tab in Chrome), Ctrl+P = Ctrl+Shift+Tab (prev tab).
+    if dy > 0 {
+        tap_with_held_mods(p, KeyCode::Tab, dy);
+    }
+    if dy < 0 {
+        // P direction: add Shift to reverse Tab direction.
+        let mut mods = held_modifiers(p);
+        if !mods.contains(&KeyCode::LShift) { mods.push(KeyCode::LShift); }
+        p.key_tap_with_mods(KeyCode::Tab, &mods, (-dy).min(128));
     }
 }
 
 fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
     if !s.is_clx_active() || phase != "MOVE" { return; }
-    if dy < 0 { p.key_tap_n(KeyCode::Enter,  -dy); }  // G
-    if dy > 0 { p.key_tap_n(KeyCode::Delete,  dy); }  // T
+    if dy < 0 { tap_with_held_mods(p, KeyCode::Enter,  -dy); }  // G (preserves Ctrl/Shift/etc.)
+    if dy > 0 { tap_with_held_mods(p, KeyCode::Delete,  dy); }  // T
 }

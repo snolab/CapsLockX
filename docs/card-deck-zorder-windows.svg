@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" font-family="Segoe UI, system-ui, sans-serif">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="520" rx="12" fill="#0d1117"/>
+
+  <!-- Title -->
+  <text x="410" y="35" text-anchor="middle" font-size="17" font-weight="600" fill="#e0e0e0">
+    Card Deck Z-Order — Space+C Stacked Mode (Windows)
+  </text>
+  <text x="410" y="55" text-anchor="middle" font-size="12" fill="#888">
+    5 windows, current = Window 3 · Cascade: bottom-left → top-right
+  </text>
+
+  <!-- Window 1 — back, bottom-left -->
+  <rect x="30" y="290" width="480" height="160" rx="2" fill="#1e1e2e" stroke="#555" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="30" y="290" width="480" height="28" fill="#2d2d3d"/>
+  <text x="42" y="309" font-size="11" fill="#777">📁 Window 1 — Explorer</text>
+  <text x="480" y="308" font-size="9" fill="#666">— □ ✕</text>
+
+  <!-- Window 5 — back, top-right -->
+  <rect x="318" y="130" width="480" height="160" rx="2" fill="#1e1e2e" stroke="#555" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="318" y="130" width="480" height="28" fill="#2d2d3d"/>
+  <text x="330" y="149" font-size="11" fill="#777">📝 Window 5 — Notepad</text>
+  <text x="768" y="148" font-size="9" fill="#666">— □ ✕</text>
+
+  <!-- Window 2 — neighbor -->
+  <rect x="102" y="258" width="480" height="160" rx="2" fill="#1a1a3a" stroke="#5865f2" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="102" y="258" width="480" height="28" fill="#2a2a5a"/>
+  <text x="114" y="277" font-size="11" fill="#aab">🌐 Window 2 — Chrome</text>
+  <text x="552" y="276" font-size="9" fill="#666">— □ ✕</text>
+
+  <!-- Window 4 — neighbor -->
+  <rect x="246" y="194" width="480" height="160" rx="2" fill="#1a1a3a" stroke="#5865f2" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="246" y="194" width="480" height="28" fill="#2a2a5a"/>
+  <text x="258" y="213" font-size="11" fill="#aab">💬 Window 4 — Teams</text>
+  <text x="696" y="212" font-size="9" fill="#666">— □ ✕</text>
+
+  <!-- Window 3 — CURRENT, topmost -->
+  <rect x="174" y="226" width="480" height="160" rx="2" fill="#0e2a1a" stroke="#3fb950" stroke-width="2.5" filter="url(#shadow)"/>
+  <rect x="174" y="226" width="480" height="28" fill="#1a4a2a"/>
+  <text x="186" y="245" font-size="11" font-weight="bold" fill="#7ee787">⭐ Window 3 — VS Code (CURRENT)</text>
+  <text x="624" y="244" font-size="9" fill="#3fb950">— □ ✕</text>
+  <text x="190" y="330" font-size="20" fill="#3fb95033" font-weight="bold">Active Window</text>
+
+  <!-- Legend -->
+  <text x="30" y="490" font-size="11" fill="#666">Z-order (top → bottom):  3 → 4 → 2 → 5 → 1</text>
+  <text x="30" y="506" font-size="11" fill="#666">Position (cascade):  1=bottom-left · 2 · 3 · 4 · 5=top-right</text>
+
+  <rect x="530" y="478" width="12" height="12" rx="1" fill="#0e2a1a" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="548" y="489" font-size="11" fill="#888">Current</text>
+  <rect x="610" y="478" width="12" height="12" rx="1" fill="#1a1a3a" stroke="#5865f2" stroke-width="1"/>
+  <text x="628" y="489" font-size="11" fill="#888">Neighbor</text>
+  <rect x="700" y="478" width="12" height="12" rx="1" fill="#1e1e2e" stroke="#555" stroke-width="1"/>
+  <text x="718" y="489" font-size="11" fill="#888">Far</text>
+</svg>

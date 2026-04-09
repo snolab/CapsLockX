@@ -395,6 +395,26 @@ fn agent_turn(
                     if keep { format!("({} history records saved)", saved) } else { "ESC to dismiss.".to_string() }
                 ));
                 eprintln!("[CLX] brainstorm: response {} chars", response.len());
+
+                // TTS: speak the response aloud.
+                // Detect language from response content.
+                let lang = if response.chars().any(|c| ('\u{3040}'..='\u{30FF}').contains(&c) || ('\u{4E00}'..='\u{9FFF}').contains(&c) && ('\u{3040}'..='\u{309F}').contains(&c)) {
+                    "ja"
+                } else if response.chars().any(|c| ('\u{4E00}'..='\u{9FFF}').contains(&c)) {
+                    "zh"
+                } else if response.chars().any(|c| ('\u{AC00}'..='\u{D7AF}').contains(&c)) {
+                    "ko"
+                } else {
+                    "en"
+                };
+                // Read API keys from config for TTS.
+                let tts_gemini_key = config.api_key.clone();
+                let tts_text = response.clone();
+                std::thread::spawn(move || {
+                    if let Err(e) = crate::tts::speak(&tts_text, lang, "", &tts_gemini_key, "") {
+                        eprintln!("[CLX] brainstorm tts: {}", e);
+                    }
+                });
             }
         }
         Err(e) => {

@@ -272,12 +272,16 @@ pub fn is_noise_artifact(text: &str) -> bool {
         "subscribe", "like and subscribe",
         "see you next time", "bye",
         "you", // single-word hallucination
+        // Common AEC ghost hallucinations (SenseVoice outputs these on near-silence)
+        "yeah", "yeah.", "okay", "okay.", "the", "the.", "oh", "oh.",
+        "yes", "yes.", "no", "no.", "so", "so.", "he", "my",
+        "hello", "hello.", "in", "sure", "here", "many",
     ];
     for p in &patterns {
         if t == *p { return true; }
     }
     // Very short outputs are usually noise
-    if t.chars().count() <= 2 { return true; }
+    if t.chars().count() <= 3 { return true; }
     false
 }
 

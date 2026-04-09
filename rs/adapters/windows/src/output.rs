@@ -192,9 +192,9 @@ impl Platform for WinPlatform {
                     // Normal: activate adjacent window on the same desktop.
                     unsafe { let _ = SetForegroundWindow(windows[new_idx as usize]); }
                 } else {
-                    // At the boundary: switch to the next/prev virtual desktop.
-                    // Run synchronously on the hook thread (which has COM/message-pump)
-                    // rather than a spawned thread (which does not).
+                    // TODO: wrap around with modulo instead of switching desktop.
+                    // Match macOS behavior: cycle through all windows, wrap E→A.
+                    // For now, keep the desktop-switching behavior.
                     switch_desktop_step(dir);
                 }
             }
@@ -487,13 +487,35 @@ fn arrange_stacked() {
     if n == 0 { return; }
     let fg = unsafe { GetForegroundWindow() };
     let (ax, ay, aw, ah) = get_work_rect(fg);
-    let dx = 48_i32.min(aw / n as i32);
-    let dy = 48_i32.min(ah / n as i32);
+    let dx = 72_i32.min(aw / n as i32);
+    let dy = 32_i32.min(ah / n as i32);
+    let w = (aw / 2).max(aw - 2 * dx - (n as i32 - 2) * dx + dx);
+    let h = (ah / 2).max(ah - 2 * dy - (n as i32 - 2) * dy + dy);
+
+    // Resize all windows.
     for (k, &hwnd) in windows.iter().enumerate() {
         let x = ax + dx * k as i32;
         let y = ay + dy * (n - k - 1) as i32;
-        let w = (aw / 2).max(aw - 2 * dx - (n as i32 - 2) * dx + dx);
-        let h = (ah / 2).max(ah - 2 * dy - (n as i32 - 2) * dy + dy);
         fast_resize(hwnd, x, y, w, h);
+    }
+
+    // Z-order: card deck fan-out from current window.
+    // Current = topmost, neighbors next, farthest = bottom.
+    // Example: [0,1,2,3,4] current=2 → raise order: 0,4,1,3,2
+    let current_idx = windows.iter().position(|&h| h == fg).unwrap_or(0);
+    let mut z_order: Vec<usize> = (0..n).collect();
+    z_order.sort_by(|&a, &b| {
+        let da = (a as isize - current_idx as isize).unsigned_abs();
+        let db = (b as isize - current_idx as isize).unsigned_abs();
+        db.cmp(&da)
+    });
+    unsafe {
+        for &idx in &z_order {
+            let hwnd = windows[idx];
+            let _ = SetWindowPos(hwnd, HWND(std::ptr::null_mut()), 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        }
+        // Restore focus to the current window.
+        let _ = SetForegroundWindow(fg);
     }
 }

@@ -20,8 +20,8 @@ fn main() {
     println!("Provider: {:?}, Model: {}", config.provider, config.model);
 
     let messages = vec![
-        Message { role: "system".into(), content: "You correct speech-to-text errors. Return ONLY corrected text.".into() },
-        Message { role: "user".into(), content: "今日は私の事故紹介をします".into() },
+        Message { role: "system".into(), content: "You correct speech-to-text errors. Return ONLY corrected text.".into(), image_base64: None },
+        Message { role: "user".into(), content: "今日は私の事故紹介をします".into(), image_base64: None },
     ];
 
     print!("Response: ");

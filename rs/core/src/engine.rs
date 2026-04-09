@@ -104,6 +104,17 @@ impl ClxEngine {
             return CoreResponse::Suppress;
         }
 
+        // ── 3b. Bare ESC dismisses overlays / kills agent (no trigger needed) ──
+        if code == KeyCode::Escape && pressed && !is_repeat {
+            let mods = self.compute_mods();
+            if self.modules.agent.on_key_down(code, &mods) {
+                return CoreResponse::Suppress;
+            }
+            if self.modules.brainstorm.on_key_down(code, &mods) {
+                return CoreResponse::Suppress;
+            }
+        }
+
         // ── 4. Non-trigger key while CLX is active ────────────────────────────
         if self.state.is_clx_active() {
             if pressed && !is_repeat {
@@ -128,6 +139,17 @@ impl ClxEngine {
     /// since FlagsChanged up can arrive before the key-down event in fast combos.
     pub fn ensure_held(&self, code: KeyCode) {
         self.held_keys.lock().unwrap().insert(code);
+    }
+
+    /// Emergency stop: clear all held keys, exit CLX mode, stop all modules.
+    /// Called when CGEventTap is disabled (secure input / password fields) so
+    /// AccModel doesn't keep running with phantom held keys.
+    pub fn emergency_stop(&self) {
+        self.held_keys.lock().unwrap().clear();
+        self.state.exit_clx_mode();
+        self.state.exit_fn_mode();
+        self.modules.stop_all();
+        eprintln!("[CLX] emergency_stop: all keys released, CLX mode off");
     }
 
     /// Returns true if `code` is a mapped key (used by adapters to decide
@@ -181,22 +203,23 @@ impl ClxEngine {
         // Bypass: let the original event pass through to the OS instead of
         // entering CLX mode. This preserves system shortcuts:
         // - Shift+Space → input method switching
+        // - Ctrl+Space  → input method switching (like AHK on Windows)
         // - Cmd/Win+Space → Spotlight (macOS) / input language (Windows)
         // - Non-trigger typing + trigger → avoids interfering with typing
-        // Note: Ctrl/Alt + Space should NOT bypass — they enter CLX mode so
-        // combos like Ctrl+Space+E (Ctrl+Click) work.
+        // Note: Alt + Space should NOT bypass — it enters CLX mode.
         //
         // Check held_keys directly (not just prior) for reliability — the prior
         // key can be overwritten by intervening FlagsChanged or other events.
         let held = self.held_keys.lock().unwrap();
         let shift_held = held.contains(&KeyCode::LShift) || held.contains(&KeyCode::RShift)
             || held.contains(&KeyCode::Shift);
+        let ctrl_held = held.contains(&KeyCode::LCtrl) || held.contains(&KeyCode::RCtrl);
         let win_held = held.contains(&KeyCode::LWin) || held.contains(&KeyCode::RWin);
         let non_modifier_held = held.iter().any(|k| !k.is_modifier() && *k != code);
         drop(held);
 
         let bypass = if code == KeyCode::Space {
-            shift_held || win_held
+            shift_held || ctrl_held || win_held
         } else {
             non_modifier_held
         };
