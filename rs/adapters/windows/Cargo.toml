@@ -31,4 +31,5 @@ windows = { version = "0.58", features = [
     "Win32_Graphics_Dwm",
     "Win32_System_Threading",
     "Win32_UI_Shell",
+    "Win32_UI_Accessibility",
 ] }

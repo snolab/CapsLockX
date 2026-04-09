@@ -64,6 +64,12 @@ pub fn engine() -> Arc<ClxEngine> {
     ENGINE.get().expect("init_engine must be called before engine()").clone()
 }
 
+/// Install the WH_KEYBOARD_LL hook and a 16 ms timer for AccModel ticks.
+///
+/// **IMPORTANT:** Must be called from the thread that runs the Win32 message
+/// loop (e.g. inside Tauri's `setup` callback).  WH_KEYBOARD_LL hooks require
+/// the installing thread to pump messages — installing on a thread that doesn't
+/// call GetMessage/DispatchMessage causes Windows to silently disable the hook.
 pub fn install_hook() {
     let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
     let hhook = unsafe {
@@ -115,11 +121,11 @@ unsafe extern "system" fn keyboard_proc(
     let injected = (flags & LLKHF_INJECTED) != 0;
     let is_ours = injected && kb.dwExtraInfo == CLX_EXTRA_INFO;
 
-    // // Debug: uncomment to log ALL key events
-    // if pressed || released {
-    //     debug_log(&format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} extra=0x{:X}",
-    //         kb.vkCode, code, if pressed { "DN" } else { "UP" }, injected, is_ours, kb.dwExtraInfo));
-    // }
+    // Debug: log ALL key events
+    if pressed || released {
+        debug_log(&format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} extra=0x{:X}",
+            kb.vkCode, code, if pressed { "DN" } else { "UP" }, injected, is_ours, kb.dwExtraInfo));
+    }
 
     // Skip events injected by us
     if is_ours {
@@ -130,6 +136,7 @@ unsafe extern "system" fn keyboard_proc(
 
     let engine = ENGINE.get().expect("init_engine not called");
     let resp = engine.on_key_event(code, pressed);
+    debug_log(&format!("[hook] -> {:?} mode={}", resp, engine.state().mode()));
 
     // Publish current mode to shared memory so AHK extensions can read it.
     let mode = engine.state().mode();
@@ -142,6 +149,14 @@ unsafe extern "system" fn keyboard_proc(
     let prev = LAST_TRAY_ACTIVE.swap(active, Ordering::Relaxed);
     if prev != active {
         crate::update_tray_icon(active != 0);
+        if active != 0 {
+            crate::cursor_visibility::enable();
+        } else {
+            crate::cursor_visibility::disable();
+        }
+    } else if active != 0 {
+        // Periodic nudge while CLX mode held — defeats touch cursor suppression.
+        crate::cursor_visibility::nudge();
     }
 
     match resp {
@@ -151,7 +166,7 @@ unsafe extern "system" fn keyboard_proc(
 }
 
 #[allow(dead_code)]
-fn debug_log(msg: &str) {
+pub fn debug_log(msg: &str) {
     use std::io::Write as _;
     if let Ok(tmp) = std::env::var("TEMP") {
         let path = format!(r"{}\capslockx_hook.log", tmp);

@@ -7,6 +7,7 @@
 
 mod commands;
 mod config_store;
+mod cursor_visibility;
 mod hook;
 mod output;
 mod shm;
@@ -48,6 +49,11 @@ pub fn update_tray_icon(active: bool) {
 }
 
 fn main() {
+    // Log panics to file since we're a windows subsystem app with no console.
+    std::panic::set_hook(Box::new(|info| {
+        hook::debug_log(&format!("[PANIC] {}", info));
+    }));
+    hook::debug_log("[main] started");
     // ── CLI subcommands (delegate to external tools, no GUI) ───────────
     if let Some(cmd) = std::env::args().nth(1) {
         match cmd.as_str() {
@@ -129,7 +135,12 @@ fn main() {
     if let Some(ev) = ahk_ready_event {
         unsafe { let _ = windows::Win32::Foundation::CloseHandle(ev); }
     }
+    // Install hook on the main thread BEFORE Tauri init.
+    // Tauri's setup takes ~15s, during which the hook would be starved of
+    // message pumping.  We install here and run a brief PeekMessage pump
+    // in install_hook's SetTimer callback to keep it alive.
     hook::install_hook();
+    hook::debug_log("[main] hook installed");
     let engine = hook::engine();
 
     tauri::Builder::default()
@@ -222,6 +233,7 @@ fn main() {
         });
 
     hook::uninstall_hook();
+    cursor_visibility::disable();
 
     // Terminate AHK child process on shutdown.
     if let Some(ref mut child) = ahk_child {
