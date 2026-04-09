@@ -15,6 +15,10 @@ use windows::Win32::System::Memory::{
     CreateFileMappingW, MapViewOfFile, OpenFileMappingW, UnmapViewOfFile,
     FILE_MAP_ALL_ACCESS, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READWRITE,
 };
+use windows::Win32::System::Diagnostics::ToolHelp::{
+    CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+    TH32CS_SNAPPROCESS,
+};
 use windows::Win32::System::Threading::{
     CreateEventW, OpenEventW, OpenProcess,
     SetEvent, TerminateProcess, WaitForSingleObject,
@@ -35,68 +39,116 @@ unsafe impl Send for SharedState {}
 unsafe impl Sync for SharedState {}
 
 impl SharedState {
-    /// If a previous instance left shared memory behind, ask it to quit gracefully.
-    /// Falls back to TerminateProcess if graceful quit doesn't work within 3 seconds.
-    pub fn kill_previous() {
+    /// Kill every other `clx-rust.exe` instance on the system, plus any
+    /// orphaned AHK child whose pid is recorded in the previous shared
+    /// memory header. Strategy:
+    ///   1. Signal the named `CapsLockX_Quit` event once — every previous
+    ///      instance that's listening will call `app.exit()` cleanly.
+    ///   2. Enumerate `clx-rust.exe` processes via Toolhelp32, skipping our
+    ///      own pid. For each: wait briefly for graceful exit, then
+    ///      `TerminateProcess` as fallback.
+    /// This catches multi-instance / orphan / crashed-prior-state cases
+    /// that the old shm-pid lookup couldn't see.
+    /// Returns `true` if at least one previous instance could not be opened
+    /// for termination (typically: it's elevated and we're not). The caller
+    /// should relaunch self elevated and retry.
+    pub fn kill_previous() -> bool {
+        let mut needs_elevation = false;
+        crate::hook::debug_log(&format!(
+            "[CLX] kill_previous: scanning for old clx-rust.exe (self_pid={})",
+            std::process::id()
+        ));
         unsafe {
-            let handle = match OpenFileMappingW(FILE_MAP_READ.0, false, w!("CapsLockX_SharedState"))
+            // ── Step 0: kill any orphaned AHK child recorded in shm ────
+            if let Ok(handle) =
+                OpenFileMappingW(FILE_MAP_READ.0, false, w!("CapsLockX_SharedState"))
             {
-                Ok(h) => h,
-                Err(_) => return, // no previous SHM – nothing to kill
-            };
-
-            let view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, SHM_SIZE as usize);
-            if view.Value.is_null() {
-                let _ = CloseHandle(handle);
-                return;
-            }
-
-            let p = view.Value as *const u8;
-            let pid = ptr::read_volatile(p.add(8) as *const u32);
-            let ahk_pid = ptr::read_volatile(p.add(0x10) as *const u32);
-
-            let _ = UnmapViewOfFile(MEMORY_MAPPED_VIEW_ADDRESS {
-                Value: view.Value,
-            });
-            let _ = CloseHandle(handle);
-
-            // Kill orphaned AHK child first.
-            if ahk_pid != 0 {
-                if let Ok(ahk_proc) = OpenProcess(PROCESS_TERMINATE, false, ahk_pid) {
-                    eprintln!("[CLX] killing previous AHK child (pid={ahk_pid})");
-                    let _ = TerminateProcess(ahk_proc, 1);
-                    let _ = CloseHandle(ahk_proc);
+                let view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, SHM_SIZE as usize);
+                if !view.Value.is_null() {
+                    let ahk_pid =
+                        ptr::read_volatile((view.Value as *const u8).add(0x10) as *const u32);
+                    let _ = UnmapViewOfFile(MEMORY_MAPPED_VIEW_ADDRESS { Value: view.Value });
+                    if ahk_pid != 0 {
+                        if let Ok(ahk_proc) = OpenProcess(PROCESS_TERMINATE, false, ahk_pid) {
+                            crate::hook::debug_log(&format!("[CLX] killing previous AHK child (pid={ahk_pid})"));
+                            let _ = TerminateProcess(ahk_proc, 1);
+                            let _ = CloseHandle(ahk_proc);
+                        }
+                    }
                 }
+                let _ = CloseHandle(handle);
             }
 
-            if pid == 0 || pid == std::process::id() {
-                return;
-            }
-
-            let proc = match OpenProcess(PROCESS_TERMINATE | PROCESS_SYNCHRONIZE, false, pid) {
-                Ok(h) => h,
-                Err(_) => return,
-            };
-
-            // Try graceful: signal the quit event so the old instance calls app.exit().
+            // ── Step 1: signal graceful-quit event (wakes all listeners) ─
             if let Ok(evt) = OpenEventW(EVENT_MODIFY_STATE, false, w!("CapsLockX_Quit")) {
-                eprintln!("[CLX] requesting previous instance to quit (pid={pid})");
                 let _ = SetEvent(evt);
                 let _ = CloseHandle(evt);
-                let r = WaitForSingleObject(proc, 3000);
-                if r != WAIT_TIMEOUT {
-                    let _ = CloseHandle(proc);
-                    return;
-                }
-                eprintln!("[CLX] graceful quit timed out, force-killing");
             }
 
-            // Fallback: force kill.
-            eprintln!("[CLX] killing previous instance (pid={pid})");
-            let _ = TerminateProcess(proc, 1);
-            let _ = WaitForSingleObject(proc, 1000);
-            let _ = CloseHandle(proc);
+            // ── Step 2: enumerate every clx-rust.exe and kill it ───────
+            let self_pid = std::process::id();
+            let snap = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
+                Ok(h) if h != INVALID_HANDLE_VALUE => h,
+                _ => return needs_elevation,
+            };
+
+            let mut entry = PROCESSENTRY32W {
+                dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+                ..Default::default()
+            };
+
+            let mut victims: Vec<u32> = Vec::new();
+            if Process32FirstW(snap, &mut entry).is_ok() {
+                loop {
+                    let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(0);
+                    let name = String::from_utf16_lossy(&entry.szExeFile[..len]);
+                    if name.eq_ignore_ascii_case("clx-rust.exe")
+                        && entry.th32ProcessID != self_pid
+                    {
+                        victims.push(entry.th32ProcessID);
+                    }
+                    if Process32NextW(snap, &mut entry).is_err() {
+                        break;
+                    }
+                }
+            }
+            let _ = CloseHandle(snap);
+
+            crate::hook::debug_log(&format!(
+                "[CLX] kill_previous: found {} victim(s): {:?}",
+                victims.len(), victims
+            ));
+
+            for pid in victims {
+                let proc = match OpenProcess(
+                    PROCESS_TERMINATE | PROCESS_SYNCHRONIZE,
+                    false,
+                    pid,
+                ) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        // Likely access denied — old instance is elevated
+                        // and we're not. Flag it so main can re-launch
+                        // self elevated and retry.
+                        crate::hook::debug_log(&format!("[CLX] cannot open previous pid={pid} ({e:?}) — needs elevation"));
+                        needs_elevation = true;
+                        continue;
+                    }
+                };
+
+                // Wait briefly for the SetEvent above to take effect.
+                let r = WaitForSingleObject(proc, 1500);
+                if r == WAIT_TIMEOUT {
+                    crate::hook::debug_log(&format!("[CLX] force-killing previous pid={pid}"));
+                    let _ = TerminateProcess(proc, 1);
+                    let _ = WaitForSingleObject(proc, 1000);
+                } else {
+                    crate::hook::debug_log(&format!("[CLX] previous pid={pid} exited gracefully"));
+                }
+                let _ = CloseHandle(proc);
+            }
         }
+        needs_elevation
     }
 
     /// Create the named quit event. Returns a handle the caller can wait on.

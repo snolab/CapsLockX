@@ -78,16 +78,23 @@ fn main() {
         }
     }
 
-    // ── Elevate to admin if configured ─────────────────────────────────
+    // ── Ensure only one instance runs at a time. ───────────────────────
+    // If we hit a previous instance we can't terminate (it's elevated and
+    // we're not), re-launch self elevated and let the elevated child retry.
+    // This mirrors the AHK version's behavior of UAC-prompting on demand.
+    let needs_elevation_for_kill = shm::SharedState::kill_previous();
+
+    // ── Elevate to admin if configured, or if a stuck old instance demands it ─
     let cfg_pre = config_store::load();
-    if cfg_pre.request_admin && !is_elevated() {
-        eprintln!("[CLX] requesting elevation …");
+    if (cfg_pre.request_admin || needs_elevation_for_kill) && !is_elevated() {
+        if needs_elevation_for_kill {
+            eprintln!("[CLX] previous elevated instance detected — requesting elevation to kill it");
+        } else {
+            eprintln!("[CLX] requesting elevation …");
+        }
         relaunch_elevated();
         return;
     }
-
-    // Ensure only one instance runs at a time.
-    shm::SharedState::kill_previous();
 
     let cfg = config_store::load();
     hook::init_engine(cfg.clone().into_clx_config());
