@@ -130,6 +130,13 @@ fn main() {
                 "pgrep -f '/clx\\b|/capslockx\\b' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
             )])
             .status();
+
+        // Reap any orphan clx-prompt daemons from previous (crashed) sessions.
+        // The Tauri prompt helper is ~74 MB each — without this, repeated
+        // crashes leak ten or more orphan processes.
+        let _ = std::process::Command::new("sh")
+            .args(["-c", "pkill -9 -f 'clx-prompt --daemon' 2>/dev/null"])
+            .status();
     }
 
     // Tee stderr to /tmp/clx-debug.log (truncated on each start) so the log
