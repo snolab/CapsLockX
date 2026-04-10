@@ -1,7 +1,26 @@
 #!/bin/bash
-# CLX launcher — sets library path + auto-restarts on crash (watchdog).
+# CLX launcher — auto-rebuild + watchdog + library path setup.
 DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.."
 export DYLD_LIBRARY_PATH="${DIR}/rs/target/release:${DYLD_LIBRARY_PATH}"
+
+# ── Auto-rebuild if source changed (like otoji) ──────────────────────────
+# Compare binary mtime against newest source file. If source is newer,
+# rebuild before launching. Skips if not in a git repo or build.sh missing.
+if [ -f "${DIR}/build.sh" ] && [ -d "${DIR}/rs/core/src" ] && [ -z "$CLX_REBUILDING" ]; then
+    BIN="${DIR}/clx"
+    if [ -f "$BIN" ]; then
+        # Find newest .rs file in src dirs (excluding target/)
+        NEWEST_SRC=$(find "${DIR}/rs/core/src" "${DIR}/rs/adapters" -name '*.rs' -newer "$BIN" 2>/dev/null | head -1)
+        if [ -n "$NEWEST_SRC" ]; then
+            echo "clx: source changed, rebuilding…" >&2
+            if CLX_REBUILDING=1 "${DIR}/build.sh" >/dev/null 2>&1; then
+                echo "clx: rebuild ok" >&2
+            else
+                echo "clx: rebuild failed, using existing binary" >&2
+            fi
+        fi
+    fi
+fi
 
 # If args are passed (agent, dino, --help, -f, etc.), run directly — no watchdog.
 if [ $# -gt 0 ] && [ "$1" != "--watchdog" ]; then
