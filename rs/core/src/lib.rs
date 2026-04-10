@@ -1,4 +1,6 @@
 pub mod acc_model;
+#[cfg(test)]
+mod acc_model_test;
 pub mod audio_capture;
 pub mod engine;
 pub mod key_code;

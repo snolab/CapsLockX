@@ -184,6 +184,9 @@ unsafe extern "C" fn handle_script_message(
                 }
             }
         }
+        "close" => {
+            close_preferences();
+        }
         _ => {
             eprintln!("[CLX] prefs: unknown command: {}", cmd);
         }
@@ -382,13 +385,41 @@ pub unsafe fn get_action_target() -> *mut c_void {
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /// Create and show the preferences window, or bring it to front if already open.
+/// Check if prefs window is currently visible.
+fn is_prefs_visible() -> bool {
+    unsafe {
+        let existing = PREFS_WINDOW.load(Ordering::Acquire);
+        if existing.is_null() { return false; }
+        let f: extern "C" fn(*mut c_void, *mut c_void) -> bool =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(existing, sel(b"isVisible\0"))
+    }
+}
+
+/// Close the prefs window (hide it).
+pub fn close_preferences() {
+    unsafe {
+        let existing = PREFS_WINDOW.load(Ordering::Acquire);
+        if !existing.is_null() {
+            eprintln!("[CLX] prefs: closing window");
+            msg1(existing, sel(b"orderOut:\0"), ptr::null_mut());
+        }
+    }
+}
+
 pub fn open_preferences() {
     eprintln!("[CLX] prefs: open_preferences called");
 
     unsafe {
-        // If window already exists, just bring it to front.
+        // If window already exists, toggle visibility.
         let existing = PREFS_WINDOW.load(Ordering::Acquire);
         if !existing.is_null() {
+            if is_prefs_visible() {
+                eprintln!("[CLX] prefs: toggling off (closing)");
+                close_preferences();
+                return;
+            }
+
             eprintln!("[CLX] prefs: reusing existing window");
             msg1(existing, sel(b"makeKeyAndOrderFront:\0"), ptr::null_mut());
 
