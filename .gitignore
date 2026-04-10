@@ -60,3 +60,5 @@ bun.lockb
 test-results/
 .playwright-mcp/
 tmp/
+rs/target-bootstrap/
+rs/target-v3/
