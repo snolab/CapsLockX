@@ -38,10 +38,17 @@ fn sign(x: f64) -> f64 {
 }
 
 /// Acceleration function – matches the AHK polynomial + exponential formula.
+/// Raw output is divided by K_RAW so that `speed_ratio` = units/second.
+///
+/// The double integral ∫₀¹∫₀ᵗ ma_raw(s) ds dt ≈ 3.935, meaning holding a key
+/// for 1 second with speed_ratio=1 produces ~1 unit of displacement.
+/// See acc_model_test.rs for FPS-independence verification.
+const K_RAW: f64 = 3.935;
+
 fn ma(dt: f64) -> f64 {
     let s = sign(dt);
     let a = dt.abs();
-    s * ((a.exp() - 1.0) + 3.0 + 4.0 * a + 9.0 * a * a + 16.0 * a * a * a)
+    s * ((a.exp() - 1.0) + 3.0 + 4.0 * a + 9.0 * a * a + 16.0 * a * a * a) / K_RAW
 }
 
 /// Velocity damping applied when no / opposing input is present.
@@ -291,6 +298,14 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
+    use std::sync::atomic::AtomicU64;
+
+    // FPS logger: every 2 seconds, log actual tick rate to stderr.
+    // Helps diagnose lag — if actual FPS << target, the thread is being
+    // starved by scheduling or memory pressure.
+    static TICK_COUNT: AtomicU64 = AtomicU64::new(0);
+    static LAST_FPS_LOG: AtomicU64 = AtomicU64::new(0);
+
     let (lock, cvar) = inner.as_ref();
     loop {
         // Wait until activated
@@ -298,9 +313,44 @@ fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
             let mut st = lock.lock().unwrap();
             while !st.active { st = cvar.wait(st).unwrap(); }
         }
-        // Tick loop (sleep first, then step)
+        // Reset FPS counter on activation
+        TICK_COUNT.store(0, Ordering::Relaxed);
+        LAST_FPS_LOG.store(0, Ordering::Relaxed);
+
+        // Tick loop — target 6ms (~166 FPS), comfortably above 144Hz screens.
+        // The old 16ms sleep gave ~62 FPS, visibly choppy on high-refresh displays.
+        // Uses sleep + spin for sub-ms precision without burning a full core.
+        let mut next_tick = Instant::now();
         loop {
-            thread::sleep(Duration::from_millis(16));
+            next_tick += Duration::from_millis(6);
+            let now = Instant::now();
+            if next_tick > now {
+                let remaining = next_tick - now;
+                if remaining > Duration::from_millis(2) {
+                    thread::sleep(remaining - Duration::from_millis(1));
+                }
+                while Instant::now() < next_tick {
+                    std::hint::spin_loop();
+                }
+            }
+
+            // FPS logging (every 2s while active)
+            let n = TICK_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+            let now_secs = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs()).unwrap_or(0);
+            let last = LAST_FPS_LOG.load(Ordering::Relaxed);
+            if last == 0 {
+                LAST_FPS_LOG.store(now_secs, Ordering::Relaxed);
+                TICK_COUNT.store(0, Ordering::Relaxed);
+            } else if now_secs.saturating_sub(last) >= 2 {
+                let elapsed = now_secs - last;
+                let fps = n / elapsed;
+                eprintln!("[CLX] acc-ticker: {} FPS (target 166)", fps);
+                LAST_FPS_LOG.store(now_secs, Ordering::Relaxed);
+                TICK_COUNT.store(0, Ordering::Relaxed);
+            }
+
             if !tick_step(&inner, &*action) { break; }
         }
     }

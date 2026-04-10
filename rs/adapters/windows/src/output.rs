@@ -153,10 +153,15 @@ impl Platform for WinPlatform {
         send(&[mouse_inp(dx, dy, 0, MOUSEEVENTF_MOVE.0)]);
     }
     fn scroll_v(&self, delta: i32) {
-        send(&[mouse_inp(0, 0, delta.clamp(-16384, 16384), MOUSEEVENTF_WHEEL.0)]);
+        // Core sends delta in pixels. Windows MOUSEEVENTF_WHEEL uses
+        // WHEEL_DELTA (120) units where 120 = one notch ≈ 3 lines ≈ ~48px.
+        // Scale: 1px → 120/48 = 2.5 wheel units.
+        let wheel = (delta as f64 * 2.5) as i32;
+        send(&[mouse_inp(0, 0, wheel.clamp(-16384, 16384), MOUSEEVENTF_WHEEL.0)]);
     }
     fn scroll_h(&self, delta: i32) {
-        send(&[mouse_inp(0, 0, delta.clamp(-16384, 16384), MOUSEEVENTF_HWHEEL.0)]);
+        let wheel = (delta as f64 * 2.5) as i32;
+        send(&[mouse_inp(0, 0, wheel.clamp(-16384, 16384), MOUSEEVENTF_HWHEEL.0)]);
     }
     fn mouse_button(&self, button: MouseButton, pressed: bool) {
         let flag = match (button, pressed) {

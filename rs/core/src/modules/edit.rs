@@ -23,26 +23,26 @@ impl EditModule {
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let page = AccModel2D::new(
             Arc::new(move |dx, dy, phase| page_action(&*p, &s, dx, dy, phase)),
-            speed.cursor_speed, speed.cursor_speed, 250.0,
+            speed.page_speed, speed.page_speed, 250.0,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let tab = AccModel2D::new(
             Arc::new(move |dx, dy, phase| tab_action(&*p, &s, dx, dy, phase)),
-            speed.cursor_speed, speed.cursor_speed, 250.0,
+            speed.tab_speed, speed.tab_speed, 250.0,
         );
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let action = AccModel2D::new(
             Arc::new(move |_dx, dy, phase| action_action(&*p, &s, dy, phase)),
-            speed.cursor_speed, speed.cursor_speed, 250.0,
+            speed.action_speed, speed.action_speed, 250.0,
         );
         Self { cursor, page, tab, action }
     }
 
     pub fn apply_speeds(&self, s: &SpeedConfig) {
         self.cursor.set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
-        self.page  .set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
-        self.tab   .set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
-        self.action.set_ratios(s.cursor_speed, s.cursor_speed, 250.0);
+        self.page  .set_ratios(s.page_speed,   s.page_speed,   250.0);
+        self.tab   .set_ratios(s.tab_speed,    s.tab_speed,    250.0);
+        self.action.set_ratios(s.action_speed, s.action_speed, 250.0);
     }
 
     pub fn stop(&self) {

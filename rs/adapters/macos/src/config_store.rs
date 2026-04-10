@@ -10,6 +10,12 @@ pub struct FullConfig {
     pub use_scroll_lock: bool,
     pub use_ralt:        bool,
     pub cursor_speed:    f64,
+    #[serde(default = "default_edit_speed")]
+    pub page_speed:      f64,
+    #[serde(default = "default_edit_speed")]
+    pub tab_speed:       f64,
+    #[serde(default = "default_edit_speed")]
+    pub action_speed:    f64,
     pub mouse_speed:     f64,
     pub scroll_speed:    f64,
     /// STT engine: "sherpa" (SenseVoice) or "whisper"
@@ -57,6 +63,7 @@ pub struct FullConfig {
 fn default_stt_engine() -> String { "sherpa".to_string() }
 fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
 fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
+fn default_edit_speed() -> f64 { 30.0 }
 fn default_aec_gain() -> f32 { 15.0 }
 fn default_noise_gate() -> f32 { 0.003 }
 fn default_speech_start_prob() -> f32 { 0.8 }
@@ -72,9 +79,12 @@ impl Default for FullConfig {
             use_insert:      false,
             use_scroll_lock: false,
             use_ralt:        false,
-            cursor_speed:    15.0,
-            mouse_speed:     360.0,
-            scroll_speed:    720.0,
+            cursor_speed:    60.0,
+            page_speed:      30.0,
+            tab_speed:       30.0,
+            action_speed:    30.0,
+            mouse_speed:     1600.0,
+            scroll_speed:    1600.0,
             stt_engine:      "sherpa".to_string(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
@@ -105,6 +115,9 @@ impl FullConfig {
             use_scroll_lock: cfg.use_scroll_lock,
             use_ralt:        cfg.use_ralt,
             cursor_speed:      cfg.speed.cursor_speed,
+            page_speed:        cfg.speed.page_speed,
+            tab_speed:         cfg.speed.tab_speed,
+            action_speed:      cfg.speed.action_speed,
             mouse_speed:       cfg.speed.mouse_speed,
             scroll_speed:      cfg.speed.scroll_speed,
             stt_engine:        cfg.stt_engine.clone(),
@@ -136,6 +149,9 @@ impl FullConfig {
             use_ralt:           self.use_ralt,
             speed: SpeedConfig {
                 cursor_speed: self.cursor_speed,
+                page_speed:   self.page_speed,
+                tab_speed:    self.tab_speed,
+                action_speed: self.action_speed,
                 mouse_speed:  self.mouse_speed,
                 scroll_speed: self.scroll_speed,
             },

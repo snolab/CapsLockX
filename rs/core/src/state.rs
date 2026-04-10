@@ -12,14 +12,24 @@ pub const CM_CLX:    u32 = 2;  // CapsLock locked mode
 
 #[derive(Debug, Clone)]
 pub struct SpeedConfig {
-    pub cursor_speed: f64,  // default 15.0
-    pub mouse_speed:  f64,  // default 240.0
-    pub scroll_speed: f64,  // default 480.0
+    pub cursor_speed: f64,  // HJKL arrow keys — units/second, default 60
+    pub page_speed:   f64,  // YUIO page nav   — units/second, default 30
+    pub tab_speed:    f64,  // NP tab switch    — units/second, default 30
+    pub action_speed: f64,  // TG enter/delete  — units/second, default 30
+    pub mouse_speed:  f64,  // WASD mouse       — px/first-second, default 1600
+    pub scroll_speed: f64,  // RF scroll        — px/first-second, default 1600
 }
 
 impl Default for SpeedConfig {
     fn default() -> Self {
-        Self { cursor_speed: 15.0, mouse_speed: 360.0, scroll_speed: 720.0 }
+        Self {
+            cursor_speed: 60.0,
+            page_speed:   30.0,
+            tab_speed:    30.0,
+            action_speed: 30.0,
+            mouse_speed:  1600.0,
+            scroll_speed: 1600.0,
+        }
     }
 }
 

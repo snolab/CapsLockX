@@ -105,6 +105,34 @@
       font-size: 13px;
     }
 
+    /* API key rows */
+    .key-row {
+      display: grid;
+      grid-template-columns: 90px 1fr auto auto;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 0;
+    }
+    .key-row label { color: var(--text); }
+    .key-row input {
+      background: var(--surface0); color: var(--text);
+      border: none; border-radius: 4px;
+      padding: 4px 8px; font-size: 13px; width: 100%;
+    }
+    .key-row input:not([disabled]) {
+      outline: 1px solid var(--blue);
+    }
+    .key-row input[disabled] {
+      opacity: 0.6;
+    }
+    .key-row button {
+      background: var(--surface1); color: var(--subtext0);
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 12px; cursor: pointer;
+      white-space: nowrap;
+    }
+    .key-row button:hover { background: var(--surface2); color: var(--text); }
+
     /* Sortable chain list */
     .chain-list { list-style: none; padding: 0; margin: 4px 0; }
     .chain-item {
@@ -166,19 +194,34 @@
   <section>
     <h2>Speeds</h2>
     <div class="sl-row">
-      <label for="cursor_speed">Cursor Speed</label>
-      <input type="range" id="cursor_speed" min="1" max="50" step="0.5">
-      <span id="cursor_speed_val">15</span>
+      <label for="cursor_speed">Arrow Keys (HJKL) — keys/1st sec</label>
+      <input type="range" id="cursor_speed" min="5" max="200" step="5">
+      <span id="cursor_speed_val">60</span>
     </div>
     <div class="sl-row">
-      <label for="mouse_speed">Mouse Speed</label>
-      <input type="range" id="mouse_speed" min="50" max="800" step="10">
-      <span id="mouse_speed_val">360</span>
+      <label for="page_speed">Page Nav (YUIO) — keys/1st sec</label>
+      <input type="range" id="page_speed" min="5" max="200" step="5">
+      <span id="page_speed_val">30</span>
     </div>
     <div class="sl-row">
-      <label for="scroll_speed">Scroll Speed</label>
-      <input type="range" id="scroll_speed" min="100" max="1500" step="20">
-      <span id="scroll_speed_val">720</span>
+      <label for="tab_speed">Tab (NP) — keys/1st sec</label>
+      <input type="range" id="tab_speed" min="5" max="200" step="5">
+      <span id="tab_speed_val">30</span>
+    </div>
+    <div class="sl-row">
+      <label for="action_speed">Action (TG) — keys/1st sec</label>
+      <input type="range" id="action_speed" min="5" max="200" step="5">
+      <span id="action_speed_val">30</span>
+    </div>
+    <div class="sl-row">
+      <label for="mouse_speed">Mouse (WASD) — px/1st sec</label>
+      <input type="range" id="mouse_speed" min="100" max="10000" step="100">
+      <span id="mouse_speed_val">3000</span>
+    </div>
+    <div class="sl-row">
+      <label for="scroll_speed">Scroll (RF) — px/1st sec</label>
+      <input type="range" id="scroll_speed" min="100" max="10000" step="100">
+      <span id="scroll_speed_val">3000</span>
     </div>
   </section>
 
@@ -247,25 +290,29 @@
 
   <section>
     <h2>API Keys</h2>
-    <div class="sl-row">
+    <div class="key-row">
       <label for="gemini_api_key">Gemini</label>
-      <input type="password" id="gemini_api_key" placeholder="AIza..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
-      <span></span>
+      <input type="password" id="gemini_api_key" placeholder="AIza..." disabled>
+      <button class="key-edit" data-for="gemini_api_key">Edit</button>
+      <button class="key-copy" data-for="gemini_api_key">Copy</button>
     </div>
-    <div class="sl-row">
+    <div class="key-row">
       <label for="openai_api_key">OpenAI</label>
-      <input type="password" id="openai_api_key" placeholder="sk-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
-      <span></span>
+      <input type="password" id="openai_api_key" placeholder="sk-..." disabled>
+      <button class="key-edit" data-for="openai_api_key">Edit</button>
+      <button class="key-copy" data-for="openai_api_key">Copy</button>
     </div>
-    <div class="sl-row">
+    <div class="key-row">
       <label for="anthropic_api_key">Anthropic</label>
-      <input type="password" id="anthropic_api_key" placeholder="sk-ant-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
-      <span></span>
+      <input type="password" id="anthropic_api_key" placeholder="sk-ant-..." disabled>
+      <button class="key-edit" data-for="anthropic_api_key">Edit</button>
+      <button class="key-copy" data-for="anthropic_api_key">Copy</button>
     </div>
-    <div class="sl-row">
+    <div class="key-row">
       <label for="elevenlabs_api_key">ElevenLabs</label>
-      <input type="password" id="elevenlabs_api_key" placeholder="xi-..." style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;width:100%;">
-      <span></span>
+      <input type="password" id="elevenlabs_api_key" placeholder="xi-..." disabled>
+      <button class="key-edit" data-for="elevenlabs_api_key">Edit</button>
+      <button class="key-copy" data-for="elevenlabs_api_key">Copy</button>
     </div>
     <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
       Set keys for each provider. Used for brainstorm, TTS, and STT correction.
@@ -366,6 +413,9 @@
         use_scroll_lock: document.getElementById('use_scroll_lock').checked,
         use_ralt:        document.getElementById('use_ralt').checked,
         cursor_speed:    parseFloat(document.getElementById('cursor_speed').value),
+        page_speed:      parseFloat(document.getElementById('page_speed').value),
+        tab_speed:       parseFloat(document.getElementById('tab_speed').value),
+        action_speed:    parseFloat(document.getElementById('action_speed').value),
         mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
         stt_engine:      document.getElementById('stt_engine').value,
@@ -393,6 +443,9 @@
       document.getElementById('use_scroll_lock').checked = cfg.use_scroll_lock;
       document.getElementById('use_ralt').checked        = cfg.use_ralt;
       setSlider('cursor_speed', cfg.cursor_speed);
+      setSlider('page_speed',   cfg.page_speed   || 15);
+      setSlider('tab_speed',    cfg.tab_speed    || 15);
+      setSlider('action_speed', cfg.action_speed || 15);
       setSlider('mouse_speed',  cfg.mouse_speed);
       setSlider('scroll_speed', cfg.scroll_speed);
       if (cfg.stt_engine) document.getElementById('stt_engine').value = cfg.stt_engine;
@@ -418,11 +471,42 @@
     }
 
     // Live label update while dragging
-    ['cursor_speed', 'mouse_speed', 'scroll_speed',
+    ['cursor_speed', 'page_speed', 'tab_speed', 'action_speed', 'mouse_speed', 'scroll_speed',
      'aec_gain', 'noise_gate', 'speech_start_prob', 'speech_end_prob',
      'speech_start_frames', 'silence_end_frames'].forEach(function(id) {
       document.getElementById(id).addEventListener('input', function(e) {
         document.getElementById(id + '_val').textContent = e.target.value;
+      });
+    });
+
+    // API key Edit/Copy buttons
+    document.querySelectorAll('.key-edit').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var input = document.getElementById(btn.dataset.for);
+        if (input.disabled) {
+          input.disabled = false;
+          input.type = 'text';
+          input.focus();
+          input.select();
+          btn.textContent = 'Lock';
+        } else {
+          input.disabled = true;
+          input.type = 'password';
+          btn.textContent = 'Edit';
+          scheduleSave();
+        }
+      });
+    });
+    document.querySelectorAll('.key-copy').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var input = document.getElementById(btn.dataset.for);
+        if (input.value) {
+          navigator.clipboard.writeText(input.value).then(function() {
+            var orig = btn.textContent;
+            btn.textContent = 'OK';
+            setTimeout(function() { btn.textContent = orig; }, 1000);
+          });
+        }
       });
     });
 
@@ -456,6 +540,32 @@
       status.className = 'saved';
       setTimeout(function() { status.textContent = ''; status.className = ''; }, 2000);
     };
+
+    // Cmd+W closes the prefs window (WKWebView doesn't get NSMenu shortcuts).
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
+        e.preventDefault();
+        webkit.messageHandlers.clx.postMessage(JSON.stringify({cmd: 'close'}));
+      }
+    });
+
+    // Tab navigation — WKWebView doesn't support Tab focus by default.
+    // Manually cycle through focusable elements on Tab/Shift+Tab.
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Tab') return;
+      var focusable = Array.from(document.querySelectorAll(
+        'input:not([disabled]):not([type=hidden]), select, button, [tabindex]:not([tabindex="-1"])'
+      ));
+      if (focusable.length === 0) return;
+      e.preventDefault();
+      var idx = focusable.indexOf(document.activeElement);
+      if (e.shiftKey) {
+        idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+      } else {
+        idx = idx >= focusable.length - 1 ? 0 : idx + 1;
+      }
+      focusable[idx].focus();
+    });
 
     // Initial load
     webkit.messageHandlers.clx.postMessage(JSON.stringify({cmd: 'get_config'}));
