@@ -91,6 +91,12 @@ impl Modules {
             return true;
         }
 
+        // Space+Slash → toggle keyboard layout HUD.
+        if key == KeyCode::Slash {
+            self.platform.toggle_keyboard_layout_hud();
+            return true;
+        }
+
         // Core modules (keyboard/mouse) — must NEVER crash. Run directly.
         if self.edit.on_key_down(key, &*self.platform) { return true; }
         if self.mouse.on_key_down(key) { return true; }
@@ -120,6 +126,7 @@ impl Modules {
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         key == KeyCode::Comma  // Space+Comma = preferences
+            || key == KeyCode::Slash  // Space+Slash = keyboard layout HUD
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)

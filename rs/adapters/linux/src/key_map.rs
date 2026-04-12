@@ -62,6 +62,8 @@ pub fn evdev_key_to_keycode(key: Key) -> KeyCode {
         27  => KeyCode::BracketRight,
         43  => KeyCode::Backslash,
         52  => KeyCode::Period,
+        51  => KeyCode::Comma,
+        53  => KeyCode::Slash,
 
         // ── Function keys ─────────────────────────────────────────────────────
         59 => KeyCode::F1,  60 => KeyCode::F2,  61 => KeyCode::F3,
@@ -140,6 +142,8 @@ pub fn keycode_to_evdev_key(key: KeyCode) -> Option<Key> {
         KeyCode::BracketRight => 27,
         KeyCode::Backslash    => 43,
         KeyCode::Period       => 52,
+        KeyCode::Comma        => 51,
+        KeyCode::Slash        => 53,
 
         // ── Function keys ─────────────────────────────────────────────────────
         KeyCode::F1  => 59,  KeyCode::F2  => 60,  KeyCode::F3  => 61,

@@ -157,5 +157,9 @@ impl Platform for WebPlatform {
         self.key_tap_cmd_or_ctrl(KeyCode::W);
     }
 
+    fn toggle_keyboard_layout_hud(&self) {
+        dispatch_custom_event("clx:toggle_keyboard_layout_hud", JsValue::NULL);
+    }
+
     // All window management methods use the inherited no-op defaults.
 }

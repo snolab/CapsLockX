@@ -27,6 +27,8 @@ mod voice_capture;
 #[cfg(target_os = "macos")]
 mod brainstorm_overlay;
 #[cfg(target_os = "macos")]
+mod keyboard_layout_overlay;
+#[cfg(target_os = "macos")]
 mod agent_cmd;
 #[cfg(target_os = "macos")]
 mod mic_mode;

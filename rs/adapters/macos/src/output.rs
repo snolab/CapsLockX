@@ -1497,6 +1497,10 @@ impl Platform for MacPlatform {
         }
     }
 
+    fn toggle_keyboard_layout_hud(&self) {
+        crate::keyboard_layout_overlay::toggle_overlay();
+    }
+
     fn show_brainstorm_overlay(&self, text: &str) {
         crate::brainstorm_overlay::show_overlay(text);
     }

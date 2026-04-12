@@ -36,6 +36,7 @@ pub enum KeyCode {
     Backslash,     // \ (OEM_5)
     Period,        // . (OEM_PERIOD)
     Comma,         // , (OEM_COMMA)
+    Slash,         // / (OEM_2)
 
     // ── Function ──────────────────────────────────────────────────────────────
     F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
