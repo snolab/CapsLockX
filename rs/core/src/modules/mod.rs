@@ -5,6 +5,10 @@ pub mod media;
 pub mod mouse;
 pub mod virtual_desktop;
 pub mod voice;
+pub mod voice_otoji;
+pub mod voice_ptt;
+#[cfg(test)]
+mod voice_ptt_test;
 pub mod window_manager;
 
 use std::sync::Arc;

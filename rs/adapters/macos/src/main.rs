@@ -209,6 +209,9 @@ fn main() {
     tray::setup_tray();
     voice_overlay::init_overlay();
 
+    // Check & request microphone permission (triggers system dialog if needed).
+    mic_mode::check_and_request_mic_permission();
+
     // Prompt user to enable Voice Isolation if not active.
     mic_mode::ensure_voice_isolation();
 
