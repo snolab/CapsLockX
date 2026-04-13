@@ -211,6 +211,14 @@ pub struct VoiceModule {
     final_polish_requested: Arc<AtomicBool>,
     /// Live config — behind Mutex so prefs changes take effect without restart.
     live_config: Arc<std::sync::Mutex<VoiceLiveConfig>>,
+    /// Otoji subprocess backend — used instead of in-process SenseVoice when available.
+    otoji: Arc<super::voice_otoji::OtojiBackend>,
+    /// Text typed by otoji backend (for backspace replacement on final).
+    otoji_typed: Arc<Mutex<String>>,
+    /// Cached result of OtojiBackend::is_available() — checked once at startup.
+    otoji_available: bool,
+    /// Push-to-talk: hold V to record, release to transcribe + type.
+    ptt: Arc<super::voice_ptt::PttSession>,
 }
 
 /// Config that can be hot-reloaded from preferences.
@@ -237,6 +245,9 @@ impl VoiceModule {
     }
 
     pub fn with_stt_engine(platform: Arc<dyn Platform>, stt_engine: String) -> Self {
+        let otoji_backend = Arc::new(super::voice_otoji::OtojiBackend::new());
+        let ptt = super::voice_ptt::PttSession::new(Arc::clone(&platform), Arc::clone(&otoji_backend));
+        // Note: otoji_backend is shared between ptt and self.otoji below.
         Self {
             press_time: Mutex::new(None),
             v_held: Arc::new(AtomicBool::new(false)),
@@ -250,6 +261,10 @@ impl VoiceModule {
             with_system_audio: Arc::new(AtomicBool::new(false)),
             flush_pending: Arc::new(AtomicBool::new(false)),
             final_polish_requested: Arc::new(AtomicBool::new(false)),
+            otoji: otoji_backend,
+            otoji_typed: Arc::new(Mutex::new(String::new())),
+            otoji_available: super::voice_otoji::OtojiBackend::is_available(),
+            ptt,
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
                 llm_api_key: String::new(),
@@ -301,34 +316,21 @@ impl VoiceModule {
             cfg.stt_engine, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate);
     }
 
-    /// Check if voice-standalone is running via PID file (fast) or pgrep (fallback).
+    /// Check if voice-standalone is running via PID file.
+    /// Uses kill(pid, 0) syscall instead of spawning a subprocess — safe for
+    /// the CGEventTap callback which must return in <500ms.
     fn voice_standalone_pid() -> Option<u32> {
-        // Fast path: check PID file.
-        if let Ok(pid_str) = std::fs::read_to_string("/tmp/clx-voice-standalone.pid") {
-            if let Ok(pid) = pid_str.trim().parse::<u32>() {
-                // Verify process is alive.
-                let alive = std::process::Command::new("kill")
-                    .arg("-0").arg(pid.to_string())
-                    .output()
-                    .map(|o| o.status.success())
-                    .unwrap_or(false);
-                if alive { return Some(pid); }
-            }
-        }
-        // Fallback: pgrep.
-        let output = std::process::Command::new("pgrep")
-            .arg("-x").arg("voice-standalone")
-            .output().ok()?;
-        let s = String::from_utf8_lossy(&output.stdout);
-        s.lines().next()?.trim().parse().ok()
+        let pid_str = std::fs::read_to_string("/tmp/clx-voice-standalone.pid").ok()?;
+        let pid = pid_str.trim().parse::<u32>().ok()?;
+        extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
+        let alive = unsafe { kill(pid as i32, 0) } == 0;
+        if alive { Some(pid) } else { None }
     }
 
-    /// Send a Unix signal to a process (best-effort).
+    /// Send a Unix signal to a process (best-effort, no subprocess spawn).
     fn send_signal(pid: u32, sig: i32) {
-        let _ = std::process::Command::new("kill")
-            .arg(format!("-{}", sig))
-            .arg(pid.to_string())
-            .output();
+        extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
+        unsafe { kill(pid as i32, sig); }
     }
 
     pub fn on_key_down(&self, key: KeyCode) -> bool {
@@ -350,29 +352,24 @@ impl VoiceModule {
         eprintln!("[CLX] voice: V key pressed, activating...");
 
         *self.press_time.lock().unwrap() = Some(Instant::now());
+        self.v_held.store(true, Ordering::Relaxed);
+
+        // Push-to-talk: start/extend the PTT segment in parallel to the
+        // always-on pipeline. On release, PTT transcribes the held segment
+        // with SenseVoice and types it at the cursor.
+        // If PTT was in locked mode, this press exits it — skip normal flow.
+        if self.ptt.on_press() {
+            return true;
+        }
 
         // Always enable dual capture (mic+system) for both tracks.
         // Shift+V is no longer needed — system audio is always captured.
         self.with_system_audio.store(true, Ordering::Relaxed);
 
-        // Audio pipeline starts immediately so we capture from the beginning.
+        // Keep the always-on pipeline running (overlay + note mode). It does
+        // NOT type into the cursor — `input_active` is left false so otoji /
+        // in-process STT only update the overlay. PTT owns typing.
         self.ensure_pipeline_running();
-
-        // After 300ms, if V is still held, activate input mode (typing at cursor).
-        // If released before 300ms, it's a click → note mode (no typing).
-        self.v_held.store(true, Ordering::Relaxed);
-        let input_flag = Arc::clone(&self.input_active);
-        let flush_flag = Arc::clone(&self.flush_pending);
-        let v_held = Arc::clone(&self.v_held);
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(HOLD_THRESHOLD_MS as u64));
-            if v_held.load(Ordering::Relaxed) {
-                // Flush old pending audio so input starts fresh from this moment.
-                flush_flag.store(true, Ordering::Relaxed);
-                input_flag.store(true, Ordering::Relaxed);
-                eprintln!("[CLX] voice: held >300ms → input mode activated (buffer flushed)");
-            }
-        });
         true
     }
 
@@ -392,36 +389,32 @@ impl VoiceModule {
 
         self.v_held.store(false, Ordering::Relaxed);
 
-        let held_long = self
-            .press_time
-            .lock()
-            .unwrap()
-            .map(|t| t.elapsed().as_millis() >= HOLD_THRESHOLD_MS)
-            .unwrap_or(false);
+        use super::voice_ptt::PttRelease;
+        let ptt_result = self.ptt.on_release();
 
-        if held_long {
-            // Hold release (>300ms): this was voice INPUT mode.
-            // Keep input_active=true so the STT worker can still type the final polish.
-            // The audio loop will clear input_active after FinalPolish completes.
-            self.final_polish_requested.store(true, Ordering::Relaxed);
-            eprintln!("[CLX] voice: hold release → final polish requested");
-
-            // If note mode isn't active, stop the pipeline (triggers FinalPolish + Quit).
-            if !self.note_active.load(Ordering::Relaxed) {
-                self.stop_pipeline();
+        match ptt_result {
+            PttRelease::Hold => {
+                // Hold release: otoji will send ptt_final asynchronously.
+                // Do NOT stop the pipeline — otoji needs to stay alive to
+                // deliver the event, and to be ready for the next PTT press.
+                eprintln!("[CLX] voice: hold release → waiting for otoji ptt_final");
+                self.platform.hide_voice_overlay();
             }
-        } else {
-            // Click (<300ms): toggle voice NOTE mode.
-            if self.note_active.load(Ordering::Relaxed) {
-                // Note was running → stop it.
-                self.note_active.store(false, Ordering::Relaxed);
-                eprintln!("[CLX] voice: click → note stopped");
-                self.stop_pipeline();
-            } else {
-                // Note wasn't running → start it.
-                self.note_active.store(true, Ordering::Relaxed);
-                eprintln!("[CLX] voice: click → note started (recording to file)");
-                // Pipeline already started on key_down.
+            PttRelease::Locked => {
+                // Double-tap: entered locked PTT mode, or already locked.
+                // Keep pipeline running for mic feed. Don't toggle note.
+                eprintln!("[CLX] voice: double-tap → PTT locked mode");
+            }
+            PttRelease::Tap => {
+                // Single tap: toggle voice NOTE mode.
+                if self.note_active.load(Ordering::Relaxed) {
+                    self.note_active.store(false, Ordering::Relaxed);
+                    eprintln!("[CLX] voice: click → note stopped");
+                    self.stop_pipeline();
+                } else {
+                    self.note_active.store(true, Ordering::Relaxed);
+                    eprintln!("[CLX] voice: click → note started (recording to file)");
+                }
             }
         }
 
@@ -464,6 +457,12 @@ impl VoiceModule {
 
     /// Spawn the background thread eagerly so the Whisper model loads at startup.
     pub fn preload(&self) {
+        // Skip in-process STT preload when otoji is available — it provides
+        // SenseVoice as an external subprocess, saving ~1 GB in this process.
+        if super::voice_otoji::OtojiBackend::is_available() {
+            eprintln!("[CLX] voice: otoji available, skipping in-process STT preload");
+            return;
+        }
         let mut bg = self.bg_thread.lock().unwrap();
         if bg.is_none() {
             self.spawn_bg_thread(&mut bg);
@@ -495,13 +494,38 @@ impl VoiceModule {
     }
 
     /// Ensure the audio pipeline bg thread is running and capturing.
+    ///
+    /// IMPORTANT: This runs inside the CGEventTap callback — must NOT block
+    /// for >200ms or macOS disables the event tap and CLX dies. All subprocess
+    /// spawns (otoji, pgrep) happen on a background thread.
     fn ensure_pipeline_running(&self) {
-        // If voice-standalone is running, don't start our own pipeline.
-        if Self::voice_standalone_pid().is_some() {
-            eprintln!("[CLX] voice: voice-standalone running, skipping internal pipeline");
-            self.stop_pipeline();
+        // Prefer otoji as external STT backend (cached check — no subprocess).
+        if self.otoji_available {
+            if !self.otoji.is_running() {
+                eprintln!("[CLX] voice: launching otoji backend (bg thread)");
+                self.platform.show_voice_overlay();
+                self.platform.update_voice_subtitle("otoji starting...");
+                *self.otoji_typed.lock().unwrap() = String::new();
+                // Spawn otoji on a background thread — Command::spawn() can
+                // take 100ms+ and would timeout the CGEventTap callback.
+                let otoji = Arc::clone(&self.otoji);
+                let platform = Arc::clone(&self.platform);
+                let input_active = Arc::clone(&self.input_active);
+                let otoji_typed = Arc::clone(&self.otoji_typed);
+                let ptt = Arc::clone(&self.ptt);
+                std::thread::Builder::new()
+                    .name("otoji-launch".into())
+                    .spawn(move || {
+                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt)) {
+                            eprintln!("[CLX] voice: otoji failed to start");
+                            platform.update_voice_subtitle("otoji failed");
+                        }
+                    })
+                    .ok();
+            }
             return;
         }
+
         self.ensure_pipeline_running_force();
     }
 
@@ -524,6 +548,11 @@ impl VoiceModule {
     }
 
     fn stop_pipeline(&self) {
+        // Stop otoji backend if running.
+        if self.otoji.is_running() {
+            self.otoji.stop();
+            self.platform.hide_voice_overlay();
+        }
         if !self.bg_stop.load(Ordering::Relaxed) {
             eprintln!("[CLX] voice: stopping pipeline");
             self.bg_stop.store(true, Ordering::Relaxed);
