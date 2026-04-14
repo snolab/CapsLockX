@@ -24,6 +24,12 @@ use crate::platform::Platform;
 /// Delay before showing any placeholder — quick taps (<150ms) stay invisible.
 const PLACEHOLDER_DELAY_MS: u64 = 150;
 
+/// Path to the context file shared with the otoji subprocess.
+/// Written on press (AX tree snapshot), read by otoji on PTT end.
+pub fn ptt_context_file_path() -> String {
+    format!("/tmp/capslockx-otoji-ctx-{}.txt", std::process::id())
+}
+
 /// Max interval between two taps to count as double-click (ms).
 const DOUBLE_TAP_MS: u64 = 500;
 
@@ -50,6 +56,9 @@ pub struct PttSession {
     locked: AtomicBool,
     /// Timestamp of last tap release — for double-click detection.
     last_tap_time: Mutex<Option<Instant>>,
+    /// Text that was last typed by `on_ptt_final` — used by `on_ptt_upgrade`
+    /// to compute a minimal diff against the polished version.
+    last_committed: Mutex<String>,
     /// True once otoji's mic is ready (first status/partial received).
     mic_ready: Arc<AtomicBool>,
     /// Signals that a PTT session is active (between press and release/commit).
@@ -66,6 +75,7 @@ impl PttSession {
             token_counter: AtomicU64::new(0),
             locked: AtomicBool::new(false),
             last_tap_time: Mutex::new(None),
+            last_committed: Mutex::new(String::new()),
             mic_ready: Arc::new(AtomicBool::new(false)),
             ptt_active: AtomicBool::new(false),
             otoji,
@@ -101,6 +111,22 @@ impl PttSession {
         let token = self.token_counter.fetch_add(1, Ordering::Relaxed) + 1;
         *self.displayed.lock().unwrap() = String::new();
         self.ptt_active.store(true, Ordering::Relaxed);
+
+        // Fetch AX tree in background — completes during the user's speech
+        // and becomes available to otoji (via ctx file) by the time the
+        // user releases V. Zero added latency on the critical path.
+        std::thread::Builder::new()
+            .name("ptt-ax-fetch".into())
+            .spawn(|| {
+                let tree = fetch_frontmost_ax_tree();
+                let path = ptt_context_file_path();
+                let tmp = format!("{path}.tmp");
+                // Atomic write: write to tmp, then rename.
+                if std::fs::write(&tmp, &tree).is_ok() {
+                    let _ = std::fs::rename(&tmp, &path);
+                }
+            })
+            .ok();
 
         // Try sending SIGUSR1 now. If otoji isn't running yet, the deferred
         // thread will retry after mic_ready confirms otoji is live.
@@ -201,7 +227,8 @@ impl PttSession {
         self.replace_displayed(&partial);
     }
 
-    /// Called when otoji emits a `ptt_final` event.
+    /// Called when otoji emits a `ptt_final` event — the RAW transcription,
+    /// typed immediately while polish runs in the background.
     pub fn on_ptt_final(&self, text: &str) {
         let text = text.trim();
         let old = {
@@ -212,9 +239,12 @@ impl PttSession {
             self.platform.key_tap(KeyCode::Backspace);
         }
         if !text.is_empty() {
-            eprintln!("[CLX] PTT: final -> {:?}", text);
+            eprintln!("[CLX] PTT: final (raw) -> {:?}", text);
             self.platform.type_text(text);
+            *self.last_committed.lock().unwrap() = text.to_string();
         }
+
+        // (on_ptt_upgrade may arrive later with polished text — we diff-update there.)
 
         // If locked mode, start a new PTT segment for the next utterance.
         if self.locked.load(Ordering::Relaxed) {
@@ -222,6 +252,44 @@ impl PttSession {
         } else {
             self.ptt_active.store(false, Ordering::Relaxed);
         }
+    }
+
+    /// Called when otoji emits a `ptt_upgrade` event — the polished version
+    /// of the most recent `ptt_final`. Diff-updates the cursor: backspace the
+    /// differing suffix, type the new suffix. Usually just a character or two.
+    pub fn on_ptt_upgrade(&self, polished: &str) {
+        let polished = polished.trim();
+        let mut prev = self.last_committed.lock().unwrap();
+        if polished == *prev || polished.is_empty() {
+            return;
+        }
+        // Safety net: if polish changed the text drastically, skip the upgrade
+        // to avoid a jarring rewrite. Conservative threshold.
+        let prev_chars = prev.chars().count();
+        let new_chars = polished.chars().count();
+        let size_delta = (prev_chars as isize - new_chars as isize).abs();
+        if size_delta > 20 {
+            eprintln!("[CLX] PTT: upgrade skipped — size delta too large ({prev_chars} → {new_chars})");
+            return;
+        }
+
+        // Find longest common prefix.
+        let common: usize = prev.chars().zip(polished.chars())
+            .take_while(|(a, b)| a == b)
+            .count();
+        let old_tail_chars = prev_chars - common;
+        let new_tail: String = polished.chars().skip(common).collect();
+
+        eprintln!("[CLX] PTT: upgrade {:?} → {:?} (bs={}, type={:?})",
+            &**prev, polished, old_tail_chars, new_tail);
+
+        for _ in 0..old_tail_chars {
+            self.platform.key_tap(KeyCode::Backspace);
+        }
+        if !new_tail.is_empty() {
+            self.platform.type_text(&new_tail);
+        }
+        *prev = polished.to_string();
     }
 
     // ── Internal ─────────────────────────────────────────────────────────
@@ -281,3 +349,51 @@ impl PttSession {
         *displayed = new_text.to_string();
     }
 }
+
+/// Fetch the frontmost app's accessibility tree via osascript (System Events).
+/// Never calls AX APIs directly — that hangs in kernel without Accessibility
+/// permission. Safe on macOS, empty string on other platforms.
+#[cfg(target_os = "macos")]
+fn fetch_frontmost_ax_tree() -> String {
+    let script = r#"
+tell application "System Events"
+    set fp to first application process whose frontmost is true
+    set appName to name of fp
+    set res to "[AX] app=" & appName & linefeed
+    try
+        repeat with w in (windows of fp)
+            try
+                set wName to name of w
+                set res to res & "  window \"" & wName & "\"" & linefeed
+            end try
+            try
+                repeat with e in (UI elements of w)
+                    try
+                        set eRole to role of e
+                        set eTitle to ""
+                        try
+                            set eTitle to title of e
+                        end try
+                        if eTitle is "" then try
+                            set eTitle to description of e
+                        end try
+                        if eTitle is "" then try
+                            set eTitle to value of e as string
+                        end try
+                        set res to res & "    " & eRole & " \"" & eTitle & "\"" & linefeed
+                    end try
+                end repeat
+            end try
+        end repeat
+    end try
+    return res
+end tell
+"#;
+    match std::process::Command::new("osascript").arg("-e").arg(script).output() {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).into_owned(),
+        _ => String::new(),
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn fetch_frontmost_ax_tree() -> String { String::new() }
