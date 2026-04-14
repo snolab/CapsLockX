@@ -124,12 +124,16 @@ impl OtojiBackend {
         // Use `otoji listen --plain -` to read WAV from stdin instead of
         // opening the mic itself. CLX has mic permission; otoji may not.
         let mut cmd = Command::new("otoji");
-        cmd.args(["listen", "--plain", "-"])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .stdin(Stdio::piped())
-            .env("OTOJI_RELAUNCHED", "1")
-            .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
+        cmd.args([
+            "listen", "--plain", "-",
+            "--ptt-polish", "auto",  // fix punctuation (e.g. `.` → `?` for questions)
+            "--ptt-tts", "auto",     // speak the polished text back for pronunciation feedback
+        ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdin(Stdio::piped())
+        .env("OTOJI_RELAUNCHED", "1")
+        .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
 
         // NOTE: process_group(0) was disabled — it may interfere with signal
         // delivery from parent to child on macOS. We kill otoji explicitly
