@@ -102,30 +102,35 @@ impl PttSession {
         *self.displayed.lock().unwrap() = String::new();
         self.ptt_active.store(true, Ordering::Relaxed);
 
-        // Send SIGUSR1 to otoji → starts PTT segment.
-        self.send_ptt_start();
+        // Try sending SIGUSR1 now. If otoji isn't running yet, the deferred
+        // thread will retry after mic_ready confirms otoji is live.
+        let sent_now = self.send_ptt_start();
 
-        // Deferred placeholder.
+        // Deferred placeholder + SIGUSR1 retry.
         let this = Arc::clone(self);
         std::thread::Builder::new()
             .name("ptt-init".into())
             .spawn(move || {
+                // Wait for placeholder delay.
                 std::thread::sleep(Duration::from_millis(PLACEHOLDER_DELAY_MS));
                 if this.token_counter.load(Ordering::Relaxed) != token { return; }
-                if was_ready || this.mic_ready.load(Ordering::Relaxed) {
-                    this.replace_displayed("~");
-                } else {
+
+                // Wait for mic_ready (= otoji is running and streaming).
+                if !(was_ready || this.mic_ready.load(Ordering::Relaxed)) {
                     this.replace_displayed("-");
-                    // Poll for mic ready.
-                    for _ in 0..100 {
+                    for _ in 0..100 { // up to 5s
                         std::thread::sleep(Duration::from_millis(50));
                         if this.token_counter.load(Ordering::Relaxed) != token { return; }
-                        if this.mic_ready.load(Ordering::Relaxed) {
-                            this.replace_displayed("~");
-                            return;
-                        }
+                        if this.mic_ready.load(Ordering::Relaxed) { break; }
                     }
                 }
+                if this.token_counter.load(Ordering::Relaxed) != token { return; }
+
+                // Retry SIGUSR1 if it failed on press (otoji wasn't ready).
+                if !sent_now {
+                    this.send_ptt_start();
+                }
+                this.replace_displayed("~");
             })
             .ok();
         false
@@ -199,7 +204,6 @@ impl PttSession {
     /// Called when otoji emits a `ptt_final` event.
     pub fn on_ptt_final(&self, text: &str) {
         let text = text.trim();
-        // Erase current displayed text.
         let old = {
             let mut d = self.displayed.lock().unwrap();
             std::mem::take(&mut *d)
@@ -207,12 +211,9 @@ impl PttSession {
         for _ in old.chars() {
             self.platform.key_tap(KeyCode::Backspace);
         }
-        // Type committed text.
         if !text.is_empty() {
             eprintln!("[CLX] PTT: final -> {:?}", text);
             self.platform.type_text(text);
-        } else {
-            eprintln!("[CLX] PTT: final -> (empty)");
         }
 
         // If locked mode, start a new PTT segment for the next utterance.
@@ -225,12 +226,15 @@ impl PttSession {
 
     // ── Internal ─────────────────────────────────────────────────────────
 
-    fn send_ptt_start(&self) {
+    /// Send SIGUSR1 to otoji. Returns true if sent, false if no pid available.
+    fn send_ptt_start(&self) -> bool {
         if let Some(pid) = self.otoji.pid() {
             eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
             Self::send_signal(pid, 10); // SIGUSR1
+            true
         } else {
-            eprintln!("[CLX] PTT: no otoji pid available for ptt_start");
+            eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
+            false
         }
     }
 
@@ -244,8 +248,15 @@ impl PttSession {
     }
 
     fn send_signal(pid: u32, sig: i32) {
-        extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
-        unsafe { kill(pid as i32, sig); }
+        extern "C" {
+            fn kill(pid: i32, sig: i32) -> i32;
+            fn __error() -> *mut i32; // macOS errno
+        }
+        let ret = unsafe { kill(pid as i32, sig) };
+        if ret != 0 {
+            let errno = unsafe { *__error() };
+            eprintln!("[CLX] PTT: kill({pid}, {sig}) FAILED: ret={ret}, errno={errno}");
+        }
     }
 
     /// Replace displayed text at cursor using diff (common prefix optimization).

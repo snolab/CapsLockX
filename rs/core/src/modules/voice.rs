@@ -407,13 +407,15 @@ impl VoiceModule {
             }
             PttRelease::Tap => {
                 // Single tap: toggle voice NOTE mode.
+                // Do NOT stop the otoji pipeline — it must stay alive for
+                // PTT signals. Only toggle the overlay and note flag.
                 if self.note_active.load(Ordering::Relaxed) {
                     self.note_active.store(false, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note stopped");
-                    self.stop_pipeline();
+                    self.platform.hide_voice_overlay();
                 } else {
                     self.note_active.store(true, Ordering::Relaxed);
-                    eprintln!("[CLX] voice: click → note started (recording to file)");
+                    eprintln!("[CLX] voice: click → note started");
                 }
             }
         }
