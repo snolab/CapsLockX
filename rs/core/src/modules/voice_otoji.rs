@@ -23,6 +23,7 @@ enum AsrEvent {
     Error { message: String },
     PttPartial { text: String },
     PttFinal { text: String },
+    PttUpgrade { text: String },
     Other,
 }
 
@@ -46,6 +47,7 @@ fn parse_event(line: &str) -> AsrEvent {
         "error"       => AsrEvent::Error       { message: get("message").unwrap_or_default() },
         "ptt_partial" => AsrEvent::PttPartial  { text: get("text").unwrap_or_default() },
         "ptt_final"   => AsrEvent::PttFinal    { text: get("text").unwrap_or_default() },
+        "ptt_upgrade" => AsrEvent::PttUpgrade  { text: get("text").unwrap_or_default() },
         _ => AsrEvent::Other,
     }
 }
@@ -124,10 +126,12 @@ impl OtojiBackend {
         // Use `otoji listen --plain -` to read WAV from stdin instead of
         // opening the mic itself. CLX has mic permission; otoji may not.
         let mut cmd = Command::new("otoji");
+        let ctx_path = super::voice_ptt::ptt_context_file_path();
         cmd.args([
             "listen", "--plain", "-",
             "--ptt-polish", "auto",  // fix punctuation (e.g. `.` → `?` for questions)
             "--ptt-tts", "auto",     // speak the polished text back for pronunciation feedback
+            "--ptt-context-file", &ctx_path,
         ])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -351,6 +355,11 @@ impl OtojiBackend {
                             AsrEvent::PttFinal { text } => {
                                 if let Some(ref p) = ptt {
                                     p.on_ptt_final(&text);
+                                }
+                            }
+                            AsrEvent::PttUpgrade { text } => {
+                                if let Some(ref p) = ptt {
+                                    p.on_ptt_upgrade(&text);
                                 }
                             }
                             AsrEvent::Status { message } => {
