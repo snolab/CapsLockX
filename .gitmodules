@@ -1,0 +1,3 @@
+[submodule "lib/otoji"]
+	path = lib/otoji
+	url = https://github.com/snomiao/otoji.git
