@@ -128,14 +128,12 @@ impl OtojiBackend {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .stdin(Stdio::piped())
-            .env("OTOJI_RELAUNCHED", "1");
+            .env("OTOJI_RELAUNCHED", "1")
+            .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
 
-        // Create a new process group so we can kill all children at once.
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            cmd.process_group(0);
-        }
+        // NOTE: process_group(0) was disabled — it may interfere with signal
+        // delivery from parent to child on macOS. We kill otoji explicitly
+        // via its PID instead of the process group.
 
         let child = match cmd.spawn()
         {
@@ -207,19 +205,10 @@ impl OtojiBackend {
                     let stop_for_cb = Arc::clone(&stop);
                     let ptt_for_cb = ptt.clone();
 
-                    // Debug: log raw amplitude periodically.
-                    let dbg_counter = Arc::new(std::sync::atomic::AtomicU32::new(0));
-                    let dbg_c = Arc::clone(&dbg_counter);
-
                     let stream = device.build_input_stream(
                         &config,
                         move |data: &[f32], _: &cpal::InputCallbackInfo| {
                             if stop_for_cb.load(Ordering::Relaxed) { return; }
-                            let n = dbg_c.fetch_add(1, Ordering::Relaxed);
-                            if n % 200 == 0 {
-                                let peak = data.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
-                                eprintln!("[CLX] voice-otoji: cb#{n} raw_peak={peak:.6} len={} sr={device_sr} ch={device_ch}", data.len());
-                            }
                             // Down-mix to mono if needed.
                             let mono: Vec<f32> = if device_ch == 1 {
                                 data.to_vec()
@@ -322,7 +311,11 @@ impl OtojiBackend {
                         if stop.load(Ordering::Relaxed) { break; }
                         let line = match line {
                             Ok(l) => l,
-                            Err(_) => break,
+                            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                            Err(e) => {
+                                eprintln!("[CLX] voice-otoji: reader error: {e}");
+                                break;
+                            }
                         };
 
                         match parse_event(&line) {
@@ -385,12 +378,14 @@ impl OtojiBackend {
             #[cfg(unix)]
             {
                 extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
+                // Kill specific PID (no longer use process group since we removed
+                // cmd.process_group(0) — a negative pid would now target a wrong group).
                 unsafe {
-                    kill(-(pid as i32), 15); // SIGTERM
+                    kill(pid as i32, 15); // SIGTERM
                 }
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 unsafe {
-                    kill(-(pid as i32), 9); // SIGKILL
+                    kill(pid as i32, 9); // SIGKILL
                 }
             }
             #[cfg(not(unix))]
