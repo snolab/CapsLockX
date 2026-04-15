@@ -140,6 +140,7 @@ pub fn keycode_to_evdev_key(key: KeyCode) -> Option<Key> {
         KeyCode::BracketRight => 27,
         KeyCode::Backslash    => 43,
         KeyCode::Period       => 52,
+        KeyCode::Comma        => 51,
 
         // ── Function keys ─────────────────────────────────────────────────────
         KeyCode::F1  => 59,  KeyCode::F2  => 60,  KeyCode::F3  => 61,

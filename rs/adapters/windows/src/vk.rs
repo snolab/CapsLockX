@@ -36,6 +36,7 @@ pub fn vk_to_keycode(vk: u32) -> KeyCode {
         0xDD => KeyCode::BracketRight,
         0xDC => KeyCode::Backslash,
         0xBE => KeyCode::Period,
+        0xBC => KeyCode::Comma,
 
         0x30 => KeyCode::D0, 0x31 => KeyCode::D1, 0x32 => KeyCode::D2,
         0x33 => KeyCode::D3, 0x34 => KeyCode::D4, 0x35 => KeyCode::D5,
@@ -104,6 +105,7 @@ pub fn keycode_to_vk(key: KeyCode) -> u16 {
         KeyCode::BracketRight => 0xDD,
         KeyCode::Backslash    => 0xDC,
         KeyCode::Period       => 0xBE,
+        KeyCode::Comma        => 0xBC,
 
         KeyCode::D0 => 0x30, KeyCode::D1 => 0x31, KeyCode::D2 => 0x32,
         KeyCode::D3 => 0x33, KeyCode::D4 => 0x34, KeyCode::D5 => 0x35,
