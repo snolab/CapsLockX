@@ -27,6 +27,15 @@ pub trait SystemAudioStream: Send {
     fn sample_rate(&self) -> u32;
 }
 
+/// Menu bar / tray icon state for voice features.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PttTrayState {
+    Idle,
+    Recording,
+    Processing,
+    NoteMode,
+}
+
 pub trait Platform: Send + Sync + 'static {
     // ── Keyboard output ───────────────────────────────────────────────────────
 
@@ -191,6 +200,8 @@ pub trait Platform: Send + Sync + 'static {
     fn hide_voice_overlay(&self) {}
     fn update_voice_overlay(&self, _mic_levels: &[f32], _mic_vad: bool, _sys_levels: &[f32], _sys_vad: bool) {}
     fn update_voice_subtitle(&self, _text: &str) {}
+    /// Update the menu bar tray icon to reflect PTT / voice state.
+    fn set_ptt_tray_state(&self, _state: PttTrayState) {}
 
     // ── Brainstorm overlay (optional, default = no-op) ─────────────────────
 

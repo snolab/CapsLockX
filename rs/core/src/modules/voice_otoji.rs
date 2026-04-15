@@ -24,6 +24,7 @@ enum AsrEvent {
     PttPartial { text: String },
     PttFinal { text: String },
     PttUpgrade { text: String },
+    PttTranslated { text: String, lang: String },
     Other,
 }
 
@@ -45,9 +46,13 @@ fn parse_event(line: &str) -> AsrEvent {
         "final"   => AsrEvent::Final   { text: get("text").unwrap_or_default() },
         "status"      => AsrEvent::Status      { message: get("message").unwrap_or_default() },
         "error"       => AsrEvent::Error       { message: get("message").unwrap_or_default() },
-        "ptt_partial" => AsrEvent::PttPartial  { text: get("text").unwrap_or_default() },
-        "ptt_final"   => AsrEvent::PttFinal    { text: get("text").unwrap_or_default() },
-        "ptt_upgrade" => AsrEvent::PttUpgrade  { text: get("text").unwrap_or_default() },
+        "ptt_partial"    => AsrEvent::PttPartial    { text: get("text").unwrap_or_default() },
+        "ptt_final"      => AsrEvent::PttFinal      { text: get("text").unwrap_or_default() },
+        "ptt_upgrade"    => AsrEvent::PttUpgrade    { text: get("text").unwrap_or_default() },
+        "ptt_translated" => AsrEvent::PttTranslated {
+            text: get("text").unwrap_or_default(),
+            lang: get("lang").unwrap_or_default(),
+        },
         _ => AsrEvent::Other,
     }
 }
@@ -127,17 +132,41 @@ impl OtojiBackend {
         // opening the mic itself. CLX has mic permission; otoji may not.
         let mut cmd = Command::new("otoji");
         let ctx_path = super::voice_ptt::ptt_context_file_path();
-        cmd.args([
-            "listen", "--plain", "-",
-            "--ptt-polish", "auto",  // fix punctuation (e.g. `.` → `?` for questions)
-            "--ptt-tts", "auto",     // speak the polished text back for pronunciation feedback
-            "--ptt-context-file", &ctx_path,
-        ])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .stdin(Stdio::piped())
-        .env("OTOJI_RELAUNCHED", "1")
-        .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
+        let mut args: Vec<String> = vec![
+            "listen".into(), "--plain".into(), "-".into(),
+            // "openai" route goes through OpenAiPolisher which honors the
+            // OTOJI_POLISH_BASE_URL / _API_KEY / _MODEL env vars. Default
+            // in .env.local points to Cloudflare Workers AI (edge inference,
+            // ~200-500ms TTFB). Falls back to Gemini if those env vars are
+            // unset thanks to `resolve_polisher`'s "auto" chain.
+            "--ptt-polish".into(), "openai".into(),
+            // Gemini handles multilingual (en/zh/ja) — "auto" would pick Piper
+            // which is English-only and mangles CJK text.
+            "--ptt-tts".into(), "gemini".into(),
+            "--ptt-context-file".into(), ctx_path,
+        ];
+        // Translation (Phase 1: env-driven).
+        // CLX_TRANSLATE_TO: target language BCP-47 code (e.g. "en"). Empty = off.
+        // CLX_TRANSLATE_TTS_SOURCE: "original" or "translated" (default original).
+        if let Ok(to) = std::env::var("CLX_TRANSLATE_TO") {
+            if !to.is_empty() {
+                args.push("--ptt-translate-to".into());
+                args.push(to);
+            }
+        }
+        if let Ok(src) = std::env::var("CLX_TRANSLATE_TTS_SOURCE") {
+            if !src.is_empty() {
+                args.push("--ptt-tts-source".into());
+                args.push(src);
+            }
+        }
+
+        cmd.args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .stdin(Stdio::piped())
+            .env("OTOJI_RELAUNCHED", "1")
+            .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
 
         // NOTE: process_group(0) was disabled — it may interfere with signal
         // delivery from parent to child on macOS. We kill otoji explicitly
@@ -360,6 +389,11 @@ impl OtojiBackend {
                             AsrEvent::PttUpgrade { text } => {
                                 if let Some(ref p) = ptt {
                                     p.on_ptt_upgrade(&text);
+                                }
+                            }
+                            AsrEvent::PttTranslated { text, lang } => {
+                                if let Some(ref p) = ptt {
+                                    p.on_ptt_translated(&text, &lang);
                                 }
                             }
                             AsrEvent::Status { message } => {
