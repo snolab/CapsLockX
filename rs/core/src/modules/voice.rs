@@ -319,6 +319,7 @@ impl VoiceModule {
     /// Check if voice-standalone is running via PID file.
     /// Uses kill(pid, 0) syscall instead of spawning a subprocess — safe for
     /// the CGEventTap callback which must return in <500ms.
+    #[cfg(unix)]
     fn voice_standalone_pid() -> Option<u32> {
         let pid_str = std::fs::read_to_string("/tmp/clx-voice-standalone.pid").ok()?;
         let pid = pid_str.trim().parse::<u32>().ok()?;
@@ -327,11 +328,18 @@ impl VoiceModule {
         if alive { Some(pid) } else { None }
     }
 
+    #[cfg(not(unix))]
+    fn voice_standalone_pid() -> Option<u32> { None }
+
     /// Send a Unix signal to a process (best-effort, no subprocess spawn).
+    #[cfg(unix)]
     fn send_signal(pid: u32, sig: i32) {
         extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
         unsafe { kill(pid as i32, sig); }
     }
+
+    #[cfg(not(unix))]
+    fn send_signal(_pid: u32, _sig: i32) {}
 
     pub fn on_key_down(&self, key: KeyCode) -> bool {
         if key != KeyCode::V {
@@ -394,28 +402,28 @@ impl VoiceModule {
 
         match ptt_result {
             PttRelease::Hold => {
-                // Hold release: otoji will send ptt_final asynchronously.
-                // Do NOT stop the pipeline — otoji needs to stay alive to
-                // deliver the event, and to be ready for the next PTT press.
                 eprintln!("[CLX] voice: hold release → waiting for otoji ptt_final");
-                self.platform.hide_voice_overlay();
+                // Only hide the overlay if note mode isn't keeping it visible.
+                if !self.note_active.load(Ordering::Relaxed) {
+                    self.platform.hide_voice_overlay();
+                }
             }
             PttRelease::Locked => {
-                // Double-tap: entered locked PTT mode, or already locked.
-                // Keep pipeline running for mic feed. Don't toggle note.
                 eprintln!("[CLX] voice: double-tap → PTT locked mode");
             }
             PttRelease::Tap => {
-                // Single tap: toggle voice NOTE mode.
-                // Do NOT stop the otoji pipeline — it must stay alive for
-                // PTT signals. Only toggle the overlay and note flag.
+                // Single tap: toggle voice NOTE mode (live subtitles in overlay).
+                use super::super::platform::PttTrayState;
                 if self.note_active.load(Ordering::Relaxed) {
                     self.note_active.store(false, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note stopped");
                     self.platform.hide_voice_overlay();
+                    self.platform.set_ptt_tray_state(PttTrayState::Idle);
                 } else {
                     self.note_active.store(true, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note started");
+                    self.platform.show_voice_overlay();
+                    self.platform.set_ptt_tray_state(PttTrayState::NoteMode);
                 }
             }
         }
