@@ -47,6 +47,34 @@ pub fn update_tray_icon(active: bool) {
     }
 }
 
+/// Open (or focus) the preferences webview window. Same code path as the
+/// tray's "Preferences…" menu — used for the Space+, hotkey from
+/// `WinPlatform::open_preferences()`.
+pub fn open_prefs_window() {
+    let Some(app) = APP_HANDLE.get() else { return };
+    let app = app.clone();
+    // Tauri's webview construction must run off the hook thread; spawn.
+    std::thread::spawn(move || {
+        if let Some(w) = app.get_webview_window("prefs") {
+            let _ = w.show();
+            let _ = w.set_focus();
+            return;
+        }
+        use tauri::webview::WebviewWindowBuilder;
+        use tauri::WebviewUrl;
+        let _ = WebviewWindowBuilder::new(
+            &app,
+            "prefs",
+            WebviewUrl::App("index.html".into()),
+        )
+        .title("CapsLockX Preferences")
+        .inner_size(560.0, 640.0)
+        .resizable(false)
+        .center()
+        .build();
+    });
+}
+
 fn main() {
     // ── CLI subcommands (delegate to external tools, no GUI) ───────────
     if let Some(cmd) = std::env::args().nth(1) {
