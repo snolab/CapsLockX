@@ -98,6 +98,9 @@ fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
 // ── Platform impl ─────────────────────────────────────────────────────────────
 
 impl Platform for WinPlatform {
+    fn open_preferences(&self) {
+        crate::open_prefs_window();
+    }
     fn key_down(&self, key: KeyCode) {
         send(&[kbd(keycode_to_vk(key), KEYBD_EVENT_FLAGS(0))]);
     }
