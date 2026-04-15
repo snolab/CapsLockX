@@ -416,6 +416,9 @@ impl PttSession {
             .name("ptt-spinner".into())
             .spawn(move || {
                 let mut i = 0usize;
+                let spin_start = Instant::now();
+                let mut iter_no = 0u64;
+                let mut last_iter_end = spin_start;
                 // Type the initial frame under the lock.
                 {
                     let mut s = this.spinner.lock().unwrap();
@@ -426,11 +429,14 @@ impl PttSession {
                 }
                 loop {
                     std::thread::sleep(Duration::from_millis(SPINNER_INTERVAL_MS));
+                    let loop_top = Instant::now();
                     let mut s = this.spinner.lock().unwrap();
+                    let got_lock = Instant::now();
                     if !s.active { return; }
                     i = (i + 1) % SPINNER_FRAMES.len();
                     // Backspace old frame, type new. Under lock so stop_spinner
                     // can't race during the swap.
+                    let inject_start = Instant::now();
                     if let Some(old) = s.current.take() {
                         for _ in old.chars() {
                             this.platform.key_tap(KeyCode::Backspace);
@@ -438,7 +444,21 @@ impl PttSession {
                     }
                     let frame = SPINNER_FRAMES[i];
                     this.platform.type_text(frame);
+                    let inject_end = Instant::now();
                     s.current = Some(frame.to_string());
+                    drop(s);
+
+                    iter_no += 1;
+                    let gap = loop_top.duration_since(last_iter_end).as_millis();
+                    let lock_wait = got_lock.duration_since(loop_top).as_millis();
+                    let inject_ms = inject_end.duration_since(inject_start).as_millis();
+                    let since_start = loop_top.duration_since(spin_start).as_millis();
+                    // Log every iteration for now (we can throttle later once
+                    // the cause is clear).
+                    eprintln!(
+                        "[CLX] ptt-spin #{iter_no} t+{since_start}ms gap={gap}ms lock_wait={lock_wait}ms inject={inject_ms}ms"
+                    );
+                    last_iter_end = inject_end;
                 }
             })
             .ok();
@@ -504,7 +524,9 @@ impl PttSession {
 
     /// Replace displayed text at cursor using diff (common prefix optimization).
     fn replace_displayed(&self, new_text: &str) {
+        let t0 = Instant::now();
         let mut displayed = self.displayed.lock().unwrap();
+        let t_lock = Instant::now();
         let old = &**displayed;
 
         let common: usize = old.chars().zip(new_text.chars())
@@ -513,13 +535,25 @@ impl PttSession {
 
         let old_tail_chars = old.chars().count() - common;
         let new_tail: String = new_text.chars().skip(common).collect();
+        let new_tail_chars = new_tail.chars().count();
 
+        let t_inject_start = Instant::now();
         for _ in 0..old_tail_chars {
             self.platform.key_tap(KeyCode::Backspace);
         }
         if !new_tail.is_empty() {
             self.platform.type_text(&new_tail);
         }
+        let t_end = Instant::now();
+
+        eprintln!(
+            "[CLX] ptt-partial old_len={} new_len={} common={} bs={} type={} | lock={}ms inject={}ms total={}ms",
+            old.chars().count(), new_text.chars().count(), common,
+            old_tail_chars, new_tail_chars,
+            t_lock.duration_since(t0).as_millis(),
+            t_end.duration_since(t_inject_start).as_millis(),
+            t_end.duration_since(t0).as_millis(),
+        );
 
         *displayed = new_text.to_string();
     }
