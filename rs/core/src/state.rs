@@ -159,3 +159,154 @@ impl ClxState {
     pub fn enter_clx_mode(&self){ self.mode.fetch_or(CM_CLX,  Ordering::Relaxed); }
     pub fn exit_clx_mode(&self) { self.mode.fetch_and(!CM_CLX, Ordering::Relaxed); }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn speed_config_default_values() {
+        let s = SpeedConfig::default();
+        assert_eq!(s.cursor_speed, 60.0);
+        assert_eq!(s.page_speed, 30.0);
+        assert_eq!(s.tab_speed, 30.0);
+        assert_eq!(s.action_speed, 30.0);
+        assert_eq!(s.mouse_speed, 1600.0);
+        assert_eq!(s.scroll_speed, 1600.0);
+    }
+
+    #[test]
+    fn clx_config_default_values() {
+        let c = ClxConfig::default();
+        assert!(c.use_capslock);
+        assert!(c.use_space);
+        assert!(!c.use_insert);
+        assert!(!c.use_scroll_lock);
+        assert!(!c.use_ralt);
+        assert_eq!(c.stt_engine, "sherpa");
+        assert_eq!(c.gemini_api_key, "");
+        assert_eq!(c.openai_api_key, "");
+        assert_eq!(c.anthropic_api_key, "");
+        assert_eq!(c.elevenlabs_api_key, "");
+        assert!(!c.stt_correction);
+        assert!(c.tts_chain.contains("elevenlabs"));
+        assert!(c.stt_polish_chain.contains("raw"));
+        assert_eq!(c.aec_gain, 15.0);
+        assert_eq!(c.noise_gate, 0.003);
+        assert_eq!(c.speech_start_prob, 0.8);
+        assert_eq!(c.speech_end_prob, 0.6);
+        assert_eq!(c.speech_start_frames, 10);
+        assert_eq!(c.silence_end_frames, 20);
+    }
+
+    #[test]
+    fn best_llm_key_prefers_gemini() {
+        let mut c = ClxConfig::default();
+        c.gemini_api_key = "g".into();
+        c.openai_api_key = "o".into();
+        c.anthropic_api_key = "a".into();
+        assert_eq!(c.best_llm_key_and_model(), ("g".to_string(), String::new()));
+    }
+
+    #[test]
+    fn best_llm_key_falls_back_to_openai() {
+        let mut c = ClxConfig::default();
+        c.openai_api_key = "o".into();
+        c.anthropic_api_key = "a".into();
+        assert_eq!(c.best_llm_key_and_model(), ("o".to_string(), String::new()));
+    }
+
+    #[test]
+    fn best_llm_key_falls_back_to_anthropic() {
+        let mut c = ClxConfig::default();
+        c.anthropic_api_key = "a".into();
+        assert_eq!(c.best_llm_key_and_model(), ("a".to_string(), String::new()));
+    }
+
+    #[test]
+    fn best_llm_key_falls_back_to_ollama() {
+        let c = ClxConfig::default();
+        assert_eq!(c.best_llm_key_and_model(), ("ollama".to_string(), String::new()));
+    }
+
+    #[test]
+    fn state_default_starts_in_normal_mode() {
+        let s = ClxState::default();
+        assert_eq!(s.mode(), CM_NORMAL);
+        assert!(!s.is_clx_active());
+        assert!(!s.is_clx_locked());
+        assert!(!s.is_shift_held());
+    }
+
+    #[test]
+    fn state_enter_fn_sets_fn_and_clears_clx() {
+        let s = ClxState::default();
+        s.enter_clx_mode();
+        assert!(s.is_clx_locked());
+        s.enter_fn_mode();
+        assert_eq!(s.mode() & CM_FN, CM_FN);
+        assert!(!s.is_clx_locked());
+    }
+
+    #[test]
+    fn state_exit_fn_clears_only_fn() {
+        let s = ClxState::default();
+        s.enter_fn_mode();
+        s.enter_clx_mode();
+        s.exit_fn_mode();
+        assert_eq!(s.mode() & CM_FN, 0);
+        assert!(s.is_clx_locked());
+    }
+
+    #[test]
+    fn state_enter_exit_clx_mode() {
+        let s = ClxState::default();
+        s.enter_clx_mode();
+        assert!(s.is_clx_locked());
+        assert!(s.is_clx_active());
+        s.exit_clx_mode();
+        assert!(!s.is_clx_locked());
+        assert!(!s.is_clx_active());
+    }
+
+    #[test]
+    fn state_shift_held_toggle() {
+        let s = ClxState::default();
+        s.set_shift_held(true);
+        assert!(s.is_shift_held());
+        s.set_shift_held(false);
+        assert!(!s.is_shift_held());
+    }
+
+    #[test]
+    fn state_is_trigger_key_respects_config() {
+        let s = ClxState::default();
+        assert!(s.is_trigger_key(KeyCode::CapsLock));
+        assert!(s.is_trigger_key(KeyCode::Space));
+        assert!(!s.is_trigger_key(KeyCode::Insert));
+        assert!(!s.is_trigger_key(KeyCode::ScrollLock));
+        assert!(!s.is_trigger_key(KeyCode::RAlt));
+        assert!(!s.is_trigger_key(KeyCode::A));
+    }
+
+    #[test]
+    fn state_is_trigger_key_with_all_enabled() {
+        let mut cfg = ClxConfig::default();
+        cfg.use_insert = true;
+        cfg.use_scroll_lock = true;
+        cfg.use_ralt = true;
+        let s = ClxState::new(cfg);
+        assert!(s.is_trigger_key(KeyCode::Insert));
+        assert!(s.is_trigger_key(KeyCode::ScrollLock));
+        assert!(s.is_trigger_key(KeyCode::RAlt));
+    }
+
+    #[test]
+    fn state_is_clx_active_false_when_paused() {
+        let s = ClxState::default();
+        s.enter_clx_mode();
+        assert!(s.is_clx_active());
+        s.paused.store(true, Ordering::Relaxed);
+        assert!(!s.is_clx_active());
+    }
+}

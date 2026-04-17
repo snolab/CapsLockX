@@ -203,3 +203,134 @@ impl AgentModule {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_platform::{Call, MockPlatform};
+
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    fn make_module() -> (AgentModule, Arc<MockPlatform>) {
+        let mock = Arc::new(MockPlatform::new());
+        let m = AgentModule::new(mock.clone() as Arc<dyn Platform>);
+        (m, mock)
+    }
+
+    #[test]
+    fn is_mapped_key_only_m() {
+        let _g = TEST_LOCK.lock().unwrap();
+        let (m, _mock) = make_module();
+        assert!(m.is_mapped_key(KeyCode::M));
+        assert!(!m.is_mapped_key(KeyCode::A));
+        assert!(!m.is_mapped_key(KeyCode::B));
+        assert!(!m.is_mapped_key(KeyCode::Escape));
+        assert!(!m.is_mapped_key(KeyCode::Space));
+    }
+
+    #[test]
+    fn on_key_up_always_false() {
+        let _g = TEST_LOCK.lock().unwrap();
+        let (m, _mock) = make_module();
+        assert!(!m.on_key_up(KeyCode::M));
+        assert!(!m.on_key_up(KeyCode::Escape));
+    }
+
+    #[test]
+    fn on_key_down_unmapped_returns_false() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+        assert!(!m.on_key_down(KeyCode::A, &mods));
+        assert!(!m.on_key_down(KeyCode::B, &mods));
+        assert!(!m.on_key_down(KeyCode::Space, &mods));
+    }
+
+    #[test]
+    fn toggle_agent_mode_on_then_off() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+
+        assert!(m.on_key_down(KeyCode::M, &mods));
+        assert!(AGENT_MODE.load(Ordering::Relaxed));
+        assert!(is_agent_mode());
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("Agent Mode ON"))));
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowVoiceOverlay)));
+
+        mock.clear();
+        assert!(m.on_key_down(KeyCode::M, &mods));
+        assert!(!AGENT_MODE.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("Agent Mode OFF"))));
+
+        AGENT_MODE.store(false, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn shift_m_force_stops() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(true, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers { shift: true, ..Default::default() };
+        assert!(m.on_key_down(KeyCode::M, &mods));
+        assert!(!AGENT_MODE.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("OFF"))));
+    }
+
+    #[test]
+    fn escape_when_agent_off_returns_false() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+        assert!(!m.on_key_down(KeyCode::Escape, &mods));
+        assert!(mock.calls().is_empty());
+    }
+
+    #[test]
+    fn escape_when_agent_on_stops() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(true, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::Escape, &mods));
+        assert!(!AGENT_MODE.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("OFF"))));
+    }
+
+    #[test]
+    fn is_agent_mode_reflects_global() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        assert!(!is_agent_mode());
+        AGENT_MODE.store(true, Ordering::Relaxed);
+        assert!(is_agent_mode());
+        AGENT_MODE.store(false, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn on_voice_transcript_empty_does_nothing() {
+        let _g = TEST_LOCK.lock().unwrap();
+        let mock = MockPlatform::new();
+        on_voice_transcript("", &mock);
+        on_voice_transcript("   ", &mock);
+        assert!(mock.calls().is_empty());
+    }
+
+    #[test]
+    fn live_log_path_is_deterministic() {
+        let p = live_log_path();
+        assert!(p.to_string_lossy().contains("agent-live.log"));
+    }
+}

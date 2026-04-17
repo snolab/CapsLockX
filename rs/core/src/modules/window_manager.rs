@@ -85,3 +85,114 @@ impl WindowManagerModule {
         matches!(key, KeyCode::Z | KeyCode::X | KeyCode::C | KeyCode::Period)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::ClxConfig;
+    use crate::test_platform::{Call, MockPlatform};
+
+    fn setup() -> (Arc<MockPlatform>, WindowManagerModule) {
+        let mock = Arc::new(MockPlatform::new());
+        let state = Arc::new(ClxState::new(ClxConfig::default()));
+        let module = WindowManagerModule::new(mock.clone(), state);
+        (mock, module)
+    }
+
+    fn mods(shift: bool, ctrl: bool, alt: bool) -> Modifiers {
+        let mut m = Modifiers::default();
+        m.shift = shift;
+        m.ctrl = ctrl;
+        m.alt = alt;
+        m
+    }
+
+    #[test]
+    fn x_without_modifiers_closes_tab() {
+        let (mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::X, &mods(false, false, false)));
+        assert_eq!(mock.calls(), vec![Call::CloseTab]);
+    }
+
+    #[test]
+    fn shift_x_closes_window() {
+        let (mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::X, &mods(true, false, false)));
+        assert_eq!(mock.calls(), vec![Call::CloseWindow]);
+    }
+
+    #[test]
+    fn ctrl_alt_x_kills_window() {
+        let (mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::X, &mods(false, true, true)));
+        assert_eq!(mock.calls(), vec![Call::KillWindow]);
+    }
+
+    #[test]
+    fn c_arranges_windows_stacked() {
+        let (mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::C, &mods(false, false, false)));
+        assert_eq!(mock.calls(), vec![Call::ArrangeWindows(ArrangeMode::Stacked)]);
+    }
+
+    #[test]
+    fn shift_c_arranges_windows_side_by_side() {
+        let (mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::C, &mods(true, false, false)));
+        assert_eq!(mock.calls(), vec![Call::ArrangeWindows(ArrangeMode::SideBySide)]);
+    }
+
+    #[test]
+    fn period_restarts_application() {
+        let (mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::Period, &mods(false, false, false)));
+        assert_eq!(mock.calls(), vec![Call::Restart]);
+    }
+
+    #[test]
+    fn z_press_returns_true_and_release_returns_true() {
+        let (_mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::Z, &mods(false, false, false)));
+        assert!(module.on_key_up(KeyCode::Z));
+    }
+
+    #[test]
+    fn shift_z_press_returns_true_for_backward_cycle() {
+        let (_mock, module) = setup();
+        assert!(module.on_key_down(KeyCode::Z, &mods(true, false, false)));
+        module.stop();
+    }
+
+    #[test]
+    fn unmapped_key_returns_false_for_down_and_up() {
+        let (mock, module) = setup();
+        assert!(!module.on_key_down(KeyCode::A, &mods(false, false, false)));
+        assert!(!module.on_key_up(KeyCode::A));
+        assert!(mock.calls().is_empty());
+    }
+
+    #[test]
+    fn is_mapped_key_recognises_handled_keys_only() {
+        let (_, module) = setup();
+        for k in [KeyCode::Z, KeyCode::X, KeyCode::C, KeyCode::Period] {
+            assert!(module.is_mapped_key(k));
+        }
+        assert!(!module.is_mapped_key(KeyCode::A));
+        assert!(!module.is_mapped_key(KeyCode::F1));
+    }
+
+    #[test]
+    fn apply_speeds_updates_cycle_ratios_without_panicking() {
+        let (_, module) = setup();
+        let mut s = SpeedConfig::default();
+        s.cursor_speed = 120.0;
+        module.apply_speeds(&s);
+    }
+
+    #[test]
+    fn tick_advances_cycle_without_panicking() {
+        let (_, module) = setup();
+        module.tick();
+        module.stop();
+    }
+}

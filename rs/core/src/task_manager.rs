@@ -213,3 +213,180 @@ pub fn task_list() -> String {
     }
     format!("Background tasks:\n{}", lines.join("\n"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::Ordering;
+
+    fn fresh_id() -> u32 {
+        let mut mgr = manager();
+        let mgr = mgr.as_mut().unwrap();
+        let id = mgr.next_id;
+        mgr.next_id += 1;
+        id
+    }
+
+    fn insert_task(name: &str, status: TaskStatus, output_str: &str) -> u32 {
+        let id = fresh_id();
+        let mut mgr = manager();
+        let mgr = mgr.as_mut().unwrap();
+        mgr.tasks.insert(id, Task {
+            name: name.to_string(),
+            status,
+            output: Arc::new(Mutex::new(output_str.to_string())),
+            input_tx: None,
+            kill: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            handle: None,
+        });
+        id
+    }
+
+    fn remove_task(id: u32) {
+        let mut mgr = manager();
+        let mgr = mgr.as_mut().unwrap();
+        mgr.tasks.remove(&id);
+    }
+
+    #[test]
+    fn manager_initializes_singleton() {
+        let mgr = manager();
+        assert!(mgr.is_some());
+    }
+
+    #[test]
+    fn task_status_running() {
+        let id = insert_task("foo", TaskStatus::Running, "hello");
+        let s = task_status(id);
+        assert!(s.contains("running"));
+        assert!(s.contains("foo"));
+        assert!(s.contains("5 chars"));
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_status_completed() {
+        let id = insert_task("done-task", TaskStatus::Completed, "abc");
+        let s = task_status(id);
+        assert!(s.contains("completed"));
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_status_killed() {
+        let id = insert_task("kt", TaskStatus::Killed, "");
+        let s = task_status(id);
+        assert!(s.contains("killed"));
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_status_failed() {
+        let id = insert_task("ft", TaskStatus::Failed("boom".to_string()), "");
+        let s = task_status(id);
+        assert!(s.contains("failed"));
+        assert!(s.contains("boom"));
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_status_not_found() {
+        let s = task_status(9_999_999);
+        assert!(s.contains("not found"));
+    }
+
+    #[test]
+    fn task_output_basic_slice() {
+        let id = insert_task("ot", TaskStatus::Running, "hello world");
+        let s = task_output(id, 0, 5);
+        assert!(s.contains("hello"));
+        assert!(s.contains("chars 0-5"));
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_output_offset_and_clamp() {
+        let id = insert_task("ot2", TaskStatus::Running, "abcdef");
+        let s = task_output(id, 2, 100);
+        assert!(s.contains("cdef"));
+        let s2 = task_output(id, 100, 10);
+        assert!(s2.contains("chars 6-6"));
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_output_not_found() {
+        let s = task_output(9_999_998, 0, 10);
+        assert!(s.contains("not found"));
+    }
+
+    #[test]
+    fn task_kill_marks_killed() {
+        let id = insert_task("kk", TaskStatus::Running, "");
+        let s = task_kill(id);
+        assert!(s.contains("killed"));
+        let mgr = manager();
+        let task = mgr.as_ref().unwrap().tasks.get(&id).unwrap();
+        assert!(task.kill.load(Ordering::Relaxed));
+        match task.status {
+            TaskStatus::Killed => {}
+            _ => panic!("expected killed"),
+        }
+        drop(mgr);
+        remove_task(id);
+    }
+
+    #[test]
+    fn task_kill_not_found() {
+        let s = task_kill(9_999_997);
+        assert!(s.contains("not found"));
+    }
+
+    #[test]
+    fn task_list_includes_all_statuses() {
+        let a = insert_task("la", TaskStatus::Running, "x");
+        let b = insert_task("lb", TaskStatus::Completed, "yy");
+        let c = insert_task("lc", TaskStatus::Killed, "");
+        let d = insert_task("ld", TaskStatus::Failed("nope".to_string()), "");
+        let s = task_list();
+        assert!(s.contains("Background tasks"));
+        assert!(s.contains("la"));
+        assert!(s.contains("lb"));
+        assert!(s.contains("lc"));
+        assert!(s.contains("ld"));
+        assert!(s.contains("running"));
+        assert!(s.contains("completed"));
+        assert!(s.contains("killed"));
+        assert!(s.contains("failed"));
+        remove_task(a);
+        remove_task(b);
+        remove_task(c);
+        remove_task(d);
+    }
+
+    #[test]
+    fn run_with_timeout_inline_completes_fast() {
+        let r = run_with_timeout("fast", 5, || "done".to_string());
+        match r {
+            ToolResult::Inline(s) => assert_eq!(s, "done"),
+            _ => panic!("expected inline"),
+        }
+    }
+
+    #[test]
+    fn run_with_timeout_moves_to_background() {
+        let r = run_with_timeout("slow", 1, || {
+            std::thread::sleep(std::time::Duration::from_millis(1500));
+            "late".to_string()
+        });
+        match r {
+            ToolResult::Background { task_id, message } => {
+                assert!(message.contains("background"));
+                assert!(message.contains(&task_id.to_string()));
+                let st = task_status(task_id);
+                assert!(st.contains(&task_id.to_string()));
+            }
+            _ => panic!("expected background"),
+        }
+    }
+}

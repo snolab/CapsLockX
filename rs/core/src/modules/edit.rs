@@ -208,3 +208,245 @@ fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
     if dy < 0 { tap_with_held_mods(p, KeyCode::Enter,  -dy); }  // G (preserves Ctrl/Shift/etc.)
     if dy > 0 { tap_with_held_mods(p, KeyCode::Delete,  dy); }  // T
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::acc_model::set_external_tick;
+    use crate::state::{ClxConfig, ClxState, SpeedConfig};
+    use crate::test_platform::{Call, MockPlatform};
+    use std::sync::Arc;
+    use std::sync::Once;
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    static EXTERNAL_TICK_INIT: Once = Once::new();
+
+    fn enable_external_tick() {
+        EXTERNAL_TICK_INIT.call_once(|| set_external_tick(true));
+    }
+
+    fn make_module(active: bool) -> (Arc<MockPlatform>, Arc<ClxState>, EditModule) {
+        enable_external_tick();
+        let mock = Arc::new(MockPlatform::new());
+        let state = Arc::new(ClxState::new(ClxConfig::default()));
+        if active {
+            state.enter_fn_mode();
+        }
+        let m = EditModule::new(mock.clone() as Arc<dyn Platform>, state.clone());
+        (mock, state, m)
+    }
+
+    fn drive_until_move(module: &EditModule, mock: &MockPlatform) {
+        for _ in 0..20 {
+            module.tick();
+            if mock.calls().iter().any(|c| matches!(c, Call::KeyDown(_))) {
+                return;
+            }
+            sleep(Duration::from_millis(20));
+        }
+    }
+
+    #[test]
+    fn is_mapped_key_covers_all_documented_keys() {
+        let (_m, _s, e) = make_module(false);
+        for k in [
+            KeyCode::H, KeyCode::J, KeyCode::K, KeyCode::L,
+            KeyCode::Y, KeyCode::U, KeyCode::I, KeyCode::O,
+            KeyCode::G, KeyCode::T, KeyCode::P, KeyCode::N,
+            KeyCode::Enter, KeyCode::Backspace,
+        ] {
+            assert!(e.is_mapped_key(k), "{:?} should be mapped", k);
+        }
+    }
+
+    #[test]
+    fn is_mapped_key_rejects_unmapped_keys() {
+        let (_m, _s, e) = make_module(false);
+        for k in [KeyCode::A, KeyCode::Z, KeyCode::Space, KeyCode::CapsLock, KeyCode::F1] {
+            assert!(!e.is_mapped_key(k), "{:?} should NOT be mapped", k);
+        }
+    }
+
+    #[test]
+    fn enter_keydown_taps_end_end_enter() {
+        let (mock, _s, e) = make_module(false);
+        assert!(e.on_key_down(KeyCode::Enter, &*mock));
+        let calls = mock.calls();
+        let taps: Vec<KeyCode> = calls.iter().filter_map(|c| match c {
+            Call::KeyDown(k) => Some(*k), _ => None,
+        }).collect();
+        assert_eq!(taps, vec![KeyCode::End, KeyCode::End, KeyCode::Enter]);
+    }
+
+    #[test]
+    fn backspace_keydown_performs_full_delete_line_sequence() {
+        let (mock, _s, e) = make_module(false);
+        assert!(e.on_key_down(KeyCode::Backspace, &*mock));
+        let calls = mock.calls();
+        let downs: Vec<KeyCode> = calls.iter().filter_map(|c| match c {
+            Call::KeyDown(k) => Some(*k), _ => None,
+        }).collect();
+        assert_eq!(downs, vec![
+            KeyCode::Home, KeyCode::Home, KeyCode::End, KeyCode::Home, KeyCode::Home,
+            KeyCode::LShift, KeyCode::End,
+            KeyCode::LShift, KeyCode::End,
+            KeyCode::LShift, KeyCode::Right,
+            KeyCode::Delete,
+        ]);
+    }
+
+    #[test]
+    fn unmapped_keys_return_false_on_key_down() {
+        let (mock, _s, e) = make_module(false);
+        assert!(!e.on_key_down(KeyCode::A, &*mock));
+        assert!(!e.on_key_down(KeyCode::Space, &*mock));
+        assert!(!e.on_key_down(KeyCode::F1, &*mock));
+    }
+
+    #[test]
+    fn unmapped_keys_return_false_on_key_up() {
+        let (_mock, _s, e) = make_module(false);
+        assert!(!e.on_key_up(KeyCode::A));
+        assert!(!e.on_key_up(KeyCode::Space));
+    }
+
+    #[test]
+    fn cursor_keys_are_accepted_on_down_and_up() {
+        let (mock, _s, e) = make_module(false);
+        for k in [KeyCode::H, KeyCode::J, KeyCode::K, KeyCode::L] {
+            assert!(e.on_key_down(k, &*mock), "down {:?}", k);
+            assert!(e.on_key_up(k), "up {:?}", k);
+        }
+    }
+
+    #[test]
+    fn page_keys_are_accepted_on_down_and_up() {
+        let (mock, _s, e) = make_module(false);
+        for k in [KeyCode::Y, KeyCode::U, KeyCode::I, KeyCode::O] {
+            assert!(e.on_key_down(k, &*mock));
+            assert!(e.on_key_up(k));
+        }
+    }
+
+    #[test]
+    fn action_keys_g_and_t_are_accepted() {
+        let (mock, _s, e) = make_module(false);
+        assert!(e.on_key_down(KeyCode::G, &*mock));
+        assert!(e.on_key_up(KeyCode::G));
+        assert!(e.on_key_down(KeyCode::T, &*mock));
+        assert!(e.on_key_up(KeyCode::T));
+    }
+
+    #[test]
+    fn tab_keys_n_and_p_are_accepted() {
+        let (mock, _s, e) = make_module(false);
+        assert!(e.on_key_down(KeyCode::N, &*mock));
+        assert!(e.on_key_up(KeyCode::N));
+        assert!(e.on_key_down(KeyCode::P, &*mock));
+        assert!(e.on_key_up(KeyCode::P));
+    }
+
+    #[test]
+    fn enter_and_backspace_keyup_return_true() {
+        let (_mock, _s, e) = make_module(false);
+        assert!(e.on_key_up(KeyCode::Enter));
+        assert!(e.on_key_up(KeyCode::Backspace));
+    }
+
+    #[test]
+    fn apply_speeds_and_stop_and_tick_do_not_panic() {
+        let (_mock, _s, e) = make_module(false);
+        let cfg = SpeedConfig { cursor_speed: 100.0, page_speed: 50.0, tab_speed: 25.0, action_speed: 10.0, mouse_speed: 1.0, scroll_speed: 1.0 };
+        e.apply_speeds(&cfg);
+        e.tick();
+        e.stop();
+    }
+
+    #[test]
+    fn cursor_action_emits_right_arrow_when_active_and_l_pressed() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::L, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::L);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::Right))),
+            "expected a Right key tap, got: {:?}", calls);
+    }
+
+    #[test]
+    fn cursor_action_does_nothing_when_clx_inactive() {
+        let (mock, _s, e) = make_module(false);
+        assert!(e.on_key_down(KeyCode::L, &*mock));
+        for _ in 0..5 { e.tick(); sleep(Duration::from_millis(10)); }
+        e.on_key_up(KeyCode::L);
+        assert!(mock.calls().is_empty(), "no platform calls when inactive, got {:?}", mock.calls());
+    }
+
+    #[test]
+    fn page_action_emits_end_when_active_and_o_pressed() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::O, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::O);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::End))),
+            "expected an End key tap, got: {:?}", calls);
+    }
+
+    #[test]
+    fn tab_action_emits_tab_when_active_and_n_pressed() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::N, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::N);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::Tab))),
+            "expected a Tab key tap, got: {:?}", calls);
+    }
+
+    #[test]
+    fn tab_action_p_direction_emits_shift_tab() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::P, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::P);
+        let calls = mock.calls();
+        let has_shift = calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::LShift)));
+        let has_tab = calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::Tab)));
+        assert!(has_shift && has_tab, "expected Shift+Tab, got: {:?}", calls);
+    }
+
+    #[test]
+    fn action_action_g_emits_enter() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::G, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::G);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::Enter))),
+            "expected Enter, got: {:?}", calls);
+    }
+
+    #[test]
+    fn action_action_t_emits_delete() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::T, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::T);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::Delete))),
+            "expected Delete, got: {:?}", calls);
+    }
+
+    #[test]
+    fn cursor_action_vertical_emits_up_or_down_and_home_when_no_mods() {
+        let (mock, _s, e) = make_module(true);
+        assert!(e.on_key_down(KeyCode::J, &*mock));
+        drive_until_move(&e, &mock);
+        e.on_key_up(KeyCode::J);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::KeyDown(KeyCode::Down))),
+            "expected Down, got: {:?}", calls);
+    }
+}

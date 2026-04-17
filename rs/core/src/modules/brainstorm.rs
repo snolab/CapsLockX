@@ -434,3 +434,137 @@ fn agent_turn(
 
     state.store(STATE_DONE, Ordering::Relaxed);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_platform::{Call, MockPlatform};
+
+    fn make_module(api_key: &str) -> (BrainstormModule, Arc<MockPlatform>) {
+        let mock = Arc::new(MockPlatform::new());
+        let m = BrainstormModule::new(
+            mock.clone() as Arc<dyn Platform>,
+            api_key.to_string(),
+            "gemini-2.0-flash".to_string(),
+        );
+        (m, mock)
+    }
+
+    #[test]
+    fn is_mapped_key_only_b() {
+        let (m, _mock) = make_module("");
+        assert!(m.is_mapped_key(KeyCode::B));
+        assert!(!m.is_mapped_key(KeyCode::A));
+        assert!(!m.is_mapped_key(KeyCode::Escape));
+        assert!(!m.is_mapped_key(KeyCode::M));
+        assert!(!m.is_mapped_key(KeyCode::Space));
+    }
+
+    #[test]
+    fn on_key_up_always_false() {
+        let (m, _mock) = make_module("");
+        assert!(!m.on_key_up(KeyCode::B));
+        assert!(!m.on_key_up(KeyCode::A));
+        assert!(!m.on_key_up(KeyCode::Escape));
+    }
+
+    #[test]
+    fn on_key_down_unmapped_returns_false() {
+        let (m, mock) = make_module("");
+        let mods = Modifiers::default();
+        assert!(!m.on_key_down(KeyCode::A, &mods));
+        assert!(!m.on_key_down(KeyCode::Space, &mods));
+        assert!(!m.on_key_down(KeyCode::M, &mods));
+        assert_eq!(mock.calls().len(), 0);
+    }
+
+    #[test]
+    fn on_key_down_b_no_api_key_shows_error_overlay() {
+        let (m, mock) = make_module("");
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::B, &mods));
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("No LLM API key"))));
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_DONE);
+    }
+
+    #[test]
+    fn on_key_down_shift_b_clears_history() {
+        let (m, mock) = make_module("");
+        {
+            let mut h = m.history.lock().unwrap();
+            h.push(Message { role: "user".into(), content: "old".into() });
+            h.push(Message { role: "assistant".into(), content: "reply".into() });
+        }
+        *m.last_response.lock().unwrap() = "something".into();
+        let mods = Modifiers { shift: true, ..Default::default() };
+        assert!(m.on_key_down(KeyCode::B, &mods));
+        assert_eq!(m.history.lock().unwrap().len(), 1);
+        assert_eq!(m.last_response.lock().unwrap().as_str(), "");
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_DONE);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("cleared"))));
+    }
+
+    #[test]
+    fn escape_when_idle_returns_false() {
+        let (m, mock) = make_module("");
+        let mods = Modifiers::default();
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_IDLE);
+        assert!(!m.on_key_down(KeyCode::Escape, &mods));
+        assert_eq!(mock.calls().len(), 0);
+    }
+
+    #[test]
+    fn escape_when_streaming_dismisses() {
+        let (m, mock) = make_module("");
+        m.state.store(STATE_STREAMING, Ordering::Relaxed);
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::Escape, &mods));
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_IDLE);
+        assert!(m.cancel.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::HideBrainstormOverlay)));
+    }
+
+    #[test]
+    fn escape_when_done_dismisses() {
+        let (m, mock) = make_module("");
+        m.state.store(STATE_DONE, Ordering::Relaxed);
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::Escape, &mods));
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_IDLE);
+        let calls = mock.calls();
+        assert!(calls.iter().any(|c| matches!(c, Call::HideBrainstormOverlay)));
+    }
+
+    #[test]
+    fn update_llm_config_to_some() {
+        let (m, _mock) = make_module("");
+        assert!(m.llm_config.lock().unwrap().is_none());
+        m.update_llm_config("test-key", "gemini-2.0-flash");
+        assert!(m.llm_config.lock().unwrap().is_some());
+    }
+
+    #[test]
+    fn update_llm_config_to_none() {
+        let (m, _mock) = make_module("initial-key");
+        assert!(m.llm_config.lock().unwrap().is_some());
+        m.update_llm_config("", "gemini-2.0-flash");
+        assert!(m.llm_config.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn new_with_api_key_initializes_config() {
+        let (m, _mock) = make_module("some-key");
+        assert!(m.llm_config.lock().unwrap().is_some());
+        assert_eq!(m.history.lock().unwrap().len(), 1);
+        assert_eq!(m.history.lock().unwrap()[0].role, "system");
+    }
+
+    #[test]
+    fn generation_counter_starts_zero() {
+        let (m, _mock) = make_module("");
+        assert_eq!(m.generation.load(Ordering::Relaxed), 0);
+    }
+}

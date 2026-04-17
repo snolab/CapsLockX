@@ -16,6 +16,9 @@ pub mod modules;
 pub mod platform;
 pub mod state;
 
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_platform;
+
 pub use engine::{ClxEngine, CoreResponse};
 pub use key_code::{KeyCode, Modifiers};
 pub use platform::Platform;

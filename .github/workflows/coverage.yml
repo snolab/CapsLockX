@@ -1,0 +1,76 @@
+name: coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "rs/**"
+      - ".github/workflows/coverage.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "rs/**"
+      - ".github/workflows/coverage.yml"
+
+jobs:
+  coverage:
+    name: cargo llvm-cov (capslockx-core)
+    runs-on: ubuntu-latest
+    env:
+      # Floor that must not regress. Raise this number as coverage climbs.
+      # Reflects current line% on capslockx-core --lib (excluding sherpa/test_platform).
+      COVERAGE_FLOOR: "50"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Run llvm-cov on capslockx-core
+        working-directory: rs
+        run: |
+          cargo llvm-cov -p capslockx-core --lib \
+            --no-fail-fast \
+            --ignore-filename-regex '(sherpa|target/|test_platform)' \
+            --json --output-path coverage.json
+          cargo llvm-cov report \
+            --ignore-filename-regex '(sherpa|target/|test_platform)' \
+            --summary-only
+
+      - name: Enforce coverage floor
+        working-directory: rs
+        run: |
+          line_pct=$(python3 -c "
+          import json
+          d = json.load(open('coverage.json'))
+          tot = d['data'][0]['totals']['lines']
+          print(f\"{tot['percent']:.2f}\")")
+          echo "Line coverage: ${line_pct}% (floor: ${COVERAGE_FLOOR}%)"
+          python3 -c "
+          import sys
+          got = float('${line_pct}')
+          floor = float('${COVERAGE_FLOOR}')
+          if got < floor:
+              print(f'::error::Coverage {got}% is below floor {floor}%')
+              sys.exit(1)"
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: rs/coverage.json
