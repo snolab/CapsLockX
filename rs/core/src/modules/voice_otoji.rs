@@ -86,6 +86,31 @@ fn write_wav_header(w: &mut impl Write) -> std::io::Result<()> {
     w.flush()
 }
 
+/// Spawn `otoji-tray` once (detached) if not already running. Best-effort.
+/// The tray is a separate binary that owns the macOS menu bar item and
+/// reads `notes.jsonl` independently — its lifecycle is not tied to the
+/// listen child, so a sensevoice crash here doesn't take it down.
+fn ensure_tray_running() {
+    // Detect existing instance by exact basename. `pgrep -x` matches the
+    // process *name* (not the full command), avoiding false positives
+    // from anything that happens to mention "otoji-tray".
+    let already = Command::new("pgrep")
+        .args(["-x", "otoji-tray"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if already {
+        return;
+    }
+    let _ = Command::new("otoji-tray")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+}
+
 pub struct OtojiBackend {
     child: Mutex<Option<Child>>,
     reader_stop: Arc<AtomicBool>,
@@ -123,6 +148,13 @@ impl OtojiBackend {
         typed_text: Arc<Mutex<String>>,
         ptt: Option<Arc<super::voice_ptt::PttSession>>,
     ) -> bool {
+        // Best-effort: launch the otoji menu-bar tray once so the user
+        // gets a status icon + recent-notes menu without having to know
+        // about a separate `otoji-tray` binary. Idempotent via pgrep, and
+        // intentionally outside the early-return guard so a tray that
+        // was killed externally gets respawned on the next start() call.
+        ensure_tray_running();
+
         let mut guard = self.child.lock().unwrap();
         if guard.is_some() {
             return true; // already running
