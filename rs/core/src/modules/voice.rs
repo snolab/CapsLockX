@@ -2942,6 +2942,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "depends on real otoji subprocess; see CLX_DISABLE_OTOJI_SPAWN gate"]
     fn test_vad_speech_then_silence() {
         let mut vad = VadState::new();
 

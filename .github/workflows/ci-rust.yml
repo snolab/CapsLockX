@@ -125,3 +125,46 @@ jobs:
       - name: cargo build --release (macos adapter)
         working-directory: rs
         run: cargo build -p capslockx-macos --release
+
+  coverage:
+    name: Coverage report (capslockx-core, lib only)
+    runs-on: ubuntu-latest
+    needs: build-linux
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rs -> rs/target
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      # Report only — no threshold gate yet. Baseline is established by the
+      # first run; a threshold can be added once the number is known and
+      # stable across PRs.
+      - name: Generate coverage report
+        working-directory: rs
+        run: cargo llvm-cov --lib -p capslockx-core --summary-only | tee coverage.txt
+
+      - name: Generate LCOV report
+        working-directory: rs
+        run: cargo llvm-cov report --lcov --output-path coverage.lcov
+
+      - name: Upload coverage artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            rs/coverage.txt
+            rs/coverage.lcov
