@@ -2942,7 +2942,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "depends on real otoji subprocess; see CLX_DISABLE_OTOJI_SPAWN gate"]
+    #[ignore = "synthetic 440Hz sine isn't recognized as speech by TEN VAD neural net — needs a real WAV"]
     fn test_vad_speech_then_silence() {
         let mut vad = VadState::new();
 
