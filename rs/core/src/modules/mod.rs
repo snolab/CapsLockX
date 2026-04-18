@@ -4,11 +4,47 @@ pub mod edit;
 pub mod media;
 pub mod mouse;
 pub mod virtual_desktop;
+#[cfg(feature = "stt")]
 pub mod voice;
 pub mod voice_otoji;
 pub mod voice_ptt;
 #[cfg(test)]
 mod voice_ptt_test;
+#[cfg(not(feature = "stt"))]
+mod voice {
+    //! No-op stub used when the `stt` feature is disabled (e.g. Windows
+    //! builds, where `whisper-rs 0.13` fails to compile). Mirrors the
+    //! public surface of `VoiceModule` so the rest of `Modules` compiles
+    //! unchanged. All hotkeys silently fall through.
+    use std::sync::Arc;
+    use crate::key_code::KeyCode;
+    use crate::platform::Platform;
+
+    pub struct VoiceModule;
+
+    impl VoiceModule {
+        pub fn with_stt_engine(_platform: Arc<dyn Platform>, _stt_engine: String) -> Self {
+            Self
+        }
+        pub fn with_llm_config(self, _api_key: String, _model: String, _correction: bool) -> Self {
+            self
+        }
+        pub fn preload(&self) {}
+        pub fn on_key_down(&self, _key: KeyCode) -> bool { false }
+        pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
+        pub fn is_mapped_key(&self, _key: KeyCode) -> bool { false }
+        pub fn stop(&self) {}
+        #[allow(clippy::too_many_arguments)]
+        pub fn update_config(
+            &self,
+            _stt_engine: String, _api_key: String, _model: String, _correction: bool,
+            _tts_chain: String, _stt_polish_chain: String,
+            _aec_gain: f32, _noise_gate: f32,
+            _speech_start_prob: f32, _speech_end_prob: f32,
+            _speech_start_frames: usize, _silence_end_frames: usize,
+        ) {}
+    }
+}
 pub mod window_manager;
 
 use std::sync::Arc;
@@ -95,6 +131,12 @@ impl Modules {
             return true;
         }
 
+        // Space+Slash → toggle keyboard layout HUD.
+        if key == KeyCode::Slash {
+            self.platform.toggle_keyboard_layout_hud();
+            return true;
+        }
+
         // Core modules (keyboard/mouse) — must NEVER crash. Run directly.
         if self.edit.on_key_down(key, &*self.platform) { return true; }
         if self.mouse.on_key_down(key) { return true; }
@@ -124,6 +166,7 @@ impl Modules {
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         key == KeyCode::Comma  // Space+Comma = preferences
+            || key == KeyCode::Slash  // Space+Slash = keyboard layout HUD
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)

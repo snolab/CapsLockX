@@ -7,7 +7,9 @@ pub mod key_code;
 pub mod agent;
 pub mod cloud_stt;
 pub mod llm_client;
+#[cfg(feature = "stt")]
 pub mod local_sherpa;
+#[cfg(feature = "stt")]
 pub mod local_whisper;
 pub mod stt_corrector;
 pub mod task_manager;

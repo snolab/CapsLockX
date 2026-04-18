@@ -7,6 +7,7 @@
 
 mod commands;
 mod config_store;
+mod cursor_visibility;
 mod hook;
 mod output;
 mod shm;
@@ -15,6 +16,7 @@ mod vk;
 
 use std::path::Path;
 use std::process::{Child, Command};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use windows::Win32::Foundation::HANDLE;
@@ -33,6 +35,11 @@ static ICON_ON:  &[u8] = include_bytes!("../../../../Data/XIconBlue.ico");
 // ── Global AppHandle so hook.rs can update the tray icon ────────────────────
 
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+
+/// Set when main() is about to return so background helper threads
+/// (e.g. the quit-watch thread) can exit their poll loops cleanly instead
+/// of blocking forever on kernel waits.
+static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
 const TRAY_ID: &str = "main";
 
@@ -76,6 +83,11 @@ pub fn open_prefs_window() {
 }
 
 fn main() {
+    // Log panics to file since we're a windows subsystem app with no console.
+    std::panic::set_hook(Box::new(|info| {
+        hook::debug_log(&format!("[PANIC] {}", info));
+    }));
+    hook::debug_log("[main] started");
     // ── CLI subcommands (delegate to external tools, no GUI) ───────────
     if let Some(cmd) = std::env::args().nth(1) {
         match cmd.as_str() {
@@ -100,16 +112,23 @@ fn main() {
         }
     }
 
-    // ── Elevate to admin if configured ─────────────────────────────────
+    // ── Ensure only one instance runs at a time. ───────────────────────
+    // If we hit a previous instance we can't terminate (it's elevated and
+    // we're not), re-launch self elevated and let the elevated child retry.
+    // This mirrors the AHK version's behavior of UAC-prompting on demand.
+    let needs_elevation_for_kill = shm::SharedState::kill_previous();
+
+    // ── Elevate to admin if configured, or if a stuck old instance demands it ─
     let cfg_pre = config_store::load();
-    if cfg_pre.request_admin && !is_elevated() {
-        eprintln!("[CLX] requesting elevation …");
+    if (cfg_pre.request_admin || needs_elevation_for_kill) && !is_elevated() {
+        if needs_elevation_for_kill {
+            eprintln!("[CLX] previous elevated instance detected — requesting elevation to kill it");
+        } else {
+            eprintln!("[CLX] requesting elevation …");
+        }
         relaunch_elevated();
         return;
     }
-
-    // Ensure only one instance runs at a time.
-    shm::SharedState::kill_previous();
 
     let cfg = config_store::load();
     hook::init_engine(cfg.clone().into_clx_config());
@@ -157,7 +176,19 @@ fn main() {
     if let Some(ev) = ahk_ready_event {
         unsafe { let _ = windows::Win32::Foundation::CloseHandle(ev); }
     }
+    // Spawn the tray/cursor worker BEFORE install_hook so the first hook
+    // callback already has a channel to send edge events into. The worker
+    // absorbs all Tauri and SystemParametersInfoW work that used to run
+    // inside the WH_KEYBOARD_LL callback — keeping the hook callback fast
+    // and avoiding deadlocks that could leave the process unkillable.
+    hook::init_tray_worker();
+
+    // Install hook on the main thread BEFORE Tauri init.
+    // Tauri's setup takes ~15s, during which the hook would be starved of
+    // message pumping.  We install here and run a brief PeekMessage pump
+    // in install_hook's SetTimer callback to keep it alive.
     hook::install_hook();
+    hook::debug_log("[main] hook installed");
     let engine = hook::engine();
 
     tauri::Builder::default()
@@ -170,19 +201,34 @@ fn main() {
             let _ = APP_HANDLE.set(app.handle().clone());
 
             // Watch the quit event so a new instance can ask us to exit cleanly.
+            // Uses a 500 ms polling wait instead of INFINITE so the thread
+            // observes the SHUTDOWN flag during normal shutdown and exits
+            // cleanly, rather than sitting in a kernel wait forever.
             if let Some(evt) = shm::SharedState::create_quit_event() {
                 let app_handle = app.handle().clone();
                 let raw = evt.0 as usize; // extract raw ptr for Send
-                std::thread::spawn(move || {
-                    use windows::Win32::Foundation::{CloseHandle, HANDLE};
-                    use windows::Win32::System::Threading::WaitForSingleObject;
-                    unsafe {
-                        let h = HANDLE(raw as *mut _);
-                        WaitForSingleObject(h, u32::MAX); // INFINITE
-                        let _ = CloseHandle(h);
-                    }
-                    app_handle.exit(0);
-                });
+                let _ = std::thread::Builder::new()
+                    .name("clx-quit-watch".into())
+                    .spawn(move || {
+                        use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_OBJECT_0};
+                        use windows::Win32::System::Threading::WaitForSingleObject;
+                        unsafe {
+                            let h = HANDLE(raw as *mut _);
+                            loop {
+                                let r = WaitForSingleObject(h, 500);
+                                if r == WAIT_OBJECT_0 {
+                                    let _ = CloseHandle(h);
+                                    app_handle.exit(0);
+                                    return;
+                                }
+                                if SHUTDOWN.load(Ordering::Relaxed) {
+                                    let _ = CloseHandle(h);
+                                    return;
+                                }
+                                // WAIT_TIMEOUT or WAIT_FAILED — retry.
+                            }
+                        }
+                    });
             }
 
             let prefs_item  = MenuItemBuilder::with_id("prefs",      "Preferences…").build(app)?;
@@ -249,7 +295,11 @@ fn main() {
             }
         });
 
+    // Signal helper threads to wind down before we tear down Win32 state.
+    SHUTDOWN.store(true, Ordering::Relaxed);
+
     hook::uninstall_hook();
+    cursor_visibility::disable();
 
     // Terminate AHK child process on shutdown.
     if let Some(ref mut child) = ahk_child {

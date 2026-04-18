@@ -111,6 +111,7 @@ fn ensure_tray_running() {
         .spawn();
 }
 
+
 pub struct OtojiBackend {
     child: Mutex<Option<Child>>,
     reader_stop: Arc<AtomicBool>,
@@ -148,12 +149,21 @@ impl OtojiBackend {
         typed_text: Arc<Mutex<String>>,
         ptt: Option<Arc<super::voice_ptt::PttSession>>,
     ) -> bool {
+        // Refuse to spawn real subprocesses under `cargo test` or when
+        // explicitly disabled. Without this, tests that touch VoiceModule
+        // would fork dozens of `otoji listen` (and the tray) processes
+        // that survive the test binary, polluting the user's session.
+        if cfg!(test) || std::env::var_os("CLX_DISABLE_OTOJI_SPAWN").is_some() {
+            return false;
+        }
+
         // Best-effort: launch the otoji menu-bar tray once so the user
         // gets a status icon + recent-notes menu without having to know
         // about a separate `otoji-tray` binary. Idempotent via pgrep, and
         // intentionally outside the early-return guard so a tray that
         // was killed externally gets respawned on the next start() call.
         ensure_tray_running();
+
 
         let mut guard = self.child.lock().unwrap();
         if guard.is_some() {

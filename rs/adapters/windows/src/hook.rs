@@ -1,6 +1,7 @@
 /// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
 use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use std::sync::mpsc;
 
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -29,6 +30,39 @@ static SHM: OnceLock<SharedState> = OnceLock::new();
 
 /// Last tray-active state for edge detection (0 = off, 1 = on, u32::MAX = uninitialised).
 static LAST_TRAY_ACTIVE: AtomicU32 = AtomicU32::new(u32::MAX);
+
+/// Channel sender to the tray/cursor worker thread. `None` until `init_tray_worker`
+/// is called. The hook callback must NEVER call Tauri or SystemParametersInfoW
+/// directly — those can block on GUI locks held by threads waiting on the hook,
+/// creating a 3-way deadlock that leaves the process unkillable.
+static TRAY_TX: OnceLock<mpsc::Sender<bool>> = OnceLock::new();
+
+/// Spawn the tray/cursor-visibility worker thread. Must be called once before
+/// `install_hook()`. The worker coalesces bursts of edge events so a rapid
+/// on/off/on flicker only triggers the most recent state.
+pub fn init_tray_worker() {
+    let (tx, rx) = mpsc::channel::<bool>();
+    if TRAY_TX.set(tx).is_err() {
+        return;
+    }
+    let _ = std::thread::Builder::new()
+        .name("clx-tray-worker".into())
+        .spawn(move || {
+            while let Ok(first) = rx.recv() {
+                // Coalesce any backlog so we only apply the latest state.
+                let mut latest = first;
+                while let Ok(next) = rx.try_recv() {
+                    latest = next;
+                }
+                crate::update_tray_icon(latest);
+                if latest {
+                    crate::cursor_visibility::enable();
+                } else {
+                    crate::cursor_visibility::disable();
+                }
+            }
+        });
+}
 
 /// Store the shared memory handle so the hook callback can publish mode changes.
 pub fn init_shared_state(shm: SharedState) {
@@ -64,6 +98,12 @@ pub fn engine() -> Arc<ClxEngine> {
     ENGINE.get().expect("init_engine must be called before engine()").clone()
 }
 
+/// Install the WH_KEYBOARD_LL hook and a 16 ms timer for AccModel ticks.
+///
+/// **IMPORTANT:** Must be called from the thread that runs the Win32 message
+/// loop (e.g. inside Tauri's `setup` callback).  WH_KEYBOARD_LL hooks require
+/// the installing thread to pump messages — installing on a thread that doesn't
+/// call GetMessage/DispatchMessage causes Windows to silently disable the hook.
 pub fn install_hook() {
     let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
     let hhook = unsafe {
@@ -80,10 +120,17 @@ pub fn install_hook() {
     }
 }
 
-/// Timer callback — drives AccModel physics on the main/hook thread.
+/// Timer callback — drives AccModel physics on the main/hook thread, and
+/// periodically nudges cursor visibility while CLX mode is held. Nudging used
+/// to happen inside the hook callback; moving it here keeps the hook callback
+/// fast and keeps us well under the WH_KEYBOARD_LL ~300 ms budget.
 unsafe extern "system" fn tick_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _time: u32) {
     if let Some(engine) = ENGINE.get() {
         engine.tick();
+    }
+    let active = LAST_TRAY_ACTIVE.load(Ordering::Relaxed);
+    if active != 0 && active != u32::MAX {
+        crate::cursor_visibility::nudge();
     }
 }
 
@@ -115,11 +162,11 @@ unsafe extern "system" fn keyboard_proc(
     let injected = (flags & LLKHF_INJECTED) != 0;
     let is_ours = injected && kb.dwExtraInfo == CLX_EXTRA_INFO;
 
-    // // Debug: uncomment to log ALL key events
-    // if pressed || released {
-    //     debug_log(&format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} extra=0x{:X}",
-    //         kb.vkCode, code, if pressed { "DN" } else { "UP" }, injected, is_ours, kb.dwExtraInfo));
-    // }
+    // Debug: log ALL key events
+    if pressed || released {
+        debug_log(&format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} extra=0x{:X}",
+            kb.vkCode, code, if pressed { "DN" } else { "UP" }, injected, is_ours, kb.dwExtraInfo));
+    }
 
     // Skip events injected by us
     if is_ours {
@@ -130,6 +177,7 @@ unsafe extern "system" fn keyboard_proc(
 
     let engine = ENGINE.get().expect("init_engine not called");
     let resp = engine.on_key_event(code, pressed);
+    debug_log(&format!("[hook] -> {:?} mode={}", resp, engine.state().mode()));
 
     // Publish current mode to shared memory so AHK extensions can read it.
     let mode = engine.state().mode();
@@ -137,11 +185,16 @@ unsafe extern "system" fn keyboard_proc(
         shm.write_mode(mode);
     }
 
-    // Update tray icon on mode edge transitions.
+    // Dispatch mode-edge transitions to the tray worker. The hook callback
+    // must never call Tauri or SystemParametersInfoW directly — sending on an
+    // mpsc channel is wait-free (one atomic CAS + a malloc) and safe here.
+    // Cursor-visibility nudges are handled by the SetTimer tick instead.
     let active = u32::from(mode != 0);
     let prev = LAST_TRAY_ACTIVE.swap(active, Ordering::Relaxed);
     if prev != active {
-        crate::update_tray_icon(active != 0);
+        if let Some(tx) = TRAY_TX.get() {
+            let _ = tx.send(active != 0);
+        }
     }
 
     match resp {
@@ -151,7 +204,7 @@ unsafe extern "system" fn keyboard_proc(
 }
 
 #[allow(dead_code)]
-fn debug_log(msg: &str) {
+pub fn debug_log(msg: &str) {
     use std::io::Write as _;
     if let Ok(tmp) = std::env::var("TEMP") {
         let path = format!(r"{}\capslockx_hook.log", tmp);

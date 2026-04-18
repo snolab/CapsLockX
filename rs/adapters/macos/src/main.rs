@@ -27,6 +27,8 @@ mod voice_capture;
 #[cfg(target_os = "macos")]
 mod brainstorm_overlay;
 #[cfg(target_os = "macos")]
+mod keyboard_layout_overlay;
+#[cfg(target_os = "macos")]
 mod agent_cmd;
 #[cfg(target_os = "macos")]
 mod mic_mode;
@@ -131,11 +133,9 @@ fn main() {
             )])
             .status();
 
-        // Reap any orphan clx-prompt daemons from previous (crashed) sessions.
-        // The Tauri prompt helper is ~74 MB each — without this, repeated
-        // crashes leak ten or more orphan processes.
+        // Reap any orphan clx-prompt processes from previous (crashed) sessions.
         let _ = std::process::Command::new("sh")
-            .args(["-c", "pkill -9 -f 'clx-prompt --daemon' 2>/dev/null"])
+            .args(["-c", "pkill -9 -f 'clx-prompt' 2>/dev/null"])
             .status();
     }
 

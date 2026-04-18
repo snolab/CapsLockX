@@ -138,14 +138,7 @@ impl FullConfig {
             stt_correction:     self.stt_correction,
             tts_chain:          self.tts_chain,
             stt_polish_chain:   self.stt_polish_chain,
-            // Voice/AEC thresholds — adopt core defaults; Windows doesn't
-            // currently expose these in its config UI.
-            aec_gain:            15.0,
-            noise_gate:          0.003,
-            speech_start_prob:   0.8,
-            speech_end_prob:     0.6,
-            speech_start_frames: 10,
-            silence_end_frames:  20,
+            ..ClxConfig::default()
         }
     }
 }

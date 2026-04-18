@@ -219,6 +219,11 @@ pub trait Platform: Send + Sync + 'static {
     /// `prefill` is shown in the text field (e.g., clipboard content).
     fn show_prompt_input(&self, _title: &str, _message: &str, _prefill: &str) -> Option<String> { None }
 
+    // ── Keyboard layout HUD (optional, default = no-op) ────────────────────
+
+    /// Toggle the keyboard layout HUD overlay (shows CLX hotkey map).
+    fn toggle_keyboard_layout_hud(&self) {}
+
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 
     /// Restart the entire application (spawn new instance, exit current).
