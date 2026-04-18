@@ -54,19 +54,19 @@ pub fn update_tray_icon(active: bool) {
     }
 }
 
-/// Open (or focus) the preferences webview window. Same code path as the
-/// tray's "Preferences…" menu — used for the Space+, hotkey from
-/// `WinPlatform::open_preferences()`.
+/// Show the preferences webview window, creating it if it doesn't exist.
+/// Safe to call from any thread (hook callback, tray worker, menu handler).
+/// Window creation is deferred to a worker thread to avoid deadlocking when
+/// called from a thread that isn't pumping messages for the window.
 pub fn open_prefs_window() {
     let Some(app) = APP_HANDLE.get() else { return };
+    if let Some(w) = app.get_webview_window("prefs") {
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
     let app = app.clone();
-    // Tauri's webview construction must run off the hook thread; spawn.
     std::thread::spawn(move || {
-        if let Some(w) = app.get_webview_window("prefs") {
-            let _ = w.show();
-            let _ = w.set_focus();
-            return;
-        }
         use tauri::webview::WebviewWindowBuilder;
         use tauri::WebviewUrl;
         let _ = WebviewWindowBuilder::new(
@@ -244,30 +244,7 @@ fn main() {
                 .icon(icon)
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
-                    "prefs" => {
-                        // Re-show if already open.
-                        if let Some(w) = app.get_webview_window("prefs") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                            return;
-                        }
-                        // Create on demand (must spawn thread to avoid deadlock on Windows).
-                        let app = app.clone();
-                        std::thread::spawn(move || {
-                            use tauri::webview::WebviewWindowBuilder;
-                            use tauri::WebviewUrl;
-                            let _ = WebviewWindowBuilder::new(
-                                &app,
-                                "prefs",
-                                WebviewUrl::App("index.html".into()),
-                            )
-                            .title("CapsLockX Preferences")
-                            .inner_size(560.0, 640.0)
-                            .resizable(false)
-                            .center()
-                            .build();
-                        });
-                    }
+                    "prefs" => open_prefs_window(),
                     "config_dir" => {
                         if let Some(dir) = config_store::config_path().parent() {
                             let _ = std::fs::create_dir_all(dir);
