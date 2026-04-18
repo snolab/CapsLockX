@@ -70,13 +70,14 @@ CLX_ConfigWindow()
     Gui, Add, Button, w200 gButton添加开机自动启动, % t("添加开机自动启动")
     Gui, Add, Button, w200 gButtonSetupAutostart, % t("设置Windows自动启动")
     Gui, Add, Button, w200 gButton配置文件编辑, % t("配置文件编辑")
-    Gui, Add, Button, w200 gButton重新載入, % t("重新載入CapsLockX")
+    Gui, Add, Button, w95 gButton重新載入, % t("重新載入CapsLockX")
+    Gui, Add, Button, x+10 yp w95 gButtonExit, % t("退出")
     
     global T_TomatoLife ;
     if (T_TomatoLife) {
-        Gui, Add, CheckBox, gCLX_ConfigureUpdate vT_TomatoLife Checked, % t("启用番茄时钟，每25分钟休息5分钟·。")
+        Gui, Add, CheckBox, xm gCLX_ConfigureUpdate vT_TomatoLife Checked, % t("启用番茄时钟，每25分钟休息5分钟·。")
     } else {
-        Gui, Add, CheckBox, gCLX_ConfigureUpdate vT_TomatoLife, % t("启用番茄时钟，每25分钟休息5分钟·。")
+        Gui, Add, CheckBox, xm gCLX_ConfigureUpdate vT_TomatoLife, % t("启用番茄时钟，每25分钟休息5分钟·。")
     }
 
     global T_XKeyAsCapsLock
@@ -145,6 +146,10 @@ return
 Button重新載入:
     Func("CLX_Reload").Call()
     Reload
+return
+ButtonExit:
+    RunWait, taskkill /F /IM clx-rust.exe, , Hide
+    ExitApp
 return
 CLX_ConfigureUpdate:
     global T_TomatoLife
