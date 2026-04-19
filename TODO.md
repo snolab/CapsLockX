@@ -1,3 +1,10 @@
+## NEXT
+
+- [ ] otoji-tray: replace text "oto10" title with a proper icon (template image), keep note count as menu header instead of title text
+- [ ] otoji listen: cheap RMS energy gate before TEN VAD to cut idle CPU (76% → ~10%)
+
+---
+
 ### 发展路线 🛰️ RoadMap
 
 CapsLockX 的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。
