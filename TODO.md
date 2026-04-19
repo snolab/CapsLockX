@@ -1,7 +1,9 @@
 ## NEXT
 
-- [ ] otoji-tray: replace text "oto10" title with a proper icon (template image), keep note count as menu header instead of title text
-- [ ] otoji listen: cheap RMS energy gate before TEN VAD to cut idle CPU (76% → ~10%)
+- [x] otoji-tray: replace text title with SF Symbol mic icon
+- [x] otoji listen: idle CPU gate before RNNoise (76% → ~0%)
+- [ ] otoji-tray: extract `objc-helpers.rs` shared with CLX `tray.rs` (~150 lines duplicated)
+- [ ] CLX↔otoji-tray state channel: drop CLX's own tray, otoji-tray reflects CLX mode/PTT via state file
 
 ---
 
