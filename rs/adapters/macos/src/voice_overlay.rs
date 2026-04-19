@@ -881,6 +881,13 @@ fn show_main_inner() {
                         _cmd: *mut c_void,
                         _sender: *mut c_void,
                     ) {
+                        // Tear down the listen child so the mic indicator
+                        // disappears. Mirrors the V-key toggle-off path —
+                        // without this the overlay hides but the mic stays
+                        // on.
+                        let _ = std::process::Command::new("pkill")
+                            .args(["-f", "otoji listen"])
+                            .status();
                         hide_overlay();
                     }
                     let sup = cls(b"NSObject\0");
