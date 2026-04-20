@@ -44,3 +44,7 @@ default = []
 # Disabled by default because whisper-rs 0.13 fails to compile on Windows.
 # macOS/Linux builds should opt in: `cargo build --features stt`.
 stt = ["dep:whisper-rs", "dep:sherpa-rs", "dep:ten-vad-rs"]
+# Cloud LLM features (brainstorm chat, agent, llm_client, cloud_stt). Enabled
+# by the "full" CLX build; disabled in the "portable" variant so the binary
+# carries no LLM/HTTP surface and Space+B/M are no-ops.
+ai = []

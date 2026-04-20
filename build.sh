@@ -3,7 +3,13 @@
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT/rs"
-cargo build -p capslockx-macos --release --bin capslockx
+# Default = full build (voice + AI). Pass --portable for the lite variant.
+FEATURES_FLAG="--features full"
+if [ "${1:-}" = "--portable" ]; then
+    FEATURES_FLAG=""
+    shift
+fi
+cargo build -p capslockx-macos --release --bin capslockx $FEATURES_FLAG
 
 # Only update the binary if the cargo output is newer than the signed clx.
 # This preserves the codesign CDHash (and Accessibility permission) across rebuilds
