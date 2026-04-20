@@ -251,8 +251,17 @@ jobs:
         working-directory: rs
         run: cargo build -p capslockx-macos --release --bin capslockx --features full
 
-      - name: Sign + stage full
-        run: codesign -s - --force --identifier "com.snomiao.capslockx" rs/target/release/capslockx
+      - name: Bundle dylibs + sign full
+        # The full binary links @rpath/libonnxruntime.*.dylib and
+        # @rpath/libsherpa-onnx-c-api.dylib (dropped by sherpa-rs's build.rs
+        # into target/release). Without bundling them and adding an rpath,
+        # the .dmg binary dies with "Library not loaded: @rpath/..." on
+        # first launch. Set rpath BEFORE codesign — install_name_tool
+        # invalidates any prior signature.
+        run: |
+          BIN=rs/target/release/capslockx
+          install_name_tool -add_rpath "@executable_path/." "$BIN"
+          codesign -s - --force --identifier "com.snomiao.capslockx" "$BIN"
 
       - name: Create .dmg (setup variant)
         run: |
@@ -261,6 +270,11 @@ jobs:
           APP_DIR="CapsLockX"
           mkdir -p "$APP_DIR"
           cp rs/target/release/capslockx "$APP_DIR/clx"
+          # Bundle the @rpath dylibs next to the binary so the rpath
+          # @executable_path/. resolves at launch.
+          cp rs/target/release/libonnxruntime.*.dylib "$APP_DIR/" 2>/dev/null || true
+          cp rs/target/release/libsherpa-onnx-c-api.dylib "$APP_DIR/" 2>/dev/null || true
+          cp rs/target/release/libsherpa-onnx-cxx-api.dylib "$APP_DIR/" 2>/dev/null || true
           cp scripts/install.sh "$APP_DIR/install.sh"
           chmod +x "$APP_DIR/clx" "$APP_DIR/install.sh"
           create-dmg \
