@@ -112,22 +112,58 @@ pub fn install_hook() {
     };
     HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
 
-    // Drive AccModel ticks on the main/hook thread (16 ms timer).
-    // This replaces background ticker threads so SendInput runs on the same
-    // thread as the keyboard hook, avoiding phantom modifier key-up events.
+    // High-frequency ticker thread for AccModel physics (~166 FPS).
+    // Uses timeBeginPeriod(1) for 1ms Sleep resolution, then sleeps ~6ms
+    // per tick. SendInput for mouse movement works fine cross-thread.
+    // A low-frequency SetTimer (250ms) handles cursor-visibility nudges
+    // that don't need high frequency.
+    std::thread::Builder::new()
+        .name("clx-ticker".into())
+        .spawn(|| {
+            use std::sync::atomic::AtomicU64;
+            static TICK_COUNT: AtomicU64 = AtomicU64::new(0);
+            static LAST_LOG: AtomicU64 = AtomicU64::new(0);
+
+            // Request 1ms timer resolution from Windows.
+            unsafe {
+                windows::Win32::Media::timeBeginPeriod(1);
+            }
+
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(6)); // ~166 FPS
+
+                if let Some(engine) = ENGINE.get() {
+                    engine.tick();
+                }
+
+                // FPS logging — every 2 seconds.
+                let count = TICK_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+                let now_ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis() as u64;
+                let last = LAST_LOG.load(Ordering::Relaxed);
+                if last == 0 {
+                    LAST_LOG.store(now_ms, Ordering::Relaxed);
+                    TICK_COUNT.store(0, Ordering::Relaxed);
+                } else if now_ms - last >= 2000 {
+                    let elapsed_s = (now_ms - last) as f64 / 1000.0;
+                    let fps = count as f64 / elapsed_s;
+                    debug_log(&format!("[CLX] tick: {:.1} FPS ({} ticks in {:.1}s)", fps, count, elapsed_s));
+                    LAST_LOG.store(now_ms, Ordering::Relaxed);
+                    TICK_COUNT.store(0, Ordering::Relaxed);
+                }
+            }
+        })
+        .expect("failed to spawn ticker thread");
+
+    // Low-frequency timer for cursor visibility nudges only.
     unsafe {
-        SetTimer(None, 0, 16, Some(tick_timer_proc));
+        SetTimer(None, 0, 250, Some(nudge_timer_proc));
     }
 }
 
-/// Timer callback — drives AccModel physics on the main/hook thread, and
-/// periodically nudges cursor visibility while CLX mode is held. Nudging used
-/// to happen inside the hook callback; moving it here keeps the hook callback
-/// fast and keeps us well under the WH_KEYBOARD_LL ~300 ms budget.
-unsafe extern "system" fn tick_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _time: u32) {
-    if let Some(engine) = ENGINE.get() {
-        engine.tick();
-    }
+unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _time: u32) {
     let active = LAST_TRAY_ACTIVE.load(Ordering::Relaxed);
     if active != 0 && active != u32::MAX {
         crate::cursor_visibility::nudge();

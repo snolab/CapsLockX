@@ -89,6 +89,8 @@ fn write_wav_header(w: &mut impl Write) -> std::io::Result<()> {
 pub struct OtojiBackend {
     child: Mutex<Option<Child>>,
     reader_stop: Arc<AtomicBool>,
+    /// TCP control socket address (used on Windows instead of Unix signals).
+    control_addr: Mutex<Option<String>>,
 }
 
 impl OtojiBackend {
@@ -96,12 +98,44 @@ impl OtojiBackend {
         Self {
             child: Mutex::new(None),
             reader_stop: Arc::new(AtomicBool::new(false)),
+            control_addr: Mutex::new(None),
         }
     }
 
     /// Get the PID of the running otoji subprocess (for signal sending).
     pub fn pid(&self) -> Option<u32> {
         self.child.lock().unwrap().as_ref().map(|c| c.id())
+    }
+
+    /// Get the control socket address (for TCP-based PTT control on Windows).
+    pub fn control_addr(&self) -> Option<String> {
+        self.control_addr.lock().unwrap().clone()
+    }
+
+    /// Send a control command via TCP to the otoji control socket.
+    pub fn send_control(&self, cmd: &str) -> bool {
+        if let Some(addr) = self.control_addr() {
+            match std::net::TcpStream::connect_timeout(
+                &addr.parse().unwrap(),
+                std::time::Duration::from_millis(500),
+            ) {
+                Ok(mut stream) => {
+                    use std::io::Write;
+                    let msg = format!("{}\n", cmd);
+                    if stream.write_all(msg.as_bytes()).is_ok() {
+                        return true;
+                    }
+                    eprintln!("[CLX] voice-otoji: control write failed");
+                    false
+                }
+                Err(e) => {
+                    eprintln!("[CLX] voice-otoji: control connect failed: {}", e);
+                    false
+                }
+            }
+        } else {
+            false
+        }
     }
 
     /// Check if `otoji` binary is available on PATH.
@@ -161,12 +195,32 @@ impl OtojiBackend {
             }
         }
 
+        // On Windows, use TCP control socket instead of Unix signals for PTT.
+        #[cfg(target_os = "windows")]
+        let control_port = {
+            // Pick a random ephemeral port.
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").ok();
+            let port = listener.as_ref().map(|l| l.local_addr().unwrap().port()).unwrap_or(18080);
+            drop(listener);
+            let addr = format!("127.0.0.1:{}", port);
+            args.push("--ptt-control-socket".into());
+            args.push(addr.clone());
+            addr
+        };
+
         cmd.args(&args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .stdin(Stdio::piped())
             .env("OTOJI_RELAUNCHED", "1")
             .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
+
+        // On Windows, prevent a visible CMD window from flashing.
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
 
         // NOTE: process_group(0) was disabled — it may interfere with signal
         // delivery from parent to child on macOS. We kill otoji explicitly
@@ -182,6 +236,13 @@ impl OtojiBackend {
         };
 
         eprintln!("[CLX] voice-otoji: started otoji pid={}", child.id());
+
+        // Store the control socket address on Windows.
+        #[cfg(target_os = "windows")]
+        {
+            *self.control_addr.lock().unwrap() = Some(control_port);
+            eprintln!("[CLX] voice-otoji: control socket ready");
+        }
 
         let mut child = child;
         let stdout = child.stdout.take().expect("otoji stdout");

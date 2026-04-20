@@ -481,22 +481,47 @@ impl PttSession {
 
     /// Send SIGUSR1 to otoji. Returns true if sent, false if no pid available.
     fn send_ptt_start(&self) -> bool {
-        if let Some(pid) = self.otoji.pid() {
-            eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
-            Self::send_signal(pid, 10); // SIGUSR1
-            true
-        } else {
-            eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
-            false
+        // On Windows, use TCP control socket instead of Unix signals.
+        #[cfg(not(unix))]
+        {
+            if self.otoji.send_control("PTT_START") {
+                eprintln!("[CLX] PTT: sent PTT_START via control socket");
+                return true;
+            }
+            eprintln!("[CLX] PTT: control socket not ready for PTT_START (will retry)");
+            return false;
+        }
+        #[cfg(unix)]
+        {
+            if let Some(pid) = self.otoji.pid() {
+                eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
+                Self::send_signal(pid, 10); // SIGUSR1
+                true
+            } else {
+                eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
+                false
+            }
         }
     }
 
     fn send_ptt_end(&self) {
-        if let Some(pid) = self.otoji.pid() {
-            eprintln!("[CLX] PTT: sending SIGUSR2 (ptt_end) to otoji pid={pid}");
-            Self::send_signal(pid, 12); // SIGUSR2
-        } else {
-            eprintln!("[CLX] PTT: no otoji pid available for ptt_end");
+        #[cfg(not(unix))]
+        {
+            if self.otoji.send_control("PTT_END") {
+                eprintln!("[CLX] PTT: sent PTT_END via control socket");
+            } else {
+                eprintln!("[CLX] PTT: control socket not ready for PTT_END");
+            }
+            return;
+        }
+        #[cfg(unix)]
+        {
+            if let Some(pid) = self.otoji.pid() {
+                eprintln!("[CLX] PTT: sending SIGUSR2 (ptt_end) to otoji pid={pid}");
+                Self::send_signal(pid, 12); // SIGUSR2
+            } else {
+                eprintln!("[CLX] PTT: no otoji pid available for ptt_end");
+            }
         }
     }
 
@@ -507,19 +532,9 @@ impl PttSession {
         }
         let ret = unsafe { kill(pid as i32, sig) };
         if ret != 0 {
-            // errno accessor is libc-specific (__error on macOS/BSD,
-            // __errno_location on glibc). std::io::Error does the right thing
-            // portably, so use that for the diagnostic.
             let err = std::io::Error::last_os_error();
             eprintln!("[CLX] PTT: kill({pid}, {sig}) FAILED: ret={ret}, err={err}");
         }
-    }
-
-    #[cfg(not(unix))]
-    fn send_signal(_pid: u32, _sig: i32) {
-        // Windows otoji handshake would use a named pipe or TCP socket rather
-        // than POSIX signals. PTT is a no-op on non-unix until that lands.
-        eprintln!("[CLX] PTT: send_signal skipped (non-unix platform)");
     }
 
     /// Replace displayed text at cursor using diff (common prefix optimization).
