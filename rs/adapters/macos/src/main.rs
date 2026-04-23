@@ -36,6 +36,8 @@ mod mic_mode;
 mod audio_tap;
 #[cfg(target_os = "macos")]
 mod observe_cmd;
+#[cfg(target_os = "macos")]
+mod ocr_cmd;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -54,6 +56,10 @@ fn main() {
             observe_cmd::main(&args[2..].to_vec());
             return;
         }
+        Some("ocr") => {
+            ocr_cmd::main(&args[2..]);
+            return;
+        }
         Some("--help") | Some("-h") | Some("help") => {
             println!("CapsLockX — keyboard productivity tool + LLM agent");
             println!();
@@ -65,7 +71,10 @@ fn main() {
             println!("  clx agent --prompt \"task\"    Run LLM agent to perform a task");
             println!("  clx agent \"task\"             Shorthand for --prompt");
             println!("  clx observe                  Capture screen + Gemini vision description");
-            println!("  clx observe --help           Show observe options");
+            println!("  clx observe --help           Show observe options
+  clx ocr                      OCR full screen (Apple Vision, JSON output)
+  clx ocr --region x,y,w,h    OCR a screen region
+  clx ocr --text               Plain text output");
             println!("  clx --help                  Show this help");
             println!();
             println!("CLX AGENT COMMANDS:");
