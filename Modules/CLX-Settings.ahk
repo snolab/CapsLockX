@@ -148,7 +148,7 @@ Button重新載入:
     Reload
 return
 ButtonExit:
-    RunWait, taskkill /F /IM clx-rust.exe, , Hide
+    RunWait, taskkill /F /IM clx.exe, , Hide
     ExitApp
 return
 CLX_ConfigureUpdate:

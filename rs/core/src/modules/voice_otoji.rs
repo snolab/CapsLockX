@@ -115,8 +115,15 @@ impl OtojiBackend {
     /// Send a control command via TCP to the otoji control socket.
     pub fn send_control(&self, cmd: &str) -> bool {
         if let Some(addr) = self.control_addr() {
+            let socket_addr: std::net::SocketAddr = match addr.parse() {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("[CLX] voice-otoji: invalid control address '{}': {}", addr, e);
+                    return false;
+                }
+            };
             match std::net::TcpStream::connect_timeout(
-                &addr.parse().unwrap(),
+                &socket_addr,
                 std::time::Duration::from_millis(500),
             ) {
                 Ok(mut stream) => {
