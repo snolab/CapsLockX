@@ -38,6 +38,11 @@ Section "Install"
   ; Copy files
   File "clx.exe"
   File "clx-screen-reader.exe"
+  ; sherpa-rs runtime DLLs (required — clx.exe fails with 0xC0000135 without
+  ; them). CI stages *.dll from rs/target/release/ next to this .nsi before
+  ; calling makensis, so the wildcard picks up sherpa-onnx-c-api.dll,
+  ; onnxruntime.dll, onnxruntime_providers_shared.dll, cargs.dll, etc.
+  File "*.dll"
 
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
@@ -76,6 +81,7 @@ Section "Uninstall"
   ; Remove files
   Delete "$INSTDIR\clx.exe"
   Delete "$INSTDIR\clx-screen-reader.exe"
+  Delete "$INSTDIR\*.dll"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"
 

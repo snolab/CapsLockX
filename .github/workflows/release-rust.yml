@@ -61,8 +61,15 @@ jobs:
         run: |
           $STAGE = "CapsLockX"
           New-Item -ItemType Directory -Force -Path $STAGE
-          Copy-Item rs\target\release\clx-rust.exe  "$STAGE\clx.exe"
+          Copy-Item rs\target\release\clx.exe  "$STAGE\clx.exe"
           Copy-Item rs\target\release\clx-screen-reader.exe "$STAGE\clx-screen-reader.exe"
+          # Runtime DLLs (sherpa-onnx-c-api.dll, onnxruntime.dll, etc.) are
+          # dropped by sherpa-rs's build.rs into target/release. Without these
+          # clx.exe fails with STATUS_DLL_NOT_FOUND (0xC0000135) at launch.
+          $dlls = Get-ChildItem rs\target\release -Filter *.dll -ErrorAction SilentlyContinue
+          if (-not $dlls) { throw "No DLLs found in rs\target\release — sherpa-rs build.rs may have failed" }
+          foreach ($d in $dlls) { Copy-Item $d.FullName "$STAGE\" }
+          Write-Host "Bundled DLLs: $($dlls.Name -join ', ')"
           Copy-Item scripts\install.ps1 "$STAGE\install.ps1"
           @"
           `$InstallDir = "`$env:LOCALAPPDATA\CapsLockX"
@@ -79,9 +86,13 @@ jobs:
       - name: Build NSIS setup.exe
         shell: pwsh
         run: |
-          # Stage binaries next to .nsi file (NSIS resolves File relative to script)
-          Copy-Item rs\target\release\clx-rust.exe scripts\clx.exe
+          # Stage binaries + runtime DLLs next to .nsi (NSIS File resolves
+          # relative to script dir)
+          Copy-Item rs\target\release\clx.exe scripts\clx.exe
           Copy-Item rs\target\release\clx-screen-reader.exe scripts\clx-screen-reader.exe
+          Get-ChildItem rs\target\release -Filter *.dll | ForEach-Object {
+            Copy-Item $_.FullName "scripts\"
+          }
           # Install NSIS + EnVar plugin
           choco install nsis -y --no-progress
           $NSIS_DIR = "C:\Program Files (x86)\NSIS"

@@ -6,7 +6,7 @@ description = "CapsLockX Windows adapter – WH_KEYBOARD_LL hook + SendInput + T
 license = "GPL-3.0"
 
 [[bin]]
-name = "clx-rust"
+name = "clx"
 path = "src/main.rs"
 
 [build-dependencies]
@@ -33,4 +33,7 @@ windows = { version = "0.58", features = [
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_UI_Shell",
     "Win32_UI_Accessibility",
+    "Win32_System_DataExchange",
+    "Win32_Globalization",
+    "Win32_Media",
 ] }

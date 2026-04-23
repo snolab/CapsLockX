@@ -12,28 +12,120 @@ pub mod voice_ptt;
 mod voice_ptt_test;
 #[cfg(not(feature = "stt"))]
 mod voice {
-    //! No-op stub used when the `stt` feature is disabled (e.g. Windows
-    //! builds, where `whisper-rs 0.13` fails to compile). Mirrors the
-    //! public surface of `VoiceModule` so the rest of `Modules` compiles
-    //! unchanged. All hotkeys silently fall through.
+    //! Otoji-only voice module for builds without in-process STT (e.g.
+    //! Windows, where whisper-rs 0.13 fails to compile on MSVC).
+    //! Delegates all speech recognition to the external `otoji` binary
+    //! via voice_otoji + voice_ptt.
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+    use std::time::Instant;
     use crate::key_code::KeyCode;
-    use crate::platform::Platform;
+    use crate::platform::{Platform, PttTrayState};
 
-    pub struct VoiceModule;
+    pub struct VoiceModule {
+        platform: Arc<dyn Platform>,
+        otoji: Arc<super::voice_otoji::OtojiBackend>,
+        otoji_available: bool,
+        otoji_typed: Arc<Mutex<String>>,
+        ptt: Arc<super::voice_ptt::PttSession>,
+        input_active: Arc<AtomicBool>,
+        v_held: Arc<AtomicBool>,
+        note_active: Arc<AtomicBool>,
+        press_time: Mutex<Option<Instant>>,
+    }
 
     impl VoiceModule {
-        pub fn with_stt_engine(_platform: Arc<dyn Platform>, _stt_engine: String) -> Self {
-            Self
+        pub fn with_stt_engine(platform: Arc<dyn Platform>, _stt_engine: String) -> Self {
+            let otoji = Arc::new(super::voice_otoji::OtojiBackend::new());
+            let ptt = super::voice_ptt::PttSession::new(
+                Arc::clone(&platform),
+                Arc::clone(&otoji),
+            );
+            let available = super::voice_otoji::OtojiBackend::is_available();
+            if available {
+                eprintln!("[CLX] voice(otoji-only): otoji detected on PATH");
+            } else {
+                eprintln!("[CLX] voice(otoji-only): otoji NOT found — Space+V disabled");
+            }
+            Self {
+                platform,
+                otoji,
+                otoji_available: available,
+                otoji_typed: Arc::new(Mutex::new(String::new())),
+                ptt,
+                input_active: Arc::new(AtomicBool::new(false)),
+                v_held: Arc::new(AtomicBool::new(false)),
+                note_active: Arc::new(AtomicBool::new(false)),
+                press_time: Mutex::new(None),
+            }
         }
+
         pub fn with_llm_config(self, _api_key: String, _model: String, _correction: bool) -> Self {
             self
         }
-        pub fn preload(&self) {}
-        pub fn on_key_down(&self, _key: KeyCode) -> bool { false }
-        pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
-        pub fn is_mapped_key(&self, _key: KeyCode) -> bool { false }
-        pub fn stop(&self) {}
+
+        pub fn preload(&self) {
+            if self.otoji_available {
+                eprintln!("[CLX] voice(otoji-only): skipping in-process STT preload");
+            }
+        }
+
+        pub fn on_key_down(&self, key: KeyCode) -> bool {
+            if key != KeyCode::V { return false; }
+            if !self.otoji_available { return false; }
+
+            *self.press_time.lock().unwrap() = Some(Instant::now());
+            self.v_held.store(true, Ordering::Relaxed);
+
+            if self.ptt.on_press() {
+                return true;
+            }
+
+            self.ensure_otoji_running();
+            true
+        }
+
+        pub fn on_key_up(&self, key: KeyCode) -> bool {
+            if key != KeyCode::V { return false; }
+            if !self.otoji_available { return false; }
+
+            self.v_held.store(false, Ordering::Relaxed);
+
+            let result = self.ptt.on_release();
+            match result {
+                super::voice_ptt::PttRelease::Hold => {
+                    eprintln!("[CLX] voice: hold release → waiting for otoji ptt_final");
+                    if !self.note_active.load(Ordering::Relaxed) {
+                        self.platform.hide_voice_overlay();
+                    }
+                }
+                super::voice_ptt::PttRelease::Locked => {
+                    eprintln!("[CLX] voice: double-tap → PTT locked mode");
+                }
+                super::voice_ptt::PttRelease::Tap => {
+                    if self.note_active.load(Ordering::Relaxed) {
+                        self.note_active.store(false, Ordering::Relaxed);
+                        self.platform.hide_voice_overlay();
+                        self.platform.set_ptt_tray_state(PttTrayState::Idle);
+                    } else {
+                        self.note_active.store(true, Ordering::Relaxed);
+                        self.platform.show_voice_overlay();
+                        self.platform.set_ptt_tray_state(PttTrayState::NoteMode);
+                    }
+                }
+            }
+            true
+        }
+
+        pub fn is_mapped_key(&self, key: KeyCode) -> bool {
+            key == KeyCode::V && self.otoji_available
+        }
+
+        pub fn stop(&self) {
+            self.otoji.stop();
+        }
+
         #[allow(clippy::too_many_arguments)]
         pub fn update_config(
             &self,
@@ -43,6 +135,30 @@ mod voice {
             _speech_start_prob: f32, _speech_end_prob: f32,
             _speech_start_frames: usize, _silence_end_frames: usize,
         ) {}
+
+        fn ensure_otoji_running(&self) {
+            if self.otoji.is_running() { return; }
+
+            eprintln!("[CLX] voice(otoji-only): launching otoji backend");
+            self.platform.show_voice_overlay();
+            self.platform.update_voice_subtitle("otoji starting...");
+            *self.otoji_typed.lock().unwrap() = String::new();
+
+            let otoji = Arc::clone(&self.otoji);
+            let platform = Arc::clone(&self.platform);
+            let input_active = Arc::clone(&self.input_active);
+            let otoji_typed = Arc::clone(&self.otoji_typed);
+            let ptt = Arc::clone(&self.ptt);
+            std::thread::Builder::new()
+                .name("otoji-launch".into())
+                .spawn(move || {
+                    if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt)) {
+                        eprintln!("[CLX] voice(otoji-only): otoji failed to start");
+                        platform.update_voice_subtitle("otoji failed");
+                    }
+                })
+                .ok();
+        }
     }
 }
 pub mod window_manager;

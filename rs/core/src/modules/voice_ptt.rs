@@ -19,7 +19,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::key_code::KeyCode;
-use crate::platform::Platform;
+use crate::platform::{Platform, PttTrayState};
 
 /// Delay before showing any placeholder — quick taps (<150ms) stay invisible.
 const PLACEHOLDER_DELAY_MS: u64 = 150;
@@ -46,6 +46,18 @@ pub enum PttRelease {
 
 // ── PttSession ───────────────────────────────────────────────────────────────
 
+/// Animated indicator typed at the cursor while background polish / TTS /
+/// translation is running. Shows the user something is in flight.
+struct SpinnerState {
+    active: bool,
+    /// The spinner glyph currently visible on screen (so we know what to
+    /// backspace when swapping frames or stopping). `None` = nothing typed.
+    current: Option<String>,
+}
+
+const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const SPINNER_INTERVAL_MS: u64 = 100;
+
 pub struct PttSession {
     platform: Arc<dyn Platform>,
     /// Currently displayed text at cursor (placeholder, partial, or final).
@@ -59,6 +71,9 @@ pub struct PttSession {
     /// Text that was last typed by `on_ptt_final` — used by `on_ptt_upgrade`
     /// to compute a minimal diff against the polished version.
     last_committed: Mutex<String>,
+    /// Spinner state — shows a live indicator char at the cursor while
+    /// polish / TTS / translation is running in the background.
+    spinner: Mutex<SpinnerState>,
     /// True once otoji's mic is ready (first status/partial received).
     mic_ready: Arc<AtomicBool>,
     /// Signals that a PTT session is active (between press and release/commit).
@@ -76,6 +91,7 @@ impl PttSession {
             locked: AtomicBool::new(false),
             last_tap_time: Mutex::new(None),
             last_committed: Mutex::new(String::new()),
+            spinner: Mutex::new(SpinnerState { active: false, current: None }),
             mic_ready: Arc::new(AtomicBool::new(false)),
             ptt_active: AtomicBool::new(false),
             otoji,
@@ -111,6 +127,7 @@ impl PttSession {
         let token = self.token_counter.fetch_add(1, Ordering::Relaxed) + 1;
         *self.displayed.lock().unwrap() = String::new();
         self.ptt_active.store(true, Ordering::Relaxed);
+        self.platform.set_ptt_tray_state(PttTrayState::Recording);
 
         // Fetch AX tree in background — completes during the user's speech
         // and becomes available to otoji (via ctx file) by the time the
@@ -229,7 +246,7 @@ impl PttSession {
 
     /// Called when otoji emits a `ptt_final` event — the RAW transcription,
     /// typed immediately while polish runs in the background.
-    pub fn on_ptt_final(&self, text: &str) {
+    pub fn on_ptt_final(self: &Arc<Self>, text: &str) {
         let text = text.trim();
         let old = {
             let mut d = self.displayed.lock().unwrap();
@@ -242,6 +259,26 @@ impl PttSession {
             eprintln!("[CLX] PTT: final (raw) -> {:?}", text);
             self.platform.type_text(text);
             *self.last_committed.lock().unwrap() = text.to_string();
+
+            // Tray: Recording -> Processing (polish/TTS still running async).
+            // Fall back to Idle after 3s if no upgrade arrives (polish may be
+            // disabled or may have returned text identical to raw).
+            self.platform.set_ptt_tray_state(PttTrayState::Processing);
+
+            // Start spinner — animated indicator at the cursor while polish/
+            // TTS/translation run in the background. Auto-stops via the 3s
+            // timer below (or sooner, when ptt_upgrade / ptt_translated arrive).
+            self.start_spinner();
+
+            let this = Arc::clone(self);
+            std::thread::Builder::new()
+                .name("ptt-tray-reset".into())
+                .spawn(move || {
+                    std::thread::sleep(Duration::from_secs(3));
+                    this.stop_spinner();
+                    this.platform.set_ptt_tray_state(PttTrayState::Idle);
+                })
+                .ok();
         }
 
         // (on_ptt_upgrade may arrive later with polished text — we diff-update there.)
@@ -254,11 +291,81 @@ impl PttSession {
         }
     }
 
+    /// Called when otoji emits a `ptt_translated` event. Behavior depends on
+    /// the translation config (env-driven in Phase 1):
+    ///
+    /// - `CLX_TRANSLATE_TYPE=original` (default): ignore — typed text stays
+    ///   in the source language.
+    /// - `CLX_TRANSLATE_TYPE=translated`: replace the already-typed original
+    ///   with the translation.
+    /// - `CLX_TRANSLATE_TYPE=both`: append the translation after the original,
+    ///   joined by `CLX_TRANSLATE_BOTH_TEMPLATE` (default `\n`) — or rendered
+    ///   via the template if it contains `__ORIGINAL__` / `__TRANSLATION__`.
+    pub fn on_ptt_translated(&self, translated: &str, _lang: &str) {
+        let translated = translated.trim();
+        if translated.is_empty() { return; }
+        self.stop_spinner();
+
+        let mode = std::env::var("CLX_TRANSLATE_TYPE").unwrap_or_else(|_| "original".into());
+        match mode.as_str() {
+            "translated" => {
+                // Replace original with translation (like ptt_upgrade).
+                let mut prev = self.last_committed.lock().unwrap();
+                if translated == *prev { return; }
+                let prev_chars = prev.chars().count();
+                let new_chars = translated.chars().count();
+                if (prev_chars as isize - new_chars as isize).abs() > 200 {
+                    eprintln!("[CLX] PTT: translation skipped — size delta too large");
+                    return;
+                }
+                let common: usize = prev.chars().zip(translated.chars())
+                    .take_while(|(a, b)| a == b).count();
+                let old_tail = prev_chars - common;
+                let new_tail: String = translated.chars().skip(common).collect();
+                for _ in 0..old_tail {
+                    self.platform.key_tap(KeyCode::Backspace);
+                }
+                if !new_tail.is_empty() {
+                    self.platform.type_text(&new_tail);
+                }
+                *prev = translated.to_string();
+                eprintln!("[CLX] PTT: translated → {:?}", translated);
+            }
+            "both" => {
+                // Append translation after original, using template.
+                let tmpl = std::env::var("CLX_TRANSLATE_BOTH_TEMPLATE")
+                    .unwrap_or_else(|_| "__ORIGINAL__\n__TRANSLATION__".into());
+                let orig = self.last_committed.lock().unwrap().clone();
+                let rendered = tmpl
+                    .replace("__ORIGINAL__", &orig)
+                    .replace("__TRANSLATION__", translated)
+                    .replace("\\n", "\n");
+                // Diff against what's already displayed (= orig).
+                let common: usize = orig.chars().zip(rendered.chars())
+                    .take_while(|(a, b)| a == b).count();
+                let old_tail = orig.chars().count() - common;
+                let new_tail: String = rendered.chars().skip(common).collect();
+                for _ in 0..old_tail {
+                    self.platform.key_tap(KeyCode::Backspace);
+                }
+                if !new_tail.is_empty() {
+                    self.platform.type_text(&new_tail);
+                }
+                *self.last_committed.lock().unwrap() = rendered;
+                eprintln!("[CLX] PTT: both (orig + translation) appended");
+            }
+            _ => {
+                // "original" or unknown — do nothing.
+            }
+        }
+    }
+
     /// Called when otoji emits a `ptt_upgrade` event — the polished version
     /// of the most recent `ptt_final`. Diff-updates the cursor: backspace the
     /// differing suffix, type the new suffix. Usually just a character or two.
     pub fn on_ptt_upgrade(&self, polished: &str) {
         let polished = polished.trim();
+        self.stop_spinner();
         let mut prev = self.last_committed.lock().unwrap();
         if polished == *prev || polished.is_empty() {
             return;
@@ -290,46 +397,151 @@ impl PttSession {
             self.platform.type_text(&new_tail);
         }
         *prev = polished.to_string();
+        // Upgrade finished — return tray to Idle (or NoteMode if active).
+        self.platform.set_ptt_tray_state(PttTrayState::Idle);
+    }
+
+    // ── Spinner ──────────────────────────────────────────────────────────
+
+    /// Start the animated polish/TTS spinner at the cursor. Idempotent —
+    /// does nothing if already active.
+    fn start_spinner(self: &Arc<Self>) {
+        {
+            let mut s = self.spinner.lock().unwrap();
+            if s.active { return; }
+            s.active = true;
+        }
+        let this = Arc::clone(self);
+        std::thread::Builder::new()
+            .name("ptt-spinner".into())
+            .spawn(move || {
+                let mut i = 0usize;
+                let spin_start = Instant::now();
+                let mut iter_no = 0u64;
+                let mut last_iter_end = spin_start;
+                // Type the initial frame under the lock.
+                {
+                    let mut s = this.spinner.lock().unwrap();
+                    if !s.active { return; }
+                    let frame = SPINNER_FRAMES[i];
+                    this.platform.type_text(frame);
+                    s.current = Some(frame.to_string());
+                }
+                loop {
+                    std::thread::sleep(Duration::from_millis(SPINNER_INTERVAL_MS));
+                    let loop_top = Instant::now();
+                    let mut s = this.spinner.lock().unwrap();
+                    let got_lock = Instant::now();
+                    if !s.active { return; }
+                    i = (i + 1) % SPINNER_FRAMES.len();
+                    // Backspace old frame, type new. Under lock so stop_spinner
+                    // can't race during the swap.
+                    let inject_start = Instant::now();
+                    if let Some(old) = s.current.take() {
+                        for _ in old.chars() {
+                            this.platform.key_tap(KeyCode::Backspace);
+                        }
+                    }
+                    let frame = SPINNER_FRAMES[i];
+                    this.platform.type_text(frame);
+                    let inject_end = Instant::now();
+                    s.current = Some(frame.to_string());
+                    drop(s);
+
+                    iter_no += 1;
+                    let gap = loop_top.duration_since(last_iter_end).as_millis();
+                    let lock_wait = got_lock.duration_since(loop_top).as_millis();
+                    let inject_ms = inject_end.duration_since(inject_start).as_millis();
+                    let since_start = loop_top.duration_since(spin_start).as_millis();
+                    // Log every iteration for now (we can throttle later once
+                    // the cause is clear).
+                    eprintln!(
+                        "[CLX] ptt-spin #{iter_no} t+{since_start}ms gap={gap}ms lock_wait={lock_wait}ms inject={inject_ms}ms"
+                    );
+                    last_iter_end = inject_end;
+                }
+            })
+            .ok();
+    }
+
+    /// Stop the spinner and remove any currently-displayed frame from the
+    /// cursor. Safe to call multiple times.
+    fn stop_spinner(&self) {
+        let mut s = self.spinner.lock().unwrap();
+        if !s.active && s.current.is_none() { return; }
+        s.active = false;
+        if let Some(old) = s.current.take() {
+            for _ in old.chars() {
+                self.platform.key_tap(KeyCode::Backspace);
+            }
+        }
     }
 
     // ── Internal ─────────────────────────────────────────────────────────
 
     /// Send SIGUSR1 to otoji. Returns true if sent, false if no pid available.
     fn send_ptt_start(&self) -> bool {
-        if let Some(pid) = self.otoji.pid() {
-            eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
-            Self::send_signal(pid, 10); // SIGUSR1
-            true
-        } else {
-            eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
-            false
+        // On Windows, use TCP control socket instead of Unix signals.
+        #[cfg(not(unix))]
+        {
+            if self.otoji.send_control("PTT_START") {
+                eprintln!("[CLX] PTT: sent PTT_START via control socket");
+                return true;
+            }
+            eprintln!("[CLX] PTT: control socket not ready for PTT_START (will retry)");
+            return false;
+        }
+        #[cfg(unix)]
+        {
+            if let Some(pid) = self.otoji.pid() {
+                eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
+                Self::send_signal(pid, 10); // SIGUSR1
+                true
+            } else {
+                eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
+                false
+            }
         }
     }
 
     fn send_ptt_end(&self) {
-        if let Some(pid) = self.otoji.pid() {
-            eprintln!("[CLX] PTT: sending SIGUSR2 (ptt_end) to otoji pid={pid}");
-            Self::send_signal(pid, 12); // SIGUSR2
-        } else {
-            eprintln!("[CLX] PTT: no otoji pid available for ptt_end");
+        #[cfg(not(unix))]
+        {
+            if self.otoji.send_control("PTT_END") {
+                eprintln!("[CLX] PTT: sent PTT_END via control socket");
+            } else {
+                eprintln!("[CLX] PTT: control socket not ready for PTT_END");
+            }
+            return;
+        }
+        #[cfg(unix)]
+        {
+            if let Some(pid) = self.otoji.pid() {
+                eprintln!("[CLX] PTT: sending SIGUSR2 (ptt_end) to otoji pid={pid}");
+                Self::send_signal(pid, 12); // SIGUSR2
+            } else {
+                eprintln!("[CLX] PTT: no otoji pid available for ptt_end");
+            }
         }
     }
 
+    #[cfg(unix)]
     fn send_signal(pid: u32, sig: i32) {
         extern "C" {
             fn kill(pid: i32, sig: i32) -> i32;
-            fn __error() -> *mut i32; // macOS errno
         }
         let ret = unsafe { kill(pid as i32, sig) };
         if ret != 0 {
-            let errno = unsafe { *__error() };
-            eprintln!("[CLX] PTT: kill({pid}, {sig}) FAILED: ret={ret}, errno={errno}");
+            let err = std::io::Error::last_os_error();
+            eprintln!("[CLX] PTT: kill({pid}, {sig}) FAILED: ret={ret}, err={err}");
         }
     }
 
     /// Replace displayed text at cursor using diff (common prefix optimization).
     fn replace_displayed(&self, new_text: &str) {
+        let t0 = Instant::now();
         let mut displayed = self.displayed.lock().unwrap();
+        let t_lock = Instant::now();
         let old = &**displayed;
 
         let common: usize = old.chars().zip(new_text.chars())
@@ -338,13 +550,25 @@ impl PttSession {
 
         let old_tail_chars = old.chars().count() - common;
         let new_tail: String = new_text.chars().skip(common).collect();
+        let new_tail_chars = new_tail.chars().count();
 
+        let t_inject_start = Instant::now();
         for _ in 0..old_tail_chars {
             self.platform.key_tap(KeyCode::Backspace);
         }
         if !new_tail.is_empty() {
             self.platform.type_text(&new_tail);
         }
+        let t_end = Instant::now();
+
+        eprintln!(
+            "[CLX] ptt-partial old_len={} new_len={} common={} bs={} type={} | lock={}ms inject={}ms total={}ms",
+            old.chars().count(), new_text.chars().count(), common,
+            old_tail_chars, new_tail_chars,
+            t_lock.duration_since(t0).as_millis(),
+            t_end.duration_since(t_inject_start).as_millis(),
+            t_end.duration_since(t0).as_millis(),
+        );
 
         *displayed = new_text.to_string();
     }

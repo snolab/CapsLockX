@@ -581,7 +581,7 @@ ArrangeWindowsSideBySide(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
     }
 }
 ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
-{    
+{
     arrangeFlags += 0 ; string to number
     n := StrSplit(listOfWindow, "`n", "`r").Count() - 1
     ; try parse work rect from monitor
@@ -598,7 +598,7 @@ ArrangeWindowsStacked(listOfWindow, arrangeFlags = "0", MonitorIndex = "")
         AreaH := MonitorWorkAreaBottom - MonitorWorkAreaTop
     }
     
-    dx := Min(48, AreaW / n)
+    dx := Min(96, AreaW / n)
     dy := Min(48, AreaH / n)
 
     if (arrangeFlags & ARRANGE_MOVING) {
