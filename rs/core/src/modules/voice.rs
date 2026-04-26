@@ -219,6 +219,9 @@ pub struct VoiceModule {
     otoji_available: bool,
     /// Push-to-talk: hold V to record, release to transcribe + type.
     ptt: Arc<super::voice_ptt::PttSession>,
+    /// Always-on KWS listener — held here so its `Drop` runs on shutdown
+    /// and reaps the otoji kws subprocess instead of leaving a zombie.
+    wake_word_listener: Mutex<Option<super::wake_word::WakeWordListener>>,
 }
 
 /// Config that can be hot-reloaded from preferences.
@@ -270,6 +273,7 @@ impl VoiceModule {
             otoji_typed: Arc::new(Mutex::new(String::new())),
             otoji_available: super::voice_otoji::OtojiBackend::is_available(),
             ptt,
+            wake_word_listener: Mutex::new(None),
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
                 llm_api_key: String::new(),
@@ -288,15 +292,17 @@ impl VoiceModule {
         }
     }
 
-    /// Start the wake-word listener with the given config. Idempotent-ish:
-    /// calling twice spawns two listeners (avoid). Normally called once
-    /// from `Modules::new` after the ClxConfig is loaded.
+    /// Start the wake-word listener with the given config. Idempotent:
+    /// a second call replaces (and stops) the previous listener so we never
+    /// stack KWS subprocesses. Normally called once from `Modules::new`
+    /// after the ClxConfig is loaded.
     pub fn start_wake_word(&self, cfg: super::wake_word::WakeWordConfig) {
-        if let Some(ww) = super::wake_word::WakeWordListener::try_start(
+        let new = super::wake_word::WakeWordListener::try_start(
             Arc::clone(&self.ptt), cfg,
-        ) {
-            std::mem::forget(ww);
-        }
+        );
+        let mut slot = self.wake_word_listener.lock().unwrap();
+        // Replacing drops the old listener; its Drop kills the otoji kws child.
+        *slot = new;
     }
 
     pub fn with_llm_config(self, api_key: String, model: String, correction: bool) -> Self {

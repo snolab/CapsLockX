@@ -210,6 +210,14 @@ impl Drop for WakeWordListener {
 /// in case VAD never goes silent (background noise, speaker noise).
 fn trigger_wake(ptt: Arc<PttSession>, max_hold_ms: u64) {
     super::agent::enable_agent_mode();
+    // Pre-arm VAD so `release_when_silent` measures silence relative to
+    // *now*, not whatever stale value (often 0) lives in the atomic from
+    // before the wake. Without this, the very first wake after >1.2s of
+    // app idle would auto-release the moment the post-wake grace ends,
+    // clipping any user who pauses briefly before speaking.
+    let now_ms = VAD_EPOCH.elapsed().as_millis() as u64;
+    VAD_ACTIVE.store(true, Ordering::Relaxed);
+    VAD_LAST_TRANSITION_MS.store(now_ms, Ordering::Relaxed);
     let _ = ptt.on_press();
     let ptt_rel = Arc::clone(&ptt);
     std::thread::Builder::new()
