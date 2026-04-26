@@ -175,13 +175,22 @@ fn resample_linear(src: &[f32], src_rate: u32, dst_rate: u32, carry: &mut f64) -
 /// reads `notes.jsonl` independently — its lifecycle is not tied to the
 /// listen child, so a sensevoice crash here doesn't take it down.
 fn ensure_tray_running() {
-    // Detect any running tray (both the bundled .app and legacy
-    // standalone `otoji-tray` binaries appear in `ps` with the same
-    // executable name `otoji` or `otoji-tray`).
-    let names = ["otoji-tray", "otoji"];
-    for n in names {
+    // Detect a running tray *specifically* — the bare process name `otoji`
+    // is also used by `otoji listen`, `otoji kws`, etc., so a `pgrep -x
+    // otoji` match would mean "any otoji subprocess is alive" and skip
+    // launching the tray when wake-word is enabled. Match either:
+    //   - the legacy `otoji-tray` binary (basename), or
+    //   - the .app bundle whose command line contains
+    //     `.app/Contents/MacOS/otoji`.
+    let patterns = [
+        // -x: full basename match (catches the standalone binary).
+        ("-x", "otoji-tray"),
+        // -f + regex: full command-line match for the .app bundle path.
+        ("-f", r"\.app/Contents/MacOS/otoji"),
+    ];
+    for (flag, pat) in patterns {
         let running = Command::new("pgrep")
-            .args(["-x", n])
+            .args([flag, pat])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()

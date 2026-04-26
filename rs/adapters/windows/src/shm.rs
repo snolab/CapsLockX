@@ -102,9 +102,14 @@ impl SharedState {
                 loop {
                     let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(0);
                     let name = String::from_utf16_lossy(&entry.szExeFile[..len]);
-                    if name.eq_ignore_ascii_case("clx-rust.exe")
-                        && entry.th32ProcessID != self_pid
-                    {
+                    // Match both the dev binary (`clx-rust.exe`) and the
+                    // packaged installer rename (`clx.exe`). Without this,
+                    // a hung packaged build that ignores the Quit event
+                    // can't be killed by a subsequent launch and the
+                    // single-instance guarantee silently regresses.
+                    let is_clx = name.eq_ignore_ascii_case("clx-rust.exe")
+                        || name.eq_ignore_ascii_case("clx.exe");
+                    if is_clx && entry.th32ProcessID != self_pid {
                         victims.push(entry.th32ProcessID);
                     }
                     if Process32NextW(snap, &mut entry).is_err() {

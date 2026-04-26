@@ -263,6 +263,15 @@ jobs:
           install_name_tool -add_rpath "@executable_path/." "$BIN"
           codesign -s - --force --identifier "com.snomiao.capslockx" "$BIN"
 
+      - name: Compile clx-ocr (Vision OCR helper)
+        # voice_ptt::fetch_frontmost_ocr() looks for a sibling clx-ocr next
+        # to the main binary to enrich PTT context with on-screen text.
+        # Without bundling it, packaged builds silently lose OCR enrichment
+        # that local build.sh users get for free.
+        run: |
+          swiftc -O -o clx-ocr rs/adapters/macos/src/bin/clx-ocr.swift
+          codesign -s - --force --identifier "com.snomiao.capslockx.ocr" clx-ocr
+
       - name: Create .dmg (setup variant)
         run: |
           brew install create-dmg
@@ -270,13 +279,14 @@ jobs:
           APP_DIR="CapsLockX"
           mkdir -p "$APP_DIR"
           cp rs/target/release/capslockx "$APP_DIR/clx"
+          cp clx-ocr "$APP_DIR/clx-ocr"
           # Bundle the @rpath dylibs next to the binary so the rpath
           # @executable_path/. resolves at launch.
           cp rs/target/release/libonnxruntime.*.dylib "$APP_DIR/" 2>/dev/null || true
           cp rs/target/release/libsherpa-onnx-c-api.dylib "$APP_DIR/" 2>/dev/null || true
           cp rs/target/release/libsherpa-onnx-cxx-api.dylib "$APP_DIR/" 2>/dev/null || true
           cp scripts/install.sh "$APP_DIR/install.sh"
-          chmod +x "$APP_DIR/clx" "$APP_DIR/install.sh"
+          chmod +x "$APP_DIR/clx" "$APP_DIR/clx-ocr" "$APP_DIR/install.sh"
           create-dmg \
             --volname "CapsLockX ${VERSION}" \
             --window-pos 200 120 \
