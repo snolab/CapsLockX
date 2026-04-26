@@ -323,3 +323,47 @@ pub fn update_tray_icon(active: bool) {
         dispatch_async_f(queue, std::ptr::null_mut(), work);
     }
 }
+
+// ── PTT (push-to-talk) state indicator ────────────────────────────────────
+// Reuses the NSStatusItem's `title` alongside the image so we don't fight
+// the existing active/inactive icon switching. Single glyph per state.
+
+static PTT_STATE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+/// Set the PTT tray glyph. 0=Idle, 1=Recording, 2=Processing, 3=NoteMode.
+pub fn set_ptt_tray_glyph(state: u8) {
+    use std::sync::atomic::Ordering;
+    if PTT_STATE.swap(state, Ordering::AcqRel) == state {
+        return; // no change — skip dispatch
+    }
+    unsafe {
+        extern "C" {
+            fn dispatch_async_f(
+                queue: *mut c_void,
+                context: *mut c_void,
+                work: extern "C" fn(*mut c_void),
+            );
+            fn dlsym(handle: *mut c_void, symbol: *const std::ffi::c_char) -> *mut c_void;
+        }
+        const RTLD_DEFAULT: *mut c_void = -2isize as *mut c_void;
+
+        extern "C" fn apply(_ctx: *mut c_void) {
+            unsafe {
+                let item = STATUS_ITEM.load(Ordering::Acquire);
+                if item.is_null() { return; }
+                let button = msg0(item, sel(b"button\0"));
+                if button.is_null() { return; }
+                let glyph = match PTT_STATE.load(Ordering::Acquire) {
+                    1 => "🎤",
+                    2 => "⋯",
+                    3 => "📝",
+                    _ => "",
+                };
+                msg1_ptr(button, sel(b"setTitle:\0"), nsstring(glyph));
+            }
+        }
+        let sym = dlsym(RTLD_DEFAULT, b"_dispatch_main_q\0".as_ptr() as *const _);
+        if sym.is_null() { return; }
+        dispatch_async_f(sym, std::ptr::null_mut(), apply);
+    }
+}

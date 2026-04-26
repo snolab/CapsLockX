@@ -11,6 +11,16 @@ if [ "${1:-}" = "--portable" ]; then
 fi
 cargo build -p capslockx-macos --release --bin capslockx $FEATURES_FLAG
 
+# Compile the Vision OCR helper into ./clx-ocr (Swift binary, no cargo involved).
+# Needs Screen Recording permission at runtime to capture window pixels.
+OCR_SRC="$ROOT/rs/adapters/macos/src/bin/clx-ocr.swift"
+OCR_BIN="$ROOT/clx-ocr"
+if [ -f "$OCR_SRC" ] && { [ ! -x "$OCR_BIN" ] || [ "$OCR_SRC" -nt "$OCR_BIN" ]; }; then
+    swiftc -O -o "$OCR_BIN" "$OCR_SRC"
+    codesign -s - --force --identifier "com.snomiao.capslockx.ocr" "$OCR_BIN"
+    echo "[build] clx-ocr compiled + signed"
+fi
+
 # Only update the binary if the cargo output is newer than the signed clx.
 # This preserves the codesign CDHash (and Accessibility permission) across rebuilds
 # that don't change the binary.

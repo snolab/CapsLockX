@@ -157,8 +157,9 @@ unsafe extern "C" fn handle_script_message(
     match cmd {
         "get_config" => {
             eprintln!("[CLX] prefs: get_config called");
-            let cfg = ENGINE.get_config();
-            let full = config_store::FullConfig::from_clx_config(&cfg);
+            // Load from disk so all fields (including ones not in ClxConfig
+            // such as translate_*) survive the round-trip.
+            let full = config_store::load();
             let json = serde_json::to_string(&full).unwrap_or_default();
 
             // Escape single quotes and backslashes for JS string literal
@@ -173,6 +174,9 @@ unsafe extern "C" fn handle_script_message(
                 match serde_json::from_value::<config_store::FullConfig>(cfg_val.clone()) {
                     Ok(full) => {
                         config_store::save(&full);
+                        crate::output::set_cycle_order(&full.window_cycle_order);
+                        crate::output::set_arrange_order(&full.window_arrange_order);
+                        crate::hook::reapply_translate_env(&full);
                         let clx_cfg = full.into_clx_config();
                         ENGINE.update_config(clx_cfg);
                         eprintln!("[CLX] prefs: config saved and applied");

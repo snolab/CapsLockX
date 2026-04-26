@@ -150,14 +150,21 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      # Report only — no threshold gate yet. Baseline is established by the
-      # first run; a threshold can be added once the number is known and
-      # stable across PRs.
-      - name: Generate coverage report
+      # Coverage threshold gate. Conservative starting floor — raise as the
+      # codebase stabilises. Failing under the threshold blocks the PR.
+      # Override via repo variable `COVERAGE_MIN_LINES` if you need to bump
+      # without editing this file.
+      - name: Generate coverage report (with threshold)
         working-directory: rs
-        run: cargo llvm-cov --lib -p capslockx-core --summary-only | tee coverage.txt
+        env:
+          COVERAGE_MIN_LINES: ${{ vars.COVERAGE_MIN_LINES || '20' }}
+        run: |
+          cargo llvm-cov --lib -p capslockx-core \
+            --fail-under-lines "$COVERAGE_MIN_LINES" \
+            --summary-only | tee coverage.txt
 
       - name: Generate LCOV report
+        if: always()
         working-directory: rs
         run: cargo llvm-cov report --lcov --output-path coverage.lcov
 

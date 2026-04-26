@@ -56,6 +56,11 @@ struct WaveformData {
     mic_vad: bool,
     sys_vad: bool,
     subtitle: String,
+    /// Last completed translation. Independent lane from `subtitle` so
+    /// partial/final transcript updates can't overwrite it. Stays sticky
+    /// across new utterances — only `update_voice_subtitle_translation`
+    /// changes it.
+    translation: String,
 }
 
 static WAVEFORM_DATA: Mutex<WaveformData> = Mutex::new(WaveformData {
@@ -64,6 +69,7 @@ static WAVEFORM_DATA: Mutex<WaveformData> = Mutex::new(WaveformData {
     mic_vad: false,
     sys_vad: false,
     subtitle: String::new(),
+    translation: String::new(),
 });
 
 static VIEW_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
@@ -72,17 +78,17 @@ static LABEL_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static HANDLE_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static RESIZE_PTR: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 
-const OVERLAY_WIDTH: f64 = 880.0;
-const OVERLAY_HEIGHT: f64 = 256.0;
+const OVERLAY_WIDTH: f64 = 560.0;
+const OVERLAY_HEIGHT: f64 = 168.0;
 const OVERLAY_TOP_MARGIN: f64 = 40.0;
-const CARD_INSET: f64 = 10.0;
-const CARD_RADIUS: f64 = 22.0;
-const CONTENT_X_PAD: f64 = 22.0;
-const CONTENT_Y_PAD: f64 = 18.0;
-const WAVE_SECTION_HEIGHT: f64 = 84.0;
-const WAVE_SECTION_GAP: f64 = 12.0;
-const WAVE_ROW_GAP: f64 = 8.0;
-const WAVE_ROW_RADIUS: f64 = 14.0;
+const CARD_INSET: f64 = 6.0;
+const CARD_RADIUS: f64 = 14.0;
+const CONTENT_X_PAD: f64 = 14.0;
+const CONTENT_Y_PAD: f64 = 11.0;
+const WAVE_SECTION_HEIGHT: f64 = 52.0;
+const WAVE_SECTION_GAP: f64 = 8.0;
+const WAVE_ROW_GAP: f64 = 5.0;
+const WAVE_ROW_RADIUS: f64 = 9.0;
 
 // ── Redraw throttle ───────────────────────────────────────────────────────
 // Coalesce rapid subtitle updates so the main queue doesn't get swamped
@@ -1246,6 +1252,38 @@ fn hide_main_inner() {
             g.mic_vad = false;
             g.sys_vad = false;
             g.subtitle.clear();
+            g.translation.clear();
+        }
+    }
+}
+
+/// Push a new translation into the bottom lane. Sticky — partial/final
+/// transcript updates DO NOT clear it. Pass empty string to explicitly
+/// clear (e.g. when toggling translation off).
+pub fn push_translation(translation: &str) {
+    let mut redraw = false;
+    {
+        let mut g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
+        if g.translation != translation {
+            g.translation = translation.to_string();
+            redraw = true;
+        }
+    }
+    if redraw {
+        // Match the throttled redraw used by other push helpers — this runs
+        // off the main thread, so dispatch back to it before touching AppKit.
+        // `dispatch_get_main_queue` is a macro in C and not link-symbol
+        // callable; use the existing dlsym-based `main_queue()` helper.
+        extern "C" {
+            fn dispatch_async_f(
+                queue: *mut c_void,
+                ctx: *mut c_void,
+                work: extern "C" fn(*mut c_void),
+            );
+        }
+        unsafe {
+            let q = main_queue();
+            dispatch_async_f(q, std::ptr::null_mut(), trigger_redraw_throttled);
         }
     }
 }
@@ -1269,13 +1307,18 @@ pub fn push_dual_audio_levels(
     let mut changed = !mic_levels.is_empty() || !sys_levels.is_empty();
     {
         let mut g = WAVEFORM_DATA.lock().unwrap_or_else(|e| e.into_inner());
+        // Always reflect the latest VAD state — even when levels are empty.
+        // (Earlier this branch only ran when levels were non-empty, which
+        // left mic_vad stuck at the last seen value when CLX was using the
+        // otoji backend and pushing VAD events without level samples.)
+        if g.mic_vad != mic_vad { g.mic_vad = mic_vad; changed = true; }
+        if g.sys_vad != sys_vad { g.sys_vad = sys_vad; changed = true; }
         if !mic_levels.is_empty() {
             g.mic_levels.extend_from_slice(mic_levels);
             if g.mic_levels.len() > 100 {
                 let e = g.mic_levels.len() - 100;
                 g.mic_levels.drain(..e);
             }
-            g.mic_vad = mic_vad;
         }
         if !sys_levels.is_empty() {
             g.sys_levels.extend_from_slice(sys_levels);
@@ -1283,7 +1326,6 @@ pub fn push_dual_audio_levels(
                 let e = g.sys_levels.len() - 100;
                 g.sys_levels.drain(..e);
             }
-            g.sys_vad = sys_vad;
         }
         if let Some(text) = subtitle {
             // Skip redraw when the subtitle text is unchanged — avoids
@@ -1503,16 +1545,24 @@ fn trigger_redraw_inner() {
                     let preview: String = g.subtitle.chars().take(60).collect();
                     eprintln!("[overlay] subtitle={:?}", preview);
                 }
+                // Compose final text: TOP = transcript (or status placeholder
+                // when empty), BOTTOM = sticky translation (when non-empty).
+                let translation_line = if g.translation.is_empty() {
+                    String::new()
+                } else {
+                    format!("\n→ {}", g.translation)
+                };
                 if g.subtitle.is_empty() {
-                    match (g.mic_vad, g.sys_vad) {
+                    let top = match (g.mic_vad, g.sys_vad) {
                         (true, true) => "🎤 Speaking...\n🔊 Playing...".to_string(),
                         (true, false) => "🎤 Speaking...".to_string(),
                         (false, true) => "🔊 Playing...".to_string(),
                         (false, false) => "🎤 Listening...".to_string(),
-                    }
+                    };
+                    format!("{top}{translation_line}")
                 } else {
                     // Truncate each line, preserving emoji prefix (🎤/🔊).
-                    g.subtitle
+                    let top: String = g.subtitle
                         .lines()
                         .map(|line| {
                             let chars: Vec<char> = line.chars().collect();
@@ -1531,7 +1581,8 @@ fn trigger_redraw_inner() {
                             }
                         })
                         .collect::<Vec<_>>()
-                        .join("\n")
+                        .join("\n");
+                    format!("{top}{translation_line}")
                 }
             };
             set_attributed_subtitle(label, &text);

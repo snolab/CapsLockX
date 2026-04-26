@@ -114,11 +114,16 @@ mod tests {
         let platform = Arc::new(MockPlatform::new());
         let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
 
-        // Manually seed displayed with "~"
-        ptt.set_mic_ready(); // make mic_ready
+        // After mic_ready + placeholder delay, tail = "-" (listening, no VAD).
+        // VAD on would flip it to "~".
+        ptt.set_mic_ready();
         ptt.on_press();
-        std::thread::sleep(Duration::from_millis(200)); // wait for placeholder
-        assert_eq!(platform.screen_text(), "~", "placeholder should be ~");
+        std::thread::sleep(Duration::from_millis(200));
+        assert_eq!(platform.screen_text(), "-", "placeholder should be - (mic ready, VAD silent)");
+
+        // Simulate VAD on → tail flips to "~".
+        ptt.on_vad(true);
+        assert_eq!(platform.screen_text(), "~", "VAD on should flip tail to ~");
 
         // Simulate what streaming does: replace "~" with "hello~"
         // We call replace_displayed indirectly — not pub. Instead, test via
@@ -162,7 +167,7 @@ mod tests {
         std::thread::sleep(Duration::from_millis(200)); // placeholder appears
         let screen_during = platform.screen_text();
         eprintln!("[test] during hold: {:?}", screen_during);
-        assert!(screen_during.ends_with("~"), "should show placeholder ~");
+        assert!(screen_during.ends_with("-"), "should show placeholder - (mic ready, no VAD)");
 
         let result = ptt.on_release();
         // Simulate otoji sending ptt_final (empty = no speech detected).

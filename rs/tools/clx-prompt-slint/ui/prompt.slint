@@ -1,0 +1,92 @@
+import { Button, CheckBox, TextEdit, ScrollView, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component PromptWindow inherits Window {
+    in-out property <string> window-title: "CapsLockX Brainstorm";
+    in property <string> context-text: "";
+    in-out property <string> prompt-text: "";
+    in-out property <bool> keep-history: false;
+    in property <int> hist-count: 0;
+
+    callback submitted(string, bool);
+    callback cancelled();
+
+    title: window-title;
+    background: #1e1e2e;
+    preferred-width: 640px;
+    preferred-height: 320px;
+    min-width: 360px;
+    min-height: 200px;
+
+    forward-focus: prompt-edit;
+
+    // Global ESC = cancel, Cmd/Ctrl+Enter = send.
+    FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.cancelled();
+                return accept;
+            }
+            if (event.text == Key.Return && (event.modifiers.control || event.modifiers.meta)) {
+                if (root.prompt-text != "") {
+                    root.submitted(root.prompt-text, root.keep-history);
+                }
+                return accept;
+            }
+            return reject;
+        }
+
+        VerticalBox {
+            padding: 10px;
+            spacing: 8px;
+
+            // Context (read-only) — only visible when non-empty.
+            if context-text != "": Rectangle {
+                background: #181825;
+                border-color: #313244;
+                border-width: 1px;
+                border-radius: 6px;
+                max-height: 180px;
+                ScrollView {
+                    Text {
+                        text: root.context-text;
+                        color: #6c7086;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                        horizontal-alignment: left;
+                    }
+                }
+            }
+
+            prompt-edit := TextEdit {
+                text <=> root.prompt-text;
+                placeholder-text: "Ask AI…   (Cmd/Ctrl+Enter = Send · Esc = Cancel)";
+                wrap: word-wrap;
+                min-height: 80px;
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                spacing: 8px;
+                alignment: stretch;
+
+                CheckBox {
+                    text: root.hist-count > 0 ? "Keep history (" + root.hist-count + ")" : "Keep history";
+                    checked <=> root.keep-history;
+                }
+
+                Rectangle { horizontal-stretch: 1; }
+
+                Button {
+                    text: "Cancel";
+                    clicked => { root.cancelled(); }
+                }
+                Button {
+                    text: "Send";
+                    primary: true;
+                    enabled: root.prompt-text != "";
+                    clicked => { root.submitted(root.prompt-text, root.keep-history); }
+                }
+            }
+        }
+    }
+}

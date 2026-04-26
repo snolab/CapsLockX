@@ -22,6 +22,14 @@ pub fn is_agent_mode() -> bool {
     AGENT_MODE.load(Ordering::Relaxed)
 }
 
+/// Enable agent mode programmatically (called by wake-word listener).
+/// Idempotent — safe to call when already on.
+pub fn enable_agent_mode() {
+    if !AGENT_MODE.swap(true, Ordering::Relaxed) {
+        eprintln!("[CLX] agent: MODE ON (via wake-word)");
+    }
+}
+
 /// Called by the voice module when a transcript is ready and agent mode is on.
 /// Spawns clx agent --prompt with the transcript.
 pub fn on_voice_transcript(text: &str, platform: &dyn Platform) {

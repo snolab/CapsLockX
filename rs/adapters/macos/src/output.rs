@@ -419,6 +419,11 @@ unsafe fn collect_windows_for_pid(
             let mut wid: u32 = 0;
             _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
             if title.is_empty() { continue; }
+            // Skip minimized windows — they still appear in the AX list
+            // (and often in CGWindowList with IsOnscreen=true on the Space
+            // where they were minimized) but cycling to them silently
+            // un-minimizes something the user can't see.
+            if ax_bool_attr(win as *mut _, "AXMinimized") { continue; }
             let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
             if on_current_space {
                 let (cx, cy) = bounds_map.get(&wid).copied().unwrap_or((0.0, 0.0));
@@ -432,6 +437,26 @@ unsafe fn collect_windows_for_pid(
         CFRelease(app_ref as *const _);
     }
     entries
+}
+
+/// Read a boolean AX attribute (e.g. AXMinimized, AXFocused). Returns false
+/// on any error or when the attribute is absent — a conservative default
+/// that keeps the window in the list rather than silently dropping it.
+unsafe fn ax_bool_attr(win: *mut std::ffi::c_void, attr: &str) -> bool {
+    extern "C" {
+        fn CFBooleanGetValue(boolean: *const std::ffi::c_void) -> bool;
+    }
+    let name = CFString::new(attr);
+    let mut value: *mut std::ffi::c_void = std::ptr::null_mut();
+    let rc = AXUIElementCopyAttributeValue(
+        win as AXUIElementRef,
+        name.as_concrete_TypeRef() as CFStringRefRaw,
+        &mut value,
+    );
+    if rc != 0 || value.is_null() { return false; }
+    let b = CFBooleanGetValue(value as *const _);
+    CFRelease(value as *const _);
+    b
 }
 
 /// List all individual windows across all GUI apps, in z-order (on-screen first)
@@ -583,6 +608,24 @@ fn list_all_windows() -> Vec<WindowEntry> {
 
         // Keep z-order from CGWindowList (front-to-back, most recently used first).
         // Don't sort — natural order is what Alt+Tab uses.
+
+        // Dedup phantom tab entries: Chrome (and other tabbed apps) expose
+        // every tab as a separate AX window with the same screen position.
+        // Cycling onto a non-foreground tab silently focuses nothing visible
+        // — the user perceives it as "Space+Z went to an invisible window".
+        // Keep only the first (topmost in z-order) entry per (pid, cx, cy).
+        let mut seen_positions = std::collections::HashSet::<(i64, i64, i64)>::new();
+        let entries: Vec<WindowEntry> = entries
+            .into_iter()
+            .filter(|w| {
+                // Windows whose wid wasn't in bounds_map get (0.0, 0.0). Don't
+                // collapse those — we have no positional signal to dedup by.
+                if w.cx == 0.0 && w.cy == 0.0 { return true; }
+                // Round to whole pixels — float NaN/precision noise breaks Hash.
+                let key = (w.pid, w.cx.round() as i64, w.cy.round() as i64);
+                seen_positions.insert(key)
+            })
+            .collect();
 
         entries
     }
@@ -1294,6 +1337,15 @@ impl Platform for MacPlatform {
             let t0 = Instant::now();
             let mut windows = list_all_windows_cached();
             eprintln!("[BENCH clx+z] list_all_windows: {}ms ({} windows)", t0.elapsed().as_millis(), windows.len());
+            // Diagnostic: dump each entry so we can catch invisible/phantom
+            // windows sneaking into the cycle. Temporary — remove once the
+            // "clx+z goes to an invisible window" report is resolved.
+            for (i, w) in windows.iter().enumerate() {
+                eprintln!(
+                    "[clx+z]   [{i}] pid={} wid={} disp={} pos=({:.0},{:.0}) title={:?}",
+                    w.pid, w.window_id, w.display_id, w.cx, w.cy, w.title
+                );
+            }
             if windows.is_empty() { return; }
 
             let t1 = Instant::now();
@@ -1565,15 +1617,22 @@ impl Platform for MacPlatform {
     fn update_voice_subtitle(&self, text: &str) {
         crate::voice_overlay::push_audio_levels_with_text(&[], false, Some(text));
     }
+    fn update_voice_subtitle_translation(&self, translation: &str) {
+        crate::voice_overlay::push_translation(translation);
+    }
     fn set_ptt_tray_state(&self, state: capslockx_core::platform::PttTrayState) {
+        // Route PTT state changes to the otoji-tray menu-bar icon (via the
+        // shared Unix datagram socket) instead of the CLX tray. The CLX tray
+        // is reserved for CapsLock on/off; otoji owns voice/PTT visuals.
         use capslockx_core::platform::PttTrayState::*;
-        let code = match state {
-            Idle => 0,
-            Recording => 1,
-            Processing => 2,
-            NoteMode => 3,
+        use capslockx_core::modules::voice_otoji::{notify_tray, TrayState};
+        let ts = match state {
+            Idle => TrayState::Idle,
+            Recording => TrayState::ListenSilent,
+            Processing => TrayState::Decoding,
+            NoteMode => TrayState::ListenSilent,
         };
-        crate::tray::set_ptt_tray_glyph(code);
+        notify_tray(ts);
     }
 
     fn get_selected_text(&self) -> String {
