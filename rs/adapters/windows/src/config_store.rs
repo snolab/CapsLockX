@@ -63,7 +63,7 @@ impl Default for FullConfig {
             page_speed:      30.0,
             tab_speed:       30.0,
             action_speed:    30.0,
-            mouse_speed:     1600.0,
+            mouse_speed:     4800.0,
             scroll_speed:    1600.0,
             request_admin:   false,
             stt_engine:      "sherpa".to_string(),

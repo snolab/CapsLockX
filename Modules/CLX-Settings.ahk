@@ -146,6 +146,10 @@ Button重新載入:
     Func("CLX_Reload").Call()
     Reload
 return
+ButtonExit:
+    RunWait, taskkill /F /IM clx.exe, , Hide
+    ExitApp
+return
 CLX_ConfigureUpdate:
     global T_TomatoLife
     global T_XKeyAsCapsLock
