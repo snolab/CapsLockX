@@ -65,8 +65,8 @@ pub struct ClxConfig {
     pub silence_end_frames:  usize,
     /// VPIO acoustic echo cancellation mode: "off" | "dual-only" | "always".
     /// - "off":       never use VPIO; raw mic via cpal.
-    /// - "dual-only": VPIO only when sys-audio is also captured (Shift+V). Default.
-    /// - "always":    VPIO for every PTT session (cancels speaker bleed even in mic-only mode).
+    /// - "dual-only": VPIO only when sys-audio is also captured (Shift+V).
+    /// - "always":    VPIO for every PTT session (cancels speaker bleed even in mic-only mode). Default.
     pub aec_mode:            String,
     // ── Wake-word ─────────────────────────────────────────────────────────
     /// Master toggle for the always-on KWS listener.
