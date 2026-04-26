@@ -8,6 +8,7 @@ pub mod virtual_desktop;
 pub mod voice;
 pub mod voice_otoji;
 pub mod voice_ptt;
+pub mod wake_word;
 #[cfg(test)]
 mod voice_ptt_test;
 #[cfg(not(feature = "stt"))]
@@ -30,6 +31,7 @@ mod voice {
             self
         }
         pub fn preload(&self) {}
+        pub fn start_wake_word(&self, _cfg: super::wake_word::WakeWordConfig) {}
         pub fn on_key_down(&self, _key: KeyCode) -> bool { false }
         pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
         pub fn is_mapped_key(&self, _key: KeyCode) -> bool { false }
@@ -42,6 +44,7 @@ mod voice {
             _aec_gain: f32, _noise_gate: f32,
             _speech_start_prob: f32, _speech_end_prob: f32,
             _speech_start_frames: usize, _silence_end_frames: usize,
+            _aec_mode: String,
         ) {}
     }
 }
@@ -118,9 +121,18 @@ impl Modules {
             window_manager:  WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
             platform,
         };
+        let ww_cfg = wake_word::WakeWordConfig {
+            enabled:       cfg.wake_word_enabled,
+            model_dir:     cfg.wake_word_model_dir.clone(),
+            keywords_file: cfg.wake_word_keywords_file.clone(),
+            threshold:     cfg.wake_word_threshold,
+            hold_ms:       cfg.wake_word_hold_ms,
+        };
         drop(cfg);
         // Preload Whisper model in background so first Space+V is instant.
         s.voice.preload();
+        // Start wake-word listener (no-op unless enabled + paths valid).
+        s.voice.start_wake_word(ww_cfg);
         s
     }
 
@@ -199,6 +211,7 @@ impl Modules {
             cfg.speech_end_prob,
             cfg.speech_start_frames,
             cfg.silence_end_frames,
+            cfg.aec_mode.clone(),
         );
         self.brainstorm.update_llm_config(&best_key, &best_model);
     }

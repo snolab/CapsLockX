@@ -126,9 +126,51 @@ extern "C" fn input_callback(
     }
 }
 
+fn write_wav(path: &str, samples: &[f32], sample_rate: u32) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut f = std::fs::File::create(path)?;
+    let n = samples.len() as u32;
+    let byte_rate = sample_rate * 2;
+    let data_size = n * 2;
+    f.write_all(b"RIFF")?;
+    f.write_all(&(36 + data_size).to_le_bytes())?;
+    f.write_all(b"WAVEfmt ")?;
+    f.write_all(&16u32.to_le_bytes())?;
+    f.write_all(&1u16.to_le_bytes())?;        // PCM
+    f.write_all(&1u16.to_le_bytes())?;        // mono
+    f.write_all(&sample_rate.to_le_bytes())?;
+    f.write_all(&byte_rate.to_le_bytes())?;
+    f.write_all(&2u16.to_le_bytes())?;        // block align
+    f.write_all(&16u16.to_le_bytes())?;       // bits
+    f.write_all(b"data")?;
+    f.write_all(&data_size.to_le_bytes())?;
+    for &s in samples {
+        let v = (s.clamp(-1.0, 1.0) * 32767.0) as i16;
+        f.write_all(&v.to_le_bytes())?;
+    }
+    Ok(())
+}
+
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let mut record_secs: Option<u32> = None;
+    let mut out_path: Option<String> = None;
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--record" => { record_secs = args.get(i+1).and_then(|s| s.parse().ok()); i += 2; }
+            "--out"    => { out_path = args.get(i+1).cloned(); i += 2; }
+            _ => i += 1,
+        }
+    }
+    let record_mode = record_secs.is_some() && out_path.is_some();
+
     eprintln!("[test-vpio] VoiceProcessingIO Echo Cancellation Test");
-    eprintln!("[test-vpio] Speak → non-zero RMS. Speakers only → low RMS = AEC working.\n");
+    if record_mode {
+        eprintln!("[test-vpio] Record mode: {}s → {}\n", record_secs.unwrap(), out_path.as_ref().unwrap());
+    } else {
+        eprintln!("[test-vpio] Speak → non-zero RMS. Speakers only → low RMS = AEC working.\n");
+    }
 
     unsafe {
         let desc = AudioComponentDescription {
@@ -188,6 +230,34 @@ fn main() {
 
         let s = AudioOutputUnitStart(unit);
         eprintln!("[test-vpio] Started: status={s}\n");
+
+        // Record mode: capture N seconds of (gain-applied) mono 48kHz, save WAV, exit.
+        if record_mode {
+            let secs = record_secs.unwrap();
+            let path = out_path.unwrap();
+            let target = (48000 * secs) as usize;
+            let mut all: Vec<f32> = Vec::with_capacity(target);
+            let start = std::time::Instant::now();
+            while all.len() < target {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+                let chunk = { let mut b = buffer.lock().unwrap(); std::mem::take(&mut *b) };
+                if chunk.is_empty() { continue; }
+                let amplified: Vec<f32> = chunk.iter().map(|&s| (s * 30.0).clamp(-1.0, 1.0)).collect();
+                let rms: f32 = (amplified.iter().map(|s| s*s).sum::<f32>() / amplified.len() as f32).sqrt();
+                let bar_len = (rms * 30.0).min(30.0) as usize;
+                let bar = "█".repeat(bar_len) + &"░".repeat(30 - bar_len);
+                eprint!("\r[{bar}] rms={rms:.4} {:>4}/{}s", start.elapsed().as_secs(), secs);
+                all.extend_from_slice(&amplified);
+            }
+            eprintln!();
+            all.truncate(target);
+            let rms_total: f32 = (all.iter().map(|s| s*s).sum::<f32>() / all.len() as f32).sqrt();
+            let peak: f32 = all.iter().fold(0f32, |a, &b| a.max(b.abs()));
+            write_wav(&path, &all, 48000).expect("wav write failed");
+            eprintln!("[test-vpio] saved {} ({} samples, rms={:.4}, peak={:.4})",
+                path, all.len(), rms_total, peak);
+            std::process::exit(0);
+        }
 
         // Load Whisper for transcription test
         eprintln!("[test-vpio] Loading Whisper...");

@@ -180,13 +180,15 @@ fn main() {
                     let speech_end_prob = v.get("speech_end_prob").and_then(|v| v.as_f64()).unwrap_or(0.6) as f32;
                     let speech_start_frames = v.get("speech_start_frames").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
                     let silence_end_frames = v.get("silence_end_frames").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
-                    eprintln!("[voice-standalone] config: aec_gain={} noise_gate={} start_prob={} end_prob={} start_frames={} silence_frames={}",
-                        aec_gain, noise_gate, speech_start_prob, speech_end_prob, speech_start_frames, silence_end_frames);
+                    let aec_mode = v.get("aec_mode").and_then(|v| v.as_str()).unwrap_or("always").to_string();
+                    eprintln!("[voice-standalone] config: aec_gain={} noise_gate={} start_prob={} end_prob={} start_frames={} silence_frames={} aec_mode={}",
+                        aec_gain, noise_gate, speech_start_prob, speech_end_prob, speech_start_frames, silence_end_frames, aec_mode);
                     voice.update_config(
                         "sherpa".into(), String::new(), String::new(), false,
                         String::new(), String::new(),
                         aec_gain, noise_gate, speech_start_prob, speech_end_prob,
                         speech_start_frames, silence_end_frames,
+                        aec_mode,
                     );
                 }
             }

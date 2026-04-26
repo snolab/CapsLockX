@@ -63,6 +63,28 @@ pub struct ClxConfig {
     pub speech_end_prob:     f32,
     pub speech_start_frames: usize,
     pub silence_end_frames:  usize,
+    /// VPIO acoustic echo cancellation mode: "off" | "dual-only" | "always".
+    /// - "off":       never use VPIO; raw mic via cpal.
+    /// - "dual-only": VPIO only when sys-audio is also captured (Shift+V). Default.
+    /// - "always":    VPIO for every PTT session (cancels speaker bleed even in mic-only mode).
+    pub aec_mode:            String,
+    // ── Wake-word ─────────────────────────────────────────────────────────
+    /// Master toggle for the always-on KWS listener.
+    pub wake_word_enabled:     bool,
+    /// Path to the sherpa-onnx KWS model directory.
+    pub wake_word_model_dir:   String,
+    /// Path to the BPE-encoded keywords.txt used by sherpa.
+    pub wake_word_keywords_file: String,
+    /// Detection threshold (0.0 – 1.0). Higher = stricter.
+    pub wake_word_threshold:   f32,
+    /// Safety cap on how long PTT stays held after a wake event (ms).
+    /// The VAD watchdog normally releases sooner, after ~1.2s of silence.
+    pub wake_word_hold_ms:     u64,
+    // ── Note-mode translation ─────────────────────────────────────────────
+    /// Translate continuous (non-PTT) transcripts independently of PTT.
+    pub note_translate_enabled: bool,
+    /// Target language for note-mode translation (e.g. "Japanese", "ja").
+    pub note_translate_target:  String,
 }
 
 impl Default for ClxConfig {
@@ -88,6 +110,14 @@ impl Default for ClxConfig {
             speech_end_prob:     0.6,
             speech_start_frames: 10,
             silence_end_frames:  20,
+            aec_mode:            "always".to_string(),
+            wake_word_enabled:     false,
+            wake_word_model_dir:   String::new(),
+            wake_word_keywords_file: String::new(),
+            wake_word_threshold:   0.25,
+            wake_word_hold_ms:     8000,
+            note_translate_enabled: false,
+            note_translate_target:  String::new(),
         }
     }
 }

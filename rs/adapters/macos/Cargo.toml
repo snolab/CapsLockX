@@ -21,6 +21,11 @@ path = "src/bin/clx-prompt.rs"
 name = "clx-agent"
 path = "src/bin/clx-agent.rs"
 
+[[bin]]
+name = "test-vpio"
+path = "src/bin/test-vpio.rs"
+required-features = ["full"]
+
 [features]
 default = []
 # Full build: STT + cloud AI (brainstorm/agent). Used by the "setup" release
