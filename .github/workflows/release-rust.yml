@@ -23,12 +23,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          FLAGS="--generate-notes"
+          # Build flag sets separately: `gh release edit` rejects the
+          # `--generate-notes` flag that `gh release create` accepts. When
+          # we re-tag (force-push) to retrigger a failed build, the
+          # release already exists, so the fallback path runs.
+          CREATE_FLAGS="--generate-notes"
+          EDIT_FLAGS=""
           if [[ "${{ github.ref_name }}" == *"-"* ]]; then
-            FLAGS="$FLAGS --prerelease"
+            CREATE_FLAGS="$CREATE_FLAGS --prerelease"
+            EDIT_FLAGS="$EDIT_FLAGS --prerelease"
           fi
-          gh release create "${{ github.ref_name }}" $FLAGS || \
-          gh release edit "${{ github.ref_name }}" $FLAGS
+          gh release create "${{ github.ref_name }}" $CREATE_FLAGS || \
+          gh release edit "${{ github.ref_name }}" $EDIT_FLAGS
 
   build-windows:
     name: Build Windows (x86_64-pc-windows-msvc)
