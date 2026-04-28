@@ -9,6 +9,39 @@ license = "GPL-3.0"
 name = "capslockx_core"
 path = "src/lib.rs"
 
+# STT-dependent bins (sherpa-onnx / whisper-rs). Gated via required-features
+# so default builds (no `stt`) and no-default-features Windows builds don't
+# try to compile them and fail with "module local_sherpa configured out".
+[[bin]]
+name = "stt-bench"
+path = "src/bin/stt-bench.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "stt-quick"
+path = "src/bin/stt-quick.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "stt-compare"
+path = "src/bin/stt-compare.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "stt-server"
+path = "src/bin/stt-server.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "sherpa-test"
+path = "src/bin/sherpa-test.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "voice-test"
+path = "src/bin/voice-test.rs"
+required-features = ["stt"]
+
 [dependencies]
 once_cell    = "1.19"
 parking_lot  = "0.12"
@@ -44,3 +77,9 @@ default = []
 # Disabled by default because whisper-rs 0.13 fails to compile on Windows.
 # macOS/Linux builds should opt in: `cargo build --features stt`.
 stt = ["dep:whisper-rs", "dep:sherpa-rs", "dep:ten-vad-rs"]
+# Cloud LLM features (brainstorm chat, agent, llm_client, cloud_stt). When
+# disabled, all outbound HTTP entry points in those modules collapse to
+# error-returning stubs (same shape as the wasm32 stubs), so Space+B/M
+# become user-visible no-ops in the "portable" variant. Enabled by the
+# "full" CLX build.
+ai = []

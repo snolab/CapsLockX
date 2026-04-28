@@ -1,0 +1,17 @@
+[package]
+name = "clx-prompt-slint"
+version = "0.1.0"
+edition = "2021"
+description = "CapsLockX brainstorm prompt dialog — Slint native, cross-platform"
+license = "GPL-3.0"
+
+[[bin]]
+name = "clx-prompt-slint"
+path = "src/main.rs"
+
+[dependencies]
+slint = { version = "1.8", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg"] }
+dirs = "5"
+
+[build-dependencies]
+slint-build = "1.8"

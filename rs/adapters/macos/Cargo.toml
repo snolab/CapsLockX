@@ -12,6 +12,11 @@ path = "src/main.rs"
 [[bin]]
 name = "voice-standalone"
 path = "src/bin/voice-standalone.rs"
+# Imports `capslockx_core::modules::voice::VoiceModule`, which is only
+# `pub` when the core's `stt` feature is on; the `not(stt)` fallback in
+# `mod.rs` is a private no-op stub. Without this gate, builds without
+# `full` (e.g. CI's default `cargo build`) fail with "voice is private".
+required-features = ["full"]
 
 [[bin]]
 name = "clx-prompt"
@@ -20,6 +25,17 @@ path = "src/bin/clx-prompt.rs"
 [[bin]]
 name = "clx-agent"
 path = "src/bin/clx-agent.rs"
+
+[[bin]]
+name = "test-vpio"
+path = "src/bin/test-vpio.rs"
+required-features = ["full"]
+
+[features]
+default = []
+# Full build: STT + cloud AI (brainstorm/agent). Used by the "setup" release
+# variant. The "portable" variant builds without --features full.
+full = ["capslockx-core/stt", "capslockx-core/ai"]
 
 [dependencies]
 capslockx-core = { path = "../../core" }

@@ -12,17 +12,11 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT, KEYBD_EVENT_FLAGS,
-    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
-    MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN,
+    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN,
     MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
     MOUSEEVENTF_WHEEL, MOUSE_EVENT_FLAGS, MOUSEINPUT, VIRTUAL_KEY, SendInput,
     GetAsyncKeyState,
 };
-use windows::Win32::System::DataExchange::{
-    OpenClipboard, CloseClipboard, EmptyClipboard, GetClipboardData, SetClipboardData,
-};
-use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
-use windows::Win32::Foundation::HGLOBAL;
 use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
@@ -107,8 +101,6 @@ impl Platform for WinPlatform {
     fn open_preferences(&self) {
         crate::open_prefs_window();
     }
-
-
     fn key_down(&self, key: KeyCode) {
         send(&[kbd(keycode_to_vk(key), KEYBD_EVENT_FLAGS(0))]);
     }
@@ -158,111 +150,6 @@ impl Platform for WinPlatform {
     fn is_key_physically_down(&self, key: KeyCode) -> bool {
         let vk = keycode_to_vk(key) as i32;
         unsafe { GetAsyncKeyState(vk) < 0 }
-    }
-
-    /// Type a Unicode string using SendInput with KEYEVENTF_UNICODE.
-    /// Supports full Unicode including CJK, emoji, etc.
-    fn type_text(&self, text: &str) {
-        let mut inputs = Vec::new();
-        for ch in text.chars() {
-            let mut utf16_buf = [0u16; 2];
-            let units = ch.encode_utf16(&mut utf16_buf);
-            for &code_unit in units.iter() {
-                inputs.push(INPUT {
-                    r#type: INPUT_KEYBOARD,
-                    Anonymous: INPUT_0 {
-                        ki: KEYBDINPUT {
-                            wVk: VIRTUAL_KEY(0),
-                            wScan: code_unit,
-                            dwFlags: KEYEVENTF_UNICODE,
-                            time: 0,
-                            dwExtraInfo: CLX_EXTRA_INFO,
-                        },
-                    },
-                });
-                inputs.push(INPUT {
-                    r#type: INPUT_KEYBOARD,
-                    Anonymous: INPUT_0 {
-                        ki: KEYBDINPUT {
-                            wVk: VIRTUAL_KEY(0),
-                            wScan: code_unit,
-                            dwFlags: KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-                            time: 0,
-                            dwExtraInfo: CLX_EXTRA_INFO,
-                        },
-                    },
-                });
-            }
-        }
-        if !inputs.is_empty() {
-            send(&inputs);
-        }
-    }
-
-    fn get_clipboard_text(&self) -> String {
-        unsafe {
-            if OpenClipboard(HWND(std::ptr::null_mut())).is_err() {
-                return String::new();
-            }
-            let result = (|| {
-                let handle = GetClipboardData(13); // CF_UNICODETEXT = 13
-                let handle = match handle {
-                    Ok(h) => HGLOBAL(h.0),
-                    Err(_) => return String::new(),
-                };
-                let ptr = GlobalLock(handle) as *const u16;
-                if ptr.is_null() { return String::new(); }
-                let mut len = 0;
-                while *ptr.add(len) != 0 { len += 1; }
-                let slice = std::slice::from_raw_parts(ptr, len);
-                let result = String::from_utf16_lossy(slice);
-                let _ = GlobalUnlock(handle);
-                result
-            })();
-            let _ = CloseClipboard();
-            result
-        }
-    }
-
-    fn set_clipboard_text(&self, text: &str) {
-        let utf16: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
-        let byte_len = utf16.len() * 2;
-        unsafe {
-            let hmem = GlobalAlloc(GMEM_MOVEABLE, byte_len);
-            let hmem = match hmem {
-                Ok(h) => h,
-                Err(_) => return,
-            };
-            let ptr = GlobalLock(hmem) as *mut u16;
-            if ptr.is_null() { return; }
-            std::ptr::copy_nonoverlapping(utf16.as_ptr(), ptr, utf16.len());
-            let _ = GlobalUnlock(hmem);
-            if OpenClipboard(HWND(std::ptr::null_mut())).is_ok() {
-                let _ = EmptyClipboard();
-                let _ = SetClipboardData(13, windows::Win32::Foundation::HANDLE(hmem.0)); // CF_UNICODETEXT
-                let _ = CloseClipboard();
-            }
-        }
-    }
-
-    fn get_selected_text(&self) -> String {
-        // Save current clipboard, send Ctrl+C, read clipboard, restore old clipboard.
-        let old = self.get_clipboard_text();
-        // Clear clipboard first so we can detect if Ctrl+C wrote something.
-        unsafe {
-            if OpenClipboard(HWND(std::ptr::null_mut())).is_ok() {
-                let _ = EmptyClipboard();
-                let _ = CloseClipboard();
-            }
-        }
-        self.key_tap_cmd_or_ctrl(KeyCode::C);
-        std::thread::sleep(std::time::Duration::from_millis(50));
-        let selected = self.get_clipboard_text();
-        // Restore old clipboard.
-        if !old.is_empty() {
-            self.set_clipboard_text(&old);
-        }
-        selected
     }
 
     fn mouse_move(&self, dx: i32, dy: i32) {

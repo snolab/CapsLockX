@@ -21,8 +21,88 @@ use crate::key_map::keycode_to_cg_keycode;
 
 // ── Window cycle state ──────────────────────────────────────────────────────
 // Snapshot the pid list on first press, then walk through it on subsequent
-// presses.  Resets after 2 seconds of inactivity so a fresh press gets a
+// presses.  Resets after 1 second of inactivity so a fresh press gets a
 // fresh snapshot.
+
+/// Cached window order settings — updated by prefs hot-reload,
+/// read by the AccModel ticker thread without touching the filesystem.
+static CYCLE_ORDER: Mutex<Option<String>> = Mutex::new(None);
+static ARRANGE_ORDER: Mutex<Option<String>> = Mutex::new(None);
+
+// ── Background window-list cache ─────────────────────────────────────────────
+// list_all_windows() takes ~1.5s because macOS serializes per-app AX IPC.
+// We pre-warm by refreshing every 500ms in a background thread so that
+// Space+Z / Space+C reads from cache and feels instant.
+
+struct WindowListCache {
+    windows: Vec<WindowEntry>,
+    at: Instant,
+}
+static WINDOW_LIST_CACHE: Mutex<Option<WindowListCache>> = Mutex::new(None);
+static WINDOW_LIST_REFRESHING: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Start an async refresh of the window-list cache (no-op if one is already running).
+fn refresh_window_cache_async() {
+    use std::sync::atomic::Ordering;
+    if WINDOW_LIST_REFRESHING.swap(true, Ordering::SeqCst) { return; }
+    std::thread::spawn(|| {
+        let windows = list_all_windows();
+        *WINDOW_LIST_CACHE.lock().unwrap() = Some(WindowListCache { windows, at: Instant::now() });
+        WINDOW_LIST_REFRESHING.store(false, std::sync::atomic::Ordering::SeqCst);
+    });
+}
+
+/// Start the background polling loop that keeps the cache warm.
+/// Call once at startup from MacPlatform::new().
+pub fn start_window_cache_warmer() {
+    // Kick off the first refresh immediately.
+    refresh_window_cache_async();
+    std::thread::spawn(|| {
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            refresh_window_cache_async();
+        }
+    });
+}
+
+/// Stale-while-revalidate: always return from cache instantly, kick background refresh.
+/// Only blocks synchronously on the very first call (before any cache exists).
+fn list_all_windows_cached() -> Vec<WindowEntry> {
+    // Always trigger a background refresh (no-op if one is already running).
+    refresh_window_cache_async();
+
+    let cached = {
+        let guard = WINDOW_LIST_CACHE.lock().unwrap();
+        guard.as_ref().map(|c| c.windows.clone())
+    };
+
+    if let Some(windows) = cached {
+        // Return immediately — may be slightly stale, background refresh is running.
+        windows
+    } else {
+        // First-ever call (startup): must wait once. After this the cache is always warm.
+        let windows = list_all_windows();
+        *WINDOW_LIST_CACHE.lock().unwrap() = Some(WindowListCache { windows: windows.clone(), at: Instant::now() });
+        windows
+    }
+}
+
+fn get_cycle_order() -> String {
+    CYCLE_ORDER.lock().unwrap().clone().unwrap_or_else(|| "y,x".to_string())
+}
+
+pub fn set_cycle_order(order: &str) {
+    *CYCLE_ORDER.lock().unwrap() = Some(order.to_string());
+}
+
+fn get_arrange_order() -> String {
+    ARRANGE_ORDER.lock().unwrap().clone().unwrap_or_else(|| "y,x".to_string())
+}
+
+pub fn set_arrange_order(order: &str) {
+    *ARRANGE_ORDER.lock().unwrap() = Some(order.to_string());
+}
 
 struct CycleState {
     windows: Vec<WindowEntry>,
@@ -94,6 +174,73 @@ struct WindowEntry {
     window_index: usize,
     title: String,
     display_id: u32, // CGDirectDisplayID of the screen this window is on
+    cx: f64,         // center X in global screen coordinates
+    cy: f64,         // center Y
+}
+
+/// Bucket size for position-based window ordering (pixels).
+/// Windows within this many pixels of each other on the bucket axis
+/// are considered to be on the same "row" or "column".
+const POSITION_BUCKET_PX: f64 = 150.0;
+
+/// Sort windows by the configured cycle order.
+fn sort_windows_by_order(windows: &mut Vec<WindowEntry>, order: &str) {
+    match order {
+        "column" => {
+            // x-bucket, then y — column-major (default)
+            windows.sort_by(|a, b| {
+                let ax = (a.cx / POSITION_BUCKET_PX) as i64;
+                let bx = (b.cx / POSITION_BUCKET_PX) as i64;
+                ax.cmp(&bx).then_with(|| a.cy.partial_cmp(&b.cy).unwrap_or(std::cmp::Ordering::Equal))
+            });
+        }
+        "row" => {
+            // y-bucket, then x — row-major (reading order)
+            windows.sort_by(|a, b| {
+                let ay = (a.cy / POSITION_BUCKET_PX) as i64;
+                let by = (b.cy / POSITION_BUCKET_PX) as i64;
+                ay.cmp(&by).then_with(|| a.cx.partial_cmp(&b.cx).unwrap_or(std::cmp::Ordering::Equal))
+            });
+        }
+        "diagonal" => {
+            // x+y, then x — diagonal sweep
+            windows.sort_by(|a, b| {
+                let da = ((a.cx + a.cy) * 100.0) as i64;
+                let db = ((b.cx + b.cy) * 100.0) as i64;
+                da.cmp(&db).then_with(|| {
+                    let xa = (a.cx * 100.0) as i64;
+                    let xb = (b.cx * 100.0) as i64;
+                    xa.cmp(&xb)
+                })
+            });
+        }
+        "linear" => {
+            // x + 2*y — weighted linear combination
+            windows.sort_by(|a, b| {
+                let va = ((a.cx + 2.0 * a.cy) * 100.0) as i64;
+                let vb = ((b.cx + 2.0 * b.cy) * 100.0) as i64;
+                va.cmp(&vb)
+            });
+        }
+        "x,y" => {
+            // Pure x then y — no bucketing
+            windows.sort_by(|a, b| {
+                a.cx.partial_cmp(&b.cx).unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| a.cy.partial_cmp(&b.cy).unwrap_or(std::cmp::Ordering::Equal))
+            });
+        }
+        "y,x" => {
+            // Pure y then x — no bucketing
+            windows.sort_by(|a, b| {
+                a.cy.partial_cmp(&b.cy).unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| a.cx.partial_cmp(&b.cx).unwrap_or(std::cmp::Ordering::Equal))
+            });
+        }
+        _ => {
+            // "id" — legacy: display, pid, window_id
+            windows.sort_by_key(|w| (w.display_id, w.pid, w.window_id));
+        }
+    }
 }
 
 /// Get the CGWindowID of the frontmost (topmost layer-0) window.
@@ -251,13 +398,73 @@ fn build_window_bounds_map() -> std::collections::HashMap<u32, (f64, f64)> {
     }
 }
 
+/// Per-pid AX window collection. Called in parallel from list_all_windows.
+/// Each call creates its own AX refs — safe for concurrent invocation across different pids.
+unsafe fn collect_windows_for_pid(
+    pid: i64,
+    onscreen_wids: &std::collections::HashSet<u32>,
+    bounds_map: &std::collections::HashMap<u32, (f64, f64)>,
+    main_display: u32,
+) -> Vec<WindowEntry> {
+    extern "C" {
+        fn CFArrayGetValueAtIndex(arr: CFArrayRef, idx: isize) -> *const std::ffi::c_void;
+        fn _AXUIElementGetWindow(element: AXUIElementRef, wid: *mut u32) -> i32;
+    }
+    let mut entries = Vec::new();
+    if let Some((app_ref, arr, count)) = ax_windows_for_pid(pid as i32) {
+        for wi in 0..count {
+            let win = CFArrayGetValueAtIndex(arr as CFArrayRef, wi as isize);
+            if win.is_null() { continue; }
+            let title = ax_window_title(win as *mut _);
+            let mut wid: u32 = 0;
+            _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
+            if title.is_empty() { continue; }
+            // Skip minimized windows — they still appear in the AX list
+            // (and often in CGWindowList with IsOnscreen=true on the Space
+            // where they were minimized) but cycling to them silently
+            // un-minimizes something the user can't see.
+            if ax_bool_attr(win as *mut _, "AXMinimized") { continue; }
+            let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
+            if on_current_space {
+                let (cx, cy) = bounds_map.get(&wid).copied().unwrap_or((0.0, 0.0));
+                let display_id = if bounds_map.contains_key(&wid) {
+                    display_for_point(cx, cy)
+                } else { main_display };
+                entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title, display_id, cx, cy });
+            }
+        }
+        CFRelease(arr as *const _);
+        CFRelease(app_ref as *const _);
+    }
+    entries
+}
+
+/// Read a boolean AX attribute (e.g. AXMinimized, AXFocused). Returns false
+/// on any error or when the attribute is absent — a conservative default
+/// that keeps the window in the list rather than silently dropping it.
+unsafe fn ax_bool_attr(win: *mut std::ffi::c_void, attr: &str) -> bool {
+    extern "C" {
+        fn CFBooleanGetValue(boolean: *const std::ffi::c_void) -> bool;
+    }
+    let name = CFString::new(attr);
+    let mut value: *mut std::ffi::c_void = std::ptr::null_mut();
+    let rc = AXUIElementCopyAttributeValue(
+        win as AXUIElementRef,
+        name.as_concrete_TypeRef() as CFStringRefRaw,
+        &mut value,
+    );
+    if rc != 0 || value.is_null() { return false; }
+    let b = CFBooleanGetValue(value as *const _);
+    CFRelease(value as *const _);
+    b
+}
+
 /// List all individual windows across all GUI apps, in z-order (on-screen first)
 /// then by app launch order for off-screen apps. Each window is a separate entry.
 fn list_all_windows() -> Vec<WindowEntry> {
-    let bounds_map = build_window_bounds_map();
+    let bounds_map = std::sync::Arc::new(build_window_bounds_map());
     let main_display = CGDisplay::main().id;
     unsafe {
-        let mut entries = Vec::new();
         let mut seen_pids = std::collections::HashSet::new();
 
         extern "C" {
@@ -375,49 +582,50 @@ fn list_all_windows() -> Vec<WindowEntry> {
             }
         }
 
-        // Private API: get CGWindowID directly from AXUIElement.
-        extern "C" {
-            fn _AXUIElementGetWindow(element: AXUIElementRef, wid: *mut u32) -> i32;
+        // 3. Enumerate AX windows per-pid IN PARALLEL.
+        // Each app's AX request is an independent IPC call — concurrent calls to
+        // different apps don't interfere. Sequential queries take ~130ms × N apps;
+        // parallel reduces that to ~max(single app latency) ≈ 130-200ms.
+        let onscreen_wids = std::sync::Arc::new(onscreen_wids);
+        let mut handles: Vec<(usize, std::thread::JoinHandle<Vec<WindowEntry>>)> = Vec::new();
+        for (order, &pid) in ordered_pids.iter().enumerate() {
+            if !seen_pids.insert(pid) { continue; }
+            let ow = std::sync::Arc::clone(&onscreen_wids);
+            let bm = std::sync::Arc::clone(&bounds_map);
+            handles.push((order, std::thread::spawn(move || {
+                unsafe { collect_windows_for_pid(pid, &ow, &bm, main_display) }
+            })));
         }
 
-        // 3. For each app pid, enumerate its AX windows
-        for &pid in &ordered_pids {
-            if !seen_pids.insert(pid) { continue; }
-            if let Some((app_ref, arr, count)) = ax_windows_for_pid(pid as i32) {
-                for wi in 0..count {
-                    let win = CFArrayGetValueAtIndex(arr as CFArrayRef, wi as isize);
-                    if win.is_null() { continue; }
-                    let title = ax_window_title(win as *mut _);
-                    let mut wid: u32 = 0;
-                    _AXUIElementGetWindow(win as AXUIElementRef, &mut wid);
-                    if title.is_empty() {
-                        continue;
-                    }
-                    {
-                        // Only include windows on the current Space.
-                        // onscreen_wids has all CGWindowIDs with isOnscreen=true.
-                        // This filters out minimized windows and (on some macOS
-                        // versions) windows on other Spaces.
-                        // Skip wid==0 windows — they can't be reliably matched
-                        // or activated, causing phantom "skips" during cycling.
-                        let on_current_space = wid != 0 && onscreen_wids.contains(&wid);
-                        if on_current_space {
-                            let display_id = if wid != 0 {
-                                if let Some(&(cx, cy)) = bounds_map.get(&wid) {
-                                    display_for_point(cx, cy)
-                                } else { main_display }
-                            } else { main_display };
-                            entries.push(WindowEntry { pid, window_id: wid, window_index: wi, title, display_id });
-                        }
-                    } // on_current_space block
-                }
-                CFRelease(arr as *const _);
-                CFRelease(app_ref as *const _);
-            }
-        }
+        // Collect results preserving z-order (ordered_pids order).
+        let mut ordered: Vec<(usize, Vec<WindowEntry>)> = handles.into_iter()
+            .filter_map(|(order, h)| h.join().ok().map(|e| (order, e)))
+            .collect();
+        ordered.sort_by_key(|(i, _)| *i);
+        let entries: Vec<WindowEntry> = ordered.into_iter()
+            .flat_map(|(_, e)| e)
+            .collect();
 
         // Keep z-order from CGWindowList (front-to-back, most recently used first).
         // Don't sort — natural order is what Alt+Tab uses.
+
+        // Dedup phantom tab entries: Chrome (and other tabbed apps) expose
+        // every tab as a separate AX window with the same screen position.
+        // Cycling onto a non-foreground tab silently focuses nothing visible
+        // — the user perceives it as "Space+Z went to an invisible window".
+        // Keep only the first (topmost in z-order) entry per (pid, cx, cy).
+        let mut seen_positions = std::collections::HashSet::<(i64, i64, i64)>::new();
+        let entries: Vec<WindowEntry> = entries
+            .into_iter()
+            .filter(|w| {
+                // Windows whose wid wasn't in bounds_map get (0.0, 0.0). Don't
+                // collapse those — we have no positional signal to dedup by.
+                if w.cx == 0.0 && w.cy == 0.0 { return true; }
+                // Round to whole pixels — float NaN/precision noise breaks Hash.
+                let key = (w.pid, w.cx.round() as i64, w.cy.round() as i64);
+                seen_positions.insert(key)
+            })
+            .collect();
 
         entries
     }
@@ -492,15 +700,18 @@ unsafe fn find_ax_window(arr: CFArrayRef, count: usize, entry: &WindowEntry) -> 
 /// Collect AXUIElementRef handles for all titled windows on the given display,
 /// sorted by (pid, window_id) for stable ordering (same order as cycle_windows).
 /// The returned refs are retained — caller must CFRelease each one.
-fn get_all_ax_window_refs_stable(display_id: u32) -> Vec<AXUIElementRef> {
+/// Takes a pre-built window list to avoid a redundant list_all_windows() call.
+fn get_all_ax_window_refs_stable(display_id: u32, all_windows: &[WindowEntry]) -> Vec<AXUIElementRef> {
     unsafe {
         extern "C" {
             fn CFRetain(cf: *const std::ffi::c_void) -> *const std::ffi::c_void;
         }
 
-        let mut entries = list_all_windows();
-        entries.retain(|w| w.display_id == display_id);
-        entries.sort_by_key(|w| (w.pid, w.window_id));
+        let mut entries: Vec<WindowEntry> = all_windows.iter()
+            .filter(|w| w.display_id == display_id)
+            .cloned()
+            .collect();
+        sort_windows_by_order(&mut entries, &get_arrange_order());
 
         let mut refs: Vec<AXUIElementRef> = Vec::new();
 
@@ -815,6 +1026,8 @@ impl MacPlatform {
     pub fn new() -> Self {
         // Pre-spawn clx-prompt daemon so the Tauri WebView is warm before first Space+B.
         std::thread::spawn(|| crate::brainstorm_overlay::spawn_prompt_daemon());
+        // Pre-warm window list cache so Space+Z / Space+C feel instant from first press.
+        start_window_cache_warmer();
         Self
     }
 
@@ -1113,23 +1326,36 @@ impl Platform for MacPlatform {
     // ── Window management: use Cmd shortcuts on macOS ──────────────────────────
 
     fn cycle_windows(&self, dir: i32) {
+        let bench_total = Instant::now();
         let mut guard = CYCLE.lock().unwrap();
 
         let now = Instant::now();
-        // Snapshot is expensive (~hundreds of ms with many AX windows on Chrome).
-        // 5s TTL means casual cycling keeps reusing the cache and doesn't stall
-        // the AccModel ticker thread → no CGEventTap timeout.
-        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_millis() > 5000);
+        // 1s TTL — position-based ordering needs reasonably fresh coordinates.
+        let stale = guard.as_ref().map_or(true, |s| now.duration_since(s.last_use).as_millis() > 1000);
 
         if stale {
-            let mut windows = list_all_windows();
+            let t0 = Instant::now();
+            let mut windows = list_all_windows_cached();
+            eprintln!("[BENCH clx+z] list_all_windows: {}ms ({} windows)", t0.elapsed().as_millis(), windows.len());
+            // Diagnostic: dump each entry so we can catch invisible/phantom
+            // windows sneaking into the cycle. Temporary — remove once the
+            // "clx+z goes to an invisible window" report is resolved.
+            for (i, w) in windows.iter().enumerate() {
+                eprintln!(
+                    "[clx+z]   [{i}] pid={} wid={} disp={} pos=({:.0},{:.0}) title={:?}",
+                    w.pid, w.window_id, w.display_id, w.cx, w.cy, w.title
+                );
+            }
             if windows.is_empty() { return; }
 
+            let t1 = Instant::now();
             let front_wid = frontmost_window_id();
+            eprintln!("[BENCH clx+z] frontmost_window_id: {}ms", t1.elapsed().as_millis());
 
-            // Cycle ALL on-screen windows across all monitors.
-            // Sort by (display, pid, window_id) — group by monitor, then app.
-            windows.sort_by_key(|w| (w.display_id, w.pid, w.window_id));
+            // Sort by configured position-based order (read from cached static,
+            // NOT from disk — ticker thread must not do file I/O or eprintln).
+            let order = get_cycle_order();
+            sort_windows_by_order(&mut windows, &order);
 
             // Try to find the currently focused window in the new list.
             let prev_wid = guard.as_ref().map_or(0, |s| s.last_activated_wid);
@@ -1138,11 +1364,6 @@ impl Platform for MacPlatform {
                 .position(|w| w.window_id == anchor_wid)
                 .or_else(|| windows.iter().position(|w| w.window_id == front_wid))
                 .unwrap_or(0);
-
-            // No eprintln here — cycle runs on AccModel ticker thread, but
-            // stderr is tee'd to a file and bursty writes can stall the
-            // process while CGEventTap is waiting (causes "handler too slow"
-            // disables and the laggy feel during rapid Z cycling).
 
             *guard = Some(CycleState {
                 windows,
@@ -1157,40 +1378,36 @@ impl Platform for MacPlatform {
         let len = state.windows.len();
         if len == 0 { return; }
 
-        // Detect current frontmost window to handle external switches
-        // (mouse click, Cmd+Tab, etc.).  BUT if the frontmost window is
-        // still the one we last activated, trust our stored index — macOS
-        // may not have finished raising the window yet, so re-querying
-        // would re-anchor to the *previous* position and skip a window.
+        // Detect external window switches (mouse click, Cmd+Tab, etc.).
         let front_wid = frontmost_window_id();
         let current_idx = if front_wid != 0
             && front_wid != state.last_activated_wid
             && state.windows.iter().any(|w| w.window_id == front_wid)
         {
-            // User switched windows externally — re-anchor to that window.
             state.windows.iter().position(|w| w.window_id == front_wid).unwrap()
         } else {
-            state.index
+            state.index.min(len - 1)
         };
 
-        // Advance from detected position, wrapping around at boundaries.
+        // Advance index, wrapping around.
         let next_idx = if dir > 0 {
             (current_idx + 1) % len
         } else {
             if current_idx == 0 { len - 1 } else { current_idx - 1 }
         };
 
-        let idx = next_idx;
-        state.index = idx;
-        state.last_activated_wid = state.windows[idx].window_id;
-        let entry = state.windows[idx].clone();
+        state.index = next_idx;
+        state.last_activated_wid = state.windows[next_idx].window_id;
+        let entry = state.windows[next_idx].clone();
         drop(guard);
 
-        // Verbose per-step log removed — see comment above.
+        let t_act = Instant::now();
         activate_window(&entry);
+        eprintln!("[BENCH clx+z] activate_window: {}ms | total: {}ms", t_act.elapsed().as_millis(), bench_total.elapsed().as_millis());
     }
 
     fn arrange_windows(&self, mode: ArrangeMode) {
+        let bench_total = Instant::now();
         // Remember the cycle's current window so we can restore focus after arrange.
         let restore_entry = if let Ok(mut guard) = CYCLE.lock() {
             if let Some(ref mut s) = *guard {
@@ -1203,7 +1420,9 @@ impl Platform for MacPlatform {
         } else { None };
 
         // Group windows by display so each display arranges independently.
-        let all_windows = list_all_windows();
+        let t0 = Instant::now();
+        let all_windows = list_all_windows_cached();
+        eprintln!("[BENCH clx+c] list_all_windows #1: {}ms ({} windows)", t0.elapsed().as_millis(), all_windows.len());
         let mut displays: std::collections::HashMap<u32, Vec<&WindowEntry>> = std::collections::HashMap::new();
         for w in &all_windows {
             displays.entry(w.display_id).or_default().push(w);
@@ -1212,7 +1431,9 @@ impl Platform for MacPlatform {
         let mut frames: Vec<(AXUIElementRef, f64, f64, f64, f64)> = Vec::new();
 
         for (&display_id, _display_windows) in &displays {
-            let windows = get_all_ax_window_refs_stable(display_id);
+            let t_ax = Instant::now();
+            let windows = get_all_ax_window_refs_stable(display_id, &all_windows);
+            eprintln!("[BENCH clx+c] get_all_ax_window_refs_stable (display {}): {}ms ({} windows)", display_id, t_ax.elapsed().as_millis(), windows.len());
             let n = windows.len();
             if n == 0 { continue; }
 
@@ -1226,7 +1447,7 @@ impl Platform for MacPlatform {
                     let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
                     for (k, win) in windows.iter().enumerate() {
                         let x = ax + dx * k as f64;
-                        let y = ay + dy * (n - k - 1) as f64;
+                        let y = ay + dy * k as f64;
                         frames.push((*win, x, y, w, h));
                     }
                 }
@@ -1256,13 +1477,17 @@ impl Platform for MacPlatform {
         // Phase 2: Resize all windows in PARALLEL (each window is independent).
         // AX resize is slow (~20-50ms per window). Parallel = total time ≈ one window.
         {
+            let t_resize = Instant::now();
             let handles: Vec<_> = frames.iter().map(|&(win, x, y, w, h)| {
                 let win = win as usize; // cast to usize to make it Send
                 std::thread::spawn(move || {
+                    let t = Instant::now();
                     unsafe { ax_set_window_frame(win as *mut std::ffi::c_void, x, y, w, h); }
+                    t.elapsed().as_millis()
                 })
             }).collect();
-            for h in handles { let _ = h.join(); }
+            let times: Vec<u128> = handles.into_iter().filter_map(|h| h.join().ok()).collect();
+            eprintln!("[BENCH clx+c] parallel resize: {}ms wall | per-window: {:?}ms", t_resize.elapsed().as_millis(), times);
         }
 
         // Phase 3: Z-order — card deck fan-out from current window.
@@ -1312,8 +1537,11 @@ impl Platform for MacPlatform {
 
         // Restore focus to the window that was active before arrange.
         if let Some(ref entry) = restore_entry {
+            let t_act = Instant::now();
             activate_window(entry);
+            eprintln!("[BENCH clx+c] activate_window: {}ms", t_act.elapsed().as_millis());
         }
+        eprintln!("[BENCH clx+c] total: {}ms", bench_total.elapsed().as_millis());
 
         // Invalidate the cycle snapshot so Space+Z picks up new window positions.
         if let Ok(mut g) = CYCLE.lock() {
@@ -1388,6 +1616,23 @@ impl Platform for MacPlatform {
     }
     fn update_voice_subtitle(&self, text: &str) {
         crate::voice_overlay::push_audio_levels_with_text(&[], false, Some(text));
+    }
+    fn update_voice_subtitle_translation(&self, translation: &str) {
+        crate::voice_overlay::push_translation(translation);
+    }
+    fn set_ptt_tray_state(&self, state: capslockx_core::platform::PttTrayState) {
+        // Route PTT state changes to the otoji-tray menu-bar icon (via the
+        // shared Unix datagram socket) instead of the CLX tray. The CLX tray
+        // is reserved for CapsLock on/off; otoji owns voice/PTT visuals.
+        use capslockx_core::platform::PttTrayState::*;
+        use capslockx_core::modules::voice_otoji::{notify_tray, TrayState};
+        let ts = match state {
+            Idle => TrayState::Idle,
+            Recording => TrayState::ListenSilent,
+            Processing => TrayState::Decoding,
+            NoteMode => TrayState::ListenSilent,
+        };
+        notify_tray(ts);
     }
 
     fn get_selected_text(&self) -> String {

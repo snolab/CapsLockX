@@ -1,4 +1,4 @@
-﻿; #Requires AutoHotkey v1.1.33
+; #Requires AutoHotkey v1.1.33
 #Include ./Modules/Lib/AHK-GDIp-Library-Compilation/ahk-v1-1/Gdip_All.ahk ; https://github.com/marius-sucan/AHK-GDIp-Library-Compilation
 
 ; Note: This module uses Msxml2.XMLHTTP for HTTP requests

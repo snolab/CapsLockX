@@ -142,11 +142,9 @@ fn main() {
             )])
             .status();
 
-        // Reap any orphan clx-prompt daemons from previous (crashed) sessions.
-        // The Tauri prompt helper is ~74 MB each — without this, repeated
-        // crashes leak ten or more orphan processes.
+        // Reap any orphan clx-prompt processes from previous (crashed) sessions.
         let _ = std::process::Command::new("sh")
-            .args(["-c", "pkill -9 -f 'clx-prompt --daemon' 2>/dev/null"])
+            .args(["-c", "pkill -9 -f 'clx-prompt' 2>/dev/null"])
             .status();
     }
 

@@ -137,6 +137,7 @@ pub fn keycode_to_vk(key: KeyCode) -> u16 {
         KeyCode::VolumeDown => 0xAE,
         KeyCode::VolumeMute => 0xAD,
 
+        KeyCode::Comma => 0xBC, // VK_OEM_COMMA
         KeyCode::Unknown(v) => v as u16,
     }
 }

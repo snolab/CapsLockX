@@ -6,7 +6,7 @@
 /// Transcribe audio samples using Gemini's audio understanding.
 /// `samples`: 16kHz mono f32 PCM. `api_key`: Gemini API key.
 /// Returns transcribed text or error.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "ai"))]
 pub fn transcribe_gemini(samples: &[f32], api_key: &str) -> Result<String, String> {
     if samples.is_empty() || api_key.is_empty() {
         return Err("empty samples or API key".into());
@@ -116,7 +116,7 @@ fn base64_encode(data: &[u8]) -> String {
     result
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", not(feature = "ai")))]
 pub fn transcribe_gemini(_samples: &[f32], _api_key: &str) -> Result<String, String> {
-    Err("Gemini STT not supported on WASM".into())
+    Err("cloud STT disabled (build without `ai` feature, or running on WASM)".into())
 }

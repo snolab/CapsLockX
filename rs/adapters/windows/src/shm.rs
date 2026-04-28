@@ -39,12 +39,12 @@ unsafe impl Send for SharedState {}
 unsafe impl Sync for SharedState {}
 
 impl SharedState {
-    /// Kill every other `clx.exe` instance on the system, plus any
+    /// Kill every other `clx-rust.exe` instance on the system, plus any
     /// orphaned AHK child whose pid is recorded in the previous shared
     /// memory header. Strategy:
     ///   1. Signal the named `CapsLockX_Quit` event once — every previous
     ///      instance that's listening will call `app.exit()` cleanly.
-    ///   2. Enumerate `clx.exe` processes via Toolhelp32, skipping our
+    ///   2. Enumerate `clx-rust.exe` processes via Toolhelp32, skipping our
     ///      own pid. For each: wait briefly for graceful exit, then
     ///      `TerminateProcess` as fallback.
     /// This catches multi-instance / orphan / crashed-prior-state cases
@@ -55,7 +55,7 @@ impl SharedState {
     pub fn kill_previous() -> bool {
         let mut needs_elevation = false;
         crate::hook::debug_log(&format!(
-            "[CLX] kill_previous: scanning for old clx.exe (self_pid={})",
+            "[CLX] kill_previous: scanning for old clx-rust.exe (self_pid={})",
             std::process::id()
         ));
         unsafe {
@@ -85,7 +85,7 @@ impl SharedState {
                 let _ = CloseHandle(evt);
             }
 
-            // ── Step 2: enumerate every clx.exe and kill it ───────
+            // ── Step 2: enumerate every clx-rust.exe and kill it ───────
             let self_pid = std::process::id();
             let snap = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
                 Ok(h) if h != INVALID_HANDLE_VALUE => h,
@@ -102,9 +102,14 @@ impl SharedState {
                 loop {
                     let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(0);
                     let name = String::from_utf16_lossy(&entry.szExeFile[..len]);
-                    if name.eq_ignore_ascii_case("clx.exe")
-                        && entry.th32ProcessID != self_pid
-                    {
+                    // Match both the dev binary (`clx-rust.exe`) and the
+                    // packaged installer rename (`clx.exe`). Without this,
+                    // a hung packaged build that ignores the Quit event
+                    // can't be killed by a subsequent launch and the
+                    // single-instance guarantee silently regresses.
+                    let is_clx = name.eq_ignore_ascii_case("clx-rust.exe")
+                        || name.eq_ignore_ascii_case("clx.exe");
+                    if is_clx && entry.th32ProcessID != self_pid {
                         victims.push(entry.th32ProcessID);
                     }
                     if Process32NextW(snap, &mut entry).is_err() {

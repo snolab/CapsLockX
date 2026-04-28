@@ -228,7 +228,7 @@ pub struct Message {
 
 /// Stream a chat completion. Calls `on_token` for each streamed token.
 /// Returns the full accumulated response.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "ai"))]
 pub fn stream_chat(
     config: &LlmConfig,
     messages: &[Message],
@@ -430,11 +430,11 @@ fn stream_ollama(
     Ok(full)
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", not(feature = "ai")))]
 pub fn stream_chat(
     _config: &LlmConfig,
     _messages: &[Message],
     _on_token: &mut dyn FnMut(&str),
 ) -> Result<String, String> {
-    Err("LLM streaming not yet supported on wasm".into())
+    Err("LLM streaming disabled (build without `ai` feature, or running on WASM)".into())
 }

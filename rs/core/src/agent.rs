@@ -96,7 +96,7 @@ const TOOLS: &[ToolDef] = &[
 
 /// Run the agent loop: send messages, handle tool calls, return final text.
 /// Calls `on_token` for streaming text output, `on_status` for tool execution updates.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "ai"))]
 pub fn agent_chat(
     config: &LlmConfig,
     messages: &mut Vec<Message>,
@@ -966,12 +966,12 @@ fn append_tool_result(config: &LlmConfig, messages: &mut Vec<Message>, call: &To
     }
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", not(feature = "ai")))]
 pub fn agent_chat(
     _config: &LlmConfig,
     _messages: &mut Vec<Message>,
     _on_token: &mut dyn FnMut(&str),
     _on_status: &mut dyn FnMut(&str),
 ) -> Result<String, String> {
-    Err("agent not supported on wasm".into())
+    Err("agent disabled (build without `ai` feature, or running on WASM)".into())
 }

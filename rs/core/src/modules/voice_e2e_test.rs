@@ -155,6 +155,7 @@ fn load_wav(path: &str) -> Vec<f32> {
 // ── E2E Test ─────────────────────────────────────────────────────────────────
 
 #[test]
+#[ignore = "depends on real otoji subprocess; see CLX_DISABLE_OTOJI_SPAWN gate"]
 fn test_voice_input_e2e() {
     // 1. Load test audio
     let wav_path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/test_data/test_speech.wav");
@@ -253,6 +254,7 @@ fn run_voice_e2e(wav_file: &str, keywords: &[&str]) -> (String, usize, usize) {
 }
 
 #[test]
+#[ignore = "depends on real otoji subprocess; see CLX_DISABLE_OTOJI_SPAWN gate"]
 fn test_voice_matrix() {
     let cases: Vec<(&str, &str, Vec<&str>)> = vec![
         // English

@@ -75,7 +75,7 @@ The `bin/clx` wrapper script sets `DYLD_LIBRARY_PATH` for onnxruntime.
 ```
 cargo build -p capslockx-windows --release
 ```
-Binary: `rs/target/release/clx.exe`
+Binary: `rs/target/release/clx-rust.exe`
 
 ## After fixing bugs / building
 **Always rebuild and relaunch after code changes — without being asked.**
@@ -86,6 +86,13 @@ Binary: `rs/target/release/clx.exe`
 ## Voice Module Rules
 - **NEVER suppress or gate mic STT** — both mic and sys tracks must always run and produce output, even if system audio is playing. The user wants to see both transcriptions simultaneously.
 - Echo/bleed in the mic track is acceptable; do NOT add energy gates, mic suppression, or silence-feeding to VAD when sys audio is active.
+
+## Privacy: never use user's real prompts as examples
+When writing few-shot examples or documentation for LLM prompts (polish, translate, agent system prompts, `lib/otoji/src/polish.rs`, `skills/clx-agent/SKILL.md`, etc.), **NEVER copy phrases from the user's voice logs, chat messages, transcripts, or `tmp/clx-watchdog.log`**. Always synthesize generic, unrelated examples (e.g. `kafka`, `npm run`, `下雨了`, `water bottle`).
+
+Why: the user speaks personal, work-in-progress content through the mic. Anything embedded in a committed system prompt (a) ships to the cloud LLM on every subsequent call, and (b) lives in git history forever. This rule is a hard requirement — violating it is a privacy regression even when the example "seems harmless."
+
+Rule of thumb: if you can find the candidate example string by grepping `tmp/` or scrolling the conversation, it is forbidden. Invent a new one.
 
 ## Key Design Decisions
 

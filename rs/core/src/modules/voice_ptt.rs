@@ -4,11 +4,13 @@
 //! to mark PTT segment boundaries. Otoji emits `ptt_partial` and `ptt_final`
 //! JSON events which the otoji reader thread dispatches to PttSession.
 //!
-//! Visual feedback at cursor:
-//!   `-`       mic stream starting (not ready yet)
-//!   `~`       mic ready, audio flowing (safe to speak)
-//!   `text~`   partial (in-progress) transcription from otoji
-//!   `text`    final committed transcription (~ removed)
+//! Visual feedback at cursor (tail glyph):
+//!   `.`       mic stream starting (otoji not ready yet)
+//!   `-`       mic ready, VAD silent (no voice detected)
+//!   `~`       VAD detected voice (mic hearing you)
+//!   `text~`   partial transcription streaming — body + VAD tail
+//!   `text…`   polish in flight (after release, before upgrade)
+//!   `text`    final, polished, committed (no tail)
 //!
 //! Modes:
 //!   Hold      — press V to start, release to commit
@@ -46,22 +48,39 @@ pub enum PttRelease {
 
 // ── PttSession ───────────────────────────────────────────────────────────────
 
-/// Animated indicator typed at the cursor while background polish / TTS /
-/// translation is running. Shows the user something is in flight.
-struct SpinnerState {
-    active: bool,
-    /// The spinner glyph currently visible on screen (so we know what to
-    /// backspace when swapping frames or stopping). `None` = nothing typed.
-    current: Option<String>,
+/// Tail glyph typed right after the body text. Represents the "live"
+/// micro-state: mic starting, listening silent, listening with voice, or
+/// polish pending.
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum Tail {
+    None,
+    MicStarting,   // "."  — otoji subprocess not yet ready
+    ListenSilent,  // "-"  — mic_ready, VAD silent
+    ListenVoice,   // "~"  — VAD detected voice
+    Polishing,     // "…"  — ptt_final received, awaiting upgrade
 }
 
-const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const SPINNER_INTERVAL_MS: u64 = 100;
+impl Tail {
+    fn glyph(self) -> Option<&'static str> {
+        match self {
+            Tail::None => None,
+            Tail::MicStarting => Some("."),
+            Tail::ListenSilent => Some("-"),
+            Tail::ListenVoice => Some("~"),
+            Tail::Polishing => Some("…"),
+        }
+    }
+}
 
 pub struct PttSession {
     platform: Arc<dyn Platform>,
-    /// Currently displayed text at cursor (placeholder, partial, or final).
+    /// Body text currently typed at the cursor (partial or raw committed
+    /// segment), **without** the tail glyph. The tail is tracked separately
+    /// so VAD can swap `./−/~` without disturbing the body.
     displayed: Arc<Mutex<String>>,
+    /// Active tail glyph. Reflects micro-state: mic starting, listening
+    /// silent, listening with voice, polish pending, or none.
+    tail: Arc<Mutex<Tail>>,
     /// Monotonic token — cancels stale deferred tasks.
     token_counter: AtomicU64,
     /// True when locked PTT mode is active (double-tap to enter).
@@ -71,9 +90,6 @@ pub struct PttSession {
     /// Text that was last typed by `on_ptt_final` — used by `on_ptt_upgrade`
     /// to compute a minimal diff against the polished version.
     last_committed: Mutex<String>,
-    /// Spinner state — shows a live indicator char at the cursor while
-    /// polish / TTS / translation is running in the background.
-    spinner: Mutex<SpinnerState>,
     /// True once otoji's mic is ready (first status/partial received).
     mic_ready: Arc<AtomicBool>,
     /// Signals that a PTT session is active (between press and release/commit).
@@ -87,11 +103,11 @@ impl PttSession {
         Arc::new(Self {
             platform,
             displayed: Arc::new(Mutex::new(String::new())),
+            tail: Arc::new(Mutex::new(Tail::None)),
             token_counter: AtomicU64::new(0),
             locked: AtomicBool::new(false),
             last_tap_time: Mutex::new(None),
             last_committed: Mutex::new(String::new()),
-            spinner: Mutex::new(SpinnerState { active: false, current: None }),
             mic_ready: Arc::new(AtomicBool::new(false)),
             ptt_active: AtomicBool::new(false),
             otoji,
@@ -129,17 +145,34 @@ impl PttSession {
         self.ptt_active.store(true, Ordering::Relaxed);
         self.platform.set_ptt_tray_state(PttTrayState::Recording);
 
-        // Fetch AX tree in background — completes during the user's speech
-        // and becomes available to otoji (via ctx file) by the time the
-        // user releases V. Zero added latency on the critical path.
+        // Fetch AX tree + Vision OCR in parallel — both complete during
+        // the user's speech and become available to otoji (via ctx file)
+        // by the time the user releases V. Zero added latency on the
+        // critical path. OCR is the one that rescues STT drops of short
+        // technical tokens (CLI, tmux, PR numbers) that AX doesn't expose
+        // but the on-screen pixels do.
         std::thread::Builder::new()
-            .name("ptt-ax-fetch".into())
+            .name("ptt-ctx-fetch".into())
             .spawn(|| {
-                let tree = fetch_frontmost_ax_tree();
+                let ax_handle = std::thread::Builder::new()
+                    .name("ptt-ax-fetch".into())
+                    .spawn(fetch_frontmost_ax_tree)
+                    .ok();
+                let ocr_handle = std::thread::Builder::new()
+                    .name("ptt-ocr-fetch".into())
+                    .spawn(fetch_frontmost_ocr)
+                    .ok();
+                let tree = ax_handle.and_then(|h| h.join().ok()).unwrap_or_default();
+                let ocr  = ocr_handle.and_then(|h| h.join().ok()).unwrap_or_default();
+                let mut ctx = tree;
+                if !ocr.trim().is_empty() {
+                    if !ctx.is_empty() && !ctx.ends_with('\n') { ctx.push('\n'); }
+                    ctx.push_str("[OCR]\n");
+                    ctx.push_str(&ocr);
+                }
                 let path = ptt_context_file_path();
                 let tmp = format!("{path}.tmp");
-                // Atomic write: write to tmp, then rename.
-                if std::fs::write(&tmp, &tree).is_ok() {
+                if std::fs::write(&tmp, &ctx).is_ok() {
                     let _ = std::fs::rename(&tmp, &path);
                 }
             })
@@ -160,7 +193,8 @@ impl PttSession {
 
                 // Wait for mic_ready (= otoji is running and streaming).
                 if !(was_ready || this.mic_ready.load(Ordering::Relaxed)) {
-                    this.replace_displayed("-");
+                    // "." — mic still starting.
+                    this.set_tail(Tail::MicStarting);
                     for _ in 0..100 { // up to 5s
                         std::thread::sleep(Duration::from_millis(50));
                         if this.token_counter.load(Ordering::Relaxed) != token { return; }
@@ -173,7 +207,8 @@ impl PttSession {
                 if !sent_now {
                     this.send_ptt_start();
                 }
-                this.replace_displayed("~");
+                // "-" — mic ready, awaiting VAD. Flips to "~" on on_vad(true).
+                this.set_tail(Tail::ListenSilent);
             })
             .ok();
         false
@@ -218,7 +253,7 @@ impl PttSession {
                     .spawn(move || {
                         std::thread::sleep(Duration::from_millis(PLACEHOLDER_DELAY_MS));
                         if this.token_counter.load(Ordering::Relaxed) != token { return; }
-                        this.replace_displayed("~");
+                        this.set_tail(Tail::ListenSilent);
                     })
                     .ok();
                 return PttRelease::Locked;
@@ -240,42 +275,62 @@ impl PttSession {
     pub fn on_ptt_partial(&self, text: &str) {
         if !self.ptt_active.load(Ordering::Relaxed) { return; }
         if text.is_empty() { return; }
-        let partial = format!("{}~", text);
-        self.replace_displayed(&partial);
+        // Body = partial text; tail = VoiceDetected (partial implies voice).
+        self.set_body(text.to_string(), Tail::ListenVoice);
+    }
+
+    /// Called when otoji emits a `vad` event. Only affects the tail glyph
+    /// when the body is still empty (i.e. before any partial arrives) —
+    /// once partials are streaming they already imply active voice.
+    pub fn on_vad(&self, active: bool) {
+        if !self.ptt_active.load(Ordering::Relaxed) { return; }
+        // Mirror VAD on/off to the otoji-tray icon so the menu-bar reflects
+        // voice activity during PTT (matches note-mode behavior).
+        super::voice_otoji::notify_tray(if active {
+            super::voice_otoji::TrayState::ListenVoice
+        } else {
+            super::voice_otoji::TrayState::ListenSilent
+        });
+        let body_empty = self.displayed.lock().unwrap().is_empty();
+        if !body_empty { return; }
+        // Only flip between the two listening states; don't override
+        // MicStarting (not ready yet) or Polishing (after release).
+        let current = *self.tail.lock().unwrap();
+        let can_flip = matches!(current, Tail::ListenSilent | Tail::ListenVoice);
+        if !can_flip { return; }
+        self.set_tail(if active { Tail::ListenVoice } else { Tail::ListenSilent });
     }
 
     /// Called when otoji emits a `ptt_final` event — the RAW transcription,
     /// typed immediately while polish runs in the background.
     pub fn on_ptt_final(self: &Arc<Self>, text: &str) {
         let text = text.trim();
-        let old = {
-            let mut d = self.displayed.lock().unwrap();
-            std::mem::take(&mut *d)
-        };
-        for _ in old.chars() {
-            self.platform.key_tap(KeyCode::Backspace);
-        }
+        // Erase live span (body + tail) — what's left to the left is text0/text1.
+        self.set_body(String::new(), Tail::None);
         if !text.is_empty() {
             eprintln!("[CLX] PTT: final (raw) -> {:?}", text);
+            // Type raw text + "…" tail directly. We DON'T put raw into
+            // `displayed` — it becomes a "pending-polish committed prefix"
+            // that on_ptt_upgrade will diff-replace using last_committed.
+            // The "…" tail IS tracked via `tail` so on_vad/set_body know
+            // to leave it alone (Polishing is not in the flippable set).
             self.platform.type_text(text);
+            *self.tail.lock().unwrap() = Tail::Polishing;
+            self.platform.type_text("…");
             *self.last_committed.lock().unwrap() = text.to_string();
 
-            // Tray: Recording -> Processing (polish/TTS still running async).
-            // Fall back to Idle after 3s if no upgrade arrives (polish may be
-            // disabled or may have returned text identical to raw).
             self.platform.set_ptt_tray_state(PttTrayState::Processing);
-
-            // Start spinner — animated indicator at the cursor while polish/
-            // TTS/translation run in the background. Auto-stops via the 3s
-            // timer below (or sooner, when ptt_upgrade / ptt_translated arrive).
-            self.start_spinner();
 
             let this = Arc::clone(self);
             std::thread::Builder::new()
                 .name("ptt-tray-reset".into())
                 .spawn(move || {
                     std::thread::sleep(Duration::from_secs(3));
-                    this.stop_spinner();
+                    // Drop the "…" tail if upgrade never arrived. Body is
+                    // already empty so set_body just clears the tail glyph.
+                    if *this.tail.lock().unwrap() == Tail::Polishing {
+                        this.set_body(String::new(), Tail::None);
+                    }
                     this.platform.set_ptt_tray_state(PttTrayState::Idle);
                 })
                 .ok();
@@ -304,7 +359,10 @@ impl PttSession {
     pub fn on_ptt_translated(&self, translated: &str, _lang: &str) {
         let translated = translated.trim();
         if translated.is_empty() { return; }
-        self.stop_spinner();
+        // Drop polish tail if still showing.
+        if *self.tail.lock().unwrap() == Tail::Polishing {
+            self.set_body(String::new(), Tail::None);
+        }
 
         let mode = std::env::var("CLX_TRANSLATE_TYPE").unwrap_or_else(|_| "original".into());
         match mode.as_str() {
@@ -365,7 +423,12 @@ impl PttSession {
     /// differing suffix, type the new suffix. Usually just a character or two.
     pub fn on_ptt_upgrade(&self, polished: &str) {
         let polished = polished.trim();
-        self.stop_spinner();
+        // Drop the "…" polish tail before diff-replacing the raw text.
+        // `displayed` body is empty (raw was typed direct, not tracked) so
+        // set_body just deletes the tail glyph.
+        if *self.tail.lock().unwrap() == Tail::Polishing {
+            self.set_body(String::new(), Tail::None);
+        }
         let mut prev = self.last_committed.lock().unwrap();
         if polished == *prev || polished.is_empty() {
             return;
@@ -399,82 +462,6 @@ impl PttSession {
         *prev = polished.to_string();
         // Upgrade finished — return tray to Idle (or NoteMode if active).
         self.platform.set_ptt_tray_state(PttTrayState::Idle);
-    }
-
-    // ── Spinner ──────────────────────────────────────────────────────────
-
-    /// Start the animated polish/TTS spinner at the cursor. Idempotent —
-    /// does nothing if already active.
-    fn start_spinner(self: &Arc<Self>) {
-        {
-            let mut s = self.spinner.lock().unwrap();
-            if s.active { return; }
-            s.active = true;
-        }
-        let this = Arc::clone(self);
-        std::thread::Builder::new()
-            .name("ptt-spinner".into())
-            .spawn(move || {
-                let mut i = 0usize;
-                let spin_start = Instant::now();
-                let mut iter_no = 0u64;
-                let mut last_iter_end = spin_start;
-                // Type the initial frame under the lock.
-                {
-                    let mut s = this.spinner.lock().unwrap();
-                    if !s.active { return; }
-                    let frame = SPINNER_FRAMES[i];
-                    this.platform.type_text(frame);
-                    s.current = Some(frame.to_string());
-                }
-                loop {
-                    std::thread::sleep(Duration::from_millis(SPINNER_INTERVAL_MS));
-                    let loop_top = Instant::now();
-                    let mut s = this.spinner.lock().unwrap();
-                    let got_lock = Instant::now();
-                    if !s.active { return; }
-                    i = (i + 1) % SPINNER_FRAMES.len();
-                    // Backspace old frame, type new. Under lock so stop_spinner
-                    // can't race during the swap.
-                    let inject_start = Instant::now();
-                    if let Some(old) = s.current.take() {
-                        for _ in old.chars() {
-                            this.platform.key_tap(KeyCode::Backspace);
-                        }
-                    }
-                    let frame = SPINNER_FRAMES[i];
-                    this.platform.type_text(frame);
-                    let inject_end = Instant::now();
-                    s.current = Some(frame.to_string());
-                    drop(s);
-
-                    iter_no += 1;
-                    let gap = loop_top.duration_since(last_iter_end).as_millis();
-                    let lock_wait = got_lock.duration_since(loop_top).as_millis();
-                    let inject_ms = inject_end.duration_since(inject_start).as_millis();
-                    let since_start = loop_top.duration_since(spin_start).as_millis();
-                    // Log every iteration for now (we can throttle later once
-                    // the cause is clear).
-                    eprintln!(
-                        "[CLX] ptt-spin #{iter_no} t+{since_start}ms gap={gap}ms lock_wait={lock_wait}ms inject={inject_ms}ms"
-                    );
-                    last_iter_end = inject_end;
-                }
-            })
-            .ok();
-    }
-
-    /// Stop the spinner and remove any currently-displayed frame from the
-    /// cursor. Safe to call multiple times.
-    fn stop_spinner(&self) {
-        let mut s = self.spinner.lock().unwrap();
-        if !s.active && s.current.is_none() { return; }
-        s.active = false;
-        if let Some(old) = s.current.take() {
-            for _ in old.chars() {
-                self.platform.key_tap(KeyCode::Backspace);
-            }
-        }
     }
 
     // ── Internal ─────────────────────────────────────────────────────────
@@ -537,40 +524,42 @@ impl PttSession {
         }
     }
 
-    /// Replace displayed text at cursor using diff (common prefix optimization).
-    fn replace_displayed(&self, new_text: &str) {
-        let t0 = Instant::now();
+    #[cfg(not(unix))]
+    fn send_signal(_pid: u32, _sig: i32) {
+        // Windows otoji handshake would use a named pipe or TCP socket rather
+        // than POSIX signals. PTT is a no-op on non-unix until that lands.
+        eprintln!("[CLX] PTT: send_signal skipped (non-unix platform)");
+    }
+
+    /// Atomically replace the live (body + tail) span at the cursor using a
+    /// common-prefix diff. Anything to the left of the live span (committed
+    /// segments, text0) is never touched.
+    fn set_body(&self, new_body: String, new_tail: Tail) {
         let mut displayed = self.displayed.lock().unwrap();
-        let t_lock = Instant::now();
-        let old = &**displayed;
+        let mut tail = self.tail.lock().unwrap();
+        let old: String = format!("{}{}", &**displayed, tail.glyph().unwrap_or(""));
+        let new: String = format!("{}{}", new_body, new_tail.glyph().unwrap_or(""));
 
-        let common: usize = old.chars().zip(new_text.chars())
-            .take_while(|(a, b)| a == b)
-            .count();
-
+        let common: usize = old.chars().zip(new.chars())
+            .take_while(|(a, b)| a == b).count();
         let old_tail_chars = old.chars().count() - common;
-        let new_tail: String = new_text.chars().skip(common).collect();
-        let new_tail_chars = new_tail.chars().count();
+        let new_tail_str: String = new.chars().skip(common).collect();
 
-        let t_inject_start = Instant::now();
         for _ in 0..old_tail_chars {
             self.platform.key_tap(KeyCode::Backspace);
         }
-        if !new_tail.is_empty() {
-            self.platform.type_text(&new_tail);
+        if !new_tail_str.is_empty() {
+            self.platform.type_text(&new_tail_str);
         }
-        let t_end = Instant::now();
+        *displayed = new_body;
+        *tail = new_tail;
+    }
 
-        eprintln!(
-            "[CLX] ptt-partial old_len={} new_len={} common={} bs={} type={} | lock={}ms inject={}ms total={}ms",
-            old.chars().count(), new_text.chars().count(), common,
-            old_tail_chars, new_tail_chars,
-            t_lock.duration_since(t0).as_millis(),
-            t_end.duration_since(t_inject_start).as_millis(),
-            t_end.duration_since(t0).as_millis(),
-        );
-
-        *displayed = new_text.to_string();
+    /// Update only the tail glyph, leaving the body alone. Convenience over
+    /// `set_body(current_body, t)`.
+    fn set_tail(&self, new_tail: Tail) {
+        let body = self.displayed.lock().unwrap().clone();
+        self.set_body(body, new_tail);
     }
 }
 
@@ -621,3 +610,26 @@ end tell
 
 #[cfg(not(target_os = "macos"))]
 fn fetch_frontmost_ax_tree() -> String { String::new() }
+
+/// Capture the frontmost window and run Vision OCR on it. Invokes the
+/// sibling `clx-ocr` binary (Swift, compiled by build.sh). Returns the
+/// empty string if the binary is missing, permission is denied, or the
+/// 3s budget expires.
+#[cfg(target_os = "macos")]
+fn fetch_frontmost_ocr() -> String {
+    // Look for clx-ocr next to the current executable.
+    let Ok(exe) = std::env::current_exe() else { return String::new(); };
+    let Some(dir) = exe.parent() else { return String::new(); };
+    let ocr_bin = dir.join("clx-ocr");
+    if !ocr_bin.exists() { return String::new(); }
+
+    match std::process::Command::new(&ocr_bin).output() {
+        Ok(out) if out.status.success() => {
+            String::from_utf8_lossy(&out.stdout).into_owned()
+        }
+        _ => String::new(),
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn fetch_frontmost_ocr() -> String { String::new() }

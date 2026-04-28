@@ -95,6 +95,9 @@
       "oxfmt",
       "oxlint"
     ],
+    "rs/**/*.rs": [
+      "rustfmt --edition 2021"
+    ],
     "*.ahk": []
   },
   "standard-version": {

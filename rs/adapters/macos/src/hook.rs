@@ -28,10 +28,66 @@ use crate::output::MacPlatform;
 
 // ── Engine (created once on first use) ───────────────────────────────────────
 
+/// Convert the stored translation preferences into the env vars that
+/// `voice_otoji::start` + `voice_ptt::on_ptt_translated` read. Keeps the
+/// plumbing thin — changing a pref just re-applies these vars.
+pub(crate) fn reapply_translate_env(cfg: &crate::config_store::FullConfig) {
+    apply_translate_env(cfg);
+}
+
+fn apply_translate_env(cfg: &crate::config_store::FullConfig) {
+    // Derive effective values from preset if not Custom.
+    // (For Custom, use the user's explicit fields as-is.)
+    let (enabled, target, type_what, tts_source) = match cfg.translate_preset.as_str() {
+        "off" => (false, String::new(), "original".into(), "original".into()),
+        "learning" => (true, cfg.translate_target.clone(), "translated".into(), "translated".into()),
+        "interpreter" => (true, cfg.translate_target.clone(), "original".into(), "translated".into()),
+        "chat" => (true, cfg.translate_target.clone(), "translated".into(), "original".into()),
+        "conversation" => (true, cfg.translate_target.clone(), "both".into(), "translated".into()),
+        _ /* custom */ => (
+            cfg.translate_enabled,
+            cfg.translate_target.clone(),
+            cfg.translate_type.clone(),
+            cfg.translate_tts_source.clone(),
+        ),
+    };
+    if enabled && !target.is_empty() {
+        std::env::set_var("CLX_TRANSLATE_TO", &target);
+        std::env::set_var("CLX_TRANSLATE_TYPE", &type_what);
+        std::env::set_var("CLX_TRANSLATE_BOTH_TEMPLATE", &cfg.translate_both_template);
+        std::env::set_var("CLX_TRANSLATE_TTS_SOURCE", &tts_source);
+        eprintln!(
+            "[CLX] translate: preset={} target={} type={} tts_source={}",
+            cfg.translate_preset, target, type_what, tts_source
+        );
+    } else {
+        std::env::remove_var("CLX_TRANSLATE_TO");
+        std::env::remove_var("CLX_TRANSLATE_TYPE");
+        std::env::remove_var("CLX_TRANSLATE_BOTH_TEMPLATE");
+        std::env::remove_var("CLX_TRANSLATE_TTS_SOURCE");
+    }
+
+    // Note-mode translation is independent — applies to continuous listen
+    // transcripts (AsrEvent::Final) while PTT is inactive.
+    if cfg.note_translate_enabled && !cfg.note_translate_target.is_empty() {
+        std::env::set_var("CLX_NOTE_TRANSLATE_TO", &cfg.note_translate_target);
+        eprintln!("[CLX] note translate: target={}", cfg.note_translate_target);
+    } else {
+        std::env::remove_var("CLX_NOTE_TRANSLATE_TO");
+    }
+}
+
 pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
     // Load saved config, fall back to defaults.
     let saved = crate::config_store::load();
+    crate::output::set_cycle_order(&saved.window_cycle_order);
+    crate::output::set_arrange_order(&saved.window_arrange_order);
+
+    // Apply voice translation settings as environment variables so the otoji
+    // subprocess and PttSession pick them up without extra plumbing.
+    apply_translate_env(&saved);
+
     let config = saved.into_clx_config();
     let (best_key, _) = config.best_llm_key_and_model();
     eprintln!("[CLX] config loaded: stt={}, correction={}, llm_key={}...",
@@ -92,6 +148,17 @@ unsafe extern "C" fn raw_callback(
 ) -> CGEventRef {
     use foreign_types::ForeignType;
 
+    // One-shot diagnostic: log the first event we ever receive so we can
+    // tell whether the CGEventTap is actually live.
+    {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        static FIRST: AtomicBool = AtomicBool::new(false);
+        if !FIRST.swap(true, Ordering::Relaxed) {
+            let etype_raw_dbg: u32 = std::mem::transmute(etype);
+            eprintln!("[CLX] CGEventTap: first event received (etype_raw={etype_raw_dbg})");
+        }
+    }
+
     // When macOS disables our tap (e.g. during secure input / password fields),
     // it sends a special event type. Re-enable the tap so it resumes working
     // after the secure input ends.
@@ -131,11 +198,32 @@ unsafe extern "C" fn raw_callback(
     // ManuallyDrop ensures we don't free the event (the OS still owns it).
     let cg_event = std::mem::ManuallyDrop::new(CGEvent::from_ptr(event as *mut _));
 
+    // Timing instrumentation: log any tap callback that exceeds SLOW_MS.
+    // macOS disables the tap when a single callback exceeds ~1 second, so we
+    // want to see which events spike and by how much. Also accumulate callback
+    // time so we can see aggregate load.
+    use std::time::Instant;
+    let t0 = Instant::now();
+
     // catch_unwind prevents panics from unwinding across the FFI boundary
     // (which is instant abort). Instead, log and pass the event through.
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         handle_event(etype, &cg_event)
-    })) {
+    }));
+
+    let elapsed = t0.elapsed();
+    const SLOW_MS: u128 = 50;
+    if elapsed.as_millis() > SLOW_MS {
+        // Get the keycode + event kind for triage.
+        let cg_keycode = cg_event
+            .get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u16;
+        eprintln!(
+            "[CLX] tap-slow: etype_raw={etype_raw} kc=0x{cg_keycode:X} took={}ms",
+            elapsed.as_millis()
+        );
+    }
+
+    match res {
         Ok(Some(_)) => event,          // pass through
         Ok(None)    => ptr::null_mut(), // suppress
         Err(_)      => {

@@ -53,7 +53,7 @@ fn main() {
         // Resample to 16kHz.
         let samples_16k = resample(&raw, sample_rate, 16000);
         pending_buf.extend_from_slice(&samples_16k);
-        pending_since += samples_16k.len();
+        _pending_since += samples_16k.len();
 
         // Transcribe every 1s of accumulated audio (SenseVoice works best on longer chunks).
         if pending_buf.len() >= 16000 {
