@@ -12,6 +12,11 @@ path = "src/main.rs"
 [[bin]]
 name = "voice-standalone"
 path = "src/bin/voice-standalone.rs"
+# Imports `capslockx_core::modules::voice::VoiceModule`, which is only
+# `pub` when the core's `stt` feature is on; the `not(stt)` fallback in
+# `mod.rs` is a private no-op stub. Without this gate, builds without
+# `full` (e.g. CI's default `cargo build`) fail with "voice is private".
+required-features = ["full"]
 
 [[bin]]
 name = "clx-prompt"

@@ -9,6 +9,39 @@ license = "GPL-3.0"
 name = "capslockx_core"
 path = "src/lib.rs"
 
+# STT-dependent bins (sherpa-onnx / whisper-rs). Gated via required-features
+# so default builds (no `stt`) and no-default-features Windows builds don't
+# try to compile them and fail with "module local_sherpa configured out".
+[[bin]]
+name = "stt-bench"
+path = "src/bin/stt-bench.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "stt-quick"
+path = "src/bin/stt-quick.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "stt-compare"
+path = "src/bin/stt-compare.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "stt-server"
+path = "src/bin/stt-server.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "sherpa-test"
+path = "src/bin/sherpa-test.rs"
+required-features = ["stt"]
+
+[[bin]]
+name = "voice-test"
+path = "src/bin/voice-test.rs"
+required-features = ["stt"]
+
 [dependencies]
 once_cell    = "1.19"
 parking_lot  = "0.12"
