@@ -30,7 +30,7 @@ version-*.txt
 debug.log
 
 # claude
-.claude/settings.local.json
+.claude/
 
 #cache
 .eslintcache
@@ -62,3 +62,11 @@ test-results/
 tmp/
 rs/target-bootstrap/
 rs/target-v3/
+
+# macOS Finder metadata (anywhere in tree)
+.DS_Store
+
+# Built helper binaries (compiled by build.sh from rs/tools/clx-prompt-slint
+# and rs/adapters/macos/src/bin/). Source is tracked, artifacts are not.
+/bin/clx-prompt
+/bin/clx-prompt-slint
