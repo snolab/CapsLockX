@@ -65,7 +65,10 @@ jobs:
         run: |
           $STAGE = "CapsLockX"
           New-Item -ItemType Directory -Force -Path $STAGE
-          Copy-Item rs\target\release\clx.exe  "$STAGE\clx.exe"
+          # cargo builds the windows adapter as `clx-rust.exe` (the bin
+          # name in capslockx-windows/Cargo.toml). Distribution renames
+          # it to `clx.exe` so users get a clean PATH entry.
+          Copy-Item rs\target\release\clx-rust.exe "$STAGE\clx.exe"
           Copy-Item rs\target\release\clx-screen-reader.exe "$STAGE\clx-screen-reader.exe"
           # Runtime DLLs (sherpa-onnx-c-api.dll, onnxruntime.dll, etc.) are
           # dropped by sherpa-rs's build.rs into target/release. Without these
@@ -92,7 +95,7 @@ jobs:
         run: |
           # Stage binaries + runtime DLLs next to .nsi (NSIS File resolves
           # relative to script dir)
-          Copy-Item rs\target\release\clx.exe scripts\clx.exe
+          Copy-Item rs\target\release\clx-rust.exe scripts\clx.exe
           Copy-Item rs\target\release\clx-screen-reader.exe scripts\clx-screen-reader.exe
           Get-ChildItem rs\target\release -Filter *.dll | ForEach-Object {
             Copy-Item $_.FullName "scripts\"
