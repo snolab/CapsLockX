@@ -38,11 +38,12 @@ Section "Install"
   ; Copy files
   File "clx.exe"
   File "clx-screen-reader.exe"
-  ; sherpa-rs runtime DLLs (required — clx.exe fails with 0xC0000135 without
-  ; them). CI stages *.dll from rs/target/release/ next to this .nsi before
-  ; calling makensis, so the wildcard picks up sherpa-onnx-c-api.dll,
-  ; onnxruntime.dll, onnxruntime_providers_shared.dll, cargs.dll, etc.
-  File "*.dll"
+  ; sherpa-rs runtime DLLs — only present when the `stt` feature is
+  ; enabled (currently disabled on Windows because whisper-rs doesn't
+  ; compile there). /nonfatal lets the installer build succeed when
+  ; the wildcard matches nothing; clx.exe runs as a STT-stub in that
+  ; case (Space+V no-op).
+  File /nonfatal "*.dll"
 
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
