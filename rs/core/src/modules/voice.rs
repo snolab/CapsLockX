@@ -557,11 +557,6 @@ impl VoiceModule {
                 let ptt = Arc::clone(&self.ptt);
                 // VPIO AEC enable for the otoji subprocess mic path.
                 //   "always"    → always on
-                //   "dual-only" → on when system-audio is also being captured
-                //                 (Shift+V); the otoji path itself doesn't run
-                //                 sys-audio capture today, so this matches the
-                //                 in-process voice.rs gating in spirit
-                //   "off"       → never
                 let aec_enabled = match self.live_config.lock().unwrap().aec_mode.as_str() {
                     "always"    => true,
                     "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
