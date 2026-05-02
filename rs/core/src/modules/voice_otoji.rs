@@ -252,12 +252,14 @@ impl OtojiBackend {
 
     /// Start otoji listen subprocess. Returns true if started.
     /// Otoji opens the microphone itself — CLX only reads its stdout JSON events.
+    /// `aec_enabled`: pass `--aec` to otoji so it uses VoiceProcessingIO (macOS AEC).
     pub fn start(
         &self,
         platform: Arc<dyn Platform>,
         input_active: Arc<AtomicBool>,
         typed_text: Arc<Mutex<String>>,
         ptt: Option<Arc<super::voice_ptt::PttSession>>,
+        aec_enabled: bool,
     ) -> bool {
         // Refuse to spawn real subprocesses under `cargo test` or when
         // explicitly disabled. Without this, tests that touch VoiceModule
@@ -284,6 +286,14 @@ impl OtojiBackend {
         let ctx_path = super::voice_ptt::ptt_context_file_path();
         let mut args: Vec<String> = vec![
             "listen".into(), "--plain".into(),
+            // AEC: use VoiceProcessingIO (macOS) for echo cancellation
+            // when requested by CLX config (voice.aec_mode = always/dual-only).
+        ];
+        #[cfg(target_os = "macos")]
+        if aec_enabled {
+            args.push("--aec".into());
+        }
+        args.extend([
             // "openai" route goes through OpenAiPolisher which honors the
             // OTOJI_POLISH_BASE_URL / _API_KEY / _MODEL env vars. Default
             // in .env.local points to Cloudflare Workers AI (edge inference,
@@ -294,7 +304,7 @@ impl OtojiBackend {
             // which is English-only and mangles CJK text.
             "--ptt-tts".into(), "gemini".into(),
             "--ptt-context-file".into(), ctx_path,
-        ];
+        ]);
         // Translation (Phase 1: env-driven).
         // CLX_TRANSLATE_TO: target language BCP-47 code (e.g. "en"). Empty = off.
         // CLX_TRANSLATE_TTS_SOURCE: "original" or "translated" (default original).

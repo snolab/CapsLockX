@@ -557,10 +557,15 @@ impl VoiceModule {
                 let ptt = Arc::clone(&self.ptt);
                 // VPIO AEC enable for the otoji subprocess mic path.
                 //   "always"    → always on
+                let aec_enabled = match self.live_config.lock().unwrap().aec_mode.as_str() {
+                    "always"    => true,
+                    "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
+                    _           => false,
+                };
                 std::thread::Builder::new()
                     .name("otoji-launch".into())
                     .spawn(move || {
-                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt)) {
+                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt), aec_enabled) {
                             eprintln!("[CLX] voice: otoji failed to start");
                             platform.update_voice_subtitle("otoji failed");
                         }
