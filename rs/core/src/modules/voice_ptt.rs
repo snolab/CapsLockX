@@ -114,6 +114,11 @@ impl PttSession {
         })
     }
 
+    /// Returns true while the user is holding V (PTT recording in progress).
+    pub fn is_active(&self) -> bool {
+        self.ptt_active.load(Ordering::Relaxed)
+    }
+
     /// Mark mic as ready (called when otoji sends first status/partial).
     pub fn set_mic_ready(&self) {
         self.mic_ready.store(true, Ordering::Relaxed);
@@ -129,6 +134,15 @@ impl PttSession {
     }
 
     /// V key pressed. Returns `true` if consumed (lock-exit).
+    /// Called when otoji emits `{"type":"open"}` — the control socket is now bound.
+    /// If the user is already holding V (ptt_active), send PTT_START now.
+    pub fn on_otoji_open(&self) {
+        if self.ptt_active.load(Ordering::Relaxed) {
+            eprintln!("[CLX] PTT: otoji open — retrying PTT_START");
+            self.send_ptt_start();
+        }
+    }
+
     pub fn on_press(self: &Arc<Self>) -> bool {
         if self.locked.load(Ordering::Relaxed) {
             eprintln!("[CLX] PTT: V pressed while locked → committing & unlocking");
@@ -466,69 +480,22 @@ impl PttSession {
 
     // ── Internal ─────────────────────────────────────────────────────────
 
-    /// Send SIGUSR1 to otoji. Returns true if sent, false if no pid available.
+    /// Send PTT_START to otoji via control socket (all platforms).
     fn send_ptt_start(&self) -> bool {
-        // On Windows, use TCP control socket instead of Unix signals.
-        #[cfg(not(unix))]
-        {
-            if self.otoji.send_control("PTT_START") {
-                eprintln!("[CLX] PTT: sent PTT_START via control socket");
-                return true;
-            }
-            eprintln!("[CLX] PTT: control socket not ready for PTT_START (will retry)");
-            return false;
+        if self.otoji.send_control("PTT_START") {
+            eprintln!("[CLX] PTT: sent PTT_START via control socket");
+            return true;
         }
-        #[cfg(unix)]
-        {
-            if let Some(pid) = self.otoji.pid() {
-                eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
-                Self::send_signal(pid, 10); // SIGUSR1
-                true
-            } else {
-                eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
-                false
-            }
-        }
+        eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
+        false
     }
 
     fn send_ptt_end(&self) {
-        #[cfg(not(unix))]
-        {
-            if self.otoji.send_control("PTT_END") {
-                eprintln!("[CLX] PTT: sent PTT_END via control socket");
-            } else {
-                eprintln!("[CLX] PTT: control socket not ready for PTT_END");
-            }
-            return;
+        if self.otoji.send_control("PTT_END") {
+            eprintln!("[CLX] PTT: sent PTT_END via control socket");
+        } else {
+            eprintln!("[CLX] PTT: control socket not ready for PTT_END");
         }
-        #[cfg(unix)]
-        {
-            if let Some(pid) = self.otoji.pid() {
-                eprintln!("[CLX] PTT: sending SIGUSR2 (ptt_end) to otoji pid={pid}");
-                Self::send_signal(pid, 12); // SIGUSR2
-            } else {
-                eprintln!("[CLX] PTT: no otoji pid available for ptt_end");
-            }
-        }
-    }
-
-    #[cfg(unix)]
-    fn send_signal(pid: u32, sig: i32) {
-        extern "C" {
-            fn kill(pid: i32, sig: i32) -> i32;
-        }
-        let ret = unsafe { kill(pid as i32, sig) };
-        if ret != 0 {
-            let err = std::io::Error::last_os_error();
-            eprintln!("[CLX] PTT: kill({pid}, {sig}) FAILED: ret={ret}, err={err}");
-        }
-    }
-
-    #[cfg(not(unix))]
-    fn send_signal(_pid: u32, _sig: i32) {
-        // Windows otoji handshake would use a named pipe or TCP socket rather
-        // than POSIX signals. PTT is a no-op on non-unix until that lands.
-        eprintln!("[CLX] PTT: send_signal skipped (non-unix platform)");
     }
 
     /// Atomically replace the live (body + tail) span at the cursor using a

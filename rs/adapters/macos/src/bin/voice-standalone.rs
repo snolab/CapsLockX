@@ -189,6 +189,7 @@ fn main() {
                         aec_gain, noise_gate, speech_start_prob, speech_end_prob,
                         speech_start_frames, silence_end_frames,
                         aec_mode,
+                        String::new(), "ja".into(),
                     );
                 }
             }

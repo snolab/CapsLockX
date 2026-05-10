@@ -83,6 +83,7 @@ enum AsrEvent {
     PttUpgrade { text: String },
     PttTranslated { text: String, lang: String },
     Vad { active: bool },
+    Open,
     Other,
 }
 
@@ -112,10 +113,10 @@ fn parse_event(line: &str) -> AsrEvent {
             lang: get("lang").unwrap_or_default(),
         },
         "vad" => {
-            // active is a bare bool, not a string — look for "active":true/false.
             let active = line.contains("\"active\":true");
             AsrEvent::Vad { active }
         }
+        "open" => AsrEvent::Open,
         _ => AsrEvent::Other,
     }
 }
@@ -259,36 +260,37 @@ impl OtojiBackend {
         self.control_addr.lock().unwrap().clone()
     }
 
-    /// Send a control command via TCP to the otoji control socket.
+    /// Send a control command to the otoji control socket.
+    /// Addr is a Unix socket path (macOS/Linux) or host:port (Windows/TCP).
     pub fn send_control(&self, cmd: &str) -> bool {
-        if let Some(addr) = self.control_addr() {
-            let socket_addr: std::net::SocketAddr = match addr.parse() {
-                Ok(a) => a,
-                Err(e) => {
-                    eprintln!("[CLX] voice-otoji: invalid control address '{}': {}", addr, e);
-                    return false;
-                }
-            };
-            match std::net::TcpStream::connect_timeout(
-                &socket_addr,
-                std::time::Duration::from_millis(500),
-            ) {
-                Ok(mut stream) => {
-                    use std::io::Write;
-                    let msg = format!("{}\n", cmd);
-                    if stream.write_all(msg.as_bytes()).is_ok() {
-                        return true;
-                    }
-                    eprintln!("[CLX] voice-otoji: control write failed");
-                    false
-                }
+        use std::io::Write;
+        let Some(addr) = self.control_addr() else { return false; };
+        let msg = format!("{}\n", cmd);
+        #[cfg(unix)]
+        if addr.starts_with('/') || addr.starts_with('.') {
+            use std::os::unix::net::UnixStream;
+            return match UnixStream::connect(&addr) {
+                Ok(mut s) => s.write_all(msg.as_bytes()).is_ok(),
                 Err(e) => {
                     eprintln!("[CLX] voice-otoji: control connect failed: {}", e);
                     false
                 }
+            };
+        }
+        // TCP fallback (Windows or host:port addr)
+        let socket_addr: std::net::SocketAddr = match addr.parse() {
+            Ok(a) => a,
+            Err(e) => {
+                eprintln!("[CLX] voice-otoji: invalid control address '{}': {}", addr, e);
+                return false;
             }
-        } else {
-            false
+        };
+        match std::net::TcpStream::connect_timeout(&socket_addr, std::time::Duration::from_millis(500)) {
+            Ok(mut s) => s.write_all(msg.as_bytes()).is_ok(),
+            Err(e) => {
+                eprintln!("[CLX] voice-otoji: control connect failed: {}", e);
+                false
+            }
         }
     }
 
@@ -311,6 +313,9 @@ impl OtojiBackend {
         typed_text: Arc<Mutex<String>>,
         ptt: Option<Arc<super::voice_ptt::PttSession>>,
         aec_enabled: bool,
+        stt_engine: String,
+        whisper_model_path: String,
+        whisper_language: String,
     ) -> bool {
         // Refuse to spawn real subprocesses under `cargo test` or when
         // explicitly disabled. Without this, tests that touch VoiceModule
@@ -366,10 +371,18 @@ impl OtojiBackend {
             }
         }
 
-        // On Windows, use TCP control socket instead of Unix signals for PTT.
+        // Use a Unix socket for PTT control on macOS/Linux (more reliable than
+        // SIGUSR1, which otoji 0.1.10 doesn't handle on all platforms).
+        // On Windows, use a TCP port instead (Unix sockets need Windows 1803+).
+        #[cfg(unix)]
+        let control_addr = {
+            let path = format!("/tmp/otoji-clx-{}.sock", std::process::id());
+            args.push("--ptt-control-socket".into());
+            args.push(path.clone());
+            path
+        };
         #[cfg(target_os = "windows")]
-        let control_port = {
-            // Pick a random ephemeral port.
+        let control_addr = {
             let listener = std::net::TcpListener::bind("127.0.0.1:0").ok();
             let port = listener.as_ref().map(|l| l.local_addr().unwrap().port()).unwrap_or(18080);
             drop(listener);
@@ -408,12 +421,8 @@ impl OtojiBackend {
 
         eprintln!("[CLX] voice-otoji: started otoji pid={}", child.id());
 
-        // Store the control socket address on Windows.
-        #[cfg(target_os = "windows")]
-        {
-            *self.control_addr.lock().unwrap() = Some(control_port);
-            eprintln!("[CLX] voice-otoji: control socket ready");
-        }
+        *self.control_addr.lock().unwrap() = Some(control_addr);
+        eprintln!("[CLX] voice-otoji: control socket ready");
 
         let mut child = child;
         let stdout = child.stdout.take().expect("otoji stdout");
@@ -423,17 +432,25 @@ impl OtojiBackend {
         let stop = Arc::clone(&self.reader_stop);
         stop.store(false, Ordering::Relaxed);
 
+        // Shared buffer for tapping raw i16 PCM bytes during PTT (whisper engine only).
+        // Cleared on each PttFinal; used to run whisper-cli on the buffered segment.
+        let ptt_audio_buf: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
+
         // Clone ptt for the reader thread before mic thread takes ownership.
         let ptt_for_reader = ptt.clone();
 
         // Stdin writer — capture mic via VPIO (with AEC) or cpal (raw),
         // stream 16kHz mono WAV to otoji.
         let platform_for_mic = Arc::clone(&platform);
+        let ptt_audio_buf_for_mic = Arc::clone(&ptt_audio_buf);
+        let stt_engine_for_mic = stt_engine.clone();
         std::thread::Builder::new()
             .name("otoji-mic".into())
             .spawn({
                 let stop = Arc::clone(&stop);
                 move || {
+                    let ptt_audio_buf = ptt_audio_buf_for_mic;
+                    let stt_engine = stt_engine_for_mic;
                     if let Err(e) = write_wav_header(&mut stdin) {
                         eprintln!("[CLX] voice-otoji: failed to write WAV header: {}", e);
                         return;
@@ -466,6 +483,9 @@ impl OtojiBackend {
                                     for &s in &amplified {
                                         let v = (s * 32767.0).clamp(-32768.0, 32767.0) as i16;
                                         buf.extend_from_slice(&v.to_le_bytes());
+                                    }
+                                    if stt_engine == "whisper" && p.is_active() {
+                                        ptt_audio_buf.lock().unwrap().extend_from_slice(&buf);
                                     }
                                     if let Ok(mut w) = stdin_mutex.lock() {
                                         if w.write_all(&buf).is_err() { break; }
@@ -515,6 +535,8 @@ impl OtojiBackend {
                     let stdin_for_cb = Arc::clone(&stdin_mutex);
                     let stop_for_cb = Arc::clone(&stop);
                     let ptt_for_cb = ptt.clone();
+                    let ptt_audio_buf_for_cb = Arc::clone(&ptt_audio_buf);
+                    let stt_engine_for_cb = stt_engine.clone();
 
                     let stream = device.build_input_stream(
                         &config,
@@ -552,6 +574,13 @@ impl OtojiBackend {
                             for &sample in &mono_16k {
                                 let s = (sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
                                 buf.extend_from_slice(&s.to_le_bytes());
+                            }
+                            if stt_engine_for_cb == "whisper" {
+                                if let Some(ref p) = ptt_for_cb {
+                                    if p.is_active() {
+                                        ptt_audio_buf_for_cb.lock().unwrap().extend_from_slice(&buf);
+                                    }
+                                }
                             }
                             if let Ok(mut w) = stdin_for_cb.lock() {
                                 let _ = w.write_all(&buf);
@@ -609,12 +638,20 @@ impl OtojiBackend {
             .ok();
 
         // Stdout reader — parse AsrEvents
+        let ptt_audio_buf_for_reader = Arc::clone(&ptt_audio_buf);
+        let stt_engine_for_reader = stt_engine.clone();
+        let whisper_model_path_for_reader = whisper_model_path.clone();
+        let whisper_language_for_reader = whisper_language.clone();
         std::thread::Builder::new()
             .name("otoji-reader".into())
             .spawn({
                 let stop = Arc::clone(&stop);
                 let ptt = ptt_for_reader;
                 move || {
+                    let ptt_audio_buf = ptt_audio_buf_for_reader;
+                    let stt_engine = stt_engine_for_reader;
+                    let whisper_model_path = whisper_model_path_for_reader;
+                    let whisper_language = whisper_language_for_reader;
                     let reader = BufReader::new(stdout);
                     let mut partial_text = String::new();
                     // Track the most recent PTT original text so that when a
@@ -723,6 +760,29 @@ impl OtojiBackend {
                                 if let Some(ref p) = ptt {
                                     p.on_ptt_final(&text);
                                 }
+                                // whisper upgrade: run whisper-cli on buffered PTT audio
+                                // and replace SenseVoice result via ptt_upgrade path.
+                                if stt_engine == "whisper" {
+                                    let pcm_bytes = std::mem::take(&mut *ptt_audio_buf.lock().unwrap());
+                                    if !pcm_bytes.is_empty() {
+                                        let model = resolve_whisper_model(&whisper_model_path);
+                                        let lang  = whisper_language.clone();
+                                        let platform2 = Arc::clone(&platform);
+                                        let ptt2 = ptt.clone();
+                                        std::thread::Builder::new()
+                                            .name("whisper-upgrade".into())
+                                            .spawn(move || {
+                                                if let Some(upgraded) = run_whisper_cli(&model, &lang, &pcm_bytes) {
+                                                    eprintln!("[CLX] whisper-upgrade: {:?}", &upgraded[..upgraded.len().min(80)]);
+                                                    platform2.update_voice_subtitle(&upgraded);
+                                                    if let Some(ref p) = ptt2 {
+                                                        p.on_ptt_upgrade(&upgraded);
+                                                    }
+                                                }
+                                            })
+                                            .ok();
+                                    }
+                                }
                             }
                             AsrEvent::PttUpgrade { text } => {
                                 last_ptt_original = text.clone();
@@ -768,18 +828,19 @@ impl OtojiBackend {
                                     });
                                 }
                             }
-                            AsrEvent::Status { message } => {
-                                // Don't push every Status into the visible
-                                // subtitle — they're diagnostic noise (model
-                                // loading, calibration, noise_floor) that
-                                // erases real transcript / translation text
-                                // the user is reading. Log to stderr only.
-                                eprintln!("[CLX] otoji-status: {}", message);
-                                // First Status event = otoji is up and
-                                // streaming — flip from Starting to Listen.
+                            AsrEvent::Open => {
+                                eprintln!("[CLX] voice-otoji: open — control socket ready");
+                                // otoji's control socket is now bound. If PTT was
+                                // pressed before the socket was ready, send it now.
+                                if let Some(ref p) = ptt {
+                                    p.on_otoji_open();
+                                }
                                 if ptt.is_none() {
                                     notify_tray(TrayState::ListenSilent);
                                 }
+                            }
+                            AsrEvent::Status { message } => {
+                                eprintln!("[CLX] otoji-status: {}", message);
                             }
                             AsrEvent::Error { message } => {
                                 eprintln!("[CLX] voice-otoji: error: {}", message);
@@ -975,6 +1036,77 @@ fn pick_best_key() -> (String, String) {
     // neither MLX nor Ollama is reachable, surfacing as a clean translate
     // failure (overlay falls back to original-only).
     ("ollama".into(), model_pref)
+}
+
+/// Auto-detect the largest non-test GGML model in the whisper.cpp share dir.
+/// Returns the first model found if configured path is empty.
+fn resolve_whisper_model(configured: &str) -> String {
+    if !configured.is_empty() {
+        return configured.to_string();
+    }
+    let dir = "/opt/homebrew/share/whisper-cpp";
+    let Ok(entries) = std::fs::read_dir(dir) else { return String::new(); };
+    let mut best: Option<(u64, std::path::PathBuf)> = None;
+    for entry in entries.flatten() {
+        let p = entry.path();
+        let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if !name.ends_with(".bin") || name.starts_with("for-tests-") { continue; }
+        if let Ok(meta) = p.metadata() {
+            let sz = meta.len();
+            if best.as_ref().map_or(true, |(b, _)| sz > *b) {
+                best = Some((sz, p));
+            }
+        }
+    }
+    best.map(|(_, p)| p.to_string_lossy().into_owned()).unwrap_or_default()
+}
+
+/// Write raw i16 PCM bytes as a WAV file to a temp path, run whisper-cli,
+/// return the trimmed transcript. Returns None on error or empty output.
+/// The caller is responsible for any further cleanup if needed.
+fn run_whisper_cli(model: &str, lang: &str, pcm_bytes: &[u8]) -> Option<String> {
+    if model.is_empty() {
+        eprintln!("[CLX] whisper-upgrade: no model found, skipping");
+        return None;
+    }
+    let tmp = format!("/tmp/clx-ptt-whisper-{}.wav", std::process::id());
+    // Prepend a proper WAV header for the accumulated PCM bytes (16kHz mono i16).
+    let data_len = pcm_bytes.len() as u32;
+    let sample_rate: u32 = 16000;
+    let byte_rate: u32 = sample_rate * 2;
+    let mut wav = Vec::with_capacity(44 + pcm_bytes.len());
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(36u32 + data_len).to_le_bytes());
+    wav.extend_from_slice(b"WAVE");
+    wav.extend_from_slice(b"fmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());       // PCM
+    wav.extend_from_slice(&1u16.to_le_bytes());       // mono
+    wav.extend_from_slice(&sample_rate.to_le_bytes());
+    wav.extend_from_slice(&byte_rate.to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());       // block align
+    wav.extend_from_slice(&16u16.to_le_bytes());      // bits per sample
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&data_len.to_le_bytes());
+    wav.extend_from_slice(pcm_bytes);
+    if std::fs::write(&tmp, &wav).is_err() {
+        eprintln!("[CLX] whisper-upgrade: failed to write temp WAV");
+        return None;
+    }
+    let result = std::process::Command::new("whisper-cli")
+        .args(["-m", model, "-f", &tmp, "-l", lang, "-np", "-nt"])
+        .output();
+    let _ = std::fs::remove_file(&tmp);
+    match result {
+        Ok(out) => {
+            let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if text.is_empty() { None } else { Some(text) }
+        }
+        Err(e) => {
+            eprintln!("[CLX] whisper-upgrade: whisper-cli error: {e}");
+            None
+        }
+    }
 }
 
 #[cfg(test)]
