@@ -43,8 +43,12 @@ pub struct ClxConfig {
     pub use_scroll_lock: bool,
     pub use_ralt:        bool,
     pub speed:           SpeedConfig,
-    /// STT engine: "sherpa" or "whisper"
+    /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
     pub stt_engine:          String,
+    /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
+    pub whisper_model_path:  String,
+    /// BCP-47 language code for whisper-cli --language. Default "ja".
+    pub whisper_language:    String,
     /// Per-provider API keys.
     pub gemini_api_key:      String,
     pub openai_api_key:      String,
@@ -97,6 +101,8 @@ impl Default for ClxConfig {
             use_ralt:           false,
             speed:              SpeedConfig::default(),
             stt_engine:         "sherpa".to_string(),
+            whisper_model_path: String::new(),
+            whisper_language:   "ja".to_string(),
             gemini_api_key:     String::new(),
             openai_api_key:     String::new(),
             anthropic_api_key:  String::new(),

@@ -281,6 +281,15 @@ unsafe extern "C" fn action_open_voice_folder(
     }
 }
 
+/// Action handler for "Microphone Mode…" menu item — opens the system mic mode picker.
+unsafe extern "C" fn action_show_mic_picker(
+    _this: *mut c_void,
+    _cmd: *mut c_void,
+    _sender: *mut c_void,
+) {
+    crate::mic_mode::show_microphone_mode_picker();
+}
+
 /// Action handler for "Restart" menu item — spawn new process and exit.
 /// Using spawn+exit instead of execv so macOS properly cleans up the old
 /// NSStatusItem (execv leaves a ghost/transparent icon in the menu bar).
@@ -355,6 +364,17 @@ unsafe fn ensure_action_class() {
         );
         if !added {
             eprintln!("[CLX] prefs: failed to add openVoiceFolder: method");
+        }
+
+        let sel_mic = sel(b"showMicPicker:\0");
+        let added = class_addMethod(
+            new_cls,
+            sel_mic,
+            action_show_mic_picker as *const c_void,
+            b"v@:@\0".as_ptr() as *const _,
+        );
+        if !added {
+            eprintln!("[CLX] prefs: failed to add showMicPicker: method");
         }
 
         objc_registerClassPair(new_cls);

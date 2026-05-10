@@ -45,6 +45,7 @@ mod voice {
             _speech_start_prob: f32, _speech_end_prob: f32,
             _speech_start_frames: usize, _silence_end_frames: usize,
             _aec_mode: String,
+            _whisper_model_path: String, _whisper_language: String,
         ) {}
     }
 }
@@ -212,6 +213,8 @@ impl Modules {
             cfg.speech_start_frames,
             cfg.silence_end_frames,
             cfg.aec_mode.clone(),
+            cfg.whisper_model_path.clone(),
+            cfg.whisper_language.clone(),
         );
         self.brainstorm.update_llm_config(&best_key, &best_model);
     }

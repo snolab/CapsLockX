@@ -228,6 +228,8 @@ pub struct VoiceModule {
 #[derive(Clone)]
 struct VoiceLiveConfig {
     stt_engine: String,
+    whisper_model_path: String,
+    whisper_language: String,
     llm_api_key: String,
     llm_model: String,
     stt_correction: bool,
@@ -276,6 +278,8 @@ impl VoiceModule {
             wake_word_listener: Mutex::new(None),
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
+                whisper_model_path: String::new(),
+                whisper_language: "ja".to_string(),
                 llm_api_key: String::new(),
                 llm_model: String::new(),
                 stt_correction: false,
@@ -322,9 +326,12 @@ impl VoiceModule {
         aec_gain: f32, noise_gate: f32, speech_start_prob: f32, speech_end_prob: f32,
         speech_start_frames: usize, silence_end_frames: usize,
         aec_mode: String,
+        whisper_model_path: String, whisper_language: String,
     ) {
         let mut cfg = self.live_config.lock().unwrap();
         cfg.stt_engine = stt_engine;
+        cfg.whisper_model_path = whisper_model_path;
+        cfg.whisper_language = whisper_language;
         cfg.llm_api_key = api_key;
         cfg.llm_model = model;
         cfg.stt_correction = correction;
@@ -337,8 +344,8 @@ impl VoiceModule {
         cfg.speech_start_frames = speech_start_frames;
         cfg.silence_end_frames = silence_end_frames;
         cfg.aec_mode = aec_mode;
-        eprintln!("[CLX] voice: config hot-reloaded (engine={}, correction={}, aec_gain={}, noise_gate={}, aec_mode={})",
-            cfg.stt_engine, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate, cfg.aec_mode);
+        eprintln!("[CLX] voice: config hot-reloaded (engine={}, whisper_lang={}, correction={}, aec_gain={}, noise_gate={}, aec_mode={})",
+            cfg.stt_engine, cfg.whisper_language, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate, cfg.aec_mode);
     }
 
     /// Check if voice-standalone is running via PID file.
@@ -562,15 +569,19 @@ impl VoiceModule {
                 //                 sys-audio capture today, so this matches the
                 //                 in-process voice.rs gating in spirit
                 //   "off"       → never
-                let aec_enabled = match self.live_config.lock().unwrap().aec_mode.as_str() {
-                    "always"    => true,
-                    "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
-                    _           => false,
+                let (aec_enabled, stt_engine, whisper_model_path, whisper_language) = {
+                    let lc = self.live_config.lock().unwrap();
+                    let aec = match lc.aec_mode.as_str() {
+                        "always"    => true,
+                        "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
+                        _           => false,
+                    };
+                    (aec, lc.stt_engine.clone(), lc.whisper_model_path.clone(), lc.whisper_language.clone())
                 };
                 std::thread::Builder::new()
                     .name("otoji-launch".into())
                     .spawn(move || {
-                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt), aec_enabled) {
+                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt), aec_enabled, stt_engine, whisper_model_path, whisper_language) {
                             eprintln!("[CLX] voice: otoji failed to start");
                             platform.update_voice_subtitle("otoji failed");
                         }

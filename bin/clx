@@ -2,6 +2,7 @@
 # CLX launcher — auto-rebuild + watchdog + library path setup.
 DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.."
 export DYLD_LIBRARY_PATH="${DIR}/rs/target/release:${DYLD_LIBRARY_PATH}"
+export PATH="${DIR}:${PATH}"
 
 # ── Auto-rebuild if source changed (like otoji) ──────────────────────────
 # Compare binary mtime against newest source file. If source is newer,

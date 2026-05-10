@@ -18,9 +18,15 @@ pub struct FullConfig {
     pub action_speed:    f64,
     pub mouse_speed:     f64,
     pub scroll_speed:    f64,
-    /// STT engine: "sherpa" (SenseVoice) or "whisper"
+    /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
     #[serde(default = "default_stt_engine")]
     pub stt_engine:          String,
+    /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
+    #[serde(default)]
+    pub whisper_model_path:  String,
+    /// BCP-47 language code for whisper-cli --language. Default "ja".
+    #[serde(default = "default_whisper_language")]
+    pub whisper_language:    String,
     #[serde(default)]
     pub gemini_api_key:      String,
     #[serde(default)]
@@ -137,6 +143,7 @@ fn default_window_cycle_order() -> String { "y,x".to_string() }
 fn default_window_arrange_order() -> String { "y,x".to_string() }
 
 fn default_stt_engine() -> String { "sherpa".to_string() }
+fn default_whisper_language() -> String { "ja".to_string() }
 fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
 fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
 fn default_edit_speed() -> f64 { 30.0 }
@@ -162,7 +169,9 @@ impl Default for FullConfig {
             action_speed:    30.0,
             mouse_speed:     1600.0,
             scroll_speed:    1600.0,
-            stt_engine:      "sherpa".to_string(),
+            stt_engine:          "sherpa".to_string(),
+            whisper_model_path:  String::new(),
+            whisper_language:    default_whisper_language(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
             anthropic_api_key: String::new(),
@@ -218,6 +227,8 @@ impl FullConfig {
             mouse_speed:       cfg.speed.mouse_speed,
             scroll_speed:      cfg.speed.scroll_speed,
             stt_engine:        cfg.stt_engine.clone(),
+            whisper_model_path: cfg.whisper_model_path.clone(),
+            whisper_language:   cfg.whisper_language.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
             openai_api_key: cfg.openai_api_key.clone(),
             anthropic_api_key: cfg.anthropic_api_key.clone(),
@@ -273,6 +284,8 @@ impl FullConfig {
                 scroll_speed: self.scroll_speed,
             },
             stt_engine:         self.stt_engine,
+            whisper_model_path: self.whisper_model_path,
+            whisper_language:   self.whisper_language,
             // Migrate old single llm_api_key to per-provider keys.
             gemini_api_key:     if !self.gemini_api_key.is_empty() { self.gemini_api_key }
                                 else if self.llm_api_key.starts_with("AIza") { self.llm_api_key.clone() }
