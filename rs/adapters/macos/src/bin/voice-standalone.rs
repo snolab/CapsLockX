@@ -190,6 +190,7 @@ fn main() {
                         speech_start_frames, silence_end_frames,
                         aec_mode,
                         String::new(), "ja".into(),
+                        0,
                     );
                 }
             }

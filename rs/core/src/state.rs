@@ -45,6 +45,14 @@ pub struct ClxConfig {
     pub speed:           SpeedConfig,
     /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
     pub stt_engine:          String,
+    /// VAD-based PTT auto-release: silence duration in ms before auto-commit.
+    /// 0 = disabled (hold-to-release only). Suggested: 1500.
+    pub ptt_vad_auto_release_ms: u64,
+    /// PTT polish LLM provider: "gemini" | "openai" | "anthropic" | "auto".
+    /// "openai" uses OTOJI_POLISH_BASE_URL (default localhost:11434 = Ollama).
+    pub ptt_polish_provider: String,
+    /// PTT polish model override (e.g. "qwen2.5:7b"). Empty = otoji default.
+    pub ptt_polish_model:    String,
     /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
     pub whisper_model_path:  String,
     /// BCP-47 language code for whisper-cli --language. Default "ja".
@@ -101,6 +109,9 @@ impl Default for ClxConfig {
             use_ralt:           false,
             speed:              SpeedConfig::default(),
             stt_engine:         "sherpa".to_string(),
+            ptt_vad_auto_release_ms: 0,
+            ptt_polish_provider: "openai".to_string(),
+            ptt_polish_model:    String::new(),
             whisper_model_path: String::new(),
             whisper_language:   "ja".to_string(),
             gemini_api_key:     String::new(),

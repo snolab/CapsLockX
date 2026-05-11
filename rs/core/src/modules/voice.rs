@@ -228,6 +228,7 @@ pub struct VoiceModule {
 #[derive(Clone)]
 struct VoiceLiveConfig {
     stt_engine: String,
+    ptt_vad_auto_release_ms: u64,
     whisper_model_path: String,
     whisper_language: String,
     llm_api_key: String,
@@ -278,6 +279,7 @@ impl VoiceModule {
             wake_word_listener: Mutex::new(None),
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
+                ptt_vad_auto_release_ms: 0,
                 whisper_model_path: String::new(),
                 whisper_language: "ja".to_string(),
                 llm_api_key: String::new(),
@@ -327,9 +329,12 @@ impl VoiceModule {
         speech_start_frames: usize, silence_end_frames: usize,
         aec_mode: String,
         whisper_model_path: String, whisper_language: String,
+        ptt_vad_auto_release_ms: u64,
     ) {
+        self.ptt.set_vad_auto_release_ms(ptt_vad_auto_release_ms);
         let mut cfg = self.live_config.lock().unwrap();
         cfg.stt_engine = stt_engine;
+        cfg.ptt_vad_auto_release_ms = ptt_vad_auto_release_ms;
         cfg.whisper_model_path = whisper_model_path;
         cfg.whisper_language = whisper_language;
         cfg.llm_api_key = api_key;
@@ -344,8 +349,8 @@ impl VoiceModule {
         cfg.speech_start_frames = speech_start_frames;
         cfg.silence_end_frames = silence_end_frames;
         cfg.aec_mode = aec_mode;
-        eprintln!("[CLX] voice: config hot-reloaded (engine={}, whisper_lang={}, correction={}, aec_gain={}, noise_gate={}, aec_mode={})",
-            cfg.stt_engine, cfg.whisper_language, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate, cfg.aec_mode);
+        eprintln!("[CLX] voice: config hot-reloaded (engine={}, whisper_lang={}, vad_release={}ms, correction={}, aec_gain={}, aec_mode={})",
+            cfg.stt_engine, cfg.whisper_language, cfg.ptt_vad_auto_release_ms, cfg.stt_correction, cfg.aec_gain, cfg.aec_mode);
     }
 
     /// Check if voice-standalone is running via PID file.

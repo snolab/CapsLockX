@@ -21,6 +21,15 @@ pub struct FullConfig {
     /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
     #[serde(default = "default_stt_engine")]
     pub stt_engine:          String,
+    /// VAD-based PTT auto-release silence threshold (ms). 0 = disabled.
+    #[serde(default)]
+    pub ptt_vad_auto_release_ms: u64,
+    /// PTT polish provider: "gemini" | "openai" | "anthropic" | "auto".
+    #[serde(default = "default_ptt_polish_provider")]
+    pub ptt_polish_provider: String,
+    /// PTT polish model override, e.g. "qwen2.5:7b". Empty = otoji default.
+    #[serde(default)]
+    pub ptt_polish_model:    String,
     /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
     #[serde(default)]
     pub whisper_model_path:  String,
@@ -144,6 +153,7 @@ fn default_window_arrange_order() -> String { "y,x".to_string() }
 
 fn default_stt_engine() -> String { "sherpa".to_string() }
 fn default_whisper_language() -> String { "ja".to_string() }
+fn default_ptt_polish_provider() -> String { "openai".to_string() }
 fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
 fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
 fn default_edit_speed() -> f64 { 30.0 }
@@ -170,6 +180,9 @@ impl Default for FullConfig {
             mouse_speed:     1600.0,
             scroll_speed:    1600.0,
             stt_engine:          "sherpa".to_string(),
+            ptt_vad_auto_release_ms: 0,
+            ptt_polish_provider: default_ptt_polish_provider(),
+            ptt_polish_model:    String::new(),
             whisper_model_path:  String::new(),
             whisper_language:    default_whisper_language(),
             gemini_api_key: String::new(),
@@ -227,6 +240,9 @@ impl FullConfig {
             mouse_speed:       cfg.speed.mouse_speed,
             scroll_speed:      cfg.speed.scroll_speed,
             stt_engine:        cfg.stt_engine.clone(),
+            ptt_vad_auto_release_ms: cfg.ptt_vad_auto_release_ms,
+            ptt_polish_provider: cfg.ptt_polish_provider.clone(),
+            ptt_polish_model:   cfg.ptt_polish_model.clone(),
             whisper_model_path: cfg.whisper_model_path.clone(),
             whisper_language:   cfg.whisper_language.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
@@ -283,8 +299,11 @@ impl FullConfig {
                 mouse_speed:  self.mouse_speed,
                 scroll_speed: self.scroll_speed,
             },
-            stt_engine:         self.stt_engine,
-            whisper_model_path: self.whisper_model_path,
+            stt_engine:              self.stt_engine,
+            ptt_vad_auto_release_ms: self.ptt_vad_auto_release_ms,
+            ptt_polish_provider:     self.ptt_polish_provider,
+            ptt_polish_model:        self.ptt_polish_model,
+            whisper_model_path:      self.whisper_model_path,
             whisper_language:   self.whisper_language,
             // Migrate old single llm_api_key to per-provider keys.
             gemini_api_key:     if !self.gemini_api_key.is_empty() { self.gemini_api_key }
