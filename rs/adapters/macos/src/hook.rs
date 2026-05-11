@@ -67,6 +67,17 @@ fn apply_translate_env(cfg: &crate::config_store::FullConfig) {
         std::env::remove_var("CLX_TRANSLATE_TTS_SOURCE");
     }
 
+    // PTT polish provider + model — always applied so they take effect even
+    // when translation is off (polish still runs for punctuation/cleanup).
+    std::env::set_var("CLX_PTT_POLISH_PROVIDER", &cfg.ptt_polish_provider);
+    if !cfg.ptt_polish_model.is_empty() {
+        std::env::set_var("OTOJI_POLISH_MODEL", &cfg.ptt_polish_model);
+        eprintln!("[CLX] ptt polish: provider={} model={}", cfg.ptt_polish_provider, cfg.ptt_polish_model);
+    } else {
+        std::env::remove_var("OTOJI_POLISH_MODEL");
+        eprintln!("[CLX] ptt polish: provider={} model=<otoji-default>", cfg.ptt_polish_provider);
+    }
+
     // Note-mode translation is independent — applies to continuous listen
     // transcripts (AsrEvent::Final) while PTT is inactive.
     if cfg.note_translate_enabled && !cfg.note_translate_target.is_empty() {

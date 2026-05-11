@@ -46,6 +46,7 @@ mod voice {
             _speech_start_frames: usize, _silence_end_frames: usize,
             _aec_mode: String,
             _whisper_model_path: String, _whisper_language: String,
+            _ptt_vad_auto_release_ms: u64,
         ) {}
     }
 }
@@ -215,6 +216,7 @@ impl Modules {
             cfg.aec_mode.clone(),
             cfg.whisper_model_path.clone(),
             cfg.whisper_language.clone(),
+            cfg.ptt_vad_auto_release_ms,
         );
         self.brainstorm.update_llm_config(&best_key, &best_model);
     }

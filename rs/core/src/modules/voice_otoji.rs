@@ -349,7 +349,8 @@ impl OtojiBackend {
             // in .env.local points to Cloudflare Workers AI (edge inference,
             // ~200-500ms TTFB). Falls back to Gemini if those env vars are
             // unset thanks to `resolve_polisher`'s "auto" chain.
-            "--ptt-polish".into(), "openai".into(),
+            "--ptt-polish".into(),
+            std::env::var("CLX_PTT_POLISH_PROVIDER").unwrap_or_else(|_| "openai".into()),
             // Gemini handles multilingual (en/zh/ja) — "auto" would pick Piper
             // which is English-only and mangles CJK text.
             "--ptt-tts".into(), "gemini".into(),

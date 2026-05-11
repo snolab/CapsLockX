@@ -94,6 +94,10 @@ pub struct PttSession {
     mic_ready: Arc<AtomicBool>,
     /// Signals that a PTT session is active (between press and release/commit).
     ptt_active: AtomicBool,
+    /// VAD silence threshold for auto-commit (ms). 0 = disabled.
+    vad_auto_release_ms: AtomicU64,
+    /// Cancels stale VAD auto-release timers when VAD returns to active.
+    vad_token: AtomicU64,
     /// Shared reference to OtojiBackend for getting pid.
     otoji: Arc<super::voice_otoji::OtojiBackend>,
 }
@@ -110,6 +114,8 @@ impl PttSession {
             last_committed: Mutex::new(String::new()),
             mic_ready: Arc::new(AtomicBool::new(false)),
             ptt_active: AtomicBool::new(false),
+            vad_auto_release_ms: AtomicU64::new(0),
+            vad_token: AtomicU64::new(0),
             otoji,
         })
     }
@@ -117,6 +123,11 @@ impl PttSession {
     /// Returns true while the user is holding V (PTT recording in progress).
     pub fn is_active(&self) -> bool {
         self.ptt_active.load(Ordering::Relaxed)
+    }
+
+    /// Hot-reload VAD auto-release threshold. 0 = disabled.
+    pub fn set_vad_auto_release_ms(&self, ms: u64) {
+        self.vad_auto_release_ms.store(ms, Ordering::Relaxed);
     }
 
     /// Mark mic as ready (called when otoji sends first status/partial).
@@ -293,22 +304,43 @@ impl PttSession {
         self.set_body(text.to_string(), Tail::ListenVoice);
     }
 
-    /// Called when otoji emits a `vad` event. Only affects the tail glyph
-    /// when the body is still empty (i.e. before any partial arrives) —
-    /// once partials are streaming they already imply active voice.
-    pub fn on_vad(&self, active: bool) {
+    /// Called when otoji emits a `vad` event. Drives tail glyph and optionally
+    /// auto-commits the PTT segment after a configured silence duration.
+    pub fn on_vad(self: &Arc<Self>, active: bool) {
         if !self.ptt_active.load(Ordering::Relaxed) { return; }
-        // Mirror VAD on/off to the otoji-tray icon so the menu-bar reflects
-        // voice activity during PTT (matches note-mode behavior).
+        // Mirror VAD on/off to the otoji-tray icon.
         super::voice_otoji::notify_tray(if active {
             super::voice_otoji::TrayState::ListenVoice
         } else {
             super::voice_otoji::TrayState::ListenSilent
         });
+
+        if active {
+            // Voice resumed — cancel any pending auto-release timer.
+            self.vad_token.fetch_add(1, Ordering::Relaxed);
+        } else {
+            // Silence — start auto-release countdown if configured and body non-empty.
+            let ms = self.vad_auto_release_ms.load(Ordering::Relaxed);
+            if ms > 0 && !self.displayed.lock().unwrap().is_empty() {
+                let token = self.vad_token.fetch_add(1, Ordering::Relaxed) + 1;
+                let this = Arc::clone(self);
+                std::thread::Builder::new()
+                    .name("vad-auto-release".into())
+                    .spawn(move || {
+                        std::thread::sleep(Duration::from_millis(ms));
+                        if this.vad_token.load(Ordering::Relaxed) != token { return; }
+                        if !this.ptt_active.load(Ordering::Relaxed) { return; }
+                        eprintln!("[CLX] PTT: VAD auto-release after {}ms silence", ms);
+                        this.ptt_active.store(false, Ordering::Relaxed);
+                        this.send_ptt_end();
+                    })
+                    .ok();
+            }
+        }
+
+        // Tail glyph: only flip while body is still empty (pre-partial state).
         let body_empty = self.displayed.lock().unwrap().is_empty();
         if !body_empty { return; }
-        // Only flip between the two listening states; don't override
-        // MicStarting (not ready yet) or Polishing (after release).
         let current = *self.tail.lock().unwrap();
         let can_flip = matches!(current, Tail::ListenSilent | Tail::ListenVoice);
         if !can_flip { return; }
