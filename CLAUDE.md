@@ -83,6 +83,11 @@ Binary: `rs/target/release/clx-rust.exe`
 ./build.sh && pkill -f "CapsLockX/clx" || true; clx
 ```
 
+**Do NOT commit or push without explicit user approval.**
+After building, test the feature locally, report findings, and wait.
+Only commit when the user says "commit". Only push when the user says "push".
+Never chain implement → build → commit → push in one shot.
+
 ## Voice Module Rules
 - **NEVER suppress or gate mic STT** — both mic and sys tracks must always run and produce output, even if system audio is playing. The user wants to see both transcriptions simultaneously.
 - Echo/bleed in the mic track is acceptable; do NOT add energy gates, mic suppression, or silence-feeding to VAD when sys audio is active.
