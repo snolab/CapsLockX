@@ -84,7 +84,7 @@ cd CapsLockX
 
 # Windows
 cd rs && cargo build -p capslockx-windows --release
-# Binary: rs/target/release/clx-rust.exe
+# Binary: rs/target/release/clx.exe
 
 # Linux
 cd rs && cargo build -p capslockx-linux --release

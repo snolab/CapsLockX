@@ -21,7 +21,7 @@
 
 # Built binaries — auto-resolve merge conflicts by keeping ours (newer build wins)
 CapsLockX.exe merge=ours
-clx-rust.exe merge=ours
+clx.exe merge=ours
 clx-screen-reader.exe merge=ours
 *.dll binary
 *.ico binary

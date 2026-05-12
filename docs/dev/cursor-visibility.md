@@ -55,7 +55,7 @@ Key design points:
 2. Hold `CapsLock` (or `Space`) — cursor should appear immediately.
 3. Press WASDQERF — cursor moves, clicks, scrolls visibly.
 4. Release the trigger — cursor returns to its prior suppressed state.
-5. Quit `clx-rust.exe` — confirm Mouse Keys is **off** in Settings →
+5. Quit `clx.exe` — confirm Mouse Keys is **off** in Settings →
    Accessibility → Mouse (it should match its pre-launch state exactly).
 
 ## Future

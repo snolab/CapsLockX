@@ -75,7 +75,7 @@ The `bin/clx` wrapper script sets `DYLD_LIBRARY_PATH` for onnxruntime.
 ```
 cargo build -p capslockx-windows --release
 ```
-Binary: `rs/target/release/clx-rust.exe`
+Binary: `rs/target/release/clx.exe`
 
 ## After fixing bugs / building
 **Always rebuild and relaunch after code changes — without being asked.**

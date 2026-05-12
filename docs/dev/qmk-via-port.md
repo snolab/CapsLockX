@@ -79,7 +79,7 @@ heavy lift. Configuration syncs both ways: VIA Custom UI for firmware
 params, companion's tray menu for LLM keys / voice models.
 
 - ✅ Keeps every CapsLockX feature.
-- ✅ Companion is much smaller than current `clx-rust.exe` — no input
+- ✅ Companion is much smaller than current `clx.exe` — no input
   hook, no tray, no Tauri webview, just a Raw HID listener + the LLM/voice/wm modules.
 - ✅ Input latency drops to firmware level (~1ms) for the fast path.
 - ✅ Permissions surface shrinks: companion needs accessibility for window
