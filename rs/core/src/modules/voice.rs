@@ -286,7 +286,7 @@ impl VoiceModule {
                 llm_model: String::new(),
                 stt_correction: false,
                 tts_chain: "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
-                stt_polish_chain: "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
+                stt_polish_chain: "min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
                 aec_gain: 15.0,
                 noise_gate: 0.003,
                 speech_start_prob: 0.8,
@@ -2111,7 +2111,11 @@ fn polish_stt_result(
     corrector: &mut Option<crate::stt_corrector::SttCorrector>,
     chain: &str,
 ) -> String {
-    let chain = if chain.is_empty() { "mlx,gemini,llm,raw" } else { chain };
+    let chain = if chain.is_empty() {
+        "min-chars:15,min-duration:5s,mlx,gemini,llm,raw"
+    } else {
+        chain
+    };
     polish_stt_with_chain(raw_text, audio_samples, corrector, chain)
 }
 

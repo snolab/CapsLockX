@@ -120,7 +120,7 @@ impl Default for ClxConfig {
             elevenlabs_api_key: String::new(),
             stt_correction:     false,
             tts_chain:          "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
-            stt_polish_chain:   "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
+            stt_polish_chain:   "min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
             aec_gain:            15.0,
             noise_gate:          0.003,
             speech_start_prob:   0.8,
