@@ -181,7 +181,7 @@ fn ensure_tray_running() {
 
 
 pub struct OtojiBackend {
-    child: Mutex<Option<Child>>,
+    child: Arc<Mutex<Option<Child>>>,
     reader_stop: Arc<AtomicBool>,
     /// TCP control socket address (used on Windows instead of Unix signals).
     control_addr: Mutex<Option<String>>,
@@ -190,7 +190,7 @@ pub struct OtojiBackend {
 impl OtojiBackend {
     pub fn new() -> Self {
         Self {
-            child: Mutex::new(None),
+            child: Arc::new(Mutex::new(None)),
             reader_stop: Arc::new(AtomicBool::new(false)),
             control_addr: Mutex::new(None),
         }
@@ -395,6 +395,7 @@ impl OtojiBackend {
             .ok();
 
         // Stdout reader — parse AsrEvents
+        let child_arc = Arc::clone(&self.child);
         std::thread::Builder::new()
             .name("otoji-reader".into())
             .spawn({
@@ -574,6 +575,10 @@ impl OtojiBackend {
                         }
                     }
                     eprintln!("[CLX] voice-otoji: reader thread exited");
+                    // Clear child so is_running() returns false and the next
+                    // ensure_pipeline_running() call will respawn otoji.
+                    *child_arc.lock().unwrap() = None;
+                    platform.update_voice_subtitle("otoji exited — press V to restart");
                 }
             })
             .ok();
@@ -729,37 +734,6 @@ fn provider_in_cooldown(label: &str) -> bool {
         Some(t) => t.elapsed().as_secs() < COOLDOWN_SECS,
         None => false,
     }
-}
-
-/// Legacy single-pick (kept for callers outside translate_simple). The
-/// active translate path now uses `build_translate_chain` for fallback.
-#[allow(dead_code)]
-/// Pick LLM (key, model) for note-mode translation.
-///
-/// Priority:
-///   1. `CLX_NOTE_TRANSLATE_PROVIDER=ollama` → force local (key="ollama")
-///   2. `CLX_NOTE_TRANSLATE_MODEL=<name>` → use that model with auto-detect
-///   3. First cloud key in env (Gemini > OpenAI > Anthropic)
-///   4. Fallback to local Ollama / MLX (key="ollama" → llm_client probes
-///      localhost:8321 then localhost:11434)
-///
-/// Returning ("ollama", "") trips `LlmConfig::from_key_and_model`'s Ollama
-/// branch, which discovers an installed model automatically.
-fn pick_best_key() -> (String, String) {
-    let model_pref = std::env::var("CLX_NOTE_TRANSLATE_MODEL").unwrap_or_default();
-    let provider = std::env::var("CLX_NOTE_TRANSLATE_PROVIDER").unwrap_or_default();
-    if provider.eq_ignore_ascii_case("ollama") || provider.eq_ignore_ascii_case("local") {
-        return ("ollama".into(), model_pref);
-    }
-    for var in &["GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"] {
-        if let Ok(k) = std::env::var(var) {
-            if !k.is_empty() { return (k, model_pref.clone()); }
-        }
-    }
-    // No cloud key — try local. llm_client's Ollama branch returns Err if
-    // neither MLX nor Ollama is reachable, surfacing as a clean translate
-    // failure (overlay falls back to original-only).
-    ("ollama".into(), model_pref)
 }
 
 #[cfg(test)]
