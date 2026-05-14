@@ -2047,6 +2047,62 @@ fn last_n_chars(s: &str, max_chars: usize) -> &str {
     &s[byte_pos..]
 }
 
+/// Parse a duration spec like `"5s"`, `"500ms"`, or a bare number (treated
+/// as ms) into milliseconds. Returns `None` if unparseable.
+fn parse_duration_ms(spec: &str) -> Option<u64> {
+    let s = spec.trim();
+    if let Some(num) = s.strip_suffix("ms") {
+        num.trim().parse::<u64>().ok()
+    } else if let Some(num) = s.strip_suffix('s') {
+        num.trim().parse::<f64>().ok().map(|v| (v * 1000.0) as u64)
+    } else {
+        s.parse::<u64>().ok()
+    }
+}
+
+#[cfg(test)]
+mod polish_chain_tests {
+    use super::*;
+
+    #[test]
+    fn parse_duration_ms_handles_common_units() {
+        assert_eq!(parse_duration_ms("5s"), Some(5_000));
+        assert_eq!(parse_duration_ms("0.5s"), Some(500));
+        assert_eq!(parse_duration_ms("500ms"), Some(500));
+        assert_eq!(parse_duration_ms("250"), Some(250));
+        assert_eq!(parse_duration_ms("nope"), None);
+    }
+
+    #[test]
+    fn min_chars_gate_short_circuits_when_text_is_short() {
+        let mut corrector = None;
+        // 11 chars < 15 → gate fires → returns raw, never reaches the
+        // (intentionally invalid) `mlx` stage.
+        let out = polish_stt_with_chain("open chrome", &[], &mut corrector, "min-chars:15,raw");
+        assert_eq!(out, "open chrome");
+    }
+
+    #[test]
+    fn min_chars_gate_passes_through_when_text_is_long() {
+        let mut corrector = None;
+        // 30+ chars — gate does NOT fire, falls through to `raw` which is
+        // the explicit echo stage. Same outcome here, but verifies the
+        // gate didn't short-circuit prematurely.
+        let long = "this is a long enough utterance to pass the gate";
+        let out = polish_stt_with_chain(long, &[], &mut corrector, "min-chars:15,raw");
+        assert_eq!(out, long);
+    }
+
+    #[test]
+    fn min_duration_gate_uses_audio_length() {
+        let mut corrector = None;
+        // 1 second of audio at 16 kHz = 16 000 samples; threshold 2s skips.
+        let one_sec = vec![0.0f32; 16_000];
+        let out = polish_stt_with_chain("hello", &one_sec, &mut corrector, "min-duration:2s,raw");
+        assert_eq!(out, "hello");
+    }
+}
+
 /// Polish STT output using the best available method.
 /// Cascade: MLX local (if running + enough RAM) → Gemini cloud → LLM corrector → raw.
 fn polish_stt_result(
@@ -2060,7 +2116,14 @@ fn polish_stt_result(
 }
 
 /// Polish STT result using a configurable fallback chain.
-/// `chain` is comma-separated: "mlx,gemini,llm,raw".
+/// `chain` is comma-separated, e.g. `"min-chars:15,mlx,gemini,llm,raw"`.
+///
+/// Length gates (return raw immediately when triggered, short-circuiting
+/// the rest of the chain — based on bench findings in
+/// `lib/otoji/docs/2026-05-14-polish-bench.md` §5: LLM polish hurts on
+/// short commands regardless of prompt design):
+/// - `min-chars:N`        — skip if `raw_text.chars().count() < N`
+/// - `min-duration:Nms|Ns`— skip if audio shorter than the threshold
 fn polish_stt_with_chain(
     raw_text: &str,
     audio_samples: &[f32],
@@ -2071,6 +2134,27 @@ fn polish_stt_with_chain(
 
     for stage in chain.split(',').map(|s| s.trim()) {
         match stage {
+            s if s.starts_with("min-chars:") => {
+                if let Some(n) = s.strip_prefix("min-chars:").and_then(|x| x.parse::<usize>().ok()) {
+                    if raw_text.chars().count() < n {
+                        eprintln!("[CLX] stt-polish: gated by min-chars:{n} ({} < {n}) → raw",
+                                  raw_text.chars().count());
+                        return raw_text.to_string();
+                    }
+                }
+            }
+            s if s.starts_with("min-duration:") => {
+                if let Some(spec) = s.strip_prefix("min-duration:") {
+                    if let Some(threshold_ms) = parse_duration_ms(spec) {
+                        // Audio is 16 kHz mono per the upstream pipeline.
+                        let actual_ms = (audio_samples.len() as u64) * 1000 / 16_000;
+                        if actual_ms < threshold_ms {
+                            eprintln!("[CLX] stt-polish: gated by min-duration:{spec} ({actual_ms}ms < {threshold_ms}ms) → raw");
+                            return raw_text.to_string();
+                        }
+                    }
+                }
+            }
             s if s.starts_with("mlx") => {
                 if has_enough_free_memory(2_000) {
                     if let Ok(polished) = polish_via_local_llm(raw_text) {
