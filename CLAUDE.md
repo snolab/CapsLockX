@@ -92,6 +92,9 @@ Never chain implement → build → commit → push in one shot.
 - **NEVER suppress or gate mic STT** — both mic and sys tracks must always run and produce output, even if system audio is playing. The user wants to see both transcriptions simultaneously.
 - Echo/bleed in the mic track is acceptable; do NOT add energy gates, mic suppression, or silence-feeding to VAD when sys audio is active.
 
+## STT polish chain
+Default since 2026-05-14: `min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw`. The two leading pseudo-stages short-circuit the chain (return raw text immediately) on short voice commands, where LLM polish was empirically shown to degrade CER ~6× — see [`lib/otoji/docs/2026-05-14-polish-bench.md`](lib/otoji/docs/2026-05-14-polish-bench.md). Long dictation still flows through MLX/llm-corrector. Stages are parsed in `rs/core/src/modules/voice.rs::polish_stt_with_chain`; callers can override via the otoji settings panel. Existing user configs are auto-migrated on load (`lib/otoji/src/config.rs::apply_migrations`).
+
 ## Privacy: never use user's real prompts as examples
 When writing few-shot examples or documentation for LLM prompts (polish, translate, agent system prompts, `lib/otoji/src/polish.rs`, `skills/clx-agent/SKILL.md`, etc.), **NEVER copy phrases from the user's voice logs, chat messages, transcripts, or `tmp/clx-watchdog.log`**. Always synthesize generic, unrelated examples (e.g. `kafka`, `npm run`, `下雨了`, `water bottle`).
 
