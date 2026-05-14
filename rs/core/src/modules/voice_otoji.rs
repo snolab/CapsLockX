@@ -235,7 +235,7 @@ fn ensure_tray_running() {
 
 
 pub struct OtojiBackend {
-    child: Mutex<Option<Child>>,
+    child: Arc<Mutex<Option<Child>>>,
     reader_stop: Arc<AtomicBool>,
     /// TCP control socket address (used on Windows instead of Unix signals).
     control_addr: Mutex<Option<String>>,
@@ -244,7 +244,7 @@ pub struct OtojiBackend {
 impl OtojiBackend {
     pub fn new() -> Self {
         Self {
-            child: Mutex::new(None),
+            child: Arc::new(Mutex::new(None)),
             reader_stop: Arc::new(AtomicBool::new(false)),
             control_addr: Mutex::new(None),
         }
@@ -643,11 +643,13 @@ impl OtojiBackend {
         let stt_engine_for_reader = stt_engine.clone();
         let whisper_model_path_for_reader = whisper_model_path.clone();
         let whisper_language_for_reader = whisper_language.clone();
+        let child_arc_for_reader = Arc::clone(&self.child);
         std::thread::Builder::new()
             .name("otoji-reader".into())
             .spawn({
                 let stop = Arc::clone(&stop);
                 let ptt = ptt_for_reader;
+                let child_arc = child_arc_for_reader;
                 move || {
                     let ptt_audio_buf = ptt_audio_buf_for_reader;
                     let stt_engine = stt_engine_for_reader;
@@ -851,6 +853,10 @@ impl OtojiBackend {
                         }
                     }
                     eprintln!("[CLX] voice-otoji: reader thread exited");
+                    // Clear child so is_running() returns false and the next
+                    // ensure_pipeline_running() call respawns otoji.
+                    *child_arc.lock().unwrap() = None;
+                    platform.update_voice_subtitle("otoji exited — press V to restart");
                 }
             })
             .ok();
