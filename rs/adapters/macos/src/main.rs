@@ -104,6 +104,21 @@ fn main() {
         }
     }
 
+    // Raise process priority to minimize scheduling delays and discourage
+    // the kernel from swapping our pages. Under heavy memory pressure,
+    // page faults inside the CGEventTap callback cause macOS to disable
+    // the tap (timeout after ~500ms), resulting in emergency_stop +
+    // dropped keystrokes + perceived lag. mlockall is not supported on
+    // macOS, so we use setpriority + mach real-time thread policy instead.
+    unsafe {
+        extern "C" {
+            fn setpriority(which: i32, who: u32, prio: i32) -> i32;
+        }
+        // PRIO_PROCESS = 0, nice -10 (higher priority than normal apps)
+        let _ = setpriority(0, 0, -10);
+        eprintln!("[CLX] setpriority: nice=-10 (elevated)");
+    }
+
     // Kill any existing clx daemon instance (deduplicate).
     // Match by executable path — works regardless of how clx was invoked.
     {

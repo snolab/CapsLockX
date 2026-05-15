@@ -7,7 +7,12 @@ members = [
     "adapters/linux",
     "adapters/macos",
     "tools/screen-reader",
+    "tools/clx-prompt",
 ]
+
+[workspace.dependencies]
+# getrandom must use `js` feature on wasm32 targets (required by rand/uuid etc.)
+getrandom = { version = "0.2", features = ["js"] }
 
 [profile.release]
 opt-level = 3

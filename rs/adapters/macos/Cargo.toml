@@ -13,9 +13,6 @@ path = "src/main.rs"
 name = "voice-standalone"
 path = "src/bin/voice-standalone.rs"
 
-[[bin]]
-name = "clx-prompt"
-path = "src/bin/clx-prompt.rs"
 
 [[bin]]
 name = "clx-agent"

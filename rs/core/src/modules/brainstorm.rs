@@ -44,6 +44,25 @@ pub struct BrainstormModule {
     llm_config: Mutex<Option<LlmConfig>>,
     /// Whether "keep history" is checked (persists across restarts).
     keep_history: AtomicBool,
+    /// Last prompt entered by the user (pre-filled on next open, like AHK brainstormLastQuestion).
+    last_prompt: Mutex<String>,
+}
+
+fn last_prompt_path() -> std::path::PathBuf {
+    dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("CapsLockX")
+        .join("brainstorm_last_prompt.txt")
+}
+
+fn load_last_prompt() -> String {
+    std::fs::read_to_string(last_prompt_path()).unwrap_or_default()
+}
+
+fn save_last_prompt(s: &str) {
+    let path = last_prompt_path();
+    if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+    let _ = std::fs::write(path, s);
 }
 
 fn history_path() -> std::path::PathBuf {
@@ -147,6 +166,7 @@ impl BrainstormModule {
             last_response: Mutex::new(String::new()),
             llm_config: Mutex::new(llm_config),
             keep_history: AtomicBool::new(keep),
+            last_prompt: Mutex::new(load_last_prompt()),
         }
     }
 
@@ -222,11 +242,14 @@ impl BrainstormModule {
         // Everything else on background thread.
         let platform = Arc::clone(&self.platform);
         let cancel = Arc::clone(&self.cancel);
+        let last_prompt_val = self.last_prompt.lock().unwrap().clone();
+
         let history_ptr = &self.history as *const Mutex<Vec<Message>> as usize;
         let state_ptr = &self.state as *const AtomicU8 as usize;
         let last_resp_ptr = &self.last_response as *const Mutex<String> as usize;
         let keep_ptr = &self.keep_history as *const AtomicBool as usize;
         let gen_ptr = &self.generation as *const AtomicU32 as usize;
+        let last_prompt_ptr = &self.last_prompt as *const Mutex<String> as usize;
 
         std::thread::Builder::new()
             .name("clx-brainstorm".into())
@@ -246,8 +269,9 @@ impl BrainstormModule {
                 let state_ref = unsafe { &*(state_ptr as *const AtomicU8) };
                 let last_resp_ref = unsafe { &*(last_resp_ptr as *const Mutex<String>) };
                 let keep_ref = unsafe { &*(keep_ptr as *const AtomicBool) };
+                let last_prompt_ref = unsafe { &*(last_prompt_ptr as *const Mutex<String>) };
 
-                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref, keep_ref, &selected_text);
+                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref, keep_ref, &selected_text, &last_prompt_val, last_prompt_ref);
             })
             .ok();
     }
@@ -269,6 +293,8 @@ fn agent_turn(
     last_response: &Mutex<String>,
     keep_history: &AtomicBool,
     pre_selected: &str,
+    last_prompt: &str,
+    last_prompt_store: &Mutex<String>,
 ) {
     // 1. Use pre-captured selected text (from event tap thread).
     //    Fall back to Cmd+C with clipboard save/restore if AX returned empty.
@@ -290,11 +316,13 @@ fn agent_turn(
     let hist_count = count_persistent_history();
     let keep_checked = keep_history.load(Ordering::Relaxed);
 
-    // 2. Show prompt panel. The [KEEP:0/1] prefix carries checkbox state.
+    // 2. Show prompt panel.
+    //    message = selected text (shown read-only above textarea)
+    //    prefill = last prompt (pre-filled in editable textarea, like AHK brainstormLastQuestion)
     let raw_input = match platform.show_prompt_input(
         "CapsLockX Brainstorm",
-        &format!("Chat with AI. Check 'Keep histories' to accumulate context. ({} saved)", hist_count),
-        &prefill,
+        &prefill,  // selected text → shown as context
+        last_prompt,  // last prompt → pre-filled in textarea
     ) {
         Some(q) if !q.trim().is_empty() => q,
         _ => {
@@ -304,16 +332,27 @@ fn agent_turn(
     };
 
     // Parse [KEEP] prefix from checkbox.
-    let (wants_keep, question) = if let Some(rest) = raw_input.strip_prefix("[KEEP]\n") {
+    let (wants_keep, prompt) = if let Some(rest) = raw_input.strip_prefix("[KEEP]\n") {
         (true, rest.to_string())
     } else {
         (false, raw_input)
     };
 
-    if question.trim().is_empty() {
-        eprintln!("[CLX] brainstorm: empty question");
+    if prompt.trim().is_empty() {
+        eprintln!("[CLX] brainstorm: empty prompt");
         return;
     }
+
+    // Save as last prompt (like AHK brainstormLastQuestion).
+    *last_prompt_store.lock().unwrap() = prompt.clone();
+    save_last_prompt(&prompt);
+
+    // Combine context + prompt (like AHK: Trim(content . "\n\n" . cmd)).
+    let question = if prefill.trim().is_empty() {
+        prompt.clone()
+    } else {
+        format!("{}\n\n{}", prefill.trim(), prompt.trim())
+    };
 
     // Persist the checkbox preference.
     if wants_keep != keep_checked {

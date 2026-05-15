@@ -194,6 +194,51 @@ pub fn install_and_run() {
         CGEventTapEnable(tap, true);
     }
 
+    // Set the current thread (which runs the event tap + run loop) to
+    // real-time priority. This tells macOS to schedule this thread with
+    // minimal latency and strongly discourages paging its working set.
+    // Without this, system memory pressure causes page faults during the
+    // CGEventTap callback, which must return within ~500ms or macOS
+    // disables the tap entirely.
+    unsafe {
+        #[repr(C)]
+        struct ThreadTimeConstraintPolicy {
+            period: u32,
+            computation: u32,
+            constraint: u32,
+            preemptible: i32,
+        }
+        extern "C" {
+            fn mach_thread_self() -> u32;
+            fn thread_policy_set(
+                thread: u32,
+                flavor: u32,
+                policy_info: *const ThreadTimeConstraintPolicy,
+                count: u32,
+            ) -> i32;
+        }
+        // THREAD_TIME_CONSTRAINT_POLICY = 2
+        // Values in Mach absolute time units (~nanoseconds on Apple Silicon).
+        // period=1ms, computation=500μs, constraint=1ms, preemptible=true
+        let policy = ThreadTimeConstraintPolicy {
+            period: 1_000_000,
+            computation: 500_000,
+            constraint: 1_000_000,
+            preemptible: 1,
+        };
+        let ret = thread_policy_set(
+            mach_thread_self(),
+            2, // THREAD_TIME_CONSTRAINT_POLICY
+            &policy,
+            4, // THREAD_TIME_CONSTRAINT_POLICY_COUNT
+        );
+        if ret == 0 {
+            eprintln!("[CLX] event tap thread set to real-time priority");
+        } else {
+            eprintln!("[CLX] thread_policy_set failed (ret={}), using default priority", ret);
+        }
+    }
+
     eprintln!("[CLX] CGEventTap installed – running…");
 
     // Run the NSApplication event loop (which also processes CFRunLoop sources).

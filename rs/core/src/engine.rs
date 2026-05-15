@@ -105,6 +105,7 @@ impl ClxEngine {
         }
 
         // ── 3b. Bare ESC dismisses overlays / kills agent (no trigger needed) ──
+        #[cfg(not(target_arch = "wasm32"))]
         if code == KeyCode::Escape && pressed && !is_repeat {
             let mods = self.compute_mods();
             if self.modules.agent.on_key_down(code, &mods) {

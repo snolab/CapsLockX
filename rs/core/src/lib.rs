@@ -1,18 +1,31 @@
+#[cfg(test)]
+mod engine_test;
+
 pub mod acc_model;
-pub mod audio_capture;
 pub mod engine;
 pub mod key_code;
-pub mod agent;
-pub mod cloud_stt;
-pub mod llm_client;
-pub mod local_sherpa;
-pub mod local_whisper;
-pub mod stt_corrector;
-pub mod task_manager;
-pub mod tts;
 pub mod modules;
 pub mod platform;
 pub mod state;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod audio_capture;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod agent;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod cloud_stt;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod llm_client;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod local_sherpa;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod local_whisper;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod stt_corrector;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod task_manager;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod tts;
 
 pub use engine::{ClxEngine, CoreResponse};
 pub use key_code::{KeyCode, Modifiers};

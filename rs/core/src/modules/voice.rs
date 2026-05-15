@@ -436,14 +436,19 @@ impl VoiceModule {
     /// Called when CLX mode deactivates (Space released).
     /// If voice input was active, trigger final polish before stopping.
     pub fn stop(&self) {
-        if self.input_active.load(Ordering::Relaxed) {
+        let was_input = self.input_active.load(Ordering::Relaxed);
+        if was_input {
             // Input was active — request final polish (same as hold-release path).
             // Keep input_active=true so the worker can type the polished result.
+            // The audio loop will clear input_active after FinalPolish completes.
             self.final_polish_requested.store(true, Ordering::Relaxed);
-            eprintln!("[CLX] voice: CLX deactivated while input active → final polish requested");
+            eprintln!("[CLX] voice: CLX deactivated while input active -> final polish requested");
             if !self.note_active.load(Ordering::Relaxed) {
                 self.stop_pipeline();
             }
+            // Prevent re-entry: clear input_active so subsequent stop() calls are no-ops.
+            // The audio loop checks final_polish_requested independently.
+            self.input_active.store(false, Ordering::Relaxed);
         }
     }
 
@@ -487,7 +492,35 @@ impl VoiceModule {
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, final_polish_requested, platform, &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model, cfg_snap.stt_correction, live_config);
+                // catch_unwind isolates voice panics from the main CLX process.
+                // If the voice module crashes, CLX keyboard/mouse continues working.
+                loop {
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        voice_bg_persistent(
+                            Arc::clone(&bg_stop), Arc::clone(&bg_quit), Arc::clone(&bg_wake),
+                            Arc::clone(&with_sys), Arc::clone(&note_active), Arc::clone(&input_active),
+                            Arc::clone(&flush_pending), Arc::clone(&final_polish_requested),
+                            Arc::clone(&platform),
+                            &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model,
+                            cfg_snap.stt_correction, Arc::clone(&live_config),
+                        );
+                    }));
+                    if let Err(e) = result {
+                        let msg = e.downcast_ref::<&str>().copied()
+                            .or_else(|| e.downcast_ref::<String>().map(|s| s.as_str()))
+                            .unwrap_or("unknown panic");
+                        eprintln!("[CLX] voice: bg thread panicked ({msg}) — restarting in 1s");
+                        // Reset flags so the pipeline can restart cleanly.
+                        input_active.store(false, std::sync::atomic::Ordering::Relaxed);
+                        final_polish_requested.store(false, std::sync::atomic::Ordering::Relaxed);
+                        note_active.store(false, std::sync::atomic::Ordering::Relaxed);
+                        std::thread::sleep(std::time::Duration::from_secs(1));
+                        // Exit restart loop if quit was requested.
+                        if bg_quit.load(std::sync::atomic::Ordering::Relaxed) { break; }
+                    } else {
+                        break; // clean exit
+                    }
+                }
             })
             .expect("failed to spawn voice bg thread");
 
@@ -551,8 +584,18 @@ fn voice_bg_persistent(
     stt_correction: bool,
     live_config: Arc<std::sync::Mutex<VoiceLiveConfig>>,
 ) {
+    // Show loading status on the overlay while the STT model loads.
+    platform.show_voice_overlay();
+    platform.update_voice_subtitle("⏳ Loading STT model...");
+
     // Load STT engine based on preference.
     let mut local_whisper = SttEngine::new_with_preference(stt_engine_pref);
+
+    // Update overlay to show model is ready (will be overwritten by audio data shortly).
+    match &local_whisper {
+        Some(e) => platform.update_voice_subtitle(&format!("✅ {} ready", e.engine_name())),
+        None    => platform.update_voice_subtitle("⚠️ No STT engine available"),
+    }
 
     // Create LLM-based STT corrector if configured.
     let mut corrector = if stt_correction && !llm_api_key.is_empty() {
@@ -1417,7 +1460,7 @@ fn stt_worker_loop(
 
         // ── FinalPolish: re-transcribe entire session with best quality ───
         if let Some(full_audio) = final_polish_audio {
-            if !full_audio.is_empty() && input_active.load(Ordering::Relaxed) {
+            if !full_audio.is_empty() && !session_input_typed.is_empty() {
                 eprintln!("[CLX] stt-worker: final polish ({} samples = {:.1}s, typed {:?})",
                     full_audio.len(), full_audio.len() as f64 / 16000.0, session_input_typed);
                 platform.update_voice_subtitle("✨ polishing...");

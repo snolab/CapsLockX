@@ -40,7 +40,7 @@ fn main() {
     ctrlc_handler(r);
 
     let mut pending_buf: Vec<f32> = Vec::new();
-    let mut _pending_since: usize = 0;
+    let mut pending_since: usize = 0;
     let mut committed = String::new();
 
     while running.load(Ordering::Relaxed) {

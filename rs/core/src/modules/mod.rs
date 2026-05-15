@@ -1,25 +1,33 @@
-pub mod agent;
-pub mod brainstorm;
 pub mod edit;
 pub mod media;
 pub mod mouse;
 pub mod virtual_desktop;
-pub mod voice;
 pub mod window_manager;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod agent;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod brainstorm;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod voice;
 
 use std::sync::Arc;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
 use crate::state::{ClxConfig, ClxState, SpeedConfig};
 
-use agent::AgentModule;
-use brainstorm::BrainstormModule;
 use edit::EditModule;
 use media::MediaModule;
 use mouse::MouseModule;
 use virtual_desktop::VirtualDesktopModule;
-use voice::VoiceModule;
 use window_manager::WindowManagerModule;
+
+#[cfg(not(target_arch = "wasm32"))]
+use agent::AgentModule;
+#[cfg(not(target_arch = "wasm32"))]
+use brainstorm::BrainstormModule;
+#[cfg(not(target_arch = "wasm32"))]
+use voice::VoiceModule;
 
 /// Call a module function with panic isolation. If the module panics,
 /// log the error and return false — the core keyboard/mouse keeps working.
@@ -41,12 +49,15 @@ fn safe_call(module: &str, f: impl FnOnce() -> bool) -> bool {
 }
 
 pub struct Modules {
+    #[cfg(not(target_arch = "wasm32"))]
     pub agent:       AgentModule,
+    #[cfg(not(target_arch = "wasm32"))]
     pub brainstorm:  BrainstormModule,
     edit:            EditModule,
     mouse:           MouseModule,
     media:           MediaModule,
     virtual_desktop: VirtualDesktopModule,
+    #[cfg(not(target_arch = "wasm32"))]
     voice:           VoiceModule,
     window_manager:  WindowManagerModule,
     platform:        Arc<dyn Platform>,
@@ -54,20 +65,28 @@ pub struct Modules {
 
 impl Modules {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
-        let cfg = state.config.read().unwrap();
+        #[cfg(not(target_arch = "wasm32"))]
+        let cfg_guard = state.config.read().unwrap();
+        #[cfg(not(target_arch = "wasm32"))]
+        let cfg = &*cfg_guard;
+        #[cfg(not(target_arch = "wasm32"))]
         let (best_key, best_model) = cfg.best_llm_key_and_model();
+
         let s = Self {
-            agent:           AgentModule::new(Arc::clone(&platform)),
-            brainstorm:      BrainstormModule::new(
+            #[cfg(not(target_arch = "wasm32"))]
+            agent:       AgentModule::new(Arc::clone(&platform)),
+            #[cfg(not(target_arch = "wasm32"))]
+            brainstorm:  BrainstormModule::new(
                 Arc::clone(&platform),
                 best_key.clone(),
                 best_model.clone(),
             ),
-            edit:            EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
-            mouse:           MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
-            media:           MediaModule::new(Arc::clone(&platform)),
+            edit:        EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            mouse:       MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            media:       MediaModule::new(Arc::clone(&platform)),
             virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform)),
-            voice:           VoiceModule::with_stt_engine(
+            #[cfg(not(target_arch = "wasm32"))]
+            voice:       VoiceModule::with_stt_engine(
                 Arc::clone(&platform),
                 cfg.stt_engine.clone(),
             ).with_llm_config(
@@ -75,12 +94,11 @@ impl Modules {
                 best_model,
                 cfg.stt_correction,
             ),
-            window_manager:  WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            window_manager: WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
             platform,
         };
-        drop(cfg);
-        // Preload Whisper model in background so first Space+V is instant.
-        s.voice.preload();
+        // NOTE: voice model is loaded lazily on first Space+V press (~3s startup).
+        // Eager preload was removed to reduce memory footprint (SenseVoice = ~2.4GB RAM).
         s
     }
 
@@ -100,8 +118,11 @@ impl Modules {
 
         // Heavy modules (LLM/voice/agent) — isolated with catch_unwind.
         // A panic here logs an error but does NOT crash the core.
+        #[cfg(not(target_arch = "wasm32"))]
         if safe_call("agent", || self.agent.on_key_down(key, mods)) { return true; }
+        #[cfg(not(target_arch = "wasm32"))]
         if safe_call("brainstorm", || self.brainstorm.on_key_down(key, mods)) { return true; }
+        #[cfg(not(target_arch = "wasm32"))]
         if safe_call("voice", || self.voice.on_key_down(key)) { return true; }
         false
     }
@@ -112,48 +133,59 @@ impl Modules {
         if self.media.on_key_up(key) { return true; }
         if self.window_manager.on_key_up(key) { return true; }
 
+        #[cfg(not(target_arch = "wasm32"))]
         if safe_call("agent", || self.agent.on_key_up(key)) { return true; }
+        #[cfg(not(target_arch = "wasm32"))]
         if safe_call("brainstorm", || self.brainstorm.on_key_up(key)) { return true; }
+        #[cfg(not(target_arch = "wasm32"))]
         if safe_call("voice", || self.voice.on_key_up(key)) { return true; }
         false
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
+        let native = {
+            #[cfg(not(target_arch = "wasm32"))]
+            { self.agent.is_mapped_key(key) || self.brainstorm.is_mapped_key(key) || self.voice.is_mapped_key(key) }
+            #[cfg(target_arch = "wasm32")]
+            { false }
+        };
         key == KeyCode::Comma  // Space+Comma = preferences
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
             || self.virtual_desktop.is_mapped_key(key)
             || self.window_manager.is_mapped_key(key)
-            || self.agent.is_mapped_key(key)
-            || self.brainstorm.is_mapped_key(key)
-            || self.voice.is_mapped_key(key)
+            || native
     }
 
     pub fn apply_speeds(&self, s: &SpeedConfig) {
-        self.edit .apply_speeds(s);
+        self.edit.apply_speeds(s);
         self.mouse.apply_speeds(s);
         self.window_manager.apply_speeds(s);
     }
 
     /// Hot-reload voice/brainstorm config from updated preferences.
     pub fn apply_config(&self, cfg: &ClxConfig) {
-        let (best_key, best_model) = cfg.best_llm_key_and_model();
-        self.voice.update_config(
-            cfg.stt_engine.clone(),
-            best_key.clone(),
-            best_model.clone(),
-            cfg.stt_correction,
-            cfg.tts_chain.clone(),
-            cfg.stt_polish_chain.clone(),
-            cfg.aec_gain,
-            cfg.noise_gate,
-            cfg.speech_start_prob,
-            cfg.speech_end_prob,
-            cfg.speech_start_frames,
-            cfg.silence_end_frames,
-        );
-        self.brainstorm.update_llm_config(&best_key, &best_model);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let (best_key, best_model) = cfg.best_llm_key_and_model();
+            self.voice.update_config(
+                cfg.stt_engine.clone(),
+                best_key.clone(),
+                best_model.clone(),
+                cfg.stt_correction,
+                cfg.tts_chain.clone(),
+                cfg.stt_polish_chain.clone(),
+                cfg.aec_gain,
+                cfg.noise_gate,
+                cfg.speech_start_prob,
+                cfg.speech_end_prob,
+                cfg.speech_start_frames,
+                cfg.silence_end_frames,
+            );
+            self.brainstorm.update_llm_config(&best_key, &best_model);
+        }
+        let _ = cfg;
     }
 
     /// Advance all AccModel physics by one step (WASM adapter tick loop).
@@ -168,6 +200,7 @@ impl Modules {
         self.edit.stop();
         self.mouse.stop();
         self.window_manager.stop();
+        #[cfg(not(target_arch = "wasm32"))]
         self.voice.stop();
     }
 }

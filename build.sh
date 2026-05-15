@@ -4,6 +4,8 @@ set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT/rs"
 cargo build -p capslockx-macos --release
+cargo build -p clx-prompt --release
+cp target/release/clx-prompt "$ROOT/bin/clx-prompt"
 
 # Only update the binary if the cargo output is newer than the signed clx.
 # This preserves the codesign CDHash (and Accessibility permission) across rebuilds
