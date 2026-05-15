@@ -99,3 +99,76 @@ impl SttCorrector {
         self.history.truncate(1); // keep system prompt
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::llm_client::{LlmConfig, LlmProvider};
+
+    fn cfg_with_key(key: &str) -> LlmConfig {
+        LlmConfig {
+            provider: LlmProvider::Gemini,
+            api_key: key.to_string(),
+            model: "gemini-2.0-flash".to_string(),
+            base_url: None,
+        }
+    }
+
+    #[test]
+    fn new_initializes_with_system_prompt() {
+        let c = SttCorrector::new(cfg_with_key("k"));
+        assert_eq!(c.history.len(), 1);
+        assert_eq!(c.history[0].role, "system");
+        assert!(c.history[0].content.contains("speech-to-text"));
+    }
+
+    #[test]
+    fn is_enabled_requires_api_key() {
+        assert!(!SttCorrector::new(cfg_with_key("")).is_enabled());
+        assert!(SttCorrector::new(cfg_with_key("k")).is_enabled());
+    }
+
+    #[test]
+    fn set_enabled_disables_correction() {
+        let mut c = SttCorrector::new(cfg_with_key("k"));
+        assert!(c.is_enabled());
+        c.set_enabled(false);
+        assert!(!c.is_enabled());
+        c.set_enabled(true);
+        assert!(c.is_enabled());
+    }
+
+    #[test]
+    fn correct_returns_input_when_disabled() {
+        let mut c = SttCorrector::new(cfg_with_key("k"));
+        c.set_enabled(false);
+        assert_eq!(c.correct("hello"), "hello");
+        assert_eq!(c.history.len(), 1);
+    }
+
+    #[test]
+    fn correct_returns_input_when_no_api_key() {
+        let mut c = SttCorrector::new(cfg_with_key(""));
+        assert_eq!(c.correct("hello"), "hello");
+        assert_eq!(c.history.len(), 1);
+    }
+
+    #[test]
+    fn correct_returns_input_when_blank_text() {
+        let mut c = SttCorrector::new(cfg_with_key("k"));
+        assert_eq!(c.correct("   "), "   ");
+        assert_eq!(c.correct(""), "");
+        assert_eq!(c.history.len(), 1);
+    }
+
+    #[test]
+    fn reset_keeps_only_system_prompt() {
+        let mut c = SttCorrector::new(cfg_with_key("k"));
+        c.history.push(Message { role: "user".into(), content: "a".into() });
+        c.history.push(Message { role: "assistant".into(), content: "b".into() });
+        assert_eq!(c.history.len(), 3);
+        c.reset();
+        assert_eq!(c.history.len(), 1);
+        assert_eq!(c.history[0].role, "system");
+    }
+}
