@@ -235,18 +235,18 @@ fn ensure_tray_running() {
 
 
 pub struct OtojiBackend {
-    child: Mutex<Option<Child>>,
+    child: Arc<Mutex<Option<Child>>>,
     reader_stop: Arc<AtomicBool>,
     /// TCP control socket address (used on Windows instead of Unix signals).
-    control_addr: Mutex<Option<String>>,
+    control_addr: Arc<Mutex<Option<String>>>,
 }
 
 impl OtojiBackend {
     pub fn new() -> Self {
         Self {
-            child: Mutex::new(None),
+            child: Arc::new(Mutex::new(None)),
             reader_stop: Arc::new(AtomicBool::new(false)),
-            control_addr: Mutex::new(None),
+            control_addr: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -420,7 +420,8 @@ impl OtojiBackend {
             }
         };
 
-        eprintln!("[CLX] voice-otoji: started otoji pid={}", child.id());
+        let child_pid = child.id();
+        eprintln!("[CLX] voice-otoji: started otoji pid={}", child_pid);
 
         *self.control_addr.lock().unwrap() = Some(control_addr);
         eprintln!("[CLX] voice-otoji: control socket ready");
@@ -643,11 +644,17 @@ impl OtojiBackend {
         let stt_engine_for_reader = stt_engine.clone();
         let whisper_model_path_for_reader = whisper_model_path.clone();
         let whisper_language_for_reader = whisper_language.clone();
+        let child_arc_for_reader = Arc::clone(&self.child);
+        let control_addr_for_reader = Arc::clone(&self.control_addr);
+        let reader_stop_signal = Arc::clone(&self.reader_stop);
+        let reader_pid = child_pid;
         std::thread::Builder::new()
             .name("otoji-reader".into())
             .spawn({
                 let stop = Arc::clone(&stop);
                 let ptt = ptt_for_reader;
+                let child_arc = child_arc_for_reader;
+                let control_addr = control_addr_for_reader;
                 move || {
                     let ptt_audio_buf = ptt_audio_buf_for_reader;
                     let stt_engine = stt_engine_for_reader;
@@ -851,6 +858,23 @@ impl OtojiBackend {
                         }
                     }
                     eprintln!("[CLX] voice-otoji: reader thread exited");
+                    // Auto-recovery: only act on the generation we read for.
+                    // A newer start() may have replaced the slot, so check the
+                    // PID before clearing — otherwise we'd orphan a live child.
+                    let mut guard = child_arc.lock().unwrap();
+                    let same_generation = guard.as_ref().map(|c| c.id()) == Some(reader_pid);
+                    if same_generation {
+                        // Take + wait reaps the zombie on Unix and frees fds.
+                        if let Some(mut c) = guard.take() {
+                            let _ = c.wait();
+                        }
+                        *control_addr.lock().unwrap() = None;
+                        // Signal the mic capture thread / cpal stream to exit
+                        // so a respawn doesn't stack a second mic on top.
+                        reader_stop_signal.store(true, Ordering::Relaxed);
+                        drop(guard);
+                        platform.update_voice_subtitle("otoji exited — press V to restart");
+                    }
                 }
             })
             .ok();
