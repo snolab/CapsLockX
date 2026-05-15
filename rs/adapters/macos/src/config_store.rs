@@ -372,3 +372,116 @@ pub fn save(cfg: &FullConfig) {
         let _ = std::fs::write(path, json);
     }
 }
+
+// ── Otoji config overlay ─────────────────────────────────────────────────────
+//
+// Reads only the voice-relevant fields from the otoji config file.
+// Unknown fields are ignored by serde, so this remains forward-compatible
+// even as the otoji config gains new fields.
+
+/// Voice fields that otoji owns. Parsed from otoji's config.json
+/// and merged into CLX's FullConfig on startup and on mtime change.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default)]
+pub struct OtojiVoiceOverride {
+    pub stt_engine:              String,
+    pub ptt_vad_auto_release_ms: u64,
+    pub ptt_polish_provider:     String,
+    pub ptt_polish_model:        String,
+    pub whisper_model_path:      String,
+    pub whisper_language:        String,
+    pub stt_correction:          bool,
+    pub tts_chain:               String,
+    pub stt_polish_chain:        String,
+    pub aec_gain:                f32,
+    pub noise_gate:              f32,
+    pub speech_start_prob:       f32,
+    pub speech_end_prob:         f32,
+    pub speech_start_frames:     usize,
+    pub silence_end_frames:      usize,
+    pub aec_mode:                String,
+    pub overlay_sharing:         bool,
+    pub translate_enabled:       bool,
+    pub translate_preset:        String,
+    pub translate_target:        String,
+    pub translate_other:         String,
+    pub translate_direction:     String,
+    pub translate_type:          String,
+    pub translate_both_template: String,
+    pub translate_tts_source:    String,
+    pub translate_polish_provider: String,
+    pub translate_tts_provider:  String,
+    pub note_translate_enabled:  bool,
+    pub note_translate_target:   String,
+}
+
+/// Path to the otoji config file.
+pub fn otoji_config_path() -> std::path::PathBuf {
+    #[cfg(target_os = "macos")]
+    if let Some(home) = std::env::var_os("HOME") {
+        return std::path::PathBuf::from(home)
+            .join("Library/Application Support/otoji/config.json");
+    }
+    dirs::data_local_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("otoji/config.json")
+}
+
+/// mtime (secs since epoch) of the otoji config file. Returns 0 if absent.
+pub fn otoji_config_mtime() -> u64 {
+    std::fs::metadata(otoji_config_path())
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Load the otoji voice override config. Returns `None` if the file doesn't exist.
+pub fn load_otoji_voice_override() -> Option<OtojiVoiceOverride> {
+    let path = otoji_config_path();
+    let data = std::fs::read_to_string(&path).ok()?;
+    match serde_json::from_str::<OtojiVoiceOverride>(&data) {
+        Ok(v) => Some(v),
+        Err(e) => {
+            eprintln!("[CLX] otoji config parse error: {}", e);
+            None
+        }
+    }
+}
+
+/// Apply an otoji voice override on top of a FullConfig.
+/// Otoji owns all voice settings — every field is applied unconditionally
+/// once the otoji config file exists. CLX voice fields in FullConfig become
+/// subordinate to the otoji config.
+pub fn apply_otoji_override(cfg: &mut FullConfig, ov: &OtojiVoiceOverride) {
+    cfg.stt_engine              = ov.stt_engine.clone();
+    cfg.ptt_vad_auto_release_ms = ov.ptt_vad_auto_release_ms;
+    cfg.ptt_polish_provider     = ov.ptt_polish_provider.clone();
+    cfg.ptt_polish_model        = ov.ptt_polish_model.clone();
+    cfg.whisper_model_path      = ov.whisper_model_path.clone();
+    cfg.whisper_language        = ov.whisper_language.clone();
+    cfg.stt_correction          = ov.stt_correction;
+    cfg.tts_chain               = ov.tts_chain.clone();
+    cfg.stt_polish_chain        = ov.stt_polish_chain.clone();
+    cfg.aec_gain                = ov.aec_gain;
+    cfg.noise_gate              = ov.noise_gate;
+    cfg.speech_start_prob       = ov.speech_start_prob;
+    cfg.speech_end_prob         = ov.speech_end_prob;
+    cfg.speech_start_frames     = ov.speech_start_frames;
+    cfg.silence_end_frames      = ov.silence_end_frames;
+    cfg.aec_mode                = ov.aec_mode.clone();
+    cfg.overlay_sharing         = ov.overlay_sharing;
+    cfg.translate_enabled       = ov.translate_enabled;
+    cfg.translate_preset        = ov.translate_preset.clone();
+    cfg.translate_target        = ov.translate_target.clone();
+    cfg.translate_other         = ov.translate_other.clone();
+    cfg.translate_direction     = ov.translate_direction.clone();
+    cfg.translate_type          = ov.translate_type.clone();
+    cfg.translate_both_template = ov.translate_both_template.clone();
+    cfg.translate_tts_source    = ov.translate_tts_source.clone();
+    cfg.translate_polish_provider = ov.translate_polish_provider.clone();
+    cfg.translate_tts_provider  = ov.translate_tts_provider.clone();
+    cfg.note_translate_enabled  = ov.note_translate_enabled;
+    cfg.note_translate_target   = ov.note_translate_target.clone();
+}

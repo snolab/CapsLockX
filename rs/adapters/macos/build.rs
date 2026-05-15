@@ -6,6 +6,7 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=CoreMedia");
     println!("cargo:rustc-link-lib=framework=AudioToolbox");
     println!("cargo:rustc-link-lib=framework=AVFoundation");
+    println!("cargo:rustc-link-lib=framework=IOKit");
 
     // Compile ObjC exception catcher (for catching ObjC exceptions from Rust).
     cc::Build::new()
@@ -13,4 +14,11 @@ fn main() {
         .flag("-fobjc-arc")
         .compile("objc_try");
     println!("cargo:rustc-link-lib=framework=Foundation");
+
+    // CapsLock toggle helper — IOKit calls in ObjC to avoid Rust FFI ABI
+    // subtleties (mach_task_self_ vs mach_task_self(), bool ABI, etc.).
+    cc::Build::new()
+        .file("capslock_iokit.m")
+        .flag("-fobjc-arc")
+        .compile("capslock_iokit");
 }

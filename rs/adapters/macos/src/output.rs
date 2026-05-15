@@ -1109,7 +1109,27 @@ impl MacPlatform {
 impl Platform for MacPlatform {
     // ── Keyboard output ───────────────────────────────────────────────────────
 
+    fn system_key_repeat_ms(&self) -> Option<u64> {
+        // macOS stores KeyRepeat in units of ~15 ms (default 2 → 30 ms).
+        let out = std::process::Command::new("defaults")
+            .args(["read", "-g", "KeyRepeat"])
+            .output()
+            .ok()?;
+        let s = String::from_utf8(out.stdout).ok()?;
+        let units: u64 = s.trim().parse().ok()?;
+        Some(units.saturating_mul(15))
+    }
+
     fn key_down(&self, key: KeyCode) {
+        // CapsLock: CGEvent does NOT toggle the OS AlphaShift state; only
+        // physical HID input does. Under our hidutil remap the physical key
+        // is gone, so the engine's single-tap-passthrough needs to use IOKit
+        // to flip AlphaShift. We collapse down+up into one toggle on key_down
+        // (and make key_up a no-op for CapsLock).
+        if matches!(key, KeyCode::CapsLock) && crate::capslock_remap::is_applied() {
+            crate::capslock_remap::toggle_caps_state();
+            return;
+        }
         if let Some(cg_key) = keycode_to_cg_keycode(key) {
             let source = Self::source();
             if let Ok(event) = CGEvent::new_keyboard_event(source, cg_key, true) {
@@ -1123,6 +1143,11 @@ impl Platform for MacPlatform {
     }
 
     fn key_up(&self, key: KeyCode) {
+        // See key_down: CapsLock toggle is performed via IOKit on key_down
+        // when the remap is active, so the matching key_up is a no-op.
+        if matches!(key, KeyCode::CapsLock) && crate::capslock_remap::is_applied() {
+            return;
+        }
         if let Some(cg_key) = keycode_to_cg_keycode(key) {
             let source = Self::source();
             if let Ok(event) = CGEvent::new_keyboard_event(source, cg_key, false) {

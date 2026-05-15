@@ -91,9 +91,15 @@ fn apply_translate_env(cfg: &crate::config_store::FullConfig) {
 pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
     // Load saved config, fall back to defaults.
-    let saved = crate::config_store::load();
+    let mut saved = crate::config_store::load();
     crate::output::set_cycle_order(&saved.window_cycle_order);
     crate::output::set_arrange_order(&saved.window_arrange_order);
+
+    // Overlay otoji voice config (if present) — otoji owns voice settings.
+    if let Some(ov) = crate::config_store::load_otoji_voice_override() {
+        eprintln!("[CLX] otoji config overlay applied (stt={})", ov.stt_engine);
+        crate::config_store::apply_otoji_override(&mut saved, &ov);
+    }
 
     // Apply voice translation settings as environment variables so the otoji
     // subprocess and PttSession pick them up without extra plumbing.
@@ -108,6 +114,10 @@ pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
 });
 
 // ── Raw FFI for CGEventTap (bypasses the buggy Rust wrapper) ────────────────
+
+extern "C" {
+    fn AXIsProcessTrusted() -> bool;
+}
 
 type CGEventRef = *mut std::ffi::c_void;
 type CGEventMask = u64;
@@ -255,11 +265,55 @@ pub fn install_and_run() {
     // Force engine initialisation.
     Lazy::force(&ENGINE);
 
+    // Ensure otoji-tray is running so the mic menu bar icon is always present.
+    // Must be called here (after GUI session is established via setup_tray) so
+    // the spawned process inherits CLX's WindowServer connection.
+    capslockx_core::modules::voice_otoji::ensure_tray_running();
+
+    // Watch otoji config for changes and hot-reload voice settings.
+    // Polls every 3s; on mtime change re-reads and calls ENGINE.update_config().
+    std::thread::Builder::new()
+        .name("otoji-cfg-watch".into())
+        .spawn(|| {
+            let mut last_mtime = crate::config_store::otoji_config_mtime();
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+                let mtime = crate::config_store::otoji_config_mtime();
+                if mtime != last_mtime && mtime > 0 {
+                    last_mtime = mtime;
+                    if let Some(ov) = crate::config_store::load_otoji_voice_override() {
+                        eprintln!("[CLX] otoji config changed — hot-reloading voice settings (stt={})", ov.stt_engine);
+                        // Build a base CLX config from disk, apply the otoji overlay,
+                        // then apply to engine (preserves API keys, trigger keys, etc.).
+                        let mut base = crate::config_store::load();
+                        crate::config_store::apply_otoji_override(&mut base, &ov);
+                        reapply_translate_env(&base);
+                        let clx_cfg = base.into_clx_config();
+                        ENGINE.update_config(clx_cfg);
+                    }
+                }
+            }
+        })
+        .ok();
+
     let mask = event_mask(&[
         CGEventType::KeyDown,
         CGEventType::KeyUp,
         CGEventType::FlagsChanged,
     ]);
+
+    // Check Accessibility permission *before* CGEventTapCreate — on some
+    // macOS versions the latter blocks indefinitely waiting for a dialog
+    // that never appears when launched without a GUI session.
+    if !unsafe { AXIsProcessTrusted() } {
+        eprintln!("[CLX] ERROR: Missing Accessibility permission.");
+        eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
+        eprintln!("[CLX] Opening System Settings — grant permission then CLX will restart automatically.");
+        let _ = std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            .status();
+        std::process::exit(1);
+    }
 
     let tap: CFMachPortRef = unsafe {
         CGEventTapCreate(

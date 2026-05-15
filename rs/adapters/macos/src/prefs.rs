@@ -191,10 +191,63 @@ unsafe extern "C" fn handle_script_message(
         "close" => {
             close_preferences();
         }
+        "open_otoji_settings" => {
+            open_otoji_settings();
+        }
         _ => {
             eprintln!("[CLX] prefs: unknown command: {}", cmd);
         }
     }
+}
+
+/// otoji-tray に SIGUSR1 を送り設定画面を開く。
+/// プロセスが見つからない場合は otoji-tray を起動してから送る。
+fn open_otoji_settings() {
+    let pid = find_otoji_tray_pid();
+    if let Some(pid) = pid {
+        eprintln!("[CLX] prefs: sending SIGUSR1 to otoji-tray pid={}", pid);
+        unsafe { libc::kill(pid, libc::SIGUSR1); }
+    } else {
+        eprintln!("[CLX] prefs: otoji-tray not running — spawning");
+        // CLX バイナリと同じディレクトリにある otoji-tray を探す。
+        let tray_path = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join("otoji-tray")));
+        let Some(tray_path) = tray_path else { return };
+        if !tray_path.exists() {
+            eprintln!("[CLX] prefs: otoji-tray not found at {}", tray_path.display());
+            return;
+        }
+        match std::process::Command::new(&tray_path)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            Ok(child) => {
+                eprintln!("[CLX] prefs: spawned otoji-tray pid={}", child.id());
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(1000));
+                    if let Some(pid) = find_otoji_tray_pid() {
+                        unsafe { libc::kill(pid, libc::SIGUSR1); }
+                    }
+                });
+            }
+            Err(e) => eprintln!("[CLX] prefs: failed to spawn otoji-tray: {}", e),
+        }
+    }
+}
+
+fn find_otoji_tray_pid() -> Option<i32> {
+    let out = std::process::Command::new("pgrep")
+        .args(["-f", "otoji-tray"])
+        .output()
+        .ok()?;
+    String::from_utf8(out.stdout)
+        .ok()?
+        .lines()
+        .next()
+        .and_then(|s| s.trim().parse::<i32>().ok())
 }
 
 /// Evaluate JavaScript on the webview (must be called from main thread or dispatched).

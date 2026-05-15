@@ -48,6 +48,11 @@ pub trait Platform: Send + Sync + 'static {
         self.key_up(key);
     }
 
+    /// System key-repeat interval in milliseconds, if the platform exposes
+    /// one. Used by the Space hold-to-repeat fallback. `None` → engine uses
+    /// its own default.
+    fn system_key_repeat_ms(&self) -> Option<u64> { None }
+
     /// Press a key `n` times (clamped to 128).
     fn key_tap_n(&self, key: KeyCode, n: i32) {
         for _ in 0..n.clamp(0, 128) {

@@ -10,6 +10,9 @@ pub fn cg_keycode_to_keycode(code: u16) -> KeyCode {
     match code {
         // ── Trigger keys ──────────────────────────────────────────────────────
         0x39 => KeyCode::CapsLock,   // kVK_CapsLock
+        // hidutil-remapped CapsLock arrives as F18 — treat it as CapsLock so the
+        // engine's chord/lock logic is unaware of the remap. See capslock_remap.rs.
+        0x4F => KeyCode::CapsLock,   // kVK_F18 (remap target)
         0x31 => KeyCode::Space,      // kVK_Space
 
         // ── Modifiers ─────────────────────────────────────────────────────────

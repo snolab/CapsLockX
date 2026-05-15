@@ -38,6 +38,8 @@ mod audio_tap;
 mod observe_cmd;
 #[cfg(target_os = "macos")]
 mod ocr_cmd;
+#[cfg(target_os = "macos")]
+mod capslock_remap;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -135,10 +137,12 @@ fn main() {
                 }
             }
         }
-        // Also try matching by path pattern for when launched as ./clx or /path/to/clx
+        // Kill other clx daemon instances by path+flag pattern.
+        // Match only the actual foreground daemon (`clx -f` / `capslockx -f`), NOT the
+        // bash watchdog wrapper (`bin/clx --watchdog`) whose cmdline also contains `/clx`.
         let _ = std::process::Command::new("sh")
             .args(["-c", &format!(
-                "pgrep -f '/clx\\b|/capslockx\\b' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
+                "pgrep -f '/clx -f|/capslockx -f' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
             )])
             .status();
 
@@ -213,6 +217,15 @@ fn main() {
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) or `pkill clx` to exit");
+
+    // Disable physical CapsLock's AlphaShift toggle via hidutil. Engine still
+    // sees CapsLock-down/up (the key is remapped to F18 and aliased back in
+    // key_map.rs), but the OS no longer toggles its CapsLock state.
+    // Gated on use_capslock so users who disable CapsLock as a trigger keep
+    // their native CapsLock behaviour.
+    if config_store::load().use_capslock {
+        capslock_remap::apply();
+    }
 
     // Install the menu bar icon and voice overlay class before entering the run loop.
     tray::setup_tray();

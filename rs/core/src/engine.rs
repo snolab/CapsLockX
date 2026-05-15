@@ -202,24 +202,20 @@ impl ClxEngine {
 
         // Bypass: let the original event pass through to the OS instead of
         // entering CLX mode. This preserves system shortcuts:
-        // - Shift+Space → input method switching
-        // - Ctrl+Space  → input method switching (like AHK on Windows)
-        // - Cmd/Win+Space → Spotlight (macOS) / input language (Windows)
-        // - Non-trigger typing + trigger → avoids interfering with typing
-        // Note: Alt + Space should NOT bypass — it enters CLX mode.
+        // - <any modifier> + Space → bypass (Shift/Ctrl/Cmd/Alt — Spotlight,
+        //   IME switching, etc.). Uniform rule: any modifier held promotes
+        //   Space to a system shortcut.
+        // - Non-trigger typing + trigger → avoids interfering with typing.
         //
         // Check held_keys directly (not just prior) for reliability — the prior
         // key can be overwritten by intervening FlagsChanged or other events.
         let held = self.held_keys.lock().unwrap();
-        let shift_held = held.contains(&KeyCode::LShift) || held.contains(&KeyCode::RShift)
-            || held.contains(&KeyCode::Shift);
-        let ctrl_held = held.contains(&KeyCode::LCtrl) || held.contains(&KeyCode::RCtrl);
-        let win_held = held.contains(&KeyCode::LWin) || held.contains(&KeyCode::RWin);
+        let modifier_held = held.iter().any(|k| k.is_modifier());
         let non_modifier_held = held.iter().any(|k| !k.is_modifier() && *k != code);
         drop(held);
 
         let bypass = if code == KeyCode::Space {
-            shift_held || ctrl_held || win_held
+            modifier_held
         } else {
             non_modifier_held
         };
@@ -231,8 +227,10 @@ impl ClxEngine {
         self.store_trigger(code);
 
         // ── 200 ms hold timeout (native only) ─────────────────────────────
-        // If Space is held >200ms with no combo action, emit a space
-        // character and deactivate FN mode — matches original AHK behaviour.
+        // If Space is held >200ms with no combo action, deactivate FN mode
+        // and emit Space as a normal repeating key (matches system default:
+        // first character, then auto-repeat at the OS repeat rate until the
+        // user lifts the key).
         #[cfg(not(target_arch = "wasm32"))]
         if code == KeyCode::Space {
             let trigger_key = Arc::clone(&self.trigger_key);
@@ -257,6 +255,19 @@ impl ClxEngine {
                     if !timeout.swap(true, Ordering::SeqCst) {
                         platform.key_tap(KeyCode::Space);
                         state.exit_fn_mode();
+                        // Auto-repeat while Space is still the trigger.
+                        // Uses platform-reported system repeat rate, falling
+                        // back to a 33 ms default (~30 Hz, macOS default).
+                        let repeat_ms = platform
+                            .system_key_repeat_ms()
+                            .unwrap_or(33)
+                            .clamp(15, 500);
+                        loop {
+                            std::thread::sleep(std::time::Duration::from_millis(repeat_ms));
+                            let still = *trigger_key.lock().unwrap() == Some(KeyCode::Space);
+                            if !still { break; }
+                            platform.key_tap(KeyCode::Space);
+                        }
                     }
                 }
             });

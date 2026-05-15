@@ -175,7 +175,7 @@ fn resample_linear(src: &[f32], src_rate: u32, dst_rate: u32, carry: &mut f64) -
 /// The tray is a separate binary that owns the macOS menu bar item and
 /// reads `notes.jsonl` independently — its lifecycle is not tied to the
 /// listen child, so a sensevoice crash here doesn't take it down.
-fn ensure_tray_running() {
+pub fn ensure_tray_running() {
     // Detect a running tray *specifically* — the bare process name `otoji`
     // is also used by `otoji listen`, `otoji kws`, etc., so a `pgrep -x
     // otoji` match would mean "any otoji subprocess is alive" and skip
@@ -226,7 +226,26 @@ fn ensure_tray_running() {
             }
         }
     }
-    let _ = Command::new("otoji-tray")
+    // Look for `otoji-tray` alongside the real `otoji` binary (resolve symlinks first).
+    let sibling = Command::new("which")
+        .arg("otoji")
+        .output()
+        .ok()
+        .and_then(|o| {
+            let p = std::path::PathBuf::from(String::from_utf8_lossy(&o.stdout).trim().to_string());
+            // Resolve symlink so we find the real install directory.
+            let real = std::fs::canonicalize(&p).unwrap_or(p);
+            let candidate = real.parent()?.join("otoji-tray");
+            if candidate.exists() { Some(candidate) } else { None }
+        });
+
+    let tray_bin: std::ffi::OsString = if let Some(p) = sibling {
+        p.into()
+    } else {
+        "otoji-tray".into()
+    };
+
+    let _ = Command::new(&tray_bin)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -295,9 +314,10 @@ impl OtojiBackend {
     }
 
     /// Check if `otoji` binary is available on PATH.
+    /// Uses `which` instead of running the binary to avoid hanging on broken builds.
     pub fn is_available() -> bool {
-        Command::new("otoji")
-            .arg("--help")
+        Command::new("which")
+            .arg("otoji")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()
