@@ -128,16 +128,16 @@ mod tests {
 
     #[test]
     fn empty_samples_returns_error() {
-        let r = transcribe_gemini(&[], "key");
-        assert!(r.is_err());
-        assert!(r.unwrap_err().contains("empty"));
+        // Without the `ai` feature, transcribe_gemini is a stub that returns
+        // a "cloud STT disabled" error; with `ai`, it returns "empty samples
+        // or API key". Both are valid err — the contract is just "errors on
+        // empty input." Don't pin the error string.
+        assert!(transcribe_gemini(&[], "key").is_err());
     }
 
     #[test]
     fn empty_api_key_returns_error() {
-        let r = transcribe_gemini(&[0.1f32, 0.2], "");
-        assert!(r.is_err());
-        assert!(r.unwrap_err().contains("empty"));
+        assert!(transcribe_gemini(&[0.1f32, 0.2], "").is_err());
     }
 
     #[test]

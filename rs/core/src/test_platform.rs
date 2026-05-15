@@ -70,6 +70,20 @@ impl MockPlatform {
     pub fn count(&self, pred: impl Fn(&Call) -> bool) -> usize {
         self.calls.lock().unwrap().iter().filter(|c| pred(*c)).count()
     }
+
+    /// Poll until `calls()` returns the expected vec or 500ms elapses.
+    /// Use this after invoking a module that dispatches its side effects
+    /// onto a background thread (e.g. window_manager close/arrange).
+    pub fn wait_calls(&self, expected: &[Call]) -> Vec<Call> {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+        loop {
+            let actual = self.calls();
+            if actual == expected || std::time::Instant::now() >= deadline {
+                return actual;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
 }
 
 impl Default for MockPlatform {

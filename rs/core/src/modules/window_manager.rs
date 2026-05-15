@@ -117,46 +117,53 @@ mod tests {
         m
     }
 
+    // X / C / Period dispatch onto a background thread to keep the
+    // event-tap callback fast (close/arrange can call out to AX and block
+    // hundreds of ms). The tests use `wait_calls` to poll until the
+    // background thread has logged its call.
+
     #[test]
     fn x_without_modifiers_closes_tab() {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::X, &mods(false, false, false)));
-        assert_eq!(mock.calls(), vec![Call::CloseTab]);
+        assert_eq!(mock.wait_calls(&[Call::CloseTab]), vec![Call::CloseTab]);
     }
 
     #[test]
     fn shift_x_closes_window() {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::X, &mods(true, false, false)));
-        assert_eq!(mock.calls(), vec![Call::CloseWindow]);
+        assert_eq!(mock.wait_calls(&[Call::CloseWindow]), vec![Call::CloseWindow]);
     }
 
     #[test]
     fn ctrl_alt_x_kills_window() {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::X, &mods(false, true, true)));
-        assert_eq!(mock.calls(), vec![Call::KillWindow]);
+        assert_eq!(mock.wait_calls(&[Call::KillWindow]), vec![Call::KillWindow]);
     }
 
     #[test]
     fn c_arranges_windows_stacked() {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::C, &mods(false, false, false)));
-        assert_eq!(mock.calls(), vec![Call::ArrangeWindows(ArrangeMode::Stacked)]);
+        let expected = vec![Call::ArrangeWindows(ArrangeMode::Stacked)];
+        assert_eq!(mock.wait_calls(&expected), expected);
     }
 
     #[test]
     fn shift_c_arranges_windows_side_by_side() {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::C, &mods(true, false, false)));
-        assert_eq!(mock.calls(), vec![Call::ArrangeWindows(ArrangeMode::SideBySide)]);
+        let expected = vec![Call::ArrangeWindows(ArrangeMode::SideBySide)];
+        assert_eq!(mock.wait_calls(&expected), expected);
     }
 
     #[test]
     fn period_restarts_application() {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::Period, &mods(false, false, false)));
-        assert_eq!(mock.calls(), vec![Call::Restart]);
+        assert_eq!(mock.wait_calls(&[Call::Restart]), vec![Call::Restart]);
     }
 
     #[test]
