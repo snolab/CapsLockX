@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <defs>
+    <style>
+      /* Color palette — all colors chosen for white text contrast (WCAG AA) */
+      .key-bg { fill: #f5f5f5; stroke: #ccc; stroke-width: 1; rx: 5; }
+      .trigger-bg { fill: #ff6b35; stroke: #e55a2b; stroke-width: 1.5; rx: 5; }
+      .cursor-bg { fill: #3a7bc8; stroke: #2e6ab5; stroke-width: 1; rx: 5; }
+      .page-bg { fill: #2e96b8; stroke: #2586a5; stroke-width: 1; rx: 5; }
+      .mouse-bg { fill: #2d9e5e; stroke: #258f52; stroke-width: 1; rx: 5; }
+      .action-bg { fill: #8344a8; stroke: #733a95; stroke-width: 1; rx: 5; }
+      .window-bg { fill: #d98a0a; stroke: #c07a08; stroke-width: 1; rx: 5; }
+      .desktop-bg { fill: #c9a50a; stroke: #b09008; stroke-width: 1; rx: 5; }
+      .desktop-label { fill: #3d2e00; font-size: 9px; text-anchor: middle; dominant-baseline: central; font-weight: 600; }
+      .desktop-sub { fill: rgba(61,46,0,0.6); font-size: 7px; text-anchor: middle; dominant-baseline: central; }
+      .ai-bg { fill: #c0392b; stroke: #a93226; stroke-width: 1; rx: 5; }
+      .media-bg { fill: #16856e; stroke: #127560; stroke-width: 1; rx: 5; }
+      .misc-bg { fill: #6c7a7d; stroke: #5e6c6f; stroke-width: 1; rx: 5; }
+
+      .key-label { fill: #555; font-size: 11px; text-anchor: middle; dominant-baseline: central; }
+      .fn-label { fill: #fff; font-size: 9px; text-anchor: middle; dominant-baseline: central; font-weight: 600; }
+      .fn-sub { fill: rgba(255,255,255,0.75); font-size: 7px; text-anchor: middle; dominant-baseline: central; }
+      .trigger-label { fill: #fff; font-size: 9px; text-anchor: middle; dominant-baseline: central; font-weight: 700; }
+
+      /* Animation: asymmetric timing — Normal 3s, Active 6s (total 10s) */
+      @keyframes showNormal {
+        0%, 25%   { opacity: 1; }
+        30%, 97%  { opacity: 0; }
+        100%      { opacity: 1; }
+      }
+      @keyframes showClx {
+        0%, 25%   { opacity: 0; }
+        30%, 97%  { opacity: 1; }
+        100%      { opacity: 0; }
+      }
+
+      .layer-normal { animation: showNormal 10s ease-in-out infinite; }
+      .layer-clx    { animation: showClx    10s ease-in-out infinite; }
+
+      /* Title */
+      .title { fill: #333; font-size: 14px; font-weight: 700; text-anchor: middle; }
+      .subtitle { fill: #888; font-size: 10px; text-anchor: middle; }
+
+      /* Legend */
+      .legend-text { fill: #555; font-size: 8px; dominant-baseline: central; }
+      .legend-dot { stroke: none; rx: 2; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="260" fill="#fff" rx="10"/>
+
+  <!-- Title area -->
+  <text x="450" y="18" class="title">CapsLockX 2.0 — Keyboard Layout</text>
+
+  <!-- ================================================================== -->
+  <!-- LAYER: Normal (base QWERTY)                                        -->
+  <!-- ================================================================== -->
+  <g class="layer-normal">
+    <text x="450" y="32" class="subtitle">Normal Mode — hold CapsLock or Space to activate</text>
+
+    <!-- Row 1: Number row -->
+    <g transform="translate(30, 42)">
+      <rect x="0"   y="0" width="40" height="32" class="key-bg"/><text x="20"  y="16" class="key-label">`</text>
+      <rect x="44"  y="0" width="40" height="32" class="key-bg"/><text x="64"  y="16" class="key-label">1</text>
+      <rect x="88"  y="0" width="40" height="32" class="key-bg"/><text x="108" y="16" class="key-label">2</text>
+      <rect x="132" y="0" width="40" height="32" class="key-bg"/><text x="152" y="16" class="key-label">3</text>
+      <rect x="176" y="0" width="40" height="32" class="key-bg"/><text x="196" y="16" class="key-label">4</text>
+      <rect x="220" y="0" width="40" height="32" class="key-bg"/><text x="240" y="16" class="key-label">5</text>
+      <rect x="264" y="0" width="40" height="32" class="key-bg"/><text x="284" y="16" class="key-label">6</text>
+      <rect x="308" y="0" width="40" height="32" class="key-bg"/><text x="328" y="16" class="key-label">7</text>
+      <rect x="352" y="0" width="40" height="32" class="key-bg"/><text x="372" y="16" class="key-label">8</text>
+      <rect x="396" y="0" width="40" height="32" class="key-bg"/><text x="416" y="16" class="key-label">9</text>
+      <rect x="440" y="0" width="40" height="32" class="key-bg"/><text x="460" y="16" class="key-label">0</text>
+      <rect x="484" y="0" width="40" height="32" class="key-bg"/><text x="504" y="16" class="key-label">-</text>
+      <rect x="528" y="0" width="40" height="32" class="key-bg"/><text x="548" y="16" class="key-label">=</text>
+      <rect x="572" y="0" width="68" height="32" class="key-bg"/><text x="606" y="16" class="key-label">Bksp</text>
+    </g>
+
+    <!-- Row 2: QWERTY -->
+    <g transform="translate(30, 78)">
+      <rect x="0"   y="0" width="58" height="32" class="key-bg"/><text x="29"  y="16" class="key-label">Tab</text>
+      <rect x="62"  y="0" width="40" height="32" class="key-bg"/><text x="82"  y="16" class="key-label">Q</text>
+      <rect x="106" y="0" width="40" height="32" class="key-bg"/><text x="126" y="16" class="key-label">W</text>
+      <rect x="150" y="0" width="40" height="32" class="key-bg"/><text x="170" y="16" class="key-label">E</text>
+      <rect x="194" y="0" width="40" height="32" class="key-bg"/><text x="214" y="16" class="key-label">R</text>
+      <rect x="238" y="0" width="40" height="32" class="key-bg"/><text x="258" y="16" class="key-label">T</text>
+      <rect x="282" y="0" width="40" height="32" class="key-bg"/><text x="302" y="16" class="key-label">Y</text>
+      <rect x="326" y="0" width="40" height="32" class="key-bg"/><text x="346" y="16" class="key-label">U</text>
+      <rect x="370" y="0" width="40" height="32" class="key-bg"/><text x="390" y="16" class="key-label">I</text>
+      <rect x="414" y="0" width="40" height="32" class="key-bg"/><text x="434" y="16" class="key-label">O</text>
+      <rect x="458" y="0" width="40" height="32" class="key-bg"/><text x="478" y="16" class="key-label">P</text>
+      <rect x="502" y="0" width="40" height="32" class="key-bg"/><text x="522" y="16" class="key-label">[</text>
+      <rect x="546" y="0" width="40" height="32" class="key-bg"/><text x="566" y="16" class="key-label">]</text>
+      <rect x="590" y="0" width="50" height="32" class="key-bg"/><text x="615" y="16" class="key-label">\</text>
+    </g>
+
+    <!-- Row 3: Home row -->
+    <g transform="translate(30, 114)">
+      <rect x="0"   y="0" width="68" height="32" class="key-bg" style="fill:#ffe0cc;stroke:#ff6b35"/><text x="34" y="16" class="key-label" style="fill:#ff6b35;font-weight:700">CapsLock</text>
+      <rect x="72"  y="0" width="40" height="32" class="key-bg"/><text x="92"  y="16" class="key-label">A</text>
+      <rect x="116" y="0" width="40" height="32" class="key-bg"/><text x="136" y="16" class="key-label">S</text>
+      <rect x="160" y="0" width="40" height="32" class="key-bg"/><text x="180" y="16" class="key-label">D</text>
+      <rect x="204" y="0" width="40" height="32" class="key-bg"/><text x="224" y="16" class="key-label">F</text>
+      <rect x="248" y="0" width="40" height="32" class="key-bg"/><text x="268" y="16" class="key-label">G</text>
+      <rect x="292" y="0" width="40" height="32" class="key-bg"/><text x="312" y="16" class="key-label">H</text>
+      <rect x="336" y="0" width="40" height="32" class="key-bg"/><text x="356" y="16" class="key-label">J</text>
+      <rect x="380" y="0" width="40" height="32" class="key-bg"/><text x="400" y="16" class="key-label">K</text>
+      <rect x="424" y="0" width="40" height="32" class="key-bg"/><text x="444" y="16" class="key-label">L</text>
+      <rect x="468" y="0" width="40" height="32" class="key-bg"/><text x="488" y="16" class="key-label">;</text>
+      <rect x="512" y="0" width="40" height="32" class="key-bg"/><text x="532" y="16" class="key-label">'</text>
+      <rect x="556" y="0" width="84" height="32" class="key-bg"/><text x="598" y="16" class="key-label">Enter</text>
+    </g>
+
+    <!-- Row 4: Bottom row -->
+    <g transform="translate(30, 150)">
+      <rect x="0"   y="0" width="84" height="32" class="key-bg"/><text x="42"  y="16" class="key-label">Shift</text>
+      <rect x="88"  y="0" width="40" height="32" class="key-bg"/><text x="108" y="16" class="key-label">Z</text>
+      <rect x="132" y="0" width="40" height="32" class="key-bg"/><text x="152" y="16" class="key-label">X</text>
+      <rect x="176" y="0" width="40" height="32" class="key-bg"/><text x="196" y="16" class="key-label">C</text>
+      <rect x="220" y="0" width="40" height="32" class="key-bg"/><text x="240" y="16" class="key-label">V</text>
+      <rect x="264" y="0" width="40" height="32" class="key-bg"/><text x="284" y="16" class="key-label">B</text>
+      <rect x="308" y="0" width="40" height="32" class="key-bg"/><text x="328" y="16" class="key-label">N</text>
+      <rect x="352" y="0" width="40" height="32" class="key-bg"/><text x="372" y="16" class="key-label">M</text>
+      <rect x="396" y="0" width="40" height="32" class="key-bg"/><text x="416" y="16" class="key-label">,</text>
+      <rect x="440" y="0" width="40" height="32" class="key-bg"/><text x="460" y="16" class="key-label">.</text>
+      <rect x="484" y="0" width="40" height="32" class="key-bg"/><text x="504" y="16" class="key-label">/</text>
+      <rect x="528" y="0" width="112" height="32" class="key-bg"/><text x="584" y="16" class="key-label">Shift</text>
+    </g>
+
+    <!-- Row 5: Space bar row -->
+    <g transform="translate(30, 186)">
+      <rect x="0"   y="0" width="52" height="32" class="key-bg"/><text x="26"  y="16" class="key-label" style="font-size:9px">Ctrl</text>
+      <rect x="56"  y="0" width="52" height="32" class="key-bg"/><text x="82"  y="16" class="key-label" style="font-size:9px">Alt</text>
+      <rect x="112" y="0" width="52" height="32" class="key-bg"/><text x="138" y="16" class="key-label" style="font-size:9px">Cmd</text>
+      <rect x="168" y="0" width="304" height="32" class="key-bg" style="fill:#ffe0cc;stroke:#ff6b35"/>
+      <text x="320" y="16" class="key-label" style="fill:#ff6b35;font-weight:700">Space</text>
+      <rect x="476" y="0" width="52" height="32" class="key-bg"/><text x="502" y="16" class="key-label" style="font-size:9px">Cmd</text>
+      <rect x="532" y="0" width="52" height="32" class="key-bg"/><text x="558" y="16" class="key-label" style="font-size:9px">Alt</text>
+      <rect x="588" y="0" width="52" height="32" class="key-bg"/><text x="614" y="16" class="key-label" style="font-size:9px">Ctrl</text>
+    </g>
+
+    <!-- Status badge (normal) -->
+    <rect x="700" y="226" width="170" height="20" rx="5" fill="#f5f5f5" stroke="#ccc"/>
+    <text x="785" y="237" text-anchor="middle" style="fill:#999;font-size:8px">Normal — keys pass through</text>
+  </g>
+
+  <!-- ================================================================== -->
+  <!-- LAYER: CLX Active (hold CapsLock or Space)                         -->
+  <!-- ================================================================== -->
+  <g class="layer-clx">
+    <text x="450" y="32" class="subtitle" style="fill:#ff6b35;font-weight:600">CLX Active — hold CapsLock or Space + press key</text>
+
+    <!-- Row 1: Number row — Desktop switching -->
+    <g transform="translate(30, 42)">
+      <rect x="0"   y="0" width="40" height="32" class="key-bg"/><text x="20"  y="16" class="key-label">`</text>
+      <rect x="44"  y="0" width="40" height="32" class="desktop-bg"/><text x="64"  y="12" class="desktop-label">Desk1</text><text x="64"  y="24" class="desktop-sub">1</text>
+      <rect x="88"  y="0" width="40" height="32" class="desktop-bg"/><text x="108" y="12" class="desktop-label">Desk2</text><text x="108" y="24" class="desktop-sub">2</text>
+      <rect x="132" y="0" width="40" height="32" class="desktop-bg"/><text x="152" y="12" class="desktop-label">Desk3</text><text x="152" y="24" class="desktop-sub">3</text>
+      <rect x="176" y="0" width="40" height="32" class="desktop-bg"/><text x="196" y="12" class="desktop-label">Desk4</text><text x="196" y="24" class="desktop-sub">4</text>
+      <rect x="220" y="0" width="40" height="32" class="desktop-bg"/><text x="240" y="12" class="desktop-label">Desk5</text><text x="240" y="24" class="desktop-sub">5</text>
+      <rect x="264" y="0" width="40" height="32" class="desktop-bg"/><text x="284" y="12" class="desktop-label">Desk6</text><text x="284" y="24" class="desktop-sub">6</text>
+      <rect x="308" y="0" width="40" height="32" class="desktop-bg"/><text x="328" y="12" class="desktop-label">Desk7</text><text x="328" y="24" class="desktop-sub">7</text>
+      <rect x="352" y="0" width="40" height="32" class="desktop-bg"/><text x="372" y="12" class="desktop-label">Desk8</text><text x="372" y="24" class="desktop-sub">8</text>
+      <rect x="396" y="0" width="40" height="32" class="desktop-bg"/><text x="416" y="12" class="desktop-label">Desk9</text><text x="416" y="24" class="desktop-sub">9</text>
+      <rect x="440" y="0" width="40" height="32" class="desktop-bg"/><text x="460" y="12" class="desktop-label">Dsk10</text><text x="460" y="24" class="desktop-sub">0</text>
+      <rect x="484" y="0" width="40" height="32" class="key-bg"/><text x="504" y="16" class="key-label">-</text>
+      <rect x="528" y="0" width="40" height="32" class="key-bg"/><text x="548" y="16" class="key-label">=</text>
+      <rect x="572" y="0" width="68" height="32" class="key-bg"/><text x="606" y="16" class="key-label">Bksp</text>
+    </g>
+
+    <!-- Row 2: Mouse/Scroll + Page Nav + Media -->
+    <g transform="translate(30, 78)">
+      <rect x="0"   y="0" width="58" height="32" class="key-bg"/><text x="29"  y="16" class="key-label">Tab</text>
+      <rect x="62"  y="0" width="40" height="32" class="mouse-bg"/><text x="82"  y="12" class="fn-label">RClick</text><text x="82" y="24" class="fn-sub">Q</text>
+      <rect x="106" y="0" width="40" height="32" class="mouse-bg"/><text x="126" y="12" class="fn-label">Mouse↑</text><text x="126" y="24" class="fn-sub">W</text>
+      <rect x="150" y="0" width="40" height="32" class="mouse-bg"/><text x="170" y="12" class="fn-label">LClick</text><text x="170" y="24" class="fn-sub">E</text>
+      <rect x="194" y="0" width="40" height="32" class="mouse-bg"/><text x="214" y="12" class="fn-label">Scrl↑</text><text x="214" y="24" class="fn-sub">R</text>
+      <rect x="238" y="0" width="40" height="32" class="action-bg"/><text x="258" y="12" class="fn-label">Delete</text><text x="258" y="24" class="fn-sub">T</text>
+      <rect x="282" y="0" width="40" height="32" class="page-bg"/><text x="302" y="12" class="fn-label">Home</text><text x="302" y="24" class="fn-sub">Y</text>
+      <rect x="326" y="0" width="40" height="32" class="page-bg"/><text x="346" y="12" class="fn-label">PgDn</text><text x="346" y="24" class="fn-sub">U</text>
+      <rect x="370" y="0" width="40" height="32" class="page-bg"/><text x="390" y="12" class="fn-label">PgUp</text><text x="390" y="24" class="fn-sub">I</text>
+      <rect x="414" y="0" width="40" height="32" class="page-bg"/><text x="434" y="12" class="fn-label">End</text><text x="434" y="24" class="fn-sub">O</text>
+      <rect x="458" y="0" width="40" height="32" class="action-bg"/><text x="478" y="12" class="fn-label">S+Tab</text><text x="478" y="24" class="fn-sub">P</text>
+      <rect x="502" y="0" width="40" height="32" class="media-bg"/><text x="522" y="12" class="fn-label">Prev</text><text x="522" y="24" class="fn-sub">[</text>
+      <rect x="546" y="0" width="40" height="32" class="media-bg"/><text x="566" y="12" class="fn-label">Next</text><text x="566" y="24" class="fn-sub">]</text>
+      <rect x="590" y="0" width="50" height="32" class="media-bg"/><text x="615" y="12" class="fn-label">Play</text><text x="615" y="24" class="fn-sub">\</text>
+    </g>
+
+    <!-- Row 3: Home row — Mouse + Cursor -->
+    <g transform="translate(30, 114)">
+      <rect x="0"   y="0" width="68" height="32" class="trigger-bg"/><text x="34" y="16" class="trigger-label">CLX</text>
+      <rect x="72"  y="0" width="40" height="32" class="mouse-bg"/><text x="92"  y="12" class="fn-label">Mouse←</text><text x="92" y="24" class="fn-sub">A</text>
+      <rect x="116" y="0" width="40" height="32" class="mouse-bg"/><text x="136" y="12" class="fn-label">Mouse↓</text><text x="136" y="24" class="fn-sub">S</text>
+      <rect x="160" y="0" width="40" height="32" class="mouse-bg"/><text x="180" y="12" class="fn-label">Mouse→</text><text x="180" y="24" class="fn-sub">D</text>
+      <rect x="204" y="0" width="40" height="32" class="mouse-bg"/><text x="224" y="12" class="fn-label">Scrl↓</text><text x="224" y="24" class="fn-sub">F</text>
+      <rect x="248" y="0" width="40" height="32" class="action-bg"/><text x="268" y="12" class="fn-label">Enter</text><text x="268" y="24" class="fn-sub">G</text>
+      <rect x="292" y="0" width="40" height="32" class="cursor-bg"/><text x="312" y="12" class="fn-label">←</text><text x="312" y="24" class="fn-sub">H</text>
+      <rect x="336" y="0" width="40" height="32" class="cursor-bg"/><text x="356" y="12" class="fn-label">↓</text><text x="356" y="24" class="fn-sub">J</text>
+      <rect x="380" y="0" width="40" height="32" class="cursor-bg"/><text x="400" y="12" class="fn-label">↑</text><text x="400" y="24" class="fn-sub">K</text>
+      <rect x="424" y="0" width="40" height="32" class="cursor-bg"/><text x="444" y="12" class="fn-label">→</text><text x="444" y="24" class="fn-sub">L</text>
+      <rect x="468" y="0" width="40" height="32" class="key-bg"/><text x="488" y="16" class="key-label">;</text>
+      <rect x="512" y="0" width="40" height="32" class="key-bg"/><text x="532" y="16" class="key-label">'</text>
+      <rect x="556" y="0" width="84" height="32" class="key-bg"/><text x="598" y="16" class="key-label">Enter</text>
+    </g>
+
+    <!-- Row 4: Bottom row — Window + AI -->
+    <g transform="translate(30, 150)">
+      <rect x="0"   y="0" width="84" height="32" class="key-bg"/><text x="42"  y="16" class="key-label">Shift</text>
+      <rect x="88"  y="0" width="40" height="32" class="window-bg"/><text x="108" y="12" class="fn-label">Cycle</text><text x="108" y="24" class="fn-sub">Z</text>
+      <rect x="132" y="0" width="40" height="32" class="window-bg"/><text x="152" y="12" class="fn-label">Close</text><text x="152" y="24" class="fn-sub">X</text>
+      <rect x="176" y="0" width="40" height="32" class="window-bg"/><text x="196" y="12" class="fn-label">Tile</text><text x="196" y="24" class="fn-sub">C</text>
+      <rect x="220" y="0" width="40" height="32" class="ai-bg"/><text x="240" y="12" class="fn-label">Voice</text><text x="240" y="24" class="fn-sub">V</text>
+      <rect x="264" y="0" width="40" height="32" class="ai-bg"/><text x="284" y="12" class="fn-label">Brain</text><text x="284" y="24" class="fn-sub">B</text>
+      <rect x="308" y="0" width="40" height="32" class="action-bg"/><text x="328" y="12" class="fn-label">Tab</text><text x="328" y="24" class="fn-sub">N</text>
+      <rect x="352" y="0" width="40" height="32" class="ai-bg"/><text x="372" y="12" class="fn-label">Agent</text><text x="372" y="24" class="fn-sub">M</text>
+      <rect x="396" y="0" width="40" height="32" class="misc-bg"/><text x="416" y="12" class="fn-label">Prefs</text><text x="416" y="24" class="fn-sub">,</text>
+      <rect x="440" y="0" width="40" height="32" class="misc-bg"/><text x="460" y="12" class="fn-label">Restart</text><text x="460" y="24" class="fn-sub">.</text>
+      <rect x="484" y="0" width="40" height="32" class="misc-bg"/><text x="504" y="12" class="fn-label">HUD</text><text x="504" y="24" class="fn-sub">/</text>
+      <rect x="528" y="0" width="112" height="32" class="key-bg"/><text x="584" y="16" class="key-label">Shift</text>
+    </g>
+
+    <!-- Row 5: Space bar row -->
+    <g transform="translate(30, 186)">
+      <rect x="0"   y="0" width="52" height="32" class="key-bg"/><text x="26"  y="16" class="key-label" style="font-size:9px">Ctrl</text>
+      <rect x="56"  y="0" width="52" height="32" class="key-bg"/><text x="82"  y="16" class="key-label" style="font-size:9px">Alt</text>
+      <rect x="112" y="0" width="52" height="32" class="key-bg"/><text x="138" y="16" class="key-label" style="font-size:9px">Cmd</text>
+      <rect x="168" y="0" width="304" height="32" class="trigger-bg"/>
+      <text x="320" y="16" class="trigger-label">CLX</text>
+      <rect x="476" y="0" width="52" height="32" class="key-bg"/><text x="502" y="16" class="key-label" style="font-size:9px">Cmd</text>
+      <rect x="532" y="0" width="52" height="32" class="key-bg"/><text x="558" y="16" class="key-label" style="font-size:9px">Alt</text>
+      <rect x="588" y="0" width="52" height="32" class="key-bg"/><text x="614" y="16" class="key-label" style="font-size:9px">Ctrl</text>
+    </g>
+
+    <!-- Status badge (active) -->
+    <rect x="700" y="226" width="170" height="20" rx="5" fill="#ff6b35" stroke="#e55a2b"/>
+    <text x="785" y="237" text-anchor="middle" style="fill:#fff;font-size:8px;font-weight:600">CLX Active — functions on</text>
+  </g>
+
+  <!-- ================================================================== -->
+  <!-- Legend                                                               -->
+  <!-- ================================================================== -->
+  <g transform="translate(30, 230)">
+    <!-- Row 1 -->
+    <rect x="0"   y="0" width="12" height="12" class="legend-dot" style="fill:#ff6b35"/><text x="16" y="6" class="legend-text">Trigger</text>
+    <rect x="70"  y="0" width="12" height="12" class="legend-dot" style="fill:#3a7bc8"/><text x="86" y="6" class="legend-text">Cursor</text>
+    <rect x="135" y="0" width="12" height="12" class="legend-dot" style="fill:#2e96b8"/><text x="151" y="6" class="legend-text">Page Nav</text>
+    <rect x="210" y="0" width="12" height="12" class="legend-dot" style="fill:#2d9e5e"/><text x="226" y="6" class="legend-text">Mouse</text>
+    <rect x="275" y="0" width="12" height="12" class="legend-dot" style="fill:#8344a8"/><text x="291" y="6" class="legend-text">Actions</text>
+    <rect x="345" y="0" width="12" height="12" class="legend-dot" style="fill:#d98a0a"/><text x="361" y="6" class="legend-text">Window</text>
+    <rect x="415" y="0" width="12" height="12" class="legend-dot" style="fill:#c9a50a"/><text x="431" y="6" class="legend-text">Desktop</text>
+    <rect x="490" y="0" width="12" height="12" class="legend-dot" style="fill:#c0392b"/><text x="506" y="6" class="legend-text">AI</text>
+    <rect x="530" y="0" width="12" height="12" class="legend-dot" style="fill:#16856e"/><text x="546" y="6" class="legend-text">Media</text>
+    <rect x="590" y="0" width="12" height="12" class="legend-dot" style="fill:#6c7a7d"/><text x="606" y="6" class="legend-text">Misc</text>
+  </g>
+</svg>

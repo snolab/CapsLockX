@@ -219,12 +219,18 @@ pub struct VoiceModule {
     otoji_available: bool,
     /// Push-to-talk: hold V to record, release to transcribe + type.
     ptt: Arc<super::voice_ptt::PttSession>,
+    /// Always-on KWS listener — held here so its `Drop` runs on shutdown
+    /// and reaps the otoji kws subprocess instead of leaving a zombie.
+    wake_word_listener: Mutex<Option<super::wake_word::WakeWordListener>>,
 }
 
 /// Config that can be hot-reloaded from preferences.
 #[derive(Clone)]
 struct VoiceLiveConfig {
     stt_engine: String,
+    ptt_vad_auto_release_ms: u64,
+    whisper_model_path: String,
+    whisper_language: String,
     llm_api_key: String,
     llm_model: String,
     stt_correction: bool,
@@ -237,6 +243,7 @@ struct VoiceLiveConfig {
     speech_end_prob: f32,
     speech_start_frames: usize,
     silence_end_frames: usize,
+    aec_mode: String,
 }
 
 impl VoiceModule {
@@ -247,6 +254,10 @@ impl VoiceModule {
     pub fn with_stt_engine(platform: Arc<dyn Platform>, stt_engine: String) -> Self {
         let otoji_backend = Arc::new(super::voice_otoji::OtojiBackend::new());
         let ptt = super::voice_ptt::PttSession::new(Arc::clone(&platform), Arc::clone(&otoji_backend));
+
+        // Wake-word listener is started lazily via `start_wake_word` once
+        // the full ClxConfig is available.
+
         // Note: otoji_backend is shared between ptt and self.otoji below.
         Self {
             press_time: Mutex::new(None),
@@ -265,21 +276,39 @@ impl VoiceModule {
             otoji_typed: Arc::new(Mutex::new(String::new())),
             otoji_available: super::voice_otoji::OtojiBackend::is_available(),
             ptt,
+            wake_word_listener: Mutex::new(None),
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
+                ptt_vad_auto_release_ms: 0,
+                whisper_model_path: String::new(),
+                whisper_language: "ja".to_string(),
                 llm_api_key: String::new(),
                 llm_model: String::new(),
                 stt_correction: false,
                 tts_chain: "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
-                stt_polish_chain: "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
+                stt_polish_chain: "min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
                 aec_gain: 15.0,
                 noise_gate: 0.003,
                 speech_start_prob: 0.8,
                 speech_end_prob: 0.6,
                 speech_start_frames: 10,
                 silence_end_frames: 20,
+                aec_mode: "always".to_string(),
             })),
         }
+    }
+
+    /// Start the wake-word listener with the given config. Idempotent:
+    /// a second call replaces (and stops) the previous listener so we never
+    /// stack KWS subprocesses. Normally called once from `Modules::new`
+    /// after the ClxConfig is loaded.
+    pub fn start_wake_word(&self, cfg: super::wake_word::WakeWordConfig) {
+        let new = super::wake_word::WakeWordListener::try_start(
+            Arc::clone(&self.ptt), cfg,
+        );
+        let mut slot = self.wake_word_listener.lock().unwrap();
+        // Replacing drops the old listener; its Drop kills the otoji kws child.
+        *slot = new;
     }
 
     pub fn with_llm_config(self, api_key: String, model: String, correction: bool) -> Self {
@@ -298,9 +327,16 @@ impl VoiceModule {
         tts_chain: String, stt_polish_chain: String,
         aec_gain: f32, noise_gate: f32, speech_start_prob: f32, speech_end_prob: f32,
         speech_start_frames: usize, silence_end_frames: usize,
+        aec_mode: String,
+        whisper_model_path: String, whisper_language: String,
+        ptt_vad_auto_release_ms: u64,
     ) {
+        self.ptt.set_vad_auto_release_ms(ptt_vad_auto_release_ms);
         let mut cfg = self.live_config.lock().unwrap();
         cfg.stt_engine = stt_engine;
+        cfg.ptt_vad_auto_release_ms = ptt_vad_auto_release_ms;
+        cfg.whisper_model_path = whisper_model_path;
+        cfg.whisper_language = whisper_language;
         cfg.llm_api_key = api_key;
         cfg.llm_model = model;
         cfg.stt_correction = correction;
@@ -312,8 +348,9 @@ impl VoiceModule {
         cfg.speech_end_prob = speech_end_prob;
         cfg.speech_start_frames = speech_start_frames;
         cfg.silence_end_frames = silence_end_frames;
-        eprintln!("[CLX] voice: config hot-reloaded (engine={}, correction={}, aec_gain={}, noise_gate={})",
-            cfg.stt_engine, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate);
+        cfg.aec_mode = aec_mode;
+        eprintln!("[CLX] voice: config hot-reloaded (engine={}, whisper_lang={}, vad_release={}ms, correction={}, aec_gain={}, aec_mode={})",
+            cfg.stt_engine, cfg.whisper_language, cfg.ptt_vad_auto_release_ms, cfg.stt_correction, cfg.aec_gain, cfg.aec_mode);
     }
 
     /// Check if voice-standalone is running via PID file.
@@ -417,6 +454,11 @@ impl VoiceModule {
                 if self.note_active.load(Ordering::Relaxed) {
                     self.note_active.store(false, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note stopped");
+                    // Tear down the audio pipeline so the mic indicator
+                    // disappears immediately. Without this, otoji listen
+                    // (or local STT) keeps the mic open silently after
+                    // the overlay is hidden.
+                    self.stop_pipeline();
                     self.platform.hide_voice_overlay();
                     self.platform.set_ptt_tray_state(PttTrayState::Idle);
                 } else {
@@ -509,6 +551,8 @@ impl VoiceModule {
     /// for >200ms or macOS disables the event tap and CLX dies. All subprocess
     /// spawns (otoji, pgrep) happen on a background thread.
     fn ensure_pipeline_running(&self) {
+        // Immediate (<1ms) tray feedback, before the otoji subprocess spawn.
+        super::voice_otoji::notify_tray(super::voice_otoji::TrayState::Starting);
         // Prefer otoji as external STT backend (cached check — no subprocess).
         if self.otoji_available {
             if !self.otoji.is_running() {
@@ -523,10 +567,26 @@ impl VoiceModule {
                 let input_active = Arc::clone(&self.input_active);
                 let otoji_typed = Arc::clone(&self.otoji_typed);
                 let ptt = Arc::clone(&self.ptt);
+                // VPIO AEC enable for the otoji subprocess mic path.
+                //   "always"    → always on
+                //   "dual-only" → on when system-audio is also being captured
+                //                 (Shift+V); the otoji path itself doesn't run
+                //                 sys-audio capture today, so this matches the
+                //                 in-process voice.rs gating in spirit
+                //   "off"       → never
+                let (aec_enabled, stt_engine, whisper_model_path, whisper_language) = {
+                    let lc = self.live_config.lock().unwrap();
+                    let aec = match lc.aec_mode.as_str() {
+                        "always"    => true,
+                        "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
+                        _           => false,
+                    };
+                    (aec, lc.stt_engine.clone(), lc.whisper_model_path.clone(), lc.whisper_language.clone())
+                };
                 std::thread::Builder::new()
                     .name("otoji-launch".into())
                     .spawn(move || {
-                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt)) {
+                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt), aec_enabled, stt_engine, whisper_model_path, whisper_language) {
                             eprintln!("[CLX] voice: otoji failed to start");
                             platform.update_voice_subtitle("otoji failed");
                         }
@@ -558,6 +618,7 @@ impl VoiceModule {
     }
 
     fn stop_pipeline(&self) {
+        super::voice_otoji::notify_tray(super::voice_otoji::TrayState::Idle);
         // Stop otoji backend if running.
         if self.otoji.is_running() {
             self.otoji.stop();
@@ -618,9 +679,18 @@ fn voice_bg_persistent(
 
         // Create AudioCapture fresh each session (cpal::Stream is !Send).
         let t_wake = std::time::Instant::now();
-        // Use VoiceProcessingIO AEC only when system audio is captured (Shift+V).
+        // VPIO AEC gating per `voice.aec_mode`:
+        //   "off"       → never use VPIO
+        //   "dual-only" → only when sys-audio is also captured (Shift+V) [default]
+        //   "always"    → every PTT session, even mic-only
         // Ducking is minimized so speakers stay audible.
-        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = if with_system_audio.load(Ordering::Relaxed) {
+        let aec_mode = live_config.lock().unwrap().aec_mode.clone();
+        let want_aec = match aec_mode.as_str() {
+            "off"    => false,
+            "always" => true,
+            _        => with_system_audio.load(Ordering::Relaxed), // dual-only
+        };
+        let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = if want_aec {
             platform.start_aec_mic()
         } else {
             None
@@ -1977,6 +2047,62 @@ fn last_n_chars(s: &str, max_chars: usize) -> &str {
     &s[byte_pos..]
 }
 
+/// Parse a duration spec like `"5s"`, `"500ms"`, or a bare number (treated
+/// as ms) into milliseconds. Returns `None` if unparseable.
+fn parse_duration_ms(spec: &str) -> Option<u64> {
+    let s = spec.trim();
+    if let Some(num) = s.strip_suffix("ms") {
+        num.trim().parse::<u64>().ok()
+    } else if let Some(num) = s.strip_suffix('s') {
+        num.trim().parse::<f64>().ok().map(|v| (v * 1000.0) as u64)
+    } else {
+        s.parse::<u64>().ok()
+    }
+}
+
+#[cfg(test)]
+mod polish_chain_tests {
+    use super::*;
+
+    #[test]
+    fn parse_duration_ms_handles_common_units() {
+        assert_eq!(parse_duration_ms("5s"), Some(5_000));
+        assert_eq!(parse_duration_ms("0.5s"), Some(500));
+        assert_eq!(parse_duration_ms("500ms"), Some(500));
+        assert_eq!(parse_duration_ms("250"), Some(250));
+        assert_eq!(parse_duration_ms("nope"), None);
+    }
+
+    #[test]
+    fn min_chars_gate_short_circuits_when_text_is_short() {
+        let mut corrector = None;
+        // 11 chars < 15 → gate fires → returns raw, never reaches the
+        // (intentionally invalid) `mlx` stage.
+        let out = polish_stt_with_chain("open chrome", &[], &mut corrector, "min-chars:15,raw");
+        assert_eq!(out, "open chrome");
+    }
+
+    #[test]
+    fn min_chars_gate_passes_through_when_text_is_long() {
+        let mut corrector = None;
+        // 30+ chars — gate does NOT fire, falls through to `raw` which is
+        // the explicit echo stage. Same outcome here, but verifies the
+        // gate didn't short-circuit prematurely.
+        let long = "this is a long enough utterance to pass the gate";
+        let out = polish_stt_with_chain(long, &[], &mut corrector, "min-chars:15,raw");
+        assert_eq!(out, long);
+    }
+
+    #[test]
+    fn min_duration_gate_uses_audio_length() {
+        let mut corrector = None;
+        // 1 second of audio at 16 kHz = 16 000 samples; threshold 2s skips.
+        let one_sec = vec![0.0f32; 16_000];
+        let out = polish_stt_with_chain("hello", &one_sec, &mut corrector, "min-duration:2s,raw");
+        assert_eq!(out, "hello");
+    }
+}
+
 /// Polish STT output using the best available method.
 /// Cascade: MLX local (if running + enough RAM) → Gemini cloud → LLM corrector → raw.
 fn polish_stt_result(
@@ -1985,12 +2111,23 @@ fn polish_stt_result(
     corrector: &mut Option<crate::stt_corrector::SttCorrector>,
     chain: &str,
 ) -> String {
-    let chain = if chain.is_empty() { "mlx,gemini,llm,raw" } else { chain };
+    let chain = if chain.is_empty() {
+        "min-chars:15,min-duration:5s,mlx,gemini,llm,raw"
+    } else {
+        chain
+    };
     polish_stt_with_chain(raw_text, audio_samples, corrector, chain)
 }
 
 /// Polish STT result using a configurable fallback chain.
-/// `chain` is comma-separated: "mlx,gemini,llm,raw".
+/// `chain` is comma-separated, e.g. `"min-chars:15,mlx,gemini,llm,raw"`.
+///
+/// Length gates (return raw immediately when triggered, short-circuiting
+/// the rest of the chain — based on bench findings in
+/// `lib/otoji/docs/2026-05-14-polish-bench.md` §5: LLM polish hurts on
+/// short commands regardless of prompt design):
+/// - `min-chars:N`        — skip if `raw_text.chars().count() < N`
+/// - `min-duration:Nms|Ns`— skip if audio shorter than the threshold
 fn polish_stt_with_chain(
     raw_text: &str,
     audio_samples: &[f32],
@@ -2001,6 +2138,27 @@ fn polish_stt_with_chain(
 
     for stage in chain.split(',').map(|s| s.trim()) {
         match stage {
+            s if s.starts_with("min-chars:") => {
+                if let Some(n) = s.strip_prefix("min-chars:").and_then(|x| x.parse::<usize>().ok()) {
+                    if raw_text.chars().count() < n {
+                        eprintln!("[CLX] stt-polish: gated by min-chars:{n} ({} < {n}) → raw",
+                                  raw_text.chars().count());
+                        return raw_text.to_string();
+                    }
+                }
+            }
+            s if s.starts_with("min-duration:") => {
+                if let Some(spec) = s.strip_prefix("min-duration:") {
+                    if let Some(threshold_ms) = parse_duration_ms(spec) {
+                        // Audio is 16 kHz mono per the upstream pipeline.
+                        let actual_ms = (audio_samples.len() as u64) * 1000 / 16_000;
+                        if actual_ms < threshold_ms {
+                            eprintln!("[CLX] stt-polish: gated by min-duration:{spec} ({actual_ms}ms < {threshold_ms}ms) → raw");
+                            return raw_text.to_string();
+                        }
+                    }
+                }
+            }
             s if s.starts_with("mlx") => {
                 if has_enough_free_memory(2_000) {
                     if let Ok(polished) = polish_via_local_llm(raw_text) {
@@ -2942,7 +3100,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "TEN VAD neural model rejects pure sine as non-speech; needs real speech sample"]
+    #[ignore = "synthetic 440Hz sine isn't recognized as speech by TEN VAD neural net — needs a real WAV"]
     fn test_vad_speech_then_silence() {
         let mut vad = VadState::new();
 

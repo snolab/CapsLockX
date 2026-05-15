@@ -53,21 +53,31 @@ impl WindowManagerModule {
                 true
             }
             KeyCode::X => {
-                if mods.ctrl && mods.alt { self.platform.kill_window() }
-                else if mods.shift       { self.platform.close_window() }
-                else                     { self.platform.close_tab() }
+                // Off-thread: close/kill can call out to AX/AppleScript and
+                // block hundreds of ms — keep the event-tap callback fast so
+                // the OS doesn't disable the tap.
+                let p = Arc::clone(&self.platform);
+                let ctrl_alt = mods.ctrl && mods.alt;
+                let shift = mods.shift;
+                std::thread::spawn(move || {
+                    if ctrl_alt    { p.kill_window() }
+                    else if shift  { p.close_window() }
+                    else           { p.close_tab() }
+                });
                 true
             }
             KeyCode::C => {
-                if mods.shift {
-                    self.platform.arrange_windows(ArrangeMode::SideBySide)
-                } else {
-                    self.platform.arrange_windows(ArrangeMode::Stacked)
-                }
+                // arrange_windows iterates AX windows + animates resize — was
+                // taking 1.5–2s synchronously and tripping the CGEventTap
+                // 1s timeout, which fires emergency_stop and drops Space.
+                let p = Arc::clone(&self.platform);
+                let mode = if mods.shift { ArrangeMode::SideBySide } else { ArrangeMode::Stacked };
+                std::thread::spawn(move || p.arrange_windows(mode));
                 true
             }
             KeyCode::Period => {
-                self.platform.restart();
+                let p = Arc::clone(&self.platform);
+                std::thread::spawn(move || p.restart());
                 true
             }
             _ => false,

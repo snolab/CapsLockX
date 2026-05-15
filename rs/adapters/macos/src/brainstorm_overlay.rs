@@ -259,110 +259,41 @@ unsafe fn hide_window() {
     msg1(w, sel(b"orderOut:\0"), std::ptr::null_mut());
 }
 
-// ── Daemon-based prompt input (zero cold-start) ──────────────────────────────
-
-use std::io::{BufRead, BufReader, Write};
-use std::process::{Child, ChildStdin, ChildStdout, Stdio};
-use std::sync::OnceLock;
-
-struct PromptDaemon {
-    _child: Child,
-    stdin:  ChildStdin,
-    stdout: BufReader<ChildStdout>,
-}
-
-impl Drop for PromptDaemon {
-    fn drop(&mut self) {
-        // Kill the child explicitly so it doesn't outlive us as an orphan.
-        // Without this, repeated clx restarts (watchdog) leak clx-prompt
-        // processes (each ~74 MB) until the user reboots.
-        let _ = self._child.kill();
-        let _ = self._child.wait();
-    }
-}
-
-static DAEMON: OnceLock<Mutex<PromptDaemon>> = OnceLock::new();
+// ── Subprocess prompt input (AppKit clx-prompt, ~5MB, <100ms cold start) ────
 
 fn prompt_bin_path() -> std::path::PathBuf {
+    // Override via CLX_PROMPT_BIN (e.g. "clx-prompt-slint" to try the slint UI).
+    let name = std::env::var("CLX_PROMPT_BIN").unwrap_or_else(|_| "clx-prompt".into());
     let exe = std::env::current_exe().unwrap_or_default();
     let dir = exe.parent().unwrap_or(std::path::Path::new("."));
-    // Check same dir as binary, then bin/ subdir (where build.sh deploys it).
-    for candidate in [dir.join("clx-prompt"), dir.join("bin").join("clx-prompt")] {
+    for candidate in [dir.join(&name), dir.join("bin").join(&name)] {
         if candidate.exists() {
-            // Verify it's the Tauri build, not an old AppKit binary.
-            if let Ok(bytes) = std::fs::read(&candidate) {
-                if bytes.windows(5).any(|w| w == b"tauri") {
-                    return candidate;
-                }
-                eprintln!("[CLX] skipping non-Tauri clx-prompt at {:?}", candidate);
-            }
+            return candidate;
         }
     }
-    std::path::PathBuf::from("clx-prompt")
+    std::path::PathBuf::from(name)
 }
 
-/// Pre-spawn the clx-prompt daemon so the window is warm before first use.
-/// Call this at CLX startup. Safe to call multiple times.
-pub fn spawn_prompt_daemon() {
-    DAEMON.get_or_init(|| {
-        let bin = prompt_bin_path();
-        eprintln!("[CLX] spawning clx-prompt daemon: {:?}", bin);
-        let mut child = std::process::Command::new(&bin)
-            .arg("--daemon")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .expect("failed to spawn clx-prompt --daemon");
+/// No-op: kept for API compatibility. The AppKit clx-prompt has <100ms
+/// cold start, so we no longer prewarm a daemon (saves ~1GB of WKWebView).
+pub fn spawn_prompt_daemon() {}
 
-        let stdin  = child.stdin.take().expect("no stdin");
-        let stdout = BufReader::new(child.stdout.take().expect("no stdout"));
-
-        let mut daemon = PromptDaemon { _child: child, stdin, stdout };
-
-        // Wait for {"type":"ready"} line before returning.
-        let mut line = String::new();
-        let _ = daemon.stdout.read_line(&mut line);
-        eprintln!("[CLX] clx-prompt daemon ready: {}", line.trim());
-
-        Mutex::new(daemon)
-    });
-}
-
-/// Show the prompt dialog. Blocks until user submits or cancels.
-/// Returns the prompt text (with optional "[KEEP]\n" prefix), or None if cancelled.
+/// Show the prompt dialog by spawning AppKit clx-prompt as a subprocess.
+/// Blocks until user submits or cancels. Returns prompt text (with optional
+/// "[KEEP]\n" prefix), or None if cancelled.
 pub fn show_prompt_panel(title: &str, context: &str, last_prompt: &str) -> Option<String> {
-    // Ensure daemon is running (lazy fallback if spawn_prompt_daemon wasn't called at startup).
-    spawn_prompt_daemon();
+    let bin = prompt_bin_path();
+    let prefill = if last_prompt.is_empty() { context.to_string() } else { last_prompt.to_string() };
 
-    let daemon_lock = DAEMON.get()?;
-    let mut d = daemon_lock.lock().ok()?;
+    let output = std::process::Command::new(&bin)
+        .arg(title)
+        .arg(context)
+        .arg(prefill)
+        .output()
+        .ok()?;
 
-    // Send show command.
-    let cmd = serde_json::json!({
-        "cmd": "show",
-        "title": title,
-        "context": context,
-        "last_prompt": last_prompt,
-    });
-    writeln!(d.stdin, "{cmd}").ok()?;
-    d.stdin.flush().ok()?;
-
-    // Block until we get a result line.
-    let mut line = String::new();
-    d.stdout.read_line(&mut line).ok()?;
-    let msg: serde_json::Value = serde_json::from_str(line.trim()).ok()?;
-
-    match msg["type"].as_str()? {
-        "submit" => {
-            let text = msg["text"].as_str()?.to_string();
-            let keep = msg["keep"].as_bool().unwrap_or(false);
-            Some(if keep { format!("[KEEP]\n{text}") } else { text })
-        }
-        _ => {
-            eprintln!("[CLX] prompt cancelled");
-            None
-        }
-    }
+    if !output.status.success() { return None; }
+    let text = String::from_utf8_lossy(&output.stdout).trim_end_matches('\n').to_string();
+    if text.is_empty() { None } else { Some(text) }
 }
 

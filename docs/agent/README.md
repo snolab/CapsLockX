@@ -15,6 +15,8 @@ real-time: keyboard, mouse, gamepad sticks, MIDI, and more.
 | [MODEL-FAST.md](./MODEL-FAST.md) | Fast streaming models (Groq, Cerebras, local) |
 | [MODEL-REASONING.md](./MODEL-REASONING.md) | Reasoning models (Gemini Pro, Claude, o3) |
 | [MODEL-REALTIME.md](./MODEL-REALTIME.md) | Realtime bidirectional (Gemini Live, OpenAI RT) |
+| [LOCAL-AGENT-MODELS.md](./LOCAL-AGENT-MODELS.md) | Open-source local multimodal agent models — full comparison (intelligence / latency / size / hardware) |
+| [TIMESCALE-ARCHITECTURE.md](./TIMESCALE-ARCHITECTURE.md) | Two-layer timescale split: fast reflex (YOLO+rules, <50ms) + slow VLM (rule rewriting + memory) |
 | [PARSER.md](./PARSER.md) | Streaming parser design and technology choice |
 | [PREPROCESSING.md](./PREPROCESSING.md) | YOLO/STT/OCR preprocessing vs native LLM input |
 | [INPUT.md](./INPUT.md) | Input injection APIs (keyboard, mouse, gamepad, MIDI) |

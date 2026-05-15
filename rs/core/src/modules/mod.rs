@@ -4,11 +4,52 @@ pub mod edit;
 pub mod media;
 pub mod mouse;
 pub mod virtual_desktop;
+#[cfg(feature = "stt")]
 pub mod voice;
 pub mod voice_otoji;
 pub mod voice_ptt;
+pub mod wake_word;
 #[cfg(test)]
 mod voice_ptt_test;
+#[cfg(not(feature = "stt"))]
+mod voice {
+    //! No-op stub used when the `stt` feature is disabled (e.g. Windows
+    //! builds, where `whisper-rs 0.13` fails to compile). Mirrors the
+    //! public surface of `VoiceModule` so the rest of `Modules` compiles
+    //! unchanged. All hotkeys silently fall through.
+    use std::sync::Arc;
+    use crate::key_code::KeyCode;
+    use crate::platform::Platform;
+
+    pub struct VoiceModule;
+
+    impl VoiceModule {
+        pub fn with_stt_engine(_platform: Arc<dyn Platform>, _stt_engine: String) -> Self {
+            Self
+        }
+        pub fn with_llm_config(self, _api_key: String, _model: String, _correction: bool) -> Self {
+            self
+        }
+        pub fn preload(&self) {}
+        pub fn start_wake_word(&self, _cfg: super::wake_word::WakeWordConfig) {}
+        pub fn on_key_down(&self, _key: KeyCode) -> bool { false }
+        pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
+        pub fn is_mapped_key(&self, _key: KeyCode) -> bool { false }
+        pub fn stop(&self) {}
+        #[allow(clippy::too_many_arguments)]
+        pub fn update_config(
+            &self,
+            _stt_engine: String, _api_key: String, _model: String, _correction: bool,
+            _tts_chain: String, _stt_polish_chain: String,
+            _aec_gain: f32, _noise_gate: f32,
+            _speech_start_prob: f32, _speech_end_prob: f32,
+            _speech_start_frames: usize, _silence_end_frames: usize,
+            _aec_mode: String,
+            _whisper_model_path: String, _whisper_language: String,
+            _ptt_vad_auto_release_ms: u64,
+        ) {}
+    }
+}
 pub mod window_manager;
 
 use std::sync::Arc;
@@ -82,9 +123,18 @@ impl Modules {
             window_manager:  WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
             platform,
         };
+        let ww_cfg = wake_word::WakeWordConfig {
+            enabled:       cfg.wake_word_enabled,
+            model_dir:     cfg.wake_word_model_dir.clone(),
+            keywords_file: cfg.wake_word_keywords_file.clone(),
+            threshold:     cfg.wake_word_threshold,
+            hold_ms:       cfg.wake_word_hold_ms,
+        };
         drop(cfg);
         // Preload Whisper model in background so first Space+V is instant.
         s.voice.preload();
+        // Start wake-word listener (no-op unless enabled + paths valid).
+        s.voice.start_wake_word(ww_cfg);
         s
     }
 
@@ -92,6 +142,12 @@ impl Modules {
         // Space+Comma → open preferences (like AHK implementation).
         if key == KeyCode::Comma {
             self.platform.open_preferences();
+            return true;
+        }
+
+        // Space+Slash → toggle keyboard layout HUD.
+        if key == KeyCode::Slash {
+            self.platform.toggle_keyboard_layout_hud();
             return true;
         }
 
@@ -124,6 +180,7 @@ impl Modules {
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         key == KeyCode::Comma  // Space+Comma = preferences
+            || key == KeyCode::Slash  // Space+Slash = keyboard layout HUD
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
@@ -156,6 +213,10 @@ impl Modules {
             cfg.speech_end_prob,
             cfg.speech_start_frames,
             cfg.silence_end_frames,
+            cfg.aec_mode.clone(),
+            cfg.whisper_model_path.clone(),
+            cfg.whisper_language.clone(),
+            cfg.ptt_vad_auto_release_ms,
         );
         self.brainstorm.update_llm_config(&best_key, &best_model);
     }

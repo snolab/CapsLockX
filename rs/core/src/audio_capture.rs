@@ -2,6 +2,13 @@
 //!
 //! Captures microphone audio as mono f32 samples, targeting 16 kHz for Whisper.
 //! Falls back to the device's default config if 16 kHz is unavailable.
+//!
+//! Uses a lock-free SPSC ring buffer between the cpal callback thread and
+//! consumers. The audio callback must never block on a user-space lock — if a
+//! consumer holds one across slow I/O while the callback is also trying to take
+//! it, the callback thread stalls and a subsequent `stream.pause()/drop()` can
+//! wedge waiting to join the callback thread. A lock-free ring avoids that
+//! entire failure mode.
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -10,10 +17,11 @@ use std::sync::{
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream, StreamConfig};
+use ringbuf::{traits::*, HeapCons, HeapRb};
 
 pub struct AudioCapture {
     recording: Arc<AtomicBool>,
-    buffer: Arc<Mutex<Vec<f32>>>,
+    cons: Arc<Mutex<HeapCons<f32>>>,
     sample_rate: u32,
     stream: Option<Stream>,
 }
@@ -64,11 +72,17 @@ impl AudioCapture {
         };
 
         let recording = Arc::new(AtomicBool::new(false));
-        let buffer: Arc<Mutex<Vec<f32>>> = Arc::new(Mutex::new(Vec::new()));
+
+        // Ring buffer sized for ~10 s of mono audio at the target rate. Consumers
+        // typically drain every 50–200 ms, so this is generous head-room.
+        let rb_capacity = (sample_rate as usize).saturating_mul(10).max(16000);
+        let rb: HeapRb<f32> = HeapRb::new(rb_capacity);
+        let (mut prod, cons) = rb.split();
+        let cons = Arc::new(Mutex::new(cons));
 
         let rec_flag = Arc::clone(&recording);
-        let buf_handle = Arc::clone(&buffer);
         let channels = config.channels as usize;
+        let mut downmix: Vec<f32> = Vec::with_capacity(4096);
 
         let stream = device
             .build_input_stream(
@@ -77,15 +91,18 @@ impl AudioCapture {
                     if !rec_flag.load(Ordering::Relaxed) {
                         return;
                     }
-                    let mut buf = buf_handle.lock().unwrap();
                     if channels == 1 {
-                        buf.extend_from_slice(data);
+                        let _ = prod.push_slice(data);
                     } else {
-                        // Down-mix to mono by averaging channels.
+                        // Down-mix to mono by averaging channels. Reuse the
+                        // scratch buffer to avoid per-callback allocation.
+                        downmix.clear();
+                        downmix.reserve(data.len() / channels);
                         for chunk in data.chunks(channels) {
                             let sum: f32 = chunk.iter().sum();
-                            buf.push(sum / channels as f32);
+                            downmix.push(sum / channels as f32);
                         }
+                        let _ = prod.push_slice(&downmix);
                     }
                 },
                 move |err| {
@@ -95,12 +112,9 @@ impl AudioCapture {
             )
             .map_err(|e| format!("Failed to build input stream: {e}"))?;
 
-        // eprintln!("[CLX] audio capture: device ready, {}Hz {}ch",
-        //     sample_rate, config.channels);
-
         Ok(Self {
             recording,
-            buffer,
+            cons,
             sample_rate,
             stream: Some(stream),
         })
@@ -113,7 +127,6 @@ impl AudioCapture {
                 .play()
                 .map_err(|e| format!("Failed to start audio stream: {e}"))?;
             self.recording.store(true, Ordering::Relaxed);
-            // eprintln!("[CLX] audio capture: started");
             Ok(())
         } else {
             Err("No audio stream available".to_string())
@@ -126,13 +139,19 @@ impl AudioCapture {
         if let Some(ref stream) = self.stream {
             let _ = stream.pause();
         }
-        // eprintln!("[CLX] audio capture: stopped");
     }
 
     /// Drain and return all buffered samples collected so far.
     pub fn take_samples(&self) -> Vec<f32> {
-        let mut buf = self.buffer.lock().unwrap();
-        std::mem::take(&mut *buf)
+        let mut cons = self.cons.lock().unwrap();
+        let n = cons.occupied_len();
+        if n == 0 {
+            return Vec::new();
+        }
+        let mut out = vec![0.0f32; n];
+        let got = cons.pop_slice(&mut out);
+        out.truncate(got);
+        out
     }
 
     /// Whether the capture is currently recording.

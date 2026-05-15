@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CapsLockX — Core Trigger Behaviors (2026-05-15)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --fg: #1a1a1a;
+    --muted: #666;
+    --bg: #fafafa;
+    --accent: #0066cc;
+    --border: #ddd;
+    --row-alt: #f4f4f4;
+    --code-bg: #eef1f5;
+    --warn: #b34700;
+  }
+  body {
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    max-width: 1100px;
+    margin: 2em auto;
+    padding: 0 1.5em;
+  }
+  h1 { font-size: 1.8em; margin: 0 0 .2em; }
+  h2 { font-size: 1.25em; margin-top: 2em; border-bottom: 1px solid var(--border); padding-bottom: .3em; }
+  .sub { color: var(--muted); margin-top: 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: .55em .8em;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #f0f3f7;
+    font-weight: 600;
+    font-size: .9em;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  tr:nth-child(even) td { background: var(--row-alt); }
+  td.idx { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); width: 2em; font-weight: 600; }
+  td.seq { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; white-space: nowrap; }
+  code, td.seq {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  td.seq code { background: transparent; padding: 0; }
+  .pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: .78em;
+    font-weight: 600;
+    margin-right: .35em;
+    vertical-align: 1px;
+  }
+  .pill.fn      { background: #e3f2fd; color: #1565c0; }
+  .pill.lock    { background: #f3e5f5; color: #7b1fa2; }
+  .pill.passthrough { background: #e8f5e9; color: #2e7d32; }
+  .pill.native  { background: #fff3e0; color: #ef6c00; }
+  .pill.warn    { background: #ffebee; color: #c62828; }
+  ul.notes { margin: .5em 0; padding-left: 1.4em; }
+  ul.notes li { margin: .25em 0; }
+  .meta {
+    color: var(--muted);
+    font-size: .85em;
+    margin-top: 3em;
+    border-top: 1px solid var(--border);
+    padding-top: .8em;
+  }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>CapsLockX — Core Trigger Behaviors</h1>
+<p class="sub">Specification of all CapsLock &amp; Space key-combination cases. 2026-05-15.</p>
+
+<h2>1. Solo trigger taps</h2>
+<table>
+  <thead><tr>
+    <th class="idx">#</th><th>Input</th><th>Sequence</th><th>Result</th><th>Notes</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="idx">1</td>
+      <td>Space single tap (&lt; 200&nbsp;ms, no other key)</td>
+      <td class="seq">Space↓ → Space↑</td>
+      <td><span class="pill native">native</span> One space character typed.</td>
+      <td>Engine&nbsp;passthrough via <code>key_tap(Space)</code> on key-up.</td>
+    </tr>
+    <tr>
+      <td class="idx">2</td>
+      <td>Space hold &gt; 200&nbsp;ms (no other key)</td>
+      <td class="seq">Space↓ &nbsp;(held)</td>
+      <td><span class="pill native">native</span> Space character emitted, then auto-repeats at the OS key-repeat rate until release. Behaves identically to a normal Space key.</td>
+      <td>200&nbsp;ms timeout closes the chord-detect window; engine then injects <code>key_down(Space)</code> and lets the OS auto-repeat, emitting <code>key_up(Space)</code> on release.</td>
+    </tr>
+    <tr>
+      <td class="idx">3</td>
+      <td>CapsLock single tap (no other key)</td>
+      <td class="seq">CapsLock↓ → CapsLock↑</td>
+      <td><span class="pill native">native</span> OS AlphaShift state toggles.</td>
+      <td>When the hidutil remap is active, the engine routes the tap to <code>IOHIDSetModifierLockState</code> instead of CGEvent (which can't toggle AlphaShift).</td>
+    </tr>
+    <tr>
+      <td class="idx">4</td>
+      <td>CapsLock hold (no other key)</td>
+      <td class="seq">CapsLock↓ &nbsp;(held) → CapsLock↑</td>
+      <td><span class="pill native">native</span> One AlphaShift toggle on release. No auto-repeat.</td>
+      <td>CapsLock has no 200&nbsp;ms timeout; tap and hold behave the same.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Trigger + action key (CLX FN mode)</h2>
+<table>
+  <thead><tr>
+    <th class="idx">#</th><th>Input</th><th>Sequence</th><th>Result</th><th>Notes</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="idx">5</td>
+      <td>Space + action key (HJKL, WASD, V, B, M, Z, 1–9, …)</td>
+      <td class="seq">Space↓ → key↓ → key↑ → Space↑</td>
+      <td><span class="pill fn">FN</span> Action runs (e.g.&nbsp;cursor left for H). No space character emitted on release.</td>
+      <td><code>fn_acted=true</code> suppresses native passthrough on Space↑.</td>
+    </tr>
+    <tr>
+      <td class="idx">6</td>
+      <td>CapsLock + action key</td>
+      <td class="seq">CapsLock↓ → key↓ → key↑ → CapsLock↑</td>
+      <td><span class="pill fn">FN</span> Same as #5. AlphaShift is <em>not</em> toggled.</td>
+      <td>Space and CapsLock are interchangeable as triggers.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Chord — Space + CapsLock (CLX LOCK mode)</h2>
+<table>
+  <thead><tr>
+    <th class="idx">#</th><th>Input</th><th>Sequence</th><th>Result</th><th>Notes</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="idx">7</td>
+      <td>Space then CapsLock</td>
+      <td class="seq">Space↓ → CapsLock↓</td>
+      <td><span class="pill lock">LOCK</span> Enter LOCK mode. AlphaShift unchanged.</td>
+      <td>Chord detected in <code>clx_dn</code>; <code>fn_acted=true</code> prevents either key emitting on release.</td>
+    </tr>
+    <tr>
+      <td class="idx">8</td>
+      <td>CapsLock then Space</td>
+      <td class="seq">CapsLock↓ → Space↓</td>
+      <td><span class="pill lock">LOCK</span> Same as #7 — order doesn't matter.</td>
+      <td>Symmetric chord detection.</td>
+    </tr>
+    <tr>
+      <td class="idx">9</td>
+      <td>Inside LOCK: tap Space or CapsLock alone</td>
+      <td class="seq">Space↑ &nbsp;or&nbsp; CapsLock↑</td>
+      <td><span class="pill native">unlock</span> Exit LOCK mode. AlphaShift unchanged.</td>
+      <td>The unlock path in <code>clx_up</code> takes precedence over native passthrough.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. Modifier + trigger (system shortcuts)</h2>
+<p>Rule: <strong>any modifier + Space bypasses CLX</strong> so OS shortcuts work unchanged.</p>
+<table>
+  <thead><tr>
+    <th class="idx">#</th><th>Input</th><th>Sequence</th><th>Result</th><th>Notes</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="idx">10</td>
+      <td>Shift + Space</td>
+      <td class="seq">Shift↓ → Space↓</td>
+      <td><span class="pill passthrough">bypass</span> OS receives Shift+Space (IME switching on macOS).</td>
+      <td>Down and up both pass through.</td>
+    </tr>
+    <tr>
+      <td class="idx">11</td>
+      <td>Ctrl + Space</td>
+      <td class="seq">Ctrl↓ → Space↓</td>
+      <td><span class="pill passthrough">bypass</span> OS receives Ctrl+Space (IME switching, AHK-compatible).</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="idx">12</td>
+      <td>Cmd + Space</td>
+      <td class="seq">Cmd↓ → Space↓</td>
+      <td><span class="pill passthrough">bypass</span> OS receives Cmd+Space (Spotlight).</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="idx">13</td>
+      <td>Alt + Space</td>
+      <td class="seq">Alt↓ → Space↓</td>
+      <td><span class="pill passthrough">bypass</span> OS receives Alt+Space.</td>
+      <td>Aligned with other modifiers — the rule is uniform.</td>
+    </tr>
+    <tr>
+      <td class="idx">14</td>
+      <td>Modifier + CapsLock</td>
+      <td class="seq">mod↓ → CapsLock↓</td>
+      <td><span class="pill fn">FN</span> Enters CLX FN mode (CapsLock is not bypassed by modifiers).</td>
+      <td>Modifier bypass applies only to Space, where it collides with OS shortcuts.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5. Accidental trigger while typing</h2>
+<table>
+  <thead><tr>
+    <th class="idx">#</th><th>Input</th><th>Sequence</th><th>Result</th><th>Notes</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="idx">15</td>
+      <td>Non-modifier key already held when Space is pressed</td>
+      <td class="seq">A↓ → Space↓</td>
+      <td><span class="pill passthrough">bypass</span> OS receives a normal Space.</td>
+      <td>Protects fast-typing scenarios. Triggered by <code>non_modifier_held</code> check.</td>
+    </tr>
+    <tr>
+      <td class="idx">16</td>
+      <td>Non-modifier key already held when CapsLock is pressed</td>
+      <td class="seq">A↓ → CapsLock↓</td>
+      <td><span class="pill passthrough">bypass</span> OS receives a normal CapsLock (toggles AlphaShift).</td>
+      <td>Same protection for CapsLock.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. Lifecycle &amp; safety</h2>
+<table>
+  <thead><tr>
+    <th class="idx">#</th><th>Event</th><th>Behavior</th><th>Notes</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="idx">17</td>
+      <td>CLX startup</td>
+      <td>If <code>use_capslock</code> is enabled: force AlphaShift OFF via <code>IOHIDSetModifierLockState</code>, then install the hidutil CapsLock → F18 remap.</td>
+      <td>Forcing AlphaShift off prevents a stuck state (user with AlphaShift on couldn't toggle it back once the physical key is remapped).</td>
+    </tr>
+    <tr>
+      <td class="idx">18</td>
+      <td>CLX graceful exit (Quit menu, <code>terminate:</code>, SIGINT, SIGTERM, SIGHUP)</td>
+      <td>hidutil remap is reset via signal handler / atexit hook.</td>
+      <td>Best-effort cleanup. AlphaShift state is left as-is.</td>
+    </tr>
+    <tr>
+      <td class="idx">19</td>
+      <td>CLX killed by SIGKILL (<code>kill -9</code>)</td>
+      <td>Remap persists. Recovery: launch CLX again, or run <code>hidutil property --set '{"UserKeyMapping":[]}'</code> manually.</td>
+      <td>SIGKILL cannot be caught.</td>
+    </tr>
+    <tr>
+      <td class="idx">20</td>
+      <td>CGEventTap disabled by macOS (secure input, password fields, watchdog timeout)</td>
+      <td>Tap is re-enabled automatically; all held keys are released; modules stopped.</td>
+      <td><code>emergency_stop()</code> prevents stuck-key states from AccModel physics.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Invariants</h2>
+<ul class="notes">
+  <li>The OS AlphaShift state changes <strong>only</strong> on a CapsLock single tap (case&nbsp;#3 / #4). Chords, action combinations, and lock/unlock operations never alter it.</li>
+  <li>The Space character is emitted <strong>only</strong> on a Space single tap (case&nbsp;#1) or Space hold &gt; 200&nbsp;ms (case&nbsp;#2). Chords and action combinations suppress it via <code>fn_acted</code>.</li>
+  <li>Modifier + Space (cases&nbsp;#10–13) always bypasses, regardless of CLX state. A locked CLX session does not consume system shortcuts.</li>
+  <li>CGEvent-injected keystrokes are tagged with <code>SELF_INJECT_TAG</code> and ignored by the hook, preventing feedback loops.</li>
+</ul>
+
+<p class="meta">
+  Source of truth: <code>rs/core/src/engine.rs</code> (state machine), <code>rs/adapters/macos/src/output.rs</code> (key injection), <code>rs/adapters/macos/src/capslock_remap.rs</code> (hidutil + IOKit).
+  Last updated 2026-05-15.
+</p>
+
+</body>
+</html>

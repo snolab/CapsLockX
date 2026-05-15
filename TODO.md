@@ -1,3 +1,12 @@
+## NEXT
+
+- [x] otoji-tray: replace text title with SF Symbol mic icon
+- [x] otoji listen: idle CPU gate before RNNoise (76% → ~0%)
+- [ ] otoji-tray: extract `objc-helpers.rs` shared with CLX `tray.rs` (~150 lines duplicated)
+- [ ] CLX↔otoji-tray state channel: drop CLX's own tray, otoji-tray reflects CLX mode/PTT via state file
+
+---
+
 ### 发展路线 🛰️ RoadMap
 
 CapsLockX 的核心理念是：简化系统操作逻辑，提升操作效率，且不与原有习惯键位冲突。

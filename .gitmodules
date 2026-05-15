@@ -1,3 +1,6 @@
 [submodule "lib/otoji"]
 	path = lib/otoji
 	url = https://github.com/snomiao/otoji.git
+[submodule "lib/capslockx.com"]
+	path = lib/capslockx.com
+	url = https://github.com/snomiao/capslockx.com.git

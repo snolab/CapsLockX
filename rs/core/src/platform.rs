@@ -200,6 +200,13 @@ pub trait Platform: Send + Sync + 'static {
     fn hide_voice_overlay(&self) {}
     fn update_voice_overlay(&self, _mic_levels: &[f32], _mic_vad: bool, _sys_levels: &[f32], _sys_vad: bool) {}
     fn update_voice_subtitle(&self, _text: &str) {}
+    /// Update only the translation lane of the voice overlay (line 2).
+    /// Independent from `update_voice_subtitle` — partial/final transcripts
+    /// don't touch this, and a new transcript doesn't clear the last
+    /// completed translation. The translation stays sticky until a new one
+    /// arrives, so the user can keep reading it while speaking the next
+    /// utterance. Pass empty `&str` to explicitly clear.
+    fn update_voice_subtitle_translation(&self, _translation: &str) {}
     /// Update the menu bar tray icon to reflect PTT / voice state.
     fn set_ptt_tray_state(&self, _state: PttTrayState) {}
 
@@ -218,6 +225,11 @@ pub trait Platform: Send + Sync + 'static {
     /// Show a prompt input dialog. Returns the user's input, or None if cancelled.
     /// `prefill` is shown in the text field (e.g., clipboard content).
     fn show_prompt_input(&self, _title: &str, _message: &str, _prefill: &str) -> Option<String> { None }
+
+    // ── Keyboard layout HUD (optional, default = no-op) ────────────────────
+
+    /// Toggle the keyboard layout HUD overlay (shows CLX hotkey map).
+    fn toggle_keyboard_layout_hud(&self) {}
 
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 
