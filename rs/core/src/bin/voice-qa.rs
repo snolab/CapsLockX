@@ -1,6 +1,12 @@
 //! Voice-input regression QA: synthesize known text with macOS `say`,
-//! resample to 16 kHz mono with `afconvert`, run through `otoji
-//! transcribe`, and compute CER/WER vs the reference.
+//! resample to 16 kHz mono with `afconvert`, run it through four STT
+//! paths, and compute CER/WER vs the reference.
+//!
+//! Paths:
+//!   A — batch `otoji transcribe` (SenseVoice local)
+//!   B — streaming `otoji listen --plain -` (same engine, different wrapper)
+//!   C — cloud STT via OpenRouter audio (Gemini 2.5 Flash)
+//!   D — Path A output polished via OpenRouter chat (lib/otoji XML-tag prompt)
 //!
 //! TTS is intentionally synthetic — the numbers measure STT pipeline
 //! regressions, NOT real-world mic accuracy. See the "Caveats" header
@@ -9,8 +15,9 @@
 //! Run: `cargo run -p capslockx-core --bin voice-qa --release`
 
 use serde_json::Value;
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::time::Instant;
 
 struct Sample {
@@ -33,22 +40,28 @@ const CORPUS: &[Sample] = &[
     Sample { lang: "zh", voice: "Tingting", text: "人工智能技术正在改变许多行业。" },
 ];
 
+struct PathResult {
+    hypothesis: String,
+    cer: f64,
+    /// Computed but not surfaced in the markdown table to keep it narrow.
+    /// CER is the meaningful metric for CJK and a strong signal for en too.
+    #[allow(dead_code)]
+    wer: Option<f64>,
+    elapsed_ms: u128,
+}
+
 struct Row {
     lang: &'static str,
     reference: String,
-    hypothesis: String,
-    polished: Option<String>,
     audio_secs: f64,
+    /// 0 for cache hits — kept on the struct so a future report variant can
+    /// surface it without rerunning the harness.
+    #[allow(dead_code)]
     tts_ms: u128,
-    stt_ms: u128,
-    polish_ms: u128,
-    cer_raw: f64,
-    cer_polish: Option<f64>,
-    /// WER is None for CJK rows — whitespace tokenization gives a single
-    /// "word" so any diff blows up to 100% noise. CER is the meaningful
-    /// metric for those languages.
-    wer_raw: Option<f64>,
-    wer_polish: Option<f64>,
+    path_a: PathResult,                // batch otoji transcribe
+    path_b: Option<PathResult>,        // streaming otoji listen
+    path_c: Option<PathResult>,        // cloud (OpenRouter audio)
+    path_d: Option<PathResult>,        // polish on top of A (OpenRouter chat)
 }
 
 fn main() {
@@ -67,17 +80,15 @@ fn main() {
         );
         match run_sample(s, &cache) {
             Ok(row) => {
-                let polish_str = match row.cer_polish {
-                    Some(c) => format!(" → polish cer={:.1}% ({}ms)", c * 100.0, row.polish_ms),
-                    None => String::new(),
-                };
+                let fmt = |p: &PathResult| format!("{:.1}% ({}ms)", p.cer * 100.0, p.elapsed_ms);
+                let cell = |p: &Option<PathResult>| p.as_ref().map(fmt).unwrap_or_else(|| "—".into());
                 eprintln!(
-                    "    raw cer={:.1}% wer={} audio={:.1}s stt={}ms{}",
-                    row.cer_raw * 100.0,
-                    row.wer_raw.map(|w| format!("{:.1}%", w * 100.0)).unwrap_or_else(|| "—".into()),
+                    "    audio={:.1}s  A={}  B={}  C={}  D={}",
                     row.audio_secs,
-                    row.stt_ms,
-                    polish_str,
+                    fmt(&row.path_a),
+                    cell(&row.path_b),
+                    cell(&row.path_c),
+                    cell(&row.path_d),
                 );
                 rows.push(row);
             }
@@ -117,15 +128,21 @@ fn run_sample(s: &Sample, cache: &Path) -> Result<Row, String> {
     };
 
     let audio_secs = wav_duration_secs(&wav).unwrap_or(0.0);
+    let ref_norm = normalize(s.text);
+    let cjk = has_cjk(s.text);
+    let score_path = |hyp: &str, elapsed_ms: u128| {
+        let (cer, wer) = score(&ref_norm, hyp, cjk);
+        PathResult { hypothesis: hyp.to_string(), cer, wer, elapsed_ms }
+    };
 
-    // STT via subprocess. `otoji transcribe` prints one JSON line on stdout.
+    // ── Path A: batch otoji transcribe ─────────────────────────────
     let t0 = Instant::now();
     let out = Command::new("otoji")
         .arg("transcribe")
         .arg(&wav)
         .output()
-        .map_err(|e| format!("spawn otoji: {e}"))?;
-    let stt_ms = t0.elapsed().as_millis();
+        .map_err(|e| format!("spawn otoji transcribe: {e}"))?;
+    let path_a_ms = t0.elapsed().as_millis();
     if !out.status.success() {
         return Err(format!(
             "otoji transcribe failed: {}",
@@ -134,48 +151,55 @@ fn run_sample(s: &Sample, cache: &Path) -> Result<Row, String> {
     }
     let v: Value = serde_json::from_slice(&out.stdout)
         .map_err(|e| format!("parse json: {e} — raw: {}", String::from_utf8_lossy(&out.stdout)))?;
-    let hyp = v
-        .get("text")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
+    let hyp_a = v.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let path_a = score_path(&hyp_a, path_a_ms);
 
-    let ref_norm = normalize(s.text);
-    let (cer_raw, wer_raw) = score(&ref_norm, &hyp, has_cjk(s.text));
-
-    // Optional polish pass via OpenRouter (cheap Gemini model). Skip if no
-    // OPENROUTER_KEY in env — the harness still produces a useful Path A run.
-    let mut polished: Option<String> = None;
-    let mut cer_polish: Option<f64> = None;
-    let mut wer_polish: Option<f64> = None;
-    let mut polish_ms: u128 = 0;
-    if let Ok(key) = std::env::var("OPENROUTER_KEY").or_else(|_| std::env::var("OPENROUTER_API_KEY")) {
-        let t0 = Instant::now();
-        match polish_via_openrouter(&hyp, &key) {
-            Ok(p) => {
-                polish_ms = t0.elapsed().as_millis();
-                let (c, w) = score(&ref_norm, &p, has_cjk(s.text));
-                polished = Some(p);
-                cer_polish = Some(c);
-                wer_polish = w;
-            }
-            Err(e) => eprintln!("    polish skipped: {e}"),
+    // ── Path B: streaming otoji listen --plain - ────────────────────
+    let path_b = match transcribe_via_listen(&wav) {
+        Ok((hyp, ms)) => Some(score_path(&hyp, ms)),
+        Err(e) => {
+            eprintln!("    path B skipped: {e}");
+            None
         }
-    }
+    };
+
+    // ── Path C: cloud STT via OpenRouter audio (Gemini 2.5 Flash) ───
+    let key = std::env::var("OPENROUTER_KEY").or_else(|_| std::env::var("OPENROUTER_API_KEY")).ok();
+    let path_c = if let Some(ref k) = key {
+        match transcribe_via_openrouter(&wav, k) {
+            Ok((hyp, ms)) => Some(score_path(&hyp, ms)),
+            Err(e) => {
+                eprintln!("    path C skipped: {e}");
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // ── Path D: polish Path A through OpenRouter chat ───────────────
+    let path_d = if let Some(ref k) = key {
+        let t0 = Instant::now();
+        match polish_via_openrouter(&hyp_a, k) {
+            Ok(p) => Some(score_path(&p, t0.elapsed().as_millis())),
+            Err(e) => {
+                eprintln!("    path D skipped: {e}");
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     Ok(Row {
         lang: s.lang,
         reference: s.text.to_string(),
-        hypothesis: hyp,
-        polished,
         audio_secs,
         tts_ms,
-        stt_ms,
-        polish_ms,
-        cer_raw,
-        cer_polish,
-        wer_raw,
-        wer_polish,
+        path_a,
+        path_b,
+        path_c,
+        path_d,
     })
 }
 
@@ -192,6 +216,91 @@ fn score(ref_norm: &str, hyp: &str, cjk: bool) -> (f64, Option<f64>) {
         Some(word_error_rate(&ref_words, &hyp_words))
     };
     (cer, wer)
+}
+
+/// Path B: feed the WAV to `otoji listen --plain -` over stdin, parse
+/// the JSON-lines AsrEvents from stdout, return the concatenated `final`
+/// text. Same engine as Path A but exercises the streaming wrapper +
+/// VAD chunking that the live mic path uses.
+fn transcribe_via_listen(wav: &Path) -> Result<(String, u128), String> {
+    let wav_bytes = std::fs::read(wav).map_err(|e| format!("read wav: {e}"))?;
+    let t0 = Instant::now();
+    let mut child = Command::new("otoji")
+        .args(["listen", "--plain", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("spawn otoji listen: {e}"))?;
+
+    // Write the cached WAV (header + PCM) and close stdin so listen drains
+    // the buffer, emits `final`, and exits cleanly.
+    {
+        let mut stdin = child.stdin.take().ok_or("listen: no stdin")?;
+        stdin
+            .write_all(&wav_bytes)
+            .map_err(|e| format!("write wav to listen: {e}"))?;
+    }
+
+    let stdout = child.stdout.take().ok_or("listen: no stdout")?;
+    let mut finals: Vec<String> = Vec::new();
+    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let v: Value = match serde_json::from_str(&line) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if v.get("type").and_then(|t| t.as_str()) == Some("final") {
+            if let Some(t) = v.get("text").and_then(|t| t.as_str()) {
+                finals.push(t.to_string());
+            }
+        }
+    }
+    let _ = child.wait();
+    Ok((finals.join(" ").trim().to_string(), t0.elapsed().as_millis()))
+}
+
+/// Path C: cloud STT via OpenRouter audio (chat completions). Sends the
+/// cached WAV as base64 in an `input_audio` content part to a model that
+/// supports audio (default `google/gemini-2.5-flash`). The user could
+/// have a direct Google AI Studio key, but OpenRouter is what we already
+/// require for Path D, so reuse the same env var.
+fn transcribe_via_openrouter(wav: &Path, key: &str) -> Result<(String, u128), String> {
+    let wav_bytes = std::fs::read(wav).map_err(|e| format!("read wav: {e}"))?;
+    let b64 = base64_encode(&wav_bytes);
+    let model = std::env::var("VOICE_QA_CLOUD_MODEL")
+        .unwrap_or_else(|_| "google/gemini-2.5-flash".into());
+    let body = serde_json::json!({
+        "model": model,
+        "temperature": 0.0,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Transcribe this audio exactly as spoken. Output ONLY the transcription text, no explanations, no surrounding quotes. Keep the original language."},
+                {"type": "input_audio", "input_audio": {"data": b64, "format": "wav"}}
+            ]
+        }]
+    });
+    let t0 = Instant::now();
+    let resp = ureq::post("https://openrouter.ai/api/v1/chat/completions")
+        .set("Authorization", &format!("Bearer {key}"))
+        .set("Content-Type", "application/json")
+        .send_string(&body.to_string())
+        .map_err(|e| format!("openrouter audio http: {e}"))?;
+    let raw = resp.into_string().map_err(|e| format!("openrouter audio read: {e}"))?;
+    let elapsed_ms = t0.elapsed().as_millis();
+    let v: Value = serde_json::from_str(&raw)
+        .map_err(|e| format!("openrouter audio json: {e} — raw: {raw}"))?;
+    let text = v
+        .pointer("/choices/0/message/content")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| format!("openrouter audio: no content in response: {v}"))?
+        .trim()
+        .trim_matches(|c| c == '"' || c == '\'' || c == '`')
+        .to_string();
+    Ok((text, elapsed_ms))
 }
 
 /// Polish raw ASR text via OpenRouter chat completions. Uses the same
@@ -264,112 +373,133 @@ fn render_report(rows: &[Row]) -> String {
     let mut out = String::new();
     let polish_model = std::env::var("VOICE_QA_POLISH_MODEL")
         .unwrap_or_else(|_| "google/gemini-2.5-flash".into());
-    let polish_active = rows.iter().any(|r| r.cer_polish.is_some());
-    out.push_str("# Voice-QA: TTS-as-ground-truth\n\n");
-    out.push_str("## Caveats\n");
+    let cloud_model = std::env::var("VOICE_QA_CLOUD_MODEL")
+        .unwrap_or_else(|_| "google/gemini-2.5-flash".into());
+    let b_active = rows.iter().any(|r| r.path_b.is_some());
+    let c_active = rows.iter().any(|r| r.path_c.is_some());
+    let d_active = rows.iter().any(|r| r.path_d.is_some());
+
+    out.push_str("# Voice-QA: TTS-as-ground-truth (4 STT paths)\n\n");
+    out.push_str("## Paths\n");
+    out.push_str("- **A** — `otoji transcribe` (batch, local SenseVoice)\n");
+    out.push_str("- **B** — `otoji listen --plain -` (streaming pipe; same engine as A but exercises VAD/chunking wrapper)\n");
+    out.push_str(&format!("- **C** — OpenRouter audio (`{cloud_model}`, cloud STT)\n"));
+    out.push_str(&format!("- **D** — Path A → OpenRouter chat (`{polish_model}`) using lib/otoji's XML-tag polish prompt\n"));
+    out.push_str("\n## Caveats\n");
     out.push_str("- TTS audio is synthetic and clean. These numbers are systematically optimistic vs. real mic input.\n");
     out.push_str("- Intended for **regression testing** (catch when an STT pipeline change breaks something), not as a real-world accuracy benchmark.\n");
-    out.push_str("- TTS engine: macOS `say` (per-language voice). STT engine: `otoji transcribe` (sherpa SenseVoice by default).\n");
-    if polish_active {
-        out.push_str(&format!(
-            "- Polish path: OpenRouter `{polish_model}` with the lib/otoji XML-tag prompt shape (one-shot; no mlx/length gates).\n"
-        ));
-    } else {
-        out.push_str("- Polish path skipped (no `OPENROUTER_KEY` in env).\n");
+    out.push_str("- TTS engine: macOS `say` (per-language voice).\n");
+    out.push_str("- Path D approximates the live polish chain. It runs the LLM polish stage only; mlx/length gates from `stt_polish_chain` are NOT replicated.\n");
+    if !c_active || !d_active {
+        out.push_str("- Paths C/D require `OPENROUTER_KEY` in env; skipped when missing.\n");
     }
+
     out.push_str("\n## Per-sample results\n\n");
-
-    if polish_active {
-        out.push_str("| # | lang | reference | raw hypothesis | polished | CER raw | CER polish | WER raw | WER polish | audio(s) | stt(ms) | polish(ms) |\n");
-        out.push_str("|--:|------|-----------|----------------|----------|--------:|-----------:|--------:|-----------:|---------:|--------:|-----------:|\n");
-        for (i, r) in rows.iter().enumerate() {
-            let polished_cell = r.polished.as_deref().map(|s| md_escape(&truncate(s, 50))).unwrap_or_else(|| "—".into());
-            out.push_str(&format!(
-                "| {} | {} | {} | {} | {} | {:.1}% | {} | {} | {} | {:.1} | {} | {} |\n",
-                i + 1, r.lang,
-                md_escape(&truncate(&r.reference, 50)),
-                md_escape(&truncate(&r.hypothesis, 50)),
-                polished_cell,
-                r.cer_raw * 100.0,
-                r.cer_polish.map(|c| format!("{:.1}%", c * 100.0)).unwrap_or_else(|| "—".into()),
-                r.wer_raw.map(|w| format!("{:.1}%", w * 100.0)).unwrap_or_else(|| "—".into()),
-                r.wer_polish.map(|w| format!("{:.1}%", w * 100.0)).unwrap_or_else(|| "—".into()),
-                r.audio_secs, r.stt_ms, r.polish_ms,
-            ));
-        }
-    } else {
-        out.push_str("| # | lang | reference | hypothesis | CER | WER | audio(s) | stt(ms) |\n");
-        out.push_str("|--:|------|-----------|------------|----:|----:|---------:|--------:|\n");
-        for (i, r) in rows.iter().enumerate() {
-            out.push_str(&format!(
-                "| {} | {} | {} | {} | {:.1}% | {} | {:.1} | {} |\n",
-                i + 1, r.lang,
-                md_escape(&truncate(&r.reference, 50)),
-                md_escape(&truncate(&r.hypothesis, 50)),
-                r.cer_raw * 100.0,
-                r.wer_raw.map(|w| format!("{:.1}%", w * 100.0)).unwrap_or_else(|| "—".into()),
-                r.audio_secs, r.stt_ms,
-            ));
-        }
+    out.push_str("| # | lang | reference | A hyp | A CER | B CER | C CER | D CER | audio(s) | A ms | B ms | C ms | D ms |\n");
+    out.push_str("|--:|------|-----------|-------|------:|------:|------:|------:|---------:|-----:|-----:|-----:|-----:|\n");
+    let cer_cell = |p: &Option<PathResult>| p.as_ref().map(|x| format!("{:.1}%", x.cer * 100.0)).unwrap_or_else(|| "—".into());
+    let ms_cell = |p: &Option<PathResult>| p.as_ref().map(|x| x.elapsed_ms.to_string()).unwrap_or_else(|| "—".into());
+    for (i, r) in rows.iter().enumerate() {
+        out.push_str(&format!(
+            "| {} | {} | {} | {} | {:.1}% | {} | {} | {} | {:.1} | {} | {} | {} | {} |\n",
+            i + 1, r.lang,
+            md_escape(&truncate(&r.reference, 48)),
+            md_escape(&truncate(&r.path_a.hypothesis, 48)),
+            r.path_a.cer * 100.0,
+            cer_cell(&r.path_b),
+            cer_cell(&r.path_c),
+            cer_cell(&r.path_d),
+            r.audio_secs,
+            r.path_a.elapsed_ms,
+            ms_cell(&r.path_b),
+            ms_cell(&r.path_c),
+            ms_cell(&r.path_d),
+        ));
     }
 
-    out.push_str("\n## Per-language summary\n\n");
-    if polish_active {
-        out.push_str("| lang | n | CER raw | CER polish | Δ | WER raw | WER polish | Δ |\n");
-        out.push_str("|------|--:|--------:|-----------:|--:|--------:|-----------:|--:|\n");
-    } else {
-        out.push_str("| lang | n | mean CER | mean WER | total stt(ms) |\n");
-        out.push_str("|------|--:|---------:|---------:|--------------:|\n");
+    // Show non-A hypotheses only when they differ from A — saves vertical space.
+    out.push_str("\n## Non-A hypotheses (where they diverge from Path A)\n\n");
+    out.push_str("| # | path | hypothesis |\n");
+    out.push_str("|--:|------|------------|\n");
+    let mut any_div = false;
+    for (i, r) in rows.iter().enumerate() {
+        for (label, p) in [("B", &r.path_b), ("C", &r.path_c), ("D", &r.path_d)] {
+            if let Some(p) = p {
+                if p.hypothesis.trim() != r.path_a.hypothesis.trim() {
+                    out.push_str(&format!(
+                        "| {} | {} | {} |\n",
+                        i + 1, label, md_escape(&truncate(&p.hypothesis, 90))
+                    ));
+                    any_div = true;
+                }
+            }
+        }
     }
+    if !any_div {
+        out.push_str("| — | — | _(all paths converged on Path A's hypothesis)_ |\n");
+    }
+
+    out.push_str("\n## Per-language summary (mean CER)\n\n");
+    out.push_str("| lang | n | A | B | C | D |\n");
+    out.push_str("|------|--:|--:|--:|--:|--:|\n");
     let mut langs: Vec<&str> = rows.iter().map(|r| r.lang).collect();
     langs.sort();
     langs.dedup();
-    let summarize_wer = |subset: &[&Row], polished: bool| -> String {
-        let vals: Vec<f64> = subset.iter().filter_map(|r| if polished { r.wer_polish } else { r.wer_raw }).collect();
+    let mean_cer = |subset: &[&Row], pick: fn(&Row) -> Option<f64>| -> String {
+        let vals: Vec<f64> = subset.iter().filter_map(|r| pick(r)).collect();
         if vals.is_empty() { "—".into() }
         else { format!("{:.1}%", vals.iter().sum::<f64>() / vals.len() as f64 * 100.0) }
     };
-    let summarize_cer = |subset: &[&Row], polished: bool| -> Option<f64> {
-        let vals: Vec<f64> = if polished {
-            subset.iter().filter_map(|r| r.cer_polish).collect()
-        } else {
-            subset.iter().map(|r| r.cer_raw).collect()
-        };
-        if vals.is_empty() { None } else { Some(vals.iter().sum::<f64>() / vals.len() as f64) }
-    };
-    let mut emit_row = |label: String, subset: &[&Row]| {
-        let n = subset.len();
-        let cer_raw = summarize_cer(subset, false).unwrap_or(0.0);
-        if polish_active {
-            let cer_p = summarize_cer(subset, true);
-            let wer_r = summarize_wer(subset, false);
-            let wer_p = summarize_wer(subset, true);
-            let delta_cer = cer_p.map(|c| format!("{:+.1}", (c - cer_raw) * 100.0)).unwrap_or_else(|| "—".into());
-            out.push_str(&format!(
-                "| {} | {} | {:.1}% | {} | {} | {} | {} | — |\n",
-                label, n,
-                cer_raw * 100.0,
-                cer_p.map(|c| format!("{:.1}%", c * 100.0)).unwrap_or_else(|| "—".into()),
-                delta_cer,
-                wer_r, wer_p,
-            ));
-        } else {
-            let stt_total: u128 = subset.iter().map(|r| r.stt_ms).sum();
-            out.push_str(&format!(
-                "| {} | {} | {:.1}% | {} | {} |\n",
-                label, n, cer_raw * 100.0, summarize_wer(subset, false), stt_total
-            ));
-        }
-    };
+    let pick_a = |r: &Row| Some(r.path_a.cer);
+    let pick_b = |r: &Row| r.path_b.as_ref().map(|p| p.cer);
+    let pick_c = |r: &Row| r.path_c.as_ref().map(|p| p.cer);
+    let pick_d = |r: &Row| r.path_d.as_ref().map(|p| p.cer);
     for lang in &langs {
         let subset: Vec<&Row> = rows.iter().filter(|r| &r.lang == lang).collect();
-        if !subset.is_empty() { emit_row((*lang).to_string(), &subset); }
+        let n = subset.len();
+        if n == 0 { continue; }
+        out.push_str(&format!(
+            "| {} | {} | {} | {} | {} | {} |\n",
+            lang, n,
+            mean_cer(&subset, pick_a),
+            mean_cer(&subset, pick_b),
+            mean_cer(&subset, pick_c),
+            mean_cer(&subset, pick_d),
+        ));
     }
     if !rows.is_empty() {
         let all: Vec<&Row> = rows.iter().collect();
-        emit_row("**all**".to_string(), &all);
+        out.push_str(&format!(
+            "| **all** | {} | **{}** | **{}** | **{}** | **{}** |\n",
+            rows.len(),
+            mean_cer(&all, pick_a),
+            mean_cer(&all, pick_b),
+            mean_cer(&all, pick_c),
+            mean_cer(&all, pick_d),
+        ));
     }
-    out.push_str("\n_WER is suppressed for CJK rows (no inter-word whitespace makes it noise); use CER._\n");
+
+    // Median/mean latency per path. Useful for spotting wall-clock regressions.
+    out.push_str("\n## Per-path latency (mean per sample)\n\n");
+    out.push_str("| path | n | mean ms |\n");
+    out.push_str("|------|--:|--------:|\n");
+    let mean_ms = |xs: Vec<u128>| -> String {
+        if xs.is_empty() { "—".into() }
+        else { format!("{}", xs.iter().sum::<u128>() / xs.len() as u128) }
+    };
+    out.push_str(&format!("| A | {} | {} |\n", rows.len(), mean_ms(rows.iter().map(|r| r.path_a.elapsed_ms).collect())));
+    out.push_str(&format!("| B | {} | {} |\n",
+        rows.iter().filter(|r| r.path_b.is_some()).count(),
+        mean_ms(rows.iter().filter_map(|r| r.path_b.as_ref().map(|p| p.elapsed_ms)).collect())));
+    out.push_str(&format!("| C | {} | {} |\n",
+        rows.iter().filter(|r| r.path_c.is_some()).count(),
+        mean_ms(rows.iter().filter_map(|r| r.path_c.as_ref().map(|p| p.elapsed_ms)).collect())));
+    out.push_str(&format!("| D | {} | {} |\n",
+        rows.iter().filter(|r| r.path_d.is_some()).count(),
+        mean_ms(rows.iter().filter_map(|r| r.path_d.as_ref().map(|p| p.elapsed_ms)).collect())));
+
+    let _ = b_active;
+    out.push_str("\n_WER is computed but omitted from the report; CER is the meaningful metric here, especially for CJK rows where whitespace tokenization is degenerate. WER values are still printed to stderr at run time._\n");
     out
 }
 
@@ -427,6 +557,24 @@ fn wav_duration_secs(p: &Path) -> Option<f64> {
         return None;
     }
     Some(data_len as f64 / bytes_per_sample as f64 / sample_rate as f64)
+}
+
+/// Minimal base64 encoder (RFC 4648, no line wrap). Copied from
+/// cloud_stt.rs to avoid pulling in the `base64` crate.
+fn base64_encode(data: &[u8]) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+        let triple = (b0 << 16) | (b1 << 8) | b2;
+        out.push(CHARS[((triple >> 18) & 0x3F) as usize] as char);
+        out.push(CHARS[((triple >> 12) & 0x3F) as usize] as char);
+        out.push(if chunk.len() > 1 { CHARS[((triple >> 6) & 0x3F) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 2 { CHARS[(triple & 0x3F) as usize] as char } else { '=' });
+    }
+    out
 }
 
 fn short_hash(s: &str) -> String {
