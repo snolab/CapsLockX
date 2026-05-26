@@ -42,6 +42,13 @@ name = "voice-test"
 path = "src/bin/voice-test.rs"
 required-features = ["stt"]
 
+# Voice QA harness: TTS-as-ground-truth regression test. No required-features —
+# shells out to system `say` and external `otoji` binary, so it builds cleanly
+# in a stripped no-default-features environment.
+[[bin]]
+name = "voice-qa"
+path = "src/bin/voice-qa.rs"
+
 [dependencies]
 once_cell    = "1.19"
 parking_lot  = "0.12"
