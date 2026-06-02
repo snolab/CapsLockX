@@ -1466,13 +1466,16 @@ impl Platform for MacPlatform {
 
             match mode {
                 ArrangeMode::Stacked => {
+                    // Cascade the top-left corner as before, but snap every
+                    // window's RIGHT edge to the display's right edge — so
+                    // width shrinks per step instead of staying fixed.
                     let dx = 72.0_f64.min(aw / n as f64);
                     let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
-                    let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
                     let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
                     for (k, win) in windows.iter().enumerate() {
                         let x = ax + dx * k as f64;
                         let y = ay + dy * k as f64;
+                        let w = (ax + aw) - x; // right edge pinned to display right edge
                         frames.push((*win, x, y, w, h));
                     }
                 }
