@@ -34,6 +34,8 @@ MODEL_ALIASES = {
     "2024":      "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
     "2025":      "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2025-09-09",
     "nano-int8": "sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17",
+    "whisper-turbo":    "sherpa-onnx-whisper-turbo",
+    "whisper-large-v3": "sherpa-onnx-whisper-large-v3",
 }
 DEFAULT_MODELS = ["int8-2024", "int8-2025", "2024"]
 
@@ -59,10 +61,14 @@ def load_ptt_segments(limit: int, kinds: set[str]) -> list[dict]:
 
 
 def transcribe(wav: str, model_dir: Path) -> str:
+    # OTOJI_REBUILDING=1 suppresses otoji's "source changed, rebuilding…"
+    # self-recompile (main.rs guard) — otherwise editing the otoji source makes
+    # every invocation rebuild and hang. Mirrors how CapsLockX spawns otoji.
+    env = {**os.environ, "OTOJI_REBUILDING": "1", "OTOJI_RELAUNCHED": "1"}
     try:
         out = subprocess.run(
             ["otoji", "transcribe", wav, "--model", str(model_dir)],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=120, env=env,
         )
     except (subprocess.TimeoutExpired, FileNotFoundError) as e:
         return f"<error: {e}>"

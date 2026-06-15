@@ -245,6 +245,23 @@ fn otoji_binary_path() -> Option<std::path::PathBuf> {
     None
 }
 
+/// Resolve the whisper.cpp ggml model used for the PTT upgrade pass.
+/// `CLX_PTT_WHISPER_MODEL` overrides (set it empty to disable); otherwise auto-
+/// detect the Homebrew whisper.cpp turbo model. Returns `None` (feature off) if
+/// nothing usable is found.
+fn resolve_whisper_upgrade_model() -> Option<String> {
+    if let Ok(m) = std::env::var("CLX_PTT_WHISPER_MODEL") {
+        let m = m.trim().to_string();
+        return if m.is_empty() { None } else { Some(m) };
+    }
+    const DEFAULT_MODEL: &str = "/opt/homebrew/share/whisper-cpp/ggml-large-v3-turbo-q5_0.bin";
+    if std::path::Path::new(DEFAULT_MODEL).exists() {
+        Some(DEFAULT_MODEL.to_string())
+    } else {
+        None
+    }
+}
+
 /// Fingerprint the on-disk `otoji` binary as `(mtime_secs, size)`. Two spawns
 /// of the same binary share a fingerprint; a rebuild changes it. `None` if the
 /// binary can't be located or stat'd.
@@ -466,6 +483,16 @@ impl OtojiBackend {
             .stdin(Stdio::null()) // otoji opens the mic itself; no audio piped in
             .env("OTOJI_RELAUNCHED", "1")
             .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
+
+        // PTT whisper upgrade: SenseVoice streams live, then on release otoji
+        // re-transcribes the held segment with whisper.cpp and rewrites the text
+        // (more accurate, esp. English). Pass the ggml model path through to
+        // otoji; it falls back to the raw SenseVoice text if anything fails.
+        // Override with CLX_PTT_WHISPER_MODEL; otherwise auto-detect the common
+        // Homebrew whisper.cpp turbo model. Empty/missing → feature off.
+        if let Some(model) = resolve_whisper_upgrade_model() {
+            cmd.env("OTOJI_PTT_WHISPER_MODEL", model);
+        }
 
         // On Windows, prevent a visible CMD window from flashing.
         #[cfg(target_os = "windows")]
