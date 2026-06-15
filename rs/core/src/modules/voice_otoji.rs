@@ -346,18 +346,30 @@ impl OtojiBackend {
         let ctx_path = super::voice_ptt::ptt_context_file_path();
         let mut args: Vec<String> = vec![
             "listen".into(), "--plain".into(),
-            // "openai" route goes through OpenAiPolisher which honors the
-            // OTOJI_POLISH_BASE_URL / _API_KEY / _MODEL env vars. Default
-            // in .env.local points to Cloudflare Workers AI (edge inference,
-            // ~200-500ms TTFB). Falls back to Gemini if those env vars are
-            // unset thanks to `resolve_polisher`'s "auto" chain.
-            "--ptt-polish".into(),
-            std::env::var("CLX_PTT_POLISH_PROVIDER").unwrap_or_else(|_| "openai".into()),
             // Gemini handles multilingual (en/zh/ja) — "auto" would pick Piper
             // which is English-only and mangles CJK text.
             "--ptt-tts".into(), "gemini".into(),
             "--ptt-context-file".into(), ctx_path,
         ];
+
+        // PTT polish provider. A value of none/off/raw/disabled/"" omits the
+        // flag entirely, so otoji returns the raw SenseVoice transcript with no
+        // LLM post-processing. Otherwise the "openai" route goes through
+        // OpenAiPolisher (OTOJI_POLISH_BASE_URL / _API_KEY / _MODEL env vars;
+        // default = Cloudflare Workers AI, falling back to Gemini via the
+        // "auto" chain in resolve_polisher).
+        let polish_provider =
+            std::env::var("CLX_PTT_POLISH_PROVIDER").unwrap_or_else(|_| "openai".into());
+        let polish_disabled = matches!(
+            polish_provider.trim().to_ascii_lowercase().as_str(),
+            "" | "none" | "off" | "raw" | "disabled" | "false"
+        );
+        if !polish_disabled {
+            args.push("--ptt-polish".into());
+            args.push(polish_provider);
+        } else {
+            eprintln!("[CLX] voice-otoji: PTT polish disabled (provider='{}')", polish_provider);
+        }
         // Translation (Phase 1: env-driven).
         // CLX_TRANSLATE_TO: target language BCP-47 code (e.g. "en"). Empty = off.
         // CLX_TRANSLATE_TTS_SOURCE: "original" or "translated" (default original).
