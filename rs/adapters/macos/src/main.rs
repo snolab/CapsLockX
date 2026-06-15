@@ -150,6 +150,15 @@ fn main() {
         let _ = std::process::Command::new("sh")
             .args(["-c", "pkill -9 -f 'clx-prompt' 2>/dev/null"])
             .status();
+
+        // Reap orphaned `otoji listen` backends from a previous clx instance.
+        // With startup pre-warm they no longer get killed on clx exit (the
+        // child outlives its parent's kill -9), so without this each restart
+        // would leak another mic-open otoji process. The fresh instance
+        // pre-warms its own.
+        let _ = std::process::Command::new("sh")
+            .args(["-c", "pkill -9 -f 'otoji listen' 2>/dev/null"])
+            .status();
     }
 
     // Tee stderr to /tmp/clx-debug.log (truncated on each start) so the log

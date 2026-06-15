@@ -245,6 +245,16 @@ fn otoji_binary_path() -> Option<std::path::PathBuf> {
     None
 }
 
+/// Whether to pre-warm otoji at startup (spawn early in standby so the first
+/// PTT is instant). Default on; disable with `CLX_PTT_PREWARM=0`. Pre-warm
+/// keeps the mic open from launch (privacy tradeoff the user opted into).
+pub fn prewarm_enabled() -> bool {
+    !matches!(
+        std::env::var("CLX_PTT_PREWARM").ok().as_deref(),
+        Some("0") | Some("false") | Some("off") | Some("")
+    )
+}
+
 /// Resolve the whisper.cpp ggml model used for the PTT upgrade pass.
 /// `CLX_PTT_WHISPER_MODEL` overrides (set it empty to disable); otherwise auto-
 /// detect the Homebrew whisper.cpp turbo model. Returns `None` (feature off) if
@@ -492,6 +502,13 @@ impl OtojiBackend {
         // Homebrew whisper.cpp turbo model. Empty/missing → feature off.
         if let Some(model) = resolve_whisper_upgrade_model() {
             cmd.env("OTOJI_PTT_WHISPER_MODEL", model);
+        }
+
+        // Pre-warm: start otoji in standby so it loads the model + opens the mic
+        // immediately but suppresses the ambient VAD path until the first PTT
+        // (instant) or note-mode RESUME. Avoids recording everything while idle.
+        if prewarm_enabled() {
+            cmd.env("OTOJI_START_STANDBY", "1");
         }
 
         // On Windows, prevent a visible CMD window from flashing.

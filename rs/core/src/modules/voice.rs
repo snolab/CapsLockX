@@ -460,16 +460,26 @@ impl VoiceModule {
                 if self.note_active.load(Ordering::Relaxed) {
                     self.note_active.store(false, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note stopped");
-                    // Warm pool: keep otoji alive for the idle window so a quick
-                    // re-toggle (or a follow-up PTT) reuses it without a model
-                    // reload. The overlay/tray are reset immediately for UI
-                    // feedback; the mic is released once the idle timer fires.
-                    self.arm_idle_stop();
+                    if super::voice_otoji::prewarm_enabled() {
+                        // Pre-warm: return otoji to standby (stop ambient VAD)
+                        // but keep it alive for the next press.
+                        self.otoji.send_control("STANDBY");
+                    } else {
+                        // Warm pool: keep otoji alive for the idle window so a
+                        // quick re-toggle (or follow-up PTT) reuses it without a
+                        // model reload; the mic releases once the timer fires.
+                        self.arm_idle_stop();
+                    }
                     self.platform.hide_voice_overlay();
                     self.platform.set_ptt_tray_state(PttTrayState::Idle);
                 } else {
                     self.note_active.store(true, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note started");
+                    // Pre-warm: otoji is idling in standby — resume the ambient
+                    // VAD path so the note overlay gets live transcription.
+                    if super::voice_otoji::prewarm_enabled() {
+                        self.otoji.send_control("RESUME");
+                    }
                     self.platform.show_voice_overlay();
                     self.platform.set_ptt_tray_state(PttTrayState::NoteMode);
                 }
@@ -522,7 +532,45 @@ impl VoiceModule {
         // Skip in-process STT preload when otoji is available — it provides
         // SenseVoice as an external subprocess, saving ~1 GB in this process.
         if super::voice_otoji::OtojiBackend::is_available() {
-            eprintln!("[CLX] voice: otoji available, skipping in-process STT preload");
+            if super::voice_otoji::prewarm_enabled() {
+                // Pre-warm otoji at startup, in standby: load the SenseVoice
+                // model + open the mic now so the first Space+V is instant
+                // (no ~1s cold start). Standby suppresses the ambient VAD path,
+                // so nothing is transcribed/recorded until the user presses PTT
+                // or starts note mode. Silent — no overlay.
+                eprintln!("[CLX] voice: pre-warming otoji at startup (standby)");
+                let otoji = Arc::clone(&self.otoji);
+                let platform = Arc::clone(&self.platform);
+                let input_active = Arc::clone(&self.input_active);
+                let otoji_typed = Arc::clone(&self.otoji_typed);
+                let ptt = Arc::clone(&self.ptt);
+                let (aec_enabled, stt_engine, whisper_model_path, whisper_language) = {
+                    let lc = self.live_config.lock().unwrap();
+                    let aec = match lc.aec_mode.as_str() {
+                        "always" => true,
+                        "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
+                        _ => false,
+                    };
+                    (aec, lc.stt_engine.clone(), lc.whisper_model_path.clone(), lc.whisper_language.clone())
+                };
+                std::thread::Builder::new()
+                    .name("otoji-prewarm".into())
+                    .spawn(move || {
+                        otoji.start(
+                            platform,
+                            input_active,
+                            otoji_typed,
+                            Some(ptt),
+                            aec_enabled,
+                            stt_engine,
+                            whisper_model_path,
+                            whisper_language,
+                        );
+                    })
+                    .ok();
+            } else {
+                eprintln!("[CLX] voice: otoji available, skipping in-process STT preload");
+            }
             return;
         }
         let mut bg = self.bg_thread.lock().unwrap();
@@ -653,6 +701,12 @@ impl VoiceModule {
     /// press (or hard `stop_pipeline`) bumps `otoji_idle_gen`, which this timer
     /// detects and aborts on. The mic stays open while warm (per user choice).
     fn arm_idle_stop(&self) {
+        // Pre-warm mode keeps otoji alive permanently (in standby), so there is
+        // nothing to idle-kill — the ambient VAD path is already suppressed and
+        // the next PTT reuses the warm process instantly.
+        if super::voice_otoji::prewarm_enabled() {
+            return;
+        }
         const IDLE_MS: u64 = 30_000;
         const TICK_MS: u64 = 1_000;
 
