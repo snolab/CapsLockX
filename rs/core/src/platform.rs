@@ -215,6 +215,10 @@ pub trait Platform: Send + Sync + 'static {
     /// Update the menu bar tray icon to reflect PTT / voice state.
     fn set_ptt_tray_state(&self, _state: PttTrayState) {}
 
+    /// Fire a brief haptic tap on the trackpad (Taptic Engine), e.g. to signal
+    /// "mic is ready, start speaking". Default no-op on platforms without one.
+    fn haptic_feedback(&self) {}
+
     // ── Brainstorm overlay (optional, default = no-op) ─────────────────────
 
     /// Get selected text via accessibility API (no clipboard change).

@@ -1106,6 +1106,46 @@ impl MacPlatform {
     }
 }
 
+/// Fire a single trackpad haptic tap via `NSHapticFeedbackManager`. Dispatched
+/// to the main queue (AppKit). No-op on hardware without a Taptic Engine.
+pub fn perform_haptic_tap() {
+    use std::ffi::c_void;
+    extern "C" {
+        fn dispatch_async_f(queue: *mut c_void, ctx: *mut c_void, work: extern "C" fn(*mut c_void));
+        fn dlsym(handle: *mut c_void, symbol: *const std::ffi::c_char) -> *mut c_void;
+    }
+    extern "C" fn do_haptic(_ctx: *mut c_void) {
+        unsafe {
+            let cls = objc_getClass(b"NSHapticFeedbackManager\0".as_ptr() as *const _);
+            if cls.is_null() {
+                return;
+            }
+            let performer = objc_msgSend(
+                cls,
+                sel_registerName(b"defaultPerformer\0".as_ptr() as *const _),
+            );
+            if performer.is_null() {
+                return;
+            }
+            // -performFeedbackPattern:(NSInteger)pattern performanceTime:(NSUInteger)time
+            // pattern: Generic = 0 · performanceTime: Now = 1
+            let perform: extern "C" fn(*mut c_void, *mut c_void, i64, u64) =
+                std::mem::transmute(objc_msgSend as *const ());
+            perform(
+                performer,
+                sel_registerName(b"performFeedbackPattern:performanceTime:\0".as_ptr() as *const _),
+                0,
+                1,
+            );
+        }
+    }
+    unsafe {
+        // RTLD_DEFAULT (-2) → the libdispatch main-queue global.
+        let main_q = dlsym(-2isize as *mut c_void, b"_dispatch_main_q\0".as_ptr() as *const _);
+        dispatch_async_f(main_q, std::ptr::null_mut(), do_haptic);
+    }
+}
+
 impl Platform for MacPlatform {
     // ── Keyboard output ───────────────────────────────────────────────────────
 
@@ -1661,6 +1701,10 @@ impl Platform for MacPlatform {
             NoteMode => TrayState::ListenSilent,
         };
         notify_tray(ts);
+    }
+
+    fn haptic_feedback(&self) {
+        crate::output::perform_haptic_tap();
     }
 
     fn get_selected_text(&self) -> String {

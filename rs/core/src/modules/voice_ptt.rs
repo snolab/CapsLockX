@@ -232,6 +232,11 @@ impl PttSession {
                 if !sent_now {
                     this.send_ptt_start();
                 }
+                // Haptic tap the instant the mic is ready, so the user knows
+                // when to start talking (otherwise the first syllables get
+                // clipped during the cold-start window). Cheap; fires once per
+                // press since we're past the token guard.
+                this.platform.haptic_feedback();
                 // "-" — mic ready, awaiting VAD. Flips to "~" on on_vad(true).
                 this.set_tail(Tail::ListenSilent);
             })
