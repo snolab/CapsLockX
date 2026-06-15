@@ -460,11 +460,11 @@ impl VoiceModule {
                 if self.note_active.load(Ordering::Relaxed) {
                     self.note_active.store(false, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note stopped");
-                    // Tear down the audio pipeline so the mic indicator
-                    // disappears immediately. Without this, otoji listen
-                    // (or local STT) keeps the mic open silently after
-                    // the overlay is hidden.
-                    self.stop_pipeline();
+                    // Warm pool: keep otoji alive for the idle window so a quick
+                    // re-toggle (or a follow-up PTT) reuses it without a model
+                    // reload. The overlay/tray are reset immediately for UI
+                    // feedback; the mic is released once the idle timer fires.
+                    self.arm_idle_stop();
                     self.platform.hide_voice_overlay();
                     self.platform.set_ptt_tray_state(PttTrayState::Idle);
                 } else {
