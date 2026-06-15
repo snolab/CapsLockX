@@ -354,11 +354,31 @@ unsafe extern "C" fn action_restart(
     eprintln!("[CLX] restart requested via tray menu");
     let exe = std::env::current_exe().unwrap_or_default();
     let args: Vec<String> = std::env::args().collect();
+    // Give the child dups of OUR fd 1 (the real log file) for both stdout and
+    // stderr. Inheriting stderr directly would hand the child the log-tee pipe
+    // (see main.rs), whose reader thread dies when this process exits — the
+    // child then deadlocks on eprintln! once the 64KB pipe buffer fills.
+    use std::os::unix::io::FromRawFd;
+    extern "C" {
+        fn dup(fd: i32) -> i32;
+    }
+    let child_out = unsafe { dup(1) };
+    let child_err = unsafe { dup(1) };
+    let stdout = if child_out >= 0 {
+        unsafe { std::process::Stdio::from_raw_fd(child_out) }
+    } else {
+        std::process::Stdio::inherit()
+    };
+    let stderr = if child_err >= 0 {
+        unsafe { std::process::Stdio::from_raw_fd(child_err) }
+    } else {
+        std::process::Stdio::inherit()
+    };
     match std::process::Command::new(&exe)
         .args(&args[1..])
         .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
+        .stdout(stdout)
+        .stderr(stderr)
         .spawn()
     {
         Ok(child) => {
