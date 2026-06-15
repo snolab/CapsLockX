@@ -1,8 +1,9 @@
-/// Voice backend using `otoji listen --plain -` as an external subprocess.
+/// Voice backend using `otoji listen --plain [--aec]` as an external subprocess.
 ///
-/// CLX captures microphone audio via cpal (which has mic permission) and
-/// streams a 16 kHz mono WAV to otoji's stdin.  Otoji runs SenseVoice in its
-/// own process (~500 MB), keeping the CLX process lightweight.
+/// Otoji opens the microphone itself (VoiceProcessingIO with AEC, or cpal) and
+/// runs SenseVoice in its own process (~500 MB), keeping the CLX process
+/// lightweight. CLX only drives push-to-talk via otoji's control socket; it no
+/// longer captures audio or pipes a WAV to otoji's stdin.
 ///
 /// JSON-line AsrEvents from otoji stdout are parsed and forwarded to the
 /// platform overlay + cursor input.
@@ -148,27 +149,6 @@ fn write_wav_header(w: &mut impl Write) -> std::io::Result<()> {
     w.write_all(b"data")?;
     w.write_all(&0xFFFFFFFEu32.to_le_bytes())?;
     w.flush()
-}
-
-/// Linear resample from `src_rate` to `dst_rate`. `carry` preserves the
-/// fractional sample position across chunks so successive calls stitch
-/// seamlessly. Mono in, mono out.
-fn resample_linear(src: &[f32], src_rate: u32, dst_rate: u32, carry: &mut f64) -> Vec<f32> {
-    if src.is_empty() { return Vec::new(); }
-    if src_rate == dst_rate { return src.to_vec(); }
-    let ratio = src_rate as f64 / dst_rate as f64;
-    let mut out = Vec::with_capacity((src.len() as f64 / ratio) as usize + 1);
-    let mut pos = *carry;
-    while (pos as usize) + 1 < src.len() {
-        let i = pos as usize;
-        let frac = (pos - i as f64) as f32;
-        let s0 = src[i];
-        let s1 = src[i + 1];
-        out.push(s0 + (s1 - s0) * frac);
-        pos += ratio;
-    }
-    *carry = pos - src.len() as f64;
-    out
 }
 
 /// Spawn `otoji-tray` once (detached) if not already running. Best-effort.
@@ -358,12 +338,14 @@ impl OtojiBackend {
             return true; // already running
         }
 
-        // Use `otoji listen --plain -` to read WAV from stdin instead of
-        // opening the mic itself. CLX has mic permission; otoji may not.
+        // Let otoji open the mic itself (`otoji listen --plain [--aec]`) instead
+        // of clx capturing audio and piping a WAV to otoji's stdin. With --aec
+        // otoji uses VoiceProcessingIO (echo cancellation); without it, cpal.
+        // NOTE: otoji must hold its own microphone TCC grant for this to work.
         let mut cmd = Command::new("otoji");
         let ctx_path = super::voice_ptt::ptt_context_file_path();
         let mut args: Vec<String> = vec![
-            "listen".into(), "--plain".into(), "-".into(),
+            "listen".into(), "--plain".into(),
             // "openai" route goes through OpenAiPolisher which honors the
             // OTOJI_POLISH_BASE_URL / _API_KEY / _MODEL env vars. Default
             // in .env.local points to Cloudflare Workers AI (edge inference,
@@ -392,6 +374,13 @@ impl OtojiBackend {
             }
         }
 
+        // Echo cancellation: otoji opens the mic via VoiceProcessingIO when
+        // --aec is set, otherwise via cpal. macOS-only flag (otoji ignores it
+        // elsewhere and falls back to cpal).
+        if aec_enabled {
+            args.push("--aec".into());
+        }
+
         // Use a Unix socket for PTT control on macOS/Linux (more reliable than
         // SIGUSR1, which otoji 0.1.10 doesn't handle on all platforms).
         // On Windows, use a TCP port instead (Unix sockets need Windows 1803+).
@@ -416,7 +405,7 @@ impl OtojiBackend {
         cmd.args(&args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .stdin(Stdio::piped())
+            .stdin(Stdio::null()) // otoji opens the mic itself; no audio piped in
             .env("OTOJI_RELAUNCHED", "1")
             .env("OTOJI_REBUILDING", "1"); // prevent auto-rebuild + exec which breaks pipes
 
@@ -449,198 +438,22 @@ impl OtojiBackend {
         let mut child = child;
         let stdout = child.stdout.take().expect("otoji stdout");
         let stderr = child.stderr.take().expect("otoji stderr");
-        let mut stdin = child.stdin.take().expect("otoji stdin");
 
         let stop = Arc::clone(&self.reader_stop);
         stop.store(false, Ordering::Relaxed);
 
-        // Shared buffer for tapping raw i16 PCM bytes during PTT (whisper engine only).
-        // Cleared on each PttFinal; used to run whisper-cli on the buffered segment.
+        // Whisper-upgrade buffer: previously populated by clx's own mic capture.
+        // Now that otoji owns the mic, clx no longer sees the raw PCM, so this
+        // stays empty and the whisper-upgrade path in the reader is inert. The
+        // sherpa/sensevoice default is unaffected (otoji transcribes natively).
         let ptt_audio_buf: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
 
-        // Clone ptt for the reader thread before mic thread takes ownership.
+        // Clone ptt for the reader thread.
         let ptt_for_reader = ptt.clone();
 
-        // Stdin writer — capture mic via VPIO (with AEC) or cpal (raw),
-        // stream 16kHz mono WAV to otoji.
-        let platform_for_mic = Arc::clone(&platform);
-        let ptt_audio_buf_for_mic = Arc::clone(&ptt_audio_buf);
-        let stt_engine_for_mic = stt_engine.clone();
-        std::thread::Builder::new()
-            .name("otoji-mic".into())
-            .spawn({
-                let stop = Arc::clone(&stop);
-                move || {
-                    let ptt_audio_buf = ptt_audio_buf_for_mic;
-                    let stt_engine = stt_engine_for_mic;
-                    if let Err(e) = write_wav_header(&mut stdin) {
-                        eprintln!("[CLX] voice-otoji: failed to write WAV header: {}", e);
-                        return;
-                    }
-
-                    // ── VPIO path (aec_enabled = "always") ──
-                    // Use macOS VoiceProcessingIO so speaker bleed (YouTube,
-                    // music) is canceled before reaching otoji. Falls back to
-                    // cpal if VPIO is unavailable.
-                    if aec_enabled {
-                        if let Some(aec) = platform_for_mic.start_aec_mic() {
-                            let device_sr = aec.sample_rate();
-                            eprintln!("[CLX] voice-otoji: using VPIO mic with AEC (native {}Hz → 16kHz)", device_sr);
-                            let stdin_mutex = Arc::new(Mutex::new(stdin));
-                            let mut leftover = 0.0f64; // resample fractional carry
-                            // VPIO post-AEC output is very quiet; same factor
-                            // tuned in test-vpio. Clamp before quantising.
-                            const VPIO_GAIN: f32 = 30.0;
-                            while !stop.load(Ordering::Relaxed) {
-                                std::thread::sleep(std::time::Duration::from_millis(50));
-                                let chunk = aec.take_samples();
-                                if chunk.is_empty() { continue; }
-                                if let Some(ref p) = ptt {
-                                    let mono_16k = resample_linear(&chunk, device_sr, 16000, &mut leftover);
-                                    let amplified: Vec<f32> = mono_16k.iter()
-                                        .map(|&s| (s * VPIO_GAIN).clamp(-1.0, 1.0))
-                                        .collect();
-                                    p.feed(&amplified);
-                                    let mut buf = Vec::with_capacity(amplified.len() * 2);
-                                    for &s in &amplified {
-                                        let v = (s * 32767.0).clamp(-32768.0, 32767.0) as i16;
-                                        buf.extend_from_slice(&v.to_le_bytes());
-                                    }
-                                    if stt_engine == "whisper" && p.is_active() {
-                                        ptt_audio_buf.lock().unwrap().extend_from_slice(&buf);
-                                    }
-                                    if let Ok(mut w) = stdin_mutex.lock() {
-                                        if w.write_all(&buf).is_err() { break; }
-                                    }
-                                }
-                            }
-                            aec.stop();
-                            return;
-                        } else {
-                            eprintln!("[CLX] voice-otoji: VPIO unavailable, falling back to cpal (no AEC)");
-                        }
-                    }
-
-                    // ── cpal path (aec disabled or VPIO unavailable) ──
-                    use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-                    let host = cpal::default_host();
-                    let device = match host.default_input_device() {
-                        Some(d) => d,
-                        None => {
-                            eprintln!("[CLX] voice-otoji: no default input device");
-                            return;
-                        }
-                    };
-
-                    // Try 16kHz mono first; fall back to device default if unsupported.
-                    let default_cfg = match device.default_input_config() {
-                        Ok(c) => c,
-                        Err(e) => { eprintln!("[CLX] voice-otoji: no default input config: {e}"); return; }
-                    };
-                    let supports_16k = device.supported_input_configs().map_or(false, |mut it| {
-                        it.any(|c| c.channels() == 1
-                            && c.min_sample_rate().0 <= 16000
-                            && c.max_sample_rate().0 >= 16000
-                            && c.sample_format() == cpal::SampleFormat::F32)
-                    });
-                    let (config, device_sr, device_ch) = if supports_16k {
-                        (cpal::StreamConfig { channels: 1, sample_rate: cpal::SampleRate(16000), buffer_size: cpal::BufferSize::Default }, 16000u32, 1usize)
-                    } else {
-                        let sr = default_cfg.sample_rate().0;
-                        let ch = default_cfg.channels() as usize;
-                        let fmt = default_cfg.sample_format();
-                        eprintln!("[CLX] voice-otoji: 16kHz mono not supported, falling back to {sr}Hz {ch}ch fmt={fmt:?}");
-                        (cpal::StreamConfig { channels: default_cfg.channels(), sample_rate: cpal::SampleRate(sr), buffer_size: cpal::BufferSize::Default }, sr, ch)
-                    };
-
-                    let stdin_mutex = Arc::new(Mutex::new(stdin));
-                    let stdin_for_cb = Arc::clone(&stdin_mutex);
-                    let stop_for_cb = Arc::clone(&stop);
-                    let ptt_for_cb = ptt.clone();
-                    let ptt_audio_buf_for_cb = Arc::clone(&ptt_audio_buf);
-                    let stt_engine_for_cb = stt_engine.clone();
-
-                    let stream = device.build_input_stream(
-                        &config,
-                        move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                            if stop_for_cb.load(Ordering::Relaxed) { return; }
-                            // Down-mix to mono if needed.
-                            let mono: Vec<f32> = if device_ch == 1 {
-                                data.to_vec()
-                            } else {
-                                data.chunks(device_ch)
-                                    .map(|c| c.iter().sum::<f32>() / device_ch as f32)
-                                    .collect()
-                            };
-                            // Resample to 16kHz if needed.
-                            let mono_16k: Vec<f32> = if device_sr == 16000 {
-                                mono
-                            } else {
-                                let ratio = device_sr as f64 / 16000.0;
-                                let out_len = (mono.len() as f64 / ratio) as usize;
-                                let mut out = Vec::with_capacity(out_len);
-                                for i in 0..out_len {
-                                    let src = i as f64 * ratio;
-                                    let i0 = src as usize;
-                                    let frac = (src - i0 as f64) as f32;
-                                    let s0 = mono.get(i0).copied().unwrap_or(0.0);
-                                    let s1 = mono.get(i0 + 1).copied().unwrap_or(s0);
-                                    out.push(s0 + (s1 - s0) * frac);
-                                }
-                                out
-                            };
-                            // Tee 16kHz mono into PTT ring buffer.
-                            if let Some(ref p) = ptt_for_cb { p.feed(&mono_16k); }
-                            // Convert to i16 PCM and write WAV payload to stdin.
-                            let mut buf = Vec::with_capacity(mono_16k.len() * 2);
-                            for &sample in &mono_16k {
-                                let s = (sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
-                                buf.extend_from_slice(&s.to_le_bytes());
-                            }
-                            if stt_engine_for_cb == "whisper" {
-                                if let Some(ref p) = ptt_for_cb {
-                                    if p.is_active() {
-                                        ptt_audio_buf_for_cb.lock().unwrap().extend_from_slice(&buf);
-                                    }
-                                }
-                            }
-                            if let Ok(mut w) = stdin_for_cb.lock() {
-                                let _ = w.write_all(&buf);
-                            }
-                        },
-                        move |err| {
-                            eprintln!("[CLX] voice-otoji: cpal error: {}", err);
-                        },
-                        None,
-                    );
-
-                    let stream = match stream {
-                        Ok(s) => s,
-                        Err(e) => {
-                            eprintln!("[CLX] voice-otoji: failed to build input stream: {}", e);
-                            return;
-                        }
-                    };
-
-                    if let Err(e) = stream.play() {
-                        eprintln!("[CLX] voice-otoji: failed to start stream: {}", e);
-                        return;
-                    }
-
-                    eprintln!("[CLX] voice-otoji: mic capture started (16kHz mono → stdin)");
-
-                    // Keep the stream alive until stop is signaled.
-                    while !stop.load(Ordering::Relaxed) {
-                        std::thread::sleep(std::time::Duration::from_millis(50));
-                    }
-
-                    drop(stream);
-                    // Close stdin to signal EOF to otoji.
-                    drop(stdin_mutex);
-                    eprintln!("[CLX] voice-otoji: mic capture stopped");
-                }
-            })
-            .ok();
+        // mic is owned by otoji now — clx no longer spawns a capture thread.
+        // `platform` is retained in the signature for API stability but unused.
+        let _ = &platform;
 
         // Stderr reader — forward otoji logs to CLX stderr
         std::thread::Builder::new()
@@ -861,6 +674,10 @@ impl OtojiBackend {
                                 // otoji's control socket is now bound. If PTT was
                                 // pressed before the socket was ready, send it now.
                                 if let Some(ref p) = ptt {
+                                    // otoji owns the mic now; its "open" event is
+                                    // our signal that capture is live (previously
+                                    // flagged by clx's own mic callback via feed()).
+                                    p.set_mic_ready();
                                     p.on_otoji_open();
                                 }
                                 if ptt.is_none() {
