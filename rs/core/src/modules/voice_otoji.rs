@@ -232,12 +232,42 @@ pub fn ensure_tray_running() {
         .spawn();
 }
 
+/// Resolve the `otoji` executable via PATH, following symlinks so the result
+/// points at the real binary (e.g. a dev rebuild behind a Homebrew symlink).
+fn otoji_binary_path() -> Option<std::path::PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    for dir in std::env::split_paths(&path_var) {
+        let candidate = dir.join("otoji");
+        if candidate.is_file() {
+            return std::fs::canonicalize(&candidate).ok().or(Some(candidate));
+        }
+    }
+    None
+}
+
+/// Fingerprint the on-disk `otoji` binary as `(mtime_secs, size)`. Two spawns
+/// of the same binary share a fingerprint; a rebuild changes it. `None` if the
+/// binary can't be located or stat'd.
+fn otoji_binary_fingerprint() -> Option<(u64, u64)> {
+    let meta = std::fs::metadata(otoji_binary_path()?).ok()?;
+    let mtime = meta
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    Some((mtime, meta.len()))
+}
 
 pub struct OtojiBackend {
     child: Arc<Mutex<Option<Child>>>,
     reader_stop: Arc<AtomicBool>,
     /// TCP control socket address (used on Windows instead of Unix signals).
     control_addr: Arc<Mutex<Option<String>>>,
+    /// (mtime_secs, size) of the `otoji` binary captured when the live child
+    /// was spawned. Used to detect a rebuilt binary so the warm pool restarts
+    /// otoji instead of pinning a stale process. `None` until first spawn.
+    spawned_binary_fp: Arc<Mutex<Option<(u64, u64)>>>,
 }
 
 impl OtojiBackend {
@@ -246,6 +276,7 @@ impl OtojiBackend {
             child: Arc::new(Mutex::new(None)),
             reader_stop: Arc::new(AtomicBool::new(false)),
             control_addr: Arc::new(Mutex::new(None)),
+            spawned_binary_fp: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -335,7 +366,22 @@ impl OtojiBackend {
 
         let mut guard = self.child.lock().unwrap();
         if guard.is_some() {
-            return true; // already running
+            // A warm instance is alive — reuse it, UNLESS the on-disk `otoji`
+            // binary has been rebuilt since we spawned it (a dev rebuild). The
+            // warm pool would otherwise pin the stale binary indefinitely, so
+            // restart to pick up the new one. If we can't fingerprint either
+            // side, keep the warm instance (don't churn on transient stat fail).
+            let outdated = matches!(
+                (*self.spawned_binary_fp.lock().unwrap(), otoji_binary_fingerprint()),
+                (Some(spawned), Some(current)) if current != spawned
+            );
+            if !outdated {
+                return true; // reuse warm instance
+            }
+            eprintln!("[CLX] voice-otoji: otoji binary changed on disk → restarting to use the rebuilt version");
+            drop(guard);
+            self.stop();
+            guard = self.child.lock().unwrap();
         }
 
         // Let otoji open the mic itself (`otoji listen --plain [--aec]`) instead
@@ -729,6 +775,9 @@ impl OtojiBackend {
             .ok();
 
         *guard = Some(child);
+        // Record which binary this child runs so the warm pool can detect a
+        // later rebuild and restart instead of pinning the stale process.
+        *self.spawned_binary_fp.lock().unwrap() = otoji_binary_fingerprint();
         true
     }
 
