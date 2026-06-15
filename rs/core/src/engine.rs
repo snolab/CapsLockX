@@ -367,7 +367,10 @@ mod tests {
     fn bare_space_tap_emits_space_via_timeout() {
         let (engine, platform) = engine_with_space();
         engine.on_key_event(KeyCode::Space, true);
-        std::thread::sleep(Duration::from_millis(260));
+        // The bare-tap emit fires from a 200ms timeout thread. Wait well past
+        // it (300ms margin) so a contended CI runner doesn't miss the emit and
+        // flake — the assertion is on behaviour, not on tight timing.
+        std::thread::sleep(Duration::from_millis(500));
         engine.on_key_event(KeyCode::Space, false);
         assert!(key_taps(&platform, KeyCode::Space) >= 1);
     }
