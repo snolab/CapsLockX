@@ -97,6 +97,15 @@ cp "$TARGET/libsherpa-onnx-c-api.dylib"    "$APP/Contents/Frameworks/"
     cp "$TARGET/libsherpa-onnx-cxx-api.dylib" "$APP/Contents/Frameworks/" || true
 ( cd "$APP/Contents/Frameworks" && ln -sf libonnxruntime.1.17.1.dylib libonnxruntime.dylib )
 
+# Intel only: ort (via ten-vad) has no x86_64-macOS prebuilt, so CI links ONNX
+# Runtime dynamically through ORT_LIB_LOCATION. Bundle that versioned dylib so
+# its @rpath/libonnxruntime.<ver>.dylib reference resolves at runtime. Copy just
+# the real file (not the generic symlink) to avoid clashing with sherpa's above.
+if [ -n "${ORT_LIB_LOCATION:-}" ]; then
+    find "$ORT_LIB_LOCATION" -maxdepth 1 -type f -name 'libonnxruntime.*.dylib' \
+        -exec cp {} "$APP/Contents/Frameworks/" \;
+fi
+
 # Skills (agent system prompt) — read-only, resolved via ../skills from the exe.
 cp -R "$ROOT/skills/." "$APP/Contents/skills/"
 
