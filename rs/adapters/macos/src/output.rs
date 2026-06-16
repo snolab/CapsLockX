@@ -894,6 +894,9 @@ fn visible_work_area() -> (f64, f64, f64, f64) {
         };
         #[cfg(target_arch = "x86_64")]
         let vis: NSRect = {
+            extern "C" {
+                fn objc_msgSend_stret(ret: *mut NSRect, receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
+            }
             let mut r = NSRect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 };
             objc_msgSend_stret(&mut r, screen, sel_visible);
             r
@@ -1003,6 +1006,9 @@ fn visible_work_area_for_display(target_display_id: u32) -> (f64, f64, f64, f64)
             };
             #[cfg(target_arch = "x86_64")]
             let vis: NSRect = {
+                extern "C" {
+                    fn objc_msgSend_stret(ret: *mut NSRect, receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
+                }
                 let mut r = NSRect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 };
                 objc_msgSend_stret(&mut r, screen, sel_visible);
                 r
