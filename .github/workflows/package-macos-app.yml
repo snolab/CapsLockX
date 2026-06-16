@@ -1,0 +1,79 @@
+name: package-macos-app
+
+# Build the self-contained CapsLockX.app (+ .pkg / .zip) for both macOS
+# architectures using scripts/package-mac.sh. Runs natively per-arch:
+#   macos-13 = Intel (x86_64), macos-14 = Apple Silicon (arm64).
+#
+# Triggers:
+#   - workflow_dispatch: run manually; optionally upload to a release tag.
+#   - push of a v* tag:  build both arches and upload to that release.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to upload assets to (e.g. v2.0.0-beta.4). Blank = workflow artifacts only."
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    if: github.repository == 'snolab/CapsLockX'
+    name: Build CapsLockX.app (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13   # Intel
+            arch: x86_64
+          - runner: macos-14   # Apple Silicon
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artefacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          # package-mac.sh builds into rs/target/dist (isolated from dev cache).
+          workspaces: rs -> rs/target/dist
+
+      - name: Build + package CapsLockX.app
+        run: ./scripts/package-mac.sh
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CapsLockX-macos-${{ matrix.arch }}
+          path: |
+            dist/CapsLockX-*-macos-${{ matrix.arch }}.pkg
+            dist/CapsLockX-*-macos-${{ matrix.arch }}.zip
+          if-no-files-found: error
+
+      - name: Upload to release
+        if: steps.tag.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.tag.outputs.tag }}" \
+            dist/CapsLockX-*-macos-${{ matrix.arch }}.pkg \
+            dist/CapsLockX-*-macos-${{ matrix.arch }}.zip \
+            --clobber
