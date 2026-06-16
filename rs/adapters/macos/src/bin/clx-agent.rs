@@ -1240,15 +1240,16 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
 fn load_system_prompt() -> String {
     // Search relative to the binary, then CWD, then common locations.
     let search_paths = [
-        // Next to the binary (e.g. /Users/snomiao/CapsLockX/skills/clx-agent/SKILL.md)
+        // Next to the binary (e.g. <app>/Contents/skills/clx-agent/SKILL.md)
         std::env::current_exe().ok()
             .and_then(|e| e.parent().map(|p| p.join("../skills/clx-agent/SKILL.md"))),
         std::env::current_exe().ok()
             .and_then(|e| e.parent().map(|p| p.join("../../skills/clx-agent/SKILL.md"))),
         // CWD
         Some(std::path::PathBuf::from("skills/clx-agent/SKILL.md")),
-        // Absolute fallback
-        Some(std::path::PathBuf::from("/Users/snomiao/CapsLockX/skills/clx-agent/SKILL.md")),
+        // Absolute fallback (legacy install location under the user's home)
+        std::env::var("HOME").ok()
+            .map(|h| std::path::PathBuf::from(h).join("CapsLockX/skills/clx-agent/SKILL.md")),
     ];
 
     for path in search_paths.iter().flatten() {
