@@ -246,12 +246,13 @@ fn otoji_binary_path() -> Option<std::path::PathBuf> {
 }
 
 /// Whether to pre-warm otoji at startup (spawn early in standby so the first
-/// PTT is instant). Default on; disable with `CLX_PTT_PREWARM=0`. Pre-warm
-/// keeps the mic open from launch (privacy tradeoff the user opted into).
+/// PTT is instant). Default OFF: pre-warm holds the mic open from launch, which
+/// lights the macOS recording indicator the whole time clx runs — recording
+/// should only happen during actual PTT use. Opt in with `CLX_PTT_PREWARM=1`.
 pub fn prewarm_enabled() -> bool {
-    !matches!(
+    matches!(
         std::env::var("CLX_PTT_PREWARM").ok().as_deref(),
-        Some("0") | Some("false") | Some("off") | Some("")
+        Some("1") | Some("true") | Some("on")
     )
 }
 
