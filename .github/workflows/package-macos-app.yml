@@ -47,19 +47,9 @@ jobs:
           # package-mac.sh builds into rs/target/dist (isolated from dev cache).
           workspaces: rs -> rs/target/dist
 
-      # ort (pulled in by ten-vad) ships no prebuilt ONNX Runtime for
-      # x86_64-apple-darwin. Supply Microsoft's official build and tell ort to
-      # link it dynamically. Version must match ort rc.11's onnxruntime (1.23.2).
-      - name: Provide ONNX Runtime for Intel
-        if: matrix.arch == 'x86_64'
-        run: |
-          ORT_VER=1.23.2
-          curl -fsSL -o ort.tgz \
-            "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-osx-x86_64-${ORT_VER}.tgz"
-          tar xzf ort.tgz
-          echo "ORT_LIB_LOCATION=$PWD/onnxruntime-osx-x86_64-${ORT_VER}/lib" >> "$GITHUB_ENV"
-          echo "ORT_PREFER_DYNAMIC_LINK=1" >> "$GITHUB_ENV"
-
+      # ort runs in load-dynamic mode (see rs/core/Cargo.toml); package-mac.sh
+      # fetches and bundles the ONNX Runtime dylib for the target arch itself,
+      # so no extra build-time ONNX Runtime setup is needed here.
       - name: Build + package CapsLockX.app
         run: ./scripts/package-mac.sh
 

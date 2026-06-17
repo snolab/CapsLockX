@@ -3,6 +3,9 @@
 DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")/.."
 export DYLD_LIBRARY_PATH="${DIR}/rs/target/release:${DYLD_LIBRARY_PATH}"
 export PATH="${DIR}:${PATH}"
+# ort (ten-vad) dlopens ONNX Runtime from ORT_DYLIB_PATH (load-dynamic). Point at
+# the dev copy that build.sh drops in target/release; the .app sets this itself.
+export ORT_DYLIB_PATH="${ORT_DYLIB_PATH:-${DIR}/rs/target/release/libonnxruntime.1.23.2.dylib}"
 
 # ── Auto-rebuild if source changed (like otoji) ──────────────────────────
 # Compare binary mtime against newest source file. If source is newer,

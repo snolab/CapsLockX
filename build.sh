@@ -21,6 +21,12 @@ if [ -f "$OCR_SRC" ] && { [ ! -x "$OCR_BIN" ] || [ "$OCR_SRC" -nt "$OCR_BIN" ]; 
     echo "[build] clx-ocr compiled + signed"
 fi
 
+# ort (ten-vad) runs in load-dynamic mode and dlopens ONNX Runtime at runtime.
+# Make sure the matching dylib sits next to the dev binaries (target/release);
+# the bin/clx wrapper points ORT_DYLIB_PATH at it. Cached — downloads once.
+"$ROOT/scripts/fetch-ort-dylib.sh" "$(uname -m)" "$ROOT/rs/target/release" >/dev/null || \
+    echo "[build] warning: could not fetch ONNX Runtime dylib (voice VAD may not load)" >&2
+
 # Only update the binary if the cargo output is newer than the signed clx.
 # This preserves the codesign CDHash (and Accessibility permission) across rebuilds
 # that don't change the binary.

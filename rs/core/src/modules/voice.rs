@@ -2768,12 +2768,39 @@ struct VadState {
 /// TEN VAD frame size: 256 samples at 16kHz (16ms).
 const TEN_VAD_FRAME_SIZE: usize = 256;
 
+/// `ort` is built in load-dynamic mode, so it dlopens ONNX Runtime from
+/// `ORT_DYLIB_PATH` at first use. Point it at the ONNX Runtime we ship next to
+/// the binary — the `.app`'s `Contents/Frameworks` (bundle) or alongside the
+/// binary (dev/portable) — unless already configured (e.g. by the dev wrapper).
+fn ensure_ort_dylib_path() {
+    use std::sync::Once;
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| {
+        if std::env::var_os("ORT_DYLIB_PATH").is_some_and(|v| !v.is_empty()) {
+            return;
+        }
+        // Must match the ONNX Runtime version ort rc.11 targets (see
+        // scripts/fetch-ort-dylib.sh, which bundles this exact file).
+        const ORT_DYLIB: &str = "libonnxruntime.1.23.2.dylib";
+        let Ok(exe) = std::env::current_exe() else { return };
+        let Some(dir) = exe.parent() else { return };
+        for cand in [dir.join("../Frameworks").join(ORT_DYLIB), dir.join(ORT_DYLIB)] {
+            if cand.exists() {
+                eprintln!("[CLX] ort: ORT_DYLIB_PATH={}", cand.display());
+                std::env::set_var("ORT_DYLIB_PATH", &cand);
+                return;
+            }
+        }
+    });
+}
+
 impl VadState {
     fn new() -> Self {
         Self::with_thresholds(SPEECH_START_PROB, SPEECH_END_PROB, SPEECH_START_FRAMES, SILENCE_END_FRAMES)
     }
 
     fn with_thresholds(start_prob: f32, end_prob: f32, start_frames: usize, end_frames: usize) -> Self {
+        ensure_ort_dylib_path();
         let model_bytes = include_bytes!(concat!(env!("CARGO_HOME"), "/registry/src/index.crates.io-1949cf8c6b5b557f/ten-vad-rs-0.1.6/onnx/ten-vad.onnx"));
         let vad = ten_vad_rs::TenVad::new_from_bytes(model_bytes, 16000)
             .expect("failed to create TEN VAD");
