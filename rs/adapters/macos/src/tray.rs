@@ -14,6 +14,7 @@ static ICON_BLUE: &[u8] = include_bytes!("../../../../Data/XIconBlue.png");
 // ── Global NSStatusItem reference ────────────────────────────────────────────
 
 static STATUS_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
+static MIC_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 
 // ── Objective-C runtime FFI ──────────────────────────────────────────────────
 
@@ -21,6 +22,20 @@ extern "C" {
     fn objc_getClass(name: *const std::ffi::c_char) -> *mut c_void;
     fn sel_registerName(name: *const std::ffi::c_char) -> *mut c_void;
     fn objc_msgSend(receiver: *mut c_void, sel: *mut c_void, ...) -> *mut c_void;
+    fn objc_allocateClassPair(
+        superclass: *mut c_void,
+        name: *const std::ffi::c_char,
+        extra_bytes: usize,
+    ) -> *mut c_void;
+    fn class_addMethod(
+        cls: *mut c_void,
+        sel: *mut c_void,
+        imp: *const c_void,
+        types: *const u8,
+    ) -> bool;
+    fn class_addProtocol(cls: *mut c_void, protocol: *mut c_void) -> bool;
+    fn objc_registerClassPair(cls: *mut c_void);
+    fn objc_getProtocol(name: *const std::ffi::c_char) -> *mut c_void;
 }
 
 // NSRect return: on aarch64 macOS, small structs are returned in registers.
@@ -83,7 +98,10 @@ unsafe fn nsimage_from_bytes_ex(bytes: &[u8], template: bool) -> *mut c_void {
         width: f64,
         height: f64,
     }
-    let size = NSSize { width: 18.0, height: 18.0 };
+    let size = NSSize {
+        width: 18.0,
+        height: 18.0,
+    };
     let sel_set_size = sel(b"setSize:\0");
     let f: extern "C" fn(*mut c_void, *mut c_void, NSSize) =
         std::mem::transmute(objc_msgSend as *const ());
@@ -111,6 +129,90 @@ unsafe fn nsstring(s: &str) -> *mut c_void {
     let f: extern "C" fn(*mut c_void, *mut c_void, *const std::ffi::c_char) -> *mut c_void =
         std::mem::transmute(objc_msgSend as *const ());
     f(cls_str, sel_utf8, cstr.as_ptr())
+}
+
+// ── Mic mode label refresh ───────────────────────────────────────────────────
+
+/// Update the "Mic: …" menu item title to reflect the currently active mode and STT engine.
+/// Safe to call from the main thread only (NSMenuItem is not thread-safe).
+fn refresh_mic_item() {
+    unsafe {
+        let item = MIC_ITEM.load(Ordering::Acquire);
+        if item.is_null() {
+            return;
+        }
+        let mode = crate::mic_mode::active_microphone_mode();
+        let mode_name = match mode {
+            0 => "Standard",
+            1 => "Wide Spectrum",
+            2 => "Voice Isolation",
+            _ => "Unknown",
+        };
+        let cfg = crate::config_store::load();
+        let engine_name = if cfg.stt_engine == "whisper" {
+            "Whisper"
+        } else {
+            "SenseVoice"
+        };
+        let title = format!("Mic: {mode_name} \u{00B7} {engine_name}\u{2026}");
+        let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(item, sel(b"setTitle:\0"), nsstring(&title));
+    }
+}
+
+/// Register a CLXMenuDelegate ObjC class with `menuWillOpen:` → refresh mic label.
+/// Returns a freshly allocated and initialized delegate instance.
+unsafe fn create_menu_delegate() -> *mut c_void {
+    let nsobject_cls = cls(b"NSObject\0");
+    if nsobject_cls.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    // Register the class only once (guard against double-registration).
+    let existing = objc_getClass(b"CLXMenuDelegate\0".as_ptr() as *const _);
+    let delegate_cls = if existing.is_null() {
+        let new_cls =
+            objc_allocateClassPair(nsobject_cls, b"CLXMenuDelegate\0".as_ptr() as *const _, 0);
+        if new_cls.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        // menuWillOpen: — called on main thread before menu is shown.
+        unsafe extern "C" fn menu_will_open(
+            _this: *mut c_void,
+            _cmd: *mut c_void,
+            _menu: *mut c_void,
+        ) {
+            refresh_mic_item();
+        }
+        let proto = objc_getProtocol(b"NSMenuDelegate\0".as_ptr() as *const _);
+        if !proto.is_null() {
+            class_addProtocol(new_cls, proto);
+        }
+        class_addMethod(
+            new_cls,
+            sel(b"menuWillOpen:\0"),
+            menu_will_open as *const c_void,
+            b"v@:@\0".as_ptr(),
+        );
+        objc_registerClassPair(new_cls);
+        new_cls
+    } else {
+        existing
+    };
+
+    // [[CLXMenuDelegate alloc] init]
+    let obj = {
+        let f: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(delegate_cls, sel(b"alloc\0"))
+    };
+    {
+        let f: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(obj, sel(b"init\0"))
+    }
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
@@ -182,10 +284,19 @@ pub fn setup_tray() {
         let prefs_key = nsstring(",");
         let prefs_item: *mut c_void = {
             let f: extern "C" fn(
-                *mut c_void, *mut c_void,
-                *mut c_void, *mut c_void, *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
             ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-            f(prefs_alloc, sel_init_item, prefs_title, prefs_action, prefs_key)
+            f(
+                prefs_alloc,
+                sel_init_item,
+                prefs_title,
+                prefs_action,
+                prefs_key,
+            )
         };
 
         // Set the target to our CLXPrefsActionTarget instance.
@@ -204,10 +315,19 @@ pub fn setup_tray() {
         let restart_key = nsstring("r");
         let restart_item: *mut c_void = {
             let f: extern "C" fn(
-                *mut c_void, *mut c_void,
-                *mut c_void, *mut c_void, *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
             ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-            f(restart_alloc, sel_init_item, restart_title, restart_action, restart_key)
+            f(
+                restart_alloc,
+                sel_init_item,
+                restart_title,
+                restart_action,
+                restart_key,
+            )
         };
         if !action_target.is_null() {
             msg1_ptr(restart_item, sel(b"setTarget:\0"), action_target);
@@ -221,15 +341,55 @@ pub fn setup_tray() {
         let voice_key = nsstring("");
         let voice_item: *mut c_void = {
             let f: extern "C" fn(
-                *mut c_void, *mut c_void,
-                *mut c_void, *mut c_void, *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
             ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-            f(voice_alloc, sel_init_item, voice_title, voice_action, voice_key)
+            f(
+                voice_alloc,
+                sel_init_item,
+                voice_title,
+                voice_action,
+                voice_key,
+            )
         };
         if !action_target.is_null() {
             msg1_ptr(voice_item, sel(b"setTarget:\0"), action_target);
         }
         msg1_ptr(menu, sel(b"addItem:\0"), voice_item);
+
+        // ── "Mic: Standard…" menu item (label updated dynamically) ─────
+        let mic_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
+        let mic_title = nsstring("Mic\u{2026}"); // placeholder; refreshed on menuWillOpen:
+        let mic_action = sel(b"showMicPicker:\0");
+        let mic_key = nsstring("");
+        let mic_item: *mut c_void = {
+            let f: extern "C" fn(
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            f(mic_alloc, sel_init_item, mic_title, mic_action, mic_key)
+        };
+        if !action_target.is_null() {
+            msg1_ptr(mic_item, sel(b"setTarget:\0"), action_target);
+        }
+        msg0(mic_item, sel(b"retain\0"));
+        MIC_ITEM.store(mic_item, Ordering::Release);
+        msg1_ptr(menu, sel(b"addItem:\0"), mic_item);
+
+        // Set delegate so menuWillOpen: fires before the menu is shown.
+        let delegate = create_menu_delegate();
+        if !delegate.is_null() {
+            msg0(delegate, sel(b"retain\0"));
+            msg1_ptr(menu, sel(b"setDelegate:\0"), delegate);
+        }
+        // Populate label immediately so first open isn't blank.
+        refresh_mic_item();
 
         // ── Separator ───────────────────────────────────────────────────
         let separator = msg0(menuitem_cls, sel(b"separatorItem\0"));
@@ -242,8 +402,11 @@ pub fn setup_tray() {
         let key_equiv = nsstring("q");
         let quit_item: *mut c_void = {
             let f: extern "C" fn(
-                *mut c_void, *mut c_void,
-                *mut c_void, *mut c_void, *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
             ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
             f(quit_alloc, sel_init_item, title, action, key_equiv)
         };
@@ -289,9 +452,13 @@ pub fn update_tray_icon(active: bool) {
         extern "C" fn set_active_icon(_ctx: *mut c_void) {
             unsafe {
                 let item = STATUS_ITEM.load(Ordering::Acquire);
-                if item.is_null() { return; }
+                if item.is_null() {
+                    return;
+                }
                 let img = nsimage_from_bytes_ex(ICON_BLUE, false); // not template — show blue color
-                if img.is_null() { return; }
+                if img.is_null() {
+                    return;
+                }
                 let button = msg0(item, sel(b"button\0"));
                 if !button.is_null() {
                     msg1_ptr(button, sel(b"setImage:\0"), img);
@@ -302,9 +469,13 @@ pub fn update_tray_icon(active: bool) {
         extern "C" fn set_inactive_icon(_ctx: *mut c_void) {
             unsafe {
                 let item = STATUS_ITEM.load(Ordering::Acquire);
-                if item.is_null() { return; }
+                if item.is_null() {
+                    return;
+                }
                 let img = nsimage_from_bytes(ICON_WHITE);
-                if img.is_null() { return; }
+                if img.is_null() {
+                    return;
+                }
                 let button = msg0(item, sel(b"button\0"));
                 if !button.is_null() {
                     msg1_ptr(button, sel(b"setImage:\0"), img);
@@ -316,10 +487,16 @@ pub fn update_tray_icon(active: bool) {
         // _dispatch_main_q is the dispatch_queue_t itself (an object).
         // dlsym returns the address OF the global, so we need to read through it.
         let sym = dlsym(RTLD_DEFAULT, b"_dispatch_main_q\0".as_ptr() as *const _);
-        if sym.is_null() { return; }
+        if sym.is_null() {
+            return;
+        }
         // The symbol IS the dispatch_queue_t object (dispatch_queue_t is a pointer type).
         let queue = sym;
-        let work = if active { set_active_icon } else { set_inactive_icon };
+        let work = if active {
+            set_active_icon
+        } else {
+            set_inactive_icon
+        };
         dispatch_async_f(queue, std::ptr::null_mut(), work);
     }
 }
@@ -350,9 +527,13 @@ pub fn set_ptt_tray_glyph(state: u8) {
         extern "C" fn apply(_ctx: *mut c_void) {
             unsafe {
                 let item = STATUS_ITEM.load(Ordering::Acquire);
-                if item.is_null() { return; }
+                if item.is_null() {
+                    return;
+                }
                 let button = msg0(item, sel(b"button\0"));
-                if button.is_null() { return; }
+                if button.is_null() {
+                    return;
+                }
                 let glyph = match PTT_STATE.load(Ordering::Acquire) {
                     1 => "🎤",
                     2 => "⋯",
@@ -363,7 +544,9 @@ pub fn set_ptt_tray_glyph(state: u8) {
             }
         }
         let sym = dlsym(RTLD_DEFAULT, b"_dispatch_main_q\0".as_ptr() as *const _);
-        if sym.is_null() { return; }
+        if sym.is_null() {
+            return;
+        }
         dispatch_async_f(sym, std::ptr::null_mut(), apply);
     }
 }

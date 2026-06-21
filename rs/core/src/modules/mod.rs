@@ -8,18 +8,18 @@ pub mod virtual_desktop;
 pub mod voice;
 pub mod voice_otoji;
 pub mod voice_ptt;
-pub mod wake_word;
 #[cfg(test)]
 mod voice_ptt_test;
+pub mod wake_word;
 #[cfg(not(feature = "stt"))]
 mod voice {
     //! No-op stub used when the `stt` feature is disabled (e.g. Windows
     //! builds, where `whisper-rs 0.13` fails to compile). Mirrors the
     //! public surface of `VoiceModule` so the rest of `Modules` compiles
     //! unchanged. All hotkeys silently fall through.
-    use std::sync::Arc;
     use crate::key_code::KeyCode;
     use crate::platform::Platform;
+    use std::sync::Arc;
 
     pub struct VoiceModule;
 
@@ -32,28 +32,45 @@ mod voice {
         }
         pub fn preload(&self) {}
         pub fn start_wake_word(&self, _cfg: super::wake_word::WakeWordConfig) {}
-        pub fn on_key_down(&self, _key: KeyCode) -> bool { false }
-        pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
-        pub fn is_mapped_key(&self, _key: KeyCode) -> bool { false }
+        pub fn on_key_down(&self, _key: KeyCode) -> bool {
+            false
+        }
+        pub fn on_key_up(&self, _key: KeyCode) -> bool {
+            false
+        }
+        pub fn is_mapped_key(&self, _key: KeyCode) -> bool {
+            false
+        }
         pub fn stop(&self) {}
         #[allow(clippy::too_many_arguments)]
         pub fn update_config(
             &self,
-            _stt_engine: String, _api_key: String, _model: String, _correction: bool,
-            _tts_chain: String, _stt_polish_chain: String,
-            _aec_gain: f32, _noise_gate: f32,
-            _speech_start_prob: f32, _speech_end_prob: f32,
-            _speech_start_frames: usize, _silence_end_frames: usize,
+            _stt_engine: String,
+            _api_key: String,
+            _model: String,
+            _correction: bool,
+            _tts_chain: String,
+            _stt_polish_chain: String,
+            _aec_gain: f32,
+            _noise_gate: f32,
+            _speech_start_prob: f32,
+            _speech_end_prob: f32,
+            _speech_start_frames: usize,
+            _silence_end_frames: usize,
             _aec_mode: String,
-        ) {}
+            _whisper_model_path: String,
+            _whisper_language: String,
+            _ptt_vad_auto_release_ms: u64,
+        ) {
+        }
     }
 }
 pub mod window_manager;
 
-use std::sync::Arc;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
 use crate::state::{ClxConfig, ClxState, SpeedConfig};
+use std::sync::Arc;
 
 use agent::AgentModule;
 use brainstorm::BrainstormModule;
@@ -77,22 +94,25 @@ fn safe_call(module: &str, f: impl FnOnce() -> bool) -> bool {
             } else {
                 "unknown panic".to_string()
             };
-            eprintln!("[CLX] PANIC in {} module (isolated, core unaffected): {}", module, msg);
+            eprintln!(
+                "[CLX] PANIC in {} module (isolated, core unaffected): {}",
+                module, msg
+            );
             false
         }
     }
 }
 
 pub struct Modules {
-    pub agent:       AgentModule,
-    pub brainstorm:  BrainstormModule,
-    edit:            EditModule,
-    mouse:           MouseModule,
-    media:           MediaModule,
+    pub agent: AgentModule,
+    pub brainstorm: BrainstormModule,
+    edit: EditModule,
+    mouse: MouseModule,
+    media: MediaModule,
     virtual_desktop: VirtualDesktopModule,
-    voice:           VoiceModule,
-    window_manager:  WindowManagerModule,
-    platform:        Arc<dyn Platform>,
+    voice: VoiceModule,
+    window_manager: WindowManagerModule,
+    platform: Arc<dyn Platform>,
 }
 
 impl Modules {
@@ -100,33 +120,27 @@ impl Modules {
         let cfg = state.config.read().unwrap();
         let (best_key, best_model) = cfg.best_llm_key_and_model();
         let s = Self {
-            agent:           AgentModule::new(Arc::clone(&platform)),
-            brainstorm:      BrainstormModule::new(
+            agent: AgentModule::new(Arc::clone(&platform)),
+            brainstorm: BrainstormModule::new(
                 Arc::clone(&platform),
                 best_key.clone(),
                 best_model.clone(),
             ),
-            edit:            EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
-            mouse:           MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
-            media:           MediaModule::new(Arc::clone(&platform)),
+            edit: EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            mouse: MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            media: MediaModule::new(Arc::clone(&platform)),
             virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform)),
-            voice:           VoiceModule::with_stt_engine(
-                Arc::clone(&platform),
-                cfg.stt_engine.clone(),
-            ).with_llm_config(
-                best_key,
-                best_model,
-                cfg.stt_correction,
-            ),
-            window_manager:  WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            voice: VoiceModule::with_stt_engine(Arc::clone(&platform), cfg.stt_engine.clone())
+                .with_llm_config(best_key, best_model, cfg.stt_correction),
+            window_manager: WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
             platform,
         };
         let ww_cfg = wake_word::WakeWordConfig {
-            enabled:       cfg.wake_word_enabled,
-            model_dir:     cfg.wake_word_model_dir.clone(),
+            enabled: cfg.wake_word_enabled,
+            model_dir: cfg.wake_word_model_dir.clone(),
             keywords_file: cfg.wake_word_keywords_file.clone(),
-            threshold:     cfg.wake_word_threshold,
-            hold_ms:       cfg.wake_word_hold_ms,
+            threshold: cfg.wake_word_threshold,
+            hold_ms: cfg.wake_word_hold_ms,
         };
         drop(cfg);
         // Preload Whisper model in background so first Space+V is instant.
@@ -150,29 +164,59 @@ impl Modules {
         }
 
         // Core modules (keyboard/mouse) — must NEVER crash. Run directly.
-        if self.edit.on_key_down(key, &*self.platform) { return true; }
-        if self.mouse.on_key_down(key) { return true; }
-        if self.media.on_key_down(key) { return true; }
-        if self.virtual_desktop.on_key_down(key, mods) { return true; }
-        if self.window_manager.on_key_down(key, mods) { return true; }
+        if self.edit.on_key_down(key, &*self.platform) {
+            return true;
+        }
+        if self.mouse.on_key_down(key) {
+            return true;
+        }
+        if self.media.on_key_down(key) {
+            return true;
+        }
+        if self.virtual_desktop.on_key_down(key, mods) {
+            return true;
+        }
+        if self.window_manager.on_key_down(key, mods) {
+            return true;
+        }
 
         // Heavy modules (LLM/voice/agent) — isolated with catch_unwind.
         // A panic here logs an error but does NOT crash the core.
-        if safe_call("agent", || self.agent.on_key_down(key, mods)) { return true; }
-        if safe_call("brainstorm", || self.brainstorm.on_key_down(key, mods)) { return true; }
-        if safe_call("voice", || self.voice.on_key_down(key)) { return true; }
+        if safe_call("agent", || self.agent.on_key_down(key, mods)) {
+            return true;
+        }
+        if safe_call("brainstorm", || self.brainstorm.on_key_down(key, mods)) {
+            return true;
+        }
+        if safe_call("voice", || self.voice.on_key_down(key)) {
+            return true;
+        }
         false
     }
 
     pub fn on_key_up(&self, key: KeyCode) -> bool {
-        if self.edit.on_key_up(key) { return true; }
-        if self.mouse.on_key_up(key) { return true; }
-        if self.media.on_key_up(key) { return true; }
-        if self.window_manager.on_key_up(key) { return true; }
+        if self.edit.on_key_up(key) {
+            return true;
+        }
+        if self.mouse.on_key_up(key) {
+            return true;
+        }
+        if self.media.on_key_up(key) {
+            return true;
+        }
+        if self.window_manager.on_key_up(key) {
+            return true;
+        }
 
-        if safe_call("agent", || self.agent.on_key_up(key)) { return true; }
-        if safe_call("brainstorm", || self.brainstorm.on_key_up(key)) { return true; }
-        if safe_call("voice", || self.voice.on_key_up(key)) { return true; }
+        if safe_call("agent", || self.agent.on_key_up(key)) {
+            return true;
+        }
+        if safe_call("brainstorm", || self.brainstorm.on_key_up(key)) {
+            return true;
+        }
+        if safe_call("voice", || self.voice.on_key_up(key)) {
+            return true;
+        }
         false
     }
 
@@ -190,7 +234,7 @@ impl Modules {
     }
 
     pub fn apply_speeds(&self, s: &SpeedConfig) {
-        self.edit .apply_speeds(s);
+        self.edit.apply_speeds(s);
         self.mouse.apply_speeds(s);
         self.window_manager.apply_speeds(s);
     }
@@ -212,6 +256,9 @@ impl Modules {
             cfg.speech_start_frames,
             cfg.silence_end_frames,
             cfg.aec_mode.clone(),
+            cfg.whisper_model_path.clone(),
+            cfg.whisper_language.clone(),
+            cfg.ptt_vad_auto_release_ms,
         );
         self.brainstorm.update_llm_config(&best_key, &best_model);
     }

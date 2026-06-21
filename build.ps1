@@ -20,7 +20,15 @@ $cargoHash = (Get-FileHash $CARGO_BIN -Algorithm SHA256).Hash
 $clxHash   = if (Test-Path $CLX_BIN) { (Get-FileHash $CLX_BIN -Algorithm SHA256).Hash } else { "" }
 
 if ($cargoHash -eq $clxHash) {
-    Write-Host "[build] done - binary unchanged"
+    # Binary is identical to the deployed copy. Still launch if nothing is
+    # running (e.g. first `dev` after clx was closed) so the loop reliably
+    # starts clx; otherwise leave the running instance untouched.
+    if (-not (Get-Process clx -ErrorAction SilentlyContinue)) {
+        Start-Process -FilePath $CLX_BIN -WorkingDirectory $ROOT
+        Write-Host "[build] binary unchanged - clx was not running, started it"
+    } else {
+        Write-Host "[build] done - binary unchanged"
+    }
     exit 0
 }
 

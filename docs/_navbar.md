@@ -1,0 +1,11 @@
+- Languages
+  - [English](README.en.md)
+  - [简体中文](README.zh.md)
+  - [日本語](README.ja.md)
+  - [Français](README.fr.md)
+  - [Español](README.es.md)
+  - [Русский](README.ru.md)
+
+- [Install](installation.md)
+- [Roadmap](Roadmap.md)
+- [GitHub ↗](https://github.com/snolab/CapsLockX)

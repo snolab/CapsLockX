@@ -10,6 +10,7 @@ mod config_store;
 mod cursor_visibility;
 mod hook;
 mod output;
+mod prefs_window;
 mod shm;
 mod vd_api;
 mod vk;
@@ -30,7 +31,7 @@ use tauri::{AppHandle, Manager as _};
 // ── Embedded tray icons ─────────────────────────────────────────────────────
 
 static ICON_OFF: &[u8] = include_bytes!("../../../../Data/XIconWhite.ico");
-static ICON_ON:  &[u8] = include_bytes!("../../../../Data/XIconBlue.ico");
+static ICON_ON: &[u8] = include_bytes!("../../../../Data/XIconBlue.ico");
 
 // ── Global AppHandle so hook.rs can update the tray icon ────────────────────
 
@@ -47,50 +48,51 @@ const TRAY_ID: &str = "main";
 pub fn update_tray_icon(active: bool) {
     let Some(app) = APP_HANDLE.get() else { return };
     let id = TrayIconId::new(TRAY_ID);
-    let Some(tray) = app.tray_by_id(&id) else { return };
+    let Some(tray) = app.tray_by_id(&id) else {
+        return;
+    };
     let bytes = if active { ICON_ON } else { ICON_OFF };
     if let Ok(icon) = Image::from_bytes(bytes) {
         let _ = tray.set_icon(Some(icon));
     }
 }
 
-/// Open (or focus) the preferences webview window. Same code path as the
-/// tray's "Preferences…" menu — used for the Space+, hotkey from
-/// `WinPlatform::open_preferences()`.
+/// Open the preferences window — as a SEPARATE process (`clx prefs-window`).
+///
+/// The prefs UI is a WebView2 window, which CANNOT live in this (the hook)
+/// process: Windows stops delivering the WH_KEYBOARD_LL hook while an in-process
+/// WebView2 window is focused, killing all hotkeys. Spawning it as its own
+/// process keeps the hook process WebView2-free. The subprocess self-limits to a
+/// single instance and focuses an existing window on a repeat open.
+///
+/// Used by the tray "Preferences…" menu and the Space+, hotkey
+/// (`WinPlatform::open_preferences()`).
 pub fn open_prefs_window() {
-    let Some(app) = APP_HANDLE.get() else { return };
-    let app = app.clone();
-    // Tauri's webview construction must run off the hook thread; spawn.
-    std::thread::spawn(move || {
-        if let Some(w) = app.get_webview_window("prefs") {
-            let _ = w.show();
-            let _ = w.set_focus();
-            return;
-        }
-        use tauri::webview::WebviewWindowBuilder;
-        use tauri::WebviewUrl;
-        let _ = WebviewWindowBuilder::new(
-            &app,
-            "prefs",
-            WebviewUrl::App("index.html".into()),
-        )
-        .title("CapsLockX Preferences")
-        .inner_size(560.0, 640.0)
-        .resizable(false)
-        .center()
-        .build();
-    });
+    if let Ok(exe) = std::env::current_exe() {
+        let _ = Command::new(exe).arg("prefs-window").spawn();
+    }
 }
 
 fn main() {
     // Log panics to file since we're a windows subsystem app with no console.
+    // Panics use the synchronous logger so they're recorded even if the async
+    // writer isn't running (CLX_DEBUG disabled, or panic before init).
     std::panic::set_hook(Box::new(|info| {
-        hook::debug_log(&format!("[PANIC] {}", info));
+        hook::debug_log_sync(&format!("[PANIC] {}", info));
     }));
+    hook::init_debug_log();
     hook::debug_log("[main] started");
     // ── CLI subcommands (delegate to external tools, no GUI) ───────────
     if let Some(cmd) = std::env::args().nth(1) {
         match cmd.as_str() {
+            // Out-of-process preferences window. MUST be handled here, before
+            // kill_previous / elevation / hook install — this subprocess shares
+            // the clx.exe name but must NOT touch the running main instance or
+            // install a keyboard hook. It only shows the prefs UI.
+            "prefs-window" => {
+                prefs_window::run();
+                return;
+            }
             "read-screen-text" => {
                 let tool = Path::new(r".\rs\target\release\clx-screen-reader.exe");
                 let tool_alt = Path::new(r".\clx-screen-reader.exe");
@@ -122,7 +124,9 @@ fn main() {
     let cfg_pre = config_store::load();
     if (cfg_pre.request_admin || needs_elevation_for_kill) && !is_elevated() {
         if needs_elevation_for_kill {
-            eprintln!("[CLX] previous elevated instance detected — requesting elevation to kill it");
+            eprintln!(
+                "[CLX] previous elevated instance detected — requesting elevation to kill it"
+            );
         } else {
             eprintln!("[CLX] requesting elevation …");
         }
@@ -174,7 +178,9 @@ fn main() {
         }
     }
     if let Some(ev) = ahk_ready_event {
-        unsafe { let _ = windows::Win32::Foundation::CloseHandle(ev); }
+        unsafe {
+            let _ = windows::Win32::Foundation::CloseHandle(ev);
+        }
     }
     // Spawn the tray/cursor worker BEFORE install_hook so the first hook
     // callback already has a channel to send edge events into. The worker
@@ -231,43 +237,51 @@ fn main() {
                     });
             }
 
-            let prefs_item  = MenuItemBuilder::with_id("prefs",      "Preferences…").build(app)?;
-            let config_item = MenuItemBuilder::with_id("config_dir", "Open Config Folder…").build(app)?;
-            let quit_item   = MenuItemBuilder::with_id("quit",       "Quit").build(app)?;
+            // Watch the config-changed event so the out-of-process prefs window
+            // can push new settings to our live engine. The prefs subprocess
+            // writes config.json then signals this event; we reload and apply.
+            if let Some(evt) = shm::SharedState::create_config_changed_event() {
+                let raw = evt.0 as usize;
+                let _ = std::thread::Builder::new()
+                    .name("clx-config-watch".into())
+                    .spawn(move || {
+                        use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_OBJECT_0};
+                        use windows::Win32::System::Threading::WaitForSingleObject;
+                        unsafe {
+                            let h = HANDLE(raw as *mut _);
+                            loop {
+                                let r = WaitForSingleObject(h, 500);
+                                if r == WAIT_OBJECT_0 {
+                                    let cfg = config_store::load();
+                                    hook::engine().update_config(cfg.into_clx_config());
+                                    hook::debug_log("[main] config reloaded from prefs subprocess");
+                                }
+                                if SHUTDOWN.load(Ordering::Relaxed) {
+                                    let _ = CloseHandle(h);
+                                    return;
+                                }
+                                // WAIT_TIMEOUT or WAIT_OBJECT_0 — loop again.
+                            }
+                        }
+                    });
+            }
+
+            let prefs_item = MenuItemBuilder::with_id("prefs", "Preferences…").build(app)?;
+            let config_item =
+                MenuItemBuilder::with_id("config_dir", "Open Config Folder…").build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
             let menu = MenuBuilder::new(app)
                 .items(&[&prefs_item, &config_item, &quit_item])
                 .build()?;
 
-            let icon = Image::from_bytes(ICON_OFF)
-                .expect("embedded ICO must be valid");
+            let icon = Image::from_bytes(ICON_OFF).expect("embedded ICO must be valid");
             TrayIconBuilder::with_id(TRAY_ID)
                 .icon(icon)
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
-                    "prefs" => {
-                        // Re-show if already open.
-                        if let Some(w) = app.get_webview_window("prefs") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                            return;
-                        }
-                        // Create on demand (must spawn thread to avoid deadlock on Windows).
-                        let app = app.clone();
-                        std::thread::spawn(move || {
-                            use tauri::webview::WebviewWindowBuilder;
-                            use tauri::WebviewUrl;
-                            let _ = WebviewWindowBuilder::new(
-                                &app,
-                                "prefs",
-                                WebviewUrl::App("index.html".into()),
-                            )
-                            .title("CapsLockX Preferences")
-                            .inner_size(560.0, 640.0)
-                            .resizable(false)
-                            .center()
-                            .build();
-                        });
-                    }
+                    // Single code path: builds (with hide-on-close handler) or
+                    // re-shows the prefs window.
+                    "prefs" => open_prefs_window(),
                     "config_dir" => {
                         if let Some(dir) = config_store::config_path().parent() {
                             let _ = std::fs::create_dir_all(dir);
@@ -324,13 +338,18 @@ fn spawn_ahk() -> Option<Child> {
         return None;
     }
     if !generator.exists() || !loader.exists() {
-        eprintln!("[CLX] GenerateModuleRunner.ahk or ModuleLoader.ahk not found, AHK modules disabled");
+        eprintln!(
+            "[CLX] GenerateModuleRunner.ahk or ModuleLoader.ahk not found, AHK modules disabled"
+        );
         return None;
     }
 
     // Step 1: generate module runner/functions files (blocking).
     eprintln!("[CLX] running GenerateModuleRunner.ahk …");
-    match Command::new(exe).arg(r"Core\GenerateModuleRunner.ahk").status() {
+    match Command::new(exe)
+        .arg(r"Core\GenerateModuleRunner.ahk")
+        .status()
+    {
         Ok(status) => {
             if !status.success() {
                 eprintln!("[CLX] GenerateModuleRunner exited with {status}");
@@ -383,11 +402,19 @@ fn relaunch_elevated() {
     use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
     let exe = std::env::current_exe().unwrap_or_default();
-    let exe_w: Vec<u16> = exe.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
+    let exe_w: Vec<u16> = exe
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     let args: String = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
     let args_w: Vec<u16> = args.encode_utf16().chain(std::iter::once(0)).collect();
     let dir = std::env::current_dir().unwrap_or_default();
-    let dir_w: Vec<u16> = dir.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
+    let dir_w: Vec<u16> = dir
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
 
     unsafe {
         use windows::core::PCWSTR;

@@ -54,10 +54,10 @@ pub enum PttRelease {
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum Tail {
     None,
-    MicStarting,   // "."  — otoji subprocess not yet ready
-    ListenSilent,  // "-"  — mic_ready, VAD silent
-    ListenVoice,   // "~"  — VAD detected voice
-    Polishing,     // "…"  — ptt_final received, awaiting upgrade
+    MicStarting,  // "."  — otoji subprocess not yet ready
+    ListenSilent, // "-"  — mic_ready, VAD silent
+    ListenVoice,  // "~"  — VAD detected voice
+    Polishing,    // "…"  — ptt_final received, awaiting upgrade
 }
 
 impl Tail {
@@ -94,12 +94,19 @@ pub struct PttSession {
     mic_ready: Arc<AtomicBool>,
     /// Signals that a PTT session is active (between press and release/commit).
     ptt_active: AtomicBool,
+    /// VAD silence threshold for auto-commit (ms). 0 = disabled.
+    vad_auto_release_ms: AtomicU64,
+    /// Cancels stale VAD auto-release timers when VAD returns to active.
+    vad_token: AtomicU64,
     /// Shared reference to OtojiBackend for getting pid.
     otoji: Arc<super::voice_otoji::OtojiBackend>,
 }
 
 impl PttSession {
-    pub fn new(platform: Arc<dyn Platform>, otoji: Arc<super::voice_otoji::OtojiBackend>) -> Arc<Self> {
+    pub fn new(
+        platform: Arc<dyn Platform>,
+        otoji: Arc<super::voice_otoji::OtojiBackend>,
+    ) -> Arc<Self> {
         Arc::new(Self {
             platform,
             displayed: Arc::new(Mutex::new(String::new())),
@@ -110,8 +117,20 @@ impl PttSession {
             last_committed: Mutex::new(String::new()),
             mic_ready: Arc::new(AtomicBool::new(false)),
             ptt_active: AtomicBool::new(false),
+            vad_auto_release_ms: AtomicU64::new(0),
+            vad_token: AtomicU64::new(0),
             otoji,
         })
+    }
+
+    /// Returns true while the user is holding V (PTT recording in progress).
+    pub fn is_active(&self) -> bool {
+        self.ptt_active.load(Ordering::Relaxed)
+    }
+
+    /// Hot-reload VAD auto-release threshold. 0 = disabled.
+    pub fn set_vad_auto_release_ms(&self, ms: u64) {
+        self.vad_auto_release_ms.store(ms, Ordering::Relaxed);
     }
 
     /// Mark mic as ready (called when otoji sends first status/partial).
@@ -129,6 +148,15 @@ impl PttSession {
     }
 
     /// V key pressed. Returns `true` if consumed (lock-exit).
+    /// Called when otoji emits `{"type":"open"}` — the control socket is now bound.
+    /// If the user is already holding V (ptt_active), send PTT_START now.
+    pub fn on_otoji_open(&self) {
+        if self.ptt_active.load(Ordering::Relaxed) {
+            eprintln!("[CLX] PTT: otoji open — retrying PTT_START");
+            self.send_ptt_start();
+        }
+    }
+
     pub fn on_press(self: &Arc<Self>) -> bool {
         if self.locked.load(Ordering::Relaxed) {
             eprintln!("[CLX] PTT: V pressed while locked → committing & unlocking");
@@ -163,10 +191,12 @@ impl PttSession {
                     .spawn(fetch_frontmost_ocr)
                     .ok();
                 let tree = ax_handle.and_then(|h| h.join().ok()).unwrap_or_default();
-                let ocr  = ocr_handle.and_then(|h| h.join().ok()).unwrap_or_default();
+                let ocr = ocr_handle.and_then(|h| h.join().ok()).unwrap_or_default();
                 let mut ctx = tree;
                 if !ocr.trim().is_empty() {
-                    if !ctx.is_empty() && !ctx.ends_with('\n') { ctx.push('\n'); }
+                    if !ctx.is_empty() && !ctx.ends_with('\n') {
+                        ctx.push('\n');
+                    }
                     ctx.push_str("[OCR]\n");
                     ctx.push_str(&ocr);
                 }
@@ -189,19 +219,28 @@ impl PttSession {
             .spawn(move || {
                 // Wait for placeholder delay.
                 std::thread::sleep(Duration::from_millis(PLACEHOLDER_DELAY_MS));
-                if this.token_counter.load(Ordering::Relaxed) != token { return; }
+                if this.token_counter.load(Ordering::Relaxed) != token {
+                    return;
+                }
 
                 // Wait for mic_ready (= otoji is running and streaming).
                 if !(was_ready || this.mic_ready.load(Ordering::Relaxed)) {
                     // "." — mic still starting.
                     this.set_tail(Tail::MicStarting);
-                    for _ in 0..100 { // up to 5s
+                    for _ in 0..100 {
+                        // up to 5s
                         std::thread::sleep(Duration::from_millis(50));
-                        if this.token_counter.load(Ordering::Relaxed) != token { return; }
-                        if this.mic_ready.load(Ordering::Relaxed) { break; }
+                        if this.token_counter.load(Ordering::Relaxed) != token {
+                            return;
+                        }
+                        if this.mic_ready.load(Ordering::Relaxed) {
+                            break;
+                        }
                     }
                 }
-                if this.token_counter.load(Ordering::Relaxed) != token { return; }
+                if this.token_counter.load(Ordering::Relaxed) != token {
+                    return;
+                }
 
                 // Retry SIGUSR1 if it failed on press (otoji wasn't ready).
                 if !sent_now {
@@ -252,7 +291,9 @@ impl PttSession {
                     .name("ptt-lock-init".into())
                     .spawn(move || {
                         std::thread::sleep(Duration::from_millis(PLACEHOLDER_DELAY_MS));
-                        if this.token_counter.load(Ordering::Relaxed) != token { return; }
+                        if this.token_counter.load(Ordering::Relaxed) != token {
+                            return;
+                        }
                         this.set_tail(Tail::ListenSilent);
                     })
                     .ok();
@@ -273,32 +314,71 @@ impl PttSession {
 
     /// Called when otoji emits a `ptt_partial` event.
     pub fn on_ptt_partial(&self, text: &str) {
-        if !self.ptt_active.load(Ordering::Relaxed) { return; }
-        if text.is_empty() { return; }
+        if !self.ptt_active.load(Ordering::Relaxed) {
+            return;
+        }
+        if text.is_empty() {
+            return;
+        }
         // Body = partial text; tail = VoiceDetected (partial implies voice).
         self.set_body(text.to_string(), Tail::ListenVoice);
     }
 
-    /// Called when otoji emits a `vad` event. Only affects the tail glyph
-    /// when the body is still empty (i.e. before any partial arrives) —
-    /// once partials are streaming they already imply active voice.
-    pub fn on_vad(&self, active: bool) {
-        if !self.ptt_active.load(Ordering::Relaxed) { return; }
-        // Mirror VAD on/off to the otoji-tray icon so the menu-bar reflects
-        // voice activity during PTT (matches note-mode behavior).
+    /// Called when otoji emits a `vad` event. Drives tail glyph and optionally
+    /// auto-commits the PTT segment after a configured silence duration.
+    pub fn on_vad(self: &Arc<Self>, active: bool) {
+        if !self.ptt_active.load(Ordering::Relaxed) {
+            return;
+        }
+        // Mirror VAD on/off to the otoji-tray icon.
         super::voice_otoji::notify_tray(if active {
             super::voice_otoji::TrayState::ListenVoice
         } else {
             super::voice_otoji::TrayState::ListenSilent
         });
+
+        if active {
+            // Voice resumed — cancel any pending auto-release timer.
+            self.vad_token.fetch_add(1, Ordering::Relaxed);
+        } else {
+            // Silence — start auto-release countdown if configured and body non-empty.
+            let ms = self.vad_auto_release_ms.load(Ordering::Relaxed);
+            if ms > 0 && !self.displayed.lock().unwrap().is_empty() {
+                let token = self.vad_token.fetch_add(1, Ordering::Relaxed) + 1;
+                let this = Arc::clone(self);
+                std::thread::Builder::new()
+                    .name("vad-auto-release".into())
+                    .spawn(move || {
+                        std::thread::sleep(Duration::from_millis(ms));
+                        if this.vad_token.load(Ordering::Relaxed) != token {
+                            return;
+                        }
+                        if !this.ptt_active.load(Ordering::Relaxed) {
+                            return;
+                        }
+                        eprintln!("[CLX] PTT: VAD auto-release after {}ms silence", ms);
+                        this.ptt_active.store(false, Ordering::Relaxed);
+                        this.send_ptt_end();
+                    })
+                    .ok();
+            }
+        }
+
+        // Tail glyph: only flip while body is still empty (pre-partial state).
         let body_empty = self.displayed.lock().unwrap().is_empty();
-        if !body_empty { return; }
-        // Only flip between the two listening states; don't override
-        // MicStarting (not ready yet) or Polishing (after release).
+        if !body_empty {
+            return;
+        }
         let current = *self.tail.lock().unwrap();
         let can_flip = matches!(current, Tail::ListenSilent | Tail::ListenVoice);
-        if !can_flip { return; }
-        self.set_tail(if active { Tail::ListenVoice } else { Tail::ListenSilent });
+        if !can_flip {
+            return;
+        }
+        self.set_tail(if active {
+            Tail::ListenVoice
+        } else {
+            Tail::ListenSilent
+        });
     }
 
     /// Called when otoji emits a `ptt_final` event — the RAW transcription,
@@ -358,7 +438,9 @@ impl PttSession {
     ///   via the template if it contains `__ORIGINAL__` / `__TRANSLATION__`.
     pub fn on_ptt_translated(&self, translated: &str, _lang: &str) {
         let translated = translated.trim();
-        if translated.is_empty() { return; }
+        if translated.is_empty() {
+            return;
+        }
         // Drop polish tail if still showing.
         if *self.tail.lock().unwrap() == Tail::Polishing {
             self.set_body(String::new(), Tail::None);
@@ -369,15 +451,20 @@ impl PttSession {
             "translated" => {
                 // Replace original with translation (like ptt_upgrade).
                 let mut prev = self.last_committed.lock().unwrap();
-                if translated == *prev { return; }
+                if translated == *prev {
+                    return;
+                }
                 let prev_chars = prev.chars().count();
                 let new_chars = translated.chars().count();
                 if (prev_chars as isize - new_chars as isize).abs() > 200 {
                     eprintln!("[CLX] PTT: translation skipped — size delta too large");
                     return;
                 }
-                let common: usize = prev.chars().zip(translated.chars())
-                    .take_while(|(a, b)| a == b).count();
+                let common: usize = prev
+                    .chars()
+                    .zip(translated.chars())
+                    .take_while(|(a, b)| a == b)
+                    .count();
                 let old_tail = prev_chars - common;
                 let new_tail: String = translated.chars().skip(common).collect();
                 for _ in 0..old_tail {
@@ -399,8 +486,11 @@ impl PttSession {
                     .replace("__TRANSLATION__", translated)
                     .replace("\\n", "\n");
                 // Diff against what's already displayed (= orig).
-                let common: usize = orig.chars().zip(rendered.chars())
-                    .take_while(|(a, b)| a == b).count();
+                let common: usize = orig
+                    .chars()
+                    .zip(rendered.chars())
+                    .take_while(|(a, b)| a == b)
+                    .count();
                 let old_tail = orig.chars().count() - common;
                 let new_tail: String = rendered.chars().skip(common).collect();
                 for _ in 0..old_tail {
@@ -439,19 +529,25 @@ impl PttSession {
         let new_chars = polished.chars().count();
         let size_delta = (prev_chars as isize - new_chars as isize).abs();
         if size_delta > 20 {
-            eprintln!("[CLX] PTT: upgrade skipped — size delta too large ({prev_chars} → {new_chars})");
+            eprintln!(
+                "[CLX] PTT: upgrade skipped — size delta too large ({prev_chars} → {new_chars})"
+            );
             return;
         }
 
         // Find longest common prefix.
-        let common: usize = prev.chars().zip(polished.chars())
+        let common: usize = prev
+            .chars()
+            .zip(polished.chars())
             .take_while(|(a, b)| a == b)
             .count();
         let old_tail_chars = prev_chars - common;
         let new_tail: String = polished.chars().skip(common).collect();
 
-        eprintln!("[CLX] PTT: upgrade {:?} → {:?} (bs={}, type={:?})",
-            &**prev, polished, old_tail_chars, new_tail);
+        eprintln!(
+            "[CLX] PTT: upgrade {:?} → {:?} (bs={}, type={:?})",
+            &**prev, polished, old_tail_chars, new_tail
+        );
 
         for _ in 0..old_tail_chars {
             self.platform.key_tap(KeyCode::Backspace);
@@ -466,69 +562,22 @@ impl PttSession {
 
     // ── Internal ─────────────────────────────────────────────────────────
 
-    /// Send SIGUSR1 to otoji. Returns true if sent, false if no pid available.
+    /// Send PTT_START to otoji via control socket (all platforms).
     fn send_ptt_start(&self) -> bool {
-        // On Windows, use TCP control socket instead of Unix signals.
-        #[cfg(not(unix))]
-        {
-            if self.otoji.send_control("PTT_START") {
-                eprintln!("[CLX] PTT: sent PTT_START via control socket");
-                return true;
-            }
-            eprintln!("[CLX] PTT: control socket not ready for PTT_START (will retry)");
-            return false;
+        if self.otoji.send_control("PTT_START") {
+            eprintln!("[CLX] PTT: sent PTT_START via control socket");
+            return true;
         }
-        #[cfg(unix)]
-        {
-            if let Some(pid) = self.otoji.pid() {
-                eprintln!("[CLX] PTT: sending SIGUSR1 (ptt_start) to otoji pid={pid}");
-                Self::send_signal(pid, 10); // SIGUSR1
-                true
-            } else {
-                eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
-                false
-            }
-        }
+        eprintln!("[CLX] PTT: no otoji pid available for ptt_start (will retry)");
+        false
     }
 
     fn send_ptt_end(&self) {
-        #[cfg(not(unix))]
-        {
-            if self.otoji.send_control("PTT_END") {
-                eprintln!("[CLX] PTT: sent PTT_END via control socket");
-            } else {
-                eprintln!("[CLX] PTT: control socket not ready for PTT_END");
-            }
-            return;
+        if self.otoji.send_control("PTT_END") {
+            eprintln!("[CLX] PTT: sent PTT_END via control socket");
+        } else {
+            eprintln!("[CLX] PTT: control socket not ready for PTT_END");
         }
-        #[cfg(unix)]
-        {
-            if let Some(pid) = self.otoji.pid() {
-                eprintln!("[CLX] PTT: sending SIGUSR2 (ptt_end) to otoji pid={pid}");
-                Self::send_signal(pid, 12); // SIGUSR2
-            } else {
-                eprintln!("[CLX] PTT: no otoji pid available for ptt_end");
-            }
-        }
-    }
-
-    #[cfg(unix)]
-    fn send_signal(pid: u32, sig: i32) {
-        extern "C" {
-            fn kill(pid: i32, sig: i32) -> i32;
-        }
-        let ret = unsafe { kill(pid as i32, sig) };
-        if ret != 0 {
-            let err = std::io::Error::last_os_error();
-            eprintln!("[CLX] PTT: kill({pid}, {sig}) FAILED: ret={ret}, err={err}");
-        }
-    }
-
-    #[cfg(not(unix))]
-    fn send_signal(_pid: u32, _sig: i32) {
-        // Windows otoji handshake would use a named pipe or TCP socket rather
-        // than POSIX signals. PTT is a no-op on non-unix until that lands.
-        eprintln!("[CLX] PTT: send_signal skipped (non-unix platform)");
     }
 
     /// Atomically replace the live (body + tail) span at the cursor using a
@@ -540,8 +589,11 @@ impl PttSession {
         let old: String = format!("{}{}", &**displayed, tail.glyph().unwrap_or(""));
         let new: String = format!("{}{}", new_body, new_tail.glyph().unwrap_or(""));
 
-        let common: usize = old.chars().zip(new.chars())
-            .take_while(|(a, b)| a == b).count();
+        let common: usize = old
+            .chars()
+            .zip(new.chars())
+            .take_while(|(a, b)| a == b)
+            .count();
         let old_tail_chars = old.chars().count() - common;
         let new_tail_str: String = new.chars().skip(common).collect();
 
@@ -602,14 +654,20 @@ tell application "System Events"
     return res
 end tell
 "#;
-    match std::process::Command::new("osascript").arg("-e").arg(script).output() {
+    match std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+    {
         Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).into_owned(),
         _ => String::new(),
     }
 }
 
 #[cfg(not(target_os = "macos"))]
-fn fetch_frontmost_ax_tree() -> String { String::new() }
+fn fetch_frontmost_ax_tree() -> String {
+    String::new()
+}
 
 /// Capture the frontmost window and run Vision OCR on it. Invokes the
 /// sibling `clx-ocr` binary (Swift, compiled by build.sh). Returns the
@@ -618,18 +676,24 @@ fn fetch_frontmost_ax_tree() -> String { String::new() }
 #[cfg(target_os = "macos")]
 fn fetch_frontmost_ocr() -> String {
     // Look for clx-ocr next to the current executable.
-    let Ok(exe) = std::env::current_exe() else { return String::new(); };
-    let Some(dir) = exe.parent() else { return String::new(); };
+    let Ok(exe) = std::env::current_exe() else {
+        return String::new();
+    };
+    let Some(dir) = exe.parent() else {
+        return String::new();
+    };
     let ocr_bin = dir.join("clx-ocr");
-    if !ocr_bin.exists() { return String::new(); }
+    if !ocr_bin.exists() {
+        return String::new();
+    }
 
     match std::process::Command::new(&ocr_bin).output() {
-        Ok(out) if out.status.success() => {
-            String::from_utf8_lossy(&out.stdout).into_owned()
-        }
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).into_owned(),
         _ => String::new(),
     }
 }
 
 #[cfg(not(target_os = "macos"))]
-fn fetch_frontmost_ocr() -> String { String::new() }
+fn fetch_frontmost_ocr() -> String {
+    String::new()
+}

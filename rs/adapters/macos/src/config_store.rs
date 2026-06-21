@@ -4,67 +4,82 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FullConfig {
-    pub use_capslock:    bool,
-    pub use_space:       bool,
-    pub use_insert:      bool,
+    pub use_capslock: bool,
+    pub use_space: bool,
+    pub use_insert: bool,
     pub use_scroll_lock: bool,
-    pub use_ralt:        bool,
-    pub cursor_speed:    f64,
+    pub use_ralt: bool,
+    pub cursor_speed: f64,
     #[serde(default = "default_edit_speed")]
-    pub page_speed:      f64,
+    pub page_speed: f64,
     #[serde(default = "default_edit_speed")]
-    pub tab_speed:       f64,
+    pub tab_speed: f64,
     #[serde(default = "default_edit_speed")]
-    pub action_speed:    f64,
-    pub mouse_speed:     f64,
-    pub scroll_speed:    f64,
-    /// STT engine: "sherpa" (SenseVoice) or "whisper"
+    pub action_speed: f64,
+    pub mouse_speed: f64,
+    pub scroll_speed: f64,
+    /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
     #[serde(default = "default_stt_engine")]
-    pub stt_engine:          String,
+    pub stt_engine: String,
+    /// VAD-based PTT auto-release silence threshold (ms). 0 = disabled.
     #[serde(default)]
-    pub gemini_api_key:      String,
+    pub ptt_vad_auto_release_ms: u64,
+    /// PTT polish provider: "gemini" | "openai" | "anthropic" | "auto".
+    #[serde(default = "default_ptt_polish_provider")]
+    pub ptt_polish_provider: String,
+    /// PTT polish model override, e.g. "qwen2.5:7b". Empty = otoji default.
     #[serde(default)]
-    pub openai_api_key:      String,
+    pub ptt_polish_model: String,
+    /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
     #[serde(default)]
-    pub anthropic_api_key:   String,
+    pub whisper_model_path: String,
+    /// BCP-47 language code for whisper-cli --language. Default "ja".
+    #[serde(default = "default_whisper_language")]
+    pub whisper_language: String,
     #[serde(default)]
-    pub elevenlabs_api_key:  String,
+    pub gemini_api_key: String,
+    #[serde(default)]
+    pub openai_api_key: String,
+    #[serde(default)]
+    pub anthropic_api_key: String,
+    #[serde(default)]
+    pub elevenlabs_api_key: String,
     /// Backwards compat: old single key migrates to gemini/openai based on prefix.
     #[serde(default)]
-    pub llm_api_key:         String,
+    pub llm_api_key: String,
     #[serde(default)]
-    pub llm_model:           String,
+    pub llm_model: String,
     #[serde(default)]
-    pub stt_correction:      bool,
+    pub stt_correction: bool,
     /// TTS fallback chain (comma-separated provider names).
     #[serde(default = "default_tts_chain")]
-    pub tts_chain:           String,
+    pub tts_chain: String,
     /// STT polishing fallback chain (comma-separated stage names).
     #[serde(default = "default_stt_polish_chain")]
-    pub stt_polish_chain:    String,
+    pub stt_polish_chain: String,
     // Advanced voice/AEC thresholds
     #[serde(default = "default_aec_gain")]
-    pub aec_gain:            f32,
+    pub aec_gain: f32,
     #[serde(default = "default_noise_gate")]
-    pub noise_gate:          f32,
+    pub noise_gate: f32,
     #[serde(default = "default_speech_start_prob")]
-    pub speech_start_prob:   f32,
+    pub speech_start_prob: f32,
     #[serde(default = "default_speech_end_prob")]
-    pub speech_end_prob:     f32,
+    pub speech_end_prob: f32,
     #[serde(default = "default_speech_start_frames")]
     pub speech_start_frames: usize,
     #[serde(default = "default_silence_end_frames")]
-    pub silence_end_frames:  usize,
+    pub silence_end_frames: usize,
     /// VPIO AEC mode: "off" | "dual-only" | "always".
     #[serde(default = "default_aec_mode")]
-    pub aec_mode:            String,
+    pub aec_mode: String,
     /// Allow overlay to be visible in screenshots/screen sharing.
     #[serde(default)]
-    pub overlay_sharing:     bool,
+    pub overlay_sharing: bool,
     /// Window cycle order (Space+Z): "column", "row", "x,y", "y,x",
     /// "diagonal", "linear", "id".
     #[serde(default = "default_window_cycle_order")]
-    pub window_cycle_order:  String,
+    pub window_cycle_order: String,
     /// Window arrange order (Space+C tile/cascade): same options as cycle order.
     #[serde(default = "default_window_arrange_order")]
     pub window_arrange_order: String,
@@ -120,49 +135,108 @@ pub struct FullConfig {
     pub note_translate_target: String,
 }
 
-fn default_wake_word_threshold() -> f32 { 0.25 }
-fn default_wake_word_hold_ms() -> u64 { 8000 }
+fn default_wake_word_threshold() -> f32 {
+    0.25
+}
+fn default_wake_word_hold_ms() -> u64 {
+    8000
+}
 
-fn default_translate_preset() -> String { "off".to_string() }
-fn default_translate_target() -> String { "English".to_string() }
-fn default_translate_other() -> String { "Japanese".to_string() }
-fn default_translate_direction() -> String { "one_way".to_string() }
-fn default_translate_type() -> String { "translated".to_string() }
-fn default_translate_both_template() -> String { "__ORIGINAL__\n__TRANSLATION__".to_string() }
-fn default_translate_tts_source() -> String { "original".to_string() }
-fn default_translate_polish_provider() -> String { "gemini".to_string() }
-fn default_translate_tts_provider() -> String { "gemini".to_string() }
+fn default_translate_preset() -> String {
+    "off".to_string()
+}
+fn default_translate_target() -> String {
+    "English".to_string()
+}
+fn default_translate_other() -> String {
+    "Japanese".to_string()
+}
+fn default_translate_direction() -> String {
+    "one_way".to_string()
+}
+fn default_translate_type() -> String {
+    "translated".to_string()
+}
+fn default_translate_both_template() -> String {
+    "__ORIGINAL__\n__TRANSLATION__".to_string()
+}
+fn default_translate_tts_source() -> String {
+    "original".to_string()
+}
+fn default_translate_polish_provider() -> String {
+    "gemini".to_string()
+}
+fn default_translate_tts_provider() -> String {
+    "gemini".to_string()
+}
 
-fn default_window_cycle_order() -> String { "y,x".to_string() }
-fn default_window_arrange_order() -> String { "y,x".to_string() }
+fn default_window_cycle_order() -> String {
+    "y,x".to_string()
+}
+fn default_window_arrange_order() -> String {
+    "y,x".to_string()
+}
 
-fn default_stt_engine() -> String { "sherpa".to_string() }
-fn default_tts_chain() -> String { "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string() }
-fn default_stt_polish_chain() -> String { "mlx:qwen2.5-3b,llm-corrector,raw".to_string() }
-fn default_edit_speed() -> f64 { 30.0 }
-fn default_aec_gain() -> f32 { 15.0 }
-fn default_noise_gate() -> f32 { 0.003 }
-fn default_speech_start_prob() -> f32 { 0.8 }
-fn default_speech_end_prob() -> f32 { 0.6 }
-fn default_speech_start_frames() -> usize { 10 }
-fn default_silence_end_frames() -> usize { 20 }
-fn default_aec_mode() -> String { "always".to_string() }
+fn default_stt_engine() -> String {
+    "sherpa".to_string()
+}
+fn default_whisper_language() -> String {
+    "ja".to_string()
+}
+fn default_ptt_polish_provider() -> String {
+    "openai".to_string()
+}
+fn default_tts_chain() -> String {
+    "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string()
+}
+fn default_stt_polish_chain() -> String {
+    "mlx:qwen2.5-3b,llm-corrector,raw".to_string()
+}
+fn default_edit_speed() -> f64 {
+    30.0
+}
+fn default_aec_gain() -> f32 {
+    15.0
+}
+fn default_noise_gate() -> f32 {
+    0.003
+}
+fn default_speech_start_prob() -> f32 {
+    0.8
+}
+fn default_speech_end_prob() -> f32 {
+    0.6
+}
+fn default_speech_start_frames() -> usize {
+    10
+}
+fn default_silence_end_frames() -> usize {
+    20
+}
+fn default_aec_mode() -> String {
+    "always".to_string()
+}
 
 impl Default for FullConfig {
     fn default() -> Self {
         Self {
-            use_capslock:    true,
-            use_space:       true,
-            use_insert:      false,
+            use_capslock: true,
+            use_space: true,
+            use_insert: false,
             use_scroll_lock: false,
-            use_ralt:        false,
-            cursor_speed:    60.0,
-            page_speed:      30.0,
-            tab_speed:       30.0,
-            action_speed:    30.0,
-            mouse_speed:     1600.0,
-            scroll_speed:    1600.0,
-            stt_engine:      "sherpa".to_string(),
+            use_ralt: false,
+            cursor_speed: 60.0,
+            page_speed: 30.0,
+            tab_speed: 30.0,
+            action_speed: 30.0,
+            mouse_speed: 1600.0,
+            scroll_speed: 1600.0,
+            stt_engine: "sherpa".to_string(),
+            ptt_vad_auto_release_ms: 0,
+            ptt_polish_provider: default_ptt_polish_provider(),
+            ptt_polish_model: String::new(),
+            whisper_model_path: String::new(),
+            whisper_language: default_whisper_language(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
             anthropic_api_key: String::new(),
@@ -206,18 +280,23 @@ impl Default for FullConfig {
 impl FullConfig {
     pub fn from_clx_config(cfg: &ClxConfig) -> Self {
         Self {
-            use_capslock:    cfg.use_capslock,
-            use_space:       cfg.use_space,
-            use_insert:      cfg.use_insert,
+            use_capslock: cfg.use_capslock,
+            use_space: cfg.use_space,
+            use_insert: cfg.use_insert,
             use_scroll_lock: cfg.use_scroll_lock,
-            use_ralt:        cfg.use_ralt,
-            cursor_speed:      cfg.speed.cursor_speed,
-            page_speed:        cfg.speed.page_speed,
-            tab_speed:         cfg.speed.tab_speed,
-            action_speed:      cfg.speed.action_speed,
-            mouse_speed:       cfg.speed.mouse_speed,
-            scroll_speed:      cfg.speed.scroll_speed,
-            stt_engine:        cfg.stt_engine.clone(),
+            use_ralt: cfg.use_ralt,
+            cursor_speed: cfg.speed.cursor_speed,
+            page_speed: cfg.speed.page_speed,
+            tab_speed: cfg.speed.tab_speed,
+            action_speed: cfg.speed.action_speed,
+            mouse_speed: cfg.speed.mouse_speed,
+            scroll_speed: cfg.speed.scroll_speed,
+            stt_engine: cfg.stt_engine.clone(),
+            ptt_vad_auto_release_ms: cfg.ptt_vad_auto_release_ms,
+            ptt_polish_provider: cfg.ptt_polish_provider.clone(),
+            ptt_polish_model: cfg.ptt_polish_model.clone(),
+            whisper_model_path: cfg.whisper_model_path.clone(),
+            whisper_language: cfg.whisper_language.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
             openai_api_key: cfg.openai_api_key.clone(),
             anthropic_api_key: cfg.anthropic_api_key.clone(),
@@ -259,48 +338,67 @@ impl FullConfig {
 
     pub fn into_clx_config(self) -> ClxConfig {
         ClxConfig {
-            use_capslock:       self.use_capslock,
-            use_space:          self.use_space,
-            use_insert:         self.use_insert,
-            use_scroll_lock:    self.use_scroll_lock,
-            use_ralt:           self.use_ralt,
+            use_capslock: self.use_capslock,
+            use_space: self.use_space,
+            use_insert: self.use_insert,
+            use_scroll_lock: self.use_scroll_lock,
+            use_ralt: self.use_ralt,
             speed: SpeedConfig {
                 cursor_speed: self.cursor_speed,
-                page_speed:   self.page_speed,
-                tab_speed:    self.tab_speed,
+                page_speed: self.page_speed,
+                tab_speed: self.tab_speed,
                 action_speed: self.action_speed,
-                mouse_speed:  self.mouse_speed,
+                mouse_speed: self.mouse_speed,
                 scroll_speed: self.scroll_speed,
             },
-            stt_engine:         self.stt_engine,
+            stt_engine: self.stt_engine,
+            ptt_vad_auto_release_ms: self.ptt_vad_auto_release_ms,
+            ptt_polish_provider: self.ptt_polish_provider,
+            ptt_polish_model: self.ptt_polish_model,
+            whisper_model_path: self.whisper_model_path,
+            whisper_language: self.whisper_language,
             // Migrate old single llm_api_key to per-provider keys.
-            gemini_api_key:     if !self.gemini_api_key.is_empty() { self.gemini_api_key }
-                                else if self.llm_api_key.starts_with("AIza") { self.llm_api_key.clone() }
-                                else { String::new() },
-            openai_api_key:     if !self.openai_api_key.is_empty() { self.openai_api_key }
-                                else if self.llm_api_key.starts_with("sk-") && !self.llm_api_key.starts_with("sk-ant-") { self.llm_api_key.clone() }
-                                else { String::new() },
-            anthropic_api_key:  if !self.anthropic_api_key.is_empty() { self.anthropic_api_key }
-                                else if self.llm_api_key.starts_with("sk-ant-") { self.llm_api_key.clone() }
-                                else { String::new() },
+            gemini_api_key: if !self.gemini_api_key.is_empty() {
+                self.gemini_api_key
+            } else if self.llm_api_key.starts_with("AIza") {
+                self.llm_api_key.clone()
+            } else {
+                String::new()
+            },
+            openai_api_key: if !self.openai_api_key.is_empty() {
+                self.openai_api_key
+            } else if self.llm_api_key.starts_with("sk-")
+                && !self.llm_api_key.starts_with("sk-ant-")
+            {
+                self.llm_api_key.clone()
+            } else {
+                String::new()
+            },
+            anthropic_api_key: if !self.anthropic_api_key.is_empty() {
+                self.anthropic_api_key
+            } else if self.llm_api_key.starts_with("sk-ant-") {
+                self.llm_api_key.clone()
+            } else {
+                String::new()
+            },
             elevenlabs_api_key: self.elevenlabs_api_key,
-            stt_correction:     self.stt_correction,
-            tts_chain:          self.tts_chain,
-            stt_polish_chain:   self.stt_polish_chain,
-            aec_gain:            self.aec_gain,
-            noise_gate:          self.noise_gate,
-            speech_start_prob:   self.speech_start_prob,
-            speech_end_prob:     self.speech_end_prob,
+            stt_correction: self.stt_correction,
+            tts_chain: self.tts_chain,
+            stt_polish_chain: self.stt_polish_chain,
+            aec_gain: self.aec_gain,
+            noise_gate: self.noise_gate,
+            speech_start_prob: self.speech_start_prob,
+            speech_end_prob: self.speech_end_prob,
             speech_start_frames: self.speech_start_frames,
-            silence_end_frames:  self.silence_end_frames,
-            aec_mode:            self.aec_mode,
-            wake_word_enabled:       self.wake_word_enabled,
-            wake_word_model_dir:     self.wake_word_model_dir,
+            silence_end_frames: self.silence_end_frames,
+            aec_mode: self.aec_mode,
+            wake_word_enabled: self.wake_word_enabled,
+            wake_word_model_dir: self.wake_word_model_dir,
             wake_word_keywords_file: self.wake_word_keywords_file,
-            wake_word_threshold:     self.wake_word_threshold,
-            wake_word_hold_ms:       self.wake_word_hold_ms,
-            note_translate_enabled:  self.note_translate_enabled,
-            note_translate_target:   self.note_translate_target,
+            wake_word_threshold: self.wake_word_threshold,
+            wake_word_hold_ms: self.wake_word_hold_ms,
+            note_translate_enabled: self.note_translate_enabled,
+            note_translate_target: self.note_translate_target,
         }
     }
 }
@@ -317,8 +415,12 @@ pub fn load() -> FullConfig {
     if let Ok(data) = std::fs::read_to_string(&path) {
         match serde_json::from_str::<FullConfig>(&data) {
             Ok(cfg) => {
-                eprintln!("[CLX] config: stt_correction={} llm_key={}... llm_model={}",
-                    cfg.stt_correction, &cfg.llm_api_key[..cfg.llm_api_key.len().min(10)], cfg.llm_model);
+                eprintln!(
+                    "[CLX] config: stt_correction={} llm_key={}... llm_model={}",
+                    cfg.stt_correction,
+                    &cfg.llm_api_key[..cfg.llm_api_key.len().min(10)],
+                    cfg.llm_model
+                );
                 cfg
             }
             Err(e) => {
@@ -339,4 +441,117 @@ pub fn save(cfg: &FullConfig) {
     if let Ok(json) = serde_json::to_string_pretty(cfg) {
         let _ = std::fs::write(path, json);
     }
+}
+
+// ── Otoji config overlay ─────────────────────────────────────────────────────
+//
+// Reads only the voice-relevant fields from the otoji config file.
+// Unknown fields are ignored by serde, so this remains forward-compatible
+// even as the otoji config gains new fields.
+
+/// Voice fields that otoji owns. Parsed from otoji's config.json
+/// and merged into CLX's FullConfig on startup and on mtime change.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default)]
+pub struct OtojiVoiceOverride {
+    pub stt_engine: String,
+    pub ptt_vad_auto_release_ms: u64,
+    pub ptt_polish_provider: String,
+    pub ptt_polish_model: String,
+    pub whisper_model_path: String,
+    pub whisper_language: String,
+    pub stt_correction: bool,
+    pub tts_chain: String,
+    pub stt_polish_chain: String,
+    pub aec_gain: f32,
+    pub noise_gate: f32,
+    pub speech_start_prob: f32,
+    pub speech_end_prob: f32,
+    pub speech_start_frames: usize,
+    pub silence_end_frames: usize,
+    pub aec_mode: String,
+    pub overlay_sharing: bool,
+    pub translate_enabled: bool,
+    pub translate_preset: String,
+    pub translate_target: String,
+    pub translate_other: String,
+    pub translate_direction: String,
+    pub translate_type: String,
+    pub translate_both_template: String,
+    pub translate_tts_source: String,
+    pub translate_polish_provider: String,
+    pub translate_tts_provider: String,
+    pub note_translate_enabled: bool,
+    pub note_translate_target: String,
+}
+
+/// Path to the otoji config file.
+pub fn otoji_config_path() -> std::path::PathBuf {
+    #[cfg(target_os = "macos")]
+    if let Some(home) = std::env::var_os("HOME") {
+        return std::path::PathBuf::from(home)
+            .join("Library/Application Support/otoji/config.json");
+    }
+    dirs::data_local_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("otoji/config.json")
+}
+
+/// mtime (secs since epoch) of the otoji config file. Returns 0 if absent.
+pub fn otoji_config_mtime() -> u64 {
+    std::fs::metadata(otoji_config_path())
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Load the otoji voice override config. Returns `None` if the file doesn't exist.
+pub fn load_otoji_voice_override() -> Option<OtojiVoiceOverride> {
+    let path = otoji_config_path();
+    let data = std::fs::read_to_string(&path).ok()?;
+    match serde_json::from_str::<OtojiVoiceOverride>(&data) {
+        Ok(v) => Some(v),
+        Err(e) => {
+            eprintln!("[CLX] otoji config parse error: {}", e);
+            None
+        }
+    }
+}
+
+/// Apply an otoji voice override on top of a FullConfig.
+/// Otoji owns all voice settings — every field is applied unconditionally
+/// once the otoji config file exists. CLX voice fields in FullConfig become
+/// subordinate to the otoji config.
+pub fn apply_otoji_override(cfg: &mut FullConfig, ov: &OtojiVoiceOverride) {
+    cfg.stt_engine = ov.stt_engine.clone();
+    cfg.ptt_vad_auto_release_ms = ov.ptt_vad_auto_release_ms;
+    cfg.ptt_polish_provider = ov.ptt_polish_provider.clone();
+    cfg.ptt_polish_model = ov.ptt_polish_model.clone();
+    cfg.whisper_model_path = ov.whisper_model_path.clone();
+    cfg.whisper_language = ov.whisper_language.clone();
+    cfg.stt_correction = ov.stt_correction;
+    cfg.tts_chain = ov.tts_chain.clone();
+    cfg.stt_polish_chain = ov.stt_polish_chain.clone();
+    cfg.aec_gain = ov.aec_gain;
+    cfg.noise_gate = ov.noise_gate;
+    cfg.speech_start_prob = ov.speech_start_prob;
+    cfg.speech_end_prob = ov.speech_end_prob;
+    cfg.speech_start_frames = ov.speech_start_frames;
+    cfg.silence_end_frames = ov.silence_end_frames;
+    cfg.aec_mode = ov.aec_mode.clone();
+    cfg.overlay_sharing = ov.overlay_sharing;
+    cfg.translate_enabled = ov.translate_enabled;
+    cfg.translate_preset = ov.translate_preset.clone();
+    cfg.translate_target = ov.translate_target.clone();
+    cfg.translate_other = ov.translate_other.clone();
+    cfg.translate_direction = ov.translate_direction.clone();
+    cfg.translate_type = ov.translate_type.clone();
+    cfg.translate_both_template = ov.translate_both_template.clone();
+    cfg.translate_tts_source = ov.translate_tts_source.clone();
+    cfg.translate_polish_provider = ov.translate_polish_provider.clone();
+    cfg.translate_tts_provider = ov.translate_tts_provider.clone();
+    cfg.note_translate_enabled = ov.note_translate_enabled;
+    cfg.note_translate_target = ov.note_translate_target.clone();
 }

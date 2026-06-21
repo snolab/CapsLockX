@@ -1,3 +1,11 @@
+#[path = "../audio_tap.rs"]
+mod audio_tap;
+#[path = "../mic_mode.rs"]
+mod mic_mode;
+#[path = "../system_audio.rs"]
+mod system_audio;
+#[path = "../voice_capture.rs"]
+mod voice_capture;
 /// CLX Voice Standalone — full Space+V pipeline without the rest of CLX.
 ///
 /// Captures mic (VoiceProcessingIO AEC) + system audio (ScreenCaptureKit),
@@ -6,17 +14,14 @@
 /// Build:   cargo build -p capslockx-macos --bin voice-standalone --release
 /// Run:     DYLD_LIBRARY_PATH=rs/target/release ./target/release/voice-standalone
 
-#[path = "../voice_overlay.rs"]  mod voice_overlay;
-#[path = "../voice_capture.rs"]  mod voice_capture;
-#[path = "../system_audio.rs"]   mod system_audio;
-#[path = "../mic_mode.rs"]       mod mic_mode;
-#[path = "../audio_tap.rs"]      mod audio_tap;
+#[path = "../voice_overlay.rs"]
+mod voice_overlay;
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use capslockx_core::key_code::KeyCode;
-use capslockx_core::platform::{Platform, SystemAudioStream};
 use capslockx_core::modules::voice::VoiceModule;
+use capslockx_core::platform::{Platform, SystemAudioStream};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 // Signal flags — set by signal handlers, consumed by timer poll.
 static SIG_KEY_DOWN: AtomicBool = AtomicBool::new(false);
@@ -84,8 +89,12 @@ impl Platform for VoicePlatform {
         }
     }
 
-    fn show_voice_overlay(&self) { voice_overlay::show_overlay(); }
-    fn hide_voice_overlay(&self) { voice_overlay::hide_overlay(); }
+    fn show_voice_overlay(&self) {
+        voice_overlay::show_overlay();
+    }
+    fn hide_voice_overlay(&self) {
+        voice_overlay::hide_overlay();
+    }
 
     fn update_voice_overlay(&self, mic: &[f32], mic_vad: bool, sys: &[f32], sys_vad: bool) {
         voice_overlay::push_dual_audio_levels(mic, mic_vad, sys, sys_vad, None);
@@ -106,23 +115,36 @@ impl Platform for VoicePlatform {
 fn main() {
     // Capture the FIRST panic message before panic_cannot_unwind swallows it.
     std::panic::set_hook(Box::new(|info| {
-        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() { s.to_string() }
-                  else if let Some(s) = info.payload().downcast_ref::<String>() { s.clone() }
-                  else { "unknown".to_string() };
-        let loc = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_default();
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "unknown".to_string()
+        };
+        let loc = info
+            .location()
+            .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_default();
         eprintln!("\n[PANIC] >>> {} at {} <<<\n", msg, loc);
     }));
 
     // Kill any previous instance of voice-standalone (dedup).
     {
         let my_pid = std::process::id();
-        if let Ok(output) = std::process::Command::new("pgrep").arg("-f").arg("voice-standalone").output() {
+        if let Ok(output) = std::process::Command::new("pgrep")
+            .arg("-f")
+            .arg("voice-standalone")
+            .output()
+        {
             let pids = String::from_utf8_lossy(&output.stdout);
             for line in pids.lines() {
                 if let Ok(pid) = line.trim().parse::<u32>() {
                     if pid != my_pid {
                         eprintln!("[voice-standalone] killing old instance (pid {})", pid);
-                        let _ = std::process::Command::new("kill").arg(pid.to_string()).output();
+                        let _ = std::process::Command::new("kill")
+                            .arg(pid.to_string())
+                            .output();
                     }
                 }
             }
@@ -169,26 +191,56 @@ fn main() {
 
     // Load config and apply voice thresholds.
     {
-        let cfg_path = dirs::config_dir()
-            .map(|d| d.join("CapsLockX").join("config.json"));
+        let cfg_path = dirs::config_dir().map(|d| d.join("CapsLockX").join("config.json"));
         if let Some(path) = cfg_path {
             if let Ok(data) = std::fs::read_to_string(&path) {
                 if let Ok(v) = serde_json::from_str::<serde_json::Value>(&data) {
-                    let aec_gain = v.get("aec_gain").and_then(|v| v.as_f64()).unwrap_or(15.0) as f32;
-                    let noise_gate = v.get("noise_gate").and_then(|v| v.as_f64()).unwrap_or(0.003) as f32;
-                    let speech_start_prob = v.get("speech_start_prob").and_then(|v| v.as_f64()).unwrap_or(0.8) as f32;
-                    let speech_end_prob = v.get("speech_end_prob").and_then(|v| v.as_f64()).unwrap_or(0.6) as f32;
-                    let speech_start_frames = v.get("speech_start_frames").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
-                    let silence_end_frames = v.get("silence_end_frames").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
-                    let aec_mode = v.get("aec_mode").and_then(|v| v.as_str()).unwrap_or("always").to_string();
+                    let aec_gain =
+                        v.get("aec_gain").and_then(|v| v.as_f64()).unwrap_or(15.0) as f32;
+                    let noise_gate = v
+                        .get("noise_gate")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.003) as f32;
+                    let speech_start_prob = v
+                        .get("speech_start_prob")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.8) as f32;
+                    let speech_end_prob = v
+                        .get("speech_end_prob")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.6) as f32;
+                    let speech_start_frames = v
+                        .get("speech_start_frames")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(10) as usize;
+                    let silence_end_frames = v
+                        .get("silence_end_frames")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(20) as usize;
+                    let aec_mode = v
+                        .get("aec_mode")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("always")
+                        .to_string();
                     eprintln!("[voice-standalone] config: aec_gain={} noise_gate={} start_prob={} end_prob={} start_frames={} silence_frames={} aec_mode={}",
                         aec_gain, noise_gate, speech_start_prob, speech_end_prob, speech_start_frames, silence_end_frames, aec_mode);
                     voice.update_config(
-                        "sherpa".into(), String::new(), String::new(), false,
-                        String::new(), String::new(),
-                        aec_gain, noise_gate, speech_start_prob, speech_end_prob,
-                        speech_start_frames, silence_end_frames,
+                        "sherpa".into(),
+                        String::new(),
+                        String::new(),
+                        false,
+                        String::new(),
+                        String::new(),
+                        aec_gain,
+                        noise_gate,
+                        speech_start_prob,
+                        speech_end_prob,
+                        speech_start_frames,
+                        silence_end_frames,
                         aec_mode,
+                        String::new(),
+                        "ja".into(),
+                        0,
                     );
                 }
             }
@@ -203,14 +255,18 @@ fn main() {
         libc::signal(libc::SIGUSR1, handle_sigusr1 as libc::sighandler_t);
         libc::signal(libc::SIGUSR2, handle_sigusr2 as libc::sighandler_t);
     }
-    eprintln!("[voice-standalone] Signal handlers: SIGUSR1=key_down SIGUSR2=key_up (pid={})", std::process::id());
+    eprintln!(
+        "[voice-standalone] Signal handlers: SIGUSR1=key_down SIGUSR2=key_up (pid={})",
+        std::process::id()
+    );
 
     // Poll signal flags from a background thread (signal handlers can't call VoiceModule directly).
     {
         let voice_ref = Arc::new(voice);
         let voice_poll = Arc::clone(&voice_ref);
-        std::thread::Builder::new().name("sig-poll".into()).spawn(move || {
-            loop {
+        std::thread::Builder::new()
+            .name("sig-poll".into())
+            .spawn(move || loop {
                 std::thread::sleep(std::time::Duration::from_millis(20));
                 if SIG_KEY_DOWN.swap(false, Ordering::Relaxed) {
                     eprintln!("[voice-standalone] SIGUSR1 → key_down(V)");
@@ -220,8 +276,8 @@ fn main() {
                     eprintln!("[voice-standalone] SIGUSR2 → key_up(V)");
                     voice_poll.on_key_up(KeyCode::V);
                 }
-            }
-        }).expect("failed to spawn signal poll thread");
+            })
+            .expect("failed to spawn signal poll thread");
         // voice_ref keeps VoiceModule alive; it's leaked intentionally (process-lifetime).
         std::mem::forget(voice_ref);
     }
@@ -235,7 +291,7 @@ fn main() {
 
 /// Spin NSApplication's run loop. Never returns (until the process is killed).
 unsafe fn run_nsapp() {
-    use std::ffi::{c_void, c_char};
+    use std::ffi::{c_char, c_void};
     extern "C" {
         fn objc_getClass(name: *const c_char) -> *mut c_void;
         fn sel_registerName(name: *const c_char) -> *mut c_void;
@@ -246,10 +302,10 @@ unsafe fn run_nsapp() {
     let f1: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
         std::mem::transmute(objc_msgSend as *const ());
 
-    let cls         = objc_getClass(b"NSApplication\0".as_ptr() as *const c_char);
-    let sel_shared  = sel_registerName(b"sharedApplication\0".as_ptr() as *const c_char);
-    let sel_run     = sel_registerName(b"run\0".as_ptr() as *const c_char);
-    let sel_policy  = sel_registerName(b"setActivationPolicy:\0".as_ptr() as *const c_char);
+    let cls = objc_getClass(b"NSApplication\0".as_ptr() as *const c_char);
+    let sel_shared = sel_registerName(b"sharedApplication\0".as_ptr() as *const c_char);
+    let sel_run = sel_registerName(b"run\0".as_ptr() as *const c_char);
+    let sel_policy = sel_registerName(b"setActivationPolicy:\0".as_ptr() as *const c_char);
 
     let app = f0(cls, sel_shared);
     // LSUIElement-style: no Dock icon, no menu bar.

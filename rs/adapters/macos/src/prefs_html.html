@@ -314,74 +314,13 @@
 
   <section>
     <h2>Voice</h2>
-    <div class="sl-row">
-      <label for="stt_engine">STT Engine</label>
-      <select id="stt_engine" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
-        <option value="sherpa">SenseVoice (sherpa) — fast, multilingual</option>
-        <option value="whisper">Whisper (whisper.cpp) — auto-scaling</option>
-      </select>
-      <span></span>
+    <div style="color:var(--overlay1);font-size:12px;padding:0 0 10px;">
+      STT エンジン・AEC・翻訳・VAD などの音声設定は otoji が管理しています。
     </div>
-    <div class="cb-row">
-      <input type="checkbox" id="stt_correction">
-      <label for="stt_correction">LLM correction (fix STT errors using AI)</label>
-    </div>
-    <div class="sl-row">
-      <label for="aec_mode">Echo Cancel</label>
-      <select id="aec_mode" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
-        <option value="always">Always — AEC every session, cancels speaker bleed (default)</option>
-        <option value="dual-only">Dual-only — AEC only with Shift+V</option>
-        <option value="off">Off — raw mic, best audio quality</option>
-      </select>
-      <span></span>
-    </div>
-    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
+    <button id="open_otoji_settings" style="background:var(--blue);color:var(--base);border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600;">Voice Settings… (otoji)</button>
+    <div style="color:var(--overlay1);font-size:11px;padding:8px 0 0;">
       <b>Space+V</b> = voice input (hold) / voice note (click)<br>
-      <b>Shift+Space+V</b> = dual capture (mic + system audio with AEC)<br>
-      <b>Echo Cancel "Always"</b>: cancels YouTube/music bleed during plain Space+V; mic tone becomes call-like.
-    </div>
-  </section>
-
-  <section>
-    <h2>Advanced Voice</h2>
-    <div class="sl-row">
-      <label for="aec_gain">AEC Gain</label>
-      <input type="range" id="aec_gain" min="1" max="50" step="0.5">
-      <span id="aec_gain_val">15</span>
-    </div>
-    <div class="sl-row">
-      <label for="noise_gate">Noise Gate</label>
-      <input type="range" id="noise_gate" min="0.0005" max="0.1" step="0.0005">
-      <span id="noise_gate_val">0.003</span>
-    </div>
-    <div class="sl-row">
-      <label for="speech_start_prob">Speech Start Prob</label>
-      <input type="range" id="speech_start_prob" min="0.3" max="1.0" step="0.05">
-      <span id="speech_start_prob_val">0.8</span>
-    </div>
-    <div class="sl-row">
-      <label for="speech_end_prob">Speech End Prob</label>
-      <input type="range" id="speech_end_prob" min="0.2" max="0.9" step="0.05">
-      <span id="speech_end_prob_val">0.6</span>
-    </div>
-    <div class="sl-row">
-      <label for="speech_start_frames">Start Frames</label>
-      <input type="range" id="speech_start_frames" min="1" max="30" step="1">
-      <span id="speech_start_frames_val">10</span>
-    </div>
-    <div class="sl-row">
-      <label for="silence_end_frames">Silence Frames</label>
-      <input type="range" id="silence_end_frames" min="5" max="60" step="1">
-      <span id="silence_end_frames_val">20</span>
-    </div>
-    <div class="cb-row">
-      <input type="checkbox" id="overlay_sharing">
-      <label for="overlay_sharing">Overlay visible in screenshots / screen sharing</label>
-    </div>
-    <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
-      Tune AEC and VAD. Changes apply on next voice session (Space+V).<br>
-      1 frame ≈ 16ms. Higher gain = louder mic. Higher gate = more silence filtering.<br>
-      Overlay sharing requires restart to take effect.
+      <b>Shift+Space+V</b> = dual capture (mic + system audio with AEC)
     </div>
   </section>
 
@@ -451,157 +390,6 @@
     </div>
   </section>
 
-  <section>
-    <h2>Voice Translation</h2>
-    <div style="color:var(--overlay1);font-size:11px;padding:0 0 8px;">
-      When enabled, your voice transcription is also translated.
-      Space+V behavior adapts based on the preset below.
-    </div>
-    <div style="margin-bottom:10px;">
-      <label><input type="checkbox" id="translate_enabled"> Enable translation</label>
-    </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Preset</label>
-      <select id="translate_preset" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;min-width:220px;">
-        <option value="off">Off</option>
-        <option value="learning">Learning (type + hear target language)</option>
-        <option value="interpreter">Interpreter (type original, speak translation)</option>
-        <option value="chat">Chat (type translation, no TTS)</option>
-        <option value="conversation">Conversation (both + translated TTS)</option>
-        <option value="custom">Custom…</option>
-      </select>
-    </div>
-
-    <!-- Language presets shared by both target and second inputs -->
-    <datalist id="language_suggestions">
-      <option value="English">
-      <option value="Japanese">
-      <option value="Chinese (Simplified)">
-      <option value="Chinese (Traditional)">
-      <option value="Korean">
-      <option value="Spanish">
-      <option value="French">
-      <option value="German">
-      <option value="Russian">
-      <option value="Portuguese">
-      <option value="Italian">
-      <option value="Hindi">
-      <option value="Arabic">
-      <option value="Vietnamese">
-      <option value="Thai">
-      <option value="Indonesian">
-      <!-- Dialects / styles — free-form is fine too -->
-      <option value="Cantonese">
-      <option value="Shanghainese">
-      <option value="Taiwanese Mandarin">
-      <option value="Kansai dialect">
-      <option value="Classical Chinese (文言文)">
-      <option value="Keigo (Japanese formal)">
-      <option value="Tagalog (Philippines)">
-      <option value="Old English (Shakespearean)">
-    </datalist>
-
-    <!-- Always-visible language inputs (for every preset except Off). -->
-    <div id="translate_langs_wrap" style="margin-bottom:10px;display:none;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:inline-block;width:120px;">Target language</label>
-      <input type="text" id="translate_target" list="language_suggestions"
-             placeholder="English, 文言文, Cantonese, ..."
-             style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;min-width:240px;">
-      <span id="translate_other_wrap" style="display:none;margin-left:12px;">
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;margin-right:6px;">↔ Second</label>
-        <input type="text" id="translate_other" list="language_suggestions"
-               placeholder="Japanese, Korean, ..."
-               style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;min-width:240px;">
-      </span>
-      <div style="color:var(--overlay1);font-size:11px;padding:4px 0 0;">
-        Free-form. Pick from the list or type any language, dialect, or style
-        (e.g. <em>文言文</em>, <em>Kansai dialect</em>, <em>formal</em>).
-      </div>
-      <div style="color:var(--overlay1);font-size:11px;padding:2px 0 0;" id="translate_langs_hint"></div>
-    </div>
-
-    <!-- Custom-only panel -->
-    <div id="translate_custom" style="display:none;border-left:2px solid var(--surface0);padding-left:10px;margin-left:4px;margin-bottom:10px;">
-      <div style="margin-bottom:8px;">
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Direction</label>
-        <label><input type="radio" name="translate_direction" value="one_way"> One-way</label>
-        <label style="margin-left:14px;"><input type="radio" name="translate_direction" value="between"> Between two languages</label>
-      </div>
-      <div style="margin-bottom:8px;">
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Type</label>
-        <label><input type="radio" name="translate_type" value="original"> Original</label>
-        <label style="margin-left:14px;"><input type="radio" name="translate_type" value="translated"> Translated</label>
-        <label style="margin-left:14px;"><input type="radio" name="translate_type" value="both"> Both</label>
-      </div>
-      <div id="translate_both_wrap" style="margin-bottom:8px;display:none;">
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">"Both" template</label>
-        <input type="text" id="translate_both_template" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:12px;width:360px;font-family:ui-monospace,monospace;">
-        <div style="color:var(--overlay1);font-size:11px;padding:4px 0 0;">
-          Placeholders: <code>__ORIGINAL__</code>, <code>__TRANSLATION__</code>. Use <code>\n</code> for newline.
-        </div>
-      </div>
-      <div style="margin-bottom:8px;">
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">TTS speaks</label>
-        <label><input type="radio" name="translate_tts_source" value="original"> Original</label>
-        <label style="margin-left:14px;"><input type="radio" name="translate_tts_source" value="translated"> Translated</label>
-        <label style="margin-left:14px;"><input type="radio" name="translate_tts_source" value="off"> Off</label>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:14px;margin-bottom:8px;">
-      <div>
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Polish</label>
-        <select id="translate_polish_provider" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
-          <option value="gemini">Gemini</option>
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-        </select>
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">TTS</label>
-        <select id="translate_tts_provider" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
-          <option value="gemini">Gemini</option>
-          <option value="openai">OpenAI</option>
-          <option value="elevenlabs">ElevenLabs</option>
-          <option value="piper">Piper (local)</option>
-          <option value="iflytek">iFlytek</option>
-        </select>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Note-Mode Translation</h2>
-    <div style="color:var(--overlay1);font-size:11px;padding:0 0 8px;">
-      Continuous listening (voice overlay, non-PTT) translates each final
-      transcript into the target language and shows both lines side-by-side
-      in the overlay. Independent from Voice Translation — enable this even
-      if PTT translation is off. Uses the first available LLM API key
-      (Gemini → OpenAI → Anthropic).
-    </div>
-    <div style="margin-bottom:10px;">
-      <label><input type="checkbox" id="note_translate_enabled"> Enable note-mode translation</label>
-    </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Target language</label>
-      <input type="text" id="note_translate_target" list="language_suggestions" placeholder="Japanese" style="width:260px;background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
-    </div>
-  </section>
-
-  <section>
-    <h2>Fallback Chains</h2>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;">TTS (text-to-speech)</label>
-      <ul id="tts_chain_list" class="chain-list"></ul>
-    </div>
-    <div>
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;">STT Polish (speech correction)</label>
-      <ul id="stt_polish_chain_list" class="chain-list"></ul>
-    </div>
-    <div style="color:var(--overlay1);font-size:11px;padding:6px 0 0;">
-      Toggle providers on/off. Use arrows to reorder. First enabled provider that succeeds wins.
-    </div>
-  </section>
 
   </div><!-- /#content -->
 
@@ -609,71 +397,6 @@
     // Use the sticky status; keep a no-op fallback for legacy code paths.
     const status = document.getElementById('status-sticky');
     let debounce = null;
-
-    // ── Chain list UI ──
-    var TTS_PROVIDERS = {
-      'elevenlabs:rachel':        'ElevenLabs — Rachel voice',
-      'gemini-2.5-flash-preview-tts': 'Gemini TTS',
-      'openai:tts-1':             'OpenAI — tts-1',
-      'msedge':                   'Edge TTS (free, no key)',
-      'native':                   'System native (macOS say)'
-    };
-    var STT_PROVIDERS = {
-      'mlx:qwen2.5-3b':          'MLX local LLM (port 8321)',
-      'gemini-2.5-flash':        'Gemini cloud re-transcribe',
-      'llm-corrector':           'LLM text corrector (uses first available key)',
-      'raw':                     'Raw (no correction)'
-    };
-
-    function populateChain(listId, allProviders, chainStr) {
-      var list = document.getElementById(listId);
-      list.innerHTML = '';
-      var enabled = chainStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-      var all = Object.keys(allProviders);
-      // Build ordered list: enabled first (in order), then disabled ones
-      var ordered = [];
-      enabled.forEach(function(p) { if (allProviders[p]) ordered.push({id: p, on: true}); });
-      all.forEach(function(p) { if (enabled.indexOf(p) === -1) ordered.push({id: p, on: false}); });
-      ordered.forEach(function(item, i) {
-        var li = document.createElement('li');
-        li.className = 'chain-item';
-        li.dataset.provider = item.id;
-        li.innerHTML =
-          '<input type="checkbox"' + (item.on ? ' checked' : '') + '>' +
-          '<span class="chain-label">' + item.id + '</span>' +
-          '<span class="chain-desc">' + allProviders[item.id] + '</span>' +
-          '<button class="chain-btn" data-dir="up" title="Move up">\u25B2</button>' +
-          '<button class="chain-btn" data-dir="down" title="Move down">\u25BC</button>';
-        list.appendChild(li);
-      });
-      // Wire events
-      list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
-        cb.addEventListener('change', scheduleSave);
-      });
-      list.querySelectorAll('.chain-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var li = btn.closest('.chain-item');
-          var dir = btn.dataset.dir;
-          if (dir === 'up' && li.previousElementSibling) {
-            li.parentNode.insertBefore(li, li.previousElementSibling);
-          } else if (dir === 'down' && li.nextElementSibling) {
-            li.parentNode.insertBefore(li.nextElementSibling, li);
-          }
-          scheduleSave();
-        });
-      });
-    }
-
-    function collectChain(listId) {
-      var items = document.getElementById(listId).querySelectorAll('.chain-item');
-      var result = [];
-      items.forEach(function(li) {
-        if (li.querySelector('input[type=checkbox]').checked) {
-          result.push(li.dataset.provider);
-        }
-      });
-      return result.join(',');
-    }
 
     function collectForm() {
       return {
@@ -688,41 +411,12 @@
         action_speed:    parseFloat(document.getElementById('action_speed').value),
         mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
-        stt_engine:      document.getElementById('stt_engine').value,
-        stt_correction:  document.getElementById('stt_correction').checked,
         gemini_api_key:    document.getElementById('gemini_api_key').value,
         openai_api_key:    document.getElementById('openai_api_key').value,
         anthropic_api_key: document.getElementById('anthropic_api_key').value,
         elevenlabs_api_key: document.getElementById('elevenlabs_api_key').value,
-        tts_chain:       collectChain('tts_chain_list'),
-        stt_polish_chain: collectChain('stt_polish_chain_list'),
-        aec_gain:           parseFloat(document.getElementById('aec_gain').value),
-        noise_gate:         parseFloat(document.getElementById('noise_gate').value),
-        speech_start_prob:  parseFloat(document.getElementById('speech_start_prob').value),
-        speech_end_prob:    parseFloat(document.getElementById('speech_end_prob').value),
-        speech_start_frames: parseInt(document.getElementById('speech_start_frames').value),
-        silence_end_frames:  parseInt(document.getElementById('silence_end_frames').value),
-        aec_mode:            document.getElementById('aec_mode').value,
-        overlay_sharing:     document.getElementById('overlay_sharing').checked,
         window_cycle_order:  document.getElementById('window_cycle_order').value,
         window_arrange_order: document.getElementById('window_arrange_order').value,
-
-        // Translation
-        translate_enabled:         document.getElementById('translate_enabled').checked,
-        translate_preset:          document.getElementById('translate_preset').value,
-        translate_direction:       (document.querySelector('input[name="translate_direction"]:checked') || {}).value || 'one_way',
-        translate_target:          document.getElementById('translate_target').value,
-        translate_other:           document.getElementById('translate_other').value,
-        translate_type:            (document.querySelector('input[name="translate_type"]:checked') || {}).value || 'translated',
-        translate_both_template:   document.getElementById('translate_both_template').value,
-        translate_tts_source:      (document.querySelector('input[name="translate_tts_source"]:checked') || {}).value || 'original',
-        translate_polish_provider: document.getElementById('translate_polish_provider').value,
-        translate_tts_provider:    document.getElementById('translate_tts_provider').value,
-
-        // Note translate
-        note_translate_enabled:  document.getElementById('note_translate_enabled').checked,
-        note_translate_target:   document.getElementById('note_translate_target').value,
-
         // Wake word
         wake_word_enabled:       document.getElementById('wake_word_enabled').checked,
         wake_word_model_dir:     document.getElementById('wake_word_model_dir').value,
@@ -744,46 +438,12 @@
       setSlider('action_speed', cfg.action_speed || 15);
       setSlider('mouse_speed',  cfg.mouse_speed);
       setSlider('scroll_speed', cfg.scroll_speed);
-      if (cfg.stt_engine) document.getElementById('stt_engine').value = cfg.stt_engine;
-      document.getElementById('stt_correction').checked = cfg.stt_correction || false;
       if (cfg.gemini_api_key) document.getElementById('gemini_api_key').value = cfg.gemini_api_key;
       if (cfg.openai_api_key) document.getElementById('openai_api_key').value = cfg.openai_api_key;
       if (cfg.anthropic_api_key) document.getElementById('anthropic_api_key').value = cfg.anthropic_api_key;
       if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
-      populateChain('tts_chain_list', TTS_PROVIDERS, cfg.tts_chain || 'elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native');
-      populateChain('stt_polish_chain_list', STT_PROVIDERS, cfg.stt_polish_chain || 'mlx:qwen2.5-3b,llm-corrector,raw');
-      setSlider('aec_gain', cfg.aec_gain || 15);
-      setSlider('noise_gate', cfg.noise_gate || 0.003);
-      setSlider('speech_start_prob', cfg.speech_start_prob || 0.8);
-      setSlider('speech_end_prob', cfg.speech_end_prob || 0.6);
-      setSlider('speech_start_frames', cfg.speech_start_frames || 10);
-      setSlider('silence_end_frames', cfg.silence_end_frames || 20);
-      document.getElementById('aec_mode').value = cfg.aec_mode || 'always';
-      document.getElementById('overlay_sharing').checked = cfg.overlay_sharing || false;
       if (cfg.window_cycle_order) document.getElementById('window_cycle_order').value = cfg.window_cycle_order;
       if (cfg.window_arrange_order) document.getElementById('window_arrange_order').value = cfg.window_arrange_order;
-
-      // Translation
-      document.getElementById('translate_enabled').checked = cfg.translate_enabled || false;
-      var preset = cfg.translate_preset || 'off';
-      document.getElementById('translate_preset').value = preset;
-      var dirRadios = document.querySelectorAll('input[name="translate_direction"]');
-      dirRadios.forEach(function(r){ r.checked = (r.value === (cfg.translate_direction || 'one_way')); });
-      document.getElementById('translate_target').value = cfg.translate_target || 'en';
-      document.getElementById('translate_other').value = cfg.translate_other || 'ja';
-      var typeRadios = document.querySelectorAll('input[name="translate_type"]');
-      typeRadios.forEach(function(r){ r.checked = (r.value === (cfg.translate_type || 'translated')); });
-      document.getElementById('translate_both_template').value = cfg.translate_both_template || '__ORIGINAL__\\n__TRANSLATION__';
-      var ttsSrcRadios = document.querySelectorAll('input[name="translate_tts_source"]');
-      ttsSrcRadios.forEach(function(r){ r.checked = (r.value === (cfg.translate_tts_source || 'original')); });
-      document.getElementById('translate_polish_provider').value = cfg.translate_polish_provider || 'gemini';
-      document.getElementById('translate_tts_provider').value = cfg.translate_tts_provider || 'gemini';
-      updateTranslateVisibility();
-
-      // Note translate
-      document.getElementById('note_translate_enabled').checked = cfg.note_translate_enabled || false;
-      document.getElementById('note_translate_target').value = cfg.note_translate_target || '';
-
       // Wake word
       document.getElementById('wake_word_enabled').checked = cfg.wake_word_enabled || false;
       document.getElementById('wake_word_model_dir').value = cfg.wake_word_model_dir || '';
@@ -798,41 +458,6 @@
       if (wwHoldV) wwHoldV.textContent = wwHold + 'ms';
     }
 
-    function updateTranslateVisibility() {
-      var preset = document.getElementById('translate_preset').value;
-      // Show language selectors for every preset except Off.
-      document.getElementById('translate_langs_wrap').style.display =
-        (preset === 'off') ? 'none' : 'block';
-      // Show Custom panel only when Custom preset.
-      document.getElementById('translate_custom').style.display =
-        (preset === 'custom') ? 'block' : 'none';
-
-      // Determine if a "second language" input is needed.
-      // Conversation preset → always bidirectional.
-      // Custom preset → based on direction radio.
-      var showSecond = false;
-      var hint = '';
-      if (preset === 'conversation') {
-        showSecond = true;
-        hint = 'Auto-detects which of the two you spoke and translates to the other.';
-      } else if (preset === 'custom') {
-        var dir = document.querySelector('input[name="translate_direction"]:checked');
-        showSecond = !!(dir && dir.value === 'between');
-      } else if (preset === 'learning') {
-        hint = 'Speak any language, it is translated to the target language and spoken back.';
-      } else if (preset === 'interpreter') {
-        hint = 'You type your language; the listener hears the target language via TTS.';
-      } else if (preset === 'chat') {
-        hint = 'Type the target language. No TTS — for silent environments.';
-      }
-      document.getElementById('translate_other_wrap').style.display = showSecond ? 'inline' : 'none';
-      document.getElementById('translate_langs_hint').textContent = hint;
-
-      var typ = document.querySelector('input[name="translate_type"]:checked');
-      document.getElementById('translate_both_wrap').style.display =
-        (typ && typ.value === 'both') ? 'block' : 'none';
-    }
-
     function setSlider(id, value) {
       document.getElementById(id).value = value;
       document.getElementById(id + '_val').textContent = value;
@@ -840,8 +465,6 @@
 
     // Live label update while dragging
     ['cursor_speed', 'page_speed', 'tab_speed', 'action_speed', 'mouse_speed', 'scroll_speed',
-     'aec_gain', 'noise_gate', 'speech_start_prob', 'speech_end_prob',
-     'speech_start_frames', 'silence_end_frames',
      'wake_word_threshold', 'wake_word_hold_ms'].forEach(function(id) {
       document.getElementById(id).addEventListener('input', function(e) {
         document.getElementById(id + '_val').textContent = e.target.value;
@@ -891,13 +514,9 @@
       el.addEventListener('input',  scheduleSave);
     });
 
-    // Translation preset / radio changes → update which sub-fields are visible.
-    document.getElementById('translate_preset').addEventListener('change', updateTranslateVisibility);
-    document.querySelectorAll('input[name="translate_direction"]').forEach(function(r){
-      r.addEventListener('change', updateTranslateVisibility);
-    });
-    document.querySelectorAll('input[name="translate_type"]').forEach(function(r){
-      r.addEventListener('change', updateTranslateVisibility);
+    // Voice Settings button → ask Rust to open otoji-tray settings window.
+    document.getElementById('open_otoji_settings').addEventListener('click', function() {
+      webkit.messageHandlers.clx.postMessage(JSON.stringify({cmd: 'open_otoji_settings'}));
     });
 
     // Called from Rust via evaluateJavaScript

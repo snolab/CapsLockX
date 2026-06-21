@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering};
 /// CLX-Brainstorm — Agent loop with persistent chat history.
 ///
 /// Keybindings:
@@ -8,14 +9,12 @@
 ///
 /// The agent maintains conversation history across multiple CLX+B presses.
 /// Each interaction appends to the history, giving the LLM full context.
-
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering};
 use std::sync::Mutex;
 
+use crate::agent::agent_chat;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::llm_client::{LlmConfig, Message};
-use crate::agent::agent_chat;
 use crate::platform::Platform;
 
 const STATE_IDLE: u8 = 0;
@@ -63,12 +62,14 @@ fn load_persistent_history() -> Vec<Message> {
         Ok(a) => a,
         Err(_) => return Vec::new(),
     };
-    arr.iter().filter_map(|v| {
-        Some(Message {
-            role: v["role"].as_str()?.to_string(),
-            content: v["content"].as_str()?.to_string(),
+    arr.iter()
+        .filter_map(|v| {
+            Some(Message {
+                role: v["role"].as_str()?.to_string(),
+                content: v["content"].as_str()?.to_string(),
+            })
         })
-    }).collect()
+        .collect()
 }
 
 fn save_persistent_history(messages: &[Message]) {
@@ -77,7 +78,8 @@ fn save_persistent_history(messages: &[Message]) {
         let _ = std::fs::create_dir_all(parent);
     }
     // Skip system prompt (index 0) when saving.
-    let arr: Vec<serde_json::Value> = messages.iter()
+    let arr: Vec<serde_json::Value> = messages
+        .iter()
         .filter(|m| m.role != "system")
         .map(|m| serde_json::json!({"role": m.role, "content": m.content}))
         .collect();
@@ -114,11 +116,7 @@ fn save_keep_history_pref(keep: bool) {
 }
 
 impl BrainstormModule {
-    pub fn new(
-        platform: Arc<dyn Platform>,
-        llm_api_key: String,
-        llm_model: String,
-    ) -> Self {
+    pub fn new(platform: Arc<dyn Platform>, llm_api_key: String, llm_model: String) -> Self {
         let llm_config = if llm_api_key.is_empty() {
             None
         } else {
@@ -126,15 +124,19 @@ impl BrainstormModule {
         };
 
         let keep = load_keep_history_pref();
-        let mut history = vec![
-            Message { role: "system".into(), content: SYSTEM_PROMPT.into() },
-        ];
+        let mut history = vec![Message {
+            role: "system".into(),
+            content: SYSTEM_PROMPT.into(),
+        }];
         // Load persistent history if preference is set.
         if keep {
             let saved = load_persistent_history();
             if !saved.is_empty() {
                 history.extend(saved);
-                eprintln!("[CLX] brainstorm: loaded {} saved history messages", history.len() - 1);
+                eprintln!(
+                    "[CLX] brainstorm: loaded {} saved history messages",
+                    history.len() - 1
+                );
             }
         }
 
@@ -183,7 +185,9 @@ impl BrainstormModule {
         }
     }
 
-    pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
+    pub fn on_key_up(&self, _key: KeyCode) -> bool {
+        false
+    }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         matches!(key, KeyCode::B)
@@ -194,7 +198,8 @@ impl BrainstormModule {
         hist.truncate(1); // keep system prompt
         *self.last_response.lock().unwrap() = String::new();
         clear_persistent_history();
-        self.platform.show_brainstorm_overlay("Chat history cleared.");
+        self.platform
+            .show_brainstorm_overlay("Chat history cleared.");
         self.state.store(STATE_DONE, Ordering::Relaxed);
         eprintln!("[CLX] brainstorm: history cleared (memory + disk)");
     }
@@ -204,7 +209,7 @@ impl BrainstormModule {
             Some(c) => c,
             None => {
                 self.platform.show_brainstorm_overlay(
-                    "No LLM API key configured.\nSet one in Preferences → LLM → API Key."
+                    "No LLM API key configured.\nSet one in Preferences → LLM → API Key.",
                 );
                 self.state.store(STATE_DONE, Ordering::Relaxed);
                 return;
@@ -217,7 +222,10 @@ impl BrainstormModule {
 
         // Capture selected text NOW (on event tap thread) before focus changes.
         let selected_text = self.platform.get_selected_text();
-        eprintln!("[CLX] brainstorm: selected text via AX: {} chars", selected_text.len());
+        eprintln!(
+            "[CLX] brainstorm: selected text via AX: {} chars",
+            selected_text.len()
+        );
 
         // Everything else on background thread.
         let platform = Arc::clone(&self.platform);
@@ -247,7 +255,16 @@ impl BrainstormModule {
                 let last_resp_ref = unsafe { &*(last_resp_ptr as *const Mutex<String>) };
                 let keep_ref = unsafe { &*(keep_ptr as *const AtomicBool) };
 
-                agent_turn(&platform, &config, &cancel, history_ref, state_ref, last_resp_ref, keep_ref, &selected_text);
+                agent_turn(
+                    &platform,
+                    &config,
+                    &cancel,
+                    history_ref,
+                    state_ref,
+                    last_resp_ref,
+                    keep_ref,
+                    &selected_text,
+                );
             })
             .ok();
     }
@@ -293,7 +310,10 @@ fn agent_turn(
     // 2. Show prompt panel. The [KEEP:0/1] prefix carries checkbox state.
     let raw_input = match platform.show_prompt_input(
         "CapsLockX Brainstorm",
-        &format!("Chat with AI. Check 'Keep histories' to accumulate context. ({} saved)", hist_count),
+        &format!(
+            "Chat with AI. Check 'Keep histories' to accumulate context. ({} saved)",
+            hist_count
+        ),
         &prefill,
     ) {
         Some(q) if !q.trim().is_empty() => q,
@@ -330,11 +350,19 @@ fn agent_turn(
             hist.truncate(1);
             clear_persistent_history();
         }
-        hist.push(Message { role: "user".into(), content: question.clone() });
+        hist.push(Message {
+            role: "user".into(),
+            content: question.clone(),
+        });
 
         let turns = hist.iter().filter(|m| m.role == "user").count();
-        eprintln!("[CLX] brainstorm: turn {} ({} chars, {} msgs, keep={})",
-            turns, question.len(), hist.len(), wants_keep);
+        eprintln!(
+            "[CLX] brainstorm: turn {} ({} chars, {} msgs, keep={})",
+            turns,
+            question.len(),
+            hist.len(),
+            wants_keep
+        );
     }
 
     // 5. Stream LLM response.
@@ -345,24 +373,35 @@ fn agent_turn(
     let mut accumulated = String::new();
     let platform_clone = Arc::clone(platform);
 
-    match agent_chat(config, &mut messages, &mut |token| {
-        if cancel.load(Ordering::Relaxed) { return; }
-        accumulated.push_str(token);
+    match agent_chat(
+        config,
+        &mut messages,
+        &mut |token| {
+            if cancel.load(Ordering::Relaxed) {
+                return;
+            }
+            accumulated.push_str(token);
 
-        let display = if accumulated.chars().count() > 2000 {
-            let chars: Vec<char> = accumulated.chars().collect();
-            let start = chars.len().saturating_sub(1500);
-            format!("...{}", chars[start..].iter().collect::<String>())
-        } else {
-            accumulated.clone()
-        };
-        platform.show_brainstorm_overlay(&display);
-    }, &mut |status| {
-        // Show tool execution status.
-        platform_clone.show_brainstorm_overlay(&format!("🔧 {}", status));
-    }) {
+            let display = if accumulated.chars().count() > 2000 {
+                let chars: Vec<char> = accumulated.chars().collect();
+                let start = chars.len().saturating_sub(1500);
+                format!("...{}", chars[start..].iter().collect::<String>())
+            } else {
+                accumulated.clone()
+            };
+            platform.show_brainstorm_overlay(&display);
+        },
+        &mut |status| {
+            // Show tool execution status.
+            platform_clone.show_brainstorm_overlay(&format!("🔧 {}", status));
+        },
+    ) {
         Ok(final_text) => {
-            let response = if final_text.is_empty() { accumulated } else { final_text };
+            let response = if final_text.is_empty() {
+                accumulated
+            } else {
+                final_text
+            };
             if !response.is_empty() {
                 // Update history with full conversation (includes tool calls/results).
                 *history.lock().unwrap() = messages;
@@ -372,7 +411,7 @@ fn agent_turn(
                     let mut hist = history.lock().unwrap();
                     if hist.len() > 42 {
                         let system = hist[0].clone();
-                        let tail: Vec<Message> = hist[hist.len()-40..].to_vec();
+                        let tail: Vec<Message> = hist[hist.len() - 40..].to_vec();
                         *hist = vec![system];
                         hist.extend(tail);
                     }
@@ -382,7 +421,10 @@ fn agent_turn(
                 if keep_history.load(Ordering::Relaxed) {
                     let hist = history.lock().unwrap();
                     save_persistent_history(&hist);
-                    eprintln!("[CLX] brainstorm: saved {} messages to history file", hist.len() - 1);
+                    eprintln!(
+                        "[CLX] brainstorm: saved {} messages to history file",
+                        hist.len() - 1
+                    );
                 }
 
                 platform.set_clipboard_text(&response);
@@ -392,17 +434,31 @@ fn agent_turn(
                 platform.show_brainstorm_overlay(&format!(
                     "{}\n\n— Copied. Space+B to continue. {}",
                     response,
-                    if keep { format!("({} history records saved)", saved) } else { "ESC to dismiss.".to_string() }
+                    if keep {
+                        format!("({} history records saved)", saved)
+                    } else {
+                        "ESC to dismiss.".to_string()
+                    }
                 ));
                 eprintln!("[CLX] brainstorm: response {} chars", response.len());
 
                 // TTS: speak the response aloud.
                 // Detect language from response content.
-                let lang = if response.chars().any(|c| ('\u{3040}'..='\u{30FF}').contains(&c) || ('\u{4E00}'..='\u{9FFF}').contains(&c) && ('\u{3040}'..='\u{309F}').contains(&c)) {
+                let lang = if response.chars().any(|c| {
+                    ('\u{3040}'..='\u{30FF}').contains(&c)
+                        || ('\u{4E00}'..='\u{9FFF}').contains(&c)
+                            && ('\u{3040}'..='\u{309F}').contains(&c)
+                }) {
                     "ja"
-                } else if response.chars().any(|c| ('\u{4E00}'..='\u{9FFF}').contains(&c)) {
+                } else if response
+                    .chars()
+                    .any(|c| ('\u{4E00}'..='\u{9FFF}').contains(&c))
+                {
                     "zh"
-                } else if response.chars().any(|c| ('\u{AC00}'..='\u{D7AF}').contains(&c)) {
+                } else if response
+                    .chars()
+                    .any(|c| ('\u{AC00}'..='\u{D7AF}').contains(&c))
+                {
                     "ko"
                 } else {
                     "en"
@@ -433,4 +489,155 @@ fn agent_turn(
     }
 
     state.store(STATE_DONE, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_platform::{Call, MockPlatform};
+
+    fn make_module(api_key: &str) -> (BrainstormModule, Arc<MockPlatform>) {
+        let mock = Arc::new(MockPlatform::new());
+        let m = BrainstormModule::new(
+            mock.clone() as Arc<dyn Platform>,
+            api_key.to_string(),
+            "gemini-2.0-flash".to_string(),
+        );
+        (m, mock)
+    }
+
+    #[test]
+    fn is_mapped_key_only_b() {
+        let (m, _mock) = make_module("");
+        assert!(m.is_mapped_key(KeyCode::B));
+        assert!(!m.is_mapped_key(KeyCode::A));
+        assert!(!m.is_mapped_key(KeyCode::Escape));
+        assert!(!m.is_mapped_key(KeyCode::M));
+        assert!(!m.is_mapped_key(KeyCode::Space));
+    }
+
+    #[test]
+    fn on_key_up_always_false() {
+        let (m, _mock) = make_module("");
+        assert!(!m.on_key_up(KeyCode::B));
+        assert!(!m.on_key_up(KeyCode::A));
+        assert!(!m.on_key_up(KeyCode::Escape));
+    }
+
+    #[test]
+    fn on_key_down_unmapped_returns_false() {
+        let (m, mock) = make_module("");
+        let mods = Modifiers::default();
+        assert!(!m.on_key_down(KeyCode::A, &mods));
+        assert!(!m.on_key_down(KeyCode::Space, &mods));
+        assert!(!m.on_key_down(KeyCode::M, &mods));
+        assert_eq!(mock.calls().len(), 0);
+    }
+
+    #[test]
+    fn on_key_down_b_no_api_key_shows_error_overlay() {
+        let (m, mock) = make_module("");
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::B, &mods));
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("No LLM API key"))));
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_DONE);
+    }
+
+    #[test]
+    fn on_key_down_shift_b_clears_history() {
+        let (m, mock) = make_module("");
+        {
+            let mut h = m.history.lock().unwrap();
+            h.push(Message {
+                role: "user".into(),
+                content: "old".into(),
+            });
+            h.push(Message {
+                role: "assistant".into(),
+                content: "reply".into(),
+            });
+        }
+        *m.last_response.lock().unwrap() = "something".into();
+        let mods = Modifiers {
+            shift: true,
+            ..Default::default()
+        };
+        assert!(m.on_key_down(KeyCode::B, &mods));
+        assert_eq!(m.history.lock().unwrap().len(), 1);
+        assert_eq!(m.last_response.lock().unwrap().as_str(), "");
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_DONE);
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("cleared"))));
+    }
+
+    #[test]
+    fn escape_when_idle_returns_false() {
+        let (m, mock) = make_module("");
+        let mods = Modifiers::default();
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_IDLE);
+        assert!(!m.on_key_down(KeyCode::Escape, &mods));
+        assert_eq!(mock.calls().len(), 0);
+    }
+
+    #[test]
+    fn escape_when_streaming_dismisses() {
+        let (m, mock) = make_module("");
+        m.state.store(STATE_STREAMING, Ordering::Relaxed);
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::Escape, &mods));
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_IDLE);
+        assert!(m.cancel.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::HideBrainstormOverlay)));
+    }
+
+    #[test]
+    fn escape_when_done_dismisses() {
+        let (m, mock) = make_module("");
+        m.state.store(STATE_DONE, Ordering::Relaxed);
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::Escape, &mods));
+        assert_eq!(m.state.load(Ordering::Relaxed), STATE_IDLE);
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::HideBrainstormOverlay)));
+    }
+
+    #[test]
+    fn update_llm_config_to_some() {
+        let (m, _mock) = make_module("");
+        assert!(m.llm_config.lock().unwrap().is_none());
+        m.update_llm_config("test-key", "gemini-2.0-flash");
+        assert!(m.llm_config.lock().unwrap().is_some());
+    }
+
+    #[test]
+    fn update_llm_config_to_none() {
+        let (m, _mock) = make_module("initial-key");
+        assert!(m.llm_config.lock().unwrap().is_some());
+        m.update_llm_config("", "gemini-2.0-flash");
+        assert!(m.llm_config.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn new_with_api_key_initializes_config() {
+        let (m, _mock) = make_module("some-key");
+        assert!(m.llm_config.lock().unwrap().is_some());
+        assert_eq!(m.history.lock().unwrap().len(), 1);
+        assert_eq!(m.history.lock().unwrap()[0].role, "system");
+    }
+
+    #[test]
+    fn generation_counter_starts_zero() {
+        let (m, _mock) = make_module("");
+        assert_eq!(m.generation.load(Ordering::Relaxed), 0);
+    }
 }

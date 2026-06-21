@@ -68,12 +68,7 @@ unsafe fn msg1(obj: *mut c_void, sel: *mut c_void, arg: *mut c_void) -> *mut c_v
 
 /// Helper: send a two-arg (id, id) message returning id.
 #[allow(dead_code)]
-unsafe fn msg2(
-    obj: *mut c_void,
-    sel: *mut c_void,
-    a: *mut c_void,
-    b: *mut c_void,
-) -> *mut c_void {
+unsafe fn msg2(obj: *mut c_void, sel: *mut c_void, a: *mut c_void, b: *mut c_void) -> *mut c_void {
     let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
         std::mem::transmute(objc_msgSend as *const ());
     f(obj, sel, a, b)
@@ -191,10 +186,70 @@ unsafe extern "C" fn handle_script_message(
         "close" => {
             close_preferences();
         }
+        "open_otoji_settings" => {
+            open_otoji_settings();
+        }
         _ => {
             eprintln!("[CLX] prefs: unknown command: {}", cmd);
         }
     }
+}
+
+/// otoji-tray に SIGUSR1 を送り設定画面を開く。
+/// プロセスが見つからない場合は otoji-tray を起動してから送る。
+fn open_otoji_settings() {
+    let pid = find_otoji_tray_pid();
+    if let Some(pid) = pid {
+        eprintln!("[CLX] prefs: sending SIGUSR1 to otoji-tray pid={}", pid);
+        unsafe {
+            libc::kill(pid, libc::SIGUSR1);
+        }
+    } else {
+        eprintln!("[CLX] prefs: otoji-tray not running — spawning");
+        // CLX バイナリと同じディレクトリにある otoji-tray を探す。
+        let tray_path = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join("otoji-tray")));
+        let Some(tray_path) = tray_path else { return };
+        if !tray_path.exists() {
+            eprintln!(
+                "[CLX] prefs: otoji-tray not found at {}",
+                tray_path.display()
+            );
+            return;
+        }
+        match std::process::Command::new(&tray_path)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            Ok(child) => {
+                eprintln!("[CLX] prefs: spawned otoji-tray pid={}", child.id());
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(1000));
+                    if let Some(pid) = find_otoji_tray_pid() {
+                        unsafe {
+                            libc::kill(pid, libc::SIGUSR1);
+                        }
+                    }
+                });
+            }
+            Err(e) => eprintln!("[CLX] prefs: failed to spawn otoji-tray: {}", e),
+        }
+    }
+}
+
+fn find_otoji_tray_pid() -> Option<i32> {
+    let out = std::process::Command::new("pgrep")
+        .args(["-f", "otoji-tray"])
+        .output()
+        .ok()?;
+    String::from_utf8(out.stdout)
+        .ok()?
+        .lines()
+        .next()
+        .and_then(|s| s.trim().parse::<i32>().ok())
 }
 
 /// Evaluate JavaScript on the webview (must be called from main thread or dispatched).
@@ -226,11 +281,8 @@ static ACTION_CLASS_NAME: &[u8] = b"CLXPrefsActionTarget\0";
 unsafe fn ensure_handler_class() {
     HANDLER_CLASS_REGISTERED.call_once(|| {
         let superclass = cls(b"NSObject\0");
-        let new_cls = objc_allocateClassPair(
-            superclass,
-            HANDLER_CLASS_NAME.as_ptr() as *const _,
-            0,
-        );
+        let new_cls =
+            objc_allocateClassPair(superclass, HANDLER_CLASS_NAME.as_ptr() as *const _, 0);
         if new_cls.is_null() {
             eprintln!("[CLX] prefs: failed to allocate CLXScriptMessageHandler class");
             return;
@@ -281,14 +333,19 @@ unsafe extern "C" fn action_open_voice_folder(
     }
 }
 
-/// Action handler for "Restart" menu item — spawn new process and exit.
-/// Using spawn+exit instead of execv so macOS properly cleans up the old
-/// NSStatusItem (execv leaves a ghost/transparent icon in the menu bar).
-unsafe extern "C" fn action_restart(
+/// Action handler for "Microphone Mode…" menu item — opens the system mic mode picker.
+unsafe extern "C" fn action_show_mic_picker(
     _this: *mut c_void,
     _cmd: *mut c_void,
     _sender: *mut c_void,
 ) {
+    crate::mic_mode::show_microphone_mode_picker();
+}
+
+/// Action handler for "Restart" menu item — spawn new process and exit.
+/// Using spawn+exit instead of execv so macOS properly cleans up the old
+/// NSStatusItem (execv leaves a ghost/transparent icon in the menu bar).
+unsafe extern "C" fn action_restart(_this: *mut c_void, _cmd: *mut c_void, _sender: *mut c_void) {
     eprintln!("[CLX] restart requested via tray menu");
     let exe = std::env::current_exe().unwrap_or_default();
     let args: Vec<String> = std::env::args().collect();
@@ -314,11 +371,7 @@ unsafe extern "C" fn action_restart(
 unsafe fn ensure_action_class() {
     ACTION_CLASS_REGISTERED.call_once(|| {
         let superclass = cls(b"NSObject\0");
-        let new_cls = objc_allocateClassPair(
-            superclass,
-            ACTION_CLASS_NAME.as_ptr() as *const _,
-            0,
-        );
+        let new_cls = objc_allocateClassPair(superclass, ACTION_CLASS_NAME.as_ptr() as *const _, 0);
         if new_cls.is_null() {
             eprintln!("[CLX] prefs: failed to allocate CLXPrefsActionTarget class");
             return;
@@ -357,6 +410,17 @@ unsafe fn ensure_action_class() {
             eprintln!("[CLX] prefs: failed to add openVoiceFolder: method");
         }
 
+        let sel_mic = sel(b"showMicPicker:\0");
+        let added = class_addMethod(
+            new_cls,
+            sel_mic,
+            action_show_mic_picker as *const c_void,
+            b"v@:@\0".as_ptr() as *const _,
+        );
+        if !added {
+            eprintln!("[CLX] prefs: failed to add showMicPicker: method");
+        }
+
         objc_registerClassPair(new_cls);
         eprintln!("[CLX] prefs: registered CLXPrefsActionTarget class");
     });
@@ -393,7 +457,9 @@ pub unsafe fn get_action_target() -> *mut c_void {
 fn is_prefs_visible() -> bool {
     unsafe {
         let existing = PREFS_WINDOW.load(Ordering::Acquire);
-        if existing.is_null() { return false; }
+        if existing.is_null() {
+            return false;
+        }
         let f: extern "C" fn(*mut c_void, *mut c_void) -> bool =
             std::mem::transmute(objc_msgSend as *const ());
         f(existing, sel(b"isVisible\0"))
@@ -501,12 +567,8 @@ pub fn open_preferences() {
         let wk_alloc = msg0(wk_view_cls, sel(b"alloc\0"));
         let sel_init_frame = sel(b"initWithFrame:configuration:\0");
         let webview: *mut c_void = {
-            let f: extern "C" fn(
-                *mut c_void,
-                *mut c_void,
-                NSRect,
-                *mut c_void,
-            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            let f: extern "C" fn(*mut c_void, *mut c_void, NSRect, *mut c_void) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
             f(wk_alloc, sel_init_frame, rect, wk_config)
         };
         if webview.is_null() {
@@ -532,15 +594,16 @@ pub fn open_preferences() {
         let window_alloc = msg0(window_cls, sel(b"alloc\0"));
         let sel_init_window = sel(b"initWithContentRect:styleMask:backing:defer:\0");
         let window: *mut c_void = {
-            let f: extern "C" fn(
-                *mut c_void,
-                *mut c_void,
-                NSRect,
-                u64,
-                u64,
-                bool,
-            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-            f(window_alloc, sel_init_window, rect, style_mask, backing, false)
+            let f: extern "C" fn(*mut c_void, *mut c_void, NSRect, u64, u64, bool) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
+            f(
+                window_alloc,
+                sel_init_window,
+                rect,
+                style_mask,
+                backing,
+                false,
+            )
         };
         if window.is_null() {
             eprintln!("[CLX] prefs: failed to create NSWindow");

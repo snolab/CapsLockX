@@ -7,37 +7,39 @@
 //!   System Settings → Privacy & Security → Accessibility
 
 #[cfg(target_os = "macos")]
+mod agent_cmd;
+#[cfg(target_os = "macos")]
+mod audio_tap;
+#[cfg(target_os = "macos")]
+mod brainstorm_overlay;
+#[cfg(target_os = "macos")]
+mod capslock_remap;
+#[cfg(target_os = "macos")]
+mod config_store;
+#[cfg(target_os = "macos")]
 mod hook;
 #[cfg(target_os = "macos")]
 mod key_map;
 #[cfg(target_os = "macos")]
-mod output;
-#[cfg(target_os = "macos")]
-mod tray;
-#[cfg(target_os = "macos")]
-mod config_store;
-#[cfg(target_os = "macos")]
-mod prefs;
-#[cfg(target_os = "macos")]
-mod voice_overlay;
-#[cfg(target_os = "macos")]
-mod system_audio;
-#[cfg(target_os = "macos")]
-mod voice_capture;
-#[cfg(target_os = "macos")]
-mod brainstorm_overlay;
-#[cfg(target_os = "macos")]
 mod keyboard_layout_overlay;
 #[cfg(target_os = "macos")]
-mod agent_cmd;
-#[cfg(target_os = "macos")]
 mod mic_mode;
-#[cfg(target_os = "macos")]
-mod audio_tap;
 #[cfg(target_os = "macos")]
 mod observe_cmd;
 #[cfg(target_os = "macos")]
 mod ocr_cmd;
+#[cfg(target_os = "macos")]
+mod output;
+#[cfg(target_os = "macos")]
+mod prefs;
+#[cfg(target_os = "macos")]
+mod system_audio;
+#[cfg(target_os = "macos")]
+mod tray;
+#[cfg(target_os = "macos")]
+mod voice_capture;
+#[cfg(target_os = "macos")]
+mod voice_overlay;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -71,10 +73,12 @@ fn main() {
             println!("  clx agent --prompt \"task\"    Run LLM agent to perform a task");
             println!("  clx agent \"task\"             Shorthand for --prompt");
             println!("  clx observe                  Capture screen + Gemini vision description");
-            println!("  clx observe --help           Show observe options
+            println!(
+                "  clx observe --help           Show observe options
   clx ocr                      OCR full screen (Apple Vision, JSON output)
   clx ocr --region x,y,w,h    OCR a screen region
-  clx ocr --text               Plain text output");
+  clx ocr --text               Plain text output"
+            );
             println!("  clx --help                  Show this help");
             println!();
             println!("CLX AGENT COMMANDS:");
@@ -124,22 +128,35 @@ fn main() {
         eprintln!("[CLX] dedup: my_pid={} exe={}", my_pid, exe_str);
 
         // Use pgrep to find processes with the same executable name.
-        if let Ok(output) = std::process::Command::new("pgrep").arg("-x").arg("clx").output() {
+        if let Ok(output) = std::process::Command::new("pgrep")
+            .arg("-x")
+            .arg("clx")
+            .output()
+        {
             let pids = String::from_utf8_lossy(&output.stdout);
             for line in pids.lines() {
                 if let Ok(pid) = line.trim().parse::<u32>() {
                     if pid != my_pid {
                         eprintln!("[CLX] dedup: killing old instance pid={}", pid);
-                        let _ = std::process::Command::new("kill").arg("-9").arg(pid.to_string()).status();
+                        let _ = std::process::Command::new("kill")
+                            .arg("-9")
+                            .arg(pid.to_string())
+                            .status();
                     }
                 }
             }
         }
-        // Also try matching by path pattern for when launched as ./clx or /path/to/clx
+        // Kill other clx daemon instances by path+flag pattern.
+        // Match only the actual foreground daemon (`clx -f` / `capslockx -f`), NOT the
+        // bash watchdog wrapper (`bin/clx --watchdog`) whose cmdline also contains `/clx`.
         let _ = std::process::Command::new("sh")
-            .args(["-c", &format!(
-                "pgrep -f '/clx\\b|/capslockx\\b' | grep -v {} | xargs kill -9 2>/dev/null", my_pid
-            )])
+            .args([
+                "-c",
+                &format!(
+                    "pgrep -f '/clx -f|/capslockx -f' | grep -v {} | xargs kill -9 2>/dev/null",
+                    my_pid
+                ),
+            ])
             .status();
 
         // Reap any orphan clx-prompt processes from previous (crashed) sessions.
@@ -165,26 +182,33 @@ fn main() {
             let log_fd = log_file.as_raw_fd();
             let mut pipe_fds = [0i32; 2];
             if unsafe { pipe(pipe_fds.as_mut_ptr()) } == 0 {
-                unsafe { dup2(pipe_fds[1], stderr_fd); }
-                unsafe { close(pipe_fds[1]); }
+                unsafe {
+                    dup2(pipe_fds[1], stderr_fd);
+                }
+                unsafe {
+                    close(pipe_fds[1]);
+                }
                 let reader_fd = pipe_fds[0];
                 let log_fd_copy = unsafe { dup(log_fd) };
-                std::thread::Builder::new().name("clx-log-tee".into()).spawn(move || {
-                    let mut reader = unsafe { std::fs::File::from_raw_fd(reader_fd) };
-                    let mut orig_w = unsafe { std::fs::File::from_raw_fd(orig_copy) };
-                    let mut log_w = unsafe { std::fs::File::from_raw_fd(log_fd_copy) };
-                    let mut buf = [0u8; 4096];
-                    loop {
-                        use std::io::Read;
-                        match reader.read(&mut buf) {
-                            Ok(0) | Err(_) => break,
-                            Ok(n) => {
-                                let _ = std::io::Write::write_all(&mut orig_w, &buf[..n]);
-                                let _ = std::io::Write::write_all(&mut log_w, &buf[..n]);
+                std::thread::Builder::new()
+                    .name("clx-log-tee".into())
+                    .spawn(move || {
+                        let mut reader = unsafe { std::fs::File::from_raw_fd(reader_fd) };
+                        let mut orig_w = unsafe { std::fs::File::from_raw_fd(orig_copy) };
+                        let mut log_w = unsafe { std::fs::File::from_raw_fd(log_fd_copy) };
+                        let mut buf = [0u8; 4096];
+                        loop {
+                            use std::io::Read;
+                            match reader.read(&mut buf) {
+                                Ok(0) | Err(_) => break,
+                                Ok(n) => {
+                                    let _ = std::io::Write::write_all(&mut orig_w, &buf[..n]);
+                                    let _ = std::io::Write::write_all(&mut log_w, &buf[..n]);
+                                }
                             }
                         }
-                    }
-                }).ok();
+                    })
+                    .ok();
             }
         }
     }
@@ -193,17 +217,25 @@ fn main() {
     // IMPORTANT: Do NOT use eprintln! here — if stderr is a broken pipe,
     // eprintln! panics, causing a double-panic → abort with no diagnostics.
     std::panic::set_hook(Box::new(|info| {
-        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() { s.to_string() }
-                  else if let Some(s) = info.payload().downcast_ref::<String>() { s.clone() }
-                  else { "unknown".to_string() };
-        let loc = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_default();
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "unknown".to_string()
+        };
+        let loc = info
+            .location()
+            .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_default();
         // Try stderr but ignore errors (broken pipe safe).
         let _ = std::io::Write::write_all(
             &mut std::io::stderr(),
             format!("[CLX] PANIC: {} at {}\n", msg, loc).as_bytes(),
         );
         // Also write to a crash file for post-mortem.
-        let crash_path = std::env::current_exe().ok()
+        let crash_path = std::env::current_exe()
+            .ok()
             .and_then(|e| e.parent().map(|p| p.join("tmp/last-panic.txt")));
         if let Some(p) = crash_path {
             let _ = std::fs::write(&p, format!("{} at {}\n", msg, loc));
@@ -213,6 +245,15 @@ fn main() {
     eprintln!("[CLX] CapsLockX macOS adapter starting…");
     eprintln!("[CLX] running – hold CapsLock/Space to activate");
     eprintln!("[CLX] send SIGINT (Ctrl+C) or `pkill clx` to exit");
+
+    // Disable physical CapsLock's AlphaShift toggle via hidutil. Engine still
+    // sees CapsLock-down/up (the key is remapped to F18 and aliased back in
+    // key_map.rs), but the OS no longer toggles its CapsLock state.
+    // Gated on use_capslock so users who disable CapsLock as a trigger keep
+    // their native CapsLock behaviour.
+    if config_store::load().use_capslock {
+        capslock_remap::apply();
+    }
 
     // Install the menu bar icon and voice overlay class before entering the run loop.
     tray::setup_tray();

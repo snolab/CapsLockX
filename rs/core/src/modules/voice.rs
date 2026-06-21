@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 /// CLX-Voice -- V key toggles voice listening (toggle / hold modes).
 ///
 /// Architecture: dual-track STT worker
@@ -11,7 +12,6 @@
 ///   - on_key_down(V): Idle->Listening (start), Listening->Idle (toggle off)
 ///   - on_key_up(V):   if held >300ms -> stop (hold mode); else keep listening (toggle mode)
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -33,9 +33,16 @@ enum SttSource {
 /// Commands sent from the audio loop to the STT worker.
 enum SttCommand {
     /// New audio chunk while in speech — worker accumulates and transcribes.
-    AudioChunk { source: SttSource, samples: Vec<f32>, timestamp_secs: f64 },
+    AudioChunk {
+        source: SttSource,
+        samples: Vec<f32>,
+        timestamp_secs: f64,
+    },
     /// Speech ended for the given source — worker finalizes and commits.
-    SpeechEnd { source: SttSource, timestamp_secs: f64 },
+    SpeechEnd {
+        source: SttSource,
+        timestamp_secs: f64,
+    },
     /// Flush pending buffers (input mode starts fresh).
     Flush,
     /// Session is ending — worker should clean up and exit.
@@ -53,18 +60,36 @@ enum SttEngine {
 impl SttEngine {
     /// Create an STT engine based on preference. Falls back to the other engine.
     fn new_with_preference(prefer: &str) -> Option<Self> {
-        let (first, second): (fn() -> Result<SttEngine, String>, fn() -> Result<SttEngine, String>) =
-            if prefer == "whisper" {
-                (
-                    || LocalWhisper::new().map(SttEngine::Whisper).map_err(|e| e.to_string()),
-                    || LocalSherpa::new().map(SttEngine::Sherpa).map_err(|e| e.to_string()),
-                )
-            } else {
-                (
-                    || LocalSherpa::new().map(SttEngine::Sherpa).map_err(|e| e.to_string()),
-                    || LocalWhisper::new().map(SttEngine::Whisper).map_err(|e| e.to_string()),
-                )
-            };
+        let (first, second): (
+            fn() -> Result<SttEngine, String>,
+            fn() -> Result<SttEngine, String>,
+        ) = if prefer == "whisper" {
+            (
+                || {
+                    LocalWhisper::new()
+                        .map(SttEngine::Whisper)
+                        .map_err(|e| e.to_string())
+                },
+                || {
+                    LocalSherpa::new()
+                        .map(SttEngine::Sherpa)
+                        .map_err(|e| e.to_string())
+                },
+            )
+        } else {
+            (
+                || {
+                    LocalSherpa::new()
+                        .map(SttEngine::Sherpa)
+                        .map_err(|e| e.to_string())
+                },
+                || {
+                    LocalWhisper::new()
+                        .map(SttEngine::Whisper)
+                        .map_err(|e| e.to_string())
+                },
+            )
+        };
 
         match first() {
             Ok(engine) => {
@@ -100,11 +125,20 @@ impl SttEngine {
     }
 
     /// Transcribe and return music detection flag alongside text.
-    fn transcribe_tagged(&mut self, samples: &[f32]) -> Result<crate::local_sherpa::SttOutput, String> {
+    fn transcribe_tagged(
+        &mut self,
+        samples: &[f32],
+    ) -> Result<crate::local_sherpa::SttOutput, String> {
         match self {
             SttEngine::Sherpa(s) => s.transcribe_tagged(samples),
             // Whisper doesn't output music tags — just wrap normal result.
-            SttEngine::Whisper(w) => w.transcribe(samples).map(|text| crate::local_sherpa::SttOutput { text, is_music: false }),
+            SttEngine::Whisper(w) => {
+                w.transcribe(samples)
+                    .map(|text| crate::local_sherpa::SttOutput {
+                        text,
+                        is_music: false,
+                    })
+            }
         }
     }
 
@@ -117,7 +151,6 @@ impl SttEngine {
             }
         }
     }
-
 }
 
 // SttEngine wraps sherpa-rs (ONNX Runtime) and whisper-rs (whisper.cpp),
@@ -142,7 +175,6 @@ const STATE_STOPPING: u8 = 2;
 /// Hold threshold: if V is held longer than this, releasing V stops listening.
 const HOLD_THRESHOLD_MS: u128 = 300;
 
-
 /// Extract a string value for a given key from a JSON object.
 fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
     let needle = format!("\"{}\"", key);
@@ -150,13 +182,17 @@ fn extract_json_text_for_key(json: &str, key: &str) -> Option<String> {
     let after_key = &json[idx + needle.len()..];
     let after_colon = after_key.trim_start().strip_prefix(':')?;
     let after_colon = after_colon.trim_start();
-    if !after_colon.starts_with('"') { return None; }
+    if !after_colon.starts_with('"') {
+        return None;
+    }
     let mut result = String::new();
     let mut chars = after_colon[1..].chars();
     loop {
         match chars.next()? {
             '"' => break,
-            '\\' => { result.push(chars.next()?); }
+            '\\' => {
+                result.push(chars.next()?);
+            }
             ch => result.push(ch),
         }
     }
@@ -173,9 +209,9 @@ const SPEECH_START_PROB: f32 = 0.8;
 /// Speech probability threshold below which silence is counted.
 const SPEECH_END_PROB: f32 = 0.6;
 /// Consecutive speech frames to trigger speech start (more = less sensitive).
-const SPEECH_START_FRAMES: usize = 10;  // 160ms — filters AEC echo residue
+const SPEECH_START_FRAMES: usize = 10; // 160ms — filters AEC echo residue
 /// Consecutive silence frames to end speech.
-const SILENCE_END_FRAMES: usize = 20;  // 320ms
+const SILENCE_END_FRAMES: usize = 20; // 320ms
 /// Streaming interval: transcribe after this many new samples accumulate.
 /// Whisper inference is ~constant time regardless of audio length (~450ms
 /// for base model), so the real cadence is limited by inference speed,
@@ -228,6 +264,9 @@ pub struct VoiceModule {
 #[derive(Clone)]
 struct VoiceLiveConfig {
     stt_engine: String,
+    ptt_vad_auto_release_ms: u64,
+    whisper_model_path: String,
+    whisper_language: String,
     llm_api_key: String,
     llm_model: String,
     stt_correction: bool,
@@ -250,7 +289,8 @@ impl VoiceModule {
 
     pub fn with_stt_engine(platform: Arc<dyn Platform>, stt_engine: String) -> Self {
         let otoji_backend = Arc::new(super::voice_otoji::OtojiBackend::new());
-        let ptt = super::voice_ptt::PttSession::new(Arc::clone(&platform), Arc::clone(&otoji_backend));
+        let ptt =
+            super::voice_ptt::PttSession::new(Arc::clone(&platform), Arc::clone(&otoji_backend));
 
         // Wake-word listener is started lazily via `start_wake_word` once
         // the full ClxConfig is available.
@@ -276,11 +316,17 @@ impl VoiceModule {
             wake_word_listener: Mutex::new(None),
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
+                ptt_vad_auto_release_ms: 0,
+                whisper_model_path: String::new(),
+                whisper_language: "ja".to_string(),
                 llm_api_key: String::new(),
                 llm_model: String::new(),
                 stt_correction: false,
-                tts_chain: "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string(),
-                stt_polish_chain: "mlx:qwen2.5-3b,llm-corrector,raw".to_string(),
+                tts_chain:
+                    "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native"
+                        .to_string(),
+                stt_polish_chain: "min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw"
+                    .to_string(),
                 aec_gain: 15.0,
                 noise_gate: 0.003,
                 speech_start_prob: 0.8,
@@ -297,9 +343,7 @@ impl VoiceModule {
     /// stack KWS subprocesses. Normally called once from `Modules::new`
     /// after the ClxConfig is loaded.
     pub fn start_wake_word(&self, cfg: super::wake_word::WakeWordConfig) {
-        let new = super::wake_word::WakeWordListener::try_start(
-            Arc::clone(&self.ptt), cfg,
-        );
+        let new = super::wake_word::WakeWordListener::try_start(Arc::clone(&self.ptt), cfg);
         let mut slot = self.wake_word_listener.lock().unwrap();
         // Replacing drops the old listener; its Drop kills the otoji kws child.
         *slot = new;
@@ -317,14 +361,30 @@ impl VoiceModule {
 
     /// Hot-reload config from preferences (takes effect on next voice session).
     pub fn update_config(
-        &self, stt_engine: String, api_key: String, model: String, correction: bool,
-        tts_chain: String, stt_polish_chain: String,
-        aec_gain: f32, noise_gate: f32, speech_start_prob: f32, speech_end_prob: f32,
-        speech_start_frames: usize, silence_end_frames: usize,
+        &self,
+        stt_engine: String,
+        api_key: String,
+        model: String,
+        correction: bool,
+        tts_chain: String,
+        stt_polish_chain: String,
+        aec_gain: f32,
+        noise_gate: f32,
+        speech_start_prob: f32,
+        speech_end_prob: f32,
+        speech_start_frames: usize,
+        silence_end_frames: usize,
         aec_mode: String,
+        whisper_model_path: String,
+        whisper_language: String,
+        ptt_vad_auto_release_ms: u64,
     ) {
+        self.ptt.set_vad_auto_release_ms(ptt_vad_auto_release_ms);
         let mut cfg = self.live_config.lock().unwrap();
         cfg.stt_engine = stt_engine;
+        cfg.ptt_vad_auto_release_ms = ptt_vad_auto_release_ms;
+        cfg.whisper_model_path = whisper_model_path;
+        cfg.whisper_language = whisper_language;
         cfg.llm_api_key = api_key;
         cfg.llm_model = model;
         cfg.stt_correction = correction;
@@ -337,8 +397,8 @@ impl VoiceModule {
         cfg.speech_start_frames = speech_start_frames;
         cfg.silence_end_frames = silence_end_frames;
         cfg.aec_mode = aec_mode;
-        eprintln!("[CLX] voice: config hot-reloaded (engine={}, correction={}, aec_gain={}, noise_gate={}, aec_mode={})",
-            cfg.stt_engine, cfg.stt_correction, cfg.aec_gain, cfg.noise_gate, cfg.aec_mode);
+        eprintln!("[CLX] voice: config hot-reloaded (engine={}, whisper_lang={}, vad_release={}ms, correction={}, aec_gain={}, aec_mode={})",
+            cfg.stt_engine, cfg.whisper_language, cfg.ptt_vad_auto_release_ms, cfg.stt_correction, cfg.aec_gain, cfg.aec_mode);
     }
 
     /// Check if voice-standalone is running via PID file.
@@ -348,19 +408,31 @@ impl VoiceModule {
     fn voice_standalone_pid() -> Option<u32> {
         let pid_str = std::fs::read_to_string("/tmp/clx-voice-standalone.pid").ok()?;
         let pid = pid_str.trim().parse::<u32>().ok()?;
-        extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
+        extern "C" {
+            fn kill(pid: i32, sig: i32) -> i32;
+        }
         let alive = unsafe { kill(pid as i32, 0) } == 0;
-        if alive { Some(pid) } else { None }
+        if alive {
+            Some(pid)
+        } else {
+            None
+        }
     }
 
     #[cfg(not(unix))]
-    fn voice_standalone_pid() -> Option<u32> { None }
+    fn voice_standalone_pid() -> Option<u32> {
+        None
+    }
 
     /// Send a Unix signal to a process (best-effort, no subprocess spawn).
     #[cfg(unix)]
     fn send_signal(pid: u32, sig: i32) {
-        extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
-        unsafe { kill(pid as i32, sig); }
+        extern "C" {
+            fn kill(pid: i32, sig: i32) -> i32;
+        }
+        unsafe {
+            kill(pid as i32, sig);
+        }
     }
 
     #[cfg(not(unix))]
@@ -373,7 +445,10 @@ impl VoiceModule {
 
         // Delegate to voice-standalone if it's running (avoids duplicate overlay).
         if let Some(pid) = Self::voice_standalone_pid() {
-            eprintln!("[CLX] voice: delegating V key_down to voice-standalone (pid={})", pid);
+            eprintln!(
+                "[CLX] voice: delegating V key_down to voice-standalone (pid={})",
+                pid
+            );
             self.platform.hide_voice_overlay(); // hide CLX's own overlay
             self.stop_pipeline(); // stop CLX's pipeline if running
             *self.press_time.lock().unwrap() = Some(Instant::now());
@@ -413,7 +488,10 @@ impl VoiceModule {
 
         // Delegate to voice-standalone if it's running.
         if let Some(pid) = Self::voice_standalone_pid() {
-            eprintln!("[CLX] voice: delegating V key_up to voice-standalone (pid={})", pid);
+            eprintln!(
+                "[CLX] voice: delegating V key_up to voice-standalone (pid={})",
+                pid
+            );
             self.v_held.store(false, Ordering::Relaxed);
             Self::send_signal(pid, 12); // SIGUSR2
             *self.press_time.lock().unwrap() = None;
@@ -526,7 +604,22 @@ impl VoiceModule {
         let handle = std::thread::Builder::new()
             .name("clx-voice-bg".into())
             .spawn(move || {
-                voice_bg_persistent(bg_stop, bg_quit, bg_wake, with_sys, note_active, input_active, flush_pending, final_polish_requested, platform, &cfg_snap.stt_engine, &cfg_snap.llm_api_key, &cfg_snap.llm_model, cfg_snap.stt_correction, live_config);
+                voice_bg_persistent(
+                    bg_stop,
+                    bg_quit,
+                    bg_wake,
+                    with_sys,
+                    note_active,
+                    input_active,
+                    flush_pending,
+                    final_polish_requested,
+                    platform,
+                    &cfg_snap.stt_engine,
+                    &cfg_snap.llm_api_key,
+                    &cfg_snap.llm_model,
+                    cfg_snap.stt_correction,
+                    live_config,
+                );
             })
             .expect("failed to spawn voice bg thread");
 
@@ -562,15 +655,33 @@ impl VoiceModule {
                 //                 sys-audio capture today, so this matches the
                 //                 in-process voice.rs gating in spirit
                 //   "off"       → never
-                let aec_enabled = match self.live_config.lock().unwrap().aec_mode.as_str() {
-                    "always"    => true,
-                    "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
-                    _           => false,
+                let (aec_enabled, stt_engine, whisper_model_path, whisper_language) = {
+                    let lc = self.live_config.lock().unwrap();
+                    let aec = match lc.aec_mode.as_str() {
+                        "always" => true,
+                        "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
+                        _ => false,
+                    };
+                    (
+                        aec,
+                        lc.stt_engine.clone(),
+                        lc.whisper_model_path.clone(),
+                        lc.whisper_language.clone(),
+                    )
                 };
                 std::thread::Builder::new()
                     .name("otoji-launch".into())
                     .spawn(move || {
-                        if !otoji.start(platform.clone(), input_active, otoji_typed, Some(ptt), aec_enabled) {
+                        if !otoji.start(
+                            platform.clone(),
+                            input_active,
+                            otoji_typed,
+                            Some(ptt),
+                            aec_enabled,
+                            stt_engine,
+                            whisper_model_path,
+                            whisper_language,
+                        ) {
                             eprintln!("[CLX] voice: otoji failed to start");
                             platform.update_voice_subtitle("otoji failed");
                         }
@@ -641,7 +752,10 @@ fn voice_bg_persistent(
     // Create LLM-based STT corrector if configured.
     let mut corrector = if stt_correction && !llm_api_key.is_empty() {
         let config = crate::llm_client::LlmConfig::from_key_and_model(llm_api_key, llm_model);
-        eprintln!("[CLX] voice: STT correction enabled ({:?} / {})", config.provider, config.model);
+        eprintln!(
+            "[CLX] voice: STT correction enabled ({:?} / {})",
+            config.provider, config.model
+        );
         Some(crate::stt_corrector::SttCorrector::new(config))
     } else {
         None
@@ -655,9 +769,14 @@ fn voice_bg_persistent(
             let (lock, cvar) = &*bg_wake;
             let mut started = lock.lock().unwrap();
             while !*started && !bg_quit.load(Ordering::Relaxed) {
-                started = cvar.wait_timeout(started, std::time::Duration::from_secs(1)).unwrap().0;
+                started = cvar
+                    .wait_timeout(started, std::time::Duration::from_secs(1))
+                    .unwrap()
+                    .0;
             }
-            if bg_quit.load(Ordering::Relaxed) { break; }
+            if bg_quit.load(Ordering::Relaxed) {
+                break;
+            }
             *started = false;
         }
 
@@ -670,9 +789,9 @@ fn voice_bg_persistent(
         // Ducking is minimized so speakers stay audible.
         let aec_mode = live_config.lock().unwrap().aec_mode.clone();
         let want_aec = match aec_mode.as_str() {
-            "off"    => false,
+            "off" => false,
             "always" => true,
-            _        => with_system_audio.load(Ordering::Relaxed), // dual-only
+            _ => with_system_audio.load(Ordering::Relaxed), // dual-only
         };
         let aec_mic: Option<Box<dyn crate::platform::SystemAudioStream>> = if want_aec {
             platform.start_aec_mic()
@@ -684,15 +803,29 @@ fn voice_bg_persistent(
         // Fall back to cpal AudioCapture if AEC not available.
         let ac = if aec_mic.is_none() {
             match AudioCapture::new() {
-                Ok(ac) => { let _ = ac.start(); Some(ac) }
-                Err(e) => { eprintln!("[CLX] voice: audio capture failed: {e}"); continue; }
+                Ok(ac) => {
+                    let _ = ac.start();
+                    Some(ac)
+                }
+                Err(e) => {
+                    eprintln!("[CLX] voice: audio capture failed: {e}");
+                    continue;
+                }
             }
-        } else { None };
-        let sample_rate = if let Some(ref aec) = aec_mic { aec.sample_rate() } else { ac.as_ref().unwrap().sample_rate() };
+        } else {
+            None
+        };
+        let sample_rate = if let Some(ref aec) = aec_mic {
+            aec.sample_rate()
+        } else {
+            ac.as_ref().unwrap().sample_rate()
+        };
         let vcfg = live_config.lock().unwrap().clone();
         let mut vad = VadState::with_thresholds(
-            vcfg.speech_start_prob, vcfg.speech_end_prob,
-            vcfg.speech_start_frames, vcfg.silence_end_frames,
+            vcfg.speech_start_prob,
+            vcfg.speech_end_prob,
+            vcfg.speech_start_frames,
+            vcfg.silence_end_frames,
         );
 
         // Start system audio capture if Shift+V was pressed.
@@ -712,17 +845,26 @@ fn voice_bg_persistent(
             None
         };
 
-        eprintln!("[CLX] voice: recording started ({:.0}ms startup, sr={sample_rate}{})",
+        eprintln!(
+            "[CLX] voice: recording started ({:.0}ms startup, sr={sample_rate}{})",
             t_wake.elapsed().as_millis(),
-            if sys_capture.is_some() { " +sysaudio" } else { "" });
+            if sys_capture.is_some() {
+                " +sysaudio"
+            } else {
+                ""
+            }
+        );
 
         platform.show_voice_overlay();
 
         // Remind user to enable Voice Isolation (once per app session).
         {
-            static REMINDED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+            static REMINDED: std::sync::atomic::AtomicBool =
+                std::sync::atomic::AtomicBool::new(false);
             if !REMINDED.swap(true, Ordering::Relaxed) {
-                platform.update_voice_subtitle("🎤 Tip: Enable Voice Isolation in Control Center for best STT");
+                platform.update_voice_subtitle(
+                    "🎤 Tip: Enable Voice Isolation in Control Center for best STT",
+                );
                 std::thread::sleep(std::time::Duration::from_secs(2));
             }
         }
@@ -741,8 +883,10 @@ fn voice_bg_persistent(
         // Share STT engine and corrector with the worker via Arc<Mutex>.
         // Only one thread accesses them at a time (worker during session,
         // bg thread only after worker exits).
-        let shared_engine: Arc<Mutex<Option<SttEngine>>> = Arc::new(Mutex::new(local_whisper.take()));
-        let shared_corrector: Arc<Mutex<Option<crate::stt_corrector::SttCorrector>>> = Arc::new(Mutex::new(corrector.take()));
+        let shared_engine: Arc<Mutex<Option<SttEngine>>> =
+            Arc::new(Mutex::new(local_whisper.take()));
+        let shared_corrector: Arc<Mutex<Option<crate::stt_corrector::SttCorrector>>> =
+            Arc::new(Mutex::new(corrector.take()));
         let worker_engine = Arc::clone(&shared_engine);
         let worker_corrector = Arc::clone(&shared_corrector);
         let worker_live_config = Arc::clone(&live_config);
@@ -783,16 +927,20 @@ fn voice_bg_persistent(
         // ── System audio VAD (audio loop only runs VAD, worker handles transcription) ──
         let mut sys_vad = if sys_capture.is_some() {
             Some(VadState::with_thresholds(
-                vcfg.speech_start_prob, vcfg.speech_end_prob,
-                vcfg.speech_start_frames, vcfg.silence_end_frames,
+                vcfg.speech_start_prob,
+                vcfg.speech_end_prob,
+                vcfg.speech_start_frames,
+                vcfg.silence_end_frames,
             ))
-        } else { None };
+        } else {
+            None
+        };
 
         // Pre-send accumulators: batch audio before sending to the STT worker.
         // Mic: 200ms batches for low latency.  Sys: 500ms batches — background audio
         // doesn't need to be as responsive, and this keeps mic getting priority.
-        const MIC_SEND_THRESHOLD: usize = 1_600;  // 100ms at 16kHz
-        const SYS_SEND_THRESHOLD: usize = 8_000;  // 500ms at 16kHz
+        const MIC_SEND_THRESHOLD: usize = 1_600; // 100ms at 16kHz
+        const SYS_SEND_THRESHOLD: usize = 8_000; // 500ms at 16kHz
         let mut mic_send_buf: Vec<f32> = Vec::new();
         let mut sys_send_buf: Vec<f32> = Vec::new();
 
@@ -820,7 +968,8 @@ fn voice_bg_persistent(
 
             // Periodically check if voice-standalone started — yield to it.
             standalone_check_counter += 1;
-            if standalone_check_counter % 100 == 0 { // every ~5 seconds
+            if standalone_check_counter % 100 == 0 {
+                // every ~5 seconds
                 if VoiceModule::voice_standalone_pid().is_some() {
                     eprintln!("[CLX] voice: voice-standalone detected, stopping internal pipeline");
                     platform.hide_voice_overlay();
@@ -828,7 +977,11 @@ fn voice_bg_persistent(
                     break;
                 }
             }
-            let samples = if let Some(ref aec) = aec_mic { aec.take_samples() } else { ac.as_ref().unwrap().take_samples() };
+            let samples = if let Some(ref aec) = aec_mic {
+                aec.take_samples()
+            } else {
+                ac.as_ref().unwrap().take_samples()
+            };
             if samples.is_empty() {
                 platform.update_voice_overlay(&[], vad.in_speech, &[], false);
                 continue;
@@ -844,13 +997,19 @@ fn voice_bg_persistent(
             // Check flush signal: discard ALL buffered audio when input mode starts fresh.
             if flush_pending.swap(false, Ordering::Relaxed) {
                 // Drain the audio capture buffer so old samples don't leak in.
-                if let Some(ref aec) = aec_mic { let _ = aec.take_samples(); }
-                if let Some(ref a) = ac { let _ = a.take_samples(); }
+                if let Some(ref aec) = aec_mic {
+                    let _ = aec.take_samples();
+                }
+                if let Some(ref a) = ac {
+                    let _ = a.take_samples();
+                }
                 // Reset VAD state so it doesn't think we're mid-speech.
                 let vcfg_flush = live_config.lock().unwrap().clone();
                 vad = VadState::with_thresholds(
-                    vcfg_flush.speech_start_prob, vcfg_flush.speech_end_prob,
-                    vcfg_flush.speech_start_frames, vcfg_flush.silence_end_frames,
+                    vcfg_flush.speech_start_prob,
+                    vcfg_flush.speech_end_prob,
+                    vcfg_flush.speech_start_frames,
+                    vcfg_flush.silence_end_frames,
                 );
                 // Tell the worker to flush its transcription state and buffers.
                 let _ = stt_tx.try_send(SttCommand::Flush);
@@ -890,8 +1049,11 @@ fn voice_bg_persistent(
             };
 
             // Log mic RMS before gain for AEC debug.
-            let pre_gain_rms = if mic_cancelled.is_empty() { 0.0 } else {
-                (mic_cancelled.iter().map(|x| x*x).sum::<f32>() / mic_cancelled.len() as f32).sqrt()
+            let pre_gain_rms = if mic_cancelled.is_empty() {
+                0.0
+            } else {
+                (mic_cancelled.iter().map(|x| x * x).sum::<f32>() / mic_cancelled.len() as f32)
+                    .sqrt()
             };
 
             // Apply gain + noise gate AFTER AEC.
@@ -900,8 +1062,15 @@ fn voice_bg_persistent(
             let mic_16k: Vec<f32> = if use_aec {
                 let cfg_gain = vcfg.aec_gain;
                 let cfg_gate = vcfg.noise_gate;
-                mic_cancelled.iter()
-                    .map(|&s| if s.abs() < cfg_gate { 0.0 } else { (s * cfg_gain).clamp(-1.0, 1.0) })
+                mic_cancelled
+                    .iter()
+                    .map(|&s| {
+                        if s.abs() < cfg_gate {
+                            0.0
+                        } else {
+                            (s * cfg_gain).clamp(-1.0, 1.0)
+                        }
+                    })
                     .collect()
             } else {
                 mic_cancelled
@@ -911,13 +1080,19 @@ fn voice_bg_persistent(
 
             // Log mic RMS for AEC debug.
             {
-                static MIC_RMS_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                static MIC_RMS_LOG: std::sync::atomic::AtomicU32 =
+                    std::sync::atomic::AtomicU32::new(0);
                 let n = MIC_RMS_LOG.fetch_add(1, Ordering::Relaxed);
                 if n < 50 || n % 50 == 0 {
-                    let rms = if mic_16k.is_empty() { 0.0 } else {
-                        (mic_16k.iter().map(|x| x*x).sum::<f32>() / mic_16k.len() as f32).sqrt()
+                    let rms = if mic_16k.is_empty() {
+                        0.0
+                    } else {
+                        (mic_16k.iter().map(|x| x * x).sum::<f32>() / mic_16k.len() as f32).sqrt()
                     };
-                    eprintln!("[CLX] voice: mic_rms raw={:.6} after_gain={:.4} (n={})", pre_gain_rms, rms, n);
+                    eprintln!(
+                        "[CLX] voice: mic_rms raw={:.6} after_gain={:.4} (n={})",
+                        pre_gain_rms, rms, n
+                    );
                 }
             }
 
@@ -927,16 +1102,32 @@ fn voice_bg_persistent(
             }
 
             // Lazily start ffmpeg — stereo if system audio present, mono otherwise.
-            if note_active.load(Ordering::Relaxed) && ffmpeg_stdin.is_none() && ffmpeg_child.is_none() {
+            if note_active.load(Ordering::Relaxed)
+                && ffmpeg_stdin.is_none()
+                && ffmpeg_child.is_none()
+            {
                 if let Some(ref dir) = note_dir {
                     let webm_path = dir.join(format!("{}.webm", session_ts));
                     let channels = if sys_capture.is_some() { "2" } else { "1" };
                     let bitrate = if sys_capture.is_some() { "64k" } else { "48k" };
                     match std::process::Command::new("ffmpeg")
                         .args([
-                            "-y", "-f", "s16le", "-ar", "16000", "-ac", channels,
-                            "-i", "pipe:0", "-c:a", "libopus", "-b:a", bitrate,
-                            "-f", "webm", webm_path.to_str().unwrap_or("out.webm"),
+                            "-y",
+                            "-f",
+                            "s16le",
+                            "-ar",
+                            "16000",
+                            "-ac",
+                            channels,
+                            "-i",
+                            "pipe:0",
+                            "-c:a",
+                            "libopus",
+                            "-b:a",
+                            bitrate,
+                            "-f",
+                            "webm",
+                            webm_path.to_str().unwrap_or("out.webm"),
                         ])
                         .stdin(std::process::Stdio::piped())
                         .stdout(std::process::Stdio::null())
@@ -946,7 +1137,11 @@ fn voice_bg_persistent(
                         Ok(mut child) => {
                             ffmpeg_stdin = child.stdin.take();
                             ffmpeg_child = Some(child);
-                            eprintln!("[CLX] voice: streaming WebM to {} ({}ch)", webm_path.display(), channels);
+                            eprintln!(
+                                "[CLX] voice: streaming WebM to {} ({}ch)",
+                                webm_path.display(),
+                                channels
+                            );
                         }
                         Err(e) => eprintln!("[CLX] voice: ffmpeg spawn failed: {e}"),
                     }
@@ -959,17 +1154,22 @@ fn voice_bg_persistent(
                 let pcm_bytes: Vec<u8> = if sys_capture.is_some() {
                     // Stereo: interleave mic (left) and system (right).
                     let max_len = mic_16k.len().max(sys_16k.len());
-                    (0..max_len).flat_map(|i| {
-                        let m = (mic_16k.get(i).copied().unwrap_or(0.0).clamp(-1.0, 1.0) * 32767.0) as i16;
-                        let s = (sys_16k.get(i).copied().unwrap_or(0.0).clamp(-1.0, 1.0) * 32767.0) as i16;
-                        let mut bytes = [0u8; 4];
-                        bytes[0..2].copy_from_slice(&m.to_le_bytes());
-                        bytes[2..4].copy_from_slice(&s.to_le_bytes());
-                        bytes
-                    }).collect()
+                    (0..max_len)
+                        .flat_map(|i| {
+                            let m = (mic_16k.get(i).copied().unwrap_or(0.0).clamp(-1.0, 1.0)
+                                * 32767.0) as i16;
+                            let s = (sys_16k.get(i).copied().unwrap_or(0.0).clamp(-1.0, 1.0)
+                                * 32767.0) as i16;
+                            let mut bytes = [0u8; 4];
+                            bytes[0..2].copy_from_slice(&m.to_le_bytes());
+                            bytes[2..4].copy_from_slice(&s.to_le_bytes());
+                            bytes
+                        })
+                        .collect()
                 } else {
                     // Mono: mic only.
-                    mic_16k.iter()
+                    mic_16k
+                        .iter()
                         .flat_map(|&s| ((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes())
                         .collect()
                 };
@@ -989,21 +1189,36 @@ fn voice_bg_persistent(
             }
 
             // Compute RMS levels for overlay (dual waveforms).
-            let mic_rms: Vec<f32> = mic_16k.chunks(TEN_VAD_FRAME_SIZE.max(1))
-                .map(|f| { let s: f32 = f.iter().map(|x| x*x).sum(); (s / f.len() as f32).sqrt() })
+            let mic_rms: Vec<f32> = mic_16k
+                .chunks(TEN_VAD_FRAME_SIZE.max(1))
+                .map(|f| {
+                    let s: f32 = f.iter().map(|x| x * x).sum();
+                    (s / f.len() as f32).sqrt()
+                })
                 .collect();
             let sys_rms: Vec<f32> = if !sys_16k.is_empty() {
-                sys_16k.chunks(TEN_VAD_FRAME_SIZE.max(1))
-                    .map(|f| { let s: f32 = f.iter().map(|x| x*x).sum(); (s / f.len() as f32).sqrt() })
+                sys_16k
+                    .chunks(TEN_VAD_FRAME_SIZE.max(1))
+                    .map(|f| {
+                        let s: f32 = f.iter().map(|x| x * x).sum();
+                        (s / f.len() as f32).sqrt()
+                    })
                     .collect()
             } else {
                 Vec::new()
             };
             let sys_vad_active = sys_vad.as_ref().map(|v| v.in_speech).unwrap_or(false);
             if !sys_rms.is_empty() && sys_rms.iter().any(|&v| v > 0.001) {
-                static SYS_LOG_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                static SYS_LOG_COUNT: std::sync::atomic::AtomicU32 =
+                    std::sync::atomic::AtomicU32::new(0);
                 let c = SYS_LOG_COUNT.fetch_add(1, Ordering::Relaxed);
-                if c < 5 { eprintln!("[CLX] voice: sys_rms samples={} max={:.4}", sys_rms.len(), sys_rms.iter().cloned().fold(0.0f32, f32::max)); }
+                if c < 5 {
+                    eprintln!(
+                        "[CLX] voice: sys_rms samples={} max={:.4}",
+                        sys_rms.len(),
+                        sys_rms.iter().cloned().fold(0.0f32, f32::max)
+                    );
+                }
             }
             platform.update_voice_overlay(&mic_rms, vad.in_speech, &sys_rms, sys_vad_active);
 
@@ -1014,11 +1229,16 @@ fn voice_bg_persistent(
             if vad.in_speech {
                 // Accumulate locally; only send once SEND_THRESHOLD reached.
                 mic_send_buf.extend_from_slice(samples_16k);
-                static SPEECH_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                static SPEECH_LOG: std::sync::atomic::AtomicU32 =
+                    std::sync::atomic::AtomicU32::new(0);
                 let n = SPEECH_LOG.fetch_add(1, Ordering::Relaxed);
                 if n < 3 || n % 100 == 0 {
-                    eprintln!("[CLX] voice: speech buf={} threshold={} samples_16k={}",
-                        mic_send_buf.len(), MIC_SEND_THRESHOLD, samples_16k.len());
+                    eprintln!(
+                        "[CLX] voice: speech buf={} threshold={} samples_16k={}",
+                        mic_send_buf.len(),
+                        MIC_SEND_THRESHOLD,
+                        samples_16k.len()
+                    );
                 }
                 if mic_send_buf.len() >= MIC_SEND_THRESHOLD {
                     let cmd = SttCommand::AudioChunk {
@@ -1107,9 +1327,14 @@ fn voice_bg_persistent(
 
         // ── Session ending: send FinalPolish if requested, then Quit ─────
         if final_polish_requested.swap(false, Ordering::Relaxed) && !full_session_mic.is_empty() {
-            eprintln!("[CLX] voice: sending FinalPolish ({} samples = {:.1}s)",
-                full_session_mic.len(), full_session_mic.len() as f64 / 16000.0);
-            let _ = stt_tx.send(SttCommand::FinalPolish { full_audio: full_session_mic.clone() });
+            eprintln!(
+                "[CLX] voice: sending FinalPolish ({} samples = {:.1}s)",
+                full_session_mic.len(),
+                full_session_mic.len() as f64 / 16000.0
+            );
+            let _ = stt_tx.send(SttCommand::FinalPolish {
+                full_audio: full_session_mic.clone(),
+            });
         }
         full_session_mic.clear();
 
@@ -1118,12 +1343,10 @@ fn voice_bg_persistent(
         drop(stt_tx);
 
         // Wait for the worker to finish and get its results.
-        let worker_result = stt_worker
-            .join()
-            .unwrap_or_else(|_| {
-                eprintln!("[CLX] voice: STT worker panicked");
-                SttWorkerResult::default()
-            });
+        let worker_result = stt_worker.join().unwrap_or_else(|_| {
+            eprintln!("[CLX] voice: STT worker panicked");
+            SttWorkerResult::default()
+        });
         // Recover engine and corrector from shared state.
         local_whisper = shared_engine.lock().unwrap().take();
         corrector = shared_corrector.lock().unwrap().take();
@@ -1139,12 +1362,10 @@ fn voice_bg_persistent(
         // Close ffmpeg stdin -> ffmpeg finalizes the WebM file.
         drop(ffmpeg_stdin);
         if let Some(mut child) = ffmpeg_child.take() {
-            std::thread::spawn(move || {
-                match child.wait() {
-                    Ok(s) if s.success() => eprintln!("[CLX] voice: WebM saved"),
-                    Ok(s) => eprintln!("[CLX] voice: ffmpeg exit {s}"),
-                    Err(e) => eprintln!("[CLX] voice: ffmpeg wait error: {e}"),
-                }
+            std::thread::spawn(move || match child.wait() {
+                Ok(s) if s.success() => eprintln!("[CLX] voice: WebM saved"),
+                Ok(s) => eprintln!("[CLX] voice: ffmpeg exit {s}"),
+                Err(e) => eprintln!("[CLX] voice: ffmpeg wait error: {e}"),
             });
         }
         // Save SRT, then remux WebM + SRT -> WebM with embedded subtitles.
@@ -1167,11 +1388,16 @@ fn voice_bg_persistent(
                     let result = std::process::Command::new("ffmpeg")
                         .args([
                             "-y",
-                            "-i", webm.to_str().unwrap_or(""),
-                            "-i", srt.to_str().unwrap_or(""),
-                            "-c:a", "copy",
-                            "-c:s", "webvtt",
-                            "-f", "webm",
+                            "-i",
+                            webm.to_str().unwrap_or(""),
+                            "-i",
+                            srt.to_str().unwrap_or(""),
+                            "-c:a",
+                            "copy",
+                            "-c:s",
+                            "webvtt",
+                            "-f",
+                            "webm",
                             webm_sub.to_str().unwrap_or(""),
                         ])
                         .stdout(std::process::Stdio::null())
@@ -1190,9 +1416,15 @@ fn voice_bg_persistent(
             }
         }
 
-        if let Some(ref sys) = sys_capture { sys.stop(); }
-        if let Some(ref aec) = aec_mic { aec.stop(); }
-        if let Some(ref a) = ac { a.stop(); }
+        if let Some(ref sys) = sys_capture {
+            sys.stop();
+        }
+        if let Some(ref aec) = aec_mic {
+            aec.stop();
+        }
+        if let Some(ref a) = ac {
+            a.stop();
+        }
         eprintln!("[CLX] voice: session ended, waiting for next activation");
     }
 
@@ -1236,7 +1468,7 @@ fn stt_worker_loop(
     let mut mic_prev_whisper = String::new();
     let mut mic_stable: usize = 0;
     let mut mic_new_samples_since_commit: usize = 0; // reset on commit; prevents context re-transcription from triggering stability
-    // ── Humming track state ──
+                                                     // ── Humming track state ──
     let mut hum_pending = String::new();
     // Tracks the total text typed into the input box during this input session.
     // Used by FinalPolish to know how many chars to backspace before typing polished text.
@@ -1286,8 +1518,14 @@ fn stt_worker_loop(
             let source = match &cmd {
                 SttCommand::AudioChunk { source, .. } => Some(*source),
                 SttCommand::SpeechEnd { source, .. } => Some(*source),
-                SttCommand::Flush => { flush = true; None }
-                SttCommand::Quit => { quit = true; None }
+                SttCommand::Flush => {
+                    flush = true;
+                    None
+                }
+                SttCommand::Quit => {
+                    quit = true;
+                    None
+                }
                 SttCommand::FinalPolish { .. } => None,
             };
             if let SttCommand::FinalPolish { full_audio } = cmd {
@@ -1310,7 +1548,9 @@ fn stt_worker_loop(
                 }
                 mic_committed.push_str(&mic_whisper_pending);
             }
-            if let Some(ref mut c) = corrector { c.reset(); }
+            if let Some(ref mut c) = corrector {
+                c.reset();
+            }
             mic_pending_buf.clear();
             mic_whisper_pending.clear();
             mic_typed_pending.clear();
@@ -1326,7 +1566,11 @@ fn stt_worker_loop(
         // Process mic commands first (priority).
         for cmd in mic_cmds {
             match cmd {
-                SttCommand::AudioChunk { samples, timestamp_secs, .. } => {
+                SttCommand::AudioChunk {
+                    samples,
+                    timestamp_secs,
+                    ..
+                } => {
                     mic_pending_buf.extend_from_slice(&samples);
                     mic_pending_since += samples.len();
                     mic_syl_detector.push_chunk(&samples, timestamp_secs);
@@ -1337,14 +1581,24 @@ fn stt_worker_loop(
                     if mic_pending_buf.len() > MIC_PENDING_MAX {
                         eprintln!("[CLX] stt-worker: mic pending >10s — forcing finalize");
                         process_mic_speech_end(
-                            &mic_pending_buf, timestamp_secs,
-                            &mut engine, &mut corrector, platform,
-                            note_active, input_active, has_sys,
-                            &mut mic_committed, &mut mic_whisper_pending,
-                            &mut mic_typed_pending, &mut mic_prev_whisper,
-                            &mut mic_stable, &mut session_input_typed,
-                            &sys_committed, &sys_whisper_pending,
-                            &mut note_srt, &mut srt_index,
+                            &mic_pending_buf,
+                            timestamp_secs,
+                            &mut engine,
+                            &mut corrector,
+                            platform,
+                            note_active,
+                            input_active,
+                            has_sys,
+                            &mut mic_committed,
+                            &mut mic_whisper_pending,
+                            &mut mic_typed_pending,
+                            &mut mic_prev_whisper,
+                            &mut mic_stable,
+                            &mut session_input_typed,
+                            &sys_committed,
+                            &sys_whisper_pending,
+                            &mut note_srt,
+                            &mut srt_index,
                             &polish_chain,
                         );
                         mic_pending_buf.clear();
@@ -1355,16 +1609,25 @@ fn stt_worker_loop(
                     if mic_pending_since >= STREAMING_CHUNK_SAMPLES {
                         mic_new_samples_since_commit += STREAMING_CHUNK_SAMPLES;
                         let result = process_mic_streaming(
-                            &mic_pending_buf, timestamp_secs,
-                            &mut engine, &mut corrector, platform,
-                            note_active, input_active, has_sys,
-                            &mut mic_committed, &mut mic_whisper_pending,
-                            &mut mic_typed_pending, &mut mic_prev_whisper,
+                            &mic_pending_buf,
+                            timestamp_secs,
+                            &mut engine,
+                            &mut corrector,
+                            platform,
+                            note_active,
+                            input_active,
+                            has_sys,
+                            &mut mic_committed,
+                            &mut mic_whisper_pending,
+                            &mut mic_typed_pending,
+                            &mut mic_prev_whisper,
                             &mut mic_stable,
                             mic_new_samples_since_commit,
                             &mut session_input_typed,
-                            &sys_committed, &sys_whisper_pending,
-                            &mut note_srt, &mut srt_index,
+                            &sys_committed,
+                            &sys_whisper_pending,
+                            &mut note_srt,
+                            &mut srt_index,
                             &mut hum_pending,
                             mic_syl_detector.speed_factor(4.5), // 4.5 syl/s = normal English
                         );
@@ -1400,14 +1663,24 @@ fn stt_worker_loop(
                 SttCommand::SpeechEnd { timestamp_secs, .. } => {
                     let pc = live_config.lock().unwrap().stt_polish_chain.clone();
                     process_mic_speech_end(
-                        &mic_pending_buf, timestamp_secs,
-                        &mut engine, &mut corrector, platform,
-                        note_active, input_active, has_sys,
-                        &mut mic_committed, &mut mic_whisper_pending,
-                        &mut mic_typed_pending, &mut mic_prev_whisper,
-                        &mut mic_stable, &mut session_input_typed,
-                        &sys_committed, &sys_whisper_pending,
-                        &mut note_srt, &mut srt_index,
+                        &mic_pending_buf,
+                        timestamp_secs,
+                        &mut engine,
+                        &mut corrector,
+                        platform,
+                        note_active,
+                        input_active,
+                        has_sys,
+                        &mut mic_committed,
+                        &mut mic_whisper_pending,
+                        &mut mic_typed_pending,
+                        &mut mic_prev_whisper,
+                        &mut mic_stable,
+                        &mut session_input_typed,
+                        &sys_committed,
+                        &sys_whisper_pending,
+                        &mut note_srt,
+                        &mut srt_index,
                         &pc,
                     );
                     // Clear buffer after speech end to prevent overlap.
@@ -1423,7 +1696,11 @@ fn stt_worker_loop(
         let mut sys_subtitle_dirty = false;
         for cmd in sys_cmds {
             match cmd {
-                SttCommand::AudioChunk { samples, timestamp_secs, .. } => {
+                SttCommand::AudioChunk {
+                    samples,
+                    timestamp_secs,
+                    ..
+                } => {
                     sys_pending_buf.extend_from_slice(&samples);
                     sys_pending_since += samples.len();
                     sys_syl_detector.push_chunk(&samples, timestamp_secs);
@@ -1432,12 +1709,17 @@ fn stt_worker_loop(
                     const SYS_STREAMING_INTERVAL: usize = STREAMING_CHUNK_SAMPLES * 3;
                     if sys_pending_since >= SYS_STREAMING_INTERVAL {
                         let committed = process_sys_streaming(
-                            &sys_pending_buf, timestamp_secs,
+                            &sys_pending_buf,
+                            timestamp_secs,
                             &mut engine,
-                            &mut sys_committed, &mut sys_whisper_pending,
-                            &mut sys_prev_whisper, &mut sys_stable,
-                            note_active, has_sys,
-                            &mut note_srt, &mut srt_index,
+                            &mut sys_committed,
+                            &mut sys_whisper_pending,
+                            &mut sys_prev_whisper,
+                            &mut sys_stable,
+                            note_active,
+                            has_sys,
+                            &mut note_srt,
+                            &mut srt_index,
                             sys_syl_detector.speed_factor(5.5), // ~5.5 syl/s avg (mixed lang)
                         );
                         sys_pending_since = 0;
@@ -1449,12 +1731,17 @@ fn stt_worker_loop(
                 }
                 SttCommand::SpeechEnd { timestamp_secs, .. } => {
                     process_sys_speech_end(
-                        &sys_pending_buf, timestamp_secs,
+                        &sys_pending_buf,
+                        timestamp_secs,
                         &mut engine,
-                        &mut sys_committed, &mut sys_whisper_pending,
-                        &mut sys_prev_whisper, &mut sys_stable,
-                        note_active, has_sys,
-                        &mut note_srt, &mut srt_index,
+                        &mut sys_committed,
+                        &mut sys_whisper_pending,
+                        &mut sys_prev_whisper,
+                        &mut sys_stable,
+                        note_active,
+                        has_sys,
+                        &mut note_srt,
+                        &mut srt_index,
                         sys_syl_detector.speed_factor(5.5),
                     );
                     sys_pending_buf.clear();
@@ -1479,29 +1766,51 @@ fn stt_worker_loop(
             };
             let hum_display = last_n_chars(&hum_pending, 80);
             let mut parts = Vec::new();
-            if !mic_display.is_empty() { parts.push(format!("\u{1F3A4} {}", mic_display)); }
-            if !sys_display.is_empty() { parts.push(format!("\u{1F50A} {}", sys_display)); }
-            if !hum_display.is_empty() { parts.push(format!("\u{1F3B5} {}", hum_display)); }
+            if !mic_display.is_empty() {
+                parts.push(format!("\u{1F3A4} {}", mic_display));
+            }
+            if !sys_display.is_empty() {
+                parts.push(format!("\u{1F50A} {}", sys_display));
+            }
+            if !hum_display.is_empty() {
+                parts.push(format!("\u{1F3B5} {}", hum_display));
+            }
             if !parts.is_empty() {
                 let subtitle = parts.join("\n");
                 let preview: String = subtitle.chars().take(60).collect();
-                eprintln!("[CLX] stt-worker: pushing sys subtitle ({} chars): {:?}", subtitle.chars().count(), preview);
+                eprintln!(
+                    "[CLX] stt-worker: pushing sys subtitle ({} chars): {:?}",
+                    subtitle.chars().count(),
+                    preview
+                );
                 platform.update_voice_subtitle(&subtitle);
             }
             // Log sys track + combined log for debugging.
             {
                 use std::io::Write;
                 use std::time::SystemTime;
-                let secs = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs_f64();
+                let secs = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs_f64();
                 if !sys_display.is_empty() {
-                    if let Ok(mut f) = std::fs::OpenOptions::new().append(true).create(true).open("/tmp/clx-voice-sys.log") {
+                    if let Ok(mut f) = std::fs::OpenOptions::new()
+                        .append(true)
+                        .create(true)
+                        .open("/tmp/clx-voice-sys.log")
+                    {
                         let _ = writeln!(f, "[{:.3}] {}", secs, sys_display.trim());
                     }
                 }
                 // Also write combined subtitle to the main log file.
                 if !parts.is_empty() {
                     let combined = parts.join("\n");
-                    if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+                    if let Ok(mut f) = std::fs::OpenOptions::new()
+                        .write(true)
+                        .truncate(true)
+                        .create(true)
+                        .open("/tmp/clx-voice.log")
+                    {
                         let _ = writeln!(f, "{}", combined);
                     }
                 }
@@ -1511,26 +1820,41 @@ fn stt_worker_loop(
         // ── FinalPolish: re-transcribe entire session with best quality ───
         if let Some(full_audio) = final_polish_audio {
             if !full_audio.is_empty() && input_active.load(Ordering::Relaxed) {
-                eprintln!("[CLX] stt-worker: final polish ({} samples = {:.1}s, typed {:?})",
-                    full_audio.len(), full_audio.len() as f64 / 16000.0, session_input_typed);
+                eprintln!(
+                    "[CLX] stt-worker: final polish ({} samples = {:.1}s, typed {:?})",
+                    full_audio.len(),
+                    full_audio.len() as f64 / 16000.0,
+                    session_input_typed
+                );
                 platform.update_voice_subtitle("✨ polishing...");
 
                 // Transcribe with local engine first to get raw text.
                 let raw_text = transcribe_local(&full_audio, &mut engine);
                 // Apply best polish chain: cloud (Gemini) first for highest quality.
                 let polished = if !raw_text.is_empty() {
-                    polish_stt_result(&raw_text, &full_audio, &mut corrector, "gemini,mlx,llm-corrector,raw")
+                    polish_stt_result(
+                        &raw_text,
+                        &full_audio,
+                        &mut corrector,
+                        "gemini,mlx,llm-corrector,raw",
+                    )
                 } else {
                     String::new()
                 };
 
                 if !polished.is_empty() && polished != session_input_typed {
-                    eprintln!("[CLX] stt-worker: final polish: {:?} → {:?}", session_input_typed, polished);
+                    eprintln!(
+                        "[CLX] stt-worker: final polish: {:?} → {:?}",
+                        session_input_typed, polished
+                    );
                     type_replace(&session_input_typed, &polished, platform);
                     session_input_typed = polished.clone();
                     platform.update_voice_subtitle(&format!("✨ {}", polished));
                 } else {
-                    eprintln!("[CLX] stt-worker: final polish: no change (raw={:?})", raw_text);
+                    eprintln!(
+                        "[CLX] stt-worker: final polish: no change (raw={:?})",
+                        raw_text
+                    );
                 }
             }
         }
@@ -1586,7 +1910,10 @@ fn process_mic_streaming(
     // Time-stretch audio if speech speed > 1.2x (e.g., 2x playback).
     let stretched;
     let buf = if speed_factor > 1.2 {
-        eprintln!("[CLX] stt-worker: mic time-stretch {:.1}x → 1x", speed_factor);
+        eprintln!(
+            "[CLX] stt-worker: mic time-stretch {:.1}x → 1x",
+            speed_factor
+        );
         stretched = time_stretch(pending_buf, speed_factor);
         &stretched[..]
     } else {
@@ -1603,21 +1930,32 @@ fn process_mic_streaming(
     let is_humming = pitch_result.is_some() && (is_music_tag || text_is_noise);
 
     if pitch_result.is_some() {
-        eprintln!("[CLX] voice: pitch={:?} text={:?} music_tag={} → humming={}",
-            pitch_result, new_text, is_music_tag, is_humming);
+        eprintln!(
+            "[CLX] voice: pitch={:?} text={:?} music_tag={} → humming={}",
+            pitch_result, new_text, is_music_tag, is_humming
+        );
     }
 
     // If music/humming detected, fork audio to pitch detection instead of mic text.
     if is_humming {
         if let Some(note) = pitch_result {
-            if !hum_pending.is_empty() { hum_pending.push(' '); }
+            if !hum_pending.is_empty() {
+                hum_pending.push(' ');
+            }
             hum_pending.push_str(&note);
             // Log to hum file.
             {
                 use std::io::Write;
                 use std::time::SystemTime;
-                let secs = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs_f64();
-                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).create(true).open("/tmp/clx-voice-hum.log") {
+                let secs = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs_f64();
+                if let Ok(mut f) = std::fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open("/tmp/clx-voice-hum.log")
+                {
                     let _ = writeln!(f, "[{:.3}] {}", secs, note);
                 }
             }
@@ -1645,7 +1983,11 @@ fn process_mic_streaming(
 
     // Update overlay subtitle — show committed + pending as one continuous text.
     // The committed prefix is locked, the pending tail keeps updating.
-    let display_pending = if is_input { mic_typed_pending.as_str() } else { mic_whisper_pending.as_str() };
+    let display_pending = if is_input {
+        mic_typed_pending.as_str()
+    } else {
+        mic_whisper_pending.as_str()
+    };
     let separator = if mic_committed.is_empty() || display_pending.is_empty() {
         ""
     } else if mic_committed.ends_with('\n') || display_pending.starts_with('\n') {
@@ -1663,11 +2005,21 @@ fn process_mic_streaming(
     let full_text = format!("{}{}{}", mic_committed, separator, display_pending);
     // Show only the last ~200 chars so the overlay doesn't overflow.
     let visible_text = last_n_chars(&full_text, 200);
-    let visible: Vec<&str> = if visible_text.is_empty() { vec![] } else { vec![&visible_text] };
+    let visible: Vec<&str> = if visible_text.is_empty() {
+        vec![]
+    } else {
+        vec![&visible_text]
+    };
 
     let subtitle = if has_sys {
         let sys_text = format!("{}{}", sys_committed, sys_whisper_pending);
-        let sys_last: String = sys_text.lines().last().unwrap_or("").chars().take(80).collect();
+        let sys_last: String = sys_text
+            .lines()
+            .last()
+            .unwrap_or("")
+            .chars()
+            .take(80)
+            .collect();
         let mut parts = Vec::new();
         for l in &visible {
             parts.push(format!("🎤 {}", l));
@@ -1685,20 +2037,36 @@ fn process_mic_streaming(
     {
         use std::io::Write;
         use std::time::SystemTime;
-        let secs = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs_f64();
-        if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+        let secs = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs_f64();
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open("/tmp/clx-voice.log")
+        {
             let _ = writeln!(f, "{}", subtitle);
         }
         let mic_full = format!("{}{}{}", mic_committed, separator, display_pending);
         if !mic_full.trim().is_empty() {
-            if let Ok(mut f) = std::fs::OpenOptions::new().append(true).create(true).open("/tmp/clx-voice-mic.log") {
+            if let Ok(mut f) = std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open("/tmp/clx-voice-mic.log")
+            {
                 let _ = writeln!(f, "[{:.3}] {}", secs, mic_full.trim());
             }
         }
         if has_sys {
             let sys_text = format!("{}{}", sys_committed, sys_whisper_pending);
             if !sys_text.trim().is_empty() {
-                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).create(true).open("/tmp/clx-voice-sys.log") {
+                if let Ok(mut f) = std::fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open("/tmp/clx-voice-sys.log")
+                {
                     let _ = writeln!(f, "[{:.3}] {}", secs, sys_text.trim());
                 }
             }
@@ -1707,7 +2075,8 @@ fn process_mic_streaming(
 
     // ── Sliding-window commit: only lock in the stable prefix ──────────
     // Find the common prefix (by chars) between current and previous transcription.
-    let common_prefix_len = mic_whisper_pending.chars()
+    let common_prefix_len = mic_whisper_pending
+        .chars()
         .zip(mic_prev_whisper.chars())
         .take_while(|(a, b)| a == b)
         .count();
@@ -1742,9 +2111,8 @@ fn process_mic_streaming(
     // for commit timing — STT may emit spurious periods. Punctuation is only
     // used for \n insertion when text is committed.
     let stable_duration_samples = mic_new_samples;
-    let should_commit_prefix = prefix_unchanged
-        && *mic_stable > 0
-        && stable_duration_samples > 48_000; // ~3s of new audio
+    let should_commit_prefix =
+        prefix_unchanged && *mic_stable > 0 && stable_duration_samples > 48_000; // ~3s of new audio
     let force_commit_all = pending_buf.len() > 80_000; // 5s
 
     if should_commit_prefix || force_commit_all {
@@ -1786,12 +2154,19 @@ fn process_mic_streaming(
             // Add SRT entry for voice note.
             if note_active.load(Ordering::Relaxed) {
                 *srt_index += 1;
-                let start_srt = format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
+                let start_srt =
+                    format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
                 let end_srt = format_srt_time(timestamp_secs);
                 let label = if has_sys { "\u{1F3A4} " } else { "" };
-                note_srt.push_str(&format!("{}\n{} --> {}\n{}{}\n\n", srt_index, start_srt, end_srt, label, commit_text));
+                note_srt.push_str(&format!(
+                    "{}\n{} --> {}\n{}{}\n\n",
+                    srt_index, start_srt, end_srt, label, commit_text
+                ));
             }
-            eprintln!("[CLX] stt-worker: sliding commit {:?} (remaining={:?})", commit_text, remaining);
+            eprintln!(
+                "[CLX] stt-worker: sliding commit {:?} (remaining={:?})",
+                commit_text, remaining
+            );
 
             // Keep the remaining tail as new pending.
             *mic_whisper_pending = remaining;
@@ -1843,7 +2218,10 @@ fn process_mic_speech_end(
                 // Update session tracking.
                 let old_pending_chars = mic_typed_pending.chars().count();
                 let session_chars = session_input_typed.chars().count();
-                *session_input_typed = session_input_typed.chars().take(session_chars.saturating_sub(old_pending_chars)).collect();
+                *session_input_typed = session_input_typed
+                    .chars()
+                    .take(session_chars.saturating_sub(old_pending_chars))
+                    .collect();
                 type_replace(mic_typed_pending, &final_text, platform);
                 session_input_typed.push_str(&final_text);
             }
@@ -1858,17 +2236,26 @@ fn process_mic_speech_end(
     // Add SRT entry for the utterance end.
     if note_active.load(Ordering::Relaxed) && !mic_whisper_pending.is_empty() {
         *srt_index += 1;
-        let start_srt = format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
+        let start_srt =
+            format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
         let end_srt = format_srt_time(timestamp_secs);
         let label = if has_sys { "\u{1F3A4} " } else { "" };
-        note_srt.push_str(&format!("{}\n{} --> {}\n{}{}\n\n", srt_index, start_srt, end_srt, label, mic_whisper_pending));
+        note_srt.push_str(&format!(
+            "{}\n{} --> {}\n{}{}\n\n",
+            srt_index, start_srt, end_srt, label, mic_whisper_pending
+        ));
     }
     eprintln!("[CLX] stt-worker: mic utterance done: {:?}", mic_committed);
 
     // Log final text.
     {
         use std::io::Write;
-        if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open("/tmp/clx-voice.log")
+        {
             let _ = writeln!(f, "{}", mic_committed);
         }
     }
@@ -1899,7 +2286,10 @@ fn process_sys_streaming(
 ) -> bool {
     let stretched;
     let buf = if speed_factor > 1.2 {
-        eprintln!("[CLX] stt-worker: sys time-stretch {:.1}x → 1x", speed_factor);
+        eprintln!(
+            "[CLX] stt-worker: sys time-stretch {:.1}x → 1x",
+            speed_factor
+        );
         stretched = time_stretch(pending_buf, speed_factor);
         &stretched[..]
     } else {
@@ -1922,17 +2312,27 @@ fn process_sys_streaming(
         // Add SRT entry.
         if note_active.load(Ordering::Relaxed) && !sys_whisper_pending.is_empty() && has_sys {
             *srt_index += 1;
-            let start_srt = format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
+            let start_srt =
+                format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
             let end_srt = format_srt_time(timestamp_secs);
-            note_srt.push_str(&format!("{}\n{} --> {}\n\u{1F50A} {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
+            note_srt.push_str(&format!(
+                "{}\n{} --> {}\n\u{1F50A} {}\n\n",
+                srt_index, start_srt, end_srt, sys_whisper_pending
+            ));
         }
-        if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
+        if !sys_committed.is_empty() && !sys_committed.ends_with(' ') {
+            sys_committed.push(' ');
+        }
         sys_committed.push_str(sys_whisper_pending);
         // Cap committed buffer to last 200 chars (char boundary safe).
         const MAX_COMMITTED: usize = 200;
         if sys_committed.chars().count() > MAX_COMMITTED {
             let drop = sys_committed.chars().count() - MAX_COMMITTED;
-            let byte_pos = sys_committed.char_indices().nth(drop).map(|(i, _)| i).unwrap_or(0);
+            let byte_pos = sys_committed
+                .char_indices()
+                .nth(drop)
+                .map(|(i, _)| i)
+                .unwrap_or(0);
             sys_committed.drain(..byte_pos);
         }
         eprintln!("[CLX] stt-worker: sys committed {:?}", sys_whisper_pending);
@@ -1969,20 +2369,32 @@ fn process_sys_speech_end(
             pending_buf
         };
         let text = transcribe_local(buf, engine);
-        if !text.is_empty() { *sys_whisper_pending = text; }
+        if !text.is_empty() {
+            *sys_whisper_pending = text;
+        }
     }
     if note_active.load(Ordering::Relaxed) && !sys_whisper_pending.is_empty() && has_sys {
         *srt_index += 1;
-        let start_srt = format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
+        let start_srt =
+            format_srt_time(timestamp_secs - (pending_buf.len() as f64 / 16000.0).max(0.0));
         let end_srt = format_srt_time(timestamp_secs);
-        note_srt.push_str(&format!("{}\n{} --> {}\n\u{1F50A} {}\n\n", srt_index, start_srt, end_srt, sys_whisper_pending));
+        note_srt.push_str(&format!(
+            "{}\n{} --> {}\n\u{1F50A} {}\n\n",
+            srt_index, start_srt, end_srt, sys_whisper_pending
+        ));
     }
-    if !sys_committed.is_empty() && !sys_committed.ends_with(' ') { sys_committed.push(' '); }
+    if !sys_committed.is_empty() && !sys_committed.ends_with(' ') {
+        sys_committed.push(' ');
+    }
     sys_committed.push_str(sys_whisper_pending);
     const MAX_COMMITTED_END: usize = 200;
     if sys_committed.chars().count() > MAX_COMMITTED_END {
         let drop = sys_committed.chars().count() - MAX_COMMITTED_END;
-        let byte_pos = sys_committed.char_indices().nth(drop).map(|(i, _)| i).unwrap_or(0);
+        let byte_pos = sys_committed
+            .char_indices()
+            .nth(drop)
+            .map(|(i, _)| i)
+            .unwrap_or(0);
         sys_committed.drain(..byte_pos);
     }
     eprintln!("[CLX] stt-worker: sys utterance: {:?}", sys_whisper_pending);
@@ -1994,7 +2406,9 @@ fn process_sys_speech_end(
 /// Generate a timestamp string like "2026-03-19T120000".
 fn chrono_timestamp() -> String {
     use std::time::SystemTime;
-    let d = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();
+    let d = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default();
     let secs = d.as_secs();
     let s = secs % 60;
     let m = (secs / 60) % 60;
@@ -2003,16 +2417,37 @@ fn chrono_timestamp() -> String {
     // Civil date from days since 1970-01-01 (Rata Die algorithm).
     let mut y: i64 = 1970;
     loop {
-        let ylen: i64 = if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) { 366 } else { 365 };
-        if days < ylen { break; }
+        let ylen: i64 = if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) {
+            366
+        } else {
+            365
+        };
+        if days < ylen {
+            break;
+        }
         days -= ylen;
         y += 1;
     }
     let leap = y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
-    let mdays: [i64; 12] = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let mdays: [i64; 12] = [
+        31,
+        if leap { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
     let mut mon: i64 = 0;
     for md in &mdays {
-        if days < *md { break; }
+        if days < *md {
+            break;
+        }
         days -= *md;
         mon += 1;
     }
@@ -2025,10 +2460,68 @@ fn chrono_timestamp() -> String {
 /// Used to cap each subtitle track to ~4 lines of display text.
 fn last_n_chars(s: &str, max_chars: usize) -> &str {
     let total = s.chars().count();
-    if total <= max_chars { return s; }
+    if total <= max_chars {
+        return s;
+    }
     let skip = total - max_chars;
     let byte_pos = s.char_indices().nth(skip).map(|(i, _)| i).unwrap_or(0);
     &s[byte_pos..]
+}
+
+/// Parse a duration spec like `"5s"`, `"500ms"`, or a bare number (treated
+/// as ms) into milliseconds. Returns `None` if unparseable.
+fn parse_duration_ms(spec: &str) -> Option<u64> {
+    let s = spec.trim();
+    if let Some(num) = s.strip_suffix("ms") {
+        num.trim().parse::<u64>().ok()
+    } else if let Some(num) = s.strip_suffix('s') {
+        num.trim().parse::<f64>().ok().map(|v| (v * 1000.0) as u64)
+    } else {
+        s.parse::<u64>().ok()
+    }
+}
+
+#[cfg(test)]
+mod polish_chain_tests {
+    use super::*;
+
+    #[test]
+    fn parse_duration_ms_handles_common_units() {
+        assert_eq!(parse_duration_ms("5s"), Some(5_000));
+        assert_eq!(parse_duration_ms("0.5s"), Some(500));
+        assert_eq!(parse_duration_ms("500ms"), Some(500));
+        assert_eq!(parse_duration_ms("250"), Some(250));
+        assert_eq!(parse_duration_ms("nope"), None);
+    }
+
+    #[test]
+    fn min_chars_gate_short_circuits_when_text_is_short() {
+        let mut corrector = None;
+        // 11 chars < 15 → gate fires → returns raw, never reaches the
+        // (intentionally invalid) `mlx` stage.
+        let out = polish_stt_with_chain("open chrome", &[], &mut corrector, "min-chars:15,raw");
+        assert_eq!(out, "open chrome");
+    }
+
+    #[test]
+    fn min_chars_gate_passes_through_when_text_is_long() {
+        let mut corrector = None;
+        // 30+ chars — gate does NOT fire, falls through to `raw` which is
+        // the explicit echo stage. Same outcome here, but verifies the
+        // gate didn't short-circuit prematurely.
+        let long = "this is a long enough utterance to pass the gate";
+        let out = polish_stt_with_chain(long, &[], &mut corrector, "min-chars:15,raw");
+        assert_eq!(out, long);
+    }
+
+    #[test]
+    fn min_duration_gate_uses_audio_length() {
+        let mut corrector = None;
+        // 1 second of audio at 16 kHz = 16 000 samples; threshold 2s skips.
+        let one_sec = vec![0.0f32; 16_000];
+        let out = polish_stt_with_chain("hello", &one_sec, &mut corrector, "min-duration:2s,raw");
+        assert_eq!(out, "hello");
+    }
 }
 
 /// Polish STT output using the best available method.
@@ -2039,27 +2532,69 @@ fn polish_stt_result(
     corrector: &mut Option<crate::stt_corrector::SttCorrector>,
     chain: &str,
 ) -> String {
-    let chain = if chain.is_empty() { "mlx,gemini,llm,raw" } else { chain };
+    let chain = if chain.is_empty() {
+        "min-chars:15,min-duration:5s,mlx,gemini,llm,raw"
+    } else {
+        chain
+    };
     polish_stt_with_chain(raw_text, audio_samples, corrector, chain)
 }
 
 /// Polish STT result using a configurable fallback chain.
-/// `chain` is comma-separated: "mlx,gemini,llm,raw".
+/// `chain` is comma-separated, e.g. `"min-chars:15,mlx,gemini,llm,raw"`.
+///
+/// Length gates (return raw immediately when triggered, short-circuiting
+/// the rest of the chain — based on bench findings in
+/// `lib/otoji/docs/2026-05-14-polish-bench.md` §5: LLM polish hurts on
+/// short commands regardless of prompt design):
+/// - `min-chars:N`        — skip if `raw_text.chars().count() < N`
+/// - `min-duration:Nms|Ns`— skip if audio shorter than the threshold
 fn polish_stt_with_chain(
     raw_text: &str,
     audio_samples: &[f32],
     corrector: &mut Option<crate::stt_corrector::SttCorrector>,
     chain: &str,
 ) -> String {
-    if raw_text.trim().is_empty() { return raw_text.to_string(); }
+    if raw_text.trim().is_empty() {
+        return raw_text.to_string();
+    }
 
     for stage in chain.split(',').map(|s| s.trim()) {
         match stage {
+            s if s.starts_with("min-chars:") => {
+                if let Some(n) = s
+                    .strip_prefix("min-chars:")
+                    .and_then(|x| x.parse::<usize>().ok())
+                {
+                    if raw_text.chars().count() < n {
+                        eprintln!(
+                            "[CLX] stt-polish: gated by min-chars:{n} ({} < {n}) → raw",
+                            raw_text.chars().count()
+                        );
+                        return raw_text.to_string();
+                    }
+                }
+            }
+            s if s.starts_with("min-duration:") => {
+                if let Some(spec) = s.strip_prefix("min-duration:") {
+                    if let Some(threshold_ms) = parse_duration_ms(spec) {
+                        // Audio is 16 kHz mono per the upstream pipeline.
+                        let actual_ms = (audio_samples.len() as u64) * 1000 / 16_000;
+                        if actual_ms < threshold_ms {
+                            eprintln!("[CLX] stt-polish: gated by min-duration:{spec} ({actual_ms}ms < {threshold_ms}ms) → raw");
+                            return raw_text.to_string();
+                        }
+                    }
+                }
+            }
             s if s.starts_with("mlx") => {
                 if has_enough_free_memory(2_000) {
                     if let Ok(polished) = polish_via_local_llm(raw_text) {
                         if !polished.is_empty() {
-                            eprintln!("[CLX] stt-polish: MLX local: {:?} → {:?}", raw_text, polished);
+                            eprintln!(
+                                "[CLX] stt-polish: MLX local: {:?} → {:?}",
+                                raw_text, polished
+                            );
                             return polished;
                         }
                     }
@@ -2081,7 +2616,10 @@ fn polish_stt_with_chain(
                 if let Some(ref mut c) = corrector {
                     let corrected = c.correct(raw_text);
                     if corrected != raw_text {
-                        eprintln!("[CLX] stt-polish: LLM corrector: {:?} → {:?}", raw_text, corrected);
+                        eprintln!(
+                            "[CLX] stt-polish: LLM corrector: {:?} → {:?}",
+                            raw_text, corrected
+                        );
                         return corrected;
                     }
                 }
@@ -2119,9 +2657,9 @@ fn polish_via_local_llm(raw_text: &str) -> Result<String, String> {
         .send_string(&body.to_string())
         .map_err(|e| format!("MLX: {}", e))?;
 
-    let result: serde_json::Value = serde_json::from_str(
-        &resp.into_string().map_err(|e| format!("read: {}", e))?
-    ).map_err(|e| format!("parse: {}", e))?;
+    let result: serde_json::Value =
+        serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?)
+            .map_err(|e| format!("parse: {}", e))?;
 
     let text = result["choices"][0]["message"]["content"]
         .as_str()
@@ -2173,10 +2711,16 @@ fn has_enough_free_memory(required_mb: u64) -> bool {
 fn read_gemini_key() -> String {
     std::env::var("GEMINI_API_KEY")
         .or_else(|_| {
-            for dir in &[".", &format!("{}/CapsLockX", std::env::var("HOME").unwrap_or_default())] {
+            for dir in &[
+                ".",
+                &format!("{}/CapsLockX", std::env::var("HOME").unwrap_or_default()),
+            ] {
                 let path = std::path::Path::new(dir).join(".env.local");
                 if let Ok(content) = std::fs::read_to_string(path) {
-                    if let Some(val) = content.lines().find_map(|l| l.strip_prefix("GEMINI_API_KEY=")) {
+                    if let Some(val) = content
+                        .lines()
+                        .find_map(|l| l.strip_prefix("GEMINI_API_KEY="))
+                    {
                         return Ok(val.to_string());
                     }
                 }
@@ -2201,7 +2745,9 @@ fn format_srt_time(secs: f64) -> String {
 /// Time-stretch audio by a factor (e.g., 2.0 = slow down to half speed).
 /// Uses linear interpolation resampling. Factor > 1 = slow down (more samples).
 fn time_stretch(samples: &[f32], factor: f32) -> Vec<f32> {
-    if (factor - 1.0).abs() < 0.1 || samples.is_empty() { return samples.to_vec(); }
+    if (factor - 1.0).abs() < 0.1 || samples.is_empty() {
+        return samples.to_vec();
+    }
     let out_len = (samples.len() as f64 * factor as f64) as usize;
     let mut out = Vec::with_capacity(out_len);
     for i in 0..out_len {
@@ -2267,17 +2813,30 @@ fn type_diff(old: &str, new: &str, platform: &Arc<dyn Platform>) {
     } else {
         // Whisper rewrote earlier text — skip this update during streaming.
         // The caller will handle it at commit time.
-        let common = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
+        let common = old
+            .chars()
+            .zip(new.chars())
+            .take_while(|(a, b)| a == b)
+            .count();
         let old_len = old.chars().count();
-        eprintln!("[CLX] voice: rewrite detected (common={}/{}, new_len={}), skipping",
-            common, old_len, new.chars().count());
+        eprintln!(
+            "[CLX] voice: rewrite detected (common={}/{}, new_len={}), skipping",
+            common,
+            old_len,
+            new.chars().count()
+        );
         return;
     }
 
     // Log current state of what's in the input box.
     if !new.is_empty() {
         use std::io::Write;
-        if let Ok(mut f) = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("/tmp/clx-voice.log") {
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open("/tmp/clx-voice.log")
+        {
             let _ = writeln!(f, "{}", new);
         }
     }
@@ -2322,7 +2881,9 @@ impl SyllableRateDetector {
 
     /// Feed an audio chunk. `timestamp` = seconds since session start.
     fn push_chunk(&mut self, samples: &[f32], timestamp: f64) {
-        if samples.is_empty() { return; }
+        if samples.is_empty() {
+            return;
+        }
         let rms = (samples.iter().map(|s| s * s).sum::<f32>() / samples.len() as f32).sqrt();
 
         // High-pass filter: keeps 2-10 Hz syllable-rate modulation.
@@ -2336,7 +2897,11 @@ impl SyllableRateDetector {
             self.crossing_times.push_back(timestamp);
             self.last_crossing_t = timestamp;
             // Keep only last 5 seconds.
-            while self.crossing_times.front().map_or(false, |&t| timestamp - t > 5.0) {
+            while self
+                .crossing_times
+                .front()
+                .map_or(false, |&t| timestamp - t > 5.0)
+            {
                 self.crossing_times.pop_front();
             }
         }
@@ -2345,12 +2910,18 @@ impl SyllableRateDetector {
 
     /// Syllables per second over the last `window` seconds.
     fn syllables_per_sec(&self, window: f64) -> f32 {
-        if self.crossing_times.len() < 2 { return 0.0; }
+        if self.crossing_times.len() < 2 {
+            return 0.0;
+        }
         let now = self.crossing_times.back().copied().unwrap_or(0.0);
-        let count = self.crossing_times.iter()
+        let count = self
+            .crossing_times
+            .iter()
             .filter(|&&t| now - t <= window)
             .count();
-        if count < 2 { return 0.0; }
+        if count < 2 {
+            return 0.0;
+        }
         count as f32 / window as f32
     }
 
@@ -2358,14 +2929,18 @@ impl SyllableRateDetector {
     /// Returns 1.0 for normal speed, 2.0 for double speed, etc.
     fn speed_factor(&self, expected_syl_per_sec: f32) -> f32 {
         let measured = self.syllables_per_sec(3.0);
-        if measured < 1.0 || expected_syl_per_sec < 1.0 { return 1.0; }
+        if measured < 1.0 || expected_syl_per_sec < 1.0 {
+            return 1.0;
+        }
         (measured / expected_syl_per_sec).clamp(0.5, 4.0)
     }
 }
 
 // ── Chord / Pitch Detection (humming → chord names or note names) ────────────
 
-const NOTE_NAMES: [&str; 12] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const NOTE_NAMES: [&str; 12] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+];
 
 /// Convert frequency in Hz to note name (e.g., 440.0 → "A4").
 fn hz_to_note(freq: f32) -> String {
@@ -2378,16 +2953,16 @@ fn hz_to_note(freq: f32) -> String {
 /// Chord templates: (name_suffix, intervals from root).
 /// Each chord type is defined by its intervals in semitones.
 const CHORD_TEMPLATES: &[(&str, &[usize])] = &[
-    ("",     &[0, 4, 7]),       // major
-    ("m",    &[0, 3, 7]),       // minor
-    ("7",    &[0, 4, 7, 10]),   // dominant 7th
-    ("m7",   &[0, 3, 7, 10]),   // minor 7th
-    ("maj7", &[0, 4, 7, 11]),   // major 7th
-    ("dim",  &[0, 3, 6]),       // diminished
-    ("aug",  &[0, 4, 8]),       // augmented
-    ("sus4", &[0, 5, 7]),       // suspended 4th
-    ("sus2", &[0, 2, 7]),       // suspended 2nd
-    ("5",    &[0, 7]),          // power chord
+    ("", &[0, 4, 7]),         // major
+    ("m", &[0, 3, 7]),        // minor
+    ("7", &[0, 4, 7, 10]),    // dominant 7th
+    ("m7", &[0, 3, 7, 10]),   // minor 7th
+    ("maj7", &[0, 4, 7, 11]), // major 7th
+    ("dim", &[0, 3, 6]),      // diminished
+    ("aug", &[0, 4, 8]),      // augmented
+    ("sus4", &[0, 5, 7]),     // suspended 4th
+    ("sus2", &[0, 2, 7]),     // suspended 2nd
+    ("5", &[0, 7]),           // power chord
 ];
 
 /// Compute 12-bin chroma vector from audio using FFT.
@@ -2413,7 +2988,9 @@ fn compute_chroma(samples: &[f32], sample_rate: u32) -> [f32; 12] {
             // Frequency of this note: C2=65.41, C#2=69.30, ...
             let midi = (octave + 1) * 12 + pitch_class as i32; // C2 = MIDI 36
             let freq = 440.0 * 2.0f32.powf((midi as f32 - 69.0) / 12.0);
-            if freq < 50.0 || freq > 2500.0 { continue; }
+            if freq < 50.0 || freq > 2500.0 {
+                continue;
+            }
 
             // Goertzel algorithm: O(N) for single frequency bin.
             let k = (freq * n as f32 / sample_rate as f32).round();
@@ -2433,7 +3010,9 @@ fn compute_chroma(samples: &[f32], sample_rate: u32) -> [f32; 12] {
     // Normalize.
     let max = chroma.iter().cloned().fold(0.0f32, f32::max);
     if max > 0.0 {
-        for c in &mut chroma { *c /= max; }
+        for c in &mut chroma {
+            *c /= max;
+        }
     }
     chroma
 }
@@ -2455,7 +3034,11 @@ fn match_chord(chroma: &[f32; 12]) -> Option<String> {
             let dot: f32 = chroma.iter().zip(template.iter()).map(|(a, b)| a * b).sum();
             let norm_a: f32 = chroma.iter().map(|x| x * x).sum::<f32>().sqrt();
             let norm_b: f32 = template.iter().map(|x| x * x).sum::<f32>().sqrt();
-            let score = if norm_a > 0.0 && norm_b > 0.0 { dot / (norm_a * norm_b) } else { 0.0 };
+            let score = if norm_a > 0.0 && norm_b > 0.0 {
+                dot / (norm_a * norm_b)
+            } else {
+                0.0
+            };
 
             if score > best_score {
                 best_score = score;
@@ -2465,13 +3048,19 @@ fn match_chord(chroma: &[f32; 12]) -> Option<String> {
     }
 
     // Require minimum confidence.
-    if best_score > 0.6 { Some(best_name) } else { None }
+    if best_score > 0.6 {
+        Some(best_name)
+    } else {
+        None
+    }
 }
 
 /// Detect chord or single pitch from audio samples.
 /// Tries chord detection first, falls back to single note via McLeod.
 fn detect_pitch(samples: &[f32]) -> Option<String> {
-    if samples.len() < 2048 { return None; }
+    if samples.len() < 2048 {
+        return None;
+    }
 
     // Try chord detection via chroma.
     let start = samples.len().saturating_sub(4096).max(0);
@@ -2480,7 +3069,9 @@ fn detect_pitch(samples: &[f32]) -> Option<String> {
 
     // Check if there's enough energy for detection.
     let energy: f32 = chroma.iter().sum();
-    if energy < 0.5 { return None; }
+    if energy < 0.5 {
+        return None;
+    }
 
     if let Some(chord) = match_chord(&chroma) {
         return Some(chord);
@@ -2503,7 +3094,9 @@ fn detect_pitch(samples: &[f32]) -> Option<String> {
 
 /// Resample audio from `from_rate` to `to_rate` using linear interpolation.
 fn resample(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
-    if from_rate == to_rate { return samples.to_vec(); }
+    if from_rate == to_rate {
+        return samples.to_vec();
+    }
     let ratio = from_rate as f64 / to_rate as f64;
     let out_len = (samples.len() as f64 / ratio) as usize;
     let mut out = Vec::with_capacity(out_len);
@@ -2539,11 +3132,24 @@ const TEN_VAD_FRAME_SIZE: usize = 256;
 
 impl VadState {
     fn new() -> Self {
-        Self::with_thresholds(SPEECH_START_PROB, SPEECH_END_PROB, SPEECH_START_FRAMES, SILENCE_END_FRAMES)
+        Self::with_thresholds(
+            SPEECH_START_PROB,
+            SPEECH_END_PROB,
+            SPEECH_START_FRAMES,
+            SILENCE_END_FRAMES,
+        )
     }
 
-    fn with_thresholds(start_prob: f32, end_prob: f32, start_frames: usize, end_frames: usize) -> Self {
-        let model_bytes = include_bytes!(concat!(env!("CARGO_HOME"), "/registry/src/index.crates.io-1949cf8c6b5b557f/ten-vad-rs-0.1.6/onnx/ten-vad.onnx"));
+    fn with_thresholds(
+        start_prob: f32,
+        end_prob: f32,
+        start_frames: usize,
+        end_frames: usize,
+    ) -> Self {
+        let model_bytes = include_bytes!(concat!(
+            env!("CARGO_HOME"),
+            "/registry/src/index.crates.io-1949cf8c6b5b557f/ten-vad-rs-0.1.6/onnx/ten-vad.onnx"
+        ));
         let vad = ten_vad_rs::TenVad::new_from_bytes(model_bytes, 16000)
             .expect("failed to create TEN VAD");
         eprintln!("[CLX] vad: TEN VAD neural network initialized (start_prob={}, end_prob={}, start_frames={}, silence_frames={})",
@@ -2575,7 +3181,8 @@ impl VadState {
             offset += TEN_VAD_FRAME_SIZE;
 
             // Convert f32 → i16 for TEN VAD
-            let frame_i16: Vec<i16> = frame.iter()
+            let frame_i16: Vec<i16> = frame
+                .iter()
                 .map(|&s| (s.clamp(-1.0, 1.0) * 32767.0) as i16)
                 .collect();
             let prob = self.vad.process_frame(&frame_i16).unwrap_or(0.0);
@@ -2606,8 +3213,10 @@ impl VadState {
                     self.silence_frames += 1;
                     if self.silence_frames >= self.cfg_silence_end_frames {
                         // Speech ended -- emit chunk.
-                        eprintln!("[CLX] vad: speech ended ({:.1}s chunk)",
-                            self.chunk.len() as f64 / 16000.0);
+                        eprintln!(
+                            "[CLX] vad: speech ended ({:.1}s chunk)",
+                            self.chunk.len() as f64 / 16000.0
+                        );
                         completed.push(std::mem::take(&mut self.chunk));
                         self.in_speech = false;
                         self.speech_frames = 0;
@@ -2706,7 +3315,8 @@ fn transcribe_and_type(
     let samples_16k = resample(samples, sample_rate, 16000);
 
     // Skip very short chunks. Pad to 1s if between 0.3-1s.
-    if samples_16k.len() < 4800 { // < 0.3s — too short, skip
+    if samples_16k.len() < 4800 {
+        // < 0.3s — too short, skip
         return;
     }
     let samples_16k = if samples_16k.len() < 16000 {
@@ -2745,9 +3355,7 @@ fn transcribe_and_type(
     if !polished.is_empty() {
         // Delete the rough draft first.
         if rough_len > 0 {
-            eprintln!(
-                "[CLX] voice: replacing rough draft ({rough_len} chars) with polished text"
-            );
+            eprintln!("[CLX] voice: replacing rough draft ({rough_len} chars) with polished text");
             for _ in 0..rough_len {
                 platform.key_tap(KeyCode::Backspace);
             }
@@ -2885,7 +3493,10 @@ fn send_chunk_and_type(
                     if !final_text.is_empty() {
                         if crate::modules::agent::is_agent_mode() {
                             eprintln!("[CLX] voice: → agent: {:?}", final_text);
-                            crate::modules::agent::on_voice_transcript(&final_text, platform.as_ref());
+                            crate::modules::agent::on_voice_transcript(
+                                &final_text,
+                                platform.as_ref(),
+                            );
                         } else {
                             eprintln!("[CLX] voice: typing: {:?}", final_text);
                             platform.type_text(&final_text);
@@ -3024,9 +3635,286 @@ mod tests {
         assert_eq!(extract_json_text(line), Some("Hello, world!".to_string()));
 
         let line = r#"{"text":"escaped \"quotes\""}"#;
-        assert_eq!(extract_json_text(line), Some("escaped \"quotes\"".to_string()));
+        assert_eq!(
+            extract_json_text(line),
+            Some("escaped \"quotes\"".to_string())
+        );
 
         assert_eq!(extract_json_text("{}"), None);
         assert_eq!(extract_json_text(r#"{"text":""}"#), None);
+    }
+
+    #[test]
+    fn extract_json_text_for_key_basic() {
+        let json = r#"{"stage":"polished","text":"hi"}"#;
+        assert_eq!(
+            extract_json_text_for_key(json, "stage"),
+            Some("polished".to_string())
+        );
+        assert_eq!(
+            extract_json_text_for_key(json, "text"),
+            Some("hi".to_string())
+        );
+        assert_eq!(extract_json_text_for_key(json, "missing"), None);
+    }
+
+    #[test]
+    fn extract_json_text_for_key_with_escaped_quote() {
+        let json = r#"{"text":"a\"b"}"#;
+        assert_eq!(
+            extract_json_text_for_key(json, "text"),
+            Some("a\"b".to_string())
+        );
+    }
+
+    #[test]
+    fn extract_json_text_for_key_non_string_value() {
+        let json = r#"{"count":42}"#;
+        assert_eq!(extract_json_text_for_key(json, "count"), None);
+    }
+
+    #[test]
+    fn last_n_chars_short_string_unchanged() {
+        assert_eq!(last_n_chars("hello", 10), "hello");
+        assert_eq!(last_n_chars("", 5), "");
+    }
+
+    #[test]
+    fn last_n_chars_truncates_from_start() {
+        assert_eq!(last_n_chars("abcdefgh", 3), "fgh");
+        assert_eq!(last_n_chars("abcdefgh", 1), "h");
+    }
+
+    #[test]
+    fn last_n_chars_handles_unicode() {
+        let s = "あいうえお";
+        assert_eq!(last_n_chars(s, 2), "えお");
+        assert_eq!(last_n_chars(s, 10), s);
+    }
+
+    #[test]
+    fn format_srt_time_zero() {
+        assert_eq!(format_srt_time(0.0), "00:00:00,000");
+    }
+
+    #[test]
+    fn format_srt_time_seconds_and_ms() {
+        assert_eq!(format_srt_time(1.5), "00:00:01,500");
+        assert_eq!(format_srt_time(61.25), "00:01:01,250");
+    }
+
+    #[test]
+    fn format_srt_time_hours() {
+        let t = format_srt_time(3661.5);
+        assert!(t.starts_with("01:01:01,"), "got {t}");
+    }
+
+    #[test]
+    fn format_srt_time_clamps_negative() {
+        assert_eq!(format_srt_time(-5.0), "00:00:00,000");
+    }
+
+    #[test]
+    fn time_stretch_identity_when_factor_near_one() {
+        let samples = vec![0.1f32, 0.2, 0.3, 0.4];
+        let out = time_stretch(&samples, 1.0);
+        assert_eq!(out, samples);
+        let out = time_stretch(&samples, 1.05);
+        assert_eq!(out, samples);
+    }
+
+    #[test]
+    fn time_stretch_doubles_length() {
+        let samples = vec![0.0f32, 1.0, 0.0, 1.0];
+        let out = time_stretch(&samples, 2.0);
+        assert_eq!(out.len(), 8);
+    }
+
+    #[test]
+    fn time_stretch_empty_input() {
+        let out = time_stretch(&[], 2.0);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn resample_same_rate_returns_clone() {
+        let samples = vec![0.1f32, 0.2, 0.3];
+        assert_eq!(resample(&samples, 16000, 16000), samples);
+    }
+
+    #[test]
+    fn resample_downsample_halves_length() {
+        let samples = vec![0.0f32; 100];
+        let out = resample(&samples, 32000, 16000);
+        assert_eq!(out.len(), 50);
+    }
+
+    #[test]
+    fn resample_upsample_doubles_length() {
+        let samples = vec![0.0f32; 50];
+        let out = resample(&samples, 16000, 32000);
+        assert_eq!(out.len(), 100);
+    }
+
+    #[test]
+    fn resample_empty_input() {
+        let out = resample(&[], 44100, 16000);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn hz_to_note_a4() {
+        assert_eq!(hz_to_note(440.0), "A4");
+    }
+
+    #[test]
+    fn hz_to_note_c4_middle_c() {
+        let note = hz_to_note(261.63);
+        assert!(note.starts_with("C"), "got {note}");
+    }
+
+    #[test]
+    fn hz_to_note_a5_octave_up() {
+        assert_eq!(hz_to_note(880.0), "A5");
+    }
+
+    #[test]
+    fn match_chord_returns_none_for_zero_chroma() {
+        let chroma = [0.0f32; 12];
+        assert_eq!(match_chord(&chroma), None);
+    }
+
+    #[test]
+    fn match_chord_detects_c_major() {
+        let mut chroma = [0.0f32; 12];
+        chroma[0] = 1.0;
+        chroma[4] = 1.0;
+        chroma[7] = 1.0;
+        let result = match_chord(&chroma);
+        assert_eq!(result, Some("C".to_string()));
+    }
+
+    #[test]
+    fn match_chord_detects_a_minor() {
+        let mut chroma = [0.0f32; 12];
+        chroma[9] = 1.0;
+        chroma[0] = 1.0;
+        chroma[4] = 1.0;
+        let result = match_chord(&chroma);
+        assert_eq!(result, Some("Am".to_string()));
+    }
+
+    #[test]
+    fn syllable_rate_detector_starts_at_zero() {
+        let det = SyllableRateDetector::new();
+        assert_eq!(det.syllables_per_sec(3.0), 0.0);
+        assert_eq!(det.speed_factor(3.0), 1.0);
+    }
+
+    #[test]
+    fn syllable_rate_detector_empty_chunk_no_op() {
+        let mut det = SyllableRateDetector::new();
+        det.push_chunk(&[], 0.0);
+        assert_eq!(det.syllables_per_sec(3.0), 0.0);
+    }
+
+    #[test]
+    fn syllable_rate_detector_speed_factor_clamps() {
+        let det = SyllableRateDetector::new();
+        assert_eq!(det.speed_factor(0.0), 1.0);
+        assert_eq!(det.speed_factor(0.5), 1.0);
+    }
+
+    #[test]
+    fn syllable_rate_detector_push_chunks_runs() {
+        let mut det = SyllableRateDetector::new();
+        for i in 0..10 {
+            let chunk: Vec<f32> = (0..160)
+                .map(|n| ((n + i * 160) as f32 * 0.01).sin() * 0.3)
+                .collect();
+            det.push_chunk(&chunk, i as f64 * 0.01);
+        }
+        let _ = det.syllables_per_sec(1.0);
+        let _ = det.speed_factor(3.0);
+    }
+
+    #[test]
+    fn polish_stt_with_chain_empty_returns_input() {
+        let mut corrector = None;
+        let out = polish_stt_with_chain("", &[], &mut corrector, "raw");
+        assert_eq!(out, "");
+        let out = polish_stt_with_chain("   ", &[], &mut corrector, "raw");
+        assert_eq!(out, "   ");
+    }
+
+    #[test]
+    fn polish_stt_with_chain_raw_stage_returns_input() {
+        let mut corrector = None;
+        let out = polish_stt_with_chain("hello world", &[], &mut corrector, "raw");
+        assert_eq!(out, "hello world");
+    }
+
+    #[test]
+    fn polish_stt_with_chain_unknown_stages_fall_through() {
+        let mut corrector = None;
+        let out = polish_stt_with_chain("text", &[], &mut corrector, "unknown,bogus,raw");
+        assert_eq!(out, "text");
+    }
+
+    #[test]
+    fn polish_stt_result_uses_default_chain_with_empty_chain() {
+        let mut corrector = None;
+        let out = polish_stt_result("", &[], &mut corrector, "");
+        assert_eq!(out, "");
+    }
+
+    #[test]
+    fn encode_wav_header_fields() {
+        let samples = vec![0.0f32, 0.5, -0.5, 1.0];
+        let wav = encode_wav(&samples, 44100);
+        assert_eq!(&wav[0..4], b"RIFF");
+        assert_eq!(&wav[8..12], b"WAVE");
+        assert_eq!(&wav[12..16], b"fmt ");
+        assert_eq!(&wav[36..40], b"data");
+        let sr = u32::from_le_bytes([wav[24], wav[25], wav[26], wav[27]]);
+        assert_eq!(sr, 44100);
+        let bits = u16::from_le_bytes([wav[34], wav[35]]);
+        assert_eq!(bits, 16);
+        let channels = u16::from_le_bytes([wav[22], wav[23]]);
+        assert_eq!(channels, 1);
+    }
+
+    #[test]
+    fn encode_wav_clamps_samples() {
+        let samples = vec![2.0f32, -2.0];
+        let wav = encode_wav(&samples, 16000);
+        let s0 = i16::from_le_bytes([wav[44], wav[45]]);
+        let s1 = i16::from_le_bytes([wav[46], wav[47]]);
+        assert_eq!(s0, 32767);
+        assert_eq!(s1, -32767);
+    }
+
+    #[test]
+    fn encode_wav_empty_samples() {
+        let wav = encode_wav(&[], 16000);
+        assert_eq!(wav.len(), 44);
+        assert_eq!(&wav[0..4], b"RIFF");
+    }
+
+    #[test]
+    fn chrono_timestamp_format_shape() {
+        let ts = chrono_timestamp();
+        assert_eq!(ts.len(), 17);
+        assert_eq!(&ts[4..5], "-");
+        assert_eq!(&ts[7..8], "-");
+        assert_eq!(&ts[10..11], "T");
+        let year: i32 = ts[0..4].parse().unwrap();
+        assert!(year >= 2025 && year < 2200);
+    }
+
+    #[test]
+    fn vad_state_flush_when_idle_returns_none() {
+        let mut vad = VadState::new();
+        assert!(vad.flush().is_none());
     }
 }

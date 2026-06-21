@@ -9,19 +9,22 @@
 //! → Accessibility).
 
 use std::ptr;
-use std::sync::{Arc, atomic::{AtomicPtr, AtomicU32, Ordering}};
+use std::sync::{
+    atomic::{AtomicPtr, AtomicU32, Ordering},
+    Arc,
+};
 
 use core_foundation::base::TCFType;
 use core_foundation::mach_port::CFMachPortRef;
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
-    CGEvent, CGEventFlags, CGEventTapLocation, CGEventTapOptions,
-    CGEventTapPlacement, CGEventType, EventField,
+    CGEvent, CGEventFlags, CGEventTapLocation, CGEventTapOptions, CGEventTapPlacement, CGEventType,
+    EventField,
 };
 
 use once_cell::sync::Lazy;
 
-use capslockx_core::{ClxEngine, ClxConfig, CoreResponse, SpeedConfig};
+use capslockx_core::{ClxConfig, ClxEngine, CoreResponse, SpeedConfig};
 
 use crate::key_map::cg_keycode_to_keycode;
 use crate::output::MacPlatform;
@@ -67,6 +70,23 @@ fn apply_translate_env(cfg: &crate::config_store::FullConfig) {
         std::env::remove_var("CLX_TRANSLATE_TTS_SOURCE");
     }
 
+    // PTT polish provider + model — always applied so they take effect even
+    // when translation is off (polish still runs for punctuation/cleanup).
+    std::env::set_var("CLX_PTT_POLISH_PROVIDER", &cfg.ptt_polish_provider);
+    if !cfg.ptt_polish_model.is_empty() {
+        std::env::set_var("OTOJI_POLISH_MODEL", &cfg.ptt_polish_model);
+        eprintln!(
+            "[CLX] ptt polish: provider={} model={}",
+            cfg.ptt_polish_provider, cfg.ptt_polish_model
+        );
+    } else {
+        std::env::remove_var("OTOJI_POLISH_MODEL");
+        eprintln!(
+            "[CLX] ptt polish: provider={} model=<otoji-default>",
+            cfg.ptt_polish_provider
+        );
+    }
+
     // Note-mode translation is independent — applies to continuous listen
     // transcripts (AsrEvent::Final) while PTT is inactive.
     if cfg.note_translate_enabled && !cfg.note_translate_target.is_empty() {
@@ -80,9 +100,15 @@ fn apply_translate_env(cfg: &crate::config_store::FullConfig) {
 pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
     // Load saved config, fall back to defaults.
-    let saved = crate::config_store::load();
+    let mut saved = crate::config_store::load();
     crate::output::set_cycle_order(&saved.window_cycle_order);
     crate::output::set_arrange_order(&saved.window_arrange_order);
+
+    // Overlay otoji voice config (if present) — otoji owns voice settings.
+    if let Some(ov) = crate::config_store::load_otoji_voice_override() {
+        eprintln!("[CLX] otoji config overlay applied (stt={})", ov.stt_engine);
+        crate::config_store::apply_otoji_override(&mut saved, &ov);
+    }
 
     // Apply voice translation settings as environment variables so the otoji
     // subprocess and PttSession pick them up without extra plumbing.
@@ -90,13 +116,20 @@ pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
 
     let config = saved.into_clx_config();
     let (best_key, _) = config.best_llm_key_and_model();
-    eprintln!("[CLX] config loaded: stt={}, correction={}, llm_key={}...",
-        config.stt_engine, config.stt_correction,
-        &best_key[..best_key.len().min(10)]);
+    eprintln!(
+        "[CLX] config loaded: stt={}, correction={}, llm_key={}...",
+        config.stt_engine,
+        config.stt_correction,
+        &best_key[..best_key.len().min(10)]
+    );
     ClxEngine::with_config(platform, config)
 });
 
 // ── Raw FFI for CGEventTap (bypasses the buggy Rust wrapper) ────────────────
+
+extern "C" {
+    fn AXIsProcessTrusted() -> bool;
+}
 
 type CGEventRef = *mut std::ffi::c_void;
 type CGEventMask = u64;
@@ -124,7 +157,9 @@ extern "C" {
 
 /// Build a CGEventMask from event types.
 fn event_mask(types: &[CGEventType]) -> CGEventMask {
-    types.iter().fold(0u64, |mask, &t| mask | (1u64 << t as u64))
+    types
+        .iter()
+        .fold(0u64, |mask, &t| mask | (1u64 << t as u64))
 }
 
 /// Global tap reference so the callback can re-enable it after secure input.
@@ -135,7 +170,7 @@ static LAST_TRAY_ACTIVE: AtomicU32 = AtomicU32::new(u32::MAX);
 
 // CGEventType raw values for tap-disabled notifications (not in the Rust crate enum).
 const TAP_DISABLED_BY_TIMEOUT: u32 = 0xFFFFFFFE;
-const TAP_DISABLED_BY_USER: u32    = 0xFFFFFFFF;
+const TAP_DISABLED_BY_USER: u32 = 0xFFFFFFFF;
 
 // ── Raw callback ─────────────────────────────────────────────────────────────
 // Returns the event pointer to pass through, or NULL to suppress.
@@ -173,7 +208,10 @@ unsafe extern "C" fn raw_callback(
             use std::time::{SystemTime, UNIX_EPOCH};
             static LAST_LOG_SEC: AtomicU64 = AtomicU64::new(0);
             static DISABLE_COUNT: AtomicU64 = AtomicU64::new(0);
-            let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
             let last = LAST_LOG_SEC.load(Ordering::Relaxed);
             let n = DISABLE_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
             if now.saturating_sub(last) >= 5 {
@@ -183,7 +221,10 @@ unsafe extern "C" fn raw_callback(
                 } else {
                     "user (secure input field)"
                 };
-                eprintln!("[CLX] CGEventTap disabled — {} (total disables: {}) — re-enabling", cause, n);
+                eprintln!(
+                    "[CLX] CGEventTap disabled — {} (total disables: {}) — re-enabling",
+                    cause, n
+                );
             }
             // Emergency stop: release all held keys and stop all modules.
             // Without this, AccModel keeps running (tabs/mouse) because we
@@ -215,8 +256,8 @@ unsafe extern "C" fn raw_callback(
     const SLOW_MS: u128 = 50;
     if elapsed.as_millis() > SLOW_MS {
         // Get the keycode + event kind for triage.
-        let cg_keycode = cg_event
-            .get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u16;
+        let cg_keycode =
+            cg_event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u16;
         eprintln!(
             "[CLX] tap-slow: etype_raw={etype_raw} kc=0x{cg_keycode:X} took={}ms",
             elapsed.as_millis()
@@ -224,9 +265,9 @@ unsafe extern "C" fn raw_callback(
     }
 
     match res {
-        Ok(Some(_)) => event,          // pass through
-        Ok(None)    => ptr::null_mut(), // suppress
-        Err(_)      => {
+        Ok(Some(_)) => event,        // pass through
+        Ok(None) => ptr::null_mut(), // suppress
+        Err(_) => {
             let _ = std::io::Write::write_all(
                 &mut std::io::stderr(),
                 b"[CLX] PANIC in CGEventTap callback - event passed through\n",
@@ -244,11 +285,60 @@ pub fn install_and_run() {
     // Force engine initialisation.
     Lazy::force(&ENGINE);
 
+    // Ensure otoji-tray is running so the mic menu bar icon is always present.
+    // Must be called here (after GUI session is established via setup_tray) so
+    // the spawned process inherits CLX's WindowServer connection.
+    capslockx_core::modules::voice_otoji::ensure_tray_running();
+
+    // Watch otoji config for changes and hot-reload voice settings.
+    // Polls every 3s; on mtime change re-reads and calls ENGINE.update_config().
+    std::thread::Builder::new()
+        .name("otoji-cfg-watch".into())
+        .spawn(|| {
+            let mut last_mtime = crate::config_store::otoji_config_mtime();
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+                let mtime = crate::config_store::otoji_config_mtime();
+                if mtime != last_mtime && mtime > 0 {
+                    last_mtime = mtime;
+                    if let Some(ov) = crate::config_store::load_otoji_voice_override() {
+                        eprintln!(
+                            "[CLX] otoji config changed — hot-reloading voice settings (stt={})",
+                            ov.stt_engine
+                        );
+                        // Build a base CLX config from disk, apply the otoji overlay,
+                        // then apply to engine (preserves API keys, trigger keys, etc.).
+                        let mut base = crate::config_store::load();
+                        crate::config_store::apply_otoji_override(&mut base, &ov);
+                        reapply_translate_env(&base);
+                        let clx_cfg = base.into_clx_config();
+                        ENGINE.update_config(clx_cfg);
+                    }
+                }
+            }
+        })
+        .ok();
+
     let mask = event_mask(&[
         CGEventType::KeyDown,
         CGEventType::KeyUp,
         CGEventType::FlagsChanged,
     ]);
+
+    // Check Accessibility permission *before* CGEventTapCreate — on some
+    // macOS versions the latter blocks indefinitely waiting for a dialog
+    // that never appears when launched without a GUI session.
+    if !unsafe { AXIsProcessTrusted() } {
+        eprintln!("[CLX] ERROR: Missing Accessibility permission.");
+        eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
+        eprintln!(
+            "[CLX] Opening System Settings — grant permission then CLX will restart automatically."
+        );
+        let _ = std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            .status();
+        std::process::exit(1);
+    }
 
     let tap: CFMachPortRef = unsafe {
         CGEventTapCreate(
@@ -290,16 +380,27 @@ pub fn install_and_run() {
         extern "C" {
             fn objc_getClass(name: *const std::ffi::c_char) -> *mut std::ffi::c_void;
             fn sel_registerName(name: *const std::ffi::c_char) -> *mut std::ffi::c_void;
-            fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void, ...) -> *mut std::ffi::c_void;
+            fn objc_msgSend(
+                receiver: *mut std::ffi::c_void,
+                sel: *mut std::ffi::c_void,
+                ...
+            ) -> *mut std::ffi::c_void;
         }
         let nsapp = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
         let app: *mut std::ffi::c_void = {
-            let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-                = std::mem::transmute(objc_msgSend as *const ());
-            f(nsapp, sel_registerName(b"sharedApplication\0".as_ptr() as *const _))
+            let f: extern "C" fn(
+                *mut std::ffi::c_void,
+                *mut std::ffi::c_void,
+            ) -> *mut std::ffi::c_void = std::mem::transmute(objc_msgSend as *const ());
+            f(
+                nsapp,
+                sel_registerName(b"sharedApplication\0".as_ptr() as *const _),
+            )
         };
-        let f: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> *mut std::ffi::c_void
-            = std::mem::transmute(objc_msgSend as *const ());
+        let f: extern "C" fn(
+            *mut std::ffi::c_void,
+            *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void = std::mem::transmute(objc_msgSend as *const ());
         f(app, sel_registerName(b"run\0".as_ptr() as *const _));
     }
 }
@@ -310,9 +411,9 @@ pub fn install_and_run() {
 fn sync_modifier_flags(flags: &CGEventFlags) {
     use capslockx_core::KeyCode;
     let pairs: &[(CGEventFlags, KeyCode)] = &[
-        (CGEventFlags::CGEventFlagCommand,   KeyCode::LWin),
-        (CGEventFlags::CGEventFlagShift,     KeyCode::LShift),
-        (CGEventFlags::CGEventFlagControl,   KeyCode::LCtrl),
+        (CGEventFlags::CGEventFlagCommand, KeyCode::LWin),
+        (CGEventFlags::CGEventFlagShift, KeyCode::LShift),
+        (CGEventFlags::CGEventFlagControl, KeyCode::LCtrl),
         (CGEventFlags::CGEventFlagAlternate, KeyCode::LAlt),
     ];
     for &(flag, code) in pairs {
@@ -343,7 +444,6 @@ fn handle_event(event_type: CGEventType, event: &CGEvent) -> Option<()> {
     {
         return Some(());
     }
-
 
     match event_type {
         CGEventType::KeyDown | CGEventType::KeyUp => {
@@ -401,7 +501,7 @@ fn is_modifier_pressed(keycode: u16, flags: CGEventFlags) -> bool {
         0x3B | 0x3E => flags.contains(CGEventFlags::CGEventFlagControl),
         0x3A | 0x3D => flags.contains(CGEventFlags::CGEventFlagAlternate),
         0x37 | 0x36 => flags.contains(CGEventFlags::CGEventFlagCommand),
-        0x39        => flags.contains(CGEventFlags::CGEventFlagAlphaShift),
+        0x39 => flags.contains(CGEventFlags::CGEventFlagAlphaShift),
         _ => false,
     }
 }

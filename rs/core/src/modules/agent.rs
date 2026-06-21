@@ -1,14 +1,13 @@
+use std::io::{BufRead, BufReader};
+use std::sync::atomic::{AtomicBool, Ordering};
 /// CLX Agent — LLM-driven computer control via voice.
 ///
 /// Keybindings:
 ///   CLX+M       — Toggle agent mode (voice → STT → LLM agent → execute)
 ///   CLX+Shift+M — Force stop agent
 ///   ESC         — Stop agent
-
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::io::{BufRead, BufReader};
 
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
@@ -33,9 +32,14 @@ pub fn enable_agent_mode() {
 /// Called by the voice module when a transcript is ready and agent mode is on.
 /// Spawns clx agent --prompt with the transcript.
 pub fn on_voice_transcript(text: &str, platform: &dyn Platform) {
-    if text.trim().is_empty() { return; }
+    if text.trim().is_empty() {
+        return;
+    }
     let prompt = text.trim().to_string();
-    eprintln!("[CLX] agent: voice transcript → \"{}\"", &prompt[..prompt.len().min(80)]);
+    eprintln!(
+        "[CLX] agent: voice transcript → \"{}\"",
+        &prompt[..prompt.len().min(80)]
+    );
     platform.show_brainstorm_overlay(&format!("🎤 \"{}\"\n\nRunning agent...", prompt));
 
     // Spawn clx agent subprocess.
@@ -88,7 +92,8 @@ pub struct AgentModule {
 
 /// Path to the live overlay file (shared with clx-agent).
 fn live_log_path() -> std::path::PathBuf {
-    std::env::current_exe().ok()
+    std::env::current_exe()
+        .ok()
         .and_then(|e| e.parent().map(|p| p.join("tmp").join("agent-live.log")))
         .unwrap_or_else(|| std::path::PathBuf::from("tmp/agent-live.log"))
 }
@@ -119,7 +124,10 @@ impl AgentModule {
 
                     let meta = match std::fs::metadata(&path) {
                         Ok(m) => m,
-                        Err(_) => { last_size = 0; continue; }
+                        Err(_) => {
+                            last_size = 0;
+                            continue;
+                        }
                     };
                     let modified = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
                     if modified < start_time && last_size == 0 {
@@ -128,7 +136,9 @@ impl AgentModule {
 
                     let size = meta.len();
                     if size != last_size {
-                        if size < last_size { last_content.clear(); }
+                        if size < last_size {
+                            last_content.clear();
+                        }
                         last_size = size;
 
                         if let Ok(content) = std::fs::read_to_string(&path) {
@@ -170,7 +180,9 @@ impl AgentModule {
         }
     }
 
-    pub fn on_key_up(&self, _key: KeyCode) -> bool { false }
+    pub fn on_key_up(&self, _key: KeyCode) -> bool {
+        false
+    }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         matches!(key, KeyCode::M)
@@ -209,5 +221,147 @@ impl AgentModule {
                 p.hide_brainstorm_overlay();
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_platform::{Call, MockPlatform};
+
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    fn make_module() -> (AgentModule, Arc<MockPlatform>) {
+        let mock = Arc::new(MockPlatform::new());
+        let m = AgentModule::new(mock.clone() as Arc<dyn Platform>);
+        (m, mock)
+    }
+
+    #[test]
+    fn is_mapped_key_only_m() {
+        let _g = TEST_LOCK.lock().unwrap();
+        let (m, _mock) = make_module();
+        assert!(m.is_mapped_key(KeyCode::M));
+        assert!(!m.is_mapped_key(KeyCode::A));
+        assert!(!m.is_mapped_key(KeyCode::B));
+        assert!(!m.is_mapped_key(KeyCode::Escape));
+        assert!(!m.is_mapped_key(KeyCode::Space));
+    }
+
+    #[test]
+    fn on_key_up_always_false() {
+        let _g = TEST_LOCK.lock().unwrap();
+        let (m, _mock) = make_module();
+        assert!(!m.on_key_up(KeyCode::M));
+        assert!(!m.on_key_up(KeyCode::Escape));
+    }
+
+    #[test]
+    fn on_key_down_unmapped_returns_false() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+        assert!(!m.on_key_down(KeyCode::A, &mods));
+        assert!(!m.on_key_down(KeyCode::B, &mods));
+        assert!(!m.on_key_down(KeyCode::Space, &mods));
+    }
+
+    #[test]
+    fn toggle_agent_mode_on_then_off() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+
+        assert!(m.on_key_down(KeyCode::M, &mods));
+        assert!(AGENT_MODE.load(Ordering::Relaxed));
+        assert!(is_agent_mode());
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("Agent Mode ON"))));
+        assert!(calls.iter().any(|c| matches!(c, Call::ShowVoiceOverlay)));
+
+        mock.clear();
+        assert!(m.on_key_down(KeyCode::M, &mods));
+        assert!(!AGENT_MODE.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("Agent Mode OFF"))));
+
+        AGENT_MODE.store(false, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn shift_m_force_stops() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(true, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers {
+            shift: true,
+            ..Default::default()
+        };
+        assert!(m.on_key_down(KeyCode::M, &mods));
+        assert!(!AGENT_MODE.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("OFF"))));
+    }
+
+    #[test]
+    fn escape_when_agent_off_returns_false() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+        assert!(!m.on_key_down(KeyCode::Escape, &mods));
+        assert!(mock.calls().is_empty());
+    }
+
+    #[test]
+    fn escape_when_agent_on_stops() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(true, Ordering::Relaxed);
+        let (m, mock) = make_module();
+        mock.clear();
+        let mods = Modifiers::default();
+        assert!(m.on_key_down(KeyCode::Escape, &mods));
+        assert!(!AGENT_MODE.load(Ordering::Relaxed));
+        let calls = mock.calls();
+        assert!(calls
+            .iter()
+            .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("OFF"))));
+    }
+
+    #[test]
+    fn is_agent_mode_reflects_global() {
+        let _g = TEST_LOCK.lock().unwrap();
+        AGENT_MODE.store(false, Ordering::Relaxed);
+        assert!(!is_agent_mode());
+        AGENT_MODE.store(true, Ordering::Relaxed);
+        assert!(is_agent_mode());
+        AGENT_MODE.store(false, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn on_voice_transcript_empty_does_nothing() {
+        let _g = TEST_LOCK.lock().unwrap();
+        let mock = MockPlatform::new();
+        on_voice_transcript("", &mock);
+        on_voice_transcript("   ", &mock);
+        assert!(mock.calls().is_empty());
+    }
+
+    #[test]
+    fn live_log_path_is_deterministic() {
+        let p = live_log_path();
+        assert!(p.to_string_lossy().contains("agent-live.log"));
     }
 }

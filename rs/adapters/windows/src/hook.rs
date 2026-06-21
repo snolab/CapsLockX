@@ -1,20 +1,19 @@
-/// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
-use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 use std::sync::mpsc;
+/// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
+use std::sync::{Arc, OnceLock};
 
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, HHOOK, KBDLLHOOKSTRUCT,
-    SetWindowsHookExW, UnhookWindowsHookEx, WH_KEYBOARD_LL,
-    SetTimer,
+    CallNextHookEx, GetClassNameW, GetForegroundWindow, GetWindowThreadProcessId, SetTimer,
+    SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL,
 };
 
-use capslockx_core::{ClxConfig, ClxEngine, CoreResponse};
 use crate::output::{WinPlatform, CLX_EXTRA_INFO};
 use crate::shm::SharedState;
 use crate::vk::vk_to_keycode;
+use capslockx_core::{ClxConfig, ClxEngine, CoreResponse};
 
 // ── Raw HHOOK stored as usize for atomic access ───────────────────────────────
 
@@ -76,12 +75,12 @@ pub fn get_shared_state() -> Option<&'static SharedState> {
 
 // ── Win32 message constants ───────────────────────────────────────────────────
 
-const WM_KEYDOWN:    u32 = 0x0100;
-const WM_KEYUP:      u32 = 0x0101;
+const WM_KEYDOWN: u32 = 0x0100;
+const WM_KEYUP: u32 = 0x0101;
 const WM_SYSKEYDOWN: u32 = 0x0104;
-const WM_SYSKEYUP:   u32 = 0x0105;
-const LLKHF_UP:      u32 = 0x80;
-const LLKHF_INJECTED:u32 = 0x10;
+const WM_SYSKEYUP: u32 = 0x0105;
+const LLKHF_UP: u32 = 0x80;
+const LLKHF_INJECTED: u32 = 0x10;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -95,15 +94,28 @@ pub fn init_engine(config: ClxConfig) {
 }
 
 pub fn engine() -> Arc<ClxEngine> {
-    ENGINE.get().expect("init_engine must be called before engine()").clone()
+    ENGINE
+        .get()
+        .expect("init_engine must be called before engine()")
+        .clone()
 }
 
-/// Install the WH_KEYBOARD_LL hook and a 16 ms timer for AccModel ticks.
+/// Install the WH_KEYBOARD_LL hook on the **calling (main/UI) thread** and spawn
+/// the AccModel ticker.
 ///
-/// **IMPORTANT:** Must be called from the thread that runs the Win32 message
-/// loop (e.g. inside Tauri's `setup` callback).  WH_KEYBOARD_LL hooks require
-/// the installing thread to pump messages — installing on a thread that doesn't
-/// call GetMessage/DispatchMessage causes Windows to silently disable the hook.
+/// **IMPORTANT — must be installed on the thread that owns clx's own windows
+/// (the Tauri/WebView2 UI thread).** A low-level keyboard hook installed on a
+/// *different* thread than the one owning the foreground window will NOT receive
+/// callbacks while one of clx's *own* windows (e.g. the Preferences window) has
+/// focus — Windows cannot deliver the cross-thread hook callback through the
+/// process's serialized input queue, so the hook silently goes dead until focus
+/// leaves. Installing on the UI thread (same as AutoHotkey's GUI-thread hook)
+/// makes the hook fire for clx's own windows too. Tauri's `run()` loop on this
+/// thread pumps the messages that keep the hook serviced.
+///
+/// The original close-freeze (closing prefs starving the hook during WebView2
+/// teardown) is solved separately by hiding the prefs window instead of
+/// destroying it — see `open_prefs_window` in main.rs.
 pub fn install_hook() {
     let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
     let hhook = unsafe {
@@ -111,6 +123,11 @@ pub fn install_hook() {
             .expect("SetWindowsHookExW failed")
     };
     HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
+
+    // Cursor-visibility nudge timer on the UI thread; Tauri's loop dispatches it.
+    unsafe {
+        SetTimer(None, 0, 250, Some(nudge_timer_proc));
+    }
 
     // High-frequency ticker thread for AccModel physics (~166 FPS).
     // Uses timeBeginPeriod(1) for 1ms Sleep resolution, then sleeps ~6ms
@@ -149,18 +166,16 @@ pub fn install_hook() {
                 } else if now_ms - last >= 2000 {
                     let elapsed_s = (now_ms - last) as f64 / 1000.0;
                     let fps = count as f64 / elapsed_s;
-                    debug_log(&format!("[CLX] tick: {:.1} FPS ({} ticks in {:.1}s)", fps, count, elapsed_s));
+                    debug_log(&format!(
+                        "[CLX] tick: {:.1} FPS ({} ticks in {:.1}s)",
+                        fps, count, elapsed_s
+                    ));
                     LAST_LOG.store(now_ms, Ordering::Relaxed);
                     TICK_COUNT.store(0, Ordering::Relaxed);
                 }
             }
         })
         .expect("failed to spawn ticker thread");
-
-    // Low-frequency timer for cursor visibility nudges only.
-    unsafe {
-        SetTimer(None, 0, 250, Some(nudge_timer_proc));
-    }
 }
 
 unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _time: u32) {
@@ -173,35 +188,46 @@ unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _
 pub fn uninstall_hook() {
     let raw = HOOK_RAW.swap(0, Ordering::SeqCst) as *mut _;
     if !std::ptr::eq(raw, std::ptr::null()) {
-        unsafe { let _ = UnhookWindowsHookEx(HHOOK(raw)); }
+        unsafe {
+            let _ = UnhookWindowsHookEx(HHOOK(raw));
+        }
     }
 }
 
 // ── Hook callback ─────────────────────────────────────────────────────────────
 
-unsafe extern "system" fn keyboard_proc(
-    n_code: i32,
-    w_param: WPARAM,
-    l_param: LPARAM,
-) -> LRESULT {
-    if n_code < 0 { return call_next(n_code, w_param, l_param); }
+unsafe extern "system" fn keyboard_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    if n_code < 0 {
+        return call_next(n_code, w_param, l_param);
+    }
 
     let kb = &*(l_param.0 as *const KBDLLHOOKSTRUCT);
+
     let flags = kb.flags.0;
 
     let msg = w_param.0 as u32;
-    let is_up   = (flags & LLKHF_UP) != 0;
+    let is_up = (flags & LLKHF_UP) != 0;
     let pressed = matches!(msg, WM_KEYDOWN | WM_SYSKEYDOWN) && !is_up;
-    let released= matches!(msg, WM_KEYUP   | WM_SYSKEYUP)   &&  is_up;
+    let released = matches!(msg, WM_KEYUP | WM_SYSKEYUP) && is_up;
 
     let code = vk_to_keycode(kb.vkCode);
     let injected = (flags & LLKHF_INJECTED) != 0;
     let is_ours = injected && kb.dwExtraInfo == CLX_EXTRA_INFO;
 
-    // Debug: log ALL key events
-    if pressed || released {
-        debug_log(&format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} extra=0x{:X}",
-            kb.vkCode, code, if pressed { "DN" } else { "UP" }, injected, is_ours, kb.dwExtraInfo));
+    // Debug: log ALL key events with the currently focused window so we can tell
+    // whether the hook fires while a given window (e.g. the prefs WebView2) has
+    // focus. Gated by debug_enabled() so the GetForegroundWindow/class lookup
+    // never runs on the hot path in production.
+    if debug_enabled() && (pressed || released) {
+        debug_log(&format!(
+            "[hook] vk=0x{:02X} {:?} {} inj={} ours={} fg=[{}]",
+            kb.vkCode,
+            code,
+            if pressed { "DN" } else { "UP" },
+            injected,
+            is_ours,
+            fg_window_desc()
+        ));
     }
 
     // Skip events injected by us
@@ -209,11 +235,19 @@ unsafe extern "system" fn keyboard_proc(
         return call_next(n_code, w_param, l_param);
     }
 
-    if !pressed && !released { return call_next(n_code, w_param, l_param); }
+    if !pressed && !released {
+        return call_next(n_code, w_param, l_param);
+    }
 
     let engine = ENGINE.get().expect("init_engine not called");
     let resp = engine.on_key_event(code, pressed);
-    debug_log(&format!("[hook] -> {:?} mode={}", resp, engine.state().mode()));
+    if debug_enabled() {
+        debug_log(&format!(
+            "[hook] -> {:?} mode={}",
+            resp,
+            engine.state().mode()
+        ));
+    }
 
     // Publish current mode to shared memory so AHK extensions can read it.
     let mode = engine.state().mode();
@@ -234,17 +268,112 @@ unsafe extern "system" fn keyboard_proc(
     }
 
     match resp {
-        CoreResponse::Suppress    => LRESULT(1),
+        CoreResponse::Suppress => LRESULT(1),
         CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
     }
 }
 
-#[allow(dead_code)]
+/// Channel to the background log writer. `Some(_)` only when CLX_DEBUG is set.
+/// `None` → logging disabled → `debug_log` is a no-op (no disk I/O, no alloc).
+static DEBUG_TX: OnceLock<Option<mpsc::Sender<String>>> = OnceLock::new();
+
+fn log_path() -> Option<std::path::PathBuf> {
+    std::env::var("TEMP")
+        .ok()
+        .map(|tmp| std::path::PathBuf::from(format!(r"{}\capslockx_hook.log", tmp)))
+}
+
+/// Initialise debug logging. Call once early in `main`.
+///
+/// Logging is **off by default** and only enabled when `CLX_DEBUG` is set (and
+/// not empty/"0"). This matters because `debug_log` is called several times per
+/// keystroke from inside the WH_KEYBOARD_LL callback — the old version did a
+/// synchronous file open+append+write there, stalling the system input path and
+/// bloating a multi-MB log. When enabled, writes are handed to a background
+/// thread so the hook callback never touches the disk.
+pub fn init_debug_log() {
+    let enabled = std::env::var("CLX_DEBUG")
+        .map(|v| !v.is_empty() && v != "0")
+        .unwrap_or(false);
+    if !enabled {
+        let _ = DEBUG_TX.set(None);
+        return;
+    }
+    let (tx, rx) = mpsc::channel::<String>();
+    let _ = std::thread::Builder::new()
+        .name("clx-debug-log".into())
+        .spawn(move || {
+            use std::io::Write as _;
+            let Some(path) = log_path() else { return };
+            let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&path)
+            else {
+                return;
+            };
+            while let Ok(line) = rx.recv() {
+                let _ = writeln!(file, "{} {}", now_ms(), line);
+                // Drain any backlog before flushing so bursts batch into one flush.
+                while let Ok(next) = rx.try_recv() {
+                    let _ = writeln!(file, "{} {}", now_ms(), next);
+                }
+                let _ = file.flush();
+            }
+        });
+    let _ = DEBUG_TX.set(Some(tx));
+}
+
+/// Milliseconds since the Unix epoch — used to timestamp log lines so a
+/// separate focus poller can be time-correlated with hook activity.
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+/// Cheap check used to gate expensive per-key logging (string formatting +
+/// GetForegroundWindow) so it only runs when CLX_DEBUG is active.
+#[inline]
+fn debug_enabled() -> bool {
+    matches!(DEBUG_TX.get(), Some(Some(_)))
+}
+
+/// Describe the currently focused (foreground) window: class name + PID. Uses
+/// only non-blocking calls — notably NOT GetWindowTextW, which sends WM_GETTEXT
+/// and could block the hook thread if the target window is busy.
+fn fg_window_desc() -> String {
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        let mut buf = [0u16; 128];
+        let n = GetClassNameW(hwnd, &mut buf);
+        let class = String::from_utf16_lossy(&buf[..n.max(0) as usize]);
+        let mut pid = 0u32;
+        let _ = GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        format!("hwnd=0x{:X} class='{}' pid={}", hwnd.0 as usize, class, pid)
+    }
+}
+
+/// Hot-path log: a cheap no-op unless CLX_DEBUG enabled the background writer.
+/// Safe to call from the keyboard-hook callback — never blocks on disk.
+#[inline]
 pub fn debug_log(msg: &str) {
+    if let Some(Some(tx)) = DEBUG_TX.get() {
+        let _ = tx.send(msg.to_string());
+    }
+}
+
+/// Synchronous, always-on log for rare critical events (panics) where we want
+/// the record on disk even if the async writer isn't up. Not for the hot path.
+pub fn debug_log_sync(msg: &str) {
     use std::io::Write as _;
-    if let Ok(tmp) = std::env::var("TEMP") {
-        let path = format!(r"{}\capslockx_hook.log", tmp);
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+    if let Some(path) = log_path() {
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+        {
             let _ = writeln!(f, "{}", msg);
         }
     }

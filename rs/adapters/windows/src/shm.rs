@@ -164,6 +164,29 @@ impl SharedState {
         }
     }
 
+    /// Create the named "config changed" event (auto-reset). The main process
+    /// waits on this; the out-of-process preferences window signals it via
+    /// `signal_config_changed` after writing config.json, so the main process
+    /// reloads and applies the new config to the live engine.
+    pub fn create_config_changed_event() -> Option<HANDLE> {
+        unsafe {
+            // auto-reset (manual_reset=false) so each save fires exactly one wake.
+            let h = CreateEventW(None, false, false, w!("CapsLockX_ConfigChanged")).ok()?;
+            Some(h)
+        }
+    }
+
+    /// Signal the main process that config.json changed (called from the prefs
+    /// subprocess). No-op if the main process isn't running.
+    pub fn signal_config_changed() {
+        unsafe {
+            if let Ok(evt) = OpenEventW(EVENT_MODIFY_STATE, false, w!("CapsLockX_ConfigChanged")) {
+                let _ = SetEvent(evt);
+                let _ = CloseHandle(evt);
+            }
+        }
+    }
+
     /// Create the named shared memory region and initialise the header.
     pub fn create() -> Option<Self> {
         unsafe {

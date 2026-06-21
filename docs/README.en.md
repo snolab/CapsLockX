@@ -1,16 +1,73 @@
-# CapsLockX - 💻 Get Hacker's Keyboard. Operate your computer like a **hacker**
+# CapsLockX 2.0 — Keyboard productivity + voice + LLM agent
 
-CapsLockX is a modular hotkey script engine based on AutoHotkey. It allows you to operate your computer efficiently like a hacker in a movie without ever taking your hands off the keyboard. It comes packed with functions that are intuitive and easy to use: enhanced editing, virtual desktop and window management, mouse simulation, in-app hotkey enhancement, JS mathematical expression calculation, and many more multifunctional features are there for you to personally customize.
+> Hold `CapsLock` or `Space` + a key. Navigate without leaving home row, dictate by voice, let an LLM drive your computer.
 
-Docs in Languages:
-**[English Docs (ChatGPT Translated)](https://capslockx.snomiao.com/)**
-**[简体中文 説明](./README.zh.md)**
+CapsLockX is a cross-platform keyboard productivity layer, **rewritten in Rust** for 2.0. The original AutoHotkey script (1.x, Windows only) is preserved on the `legacy` branch; this page documents the current Rust implementation that runs on macOS, Linux, and (in progress) Windows.
 
-**[See Any Language Docs (Google Translated)](https://capslockx.snomiao.com/)**
+What it does:
+
+- **Vim-style navigation** anywhere (`HJKL` cursor, `YUIO` page, `G` enter, `T` delete, `N`/`P` tab)
+- **Mouse simulation** with physics-based acceleration (`WASD` move, `QE` click, `RF` scroll)
+- **Window management** & **virtual desktops** (`Z` cycle, `X` close, `C` tile, `1`–`9` desktops)
+- **Voice dictation** (`Space+V`) — local SenseVoice / whisper.cpp, with optional LLM polish
+- **Brainstorm chat** (`Space+B`) — streaming overlay to Gemini / OpenAI / Anthropic / Ollama / MLX
+- **LLM agent** (`Space+M` or `clx agent`) — describe a task in natural language and it operates the UI for you
+
+Languages:
+**[English](./README.en.md)** · **[简体中文](./README.zh.md)** · **[日本語](./README.ja.md)** · **[Français](./README.fr.md)** · **[Español](./README.es.md)** · **[Русский](./README.ru.md)**
+
+Repository 🏠: <https://github.com/snolab/CapsLockX>
 
 ---
 
-CapsLockX is a modular hotkey script engine based on AutoHotkey. It makes it so you can effortlessly operate your computer with high efficiency like a hacker from the movies, without taking your hands off the keyboard. There are a lot of easy-to-learn and very user-friendly functions available: editing enhancement, virtual desktop and window management, mouse simulation, application-specific hotkey enhancement, JS mathematical expression calculation, and many other features await your personal customization. Main repository address 🏠: [https://github.com/snolab/CapsLockX](https://github.com/snolab/CapsLockX)
+## Voice features
+
+`Space+V` toggles voice input; hold to talk push-to-talk style, tap to leave it on. The pipeline:
+
+1. **STT** — SenseVoice (local) or whisper.cpp; Gemini cloud as fallback. Both mic and system-audio tracks are transcribed in parallel, so you can dictate over a meeting without losing either side.
+2. **Polish chain** (configurable) — short utterances (≤15 chars or ≤5 s) return raw to avoid LLM-induced CER regressions; longer dictation flows through MLX (Qwen 2.5-3B local) or an LLM corrector for punctuation, capitalisation, and disfluency cleanup.
+3. **Translation** (optional) — presets for learning, interpreter, chat, and conversation modes.
+4. **TTS** — ElevenLabs → Gemini → OpenAI → msedge-tts → native system, with automatic fallback.
+
+All settings live in the otoji preferences panel (`clx prefs`).
+
+## LLM agent
+
+The agent (`Space+M` or `clx agent --prompt "…"`) operates your computer via the CLX command language:
+
+```
+k a                  tap key 'a'
+k c-c                Ctrl+C   (s=shift, c=ctrl, a=alt, w=cmd; macOS w=Cmd)
+k "text"             type a string (with \n \t \" \\ escapes)
+m 400 300            move mouse to (400, 300)
+m 400 300 c          move + left-click
+w 200ms              wait 200 ms
+wf "Save" 3s         wait up to 3 s for "Save" to appear in the accessibility tree
+scan ID x y w h dark>N { k key }   60 Hz pixel reflex (e.g. Chrome Dino jump)
+scan_stop ID         stop a named reflex
+S screen region x y w h   set the capture region
+? screen             one-shot screenshot
+```
+
+CLI commands available without entering FN mode:
+
+```bash
+clx agent --tree            # dump the frontmost app's AX tree
+clx agent --exec            # execute CLX commands from stdin
+clx agent --prompt "open notes and write today's date"
+clx agent "open notes"      # shorthand
+clx dino                    # auto-play Chrome Dino with a 60 Hz pixel reflex
+clx observe                 # screenshot + Gemini Vision description
+clx ocr                     # Apple Vision OCR (full screen or region)
+```
+
+The agent system prompt is editable at [`skills/clx-agent/SKILL.md`](https://github.com/snolab/CapsLockX/blob/main/skills/clx-agent/SKILL.md) — no rebuild needed.
+
+---
+
+## Legacy 1.x reference (AutoHotkey)
+
+The sections below describe the original AutoHotkey 1.x build. They still apply to users running CapsLockX 1.x on Windows; on the Rust 2.0 build, see [Installation](installation.md), the [hotkey map above](#hotkey-map), and the [core trigger behaviors spec](2026-05-15-core-behaviors.html) instead.
 
 ---
 
