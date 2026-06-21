@@ -1311,8 +1311,14 @@ pub fn push_dual_audio_levels(
         // (Earlier this branch only ran when levels were non-empty, which
         // left mic_vad stuck at the last seen value when CLX was using the
         // otoji backend and pushing VAD events without level samples.)
-        if g.mic_vad != mic_vad { g.mic_vad = mic_vad; changed = true; }
-        if g.sys_vad != sys_vad { g.sys_vad = sys_vad; changed = true; }
+        if g.mic_vad != mic_vad {
+            g.mic_vad = mic_vad;
+            changed = true;
+        }
+        if g.sys_vad != sys_vad {
+            g.sys_vad = sys_vad;
+            changed = true;
+        }
         if !mic_levels.is_empty() {
             g.mic_levels.extend_from_slice(mic_levels);
             if g.mic_levels.len() > 100 {
@@ -1562,7 +1568,8 @@ fn trigger_redraw_inner() {
                     format!("{top}{translation_line}")
                 } else {
                     // Truncate each line, preserving emoji prefix (🎤/🔊).
-                    let top: String = g.subtitle
+                    let top: String = g
+                        .subtitle
                         .lines()
                         .map(|line| {
                             let chars: Vec<char> = line.chars().collect();

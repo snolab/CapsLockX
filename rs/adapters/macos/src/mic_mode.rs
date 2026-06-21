@@ -12,8 +12,12 @@ extern "C" {
     fn objc_msgSend(receiver: *mut c_void, sel: *mut c_void, ...) -> *mut c_void;
 }
 
-unsafe fn sel(name: &[u8]) -> *mut c_void { sel_registerName(name.as_ptr() as *const _) }
-unsafe fn cls(name: &[u8]) -> *mut c_void { objc_getClass(name.as_ptr() as *const _) }
+unsafe fn sel(name: &[u8]) -> *mut c_void {
+    sel_registerName(name.as_ptr() as *const _)
+}
+unsafe fn cls(name: &[u8]) -> *mut c_void {
+    objc_getClass(name.as_ptr() as *const _)
+}
 
 const MODE_STANDARD: isize = 0;
 const _MODE_WIDE_SPECTRUM: isize = 1;
@@ -23,7 +27,9 @@ const MODE_VOICE_ISOLATION: isize = 2;
 pub fn active_microphone_mode() -> isize {
     unsafe {
         let device_cls = cls(b"AVCaptureDevice\0");
-        if device_cls.is_null() { return MODE_STANDARD; }
+        if device_cls.is_null() {
+            return MODE_STANDARD;
+        }
         let f: extern "C" fn(*mut c_void, *mut c_void) -> isize =
             std::mem::transmute(objc_msgSend as *const ());
         f(device_cls, sel(b"activeMicrophoneMode\0"))
@@ -34,7 +40,9 @@ pub fn active_microphone_mode() -> isize {
 pub fn show_microphone_mode_picker() {
     unsafe {
         let device_cls = cls(b"AVCaptureDevice\0");
-        if device_cls.is_null() { return; }
+        if device_cls.is_null() {
+            return;
+        }
         let f: extern "C" fn(*mut c_void, *mut c_void, isize) =
             std::mem::transmute(objc_msgSend as *const ());
         f(device_cls, sel(b"showSystemUserInterface:\0"), 2); // microphoneModes = 2
@@ -47,21 +55,31 @@ pub fn show_microphone_mode_picker() {
 pub fn check_and_request_mic_permission() -> bool {
     unsafe {
         let device_cls = cls(b"AVCaptureDevice\0");
-        if device_cls.is_null() { return true; }
+        if device_cls.is_null() {
+            return true;
+        }
 
         // AVMediaTypeAudio = @"soun"
         let nsstring_cls = cls(b"NSString\0");
         let media_audio: *mut c_void = {
             let f: extern "C" fn(*mut c_void, *mut c_void, *const u8) -> *mut c_void =
                 std::mem::transmute(objc_msgSend as *const ());
-            f(nsstring_cls, sel(b"stringWithUTF8String:\0"), b"soun\0".as_ptr())
+            f(
+                nsstring_cls,
+                sel(b"stringWithUTF8String:\0"),
+                b"soun\0".as_ptr(),
+            )
         };
 
         // authorizationStatusForMediaType: -> NSInteger
         let status: isize = {
             let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> isize =
                 std::mem::transmute(objc_msgSend as *const ());
-            f(device_cls, sel(b"authorizationStatusForMediaType:\0"), media_audio)
+            f(
+                device_cls,
+                sel(b"authorizationStatusForMediaType:\0"),
+                media_audio,
+            )
         };
 
         match status {
@@ -69,7 +87,9 @@ pub fn check_and_request_mic_permission() -> bool {
                 eprintln!("[CLX] mic permission: not determined — requesting via subprocess...");
                 // Spawn a swift process that requests mic access and waits for user response.
                 let result = std::process::Command::new("swift")
-                    .args(["-e", r#"
+                    .args([
+                        "-e",
+                        r#"
 import AVFoundation
 import Foundation
 let sem = DispatchSemaphore(value: 0)
@@ -78,7 +98,8 @@ AVCaptureDevice.requestAccess(for: .audio) { granted in
     sem.signal()
 }
 sem.wait()
-"#])
+"#,
+                    ])
                     .output();
                 match result {
                     Ok(out) => {
@@ -97,10 +118,22 @@ sem.wait()
                     }
                 }
             }
-            1 => { eprintln!("[CLX] mic permission: RESTRICTED"); false }
-            2 => { eprintln!("[CLX] mic permission: DENIED — enable in System Settings → Privacy & Security → Microphone"); false }
-            3 => { eprintln!("[CLX] mic permission: authorized"); true }
-            _ => { eprintln!("[CLX] mic permission: unknown status {status}"); true }
+            1 => {
+                eprintln!("[CLX] mic permission: RESTRICTED");
+                false
+            }
+            2 => {
+                eprintln!("[CLX] mic permission: DENIED — enable in System Settings → Privacy & Security → Microphone");
+                false
+            }
+            3 => {
+                eprintln!("[CLX] mic permission: authorized");
+                true
+            }
+            _ => {
+                eprintln!("[CLX] mic permission: unknown status {status}");
+                true
+            }
         }
     }
 }

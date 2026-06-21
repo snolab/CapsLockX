@@ -9,9 +9,9 @@ mod tests {
     use std::time::Duration;
 
     use crate::key_code::KeyCode;
-    use crate::platform::{MouseButton, Platform};
-    use crate::modules::voice_ptt::{PttRelease, PttSession};
     use crate::modules::voice_otoji::OtojiBackend;
+    use crate::modules::voice_ptt::{PttRelease, PttSession};
+    use crate::platform::{MouseButton, Platform};
 
     // ── MockPlatform: simulates a text cursor ────────────────────────────────
 
@@ -46,13 +46,19 @@ mod tests {
         }
 
         fn backspace_count(&self) -> usize {
-            self.ops.lock().unwrap().iter()
+            self.ops
+                .lock()
+                .unwrap()
+                .iter()
                 .filter(|op| op == &"BS")
                 .count()
         }
 
         fn type_count(&self) -> usize {
-            self.ops.lock().unwrap().iter()
+            self.ops
+                .lock()
+                .unwrap()
+                .iter()
                 .filter(|op| op.starts_with("T:"))
                 .count()
         }
@@ -91,10 +97,12 @@ mod tests {
     /// Generate 16kHz mono sine wave (audible signal for VAD).
     fn sine_wave(duration_ms: u64, freq_hz: f32) -> Vec<f32> {
         let n = (16 * duration_ms) as usize;
-        (0..n).map(|i| {
-            let t = i as f32 / 16000.0;
-            (2.0 * std::f32::consts::PI * freq_hz * t).sin() * 0.5
-        }).collect()
+        (0..n)
+            .map(|i| {
+                let t = i as f32 / 16000.0;
+                (2.0 * std::f32::consts::PI * freq_hz * t).sin() * 0.5
+            })
+            .collect()
     }
 
     /// Feed samples to PTT in small chunks (simulating real-time mic callback).
@@ -112,14 +120,21 @@ mod tests {
     fn test_replace_displayed_diff_append() {
         // Scenario: "~" → "hello~" — should backspace 1, type "hello~"
         let platform = Arc::new(MockPlatform::new());
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
 
         // After mic_ready + placeholder delay, tail = "-" (listening, no VAD).
         // VAD on would flip it to "~".
         ptt.set_mic_ready();
         ptt.on_press();
         std::thread::sleep(Duration::from_millis(200));
-        assert_eq!(platform.screen_text(), "-", "placeholder should be - (mic ready, VAD silent)");
+        assert_eq!(
+            platform.screen_text(),
+            "-",
+            "placeholder should be - (mic ready, VAD silent)"
+        );
 
         // Simulate VAD on → tail flips to "~".
         ptt.on_vad(true);
@@ -130,8 +145,12 @@ mod tests {
         // the full flow by stopping here and checking ops.
         let bs = platform.backspace_count();
         let tc = platform.type_count();
-        eprintln!("[test] after placeholder: screen={:?}, bs={}, types={}",
-            platform.screen_text(), bs, tc);
+        eprintln!(
+            "[test] after placeholder: screen={:?}, bs={}, types={}",
+            platform.screen_text(),
+            bs,
+            tc
+        );
 
         // Clean up
         ptt.on_release();
@@ -142,7 +161,10 @@ mod tests {
     fn test_tap_no_text() {
         // Quick tap (<150ms) should not type anything.
         let platform = Arc::new(MockPlatform::with_existing_text("existing"));
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -150,24 +172,36 @@ mod tests {
         let result = ptt.on_release();
 
         assert_eq!(result, PttRelease::Tap);
-        assert_eq!(platform.screen_text(), "existing",
-            "tap should not modify existing text");
-        assert_eq!(platform.backspace_count(), 0,
-            "tap should not send any backspaces");
+        assert_eq!(
+            platform.screen_text(),
+            "existing",
+            "tap should not modify existing text"
+        );
+        assert_eq!(
+            platform.backspace_count(),
+            0,
+            "tap should not send any backspaces"
+        );
     }
 
     #[test]
     fn test_tap_with_placeholder_cleanup() {
         // Tap at 200ms — placeholder "~" was typed, should be cleaned up.
         let platform = Arc::new(MockPlatform::with_existing_text("hello"));
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         ptt.on_press();
         std::thread::sleep(Duration::from_millis(200)); // placeholder appears
         let screen_during = platform.screen_text();
         eprintln!("[test] during hold: {:?}", screen_during);
-        assert!(screen_during.ends_with("-"), "should show placeholder - (mic ready, no VAD)");
+        assert!(
+            screen_during.ends_with("-"),
+            "should show placeholder - (mic ready, no VAD)"
+        );
 
         let result = ptt.on_release();
         // Simulate otoji sending ptt_final (empty = no speech detected).
@@ -177,15 +211,23 @@ mod tests {
         // PTT had displayed text, so it's a Hold.
         // ptt_final("") should erase the placeholder without typing anything.
         let screen_after = platform.screen_text();
-        eprintln!("[test] after release: {:?}, result={:?}", screen_after, result);
-        assert_eq!(screen_after, "hello",
-            "existing text must be preserved after hold release with no speech");
+        eprintln!(
+            "[test] after release: {:?}, result={:?}",
+            screen_after, result
+        );
+        assert_eq!(
+            screen_after, "hello",
+            "existing text must be preserved after hold release with no speech"
+        );
     }
 
     #[test]
     fn test_hold_preserves_existing_text() {
         let platform = Arc::new(MockPlatform::with_existing_text("pre-existing "));
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -199,14 +241,20 @@ mod tests {
 
         let screen = platform.screen_text();
         eprintln!("[test] screen after silent hold: {:?}", screen);
-        assert!(screen.starts_with("pre-existing "),
-            "existing text must be preserved, got: {:?}", screen);
+        assert!(
+            screen.starts_with("pre-existing "),
+            "existing text must be preserved, got: {:?}",
+            screen
+        );
     }
 
     #[test]
     fn test_double_tap_enters_locked() {
         let platform = Arc::new(MockPlatform::new());
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         // First tap
@@ -227,7 +275,10 @@ mod tests {
     #[test]
     fn test_locked_exit_on_press() {
         let platform = Arc::new(MockPlatform::new());
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         // Enter locked mode via double-tap
@@ -253,7 +304,10 @@ mod tests {
     fn test_no_backspace_on_empty_screen() {
         // Ensure we never send BS(empty!) — backspace when nothing to delete.
         let platform = Arc::new(MockPlatform::new());
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -263,14 +317,20 @@ mod tests {
 
         let ops = platform.op_log();
         let empty_bs = ops.iter().filter(|op| *op == "BS(empty!)").count();
-        assert_eq!(empty_bs, 0,
-            "should never backspace on empty screen, ops: {:?}", ops);
+        assert_eq!(
+            empty_bs, 0,
+            "should never backspace on empty screen, ops: {:?}",
+            ops
+        );
     }
 
     #[test]
     fn test_double_tap_too_slow_is_two_taps() {
         let platform = Arc::new(MockPlatform::new());
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         // First tap
@@ -286,7 +346,11 @@ mod tests {
         ptt.on_press();
         std::thread::sleep(Duration::from_millis(50));
         let r2 = ptt.on_release();
-        assert_eq!(r2, PttRelease::Tap, "slow second tap should be Tap, not Locked");
+        assert_eq!(
+            r2,
+            PttRelease::Tap,
+            "slow second tap should be Tap, not Locked"
+        );
         assert!(!ptt.is_locked());
     }
 
@@ -296,13 +360,19 @@ mod tests {
         // total characters typed by PTT (placeholder + partials) minus
         // any final committed text.
         let platform = Arc::new(MockPlatform::with_existing_text("AAA"));
-        let ptt = PttSession::new(Arc::clone(&platform) as Arc<dyn Platform>, Arc::new(OtojiBackend::new()));
+        let ptt = PttSession::new(
+            Arc::clone(&platform) as Arc<dyn Platform>,
+            Arc::new(OtojiBackend::new()),
+        );
         ptt.set_mic_ready();
 
         ptt.on_press();
         std::thread::sleep(Duration::from_millis(200)); // placeholder "~" typed
         let screen_during = platform.screen_text();
-        assert!(screen_during.starts_with("AAA"), "existing text preserved during hold");
+        assert!(
+            screen_during.starts_with("AAA"),
+            "existing text preserved during hold"
+        );
 
         ptt.on_release();
         ptt.on_ptt_final(""); // simulate otoji response
@@ -314,7 +384,10 @@ mod tests {
         eprintln!("[test] screen: {:?}", screen_after);
 
         // Verify: all PTT-typed chars were backspaced, existing text intact.
-        assert!(screen_after.starts_with("AAA"),
-            "existing text 'AAA' must survive, got: {:?}", screen_after);
+        assert!(
+            screen_after.starts_with("AAA"),
+            "existing text 'AAA' must survive, got: {:?}",
+            screen_after
+        );
     }
 }

@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
 /// AccModel2D – time-based 2-D acceleration physics model.
 ///
 /// Ported from AHK `AccModel2D` (Modules/AccModel/AccModel.ahk).
@@ -10,8 +12,6 @@
 use std::thread;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
-use std::sync::{Arc, Condvar, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
 
 /// When true, AccModel2D does NOT spawn background ticker threads.
 /// The caller must drive ticks externally (e.g. via SetTimer on Windows).
@@ -34,7 +34,13 @@ use web_time::Instant;
 // ──────────────────────────────── math helpers ───────────────────────────────
 
 fn sign(x: f64) -> f64 {
-    if x > 0.0 { 1.0 } else if x < 0.0 { -1.0 } else { 0.0 }
+    if x > 0.0 {
+        1.0
+    } else if x < 0.0 {
+        -1.0
+    } else {
+        0.0
+    }
 }
 
 /// Acceleration function – matches the AHK polynomial + exponential formula.
@@ -53,54 +59,66 @@ fn ma(dt: f64) -> f64 {
 
 /// Velocity damping applied when no / opposing input is present.
 fn damping(mut v: f64, accel: f64, dt: f64, max_speed: f64) -> f64 {
-    if max_speed.is_finite() { v = v.clamp(-max_speed, max_speed); }
-    if accel * v > 0.0 { return v; }
+    if max_speed.is_finite() {
+        v = v.clamp(-max_speed, max_speed);
+    }
+    if accel * v > 0.0 {
+        return v;
+    }
     v *= (-dt * 20.0_f64).exp();
     v -= sign(v) * dt;
-    if v.abs() < 1.0 { v = 0.0; }
+    if v.abs() < 1.0 {
+        v = 0.0;
+    }
     v
 }
 
 fn add_safe(acc: f64, x: f64) -> f64 {
     let c = acc + x;
-    if c.is_finite() { c } else { acc }
+    if c.is_finite() {
+        c
+    } else {
+        acc
+    }
 }
 
 // ──────────────────────────────── state ──────────────────────────────────────
 
 struct State {
-    left_down:  Option<Instant>,
+    left_down: Option<Instant>,
     right_down: Option<Instant>,
-    up_down:    Option<Instant>,
-    down_down:  Option<Instant>,
-    last_tick:  Option<Instant>,
-    h_vel:   f64,
-    v_vel:   f64,
+    up_down: Option<Instant>,
+    down_down: Option<Instant>,
+    last_tick: Option<Instant>,
+    h_vel: f64,
+    v_vel: f64,
     h_accum: f64,
     v_accum: f64,
-    active:  bool,
-    h_accel_ratio:  f64,
-    v_accel_ratio:  f64,
-    max_speed:      f64,
+    active: bool,
+    h_accel_ratio: f64,
+    v_accel_ratio: f64,
+    max_speed: f64,
     mid_key_window: std::time::Duration,
 }
 
 impl State {
     fn any_key_held(&self) -> bool {
-        self.left_down.is_some() || self.right_down.is_some()
-            || self.up_down.is_some() || self.down_down.is_some()
+        self.left_down.is_some()
+            || self.right_down.is_some()
+            || self.up_down.is_some()
+            || self.down_down.is_some()
     }
     fn reset(&mut self) {
-        self.left_down  = None;
+        self.left_down = None;
         self.right_down = None;
-        self.up_down    = None;
-        self.down_down  = None;
-        self.last_tick  = None;
-        self.h_vel   = 0.0;
-        self.v_vel   = 0.0;
+        self.up_down = None;
+        self.down_down = None;
+        self.last_tick = None;
+        self.h_vel = 0.0;
+        self.v_vel = 0.0;
         self.h_accum = 0.0;
         self.v_accum = 0.0;
-        self.active  = false;
+        self.active = false;
     }
 }
 
@@ -114,7 +132,7 @@ pub type ActionFn = dyn Fn(i32, i32, &str) + Send + Sync + 'static;
 /// On WASM the caller must call `tick_once()` periodically (e.g. every 16 ms
 /// via `setInterval`).
 pub struct AccModel2D {
-    inner:  Arc<(Mutex<State>, Condvar)>,
+    inner: Arc<(Mutex<State>, Condvar)>,
     action: Arc<ActionFn>,
 }
 
@@ -127,12 +145,22 @@ impl AccModel2D {
     ) -> Self {
         let inner = Arc::new((
             Mutex::new(State {
-                left_down: None, right_down: None, up_down: None, down_down: None,
+                left_down: None,
+                right_down: None,
+                up_down: None,
+                down_down: None,
                 last_tick: None,
-                h_vel: 0.0, v_vel: 0.0, h_accum: 0.0, v_accum: 0.0,
+                h_vel: 0.0,
+                v_vel: 0.0,
+                h_accum: 0.0,
+                v_accum: 0.0,
                 active: false,
                 h_accel_ratio,
-                v_accel_ratio: if v_accel_ratio == 0.0 { h_accel_ratio } else { v_accel_ratio },
+                v_accel_ratio: if v_accel_ratio == 0.0 {
+                    h_accel_ratio
+                } else {
+                    v_accel_ratio
+                },
                 max_speed,
                 mid_key_window: std::time::Duration::from_millis(100),
             }),
@@ -160,10 +188,15 @@ impl AccModel2D {
         tick_step(&self.inner, &*self.action);
     }
 
-    fn press_dir(inner: &Arc<(Mutex<State>, Condvar)>, field: fn(&mut State) -> &mut Option<Instant>) {
+    fn press_dir(
+        inner: &Arc<(Mutex<State>, Condvar)>,
+        field: fn(&mut State) -> &mut Option<Instant>,
+    ) {
         let (lock, cvar) = inner.as_ref();
         let mut st = lock.lock().unwrap();
-        if field(&mut st).is_none() { *field(&mut st) = Some(Instant::now()); }
+        if field(&mut st).is_none() {
+            *field(&mut st) = Some(Instant::now());
+        }
         if !st.active {
             st.active = true;
             st.last_tick = None;
@@ -171,19 +204,38 @@ impl AccModel2D {
         }
     }
 
-    fn release_dir(inner: &Arc<(Mutex<State>, Condvar)>, field: fn(&mut State) -> &mut Option<Instant>) {
+    fn release_dir(
+        inner: &Arc<(Mutex<State>, Condvar)>,
+        field: fn(&mut State) -> &mut Option<Instant>,
+    ) {
         let (lock, _) = inner.as_ref();
         *field(&mut lock.lock().unwrap()) = None;
     }
 
-    pub fn press_left(&self)    { Self::press_dir(&self.inner,   |s| &mut s.left_down); }
-    pub fn release_left(&self)  { Self::release_dir(&self.inner, |s| &mut s.left_down); }
-    pub fn press_right(&self)   { Self::press_dir(&self.inner,   |s| &mut s.right_down); }
-    pub fn release_right(&self) { Self::release_dir(&self.inner, |s| &mut s.right_down); }
-    pub fn press_up(&self)      { Self::press_dir(&self.inner,   |s| &mut s.up_down); }
-    pub fn release_up(&self)    { Self::release_dir(&self.inner, |s| &mut s.up_down); }
-    pub fn press_down(&self)    { Self::press_dir(&self.inner,   |s| &mut s.down_down); }
-    pub fn release_down(&self)  { Self::release_dir(&self.inner, |s| &mut s.down_down); }
+    pub fn press_left(&self) {
+        Self::press_dir(&self.inner, |s| &mut s.left_down);
+    }
+    pub fn release_left(&self) {
+        Self::release_dir(&self.inner, |s| &mut s.left_down);
+    }
+    pub fn press_right(&self) {
+        Self::press_dir(&self.inner, |s| &mut s.right_down);
+    }
+    pub fn release_right(&self) {
+        Self::release_dir(&self.inner, |s| &mut s.right_down);
+    }
+    pub fn press_up(&self) {
+        Self::press_dir(&self.inner, |s| &mut s.up_down);
+    }
+    pub fn release_up(&self) {
+        Self::release_dir(&self.inner, |s| &mut s.up_down);
+    }
+    pub fn press_down(&self) {
+        Self::press_dir(&self.inner, |s| &mut s.down_down);
+    }
+    pub fn release_down(&self) {
+        Self::release_dir(&self.inner, |s| &mut s.down_down);
+    }
 
     pub fn set_ratios(&self, h: f64, v: f64, max: f64) {
         let (lock, _) = self.inner.as_ref();
@@ -211,18 +263,20 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
     let (lock, _cvar) = inner.as_ref();
 
     let mut st = lock.lock().unwrap();
-    if !st.active { return false; }
+    if !st.active {
+        return false;
+    }
 
     // Fast-start: first tick just fires the "started" callback and sets direction.
     if st.last_tick.is_none() {
         st.last_tick = Some(now);
         let h_sign = sign(
             if st.right_down.is_some() { 1.0 } else { 0.0 }
-            - if st.left_down.is_some()  { 1.0 } else { 0.0 },
+                - if st.left_down.is_some() { 1.0 } else { 0.0 },
         );
         let v_sign = sign(
             if st.down_down.is_some() { 1.0 } else { 0.0 }
-            - if st.up_down.is_some()  { 1.0 } else { 0.0 },
+                - if st.up_down.is_some() { 1.0 } else { 0.0 },
         );
         st.h_accum = h_sign;
         st.v_accum = v_sign;
@@ -239,10 +293,19 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
     };
 
     // Hold durations
-    let left_s  = st.left_down .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-    let right_s = st.right_down.map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-    let up_s    = st.up_down   .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
-    let down_s  = st.down_down .map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+    let left_s = st
+        .left_down
+        .map(|t| t.elapsed().as_secs_f64())
+        .unwrap_or(0.0);
+    let right_s = st
+        .right_down
+        .map(|t| t.elapsed().as_secs_f64())
+        .unwrap_or(0.0);
+    let up_s = st.up_down.map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+    let down_s = st
+        .down_down
+        .map(|t| t.elapsed().as_secs_f64())
+        .unwrap_or(0.0);
 
     // Mid-key: simultaneous opposite directions
     let mid_win = st.mid_key_window;
@@ -250,16 +313,22 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
         let diff = if rt > lt { rt - lt } else { lt - rt };
         if diff < mid_win {
             let s = if rt > lt { 1i32 } else { -1i32 };
-            st.reset(); drop(st);
+            st.reset();
+            drop(st);
             action(s, 0, "H_MIDKEY");
             return false;
         }
     }
     if let (Some(ut), Some(dt_inst)) = (st.up_down, st.down_down) {
-        let diff = if dt_inst > ut { dt_inst - ut } else { ut - dt_inst };
+        let diff = if dt_inst > ut {
+            dt_inst - ut
+        } else {
+            ut - dt_inst
+        };
         if diff < mid_win {
             let s = if dt_inst > ut { 1i32 } else { -1i32 };
-            st.reset(); drop(st);
+            st.reset();
+            drop(st);
             action(0, s, "V_MIDKEY");
             return false;
         }
@@ -267,7 +336,7 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
 
     // Physics integration
     let h_accel = ma(right_s - left_s) * st.h_accel_ratio;
-    let v_accel = ma(down_s  - up_s)   * st.v_accel_ratio;
+    let v_accel = ma(down_s - up_s) * st.v_accel_ratio;
 
     st.h_vel = add_safe(st.h_vel, h_accel * dt);
     st.v_vel = add_safe(st.v_vel, v_accel * dt);
@@ -277,14 +346,18 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
     st.h_accum = add_safe(st.h_accum, st.h_vel * dt);
     st.v_accum = add_safe(st.v_accum, st.v_vel * dt);
 
-    let h_out = st.h_accum as i32; st.h_accum -= h_out as f64;
-    let v_out = st.v_accum as i32; st.v_accum -= v_out as f64;
+    let h_out = st.h_accum as i32;
+    st.h_accum -= h_out as f64;
+    let v_out = st.v_accum as i32;
+    st.v_accum -= v_out as f64;
     let h_vel = st.h_vel;
     let v_vel = st.v_vel;
     let any_key = st.any_key_held();
     drop(st);
 
-    if h_out != 0 || v_out != 0 { action(h_out, v_out, "MOVE"); }
+    if h_out != 0 || v_out != 0 {
+        action(h_out, v_out, "MOVE");
+    }
 
     if h_vel == 0.0 && v_vel == 0.0 && h_out == 0 && v_out == 0 && !any_key {
         lock.lock().unwrap().active = false;
@@ -311,7 +384,9 @@ fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
         // Wait until activated
         {
             let mut st = lock.lock().unwrap();
-            while !st.active { st = cvar.wait(st).unwrap(); }
+            while !st.active {
+                st = cvar.wait(st).unwrap();
+            }
         }
         // Reset FPS counter on activation
         TICK_COUNT.store(0, Ordering::Relaxed);
@@ -338,7 +413,8 @@ fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
             let n = TICK_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
             let now_secs = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs()).unwrap_or(0);
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
             let last = LAST_FPS_LOG.load(Ordering::Relaxed);
             if last == 0 {
                 LAST_FPS_LOG.store(now_secs, Ordering::Relaxed);
@@ -351,7 +427,9 @@ fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
                 TICK_COUNT.store(0, Ordering::Relaxed);
             }
 
-            if !tick_step(&inner, &*action) { break; }
+            if !tick_step(&inner, &*action) {
+                break;
+            }
         }
     }
 }

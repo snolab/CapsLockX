@@ -5,8 +5,7 @@
 ///   2. LLM responds (may include tool calls)
 ///   3. Execute tools, append results
 ///   4. Repeat until LLM gives a final text response (max 10 iterations)
-
-use crate::llm_client::{LlmConfig, LlmProvider, Message, stream_chat};
+use crate::llm_client::{stream_chat, LlmConfig, LlmProvider, Message};
 
 const MAX_TOOL_ITERATIONS: usize = 10;
 /// Max chars for inline tool result. Larger outputs saved to file.
@@ -131,10 +130,17 @@ pub fn agent_chat(
                     }
                     prev_sig = sig;
 
-                    on_status(&format!("Running {}({})...", call.name,
-                        call.args.chars().take(40).collect::<String>()));
-                    eprintln!("[CLX] agent: tool call #{}: {}({})",
-                        iteration + 1, call.name, call.args.chars().take(80).collect::<String>());
+                    on_status(&format!(
+                        "Running {}({})...",
+                        call.name,
+                        call.args.chars().take(40).collect::<String>()
+                    ));
+                    eprintln!(
+                        "[CLX] agent: tool call #{}: {}({})",
+                        iteration + 1,
+                        call.name,
+                        call.args.chars().take(80).collect::<String>()
+                    );
 
                     let mut result = execute_tool(&call.name, &call.args);
                     eprintln!("[CLX] agent: tool result: {} chars", result.len());
@@ -147,7 +153,8 @@ pub fn agent_chat(
                         let total_lines = result.lines().count();
                         let _ = std::fs::write(&path, &result);
                         // Return a summary + file path for the agent to read_file_range.
-                        let preview: String = result.lines().take(20).collect::<Vec<_>>().join("\n");
+                        let preview: String =
+                            result.lines().take(20).collect::<Vec<_>>().join("\n");
                         result = format!(
                             "[Output too large ({} chars, {} lines). Saved to: {}\nFirst 20 lines:\n{}\n\n... use read_file_range(path=\"{}\", start_line=21) to read more]",
                             result.len(), total_lines, path, preview, path
@@ -245,7 +252,7 @@ fn execute_tool(name: &str, args_json: &str) -> String {
 /// WASM: boa_engine (pure Rust, compiles to wasm32).
 #[cfg(not(target_arch = "wasm32"))]
 fn js_eval(code: &str) -> String {
-    use rquickjs::{Runtime, Context};
+    use rquickjs::{Context, Runtime};
 
     eprintln!("[CLX] agent: js_eval({} chars) [rquickjs]", code.len());
 
@@ -258,9 +265,7 @@ fn js_eval(code: &str) -> String {
     // Use 4s internal deadline (slightly less than the 5s task_manager timeout)
     // so QuickJS cleanly returns an error before the task manager forces background.
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
-    rt.set_interrupt_handler(Some(Box::new(move || {
-        std::time::Instant::now() > deadline
-    })));
+    rt.set_interrupt_handler(Some(Box::new(move || std::time::Instant::now() > deadline)));
 
     let ctx = match Context::full(&rt) {
         Ok(c) => c,
@@ -306,9 +311,7 @@ fn js_eval(code: &str) -> String {
 fn math_eval(expr: &str) -> String {
     eprintln!("[CLX] agent: math_eval({:?})", expr);
 
-    match std::panic::catch_unwind(|| {
-        woxi::interpret(expr)
-    }) {
+    match std::panic::catch_unwind(|| woxi::interpret(expr)) {
         Ok(Ok(result)) => result,
         Ok(Err(e)) => format!("Wolfram error: {:?}", e),
         Err(_) => "Woxi panicked (unsupported expression).".to_string(),
@@ -334,7 +337,10 @@ fn take_screenshot_and_describe() -> String {
                     // Base64 encode.
                     let b64 = base64_encode(&bytes);
                     let size_kb = bytes.len() / 1024;
-                    eprintln!("[CLX] agent: screenshot {}KB, sending to vision...", size_kb);
+                    eprintln!(
+                        "[CLX] agent: screenshot {}KB, sending to vision...",
+                        size_kb
+                    );
 
                     // Use Gemini to describe the screenshot.
                     // Return the base64 for the caller to handle, or describe it inline.
@@ -395,11 +401,24 @@ fn run_shell(command: &str) -> String {
 
     // Safety: refuse obviously destructive commands.
     let lower = command.to_lowercase();
-    let dangerous = ["rm -rf", "rm -r /", "mkfs", "dd if=", ":(){ ", "fork bomb",
-                     "> /dev/sd", "shutdown", "reboot", "halt"];
+    let dangerous = [
+        "rm -rf",
+        "rm -r /",
+        "mkfs",
+        "dd if=",
+        ":(){ ",
+        "fork bomb",
+        "> /dev/sd",
+        "shutdown",
+        "reboot",
+        "halt",
+    ];
     for d in &dangerous {
         if lower.contains(d) {
-            return format!("Refused: '{}' looks destructive. Will not execute.", command);
+            return format!(
+                "Refused: '{}' looks destructive. Will not execute.",
+                command
+            );
         }
     }
 
@@ -425,7 +444,11 @@ fn run_shell(command: &str) -> String {
             if !o.status.success() {
                 result.push_str(&format!("\nExit code: {}", o.status));
             }
-            if result.is_empty() { "(no output)".to_string() } else { result }
+            if result.is_empty() {
+                "(no output)".to_string()
+            } else {
+                result
+            }
         }
         Err(e) => format!("Failed to execute: {}", e),
     }
@@ -439,7 +462,11 @@ fn read_clipboard() -> String {
         Ok(o) => {
             let text = String::from_utf8_lossy(&o.stdout);
             let short: String = text.chars().take(4000).collect();
-            if short.is_empty() { "(clipboard is empty)".to_string() } else { short }
+            if short.is_empty() {
+                "(clipboard is empty)".to_string()
+            } else {
+                short
+            }
         }
         Err(e) => format!("Failed to read clipboard: {}", e),
     }
@@ -465,7 +492,8 @@ fn list_files(path: &str) -> String {
 /// Serial speech queue — speaks one at a time, no overlap.
 fn speech_queue(text: &str, lang: &str) {
     use std::sync::mpsc;
-    static SPEECH_TX: std::sync::Mutex<Option<mpsc::Sender<(String, String)>>> = std::sync::Mutex::new(None);
+    static SPEECH_TX: std::sync::Mutex<Option<mpsc::Sender<(String, String)>>> =
+        std::sync::Mutex::new(None);
 
     let mut tx_guard = SPEECH_TX.lock().unwrap();
     if tx_guard.is_none() {
@@ -499,30 +527,48 @@ where
 
 /// Speak text aloud via the TTS fallback chain.
 fn speak_text(text: &str, lang: &str) -> String {
-    eprintln!("[CLX] agent: speak({:?}, lang={})", text.chars().take(40).collect::<String>(), lang);
+    eprintln!(
+        "[CLX] agent: speak({:?}, lang={})",
+        text.chars().take(40).collect::<String>(),
+        lang
+    );
     let el_key = std::env::var("ELEVENLABS_API_KEY").unwrap_or_default();
     let gemini_key = std::env::var("GEMINI_API_KEY").unwrap_or_default();
     let openai_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
     match crate::tts::speak(text, lang, &el_key, &gemini_key, &openai_key) {
-        Ok(()) => format!("Spoke aloud: {:?} (lang={})", text.chars().take(50).collect::<String>(), lang),
+        Ok(()) => format!(
+            "Spoke aloud: {:?} (lang={})",
+            text.chars().take(50).collect::<String>(),
+            lang
+        ),
         Err(e) => format!("TTS error: {}", e),
     }
 }
 
 /// Read a range of lines from a file.
 fn read_file_range(path: &str, start_line: usize, num_lines: usize) -> String {
-    eprintln!("[CLX] agent: read_file_range({:?}, start={}, n={})", path, start_line, num_lines);
+    eprintln!(
+        "[CLX] agent: read_file_range({:?}, start={}, n={})",
+        path, start_line, num_lines
+    );
     match std::fs::read_to_string(path) {
         Ok(content) => {
             let lines: Vec<&str> = content.lines().collect();
             let total = lines.len();
             let start = (start_line.max(1) - 1).min(total);
             let end = (start + num_lines).min(total);
-            let selected: Vec<String> = lines[start..end].iter()
+            let selected: Vec<String> = lines[start..end]
+                .iter()
                 .enumerate()
                 .map(|(i, l)| format!("{:>5}: {}", start + i + 1, l))
                 .collect();
-            format!("Lines {}-{} of {} total:\n{}", start + 1, end, total, selected.join("\n"))
+            format!(
+                "Lines {}-{} of {} total:\n{}",
+                start + 1,
+                end,
+                total,
+                selected.join("\n")
+            )
         }
         Err(e) => format!("Failed to read {}: {}", path, e),
     }
@@ -533,17 +579,17 @@ fn read_file_range(path: &str, start_line: usize, num_lines: usize) -> String {
 /// Compact conversation history when it exceeds the threshold.
 /// Preserves: system prompt, last 4 messages (verbatim), summary of the rest.
 #[cfg(not(target_arch = "wasm32"))]
-fn maybe_compact(
-    config: &LlmConfig,
-    messages: &mut Vec<Message>,
-    on_status: &mut dyn FnMut(&str),
-) {
+fn maybe_compact(config: &LlmConfig, messages: &mut Vec<Message>, on_status: &mut dyn FnMut(&str)) {
     let total_chars: usize = messages.iter().map(|m| m.content.len()).sum();
     if total_chars < COMPACTION_THRESHOLD || messages.len() < 8 {
         return;
     }
 
-    eprintln!("[CLX] agent: compacting context ({} chars, {} messages)", total_chars, messages.len());
+    eprintln!(
+        "[CLX] agent: compacting context ({} chars, {} messages)",
+        total_chars,
+        messages.len()
+    );
     on_status("Compacting conversation history...");
 
     // Keep system prompt (index 0) and last 4 messages.
@@ -552,14 +598,20 @@ fn maybe_compact(
     let tail: Vec<Message> = messages[messages.len() - keep_tail..].to_vec();
     let to_summarize: Vec<&Message> = messages[1..messages.len() - keep_tail].iter().collect();
 
-    if to_summarize.is_empty() { return; }
+    if to_summarize.is_empty() {
+        return;
+    }
 
     // Build summary request.
-    let summary_text: String = to_summarize.iter().map(|m| {
-        let role = &m.role;
-        let content: String = m.content.chars().take(500).collect();
-        format!("[{}]: {}", role, content)
-    }).collect::<Vec<_>>().join("\n");
+    let summary_text: String = to_summarize
+        .iter()
+        .map(|m| {
+            let role = &m.role;
+            let content: String = m.content.chars().take(500).collect();
+            format!("[{}]: {}", role, content)
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let summary_prompt = vec![
         Message {
@@ -574,7 +626,11 @@ fn maybe_compact(
         summary.push_str(token);
     }) {
         Ok(_) => {
-            eprintln!("[CLX] agent: compacted {} messages → {} char summary", to_summarize.len(), summary.len());
+            eprintln!(
+                "[CLX] agent: compacted {} messages → {} char summary",
+                to_summarize.len(),
+                summary.len()
+            );
             // Rebuild: system + summary + tail
             *messages = vec![system];
             messages.push(Message {
@@ -584,7 +640,10 @@ fn maybe_compact(
             messages.extend(tail);
         }
         Err(e) => {
-            eprintln!("[CLX] agent: compaction failed: {}, falling back to truncation", e);
+            eprintln!(
+                "[CLX] agent: compaction failed: {}, falling back to truncation",
+                e
+            );
             // Fallback: just keep system + last 6 messages.
             let keep = 6.min(messages.len() - 1);
             let tail: Vec<Message> = messages[messages.len() - keep..].to_vec();
@@ -604,8 +663,16 @@ fn base64_encode(data: &[u8]) -> String {
         let triple = (b0 << 16) | (b1 << 8) | b2;
         result.push(CHARS[((triple >> 18) & 0x3F) as usize] as char);
         result.push(CHARS[((triple >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 { result.push(CHARS[((triple >> 6) & 0x3F) as usize] as char); } else { result.push('='); }
-        if chunk.len() > 2 { result.push(CHARS[(triple & 0x3F) as usize] as char); } else { result.push('='); }
+        if chunk.len() > 1 {
+            result.push(CHARS[((triple >> 6) & 0x3F) as usize] as char);
+        } else {
+            result.push('=');
+        }
+        if chunk.len() > 2 {
+            result.push(CHARS[(triple & 0x3F) as usize] as char);
+        } else {
+            result.push('=');
+        }
     }
     result
 }
@@ -615,9 +682,7 @@ fn web_search(query: &str) -> String {
     eprintln!("[CLX] agent: web_search({:?})", query);
     // Use DuckDuckGo HTML lite — no API key needed.
     let url = format!("https://html.duckduckgo.com/html/?q={}", urlencoded(query));
-    let resp = match ureq::get(&url)
-        .set("User-Agent", "CapsLockX/2.0")
-        .call() {
+    let resp = match ureq::get(&url).set("User-Agent", "CapsLockX/2.0").call() {
         Ok(r) => r,
         Err(e) => return format!("Search error: {}", e),
     };
@@ -626,13 +691,19 @@ fn web_search(query: &str) -> String {
     // Extract results from DDG HTML: <a class="result__a" href="...">title</a> and <a class="result__snippet">...</a>
     let mut results = Vec::new();
     for (i, chunk) in body.split("result__a").enumerate() {
-        if i == 0 || i > 8 { continue; } // skip first (header), limit to 8
-        // Extract href
-        let href = chunk.split("href=\"").nth(1)
+        if i == 0 || i > 8 {
+            continue;
+        } // skip first (header), limit to 8
+          // Extract href
+        let href = chunk
+            .split("href=\"")
+            .nth(1)
             .and_then(|s| s.split('"').next())
             .unwrap_or("");
         // Extract title text (between > and </a>)
-        let title = chunk.split('>').nth(1)
+        let title = chunk
+            .split('>')
+            .nth(1)
             .and_then(|s| s.split("</").next())
             .map(|s| strip_html_tags(s))
             .unwrap_or_default();
@@ -677,9 +748,7 @@ fn web_search(query: &str) -> String {
 #[cfg(not(target_arch = "wasm32"))]
 fn fetch_url(url: &str) -> String {
     eprintln!("[CLX] agent: fetch_url({:?})", url);
-    let resp = match ureq::get(url)
-        .set("User-Agent", "CapsLockX/2.0")
-        .call() {
+    let resp = match ureq::get(url).set("User-Agent", "CapsLockX/2.0").call() {
         Ok(r) => r,
         Err(e) => return format!("Fetch error: {}", e),
     };
@@ -688,27 +757,41 @@ fn fetch_url(url: &str) -> String {
     // Strip HTML tags for readability, truncate to 8000 chars.
     let text = strip_html_tags(&body);
     let text: String = text.chars().take(8000).collect();
-    if text.is_empty() { "Empty response.".to_string() } else { text }
+    if text.is_empty() {
+        "Empty response.".to_string()
+    } else {
+        text
+    }
 }
 
 fn strip_html_tags(s: &str) -> String {
     let mut out = String::new();
     let mut in_tag = false;
     for c in s.chars() {
-        if c == '<' { in_tag = true; }
-        else if c == '>' { in_tag = false; }
-        else if !in_tag { out.push(c); }
+        if c == '<' {
+            in_tag = true;
+        } else if c == '>' {
+            in_tag = false;
+        } else if !in_tag {
+            out.push(c);
+        }
     }
     // Collapse whitespace.
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn urlencoded(s: &str) -> String {
-    s.chars().map(|c| {
-        if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' { c.to_string() }
-        else if c == ' ' { "+".to_string() }
-        else { format!("%{:02X}", c as u32) }
-    }).collect()
+    s.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c.to_string()
+            } else if c == ' ' {
+                "+".to_string()
+            } else {
+                format!("%{:02X}", c as u32)
+            }
+        })
+        .collect()
 }
 
 // ── Provider-specific tool call handling ──────────────────────────────────────
@@ -721,8 +804,12 @@ fn gemini_turn(
 ) -> Result<TurnResult, String> {
     use std::io::{BufRead, BufReader};
 
-    let system_msg = messages.iter().find(|m| m.role == "system").map(|m| m.content.clone());
-    let contents: Vec<serde_json::Value> = messages.iter()
+    let system_msg = messages
+        .iter()
+        .find(|m| m.role == "system")
+        .map(|m| m.content.clone());
+    let contents: Vec<serde_json::Value> = messages
+        .iter()
         .filter(|m| m.role != "system")
         .map(|m| {
             let role = match m.role.as_str() {
@@ -737,16 +824,20 @@ fn gemini_turn(
                 }
             }
             serde_json::json!({"role": role, "parts": [{"text": m.content}]})
-        }).collect();
-
-    let tool_defs: Vec<serde_json::Value> = TOOLS.iter().map(|t| {
-        let params: serde_json::Value = serde_json::from_str(t.params_json).unwrap();
-        serde_json::json!({
-            "name": t.name,
-            "description": t.description,
-            "parameters": params,
         })
-    }).collect();
+        .collect();
+
+    let tool_defs: Vec<serde_json::Value> = TOOLS
+        .iter()
+        .map(|t| {
+            let params: serde_json::Value = serde_json::from_str(t.params_json).unwrap();
+            serde_json::json!({
+                "name": t.name,
+                "description": t.description,
+                "parameters": params,
+            })
+        })
+        .collect();
 
     let mut body = serde_json::json!({
         "contents": contents,
@@ -767,7 +858,9 @@ fn gemini_turn(
         .send_string(&body.to_string())
         .map_err(|e| format!("Gemini: {}", e))?;
 
-    let result: serde_json::Value = serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?).map_err(|e| format!("parse: {}", e))?;
+    let result: serde_json::Value =
+        serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?)
+            .map_err(|e| format!("parse: {}", e))?;
 
     // Check for function calls in response.
     if let Some(parts) = result["candidates"][0]["content"]["parts"].as_array() {
@@ -778,7 +871,11 @@ fn gemini_turn(
             if let Some(fc) = part.get("functionCall") {
                 let name = fc["name"].as_str().unwrap_or("").to_string();
                 let args = fc["args"].to_string();
-                tool_calls.push(ToolCall { id: name.clone(), name, args });
+                tool_calls.push(ToolCall {
+                    id: name.clone(),
+                    name,
+                    args,
+                });
             }
             if let Some(t) = part["text"].as_str() {
                 text.push_str(t);
@@ -802,23 +899,29 @@ fn openai_turn(
     messages: &[Message],
     on_token: &mut dyn FnMut(&str),
 ) -> Result<TurnResult, String> {
-    let msgs: Vec<serde_json::Value> = messages.iter().map(|m| {
-        if m.role == "tool" {
-            // Parse tool result message: "tool_call_id\n\ncontent"
-            let (id, content) = m.content.split_once("\n\n").unwrap_or(("", &m.content));
-            serde_json::json!({"role": "tool", "tool_call_id": id, "content": content})
-        } else {
-            serde_json::json!({"role": m.role, "content": m.content})
-        }
-    }).collect();
-
-    let tool_defs: Vec<serde_json::Value> = TOOLS.iter().map(|t| {
-        let params: serde_json::Value = serde_json::from_str(t.params_json).unwrap();
-        serde_json::json!({
-            "type": "function",
-            "function": {"name": t.name, "description": t.description, "parameters": params}
+    let msgs: Vec<serde_json::Value> = messages
+        .iter()
+        .map(|m| {
+            if m.role == "tool" {
+                // Parse tool result message: "tool_call_id\n\ncontent"
+                let (id, content) = m.content.split_once("\n\n").unwrap_or(("", &m.content));
+                serde_json::json!({"role": "tool", "tool_call_id": id, "content": content})
+            } else {
+                serde_json::json!({"role": m.role, "content": m.content})
+            }
         })
-    }).collect();
+        .collect();
+
+    let tool_defs: Vec<serde_json::Value> = TOOLS
+        .iter()
+        .map(|t| {
+            let params: serde_json::Value = serde_json::from_str(t.params_json).unwrap();
+            serde_json::json!({
+                "type": "function",
+                "function": {"name": t.name, "description": t.description, "parameters": params}
+            })
+        })
+        .collect();
 
     let body = serde_json::json!({
         "model": config.model,
@@ -826,30 +929,45 @@ fn openai_turn(
         "tools": tool_defs,
     });
 
-    let base = config.base_url.as_deref().unwrap_or("https://api.openai.com");
+    let base = config
+        .base_url
+        .as_deref()
+        .unwrap_or("https://api.openai.com");
     let url = format!("{}/v1/chat/completions", base);
     let mut req = ureq::post(&url).set("Content-Type", "application/json");
     if !config.api_key.is_empty() {
         req = req.set("Authorization", &format!("Bearer {}", config.api_key));
     }
-    let resp = req.send_string(&body.to_string())
+    let resp = req
+        .send_string(&body.to_string())
         .map_err(|e| format!("OpenAI/Ollama: {}", e))?;
 
-    let result: serde_json::Value = serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?).map_err(|e| format!("parse: {}", e))?;
+    let result: serde_json::Value =
+        serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?)
+            .map_err(|e| format!("parse: {}", e))?;
     let choice = &result["choices"][0];
 
     if let Some(tool_calls) = choice["message"]["tool_calls"].as_array() {
-        let calls: Vec<ToolCall> = tool_calls.iter().map(|tc| {
-            ToolCall {
+        let calls: Vec<ToolCall> = tool_calls
+            .iter()
+            .map(|tc| ToolCall {
                 id: tc["id"].as_str().unwrap_or("").to_string(),
                 name: tc["function"]["name"].as_str().unwrap_or("").to_string(),
-                args: tc["function"]["arguments"].as_str().unwrap_or("{}").to_string(),
-            }
-        }).collect();
-        if !calls.is_empty() { return Ok(TurnResult::ToolCalls(calls)); }
+                args: tc["function"]["arguments"]
+                    .as_str()
+                    .unwrap_or("{}")
+                    .to_string(),
+            })
+            .collect();
+        if !calls.is_empty() {
+            return Ok(TurnResult::ToolCalls(calls));
+        }
     }
 
-    let text = choice["message"]["content"].as_str().unwrap_or("").to_string();
+    let text = choice["message"]["content"]
+        .as_str()
+        .unwrap_or("")
+        .to_string();
     on_token(&text);
     Ok(TurnResult::Text(text))
 }
@@ -860,7 +978,11 @@ fn anthropic_turn(
     messages: &[Message],
     on_token: &mut dyn FnMut(&str),
 ) -> Result<TurnResult, String> {
-    let system = messages.iter().find(|m| m.role == "system").map(|m| m.content.clone()).unwrap_or_default();
+    let system = messages
+        .iter()
+        .find(|m| m.role == "system")
+        .map(|m| m.content.clone())
+        .unwrap_or_default();
     let msgs: Vec<serde_json::Value> = messages.iter()
         .filter(|m| m.role != "system")
         .map(|m| {
@@ -884,7 +1006,9 @@ fn anthropic_turn(
         "tools": tool_defs,
         "max_tokens": 4096,
     });
-    if !system.is_empty() { body["system"] = serde_json::Value::String(system); }
+    if !system.is_empty() {
+        body["system"] = serde_json::Value::String(system);
+    }
 
     let resp = ureq::post("https://api.anthropic.com/v1/messages")
         .set("x-api-key", &config.api_key)
@@ -893,7 +1017,9 @@ fn anthropic_turn(
         .send_string(&body.to_string())
         .map_err(|e| format!("Anthropic: {}", e))?;
 
-    let result: serde_json::Value = serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?).map_err(|e| format!("parse: {}", e))?;
+    let result: serde_json::Value =
+        serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?)
+            .map_err(|e| format!("parse: {}", e))?;
 
     let mut tool_calls = Vec::new();
     let mut text = String::new();
@@ -918,11 +1044,18 @@ fn anthropic_turn(
         }
     }
 
-    if !tool_calls.is_empty() { return Ok(TurnResult::ToolCalls(tool_calls)); }
+    if !tool_calls.is_empty() {
+        return Ok(TurnResult::ToolCalls(tool_calls));
+    }
     Ok(TurnResult::Text(text))
 }
 
-fn append_tool_result(config: &LlmConfig, messages: &mut Vec<Message>, call: &ToolCall, result: &str) {
+fn append_tool_result(
+    config: &LlmConfig,
+    messages: &mut Vec<Message>,
+    call: &ToolCall,
+    result: &str,
+) {
     match config.provider {
         LlmProvider::Gemini => {
             // Gemini: model response with functionCall, then function role with functionResponse.

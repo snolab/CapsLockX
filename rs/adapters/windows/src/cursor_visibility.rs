@@ -17,8 +17,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_MOUSE, MOUSEEVENTF_MOVE, MOUSEINPUT,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    SystemParametersInfoW, SPI_GETMOUSEKEYS, SPI_SETMOUSEKEYS,
-    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    SystemParametersInfoW, SPI_GETMOUSEKEYS, SPI_SETMOUSEKEYS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
 };
 
 // Mouse Keys flag bits (from WinUser.h — not exported by windows-rs 0.58).
@@ -72,7 +71,9 @@ pub fn enable() {
 /// Restore the Mouse Keys settings captured by `enable()`.
 pub fn disable() {
     let mut saved = SAVED.lock().unwrap();
-    let Some(mut prior) = saved.take() else { return };
+    let Some(mut prior) = saved.take() else {
+        return;
+    };
     unsafe {
         let _ = SystemParametersInfoW(
             SPI_SETMOUSEKEYS,

@@ -29,7 +29,10 @@ pub fn main(args: &[String]) {
         match args[i].as_str() {
             "--region" | "-r" if i + 1 < args.len() => {
                 i += 1;
-                let parts: Vec<i32> = args[i].split(',').filter_map(|s| s.trim().parse().ok()).collect();
+                let parts: Vec<i32> = args[i]
+                    .split(',')
+                    .filter_map(|s| s.trim().parse().ok())
+                    .collect();
                 if parts.len() == 4 {
                     region = Some((parts[0], parts[1], parts[2], parts[3]));
                 } else {
@@ -76,7 +79,10 @@ pub fn main(args: &[String]) {
     if let Some(ref name) = window_name {
         match find_window_region(name) {
             Some(r) => {
-                eprintln!("[observe] found window {:?}: region={},{},{},{}", name, r.0, r.1, r.2, r.3);
+                eprintln!(
+                    "[observe] found window {:?}: region={},{},{},{}",
+                    name, r.0, r.1, r.2, r.3
+                );
                 region = Some(r);
             }
             None => {
@@ -87,8 +93,10 @@ pub fn main(args: &[String]) {
 
     let num_frames = (duration_secs * fps).ceil() as usize;
     let frame_interval = std::time::Duration::from_secs_f64(1.0 / fps);
-    eprintln!("[observe] capturing {} frames over {:.1}s ({:.0} fps), region={:?}",
-        num_frames, duration_secs, fps, region);
+    eprintln!(
+        "[observe] capturing {} frames over {:.1}s ({:.0} fps), region={:?}",
+        num_frames, duration_secs, fps, region
+    );
 
     // Capture frames.
     let tmp_dir = std::path::PathBuf::from("/tmp/clx-observe");
@@ -101,7 +109,14 @@ pub fn main(args: &[String]) {
 
         let status = if let Some((x, y, w, h)) = region {
             std::process::Command::new("screencapture")
-                .args(["-x", "-t", "jpg", "-R", &format!("{},{},{},{}", x, y, w, h), path_str])
+                .args([
+                    "-x",
+                    "-t",
+                    "jpg",
+                    "-R",
+                    &format!("{},{},{},{}", x, y, w, h),
+                    path_str,
+                ])
                 .status()
         } else {
             std::process::Command::new("screencapture")
@@ -133,7 +148,11 @@ pub fn main(args: &[String]) {
             let dest = format!("{}/frame-{:04}.jpg", out_dir, i);
             let _ = std::fs::copy(path, &dest);
         }
-        eprintln!("[observe] saved {} frames to {}", frame_paths.len(), out_dir);
+        eprintln!(
+            "[observe] saved {} frames to {}",
+            frame_paths.len(),
+            out_dir
+        );
         cleanup(&tmp_dir);
         return;
     }
@@ -144,13 +163,19 @@ pub fn main(args: &[String]) {
         None => {
             eprintln!("[observe] no LLM API key found (set GEMINI_API_KEY or configure in CapsLockX prefs)");
             // Still show frame paths.
-            for p in &frame_paths { eprintln!("  {}", p.display()); }
+            for p in &frame_paths {
+                eprintln!("  {}", p.display());
+            }
             cleanup(&tmp_dir);
             return;
         }
     };
 
-    eprintln!("[observe] sending {} frames to {} for analysis...", frame_paths.len(), config.model);
+    eprintln!(
+        "[observe] sending {} frames to {} for analysis...",
+        frame_paths.len(),
+        config.model
+    );
 
     // Build Gemini vision message.
     let mut parts: Vec<serde_json::Value> = Vec::new();
@@ -204,8 +229,12 @@ fn print_usage() {
 
 fn parse_duration(s: &str) -> f64 {
     let s = s.trim();
-    if let Some(n) = s.strip_suffix('s') { return n.parse().unwrap_or(3.0); }
-    if let Some(n) = s.strip_suffix("ms") { return n.parse::<f64>().unwrap_or(3000.0) / 1000.0; }
+    if let Some(n) = s.strip_suffix('s') {
+        return n.parse().unwrap_or(3.0);
+    }
+    if let Some(n) = s.strip_suffix("ms") {
+        return n.parse::<f64>().unwrap_or(3000.0) / 1000.0;
+    }
     s.parse().unwrap_or(3.0)
 }
 
@@ -227,16 +256,23 @@ for w in windows:
         b = w['kCGWindowBounds']
         print(json.dumps([int(b['X']), int(b['Y']), int(b['Width']), int(b['Height'])]))
         break
-"#, name.to_lowercase()
+"#,
+        name.to_lowercase()
     );
 
     let output = std::process::Command::new("python3")
-        .arg("-c").arg(&script)
-        .output().ok()?;
+        .arg("-c")
+        .arg(&script)
+        .output()
+        .ok()?;
 
     let s = String::from_utf8_lossy(&output.stdout);
     let arr: Vec<i32> = serde_json::from_str(s.trim()).ok()?;
-    if arr.len() == 4 { Some((arr[0], arr[1], arr[2], arr[3])) } else { None }
+    if arr.len() == 4 {
+        Some((arr[0], arr[1], arr[2], arr[3]))
+    } else {
+        None
+    }
 }
 
 // ── LLM config ──────────────────────────────────────────────────────────────
@@ -249,9 +285,17 @@ fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
 
     let mut api_key = String::new();
     // Check per-provider keys first.
-    for key in ["gemini_api_key", "openai_api_key", "anthropic_api_key", "llm_api_key"] {
+    for key in [
+        "gemini_api_key",
+        "openai_api_key",
+        "anthropic_api_key",
+        "llm_api_key",
+    ] {
         if let Some(k) = v.get(key).and_then(|k| k.as_str()) {
-            if !k.is_empty() { api_key = k.to_string(); break; }
+            if !k.is_empty() {
+                api_key = k.to_string();
+                break;
+            }
         }
     }
     // Fall back to env vars.
@@ -260,10 +304,18 @@ fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
             .or_else(|_| std::env::var("OPENAI_API_KEY"))
             .unwrap_or_default();
     }
-    if api_key.is_empty() { return None; }
+    if api_key.is_empty() {
+        return None;
+    }
 
-    let model = v.get("llm_model").and_then(|k| k.as_str()).unwrap_or("").to_string();
-    Some(capslockx_core::llm_client::LlmConfig::from_key_and_model(&api_key, &model))
+    let model = v
+        .get("llm_model")
+        .and_then(|k| k.as_str())
+        .unwrap_or("")
+        .to_string();
+    Some(capslockx_core::llm_client::LlmConfig::from_key_and_model(
+        &api_key, &model,
+    ))
 }
 
 // ── Gemini vision streaming ─────────────────────────────────────────────────
@@ -318,8 +370,16 @@ fn base64_encode(data: &[u8]) -> String {
         let n = (b0 << 16) | (b1 << 8) | b2;
         out.push(CHARS[((n >> 18) & 0x3F) as usize] as char);
         out.push(CHARS[((n >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 { out.push(CHARS[((n >> 6) & 0x3F) as usize] as char); } else { out.push('='); }
-        if chunk.len() > 2 { out.push(CHARS[(n & 0x3F) as usize] as char); } else { out.push('='); }
+        if chunk.len() > 1 {
+            out.push(CHARS[((n >> 6) & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(CHARS[(n & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
     }
     out
 }

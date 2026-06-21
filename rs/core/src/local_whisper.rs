@@ -11,9 +11,21 @@ const HF_BASE_URL: &str = "https://huggingface.co/ggerganov/whisper.cpp/resolve/
 
 /// Model tiers in ascending order of quality/size.
 const MODEL_TIERS: &[ModelTier] = &[
-    ModelTier { name: "tiny",  filename: "ggml-tiny.bin",  size_mb: 75 },
-    ModelTier { name: "base",  filename: "ggml-base.bin",  size_mb: 142 },
-    ModelTier { name: "small", filename: "ggml-small.bin", size_mb: 466 },
+    ModelTier {
+        name: "tiny",
+        filename: "ggml-tiny.bin",
+        size_mb: 75,
+    },
+    ModelTier {
+        name: "base",
+        filename: "ggml-base.bin",
+        size_mb: 142,
+    },
+    ModelTier {
+        name: "small",
+        filename: "ggml-small.bin",
+        size_mb: 466,
+    },
 ];
 
 /// Upgrade if inference speed > this multiple of realtime.
@@ -56,7 +68,9 @@ impl LocalWhisper {
         let try_order: Vec<usize> = if let Some(saved) = saved_tier {
             let mut order = vec![saved];
             // Fallback: try smaller tiers if saved one fails.
-            for i in (0..saved).rev() { order.push(i); }
+            for i in (0..saved).rev() {
+                order.push(i);
+            }
             order
         } else {
             (0..MODEL_TIERS.len()).collect()
@@ -73,7 +87,10 @@ impl LocalWhisper {
         // No model found — download the smallest.
         let tier = &MODEL_TIERS[0];
         let path = cache_dir.join(tier.filename);
-        eprintln!("[CLX] whisper: downloading {} model (~{}MB)...", tier.name, tier.size_mb);
+        eprintln!(
+            "[CLX] whisper: downloading {} model (~{}MB)...",
+            tier.name, tier.size_mb
+        );
         download_model(tier.filename, &path)?;
         Self::load_tier(0, &path)
     }
@@ -103,7 +120,11 @@ impl LocalWhisper {
         let ctx = WhisperContext::new_with_params(path_str, WhisperContextParameters::default())
             .map_err(|e| format!("failed to load {} model: {e}", tier.name))?;
 
-        eprintln!("[CLX] whisper: loaded {} model ({:.0}ms)", tier.name, t0.elapsed().as_millis());
+        eprintln!(
+            "[CLX] whisper: loaded {} model ({:.0}ms)",
+            tier.name,
+            t0.elapsed().as_millis()
+        );
 
         let s = Self {
             ctx,
@@ -121,7 +142,10 @@ impl LocalWhisper {
     /// wall_budget_ratio = time_available / inference_time, where time_available
     /// includes idle time since last transcription (user pauses = free headroom).
     pub fn transcribe(&mut self, samples: &[f32]) -> Result<String, String> {
-        let mut state = self.ctx.create_state().map_err(|e| format!("create state: {e}"))?;
+        let mut state = self
+            .ctx
+            .create_state()
+            .map_err(|e| format!("create state: {e}"))?;
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
         params.set_language(None); // auto-detect language
@@ -136,11 +160,14 @@ impl LocalWhisper {
         let t0 = std::time::Instant::now();
         // Wall time available = time since last transcription finished.
         // Includes user pauses/silence — that's free processing headroom.
-        let wall_available = self.last_done
+        let wall_available = self
+            .last_done
             .map(|d| d.elapsed().as_secs_f64())
             .unwrap_or(f64::MAX);
 
-        state.full(params, samples).map_err(|e| format!("whisper full: {e}"))?;
+        state
+            .full(params, samples)
+            .map_err(|e| format!("whisper full: {e}"))?;
         let inference_secs = t0.elapsed().as_secs_f64();
         self.last_done = Some(std::time::Instant::now());
 
@@ -151,14 +178,21 @@ impl LocalWhisper {
         let budget_ratio = wall_available / inference_secs;
         let effective_ratio = budget_ratio.min(10.0); // cap at 10x to avoid outliers
 
-        eprintln!("[CLX] whisper[{}]: {:.1}s audio → {:.0}ms ({:.1}x realtime, {:.1}x budget)",
-            MODEL_TIERS[self.tier_index].name, audio_dur,
-            inference_secs * 1000.0, realtime_ratio, effective_ratio);
+        eprintln!(
+            "[CLX] whisper[{}]: {:.1}s audio → {:.0}ms ({:.1}x realtime, {:.1}x budget)",
+            MODEL_TIERS[self.tier_index].name,
+            audio_dur,
+            inference_secs * 1000.0,
+            realtime_ratio,
+            effective_ratio
+        );
 
         // Record the budget ratio for auto-scaling decisions.
         self.speed_samples.push(effective_ratio);
 
-        let n_segments = state.full_n_segments().map_err(|e| format!("n_segments: {e}"))?;
+        let n_segments = state
+            .full_n_segments()
+            .map_err(|e| format!("n_segments: {e}"))?;
         let mut text = String::new();
         for i in 0..n_segments {
             if let Ok(seg) = state.full_get_segment_text(i) {
@@ -177,19 +211,27 @@ impl LocalWhisper {
     /// Check speed samples and kick off background model loading if needed.
     /// Does NOT block — the old model keeps working while the new one loads.
     pub fn maybe_rescale(&mut self) {
-        if self.pending.is_some() { return; } // already loading
-        if self.speed_samples.len() < SAMPLES_BEFORE_UPGRADE { return; }
+        if self.pending.is_some() {
+            return;
+        } // already loading
+        if self.speed_samples.len() < SAMPLES_BEFORE_UPGRADE {
+            return;
+        }
 
         let avg: f64 = self.speed_samples.iter().sum::<f64>() / self.speed_samples.len() as f64;
         self.speed_samples.clear();
 
         let target_tier = if avg < DOWNGRADE_THRESHOLD && self.tier_index > 0 {
-            eprintln!("[CLX] whisper: budget {:.1}x < {:.1}x, will downgrade",
-                avg, DOWNGRADE_THRESHOLD);
+            eprintln!(
+                "[CLX] whisper: budget {:.1}x < {:.1}x, will downgrade",
+                avg, DOWNGRADE_THRESHOLD
+            );
             Some(self.tier_index - 1)
         } else if avg > UPGRADE_THRESHOLD && self.tier_index + 1 < MODEL_TIERS.len() {
-            eprintln!("[CLX] whisper: budget {:.1}x > {:.1}x, will upgrade",
-                avg, UPGRADE_THRESHOLD);
+            eprintln!(
+                "[CLX] whisper: budget {:.1}x > {:.1}x, will upgrade",
+                avg, UPGRADE_THRESHOLD
+            );
             Some(self.tier_index + 1)
         } else {
             None
@@ -205,13 +247,19 @@ impl LocalWhisper {
                     let tier = &MODEL_TIERS[idx];
                     let cache_dir = match dirs::cache_dir() {
                         Some(d) => d.join(CACHE_SUBDIR),
-                        None => { let _ = tx.send(Err("no cache dir".into())); return; }
+                        None => {
+                            let _ = tx.send(Err("no cache dir".into()));
+                            return;
+                        }
                     };
                     let path = cache_dir.join(tier.filename);
 
                     // Download if needed.
                     if !path.exists() {
-                        eprintln!("[CLX] whisper: downloading {} (~{}MB)...", tier.name, tier.size_mb);
+                        eprintln!(
+                            "[CLX] whisper: downloading {} (~{}MB)...",
+                            tier.name, tier.size_mb
+                        );
                         if let Err(e) = download_model(tier.filename, &path) {
                             let _ = tx.send(Err(e));
                             return;
@@ -233,7 +281,10 @@ impl LocalWhisper {
         if let Some(ref rx) = self.pending {
             match rx.try_recv() {
                 Ok(Ok(new_model)) => {
-                    eprintln!("[CLX] whisper: hot-swapped to {} model", new_model.tier_name());
+                    eprintln!(
+                        "[CLX] whisper: hot-swapped to {} model",
+                        new_model.tier_name()
+                    );
                     self.pending = None;
                     *slot = Some(new_model);
                 }
@@ -260,28 +311,63 @@ impl LocalWhisper {
 pub fn is_noise_artifact(text: &str) -> bool {
     let t = text.to_lowercase();
     // Bracketed annotations like (clicking), [BLANK_AUDIO], (keyboard clicking)
-    if t.starts_with('(') && t.ends_with(')') { return true; }
-    if t.starts_with('[') && t.ends_with(']') { return true; }
+    if t.starts_with('(') && t.ends_with(')') {
+        return true;
+    }
+    if t.starts_with('[') && t.ends_with(']') {
+        return true;
+    }
     // Common hallucination patterns
     let patterns = [
-        "blank_audio", "blank audio",
-        "clicking", "keyboard",
-        "music", "applause", "laughter",
-        "silence", "no speech",
-        "thank you", "thanks for watching",
-        "subscribe", "like and subscribe",
-        "see you next time", "bye",
+        "blank_audio",
+        "blank audio",
+        "clicking",
+        "keyboard",
+        "music",
+        "applause",
+        "laughter",
+        "silence",
+        "no speech",
+        "thank you",
+        "thanks for watching",
+        "subscribe",
+        "like and subscribe",
+        "see you next time",
+        "bye",
         "you", // single-word hallucination
         // Common AEC ghost hallucinations (SenseVoice outputs these on near-silence)
-        "yeah", "yeah.", "okay", "okay.", "the", "the.", "oh", "oh.",
-        "yes", "yes.", "no", "no.", "so", "so.", "he", "my",
-        "hello", "hello.", "in", "sure", "here", "many",
+        "yeah",
+        "yeah.",
+        "okay",
+        "okay.",
+        "the",
+        "the.",
+        "oh",
+        "oh.",
+        "yes",
+        "yes.",
+        "no",
+        "no.",
+        "so",
+        "so.",
+        "he",
+        "my",
+        "hello",
+        "hello.",
+        "in",
+        "sure",
+        "here",
+        "many",
     ];
     for p in &patterns {
-        if t == *p { return true; }
+        if t == *p {
+            return true;
+        }
     }
     // Very short outputs are usually noise
-    if t.chars().count() <= 3 { return true; }
+    if t.chars().count() <= 3 {
+        return true;
+    }
     false
 }
 
@@ -294,12 +380,15 @@ fn download_model(filename: &str, dest: &std::path::Path) -> Result<(), String> 
         .map_err(|e| format!("download {filename}: {e}"))?;
 
     let mut reader = resp.into_reader();
-    let mut file = std::fs::File::create(dest)
-        .map_err(|e| format!("create {}: {e}", dest.display()))?;
-    std::io::copy(&mut reader, &mut file)
-        .map_err(|e| format!("write {}: {e}", dest.display()))?;
+    let mut file =
+        std::fs::File::create(dest).map_err(|e| format!("create {}: {e}", dest.display()))?;
+    std::io::copy(&mut reader, &mut file).map_err(|e| format!("write {}: {e}", dest.display()))?;
 
-    eprintln!("[CLX] whisper: downloaded {} to {}", filename, dest.display());
+    eprintln!(
+        "[CLX] whisper: downloaded {} to {}",
+        filename,
+        dest.display()
+    );
     Ok(())
 }
 

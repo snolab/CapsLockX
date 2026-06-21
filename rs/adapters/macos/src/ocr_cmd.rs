@@ -139,7 +139,14 @@ pub fn main(args: &[String]) {
         None => {
             let status = if let Some((x, y, w, h)) = region {
                 std::process::Command::new("screencapture")
-                    .args(["-x", "-t", "png", "-R", &format!("{},{},{},{}", x, y, w, h), &tmp_path])
+                    .args([
+                        "-x",
+                        "-t",
+                        "png",
+                        "-R",
+                        &format!("{},{},{},{}", x, y, w, h),
+                        &tmp_path,
+                    ])
                     .status()
             } else {
                 std::process::Command::new("screencapture")
@@ -163,7 +170,12 @@ pub fn main(args: &[String]) {
     }
 
     let output = std::process::Command::new("python3")
-        .args([py_path, &img_path, &region_x.to_string(), &region_y.to_string()])
+        .args([
+            py_path,
+            &img_path,
+            &region_x.to_string(),
+            &region_y.to_string(),
+        ])
         .output();
 
     // Clean up temp screenshot.
@@ -210,11 +222,12 @@ pub fn main(args: &[String]) {
         Ok(items) => {
             let filtered: Vec<_> = items
                 .into_iter()
-                .filter(|item| {
-                    item["confidence"].as_f64().unwrap_or(0.0) >= min_confidence
-                })
+                .filter(|item| item["confidence"].as_f64().unwrap_or(0.0) >= min_confidence)
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&filtered).unwrap_or_default());
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&filtered).unwrap_or_default()
+            );
         }
         Err(_) => {
             // Fallback: print raw output.

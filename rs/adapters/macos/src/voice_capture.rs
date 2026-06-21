@@ -18,10 +18,7 @@ extern "C" {
         desc: *const AudioComponentDescription,
     ) -> *mut c_void;
 
-    fn AudioComponentInstanceNew(
-        comp: *mut c_void,
-        instance: *mut *mut c_void,
-    ) -> i32;
+    fn AudioComponentInstanceNew(comp: *mut c_void, instance: *mut *mut c_void) -> i32;
 
     fn AudioUnitSetProperty(
         unit: *mut c_void,
@@ -205,7 +202,9 @@ unsafe extern "C" fn input_callback(
     if status != 0 {
         static ERR_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let c = ERR_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        if c < 3 { eprintln!("[CLX] voice_capture: render failed status={}", status); }
+        if c < 3 {
+            eprintln!("[CLX] voice_capture: render failed status={}", status);
+        }
         return status;
     }
 
@@ -216,8 +215,12 @@ unsafe extern "C" fn input_callback(
         static CB_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let c = CB_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if c < 5 {
-            let rms: f32 = (samples.iter().map(|s| s*s).sum::<f32>() / samples.len().max(1) as f32).sqrt();
-            eprintln!("[CLX] voice_capture: cb#{} frames={} rms={:.4}", c, frames, rms);
+            let rms: f32 =
+                (samples.iter().map(|s| s * s).sum::<f32>() / samples.len().max(1) as f32).sqrt();
+            eprintln!(
+                "[CLX] voice_capture: cb#{} frames={} rms={:.4}",
+                c, frames, rms
+            );
         }
     }
     if let Ok(mut buf) = ctx.buffer.try_lock() {
@@ -292,7 +295,10 @@ impl VoiceCapture {
             );
             if status != 0 {
                 AudioComponentInstanceDispose(unit);
-                return Err(format!("Failed to enable input on Bus 1 (status {})", status));
+                return Err(format!(
+                    "Failed to enable input on Bus 1 (status {})",
+                    status
+                ));
             }
 
             // Leave output on Bus 0 enabled — VoiceProcessingIO uses it
@@ -320,7 +326,10 @@ impl VoiceCapture {
                 std::mem::size_of::<AudioStreamBasicDescription>() as u32,
             );
             if s != 0 {
-                eprintln!("[CLX] voice_capture: set output format failed ({}), trying after init", s);
+                eprintln!(
+                    "[CLX] voice_capture: set output format failed ({}), trying after init",
+                    s
+                );
             } else {
                 eprintln!("[CLX] voice_capture: output format set to 48kHz mono f32 before init");
             }
@@ -343,7 +352,10 @@ impl VoiceCapture {
                     std::mem::size_of::<AudioStreamBasicDescription>() as u32,
                 );
                 if s2 != 0 {
-                    eprintln!("[CLX] voice_capture: set output format still failed after init ({})", s2);
+                    eprintln!(
+                        "[CLX] voice_capture: set output format still failed after init ({})",
+                        s2
+                    );
                 } else {
                     eprintln!("[CLX] voice_capture: output format set after init");
                 }
@@ -354,11 +366,11 @@ impl VoiceCapture {
             #[repr(C)]
             struct DuckingConfig {
                 enable_advanced: u8, // Boolean
-                level: u32,         // AUVoiceIOOtherAudioDuckingLevel
+                level: u32,          // AUVoiceIOOtherAudioDuckingLevel
             }
             let ducking = DuckingConfig {
-                enable_advanced: 0,  // false — don't duck based on VAD
-                level: 10,           // kAUVoiceIOOtherAudioDuckingLevelMin
+                enable_advanced: 0, // false — don't duck based on VAD
+                level: 10,          // kAUVoiceIOOtherAudioDuckingLevelMin
             };
             let s = AudioUnitSetProperty(
                 unit,
@@ -369,7 +381,10 @@ impl VoiceCapture {
                 std::mem::size_of::<DuckingConfig>() as u32,
             );
             if s != 0 {
-                eprintln!("[CLX] voice_capture: ducking config not supported (status {}), older macOS?", s);
+                eprintln!(
+                    "[CLX] voice_capture: ducking config not supported (status {}), older macOS?",
+                    s
+                );
             } else {
                 eprintln!("[CLX] voice_capture: audio ducking minimized");
             }
@@ -378,7 +393,11 @@ impl VoiceCapture {
             let mut actual_format: AudioStreamBasicDescription = std::mem::zeroed();
             let mut size = std::mem::size_of::<AudioStreamBasicDescription>() as u32;
             // Try: Output scope Bus 1, Input scope Bus 1, Global scope Bus 0
-            let scopes = [(K_AUDIO_UNIT_SCOPE_OUTPUT, 1u32), (K_AUDIO_UNIT_SCOPE_INPUT, 1), (0u32/*Global*/, 0)];
+            let scopes = [
+                (K_AUDIO_UNIT_SCOPE_OUTPUT, 1u32),
+                (K_AUDIO_UNIT_SCOPE_INPUT, 1),
+                (0u32 /*Global*/, 0),
+            ];
             let mut status = -1i32;
             for &(scope, bus) in &scopes {
                 status = AudioUnitGetProperty(
@@ -390,7 +409,10 @@ impl VoiceCapture {
                     &mut size,
                 );
                 if status == 0 {
-                    eprintln!("[CLX] voice_capture: format query OK on scope={} bus={}", scope, bus);
+                    eprintln!(
+                        "[CLX] voice_capture: format query OK on scope={} bus={}",
+                        scope, bus
+                    );
                     break;
                 }
             }
@@ -398,10 +420,16 @@ impl VoiceCapture {
             let actual_rate;
             if status == 0 {
                 actual_rate = actual_format.sample_rate as u32;
-                eprintln!("[CLX] voice_capture: format: {}Hz {}ch {}bit flags={:#x} bpp={} fpk={} bpf={}",
-                    actual_rate, actual_format.channels_per_frame, actual_format.bits_per_channel,
-                    actual_format.format_flags, actual_format.bytes_per_packet,
-                    actual_format.frames_per_packet, actual_format.bytes_per_frame);
+                eprintln!(
+                    "[CLX] voice_capture: format: {}Hz {}ch {}bit flags={:#x} bpp={} fpk={} bpf={}",
+                    actual_rate,
+                    actual_format.channels_per_frame,
+                    actual_format.bits_per_channel,
+                    actual_format.format_flags,
+                    actual_format.bytes_per_packet,
+                    actual_format.frames_per_packet,
+                    actual_format.bytes_per_frame
+                );
 
                 // Try to set our preferred format: mono float32 at hardware rate.
                 let format = AudioStreamBasicDescription {
@@ -476,10 +504,7 @@ impl VoiceCapture {
             );
             if status != 0 {
                 AudioComponentInstanceDispose(unit);
-                return Err(format!(
-                    "Failed to set input callback (status {})",
-                    status
-                ));
+                return Err(format!("Failed to set input callback (status {})", status));
             }
 
             // (Already initialized above before format query)
@@ -544,7 +569,13 @@ impl Drop for VoiceCapture {
 
 // Implement SystemAudioStream so VoiceCapture can be used via Platform trait.
 impl capslockx_core::platform::SystemAudioStream for VoiceCapture {
-    fn take_samples(&self) -> Vec<f32> { self.take_samples() }
-    fn stop(&self) { self.stop() }
-    fn sample_rate(&self) -> u32 { self.sample_rate() }
+    fn take_samples(&self) -> Vec<f32> {
+        self.take_samples()
+    }
+    fn stop(&self) {
+        self.stop()
+    }
+    fn sample_rate(&self) -> u32 {
+        self.sample_rate()
+    }
 }

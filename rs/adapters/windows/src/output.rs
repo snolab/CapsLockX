@@ -5,41 +5,39 @@
 /// Window management: Win32 window enumeration + manipulation APIs.
 use std::mem::size_of;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use windows::Win32::Foundation::{BOOL, CloseHandle, COLORREF, HWND, LPARAM, WPARAM};
+use windows::Win32::Foundation::{CloseHandle, BOOL, COLORREF, HWND, LPARAM, WPARAM};
+use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
 use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT, KEYBD_EVENT_FLAGS,
-    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN,
-    MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
-    MOUSEEVENTF_WHEEL, MOUSE_EVENT_FLAGS, MOUSEINPUT, VIRTUAL_KEY, SendInput,
-    GetAsyncKeyState,
+    GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
+    KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, MOUSEEVENTF_HWHEEL,
+    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN,
+    MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL, MOUSEINPUT, MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
 };
-use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
     GetWindowThreadProcessId, IsWindowVisible, SendMessageW, SetForegroundWindow,
-    SetLayeredWindowAttributes, SetWindowLongW, SetWindowPos, ShowWindow,
-    GWL_EXSTYLE, GWL_STYLE, HWND_NOTOPMOST, HWND_TOPMOST,
-    LWA_ALPHA, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW,
-    SW_HIDE, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
+    SetLayeredWindowAttributes, SetWindowLongW, SetWindowPos, ShowWindow, GWL_EXSTYLE, GWL_STYLE,
+    HWND_NOTOPMOST, HWND_TOPMOST, LWA_ALPHA, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE,
+    SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, SW_HIDE, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
 };
 
-use capslockx_core::{KeyCode, Platform};
-use capslockx_core::platform::{ArrangeMode, MouseButton};
 use crate::vd_api;
 use crate::vk::keycode_to_vk;
+use capslockx_core::platform::{ArrangeMode, MouseButton};
+use capslockx_core::{KeyCode, Platform};
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 /// Magic tag on SendInput events so our hook callback skips them.
 pub const CLX_EXTRA_INFO: usize = 0x434C_5800;
 
-const WS_CAPTION_RAW: u32       = 0x00C0_0000;
+const WS_CAPTION_RAW: u32 = 0x00C0_0000;
 const WS_EX_TOOLWINDOW_RAW: u32 = 0x0000_0080;
-const WM_CLOSE: u32             = 0x0010;
+const WM_CLOSE: u32 = 0x0010;
 
 // ── WinPlatform ───────────────────────────────────────────────────────────────
 
@@ -77,7 +75,9 @@ fn kbd(vk: u16, flags: KEYBD_EVENT_FLAGS) -> INPUT {
 }
 
 fn send(inputs: &[INPUT]) {
-    unsafe { SendInput(inputs, size_of::<INPUT>() as i32); }
+    unsafe {
+        SendInput(inputs, size_of::<INPUT>() as i32);
+    }
 }
 
 fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
@@ -85,7 +85,8 @@ fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
         r#type: INPUT_MOUSE,
         Anonymous: INPUT_0 {
             mi: MOUSEINPUT {
-                dx, dy,
+                dx,
+                dy,
                 mouseData: data as u32,
                 dwFlags: MOUSE_EVENT_FLAGS(flags),
                 time: 0,
@@ -160,17 +161,27 @@ impl Platform for WinPlatform {
         // WHEEL_DELTA (120) units where 120 = one notch ≈ 3 lines ≈ ~48px.
         // Scale: 1px → 120/48 = 2.5 wheel units.
         let wheel = (delta as f64 * 2.5) as i32;
-        send(&[mouse_inp(0, 0, wheel.clamp(-16384, 16384), MOUSEEVENTF_WHEEL.0)]);
+        send(&[mouse_inp(
+            0,
+            0,
+            wheel.clamp(-16384, 16384),
+            MOUSEEVENTF_WHEEL.0,
+        )]);
     }
     fn scroll_h(&self, delta: i32) {
         let wheel = (delta as f64 * 2.5) as i32;
-        send(&[mouse_inp(0, 0, wheel.clamp(-16384, 16384), MOUSEEVENTF_HWHEEL.0)]);
+        send(&[mouse_inp(
+            0,
+            0,
+            wheel.clamp(-16384, 16384),
+            MOUSEEVENTF_HWHEEL.0,
+        )]);
     }
     fn mouse_button(&self, button: MouseButton, pressed: bool) {
         let flag = match (button, pressed) {
-            (MouseButton::Left,  true)  => MOUSEEVENTF_LEFTDOWN.0,
-            (MouseButton::Left,  false) => MOUSEEVENTF_LEFTUP.0,
-            (MouseButton::Right, true)  => MOUSEEVENTF_RIGHTDOWN.0,
+            (MouseButton::Left, true) => MOUSEEVENTF_LEFTDOWN.0,
+            (MouseButton::Left, false) => MOUSEEVENTF_LEFTUP.0,
+            (MouseButton::Right, true) => MOUSEEVENTF_RIGHTDOWN.0,
             (MouseButton::Right, false) => MOUSEEVENTF_RIGHTUP.0,
             _ => return,
         };
@@ -190,15 +201,23 @@ impl Platform for WinPlatform {
         match pos {
             None => {
                 // No focused window in list — focus first/last on current desktop.
-                if let Some(&w) = if dir > 0 { windows.first() } else { windows.last() } {
-                    unsafe { let _ = SetForegroundWindow(w); }
+                if let Some(&w) = if dir > 0 {
+                    windows.first()
+                } else {
+                    windows.last()
+                } {
+                    unsafe {
+                        let _ = SetForegroundWindow(w);
+                    }
                 }
             }
             Some(idx) => {
                 let new_idx = idx as i32 + dir;
                 if new_idx >= 0 && (new_idx as usize) < windows.len() {
                     // Normal: activate adjacent window on the same desktop.
-                    unsafe { let _ = SetForegroundWindow(windows[new_idx as usize]); }
+                    unsafe {
+                        let _ = SetForegroundWindow(windows[new_idx as usize]);
+                    }
                 } else {
                     // TODO: wrap around with modulo instead of switching desktop.
                     // Match macOS behavior: cycle through all windows, wrap E→A.
@@ -212,7 +231,7 @@ impl Platform for WinPlatform {
     fn arrange_windows(&self, mode: ArrangeMode) {
         match mode {
             ArrangeMode::SideBySide => arrange_side_by_side(),
-            ArrangeMode::Stacked    => arrange_stacked(),
+            ArrangeMode::Stacked => arrange_stacked(),
         }
     }
 
@@ -223,7 +242,9 @@ impl Platform for WinPlatform {
     fn close_window(&self) {
         let hwnd = unsafe { GetForegroundWindow() };
         self.cycle_windows(1);
-        unsafe { SendMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)); }
+        unsafe {
+            SendMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+        }
     }
 
     fn kill_window(&self) {
@@ -246,8 +267,15 @@ impl Platform for WinPlatform {
         self.v_hwnd.store(hwnd.0 as usize, Ordering::Relaxed);
         set_layered_alpha(hwnd, alpha);
         unsafe {
-            let _ = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            let _ = SetWindowPos(
+                hwnd,
+                HWND_TOPMOST,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+            );
         }
     }
 
@@ -257,8 +285,15 @@ impl Platform for WinPlatform {
             let hwnd = HWND(raw as *mut _);
             set_layered_alpha(hwnd, 255);
             unsafe {
-                let _ = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                let _ = SetWindowPos(
+                    hwnd,
+                    HWND_NOTOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                );
             }
         }
     }
@@ -269,12 +304,26 @@ impl Platform for WinPlatform {
         unsafe {
             if exstyle & WS_EX_TOPMOST.0 != 0 {
                 set_layered_alpha(hwnd, 255);
-                let _ = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                let _ = SetWindowPos(
+                    hwnd,
+                    HWND_NOTOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                );
             } else {
                 set_layered_alpha(hwnd, 200);
-                let _ = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                let _ = SetWindowPos(
+                    hwnd,
+                    HWND_TOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                );
             }
         }
     }
@@ -284,11 +333,15 @@ impl Platform for WinPlatform {
     fn switch_to_desktop(&self, idx: u32) {
         let idx = idx.clamp(1, 10) as usize;
         // Try instant COM API first (Win10+, position-independent).
-        if vd_api::switch_desktop(idx) { return; }
+        if vd_api::switch_desktop(idx) {
+            return;
+        }
         // Hotkey fallback: query real current position, then send Win+Ctrl+Arrow.
         let cur = vd_api::current_desktop_idx()
             .unwrap_or_else(|| self.desktop_idx.load(Ordering::Relaxed));
-        if cur == idx { return; }
+        if cur == idx {
+            return;
+        }
         navigate_desktops(cur, idx);
         self.desktop_idx.store(idx, Ordering::Relaxed);
     }
@@ -296,7 +349,8 @@ impl Platform for WinPlatform {
     fn restart(&self) {
         // Spawn a new instance of ourselves, then exit.
         if let Ok(exe) = std::env::current_exe() {
-            let wd = std::env::current_dir().unwrap_or_else(|_| exe.parent().unwrap().to_path_buf());
+            let wd =
+                std::env::current_dir().unwrap_or_else(|_| exe.parent().unwrap().to_path_buf());
             let _ = std::process::Command::new(&exe).current_dir(wd).spawn();
         }
         std::process::exit(0);
@@ -306,10 +360,14 @@ impl Platform for WinPlatform {
         let idx = idx.clamp(1, 10) as usize;
         let cur = vd_api::current_desktop_idx()
             .unwrap_or_else(|| self.desktop_idx.load(Ordering::Relaxed));
-        if cur == idx { return; }
+        if cur == idx {
+            return;
+        }
         // Hide window, switch desktop, show it on the new desktop.
         let hwnd = unsafe { GetForegroundWindow() };
-        unsafe { let _ = ShowWindow(hwnd, SW_HIDE); }
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_HIDE);
+        }
         if !vd_api::switch_desktop(idx) {
             navigate_desktops(cur, idx);
             self.desktop_idx.store(idx, Ordering::Relaxed);
@@ -325,12 +383,20 @@ impl Platform for WinPlatform {
 
 extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
     unsafe {
-        if !IsWindowVisible(hwnd).as_bool() { return BOOL(1); }
-        let style   = GetWindowLongW(hwnd, GWL_STYLE) as u32;
+        if !IsWindowVisible(hwnd).as_bool() {
+            return BOOL(1);
+        }
+        let style = GetWindowLongW(hwnd, GWL_STYLE) as u32;
         let exstyle = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
-        if style & WS_CAPTION_RAW == 0 { return BOOL(1); }
-        if exstyle & WS_EX_TOOLWINDOW_RAW != 0 { return BOOL(1); }
-        if GetWindowTextLengthW(hwnd) == 0 { return BOOL(1); }
+        if style & WS_CAPTION_RAW == 0 {
+            return BOOL(1);
+        }
+        if exstyle & WS_EX_TOOLWINDOW_RAW != 0 {
+            return BOOL(1);
+        }
+        if GetWindowTextLengthW(hwnd) == 0 {
+            return BOOL(1);
+        }
         // Skip cloaked windows (e.g. UWP apps on other virtual desktops).
         let mut cloaked: u32 = 0;
         let _ = DwmGetWindowAttribute(
@@ -339,7 +405,9 @@ extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
             &mut cloaked as *mut u32 as *mut _,
             std::mem::size_of::<u32>() as u32,
         );
-        if cloaked != 0 { return BOOL(1); }
+        if cloaked != 0 {
+            return BOOL(1);
+        }
         (&mut *(lparam.0 as *mut Vec<HWND>)).push(hwnd);
         BOOL(1)
     }
@@ -350,7 +418,12 @@ extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
 /// Cycling order: current monitor's windows → next monitor → … → desktop switch.
 fn get_app_windows() -> Vec<HWND> {
     let mut v: Vec<HWND> = Vec::new();
-    unsafe { let _ = EnumWindows(Some(enum_callback), LPARAM(&mut v as *mut Vec<HWND> as isize)); }
+    unsafe {
+        let _ = EnumWindows(
+            Some(enum_callback),
+            LPARAM(&mut v as *mut Vec<HWND> as isize),
+        );
+    }
     // Sort by (monitor_index, hwnd) so cycling goes through all windows on one
     // monitor before moving to the next.  Within a monitor, HWND order is stable
     // (doesn't shift on focus change, unlike Z-order from EnumWindows).
@@ -369,30 +442,32 @@ fn switch_desktop_step(dir: i32) {
     // Query real current index so we don't drift if user switched manually.
     if let Some(cur) = vd_api::current_desktop_idx() {
         let next = (cur as i32 + dir).max(1) as usize;
-        if vd_api::switch_desktop(next) { return; }
+        if vd_api::switch_desktop(next) {
+            return;
+        }
     }
     // Hotkey fallback.
-    const VK_LWIN: u16  = 0x5B;
+    const VK_LWIN: u16 = 0x5B;
     const VK_LCTRL: u16 = 0xA2;
-    const VK_LEFT: u16  = 0x25;
+    const VK_LEFT: u16 = 0x25;
     const VK_RIGHT: u16 = 0x27;
     let vk_dir = if dir > 0 { VK_RIGHT } else { VK_LEFT };
     send(&[
-        kbd(VK_LWIN,  KEYBD_EVENT_FLAGS(0)),
+        kbd(VK_LWIN, KEYBD_EVENT_FLAGS(0)),
         kbd(VK_LCTRL, KEYBD_EVENT_FLAGS(0)),
-        kbd(vk_dir,   KEYBD_EVENT_FLAGS(0)),
-        kbd(vk_dir,   KEYEVENTF_KEYUP),
+        kbd(vk_dir, KEYBD_EVENT_FLAGS(0)),
+        kbd(vk_dir, KEYEVENTF_KEYUP),
         kbd(VK_LCTRL, KEYEVENTF_KEYUP),
-        kbd(VK_LWIN,  KEYEVENTF_KEYUP),
+        kbd(VK_LWIN, KEYEVENTF_KEYUP),
     ]);
 }
 
 /// Navigate from desktop `from` to desktop `to` by sending Win+Ctrl+Left/Right.
 fn navigate_desktops(from: usize, to: usize) {
     // VK codes
-    const VK_LWIN: u16  = 0x5B;
+    const VK_LWIN: u16 = 0x5B;
     const VK_LCTRL: u16 = 0xA2;
-    const VK_LEFT: u16  = 0x25;
+    const VK_LEFT: u16 = 0x25;
     const VK_RIGHT: u16 = 0x27;
 
     let (count, vk_dir) = if to > from {
@@ -452,15 +527,24 @@ fn get_work_rect(hwnd: HWND) -> (i32, i32, i32, i32) {
 fn fast_resize(hwnd: HWND, x: i32, y: i32, w: i32, h: i32) {
     unsafe {
         let _ = ShowWindow(hwnd, SW_RESTORE);
-        let _ = SetWindowPos(hwnd, HWND(std::ptr::null_mut()), x, y, w, h,
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+        let _ = SetWindowPos(
+            hwnd,
+            HWND(std::ptr::null_mut()),
+            x,
+            y,
+            w,
+            h,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS,
+        );
     }
 }
 
 fn arrange_side_by_side() {
     let windows = get_app_windows();
     let n = windows.len();
-    if n == 0 { return; }
+    if n == 0 {
+        return;
+    }
     let fg = unsafe { GetForegroundWindow() };
     let (ax, ay, aw, ah) = get_work_rect(fg);
     let (rows, cols) = if aw <= ah {
@@ -481,8 +565,12 @@ fn arrange_side_by_side() {
         let mut y = ay + ny * sh;
         let mut w = sw + 16;
         let mut h = sh + 8;
-        let dx = (ax - x).max(0); x += dx; w -= dx;
-        let dy = (ay - y).max(0); y += dy; h -= dy;
+        let dx = (ax - x).max(0);
+        x += dx;
+        w -= dx;
+        let dy = (ay - y).max(0);
+        y += dy;
+        h -= dy;
         w = w.min(ax + aw - x);
         h = h.min(ay + ah - 1 - y);
         fast_resize(hwnd, x, y, w, h);
@@ -492,7 +580,9 @@ fn arrange_side_by_side() {
 fn arrange_stacked() {
     let windows = get_app_windows();
     let n = windows.len();
-    if n == 0 { return; }
+    if n == 0 {
+        return;
+    }
     let fg = unsafe { GetForegroundWindow() };
     let (ax, ay, aw, ah) = get_work_rect(fg);
     let dx = 72_i32.min(aw / n as i32);
@@ -520,8 +610,15 @@ fn arrange_stacked() {
     unsafe {
         for &idx in &z_order {
             let hwnd = windows[idx];
-            let _ = SetWindowPos(hwnd, HWND(std::ptr::null_mut()), 0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            let _ = SetWindowPos(
+                hwnd,
+                HWND(std::ptr::null_mut()),
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+            );
         }
         // Restore focus to the current window.
         let _ = SetForegroundWindow(fg);

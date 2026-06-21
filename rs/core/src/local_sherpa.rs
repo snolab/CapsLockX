@@ -1,12 +1,11 @@
+use crate::local_whisper::is_noise_artifact;
 /// Local SenseVoice transcription using sherpa-rs (sherpa-onnx bindings).
 ///
 /// SenseVoice supports: Chinese, English, Japanese, Korean, Cantonese
 /// in a single model (~228MB int8). Non-autoregressive = fast & predictable latency.
 ///
 /// Drop-in alternative to LocalWhisper with the same API shape.
-
 use sherpa_rs::sense_voice::{SenseVoiceConfig, SenseVoiceRecognizer};
-use crate::local_whisper::is_noise_artifact;
 
 const CACHE_SUBDIR: &str = "capslockx";
 const MODEL_DIR_NAME: &str = "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17";
@@ -38,8 +37,14 @@ impl LocalSherpa {
             download_and_extract(&cache_dir)?;
         }
 
-        let model_str = model_path.to_str().ok_or("model path not UTF-8")?.to_string();
-        let tokens_str = tokens_path.to_str().ok_or("tokens path not UTF-8")?.to_string();
+        let model_str = model_path
+            .to_str()
+            .ok_or("model path not UTF-8")?
+            .to_string();
+        let tokens_str = tokens_path
+            .to_str()
+            .ok_or("tokens path not UTF-8")?
+            .to_string();
 
         eprintln!("[CLX] sherpa: loading SenseVoice model...");
         let t0 = std::time::Instant::now();
@@ -57,7 +62,10 @@ impl LocalSherpa {
         let recognizer = SenseVoiceRecognizer::new(config)
             .map_err(|e| format!("failed to load SenseVoice: {e}"))?;
 
-        eprintln!("[CLX] sherpa: loaded SenseVoice ({:.0}ms)", t0.elapsed().as_millis());
+        eprintln!(
+            "[CLX] sherpa: loaded SenseVoice ({:.0}ms)",
+            t0.elapsed().as_millis()
+        );
 
         Ok(Self { recognizer })
     }
@@ -77,8 +85,10 @@ impl LocalSherpa {
         let inference_ms = t0.elapsed().as_millis();
         let realtime_ratio = audio_dur / (inference_ms as f64 / 1000.0);
 
-        eprintln!("[CLX] sherpa[sensevoice]: {:.1}s audio → {:.0}ms ({:.1}x realtime, lang={})",
-            audio_dur, inference_ms, realtime_ratio, result.lang);
+        eprintln!(
+            "[CLX] sherpa[sensevoice]: {:.1}s audio → {:.0}ms ({:.1}x realtime, lang={})",
+            audio_dur, inference_ms, realtime_ratio, result.lang
+        );
 
         let raw = result.text.trim().to_string();
         let raw_lower = raw.to_lowercase();
@@ -90,10 +100,17 @@ impl LocalSherpa {
             || raw_lower.contains("(singing)");
 
         if is_music {
-            eprintln!("[CLX] sherpa: music/humming detected in raw output: {:?}", raw);
+            eprintln!(
+                "[CLX] sherpa: music/humming detected in raw output: {:?}",
+                raw
+            );
         }
 
-        let text = if is_noise_artifact(&raw) { String::new() } else { raw };
+        let text = if is_noise_artifact(&raw) {
+            String::new()
+        } else {
+            raw
+        };
         Ok(SttOutput { text, is_music })
     }
 
@@ -119,10 +136,9 @@ fn download_and_extract(cache_dir: &std::path::Path) -> Result<(), String> {
         .map_err(|e| format!("download SenseVoice: {e}"))?;
 
     let mut reader = resp.into_reader();
-    let mut file = std::fs::File::create(&archive_path)
-        .map_err(|e| format!("create archive: {e}"))?;
-    std::io::copy(&mut reader, &mut file)
-        .map_err(|e| format!("write archive: {e}"))?;
+    let mut file =
+        std::fs::File::create(&archive_path).map_err(|e| format!("create archive: {e}"))?;
+    std::io::copy(&mut reader, &mut file).map_err(|e| format!("write archive: {e}"))?;
 
     eprintln!("[CLX] sherpa: downloaded, extracting...");
 
@@ -140,7 +156,10 @@ fn download_and_extract(cache_dir: &std::path::Path) -> Result<(), String> {
     // Clean up archive.
     let _ = std::fs::remove_file(&archive_path);
 
-    eprintln!("[CLX] sherpa: model extracted to {}", cache_dir.join(MODEL_DIR_NAME).display());
+    eprintln!(
+        "[CLX] sherpa: model extracted to {}",
+        cache_dir.join(MODEL_DIR_NAME).display()
+    );
     Ok(())
 }
 

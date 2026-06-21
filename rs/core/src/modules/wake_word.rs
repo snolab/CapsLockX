@@ -68,10 +68,14 @@ fn otoji_bin() -> std::path::PathBuf {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             let p = dir.join("otoji");
-            if p.is_file() { return p; }
+            if p.is_file() {
+                return p;
+            }
             // `./clx` is sibling of `./lib/otoji/target/release/otoji` during dev.
             let dev = dir.join("lib/otoji/target/release/otoji");
-            if dev.is_file() { return dev; }
+            if dev.is_file() {
+                return dev;
+            }
         }
     }
     std::path::PathBuf::from("otoji")
@@ -98,9 +102,13 @@ impl WakeWordConfig {
             model_dir: std::env::var("OTOJI_KWS_DIR").unwrap_or_default(),
             keywords_file: std::env::var("OTOJI_KWS_KEYWORDS").unwrap_or_default(),
             threshold: std::env::var("OTOJI_KWS_THRESHOLD")
-                .ok().and_then(|s| s.parse().ok()).unwrap_or(0.25),
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0.25),
             hold_ms: std::env::var("OTOJI_KWS_HOLD_MS")
-                .ok().and_then(|s| s.parse().ok()).unwrap_or(DEFAULT_HOLD_MS),
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(DEFAULT_HOLD_MS),
         }
     }
 }
@@ -121,13 +129,19 @@ impl WakeWordListener {
         } else {
             cfg
         };
-        if !cfg.enabled { return None; }
+        if !cfg.enabled {
+            return None;
+        }
         let model = if cfg.model_dir.is_empty() {
             std::env::var("OTOJI_KWS_DIR").ok()?
-        } else { cfg.model_dir };
+        } else {
+            cfg.model_dir
+        };
         let keywords = if cfg.keywords_file.is_empty() {
             std::env::var("OTOJI_KWS_KEYWORDS").ok()?
-        } else { cfg.keywords_file };
+        } else {
+            cfg.keywords_file
+        };
         if !std::path::Path::new(&model).is_dir() {
             eprintln!("[CLX] wake-word: model dir not found, skipping ({model})");
             return None;
@@ -142,9 +156,12 @@ impl WakeWordListener {
         let bin = otoji_bin();
         let mut cmd = Command::new(&bin);
         cmd.arg("kws")
-            .arg("--model").arg(&model)
-            .arg("--keywords").arg(&keywords)
-            .arg("--threshold").arg(threshold.to_string())
+            .arg("--model")
+            .arg(&model)
+            .arg("--keywords")
+            .arg(&keywords)
+            .arg("--threshold")
+            .arg(threshold.to_string())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
 
@@ -169,12 +186,16 @@ impl WakeWordListener {
             .spawn(move || {
                 let reader = BufReader::new(stdout);
                 for line in reader.lines() {
-                    if stop_r.load(Ordering::Relaxed) { break; }
+                    if stop_r.load(Ordering::Relaxed) {
+                        break;
+                    }
                     let line = match line {
                         Ok(l) => l,
                         Err(_) => break,
                     };
-                    if !line.contains("\"type\":\"wake\"") { continue; }
+                    if !line.contains("\"type\":\"wake\"") {
+                        continue;
+                    }
                     let keyword = extract_str(&line, "keyword").unwrap_or_default();
                     eprintln!("[CLX] wake-word: detected \"{}\"", keyword);
                     trigger_wake(Arc::clone(&ptt_r), hold_ms);

@@ -5,10 +5,10 @@
 
 use super::VoiceModule;
 use crate::key_code::KeyCode;
-use crate::platform::{Platform, SystemAudioStream, MouseButton};
+use crate::platform::{MouseButton, Platform, SystemAudioStream};
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 // ── Mock Audio Stream ────────────────────────────────────────────────────────
@@ -82,7 +82,12 @@ impl MockPlatform {
     }
 
     fn last_subtitle(&self) -> String {
-        self.subtitles.lock().unwrap().last().cloned().unwrap_or_default()
+        self.subtitles
+            .lock()
+            .unwrap()
+            .last()
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -124,30 +129,44 @@ fn load_wav(path: &str) -> Vec<f32> {
     let channels = u16::from_le_bytes([data[22], data[23]]) as usize;
     let sample_rate = u32::from_le_bytes([data[24], data[25], data[26], data[27]]);
     let bits = u16::from_le_bytes([data[34], data[35]]);
-    eprintln!("[test] WAV: {}Hz {}ch {}bit, {} bytes", sample_rate, channels, bits, data.len());
+    eprintln!(
+        "[test] WAV: {}Hz {}ch {}bit, {} bytes",
+        sample_rate,
+        channels,
+        bits,
+        data.len()
+    );
 
     assert_eq!(bits, 16, "only 16-bit WAV supported");
 
     // Find data chunk
     let mut pos = 12;
     while pos + 8 < data.len() {
-        let chunk_id = &data[pos..pos+4];
-        let chunk_size = u32::from_le_bytes([data[pos+4], data[pos+5], data[pos+6], data[pos+7]]) as usize;
+        let chunk_id = &data[pos..pos + 4];
+        let chunk_size =
+            u32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]])
+                as usize;
         if chunk_id == b"data" {
-            let audio_data = &data[pos+8..pos+8+chunk_size.min(data.len()-pos-8)];
-            let samples: Vec<f32> = audio_data.chunks(2)
-                .map(|c| i16::from_le_bytes([c[0], c.get(1).copied().unwrap_or(0)]) as f32 / 32768.0)
+            let audio_data = &data[pos + 8..pos + 8 + chunk_size.min(data.len() - pos - 8)];
+            let samples: Vec<f32> = audio_data
+                .chunks(2)
+                .map(|c| {
+                    i16::from_le_bytes([c[0], c.get(1).copied().unwrap_or(0)]) as f32 / 32768.0
+                })
                 .collect();
             // Mix to mono if stereo
             if channels > 1 {
-                return samples.chunks(channels)
+                return samples
+                    .chunks(channels)
                     .map(|ch| ch.iter().sum::<f32>() / channels as f32)
                     .collect();
             }
             return samples;
         }
         pos += 8 + chunk_size;
-        if chunk_size % 2 != 0 { pos += 1; } // padding
+        if chunk_size % 2 != 0 {
+            pos += 1;
+        } // padding
     }
     panic!("no data chunk in WAV");
 }
@@ -161,7 +180,11 @@ fn test_voice_input_e2e() {
     let wav_path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/test_data/test_speech.wav");
     let samples = load_wav(wav_path);
     let duration_secs = samples.len() as f64 / 16000.0;
-    eprintln!("[test] loaded {} samples ({:.1}s)", samples.len(), duration_secs);
+    eprintln!(
+        "[test] loaded {} samples ({:.1}s)",
+        samples.len(),
+        duration_secs
+    );
 
     // 2. Create mocks
     let mock_audio = MockAudioStream::new(samples);
@@ -202,16 +225,25 @@ fn test_voice_input_e2e() {
     eprintln!("[test] ══════════════════════════════════════");
 
     // 8. Assert — fuzzy match (STT won't be perfect)
-    assert!(!typed.is_empty(), "Voice pipeline should have typed something");
+    assert!(
+        !typed.is_empty(),
+        "Voice pipeline should have typed something"
+    );
     let lower = typed.to_lowercase();
     let keywords = ["quick", "brown", "fox", "jump", "lazy", "dog"];
-    let matches: Vec<&str> = keywords.iter().filter(|&&k| lower.contains(k)).copied().collect();
+    let matches: Vec<&str> = keywords
+        .iter()
+        .filter(|&&k| lower.contains(k))
+        .copied()
+        .collect();
     eprintln!("[test] Matched keywords: {:?} / {:?}", matches, keywords);
     assert!(
         matches.len() >= 2,
         "Expected at least 2 keywords from 'The quick brown fox jumps over the lazy dog', \
          got {} matches ({:?}) in: {:?}",
-        matches.len(), matches, typed
+        matches.len(),
+        matches,
+        typed
     );
 }
 
@@ -234,7 +266,9 @@ fn run_voice_e2e(wav_file: &str, keywords: &[&str]) -> (String, usize, usize) {
     // Wait for audio consumption
     let deadline = std::time::Instant::now() + Duration::from_secs(15);
     while !mock_audio.is_done() {
-        if std::time::Instant::now() > deadline { break; }
+        if std::time::Instant::now() > deadline {
+            break;
+        }
         std::thread::sleep(Duration::from_millis(100));
     }
     std::thread::sleep(Duration::from_secs(3));
@@ -245,10 +279,21 @@ fn run_voice_e2e(wav_file: &str, keywords: &[&str]) -> (String, usize, usize) {
 
     let typed = platform.typed_text();
     let lower = typed.to_lowercase();
-    let matches: Vec<&str> = keywords.iter().filter(|&&k| lower.contains(k)).copied().collect();
+    let matches: Vec<&str> = keywords
+        .iter()
+        .filter(|&&k| lower.contains(k))
+        .copied()
+        .collect();
 
-    eprintln!("[matrix] {} ({:.1}s) → {:?} | matched {}/{}: {:?}",
-        wav_file, duration_secs, typed, matches.len(), keywords.len(), matches);
+    eprintln!(
+        "[matrix] {} ({:.1}s) → {:?} | matched {}/{}: {:?}",
+        wav_file,
+        duration_secs,
+        typed,
+        matches.len(),
+        keywords.len(),
+        matches
+    );
 
     (typed, matches.len(), keywords.len())
 }
@@ -258,50 +303,109 @@ fn run_voice_e2e(wav_file: &str, keywords: &[&str]) -> (String, usize, usize) {
 fn test_voice_matrix() {
     let cases: Vec<(&str, &str, Vec<&str>)> = vec![
         // English
-        ("en1.wav", "The quick brown fox jumps over the lazy dog",
-         vec!["quick", "brown", "fox", "jump", "lazy", "dog"]),
-        ("en2.wav", "How are you doing today my friend",
-         vec!["how", "doing", "today", "friend"]),
-        ("en3.wav", "Please remember to save your work before closing",
-         vec!["remember", "save", "work", "closing"]),
-        ("en4.wav", "The weather is beautiful outside this morning",
-         vec!["weather", "beautiful", "outside", "morning"]),
-        ("en5.wav", "I would like to order a cup of coffee please",
-         vec!["order", "cup", "coffee", "please"]),
-        ("en6.wav", "Can you help me find the nearest train station",
-         vec!["help", "find", "nearest", "train", "station"]),
-        ("en7.wav", "Technology is changing the world every single day",
-         vec!["technology", "changing", "world", "every", "day"]),
+        (
+            "en1.wav",
+            "The quick brown fox jumps over the lazy dog",
+            vec!["quick", "brown", "fox", "jump", "lazy", "dog"],
+        ),
+        (
+            "en2.wav",
+            "How are you doing today my friend",
+            vec!["how", "doing", "today", "friend"],
+        ),
+        (
+            "en3.wav",
+            "Please remember to save your work before closing",
+            vec!["remember", "save", "work", "closing"],
+        ),
+        (
+            "en4.wav",
+            "The weather is beautiful outside this morning",
+            vec!["weather", "beautiful", "outside", "morning"],
+        ),
+        (
+            "en5.wav",
+            "I would like to order a cup of coffee please",
+            vec!["order", "cup", "coffee", "please"],
+        ),
+        (
+            "en6.wav",
+            "Can you help me find the nearest train station",
+            vec!["help", "find", "nearest", "train", "station"],
+        ),
+        (
+            "en7.wav",
+            "Technology is changing the world every single day",
+            vec!["technology", "changing", "world", "every", "day"],
+        ),
         // Chinese
-        ("zh1.wav", "今天天气真的很不错",
-         vec!["今天", "天气", "不错"]),
-        ("zh2.wav", "请问最近的地铁站在哪里",
-         vec!["请问", "地铁", "哪里"]),
-        ("zh3.wav", "我想要一杯热咖啡谢谢",
-         vec!["咖啡", "谢谢"]),
-        ("zh4.wav", "这个周末我们一起去爬山吧",
-         vec!["周末", "一起", "爬山"]),
-        ("zh5.wav", "人工智能正在改变我们的生活",
-         vec!["人工智能", "改变", "生活"]),
-        ("zh6.wav", "学习新的编程语言很有意思",
-         vec!["学习", "编程", "语言"]),
-        ("zh7.wav", "早上好希望你今天过得愉快",
-         vec!["早上", "今天", "愉快"]),
+        (
+            "zh1.wav",
+            "今天天气真的很不错",
+            vec!["今天", "天气", "不错"],
+        ),
+        (
+            "zh2.wav",
+            "请问最近的地铁站在哪里",
+            vec!["请问", "地铁", "哪里"],
+        ),
+        ("zh3.wav", "我想要一杯热咖啡谢谢", vec!["咖啡", "谢谢"]),
+        (
+            "zh4.wav",
+            "这个周末我们一起去爬山吧",
+            vec!["周末", "一起", "爬山"],
+        ),
+        (
+            "zh5.wav",
+            "人工智能正在改变我们的生活",
+            vec!["人工智能", "改变", "生活"],
+        ),
+        (
+            "zh6.wav",
+            "学习新的编程语言很有意思",
+            vec!["学习", "编程", "语言"],
+        ),
+        (
+            "zh7.wav",
+            "早上好希望你今天过得愉快",
+            vec!["早上", "今天", "愉快"],
+        ),
         // Japanese
-        ("ja1.wav", "今日はとても良い天気ですね",
-         vec!["今日", "天気"]),
-        ("ja2.wav", "すみません駅はどこですか",
-         vec!["すみません", "駅"]),
-        ("ja3.wav", "コーヒーを一杯お願いします",
-         vec!["コーヒー", "お願い"]),
-        ("ja4.wav", "週末に一緒に山に登りましょう",
-         vec!["週末", "一緒", "山"]),
-        ("ja5.wav", "技術は毎日世界を変えています",
-         vec!["技術", "世界", "変え"]),
-        ("ja6.wav", "新しいプログラミング言語を学ぶのは楽しい",
-         vec!["プログラミング", "言語", "楽し"]),
-        ("ja7.wav", "おはようございます良い一日を",
-         vec!["おはよう", "一日"]),
+        (
+            "ja1.wav",
+            "今日はとても良い天気ですね",
+            vec!["今日", "天気"],
+        ),
+        (
+            "ja2.wav",
+            "すみません駅はどこですか",
+            vec!["すみません", "駅"],
+        ),
+        (
+            "ja3.wav",
+            "コーヒーを一杯お願いします",
+            vec!["コーヒー", "お願い"],
+        ),
+        (
+            "ja4.wav",
+            "週末に一緒に山に登りましょう",
+            vec!["週末", "一緒", "山"],
+        ),
+        (
+            "ja5.wav",
+            "技術は毎日世界を変えています",
+            vec!["技術", "世界", "変え"],
+        ),
+        (
+            "ja6.wav",
+            "新しいプログラミング言語を学ぶのは楽しい",
+            vec!["プログラミング", "言語", "楽し"],
+        ),
+        (
+            "ja7.wav",
+            "おはようございます良い一日を",
+            vec!["おはよう", "一日"],
+        ),
     ];
 
     let mut results: Vec<(String, String, usize, usize, bool)> = Vec::new();
@@ -321,8 +425,10 @@ fn test_voice_matrix() {
     for (wav, typed, matched, total, pass) in &results {
         let typed_short: String = typed.chars().take(30).collect();
         let status = if *pass { "✓" } else { "✗" };
-        eprintln!("║ {:<8} ║ {:<33} ║ {}/{:<2} ║   {}   ║",
-            wav, typed_short, matched, total, status);
+        eprintln!(
+            "║ {:<8} ║ {:<33} ║ {}/{:<2} ║   {}   ║",
+            wav, typed_short, matched, total, status
+        );
     }
     eprintln!("╚══════════╩═══════════════════════════════════╩══════╩═══════╝");
 
@@ -334,7 +440,9 @@ fn test_voice_matrix() {
     assert!(
         passed * 100 / total >= 70,
         "Expected >=70% pass rate, got {}/{} ({}%)",
-        passed, total, passed * 100 / total
+        passed,
+        total,
+        passed * 100 / total
     );
 }
 
@@ -353,5 +461,9 @@ fn test_voice_click_toggle() {
     std::thread::sleep(Duration::from_secs(2));
 
     let typed = platform.typed_text();
-    assert!(typed.is_empty(), "Click mode should not type anything, got: {:?}", typed);
+    assert!(
+        typed.is_empty(),
+        "Click mode should not type anything, got: {:?}",
+        typed
+    );
 }

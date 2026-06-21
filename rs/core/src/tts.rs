@@ -7,23 +7,52 @@
 /// `chain` is a comma-separated list: "elevenlabs,gemini,openai,msedge,native".
 /// `lang` is a BCP-47 hint like "en", "ja", "zh", "ko".
 #[cfg(not(target_arch = "wasm32"))]
-pub fn speak(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, openai_key: &str) -> Result<(), String> {
-    speak_with_chain(text, lang, elevenlabs_key, gemini_key, openai_key, "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native")
+pub fn speak(
+    text: &str,
+    lang: &str,
+    elevenlabs_key: &str,
+    gemini_key: &str,
+    openai_key: &str,
+) -> Result<(), String> {
+    speak_with_chain(
+        text,
+        lang,
+        elevenlabs_key,
+        gemini_key,
+        openai_key,
+        "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native",
+    )
 }
 
 /// Speak with a configurable fallback chain.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn speak_with_chain(text: &str, lang: &str, elevenlabs_key: &str, gemini_key: &str, openai_key: &str, chain: &str) -> Result<(), String> {
-    if text.trim().is_empty() { return Ok(()); }
+pub fn speak_with_chain(
+    text: &str,
+    lang: &str,
+    elevenlabs_key: &str,
+    gemini_key: &str,
+    openai_key: &str,
+    chain: &str,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
 
     for model in chain.split(',').map(|s| s.trim()) {
         let result = match model {
-            m if m.starts_with("elevenlabs") && !elevenlabs_key.is_empty() =>
-                speak_elevenlabs(text, lang, elevenlabs_key),
-            m if (m.starts_with("gemini") || m.contains("-tts")) && !gemini_key.is_empty() =>
-                speak_gemini(text, lang, gemini_key),
-            m if m.starts_with("openai") || m == "tts-1" || m == "tts-1-hd" =>
-                if !openai_key.is_empty() { speak_openai(text, lang, openai_key) } else { continue },
+            m if m.starts_with("elevenlabs") && !elevenlabs_key.is_empty() => {
+                speak_elevenlabs(text, lang, elevenlabs_key)
+            }
+            m if (m.starts_with("gemini") || m.contains("-tts")) && !gemini_key.is_empty() => {
+                speak_gemini(text, lang, gemini_key)
+            }
+            m if m.starts_with("openai") || m == "tts-1" || m == "tts-1-hd" => {
+                if !openai_key.is_empty() {
+                    speak_openai(text, lang, openai_key)
+                } else {
+                    continue;
+                }
+            }
             "msedge" => speak_msedge(text, lang),
             "native" => return speak_native(text, lang),
             _ => continue,
@@ -94,9 +123,9 @@ fn speak_gemini(text: &str, lang: &str, api_key: &str) -> Result<(), String> {
         .map_err(|e| format!("{}", e))?;
 
     // Gemini returns JSON with inline_data containing base64 audio.
-    let result: serde_json::Value = serde_json::from_str(
-        &resp.into_string().map_err(|e| format!("read: {}", e))?
-    ).map_err(|e| format!("parse: {}", e))?;
+    let result: serde_json::Value =
+        serde_json::from_str(&resp.into_string().map_err(|e| format!("read: {}", e))?)
+            .map_err(|e| format!("parse: {}", e))?;
 
     let audio_b64 = result["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
         .as_str()
@@ -131,7 +160,11 @@ fn speak_openai(text: &str, _lang: &str, api_key: &str) -> Result<(), String> {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn speak_msedge(text: &str, lang: &str) -> Result<(), String> {
-    eprintln!("[CLX] tts: msedge-tts ({} chars, lang={})", text.len(), lang);
+    eprintln!(
+        "[CLX] tts: msedge-tts ({} chars, lang={})",
+        text.len(),
+        lang
+    );
 
     let voice = match lang {
         "ja" => "ja-JP-NanamiNeural",
@@ -157,7 +190,9 @@ fn edge_tts_sync(text: &str, voice: &str) -> Result<(), String> {
         rate: 0,
         volume: 0,
     };
-    let audio = tts.synthesize(text, &config).map_err(|e| format!("synth: {}", e))?;
+    let audio = tts
+        .synthesize(text, &config)
+        .map_err(|e| format!("synth: {}", e))?;
 
     let path = "/tmp/clx-tts-edge.mp3";
     std::fs::write(path, &audio.audio_bytes).map_err(|e| format!("write: {}", e))?;
@@ -168,7 +203,11 @@ fn edge_tts_sync(text: &str, voice: &str) -> Result<(), String> {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn speak_native(text: &str, lang: &str) -> Result<(), String> {
-    eprintln!("[CLX] tts: native say ({} chars, lang={})", text.len(), lang);
+    eprintln!(
+        "[CLX] tts: native say ({} chars, lang={})",
+        text.len(),
+        lang
+    );
 
     let voice = match lang {
         "ja" => "Kyoko",
@@ -182,7 +221,11 @@ fn speak_native(text: &str, lang: &str) -> Result<(), String> {
         .status()
         .map_err(|e| format!("say: {}", e))?;
 
-    if status.success() { Ok(()) } else { Err(format!("say exit: {}", status)) }
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("say exit: {}", status))
+    }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -211,7 +254,9 @@ fn play_audio_file(path: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     let status = std::process::Command::new("aplay").arg(path).status();
     #[cfg(target_os = "windows")]
-    let status = std::process::Command::new("cmd").args(["/c", "start", "/b", path]).status();
+    let status = std::process::Command::new("cmd")
+        .args(["/c", "start", "/b", path])
+        .status();
 
     match status {
         Ok(s) if s.success() => Ok(()),
@@ -223,17 +268,34 @@ fn play_audio_file(path: &str) -> Result<(), String> {
 fn base64_decode(input: &str) -> Result<Vec<u8>, String> {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = Vec::new();
-    let bytes: Vec<u8> = input.bytes().filter(|b| *b != b'\n' && *b != b'\r' && *b != b' ').collect();
+    let bytes: Vec<u8> = input
+        .bytes()
+        .filter(|b| *b != b'\n' && *b != b'\r' && *b != b' ')
+        .collect();
     for chunk in bytes.chunks(4) {
-        if chunk.len() < 2 { break; }
+        if chunk.len() < 2 {
+            break;
+        }
         let a = CHARS.iter().position(|&c| c == chunk[0]).unwrap_or(0) as u32;
         let b = CHARS.iter().position(|&c| c == chunk[1]).unwrap_or(0) as u32;
-        let c = if chunk.len() > 2 && chunk[2] != b'=' { CHARS.iter().position(|&x| x == chunk[2]).unwrap_or(0) as u32 } else { 0 };
-        let d = if chunk.len() > 3 && chunk[3] != b'=' { CHARS.iter().position(|&x| x == chunk[3]).unwrap_or(0) as u32 } else { 0 };
+        let c = if chunk.len() > 2 && chunk[2] != b'=' {
+            CHARS.iter().position(|&x| x == chunk[2]).unwrap_or(0) as u32
+        } else {
+            0
+        };
+        let d = if chunk.len() > 3 && chunk[3] != b'=' {
+            CHARS.iter().position(|&x| x == chunk[3]).unwrap_or(0) as u32
+        } else {
+            0
+        };
         let triple = (a << 18) | (b << 12) | (c << 6) | d;
         out.push((triple >> 16) as u8);
-        if chunk.len() > 2 && chunk[2] != b'=' { out.push((triple >> 8) as u8); }
-        if chunk.len() > 3 && chunk[3] != b'=' { out.push(triple as u8); }
+        if chunk.len() > 2 && chunk[2] != b'=' {
+            out.push((triple >> 8) as u8);
+        }
+        if chunk.len() > 3 && chunk[3] != b'=' {
+            out.push(triple as u8);
+        }
     }
     Ok(out)
 }
@@ -241,7 +303,13 @@ fn base64_decode(input: &str) -> Result<Vec<u8>, String> {
 // ── WASM stub ────────────────────────────────────────────────────────────────
 
 #[cfg(target_arch = "wasm32")]
-pub fn speak(_text: &str, _lang: &str, _elevenlabs_key: &str, _gemini_key: &str, _openai_key: &str) -> Result<(), String> {
+pub fn speak(
+    _text: &str,
+    _lang: &str,
+    _elevenlabs_key: &str,
+    _gemini_key: &str,
+    _openai_key: &str,
+) -> Result<(), String> {
     // In WASM, use Web Speech API via JS interop.
     Err("TTS on WASM: use window.speechSynthesis from JS".into())
 }

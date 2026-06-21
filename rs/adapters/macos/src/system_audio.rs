@@ -3,10 +3,13 @@
 //! Captures what's playing through the system speakers — meetings,
 //! YouTube, music, etc. Mixed with mic audio for voice transcription.
 
+use capslockx_core::platform::SystemAudioStream;
 use std::ffi::c_void;
 use std::ptr::null_mut;
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, AtomicPtr, Ordering}};
-use capslockx_core::platform::SystemAudioStream;
+use std::sync::{
+    atomic::{AtomicBool, AtomicPtr, Ordering},
+    Arc, Mutex,
+};
 
 // ── ObjC runtime FFI ─────────────────────────────────────────────────────────
 
@@ -14,9 +17,18 @@ extern "C" {
     fn objc_getClass(name: *const std::ffi::c_char) -> *mut c_void;
     fn sel_registerName(name: *const std::ffi::c_char) -> *mut c_void;
     fn objc_msgSend(receiver: *mut c_void, sel: *mut c_void, ...) -> *mut c_void;
-    fn objc_allocateClassPair(sup: *mut c_void, name: *const std::ffi::c_char, extra: usize) -> *mut c_void;
+    fn objc_allocateClassPair(
+        sup: *mut c_void,
+        name: *const std::ffi::c_char,
+        extra: usize,
+    ) -> *mut c_void;
     fn objc_registerClassPair(cls: *mut c_void);
-    fn class_addMethod(cls: *mut c_void, sel: *mut c_void, imp: *const c_void, types: *const std::ffi::c_char) -> bool;
+    fn class_addMethod(
+        cls: *mut c_void,
+        sel: *mut c_void,
+        imp: *const c_void,
+        types: *const std::ffi::c_char,
+    ) -> bool;
     fn class_addProtocol(cls: *mut c_void, protocol: *mut c_void) -> bool;
     fn objc_getProtocol(name: *const std::ffi::c_char) -> *mut c_void;
     fn objc_retain(obj: *mut c_void) -> *mut c_void;
@@ -52,10 +64,15 @@ extern "C" {
     static _NSConcreteGlobalBlock: *const c_void;
 }
 
-unsafe fn sel(name: &[u8]) -> *mut c_void { sel_registerName(name.as_ptr() as *const _) }
-unsafe fn cls(name: &[u8]) -> *mut c_void { objc_getClass(name.as_ptr() as *const _) }
+unsafe fn sel(name: &[u8]) -> *mut c_void {
+    sel_registerName(name.as_ptr() as *const _)
+}
+unsafe fn cls(name: &[u8]) -> *mut c_void {
+    objc_getClass(name.as_ptr() as *const _)
+}
 unsafe fn msg0(obj: *mut c_void, s: *mut c_void) -> *mut c_void {
-    let f: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+    let f: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+        std::mem::transmute(objc_msgSend as *const ());
     f(obj, s)
 }
 
@@ -138,10 +155,7 @@ static START_ERROR: AtomicBool = AtomicBool::new(false);
 
 /// Completion handler for `startCaptureWithCompletionHandler:`
 /// Signature: ^(NSError * _Nullable error)
-unsafe extern "C" fn start_capture_completion(
-    _block: *mut GlobalBlock,
-    error: *mut c_void,
-) {
+unsafe extern "C" fn start_capture_completion(_block: *mut GlobalBlock, error: *mut c_void) {
     if !error.is_null() {
         START_ERROR.store(true, Ordering::Release);
         let desc = msg0(error, sel(b"localizedDescription\0"));
@@ -187,19 +201,31 @@ extern "C" fn did_output_sample_buffer(
     sample_buffer: *mut c_void,
     output_type: i64,
 ) {
-    if output_type != 1 { return; } // 1 = SCStreamOutputTypeAudio
-    if !SYS_AUDIO_ACTIVE.load(Ordering::Relaxed) { return; }
+    if output_type != 1 {
+        return;
+    } // 1 = SCStreamOutputTypeAudio
+    if !SYS_AUDIO_ACTIVE.load(Ordering::Relaxed) {
+        return;
+    }
 
     unsafe {
         let block_buf = CMSampleBufferGetDataBuffer(sample_buffer);
-        if block_buf.is_null() { return; }
+        if block_buf.is_null() {
+            return;
+        }
 
         let mut data_ptr: *mut u8 = std::ptr::null_mut();
         let mut total_len: usize = 0;
         let status = CMBlockBufferGetDataPointer(
-            block_buf, 0, std::ptr::null_mut(), &mut total_len, &mut data_ptr,
+            block_buf,
+            0,
+            std::ptr::null_mut(),
+            &mut total_len,
+            &mut data_ptr,
         );
-        if status != 0 || data_ptr.is_null() || total_len == 0 { return; }
+        if status != 0 || data_ptr.is_null() || total_len == 0 {
+            return;
+        }
 
         // Audio arrives as interleaved f32 PCM (mono or stereo depending on config).
         let f32_count = total_len / 4;
@@ -219,10 +245,16 @@ static mut OUTPUT_HANDLER_CLS_REGISTERED: bool = false;
 
 fn register_output_handler_class() {
     unsafe {
-        if OUTPUT_HANDLER_CLS_REGISTERED { return; }
+        if OUTPUT_HANDLER_CLS_REGISTERED {
+            return;
+        }
         let nsobject = cls(b"NSObject\0");
-        let new_cls = objc_allocateClassPair(nsobject, b"CLXAudioOutputHandler\0".as_ptr() as *const _, 0);
-        if new_cls.is_null() { OUTPUT_HANDLER_CLS_REGISTERED = true; return; }
+        let new_cls =
+            objc_allocateClassPair(nsobject, b"CLXAudioOutputHandler\0".as_ptr() as *const _, 0);
+        if new_cls.is_null() {
+            OUTPUT_HANDLER_CLS_REGISTERED = true;
+            return;
+        }
 
         let proto = objc_getProtocol(b"SCStreamOutput\0".as_ptr() as *const _);
         if !proto.is_null() {
@@ -284,11 +316,19 @@ impl SystemAudioCapture {
             let sel_get = sel(b"getShareableContentExcludingDesktopWindows:onScreenWindowsOnly:completionHandler:\0");
             let f_get: extern "C" fn(*mut c_void, *mut c_void, bool, bool, *const GlobalBlock) =
                 std::mem::transmute(objc_msgSend as *const ());
-            f_get(sc_content_cls, sel_get, true, false, &CONTENT_COMPLETION_BLOCK);
+            f_get(
+                sc_content_cls,
+                sel_get,
+                true,
+                false,
+                &CONTENT_COMPLETION_BLOCK,
+            );
 
             // Block until the completion handler fires (with a 10s timeout)
             let timeout_ns: u64 = 10_000_000_000; // 10 seconds
-            extern "C" { fn dispatch_time(when: u64, delta: i64) -> u64; }
+            extern "C" {
+                fn dispatch_time(when: u64, delta: i64) -> u64;
+            }
             let deadline = dispatch_time(0, timeout_ns as i64);
             let wait_result = dispatch_semaphore_wait(sem, deadline);
 
@@ -328,9 +368,20 @@ impl SystemAudioCapture {
             let filter_cls = cls(b"SCContentFilter\0");
             let filter_alloc = msg0(filter_cls, sel(b"alloc\0"));
             let sel_init_filter = sel(b"initWithDisplay:excludingApplications:exceptingWindows:\0");
-            let f_init_filter: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
-                std::mem::transmute(objc_msgSend as *const ());
-            let filter = f_init_filter(filter_alloc, sel_init_filter, first_display, empty_array, empty_array);
+            let f_init_filter: extern "C" fn(
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            let filter = f_init_filter(
+                filter_alloc,
+                sel_init_filter,
+                first_display,
+                empty_array,
+                empty_array,
+            );
             if filter.is_null() {
                 return Err("Failed to create SCContentFilter".into());
             }
@@ -368,8 +419,13 @@ impl SystemAudioCapture {
             let stream_cls = cls(b"SCStream\0");
             let stream_alloc = msg0(stream_cls, sel(b"alloc\0"));
             let sel_init_stream = sel(b"initWithFilter:configuration:delegate:\0");
-            let f_init_stream: extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
-                std::mem::transmute(objc_msgSend as *const ());
+            let f_init_stream: extern "C" fn(
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
             let stream = f_init_stream(stream_alloc, sel_init_stream, filter, config, null_mut());
             if stream.is_null() {
                 return Err("Failed to create SCStream".into());
@@ -389,8 +445,12 @@ impl SystemAudioCapture {
             let sel_add_output = sel(b"addStreamOutput:type:sampleHandlerQueue:error:\0");
             let mut error: *mut c_void = null_mut();
             let f_add_output: extern "C" fn(
-                *mut c_void, *mut c_void,
-                *mut c_void, i64, *mut c_void, *mut *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                i64,
+                *mut c_void,
+                *mut *mut c_void,
             ) -> bool = std::mem::transmute(objc_msgSend as *const ());
             let ok = f_add_output(stream, sel_add_output, handler, 1, null_mut(), &mut error);
             if !ok || !error.is_null() {
@@ -439,10 +499,7 @@ impl SystemAudioCapture {
 
             eprintln!("[CLX] system_audio: ScreenCaptureKit stream started (48kHz mono)");
 
-            Ok(Self {
-                stream,
-                handler,
-            })
+            Ok(Self { stream, handler })
         }
     }
 }
@@ -460,11 +517,17 @@ impl SystemAudioStream for SystemAudioCapture {
                 // [stream stopCaptureWithCompletionHandler:nil]
                 let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) =
                     std::mem::transmute(objc_msgSend as *const ());
-                f(self.stream, sel(b"stopCaptureWithCompletionHandler:\0"), std::ptr::null_mut());
+                f(
+                    self.stream,
+                    sel(b"stopCaptureWithCompletionHandler:\0"),
+                    std::ptr::null_mut(),
+                );
             }
         }
         eprintln!("[CLX] system_audio: stopped");
     }
 
-    fn sample_rate(&self) -> u32 { 48000 }
+    fn sample_rate(&self) -> u32 {
+        48000
+    }
 }

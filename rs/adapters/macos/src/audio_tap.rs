@@ -4,10 +4,13 @@
 //! going to speakers — zero acoustic distortion, perfect for AEC reference.
 //! Falls back to ScreenCaptureKit if taps are unavailable.
 
+use capslockx_core::platform::SystemAudioStream;
 use std::ffi::c_void;
 use std::ptr::null_mut;
-use std::sync::{Mutex, atomic::{AtomicBool, Ordering}};
-use capslockx_core::platform::SystemAudioStream;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 
 // ── Raw FFI declarations ────────────────────────────────────────────────────
 
@@ -64,9 +67,12 @@ extern "C" {
     fn AudioDeviceCreateIOProcID(
         device: AudioObjectID,
         proc_fn: unsafe extern "C" fn(
-            AudioObjectID, *const AudioTimeStamp,
-            *const AudioBufferList, *const AudioTimeStamp,
-            *mut AudioBufferList, *const AudioTimeStamp,
+            AudioObjectID,
+            *const AudioTimeStamp,
+            *const AudioBufferList,
+            *const AudioTimeStamp,
+            *mut AudioBufferList,
+            *const AudioTimeStamp,
             *mut c_void,
         ) -> OSStatus,
         client_data: *mut c_void,
@@ -137,8 +143,12 @@ const K_AUDIO_HARDWARE_PROPERTY_DEFAULT_OUTPUT_DEVICE: u32 = 0x644F7574; // 'dOu
 const K_AUDIO_DEVICE_PROPERTY_DEVICE_UID: u32 = 0x75696420; // 'uid '
 const K_AUDIO_TAP_PROPERTY_UID: u32 = 0x74756964; // 'tuid'
 
-unsafe fn sel(name: &[u8]) -> *mut c_void { sel_registerName(name.as_ptr() as *const _) }
-unsafe fn cls(name: &[u8]) -> *mut c_void { objc_getClass(name.as_ptr() as *const _) }
+unsafe fn sel(name: &[u8]) -> *mut c_void {
+    sel_registerName(name.as_ptr() as *const _)
+}
+unsafe fn cls(name: &[u8]) -> *mut c_void {
+    objc_getClass(name.as_ptr() as *const _)
+}
 
 fn cfstr(s: &str) -> *mut c_void {
     let cstr = std::ffi::CString::new(s).unwrap();
@@ -146,7 +156,13 @@ fn cfstr(s: &str) -> *mut c_void {
 }
 
 fn cfnum_i32(val: i32) -> *mut c_void {
-    unsafe { CFNumberCreate(null_mut(), 3 /* kCFNumberSInt32Type */, &val as *const _ as *const c_void) }
+    unsafe {
+        CFNumberCreate(
+            null_mut(),
+            3, /* kCFNumberSInt32Type */
+            &val as *const _ as *const c_void,
+        )
+    }
 }
 
 fn cfbool(val: bool) -> *mut c_void {
@@ -155,7 +171,13 @@ fn cfbool(val: bool) -> *mut c_void {
         static kCFBooleanTrue: *mut c_void;
         static kCFBooleanFalse: *mut c_void;
     }
-    unsafe { if val { kCFBooleanTrue } else { kCFBooleanFalse } }
+    unsafe {
+        if val {
+            kCFBooleanTrue
+        } else {
+            kCFBooleanFalse
+        }
+    }
 }
 
 // ── Shared sample buffer ────────────────────────────────────────────────────
@@ -174,11 +196,17 @@ unsafe extern "C" fn io_callback(
     _output_time: *const AudioTimeStamp,
     _client_data: *mut c_void,
 ) -> OSStatus {
-    if input_data.is_null() { return 0; }
+    if input_data.is_null() {
+        return 0;
+    }
     let buf_list = &*input_data;
-    if buf_list.m_number_buffers == 0 { return 0; }
+    if buf_list.m_number_buffers == 0 {
+        return 0;
+    }
     let buf = &buf_list.m_buffers[0];
-    if buf.m_data.is_null() || buf.m_data_byte_size == 0 { return 0; }
+    if buf.m_data.is_null() || buf.m_data_byte_size == 0 {
+        return 0;
+    }
 
     let sample_count = buf.m_data_byte_size as usize / 4; // f32 = 4 bytes
     let samples = std::slice::from_raw_parts(buf.m_data as *const f32, sample_count);
@@ -186,7 +214,8 @@ unsafe extern "C" fn io_callback(
     // If stereo, mix down to mono
     let channels = buf.m_number_channels as usize;
     let mono: Vec<f32> = if channels > 1 {
-        samples.chunks(channels)
+        samples
+            .chunks(channels)
             .map(|ch| ch.iter().sum::<f32>() / channels as f32)
             .collect()
     } else {
@@ -220,8 +249,12 @@ fn get_default_output_device_uid() -> Result<(AudioObjectID, String), String> {
         let mut device_id: AudioObjectID = 0;
         let mut size = std::mem::size_of::<AudioObjectID>() as u32;
         let status = AudioObjectGetPropertyData(
-            K_AUDIO_OBJECT_SYSTEM_OBJECT, &addr,
-            0, null_mut(), &mut size, &mut device_id as *mut _ as *mut c_void,
+            K_AUDIO_OBJECT_SYSTEM_OBJECT,
+            &addr,
+            0,
+            null_mut(),
+            &mut size,
+            &mut device_id as *mut _ as *mut c_void,
         );
         if status != 0 {
             return Err(format!("Failed to get default output device: {}", status));
@@ -236,8 +269,12 @@ fn get_default_output_device_uid() -> Result<(AudioObjectID, String), String> {
         let mut uid_ref: *mut c_void = null_mut();
         let mut uid_size = std::mem::size_of::<*mut c_void>() as u32;
         let status = AudioObjectGetPropertyData(
-            device_id, &uid_addr,
-            0, null_mut(), &mut uid_size, &mut uid_ref as *mut _ as *mut c_void,
+            device_id,
+            &uid_addr,
+            0,
+            null_mut(),
+            &mut uid_size,
+            &mut uid_ref as *mut _ as *mut c_void,
         );
         if status != 0 || uid_ref.is_null() {
             return Err(format!("Failed to get device UID: {}", status));
@@ -251,7 +288,9 @@ fn get_default_output_device_uid() -> Result<(AudioObjectID, String), String> {
             CFRelease(uid_ref);
             return Err("Device UID UTF8String is null".into());
         } else {
-            let s = std::ffi::CStr::from_ptr(utf8).to_string_lossy().into_owned();
+            let s = std::ffi::CStr::from_ptr(utf8)
+                .to_string_lossy()
+                .into_owned();
             CFRelease(uid_ref);
             s
         };
@@ -272,8 +311,12 @@ fn get_tap_uid(tap_id: AudioObjectID) -> Result<String, String> {
         let mut uid_ref: *mut c_void = null_mut();
         let mut size = std::mem::size_of::<*mut c_void>() as u32;
         let status = AudioObjectGetPropertyData(
-            tap_id, &addr,
-            0, null_mut(), &mut size, &mut uid_ref as *mut _ as *mut c_void,
+            tap_id,
+            &addr,
+            0,
+            null_mut(),
+            &mut size,
+            &mut uid_ref as *mut _ as *mut c_void,
         );
         if status != 0 || uid_ref.is_null() {
             return Err(format!("Failed to get tap UID: {}", status));
@@ -285,7 +328,9 @@ fn get_tap_uid(tap_id: AudioObjectID) -> Result<String, String> {
             CFRelease(uid_ref);
             return Err("Tap UID UTF8String is null".into());
         }
-        let s = std::ffi::CStr::from_ptr(utf8).to_string_lossy().into_owned();
+        let s = std::ffi::CStr::from_ptr(utf8)
+            .to_string_lossy()
+            .into_owned();
         CFRelease(uid_ref);
         Ok(s)
     }
@@ -332,7 +377,11 @@ impl AudioTapCapture {
                 // initStereoGlobalTapButExcludeProcesses:
                 let f1: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
                     std::mem::transmute(objc_msgSend as *const ());
-                let desc = f1(alloc, sel(b"initStereoGlobalTapButExcludeProcesses:\0"), empty_array);
+                let desc = f1(
+                    alloc,
+                    sel(b"initStereoGlobalTapButExcludeProcesses:\0"),
+                    empty_array,
+                );
                 if desc.is_null() {
                     return Err("CATapDescription init returned nil".into());
                 }
@@ -359,11 +408,17 @@ impl AudioTapCapture {
             // ── Step 3: Create aggregate device with tap ─────────────────────
             let agg_dict = {
                 let dict = CFDictionaryCreateMutable(
-                    null_mut(), 0,
-                    &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks,
+                    null_mut(),
+                    0,
+                    &kCFTypeDictionaryKeyCallBacks,
+                    &kCFTypeDictionaryValueCallBacks,
                 );
 
-                CFDictionarySetValue(dict, cfstr("uid") as _, cfstr("com.snomiao.clx.audiotap") as _);
+                CFDictionarySetValue(
+                    dict,
+                    cfstr("uid") as _,
+                    cfstr("com.snomiao.clx.audiotap") as _,
+                );
                 CFDictionarySetValue(dict, cfstr("name") as _, cfstr("CLX-AudioTap") as _);
                 CFDictionarySetValue(dict, cfstr("private") as _, cfbool(true) as _);
                 CFDictionarySetValue(dict, cfstr("stacked") as _, cfbool(false) as _);
@@ -371,8 +426,10 @@ impl AudioTapCapture {
 
                 // Tap list: [{ uid: "<tap_uid>" }]
                 let tap_entry = CFDictionaryCreateMutable(
-                    null_mut(), 0,
-                    &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks,
+                    null_mut(),
+                    0,
+                    &kCFTypeDictionaryKeyCallBacks,
+                    &kCFTypeDictionaryValueCallBacks,
                 );
                 CFDictionarySetValue(tap_entry, cfstr("uid") as _, cfstr(&tap_uid) as _);
 
@@ -388,15 +445,20 @@ impl AudioTapCapture {
             CFRelease(agg_dict);
             if status != 0 {
                 AudioHardwareDestroyProcessTap(tap_id);
-                return Err(format!("AudioHardwareCreateAggregateDevice failed: {}", status));
+                return Err(format!(
+                    "AudioHardwareCreateAggregateDevice failed: {}",
+                    status
+                ));
             }
-            eprintln!("[CLX] audio_tap: aggregate device created (id={})", aggregate_id);
+            eprintln!(
+                "[CLX] audio_tap: aggregate device created (id={})",
+                aggregate_id
+            );
 
             // ── Step 4: Create IO proc and start ─────────────────────────────
             let mut proc_id: *mut c_void = null_mut();
-            let status = AudioDeviceCreateIOProcID(
-                aggregate_id, io_callback, null_mut(), &mut proc_id,
-            );
+            let status =
+                AudioDeviceCreateIOProcID(aggregate_id, io_callback, null_mut(), &mut proc_id);
             if status != 0 {
                 AudioHardwareDestroyAggregateDevice(aggregate_id);
                 AudioHardwareDestroyProcessTap(tap_id);
@@ -414,7 +476,11 @@ impl AudioTapCapture {
             TAP_ACTIVE.store(true, Ordering::Relaxed);
             eprintln!("[CLX] audio_tap: Core Audio Tap started (capturing all system audio)");
 
-            Ok(Self { tap_id, aggregate_id, proc_id })
+            Ok(Self {
+                tap_id,
+                aggregate_id,
+                proc_id,
+            })
         }
     }
 }

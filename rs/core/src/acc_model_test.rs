@@ -16,8 +16,8 @@
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::Arc;
 
     /// Simulate AccModel physics for `duration_s` at `fps` frames per second,
     /// with the given `speed_ratio`, holding the right direction.
@@ -33,7 +33,13 @@ mod tests {
         // ma() from acc_model.rs — includes K_RAW calibration
         const K_RAW: f64 = 3.935;
         fn ma(t: f64) -> f64 {
-            let s = if t > 0.0 { 1.0 } else if t < 0.0 { -1.0 } else { 0.0 };
+            let s = if t > 0.0 {
+                1.0
+            } else if t < 0.0 {
+                -1.0
+            } else {
+                0.0
+            };
             let a = t.abs();
             s * ((a.exp() - 1.0) + 3.0 + 4.0 * a + 9.0 * a * a + 16.0 * a * a * a) / K_RAW
         }
@@ -67,7 +73,10 @@ mod tests {
     fn mouse_3000_moves_3000px_in_1s_at_166fps() {
         let disp = simulate_1d(3000.0, 1.0, 166.0);
         let err = (disp - 3000.0).abs();
-        eprintln!("mouse_speed=3000, 166 FPS → {:.0} px (err={:.0})", disp, err);
+        eprintln!(
+            "mouse_speed=3000, 166 FPS → {:.0} px (err={:.0})",
+            disp, err
+        );
         assert!(err < 200.0, "expected ~3000px, got {:.0}", disp);
     }
 
@@ -83,27 +92,38 @@ mod tests {
     fn cursor_60_produces_60_keys_in_1s() {
         let disp = simulate_1d(60.0, 1.0, 166.0);
         let err = (disp - 60.0).abs();
-        eprintln!("cursor_speed=60, 166 FPS → {:.0} keys (err={:.0})", disp, err);
+        eprintln!(
+            "cursor_speed=60, 166 FPS → {:.0} keys (err={:.0})",
+            disp, err
+        );
         assert!(err < 10.0, "expected ~60 keys, got {:.0}", disp);
     }
 
     #[test]
     fn frame_rate_independence() {
         // Same speed should produce similar displacement at different FPS.
-        let d30  = simulate_1d(500.0, 1.0, 30.0);
-        let d60  = simulate_1d(500.0, 1.0, 60.0);
+        let d30 = simulate_1d(500.0, 1.0, 30.0);
+        let d60 = simulate_1d(500.0, 1.0, 60.0);
         let d120 = simulate_1d(500.0, 1.0, 120.0);
         let d166 = simulate_1d(500.0, 1.0, 166.0);
 
-        eprintln!("speed=500: 30fps={:.0}, 60fps={:.0}, 120fps={:.0}, 166fps={:.0}",
-            d30, d60, d120, d166);
+        eprintln!(
+            "speed=500: 30fps={:.0}, 60fps={:.0}, 120fps={:.0}, 166fps={:.0}",
+            d30, d60, d120, d166
+        );
 
         // All should be within 15% of each other.
         let avg = (d30 + d60 + d120 + d166) / 4.0;
         for (fps, d) in [(30, d30), (60, d60), (120, d120), (166, d166)] {
             let pct = ((d - avg) / avg).abs() * 100.0;
-            assert!(pct < 15.0, "{}fps deviated {:.1}% from average ({:.0} vs {:.0})",
-                fps, pct, d, avg);
+            assert!(
+                pct < 15.0,
+                "{}fps deviated {:.1}% from average ({:.0} vs {:.0})",
+                fps,
+                pct,
+                d,
+                avg
+            );
         }
     }
 }
