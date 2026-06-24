@@ -298,6 +298,11 @@ pub trait Platform: Send + Sync + 'static {
     fn show_prompt_input(&self, _title: &str, _message: &str, _prefill: &str) -> Option<String> {
         None
     }
+    /// Open the first-run local-AI setup wizard (install/start Ollama, pull a
+    /// model). Called by the brainstorm module when local-first is enabled but
+    /// the local server isn't ready. Default no-op (platforms without a wizard
+    /// just surface the connection error instead).
+    fn open_brainstorm_setup(&self) {}
 
     // ── Keyboard layout HUD (optional, default = no-op) ────────────────────
 

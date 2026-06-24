@@ -44,6 +44,12 @@ pub struct FullConfig {
     /// STT polishing fallback chain (comma-separated stage names).
     #[serde(default = "default_stt_polish_chain")]
     pub stt_polish_chain: String,
+    /// Brainstorm: prefer a local LLM (Ollama) over cloud APIs. Default true.
+    #[serde(default = "default_prefer_local")]
+    pub prefer_local: bool,
+    /// Brainstorm local model tag (e.g. "qwen2.5:7b"). Empty = auto-recommend.
+    #[serde(default)]
+    pub local_model: String,
 }
 
 fn default_edit_speed() -> f64 {
@@ -57,6 +63,9 @@ fn default_tts_chain() -> String {
 }
 fn default_stt_polish_chain() -> String {
     "mlx:qwen2.5-3b,llm-corrector,raw".to_string()
+}
+fn default_prefer_local() -> bool {
+    true
 }
 
 impl Default for FullConfig {
@@ -84,6 +93,8 @@ impl Default for FullConfig {
             stt_correction: false,
             tts_chain: default_tts_chain(),
             stt_polish_chain: default_stt_polish_chain(),
+            prefer_local: true,
+            local_model: String::new(),
         }
     }
 }
@@ -113,6 +124,8 @@ impl FullConfig {
             stt_correction: cfg.stt_correction,
             tts_chain: cfg.tts_chain.clone(),
             stt_polish_chain: cfg.stt_polish_chain.clone(),
+            prefer_local: cfg.prefer_local,
+            local_model: cfg.local_model.clone(),
         }
     }
 
@@ -160,6 +173,10 @@ impl FullConfig {
             stt_correction: self.stt_correction,
             tts_chain: self.tts_chain,
             stt_polish_chain: self.stt_polish_chain,
+            // Set explicitly: default prefer_local is true, so omitting here
+            // would mask a stored `false`.
+            prefer_local: self.prefer_local,
+            local_model: self.local_model,
             ..ClxConfig::default()
         }
     }

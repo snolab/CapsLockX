@@ -151,15 +151,47 @@
     </div>
   </section>
 
+  <section id="bs-section">
+    <h2>Local AI · Brainstorm (Space+B)</h2>
+    <div id="bs-detect" class="bs-muted">Detecting…</div>
+    <div id="bs-hw" class="bs-muted" style="margin-top:6px;"></div>
+    <div class="sl-row" style="grid-template-columns: 130px 1fr; margin-top:10px;">
+      <label for="bs-model">Model</label>
+      <input type="text" id="bs-model" spellcheck="false"
+             style="background:var(--surface0); color:var(--text); border:1px solid var(--overlay1);
+                    border-radius:6px; padding:6px 8px; font-family:monospace;">
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
+      <button id="bs-setup-btn"
+              style="font-family:inherit; font-size:13px; font-weight:600; padding:8px 18px;
+                     border-radius:7px; border:1px solid var(--blue); background:var(--blue);
+                     color:var(--base); cursor:pointer;">Set up local AI</button>
+      <span id="bs-progress" class="bs-muted" style="flex:1;"></span>
+    </div>
+    <div class="bs-muted" style="margin-top:10px; font-size:11px;">
+      Runs a private AI on your PC via Ollama — no cloud, no API key. We pick a
+      model that fits your hardware; you can change it above.
+    </div>
+  </section>
+
   <div id="status">Loading…</div>
+
+  <style>
+    .bs-muted { font-size: 12px; color: var(--subtext0); }
+    #bs-section.highlight { outline: 2px solid var(--blue); }
+    #bs-detect.ok { color: var(--green); }
+  </style>
 
   <script>
     const invoke = window.__TAURI__.core.invoke;
     const status = document.getElementById('status');
     let debounce = null;
+    // Full config snapshot — spread into every save so fields this form doesn't
+    // expose (API keys, local_model, prefer_local, …) are preserved, not reset.
+    let currentCfg = {};
 
     function collectForm() {
-      return {
+      return Object.assign({}, currentCfg, {
         use_capslock:    document.getElementById('use_capslock').checked,
         use_space:       document.getElementById('use_space').checked,
         use_insert:      document.getElementById('use_insert').checked,
@@ -168,10 +200,11 @@
         cursor_speed:    parseFloat(document.getElementById('cursor_speed').value),
         mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
-      };
+      });
     }
 
     function populateForm(cfg) {
+      currentCfg = cfg;
       document.getElementById('use_capslock').checked    = cfg.use_capslock;
       document.getElementById('use_space').checked       = cfg.use_space;
       document.getElementById('use_insert').checked      = cfg.use_insert;
@@ -219,6 +252,62 @@
     invoke('get_config')
       .then(cfg => { populateForm(cfg); status.textContent = ''; })
       .catch(err => { status.textContent = 'Failed to load: ' + err; status.className = 'error'; });
+
+    // ── Local AI (Brainstorm) wizard ──────────────────────────────────────
+    const bsDetect = document.getElementById('bs-detect');
+    const bsHw     = document.getElementById('bs-hw');
+    const bsModel  = document.getElementById('bs-model');
+    const bsProg   = document.getElementById('bs-progress');
+    const bsBtn    = document.getElementById('bs-setup-btn');
+
+    const STATUS_TEXT = {
+      ready:            ['Local AI is ready.', true],
+      running_no_model: ['Ollama is running but no model is installed yet.', false],
+      down:             ['Ollama is installed but not running — we can start it.', false],
+      not_installed:    ['Ollama is not installed yet — we can install it for you.', false],
+    };
+
+    function refreshBs() {
+      return invoke('bs_detect').then(s => {
+        const [txt, ok] = STATUS_TEXT[s.status] || [s.status, false];
+        bsDetect.textContent = txt;
+        bsDetect.className = ok ? 'bs-muted ok' : 'bs-muted';
+        const vram = s.vram_gb > 0 ? `, ${s.vram_gb} GB VRAM` : '';
+        bsHw.textContent = `Detected: ${s.ram_gb} GB RAM${vram}, ${s.cpu_cores} cores · recommended ${s.recommended}`;
+        if (!bsModel.value) bsModel.value = s.current_model;
+        bsBtn.textContent = s.status === 'ready' ? 'Re-run setup' : 'Set up local AI';
+      }).catch(e => { bsDetect.textContent = 'Detection failed: ' + e; });
+    }
+
+    bsBtn.addEventListener('click', () => {
+      const model = bsModel.value.trim();
+      if (!model) { bsProg.textContent = 'Enter a model name first.'; return; }
+      bsBtn.disabled = true;
+      bsProg.textContent = 'Starting…';
+      invoke('bs_run_setup', { model })
+        .then(msg => {
+          bsProg.textContent = msg;
+          bsBtn.disabled = false;
+          refreshBs();
+          invoke('get_config').then(cfg => { currentCfg = cfg; });
+        })
+        .catch(err => { bsProg.textContent = 'Error: ' + err; bsBtn.disabled = false; });
+    });
+
+    // Live progress from the Rust setup task.
+    window.__TAURI__.event.listen('bs-progress', e => { bsProg.textContent = e.payload; });
+
+    refreshBs();
+
+    // If launched in setup mode (Space+B with no ready local AI), highlight the
+    // section and bring it into view.
+    invoke('is_setup_mode').then(on => {
+      if (on) {
+        const sec = document.getElementById('bs-section');
+        sec.classList.add('highlight');
+        sec.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
   </script>
 </body>
 </html>

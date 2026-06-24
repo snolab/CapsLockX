@@ -19,6 +19,9 @@ tauri      = { version = "2", features = ["tray-icon", "image-png", "image-ico"]
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs       = "5"
+# Clipboard read/write for brainstorm (CLX+B). default-features off drops the
+# image-data support we don't need.
+arboard    = { version = "3", default-features = false }
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_UI_Input_KeyboardAndMouse",

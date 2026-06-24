@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>CapsLockX Brainstorm Overlay</title>
+  <style>
+    /* Catppuccin Mocha — dark floating panel, matches macOS overlay. */
+    :root {
+      --base:     #11111b;
+      --text:     #cdd6f4;
+      --blue:     #89b4fa;
+      --surface0: #313244;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; }
+    body {
+      background: var(--base);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      border: 1px solid var(--surface0);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+    #bar {
+      flex: 0 0 auto;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--blue);
+      padding: 8px 14px 4px;
+    }
+    #content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 4px 14px 12px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #content::-webkit-scrollbar { width: 8px; }
+    #content::-webkit-scrollbar-thumb { background: var(--surface0); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="bar">CapsLockX Brainstorm</div>
+  <div id="content"></div>
+
+  <script>
+    const invoke = window.__TAURI__.core.invoke;
+    const content = document.getElementById('content');
+    let lastSeq = -1;
+    let lastVisible = null;
+
+    async function tick() {
+      let snap;
+      try { snap = await invoke('overlay_poll'); }
+      catch (e) { return; }
+
+      if (!snap.alive) {                  // main clx exited → close overlay
+        try { await invoke('overlay_quit'); } catch (e) {}
+        return;
+      }
+
+      if (snap.visible !== lastVisible) {
+        lastVisible = snap.visible;
+        try { await invoke('overlay_set_visible', { visible: snap.visible }); } catch (e) {}
+      }
+
+      if (snap.seq !== lastSeq) {
+        lastSeq = snap.seq;
+        const atBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 24;
+        content.textContent = snap.text;
+        if (atBottom) content.scrollTop = content.scrollHeight; // follow stream
+      }
+    }
+
+    setInterval(tick, 100);
+    tick();
+  </script>
+</body>
+</html>

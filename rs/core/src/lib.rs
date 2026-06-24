@@ -7,6 +7,7 @@ pub mod cloud_stt;
 pub mod engine;
 pub mod key_code;
 pub mod llm_client;
+pub mod local_llm;
 #[cfg(feature = "stt")]
 pub mod local_sherpa;
 #[cfg(feature = "stt")]

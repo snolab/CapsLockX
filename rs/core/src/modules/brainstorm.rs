@@ -287,6 +287,22 @@ fn agent_turn(
     keep_history: &AtomicBool,
     pre_selected: &str,
 ) {
+    // 0. Local-first readiness gate: if routed to a local model but the Ollama
+    //    server isn't ready, open the setup wizard instead of failing later with
+    //    a connection error. (Skipped on wasm, which has no local server.)
+    #[cfg(not(target_arch = "wasm32"))]
+    if config.provider == crate::llm_client::LlmProvider::Ollama
+        && crate::local_llm::local_status() != crate::local_llm::LocalLlmStatus::Ready
+    {
+        eprintln!("[CLX] brainstorm: local AI not ready — opening setup");
+        platform.show_brainstorm_overlay(
+            "Local AI isn't ready yet.\nOpening setup… (install / start Ollama, then press Space+B again).",
+        );
+        platform.open_brainstorm_setup();
+        state.store(STATE_DONE, Ordering::Relaxed);
+        return;
+    }
+
     // 1. Use pre-captured selected text (from event tap thread).
     //    Fall back to Cmd+C with clipboard save/restore if AX returned empty.
     let prefill = if !pre_selected.is_empty() {

@@ -10,7 +10,9 @@ mod config_store;
 mod cursor_visibility;
 mod hook;
 mod output;
+mod overlay;
 mod prefs_window;
+mod prompt_window;
 mod shm;
 mod vd_api;
 mod vk;
@@ -91,6 +93,29 @@ fn main() {
             // install a keyboard hook. It only shows the prefs UI.
             "prefs-window" => {
                 prefs_window::run();
+                return;
+            }
+            // Out-of-process brainstorm prompt window. Like prefs-window, this
+            // must NOT install a hook or touch the running instance — it only
+            // shows the input UI and writes the result to the temp file given as
+            // the final argument.  Usage: clx prompt-window <title> <msg> <prefill> <out_path>
+            "prompt-window" => {
+                let title = std::env::args().nth(2).unwrap_or_default();
+                let message = std::env::args().nth(3).unwrap_or_default();
+                let prefill = std::env::args().nth(4).unwrap_or_default();
+                let out_path = std::env::args().nth(5).unwrap_or_default();
+                prompt_window::run(title, message, prefill, out_path);
+                return;
+            }
+            // Out-of-process brainstorm streaming overlay. Reads the shared text
+            // region and renders it; never installs a hook.
+            "overlay-window" => {
+                overlay::run();
+                return;
+            }
+            // Dev smoke test for the overlay pipeline (no LLM needed).
+            "overlay-selftest" => {
+                overlay::selftest();
                 return;
             }
             "read-screen-text" => {

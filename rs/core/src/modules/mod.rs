@@ -119,13 +119,12 @@ impl Modules {
     pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
         let cfg = state.config.read().unwrap();
         let (best_key, best_model) = cfg.best_llm_key_and_model();
+        // Brainstorm is local-first (Ollama by default); voice/STT keep the
+        // cloud-priority key above.
+        let (bs_key, bs_model) = cfg.brainstorm_llm_key_and_model();
         let s = Self {
             agent: AgentModule::new(Arc::clone(&platform)),
-            brainstorm: BrainstormModule::new(
-                Arc::clone(&platform),
-                best_key.clone(),
-                best_model.clone(),
-            ),
+            brainstorm: BrainstormModule::new(Arc::clone(&platform), bs_key, bs_model),
             edit: EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
             mouse: MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
             media: MediaModule::new(Arc::clone(&platform)),
@@ -260,7 +259,8 @@ impl Modules {
             cfg.whisper_language.clone(),
             cfg.ptt_vad_auto_release_ms,
         );
-        self.brainstorm.update_llm_config(&best_key, &best_model);
+        let (bs_key, bs_model) = cfg.brainstorm_llm_key_and_model();
+        self.brainstorm.update_llm_config(&bs_key, &bs_model);
     }
 
     /// Advance all AccModel physics by one step (WASM adapter tick loop).

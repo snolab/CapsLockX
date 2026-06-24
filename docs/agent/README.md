@@ -25,3 +25,4 @@ real-time: keyboard, mouse, gamepad sticks, MIDI, and more.
 | [DEMO-TARGETS.md](./DEMO-TARGETS.md) | Free real-time games for agent demo showcase |
 | [STREAMING-OUTPUT.md](./STREAMING-OUTPUT.md) | Async command queue design for streaming execution |
 | [ROADMAP.md](./ROADMAP.md) | Implementation phases and milestones |
+| [WINDOWS-BRAINSTORM-LOCAL-FIRST.md](./WINDOWS-BRAINSTORM-LOCAL-FIRST.md) | Windows clx+B (brainstorm) port — local-first Ollama bootstrap design |

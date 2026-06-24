@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>CapsLockX Brainstorm</title>
+  <style>
+    /* Catppuccin Mocha palette — matches prefs window. */
+    :root {
+      --base:     #1e1e2e;
+      --mantle:   #181825;
+      --surface0: #313244;
+      --overlay1: #7f849c;
+      --text:     #cdd6f4;
+      --subtext0: #a6adc8;
+      --blue:     #89b4fa;
+      --green:    #a6e3a1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--base);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--blue);
+      letter-spacing: 0.3px;
+    }
+    #msg {
+      font-size: 12px;
+      color: var(--subtext0);
+      white-space: pre-wrap;
+      max-height: 64px;
+      overflow-y: auto;
+    }
+    textarea {
+      flex: 1;
+      width: 100%;
+      resize: none;
+      background: var(--mantle);
+      color: var(--text);
+      border: 1px solid var(--surface0);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--blue); }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .cb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--subtext0);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .cb input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+    .btns { display: flex; gap: 8px; }
+    button {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 7px 16px;
+      border-radius: 7px;
+      border: 1px solid var(--surface0);
+      background: var(--surface0);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button.primary { background: var(--blue); border-color: var(--blue); color: var(--base); font-weight: 600; }
+    button:hover { filter: brightness(1.1); }
+    .hint { font-size: 11px; color: var(--overlay1); }
+  </style>
+</head>
+<body>
+  <h1 id="title">CapsLockX Brainstorm</h1>
+  <div id="msg"></div>
+  <textarea id="input" placeholder="Ask AI… (Ctrl+Enter to send, Esc to cancel)"></textarea>
+  <div class="row">
+    <label class="cb"><input type="checkbox" id="keep"> Keep history</label>
+    <div class="btns">
+      <span class="hint">Ctrl+Enter · Esc</span>
+      <button id="cancelBtn">Cancel</button>
+      <button id="sendBtn" class="primary">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const invoke = window.__TAURI__.core.invoke;
+    const ta = document.getElementById('input');
+
+    invoke('get_prompt_args').then(a => {
+      if (a.title)   document.getElementById('title').textContent = a.title;
+      if (a.message) document.getElementById('msg').textContent   = a.message;
+      ta.value = a.prefill || '';
+      ta.focus();
+      // Cursor at end so the user types their instruction after captured text.
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    }).catch(() => ta.focus());
+
+    function send() {
+      invoke('submit', { text: ta.value, keep: document.getElementById('keep').checked });
+    }
+    function cancel() { invoke('cancel'); }
+
+    document.getElementById('sendBtn').addEventListener('click', send);
+    document.getElementById('cancelBtn').addEventListener('click', cancel);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    });
+  </script>
+</body>
+</html>

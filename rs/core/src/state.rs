@@ -97,6 +97,13 @@ pub struct ClxConfig {
     pub note_translate_enabled: bool,
     /// Target language for note-mode translation (e.g. "Japanese", "ja").
     pub note_translate_target: String,
+    // ── Brainstorm: local-first LLM ───────────────────────────────────────
+    /// Prefer a local LLM (Ollama) for CLX+B over any cloud API. Default true.
+    /// Cloud keys remain a runtime fallback when the local server is down.
+    pub prefer_local: bool,
+    /// Local model tag for brainstorm (e.g. "qwen2.5:7b").
+    /// Empty = auto-discover/recommend based on hardware.
+    pub local_model: String,
 }
 
 impl Default for ClxConfig {
@@ -137,6 +144,8 @@ impl Default for ClxConfig {
             wake_word_hold_ms: 8000,
             note_translate_enabled: false,
             note_translate_target: String::new(),
+            prefer_local: true,
+            local_model: String::new(),
         }
     }
 }
@@ -156,6 +165,17 @@ impl ClxConfig {
         }
         // Ollama (local, no key needed).
         ("ollama".to_string(), String::new())
+    }
+
+    /// LLM key+model for the brainstorm module. Local-first: when `prefer_local`
+    /// is set, always route to Ollama (cloud keys remain a runtime fallback,
+    /// handled by the brainstorm module when the local server is unavailable).
+    /// Otherwise defers to the cloud-priority `best_llm_key_and_model`.
+    pub fn brainstorm_llm_key_and_model(&self) -> (String, String) {
+        if self.prefer_local {
+            return ("ollama".to_string(), self.local_model.clone());
+        }
+        self.best_llm_key_and_model()
     }
 }
 
@@ -299,6 +319,34 @@ mod tests {
         assert_eq!(
             c.best_llm_key_and_model(),
             ("ollama".to_string(), String::new())
+        );
+    }
+
+    #[test]
+    fn prefer_local_defaults_true() {
+        assert!(ClxConfig::default().prefer_local);
+    }
+
+    #[test]
+    fn brainstorm_llm_local_first_ignores_cloud_keys() {
+        let mut c = ClxConfig::default();
+        c.gemini_api_key = "g".into();
+        c.local_model = "qwen2.5:7b".into();
+        // prefer_local is true by default → always Ollama, despite the cloud key.
+        assert_eq!(
+            c.brainstorm_llm_key_and_model(),
+            ("ollama".to_string(), "qwen2.5:7b".to_string())
+        );
+    }
+
+    #[test]
+    fn brainstorm_llm_falls_back_to_cloud_when_prefer_local_off() {
+        let mut c = ClxConfig::default();
+        c.prefer_local = false;
+        c.gemini_api_key = "g".into();
+        assert_eq!(
+            c.brainstorm_llm_key_and_model(),
+            ("g".to_string(), String::new())
         );
     }
 

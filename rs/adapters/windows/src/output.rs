@@ -46,6 +46,8 @@ pub struct WinPlatform {
     v_hwnd: AtomicUsize,
     /// Tracked current virtual desktop index (1-based).
     desktop_idx: AtomicUsize,
+    /// Monotonic counter for unique prompt-result temp file names.
+    prompt_seq: AtomicUsize,
 }
 
 impl WinPlatform {
@@ -53,6 +55,7 @@ impl WinPlatform {
         Self {
             v_hwnd: AtomicUsize::new(0),
             desktop_idx: AtomicUsize::new(1),
+            prompt_seq: AtomicUsize::new(0),
         }
     }
 }
@@ -102,6 +105,71 @@ impl Platform for WinPlatform {
     fn open_preferences(&self) {
         crate::open_prefs_window();
     }
+
+    // ── Brainstorm (CLX+B) support ──────────────────────────────────────────
+
+    fn get_clipboard_text(&self) -> String {
+        arboard::Clipboard::new()
+            .and_then(|mut c| c.get_text())
+            .unwrap_or_default()
+    }
+
+    fn set_clipboard_text(&self, text: &str) {
+        if let Ok(mut c) = arboard::Clipboard::new() {
+            let _ = c.set_text(text.to_owned());
+        }
+    }
+
+    fn show_brainstorm_overlay(&self, text: &str) {
+        crate::overlay::show(text);
+    }
+
+    fn hide_brainstorm_overlay(&self) {
+        crate::overlay::hide();
+    }
+
+    /// Launch the local-AI setup wizard: the prefs window opened in setup mode.
+    fn open_brainstorm_setup(&self) {
+        if let Ok(exe) = std::env::current_exe() {
+            let _ = std::process::Command::new(exe)
+                .arg("prefs-window")
+                .arg("--setup=brainstorm")
+                .spawn();
+        }
+    }
+
+    /// Show the brainstorm prompt as a SEPARATE process (`clx prompt-window`).
+    ///
+    /// Same rationale as the prefs window: a WebView2 window in the hook process
+    /// kills WH_KEYBOARD_LL while focused. The subprocess writes the user's input
+    /// to a temp file (NOT stdout — WebView2 spawns Chromium helper processes that
+    /// may inherit a stdout pipe and hang `.output()`); we wait via `.status()`
+    /// then read the file. Absent/empty file = cancelled.
+    fn show_prompt_input(&self, title: &str, message: &str, prefill: &str) -> Option<String> {
+        let n = self.prompt_seq.fetch_add(1, Ordering::Relaxed);
+        let path =
+            std::env::temp_dir().join(format!("clx-prompt-{}-{}.txt", std::process::id(), n));
+        // Stale-safe: ensure no leftover file from a crashed prior run.
+        let _ = std::fs::remove_file(&path);
+
+        let exe = std::env::current_exe().ok()?;
+        let status = std::process::Command::new(exe)
+            .arg("prompt-window")
+            .arg(title)
+            .arg(message)
+            .arg(prefill)
+            .arg(&path)
+            .status()
+            .ok()?;
+        let _ = status; // exit code is advisory; the file is the channel.
+
+        let result = std::fs::read_to_string(&path).ok();
+        let _ = std::fs::remove_file(&path);
+        match result {
+            Some(s) if !s.is_empty() => Some(s),
+            _ => None,
+        }
+    }
     fn key_down(&self, key: KeyCode) {
         send(&[kbd(keycode_to_vk(key), KEYBD_EVENT_FLAGS(0))]);
     }
@@ -148,9 +216,54 @@ impl Platform for WinPlatform {
         }
     }
 
+    fn key_tap_with_mods(&self, key: KeyCode, mods: &[KeyCode], n: i32) {
+        let vk = keycode_to_vk(key);
+        let n = n.clamp(0, 128) as usize;
+        // Only inject modifiers that aren't ALREADY physically held. This is
+        // what makes CLX+Shift+HJKL/YUIO selection work: when the user holds
+        // Shift, `held_modifiers()` passes it here — but the trait's default
+        // impl would emit key_down(Shift) … taps … key_up(Shift). That injected
+        // key_up, while Shift is still physically down, makes the OS (and
+        // GetAsyncKeyState) believe Shift was released, so the NEXT AccModel
+        // batch sees no Shift and the arrows stop selecting (collapsing the
+        // selection). By skipping already-held modifiers and letting the OS
+        // combine the arrow taps with the real held key, selection extends
+        // continuously — mirroring the macOS flag-on-event approach and the
+        // existing single-modifier `key_tap_n_with_mod` logic above.
+        let to_inject: Vec<u16> = mods
+            .iter()
+            .map(|m| keycode_to_vk(*m))
+            .filter(|&mvk| unsafe { GetAsyncKeyState(mvk as i32) >= 0 })
+            .collect();
+
+        crate::hook::debug_log(&format!(
+            "[ktwm] key={:?} mods={:?} inject={} n={}",
+            key,
+            mods,
+            to_inject.len(),
+            n
+        ));
+        let mut inputs = Vec::with_capacity(to_inject.len() * 2 + n * 2);
+        for &mvk in &to_inject {
+            inputs.push(kbd(mvk, KEYBD_EVENT_FLAGS(0)));
+        }
+        for _ in 0..n {
+            inputs.push(kbd(vk, KEYBD_EVENT_FLAGS(0)));
+            inputs.push(kbd(vk, KEYEVENTF_KEYUP));
+        }
+        for &mvk in to_inject.iter().rev() {
+            inputs.push(kbd(mvk, KEYEVENTF_KEYUP));
+        }
+        send(&inputs);
+    }
+
     fn is_key_physically_down(&self, key: KeyCode) -> bool {
         let vk = keycode_to_vk(key) as i32;
-        unsafe { GetAsyncKeyState(vk) < 0 }
+        let down = unsafe { GetAsyncKeyState(vk) < 0 };
+        if matches!(key, KeyCode::LShift | KeyCode::RShift) {
+            crate::hook::debug_log(&format!("[phys] {:?} vk=0x{:X} down={}", key, vk, down));
+        }
+        down
     }
 
     fn mouse_move(&self, dx: i32, dy: i32) {
