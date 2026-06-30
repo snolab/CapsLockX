@@ -40,6 +40,88 @@ fn is_setup_mode() -> bool {
     SETUP_MODE.load(Ordering::Relaxed)
 }
 
+/// Version + build time + install source shown in the prefs footer so you can
+/// confirm WHICH build is running and where it came from. The build time is the
+/// running exe's mtime (changes on every rebuild — handy for verifying a fix got
+/// deployed); the source is inferred from the exe path (git dev build vs.
+/// chocolatey vs. npm vs. a plain install).
+#[derive(serde::Serialize)]
+struct VersionInfo {
+    /// Crate version, e.g. "2.0.0".
+    version: String,
+    /// Build timestamp (running exe mtime), "YYYY-MM-DD HH:MM UTC".
+    built: String,
+    /// Install source: "git (dev build)" | "chocolatey" | "npm" | "installed".
+    source: String,
+    /// Full path of the running executable.
+    exe_path: String,
+    /// Official repo "owner/name" for the UI's latest-release lookup.
+    repo: String,
+}
+
+#[tauri::command]
+fn get_version() -> VersionInfo {
+    let version = env!("CARGO_PKG_VERSION").to_string();
+    let exe = std::env::current_exe().unwrap_or_default();
+    let built = std::fs::metadata(&exe)
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| fmt_utc(d.as_secs()))
+        .unwrap_or_default();
+    VersionInfo {
+        version,
+        built,
+        source: detect_source(&exe),
+        exe_path: exe.to_string_lossy().to_string(),
+        repo: "snolab/CapsLockX".to_string(),
+    }
+}
+
+/// Infer how this binary was installed from its path + neighbouring markers.
+fn detect_source(exe: &std::path::Path) -> String {
+    let p = exe.to_string_lossy().to_lowercase();
+    // Cargo dev build: lives under `…/target/{release,debug}/` inside a checkout.
+    if p.contains("\\target\\release\\") || p.contains("\\target\\debug\\") {
+        return "git (dev build)".to_string();
+    }
+    // Chocolatey shims/libs.
+    if p.contains("\\chocolatey\\") {
+        return "chocolatey".to_string();
+    }
+    // npm global install (…\npm\node_modules\… or …\AppData\Roaming\npm\…).
+    if p.contains("\\npm\\") || p.contains("\\node_modules\\") {
+        return "npm".to_string();
+    }
+    // Fallback: a checkout anywhere with a .git dir in an ancestor → git.
+    if exe
+        .ancestors()
+        .any(|a| a.join(".git").exists() || a.file_name().is_some_and(|n| n == "CapsLockX"))
+    {
+        return "git (source tree)".to_string();
+    }
+    "installed".to_string()
+}
+
+/// Format Unix epoch seconds as "YYYY-MM-DD HH:MM UTC" without external crates
+/// (Howard Hinnant's civil-from-days algorithm).
+fn fmt_utc(secs: u64) -> String {
+    let days = (secs / 86400) as i64;
+    let tod = secs % 86400;
+    let (h, mi) = (tod / 3600, (tod % 3600) / 60);
+    let z = days + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    format!("{:04}-{:02}-{:02} {:02}:{:02} UTC", y, m, d, h, mi)
+}
+
 /// Detected local-AI status + hardware + recommended model for the wizard.
 #[derive(serde::Serialize)]
 struct BsStatus {
@@ -135,6 +217,7 @@ pub fn run() {
             get_config,
             set_config,
             is_setup_mode,
+            get_version,
             bs_detect,
             bs_run_setup
         ])

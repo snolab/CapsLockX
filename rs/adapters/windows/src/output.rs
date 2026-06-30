@@ -12,10 +12,11 @@ use windows::Win32::Graphics::Gdi::{
 };
 use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
-    KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, MOUSEEVENTF_HWHEEL,
-    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN,
-    MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL, MOUSEINPUT, MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
+    GetAsyncKeyState, MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE,
+    KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE,
+    MAPVK_VK_TO_VSC, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP,
+    MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL, MOUSEINPUT,
+    MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
@@ -62,14 +63,35 @@ impl WinPlatform {
 
 // ── SendInput helpers ────────────────────────────────────────────────────────
 
+/// Nav-cluster / arrow / right-modifier VKs that require KEYEVENTF_EXTENDEDKEY
+/// (they share scancodes with the numpad and need the E0 prefix).
+fn is_extended_vk(vk: u16) -> bool {
+    matches!(
+        vk,
+        0x21 | 0x22 | 0x23 | 0x24 | 0x25 | 0x26 | 0x27 | 0x28 // PgUp PgDn End Home ← ↑ → ↓
+            | 0x2D | 0x2E                                     // Insert Delete
+            | 0x5B | 0x5C                                     // L/R Win
+            | 0xA3 | 0xA5 | 0x90 // RCtrl RAlt NumLock
+    )
+}
+
+/// Build a keyboard INPUT using the SCANCODE (KEYEVENTF_SCANCODE) like AHK's
+/// SendEvent — Windows treats scancode injection more like a real hardware key,
+/// which (unlike bare virtual-key injection) lets a physically-held Shift modify
+/// our injected arrow without the OS "isolating" (lifting) the Shift.
 fn kbd(vk: u16, flags: KEYBD_EVENT_FLAGS) -> INPUT {
+    let scan = unsafe { MapVirtualKeyW(vk as u32, MAPVK_VK_TO_VSC) } as u16;
+    let mut f = flags | KEYEVENTF_SCANCODE;
+    if is_extended_vk(vk) {
+        f |= KEYEVENTF_EXTENDEDKEY;
+    }
     INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
             ki: KEYBDINPUT {
                 wVk: VIRTUAL_KEY(vk),
-                wScan: 0,
-                dwFlags: flags,
+                wScan: scan,
+                dwFlags: f,
                 time: 0,
                 dwExtraInfo: CLX_EXTRA_INFO,
             },
@@ -81,6 +103,26 @@ fn send(inputs: &[INPUT]) {
     unsafe {
         SendInput(inputs, size_of::<INPUT>() as i32);
     }
+}
+
+/// True if `key` is currently physically down. Checks the distinguished VK
+/// (e.g. VK_LSHIFT 0xA0) and falls back to the combined VK (VK_SHIFT 0x10 /
+/// VK_CONTROL 0x11 / VK_MENU 0x12) — the distinguished left/right modifier VKs
+/// can read as up via GetAsyncKeyState even while physically held.
+fn modifier_held(key: KeyCode) -> bool {
+    let vk = keycode_to_vk(key) as i32;
+    if unsafe { GetAsyncKeyState(vk) < 0 } {
+        return true;
+    }
+    let combined = match key {
+        KeyCode::LShift | KeyCode::RShift => Some(0x10),
+        KeyCode::LCtrl | KeyCode::RCtrl => Some(0x11),
+        KeyCode::LAlt | KeyCode::RAlt => Some(0x12),
+        _ => None,
+    };
+    combined
+        .map(|c| unsafe { GetAsyncKeyState(c) < 0 })
+        .unwrap_or(false)
 }
 
 fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
@@ -192,10 +234,6 @@ impl Platform for WinPlatform {
         let mod_vk = keycode_to_vk(mod_key);
         let vk = keycode_to_vk(key);
         let n = n.clamp(0, 128) as usize;
-        // If the modifier is already physically held, don't re-inject it —
-        // that causes the OS to insert a phantom key-up between our DN and
-        // the next event.  Just send plain arrow taps; the OS will combine
-        // them with the already-held modifier.
         let mod_already_down = unsafe { GetAsyncKeyState(mod_vk as i32) < 0 };
         if mod_already_down {
             let mut inputs = Vec::with_capacity(n * 2);
@@ -219,51 +257,31 @@ impl Platform for WinPlatform {
     fn key_tap_with_mods(&self, key: KeyCode, mods: &[KeyCode], n: i32) {
         let vk = keycode_to_vk(key);
         let n = n.clamp(0, 128) as usize;
-        // Only inject modifiers that aren't ALREADY physically held. This is
-        // what makes CLX+Shift+HJKL/YUIO selection work: when the user holds
-        // Shift, `held_modifiers()` passes it here — but the trait's default
-        // impl would emit key_down(Shift) … taps … key_up(Shift). That injected
-        // key_up, while Shift is still physically down, makes the OS (and
-        // GetAsyncKeyState) believe Shift was released, so the NEXT AccModel
-        // batch sees no Shift and the arrows stop selecting (collapsing the
-        // selection). By skipping already-held modifiers and letting the OS
-        // combine the arrow taps with the real held key, selection extends
-        // continuously — mirroring the macOS flag-on-event approach and the
-        // existing single-modifier `key_tap_n_with_mod` logic above.
-        let to_inject: Vec<u16> = mods
+        let mod_states: Vec<(u16, bool)> = mods
             .iter()
-            .map(|m| keycode_to_vk(*m))
-            .filter(|&mvk| unsafe { GetAsyncKeyState(mvk as i32) >= 0 })
+            .map(|m| (keycode_to_vk(*m), modifier_held(*m)))
             .collect();
 
-        crate::hook::debug_log(&format!(
-            "[ktwm] key={:?} mods={:?} inject={} n={}",
-            key,
-            mods,
-            to_inject.len(),
-            n
-        ));
-        let mut inputs = Vec::with_capacity(to_inject.len() * 2 + n * 2);
-        for &mvk in &to_inject {
-            inputs.push(kbd(mvk, KEYBD_EVENT_FLAGS(0)));
+        let mut inputs = Vec::with_capacity(mod_states.len() * 2 + n * 2);
+        for (mvk, held) in &mod_states {
+            if !held {
+                inputs.push(kbd(*mvk, KEYBD_EVENT_FLAGS(0)));
+            }
         }
         for _ in 0..n {
             inputs.push(kbd(vk, KEYBD_EVENT_FLAGS(0)));
             inputs.push(kbd(vk, KEYEVENTF_KEYUP));
         }
-        for &mvk in to_inject.iter().rev() {
-            inputs.push(kbd(mvk, KEYEVENTF_KEYUP));
+        for (mvk, held) in mod_states.iter().rev() {
+            if !held {
+                inputs.push(kbd(*mvk, KEYEVENTF_KEYUP));
+            }
         }
         send(&inputs);
     }
 
     fn is_key_physically_down(&self, key: KeyCode) -> bool {
-        let vk = keycode_to_vk(key) as i32;
-        let down = unsafe { GetAsyncKeyState(vk) < 0 };
-        if matches!(key, KeyCode::LShift | KeyCode::RShift) {
-            crate::hook::debug_log(&format!("[phys] {:?} vk=0x{:X} down={}", key, vk, down));
-        }
-        down
+        modifier_held(key)
     }
 
     fn mouse_move(&self, dx: i32, dy: i32) {

@@ -227,12 +227,25 @@ impl EditModule {
 
 // ── Action callbacks ──────────────────────────────────────────────────────────
 
-/// Collect physically-held modifier keys into a list.
-fn held_modifiers(p: &dyn Platform) -> Vec<KeyCode> {
+/// Collect currently-held modifier keys to apply to a tap.
+///
+/// Shift is platform-split:
+/// - Windows: NOT added here. A CLX-mode Shift is held as ONE persistent
+///   app-visible Shift by the engine (see `engine.rs` step 3a), so plain arrow
+///   taps already combine with it; adding it per batch would re-trigger the OS
+///   isolation lift and break selection.
+/// - macOS: added from the tracked `is_shift_held()` flag so `key_tap_with_mods`
+///   can embed the Shift flag on each injected CGEvent.
+///
+/// Ctrl/Alt/Win are read from physical key state on both platforms.
+fn held_modifiers(p: &dyn Platform, s: &ClxState) -> Vec<KeyCode> {
     let mut mods = Vec::new();
-    if p.is_key_physically_down(KeyCode::LShift) || p.is_key_physically_down(KeyCode::RShift) {
+    #[cfg(not(target_os = "windows"))]
+    if s.is_shift_held() {
         mods.push(KeyCode::LShift);
     }
+    #[cfg(target_os = "windows")]
+    let _ = s;
     if p.is_key_physically_down(KeyCode::LCtrl) || p.is_key_physically_down(KeyCode::RCtrl) {
         mods.push(KeyCode::LCtrl);
     }
@@ -247,8 +260,8 @@ fn held_modifiers(p: &dyn Platform) -> Vec<KeyCode> {
 
 /// Tap a key with all currently-held modifiers passed through.
 /// Uses key_tap_with_mods which embeds flags atomically on macOS.
-fn tap_with_held_mods(p: &dyn Platform, key: KeyCode, n: i32) {
-    let mods = held_modifiers(p);
+fn tap_with_held_mods(p: &dyn Platform, s: &ClxState, key: KeyCode, n: i32) {
+    let mods = held_modifiers(p, s);
     if mods.is_empty() {
         p.key_tap_n(key, n);
     } else {
@@ -267,30 +280,30 @@ fn cursor_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) 
             } else {
                 KeyCode::Left
             };
-            tap_with_held_mods(p, key, 1);
+            tap_with_held_mods(p, s, key, 1);
         }
         "V_MIDKEY" => {
             let key = if dy > 0 { KeyCode::Down } else { KeyCode::Up };
-            let mods = held_modifiers(p);
+            let mods = held_modifiers(p, s);
             if mods.is_empty() {
                 p.key_tap(key);
                 p.key_tap(KeyCode::Home);
             } else {
-                tap_with_held_mods(p, key, 1);
+                tap_with_held_mods(p, s, key, 1);
             }
         }
         "MOVE" => {
             if dy < 0 {
-                tap_with_held_mods(p, KeyCode::Up, -dy);
+                tap_with_held_mods(p, s, KeyCode::Up, -dy);
             }
             if dy > 0 {
-                tap_with_held_mods(p, KeyCode::Down, dy);
+                tap_with_held_mods(p, s, KeyCode::Down, dy);
             }
             if dx < 0 {
-                tap_with_held_mods(p, KeyCode::Left, -dx);
+                tap_with_held_mods(p, s, KeyCode::Left, -dx);
             }
             if dx > 0 {
-                tap_with_held_mods(p, KeyCode::Right, dx);
+                tap_with_held_mods(p, s, KeyCode::Right, dx);
             }
         }
         _ => {}
@@ -302,16 +315,16 @@ fn page_action(p: &dyn Platform, s: &ClxState, dx: i32, dy: i32, phase: &str) {
         return;
     }
     if dy < 0 {
-        tap_with_held_mods(p, KeyCode::PageUp, -dy);
+        tap_with_held_mods(p, s, KeyCode::PageUp, -dy);
     }
     if dy > 0 {
-        tap_with_held_mods(p, KeyCode::PageDown, dy);
+        tap_with_held_mods(p, s, KeyCode::PageDown, dy);
     }
     if dx < 0 {
-        tap_with_held_mods(p, KeyCode::Home, -dx);
+        tap_with_held_mods(p, s, KeyCode::Home, -dx);
     }
     if dx > 0 {
-        tap_with_held_mods(p, KeyCode::End, dx);
+        tap_with_held_mods(p, s, KeyCode::End, dx);
     }
 }
 
@@ -323,11 +336,11 @@ fn tab_action(p: &dyn Platform, s: &ClxState, _dx: i32, dy: i32, phase: &str) {
     // Any held modifiers (Ctrl, Alt, Cmd) pass through automatically.
     // So Ctrl+N = Ctrl+Tab (next tab in Chrome), Ctrl+P = Ctrl+Shift+Tab (prev tab).
     if dy > 0 {
-        tap_with_held_mods(p, KeyCode::Tab, dy);
+        tap_with_held_mods(p, s, KeyCode::Tab, dy);
     }
     if dy < 0 {
         // P direction: add Shift to reverse Tab direction.
-        let mut mods = held_modifiers(p);
+        let mut mods = held_modifiers(p, s);
         if !mods.contains(&KeyCode::LShift) {
             mods.push(KeyCode::LShift);
         }
@@ -340,10 +353,10 @@ fn action_action(p: &dyn Platform, s: &ClxState, dy: i32, phase: &str) {
         return;
     }
     if dy < 0 {
-        tap_with_held_mods(p, KeyCode::Enter, -dy);
+        tap_with_held_mods(p, s, KeyCode::Enter, -dy);
     } // G (preserves Ctrl/Shift/etc.)
     if dy > 0 {
-        tap_with_held_mods(p, KeyCode::Delete, dy);
+        tap_with_held_mods(p, s, KeyCode::Delete, dy);
     } // T
 }
 

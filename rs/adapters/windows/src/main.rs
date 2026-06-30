@@ -113,6 +113,18 @@ fn main() {
                 overlay::run();
                 return;
             }
+            // Read-only diagnostic: init the virtual-desktop COM interface and
+            // query the current desktop index (exercises GetCurrentDesktop +
+            // GetDesktops without switching). Result goes to %TEMP%\capslockx_vd.log.
+            "vd-test" => {
+                vd_api::init();
+                let idx = vd_api::current_desktop_idx();
+                vd_api::log_line(&format!(
+                    "[vd_api] vd-test: current_desktop_idx = {:?}",
+                    idx
+                ));
+                return;
+            }
             // Dev smoke test for the overlay pipeline (no LLM needed).
             "overlay-selftest" => {
                 overlay::selftest();

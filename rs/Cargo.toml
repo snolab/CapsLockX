@@ -14,3 +14,15 @@ members = [
 opt-level = 3
 lto = true
 codegen-units = 1
+
+# Fast dev-iteration profile: skips LTO and maximizes codegen parallelism so a
+# one-line change links in ~30-60s instead of the 2-4 min full-release LTO pass.
+# Functionally identical for testing (hotkey/AccModel paths don't need -O3).
+# Build:  cargo build -p capslockx-windows --profile release-fast
+# Binary: target/release-fast/clx.exe
+[profile.release-fast]
+inherits = "release"
+lto = false
+codegen-units = 256
+opt-level = 1
+incremental = true

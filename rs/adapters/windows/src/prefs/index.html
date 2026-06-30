@@ -136,12 +136,12 @@
     <h2>Speeds</h2>
     <div class="sl-row">
       <label for="cursor_speed">Cursor Speed</label>
-      <input type="range" id="cursor_speed" min="1" max="50" step="0.5">
+      <input type="range" id="cursor_speed" min="1" max="120" step="1">
       <span id="cursor_speed_val">15</span>
     </div>
     <div class="sl-row">
       <label for="mouse_speed">Mouse Speed</label>
-      <input type="range" id="mouse_speed" min="50" max="800" step="10">
+      <input type="range" id="mouse_speed" min="50" max="7000" step="50">
       <span id="mouse_speed_val">360</span>
     </div>
     <div class="sl-row">
@@ -308,6 +308,48 @@
         sec.scrollIntoView({ behavior: 'smooth' });
       }
     });
+
+    // Build/version footer — confirms which build is actually running, where it
+    // came from, and whether a newer release exists on the official repo.
+    invoke('get_version').then(v => {
+      let el = document.getElementById('clx-version');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'clx-version';
+        el.style.cssText = 'margin:18px 0 8px;text-align:center;opacity:.6;font-size:12px;line-height:1.6';
+        document.body.appendChild(el);
+      }
+      el.innerHTML =
+        'CapsLockX <b>v' + v.version + '</b> · ' + v.source +
+        '<br>built ' + v.built +
+        '<br><span id="clx-latest" style="opacity:.8">checking latest…</span>' +
+        '<br><span style="opacity:.45;font-size:11px">' + v.exe_path + '</span>';
+
+      // Best-effort latest-release lookup against the official GitHub repo.
+      // Fails silently (offline / rate-limited) without breaking the footer.
+      fetch('https://api.github.com/repos/' + v.repo + '/releases/latest', {
+        headers: { 'Accept': 'application/vnd.github+json' }
+      })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(rel => {
+          const latest = (rel.tag_name || '').replace(/^v/, '');
+          const cur = v.version;
+          const ls = document.getElementById('clx-latest');
+          if (!latest) { ls.textContent = 'latest: unknown'; return; }
+          if (latest === cur) {
+            ls.innerHTML = '✓ up to date (latest v' + latest + ')';
+            ls.style.color = '#3a3';
+          } else {
+            ls.innerHTML = '⚠ update available: <b>v' + latest + '</b> · <a href="https://github.com/'
+              + v.repo + '/releases/latest" target="_blank">release notes</a>';
+            ls.style.color = '#c80';
+          }
+        })
+        .catch(() => {
+          const ls = document.getElementById('clx-latest');
+          if (ls) ls.textContent = 'latest: offline / unavailable';
+        });
+    }).catch(() => {});
   </script>
 </body>
 </html>

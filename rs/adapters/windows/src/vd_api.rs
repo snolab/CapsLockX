@@ -102,6 +102,12 @@ const S_OK: i32 = 0;
 
 // ── File logger (appends to %TEMP%\capslockx_vd.log) ─────────────────────────
 
+/// Public wrapper so other modules (e.g. the `vd-test` diagnostic) can append
+/// to the same virtual-desktop log file.
+pub fn log_line(msg: &str) {
+    log(msg);
+}
+
 fn log(msg: &str) {
     use std::io::Write as _;
     if let Ok(tmp) = std::env::var("TEMP") {
@@ -231,9 +237,15 @@ enum Ver {
 }
 
 impl Ver {
-    /// Win11+ vtable methods take an extra null `*mut c_void` after `this`.
-    fn is_w11(self) -> bool {
-        matches!(self, Ver::W11 | Ver::W12)
+    /// Only the Win11 vtable variant takes an extra null `*mut c_void` after
+    /// `this`. W10 and W12 use the plain `(this, out)` form — this matches the
+    /// working AHK implementation (`SwitchToDesktopByInternalAPI`), where the
+    /// win12 branch calls GetDesktops/SwitchDesktop with NO extra arg, same as
+    /// win10; only the win11 branch inserts `"Ptr", 0`. Grouping W12 with W11
+    /// here was the bug that made GetDesktops always fail on Win11 24H2/W12
+    /// builds, forcing the slow Win+Ctrl+Arrow hotkey fallback.
+    fn needs_extra_arg(self) -> bool {
+        matches!(self, Ver::W11)
     }
     fn desktop_iid(self) -> GUID {
         match self {
@@ -264,7 +276,7 @@ impl Manager {
     /// vtable[7]: GetDesktops(this, [0,] **IObjectArray)
     unsafe fn get_desktops(&self) -> Option<ComPtr> {
         let mut arr: *mut c_void = std::ptr::null_mut();
-        let hr = if self.1.is_w11() {
+        let hr = if self.1.needs_extra_arg() {
             let f: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut *mut c_void) -> i32 =
                 vt(self.0.ptr(), 7);
             f(self.0.ptr(), std::ptr::null_mut(), &mut arr)
@@ -283,7 +295,7 @@ impl Manager {
     /// vtable[6]: GetCurrentDesktop(this, [0,] **IVirtualDesktop)
     unsafe fn get_current_desktop(&self) -> Option<ComPtr> {
         let mut d: *mut c_void = std::ptr::null_mut();
-        let hr = if self.1.is_w11() {
+        let hr = if self.1.needs_extra_arg() {
             let f: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut *mut c_void) -> i32 =
                 vt(self.0.ptr(), 6);
             f(self.0.ptr(), std::ptr::null_mut(), &mut d)
@@ -301,7 +313,7 @@ impl Manager {
 
     /// vtable[9]: SwitchDesktop(this, [0,] *IVirtualDesktop)
     unsafe fn switch_to(&self, desktop: *mut c_void) -> bool {
-        let hr = if self.1.is_w11() {
+        let hr = if self.1.needs_extra_arg() {
             let f: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32 =
                 vt(self.0.ptr(), 9);
             f(self.0.ptr(), std::ptr::null_mut(), desktop)

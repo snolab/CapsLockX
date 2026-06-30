@@ -78,7 +78,16 @@ impl ClxEngine {
             *self.prior_key.lock().unwrap() = code;
         }
 
-        // ── 3a. Track Shift for AccModel callbacks ────────────────────────────
+        // ── 3a. Shift handling (selection: CLX+Shift+HJKL/YUIO) ───────────────
+        // AHK/macOS model: do NOT inject a synthetic Shift and do NOT suppress
+        // the physical Shift — just track it and let it pass through to the app.
+        // Arrows are injected by SCANCODE + KEYEVENTF_EXTENDEDKEY (see the Windows
+        // adapter's `kbd`), which Windows treats like a real hardware key, so a
+        // physically-held Shift modifies them directly WITHOUT the OS "isolating"
+        // (lifting) the Shift around bare virtual-key injection. No artifacts, so
+        // no timing heuristics: Shift is exactly the user's physical key.
+        // `held_modifiers` omits Shift on Windows (the real one applies); macOS
+        // embeds the flag per injected CGEvent.
         if matches!(code, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift) {
             self.state.set_shift_held(pressed);
         }
