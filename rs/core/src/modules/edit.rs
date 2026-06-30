@@ -230,10 +230,11 @@ impl EditModule {
 /// Collect currently-held modifier keys to apply to a tap.
 ///
 /// Shift is platform-split:
-/// - Windows: NOT added here. A CLX-mode Shift is held as ONE persistent
-///   app-visible Shift by the engine (see `engine.rs` step 3a), so plain arrow
-///   taps already combine with it; adding it per batch would re-trigger the OS
-///   isolation lift and break selection.
+/// - Windows: NOT added here. The user's PHYSICAL Shift passes through and
+///   applies directly, because navigation keys are injected by scancode +
+///   KEYEVENTF_EXTENDEDKEY (see `output.rs::kbd`), which avoids the OS modifier-
+///   isolation lift. Re-injecting Shift here would be redundant and re-trigger
+///   that isolation. See `docs/dev/windows-shift-selection.md`.
 /// - macOS: added from the tracked `is_shift_held()` flag so `key_tap_with_mods`
 ///   can embed the Shift flag on each injected CGEvent.
 ///
