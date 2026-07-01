@@ -587,8 +587,16 @@ fn list_all_windows() -> Vec<WindowEntry> {
         // different apps don't interfere. Sequential queries take ~130ms × N apps;
         // parallel reduces that to ~max(single app latency) ≈ 130-200ms.
         let onscreen_wids = std::sync::Arc::new(onscreen_wids);
+        // Never enumerate clx's own windows. Operating on them (e.g. AX frame-set
+        // during Space+C arrange) routes through in-process AppKit, which asserts
+        // "Must only be used from the main thread" and SIGTRAPs — arrange runs on
+        // a worker thread. Cross-process AX is serviced in the target app, so this
+        // only affects our own overlays. Excluding our pid also keeps clx's
+        // overlays out of the Space+Z cycle.
+        let own_pid = std::process::id() as i64;
         let mut handles: Vec<(usize, std::thread::JoinHandle<Vec<WindowEntry>>)> = Vec::new();
         for (order, &pid) in ordered_pids.iter().enumerate() {
+            if pid == own_pid { continue; }
             if !seen_pids.insert(pid) { continue; }
             let ow = std::sync::Arc::clone(&onscreen_wids);
             let bm = std::sync::Arc::clone(&bounds_map);
