@@ -64,7 +64,7 @@ jobs:
         # without stt by default (whisper-rs doesn't compile on Windows).
         # Both portable and setup ship the same binary on Windows for now —
         # the variants differ only in packaging (zip vs NSIS installer).
-        run: cargo build -p capslockx-windows -p clx-screen-reader --release
+        run: cargo build -p capslockx-windows -p clx-screen-reader -p clx-prefs-slint --release
 
       - name: Package Windows zip
         shell: pwsh
@@ -75,6 +75,8 @@ jobs:
           # in capslockx-windows/Cargo.toml).
           Copy-Item rs\target\release\clx.exe "$STAGE\clx.exe"
           Copy-Item rs\target\release\clx-screen-reader.exe "$STAGE\clx-screen-reader.exe"
+          # Native (Slint) preferences window — opens instantly (no WebView2).
+          Copy-Item rs\target\release\clx-prefs-slint.exe "$STAGE\clx-prefs-slint.exe"
           # Runtime DLLs (sherpa-onnx-c-api.dll, onnxruntime.dll, etc.)
           # are dropped by sherpa-rs's build.rs into target/release WHEN
           # the `stt` feature is enabled. capslockx-windows currently
@@ -107,8 +109,9 @@ jobs:
         run: |
           # Stage binaries + runtime DLLs next to .nsi (NSIS File resolves
           # relative to script dir)
-          Copy-Item rs\target\release\clx-rust.exe scripts\clx.exe
+          Copy-Item rs\target\release\clx.exe scripts\clx.exe
           Copy-Item rs\target\release\clx-screen-reader.exe scripts\clx-screen-reader.exe
+          Copy-Item rs\target\release\clx-prefs-slint.exe scripts\clx-prefs-slint.exe
           Get-ChildItem rs\target\release -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
             Copy-Item $_.FullName "scripts\"
           }

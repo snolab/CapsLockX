@@ -1,0 +1,112 @@
+import { Button, CheckBox, Slider, GroupBox, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+
+// One labelled slider row: "Label  [====o====]  value"
+component SpeedRow inherits HorizontalBox {
+    in property <string> label;
+    in property <float> min;
+    in property <float> max;
+    in-out property <float> value;
+    callback changed();
+
+    spacing: 10px;
+    Text {
+        text: root.label;
+        width: 96px;
+        vertical-alignment: center;
+        horizontal-alignment: left;
+    }
+    Slider {
+        minimum: root.min;
+        maximum: root.max;
+        value: root.value;
+        horizontal-stretch: 1;
+        changed(v) => {
+            root.value = Math.round(v);
+            root.changed();
+        }
+    }
+    Text {
+        text: Math.round(root.value);
+        width: 52px;
+        vertical-alignment: center;
+        horizontal-alignment: right;
+    }
+}
+
+export component PrefsWindow inherits Window {
+    // Trigger keys
+    in-out property <bool> use-capslock;
+    in-out property <bool> use-space;
+    in-out property <bool> use-insert;
+    in-out property <bool> use-scroll-lock;
+    in-out property <bool> use-ralt;
+    // Speeds
+    in-out property <float> cursor-speed;
+    in-out property <float> mouse-speed;
+    in-out property <float> scroll-speed;
+    // Footer
+    in property <string> version-text: "CapsLockX";
+
+    callback changed();
+
+    title: "CapsLockX Preferences";
+    preferred-width: 460px;
+    preferred-height: 540px;
+    min-width: 400px;
+    min-height: 420px;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 14px;
+
+        Text {
+            text: "CapsLockX Preferences";
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        GroupBox {
+            title: "Trigger keys  (hold to enter CLX mode)";
+            VerticalBox {
+                spacing: 4px;
+                CheckBox { text: "CapsLock"; checked <=> root.use-capslock; toggled => { root.changed(); } }
+                CheckBox { text: "Space"; checked <=> root.use-space; toggled => { root.changed(); } }
+                CheckBox { text: "Insert"; checked <=> root.use-insert; toggled => { root.changed(); } }
+                CheckBox { text: "ScrollLock"; checked <=> root.use-scroll-lock; toggled => { root.changed(); } }
+                CheckBox { text: "Right Alt"; checked <=> root.use-ralt; toggled => { root.changed(); } }
+            }
+        }
+
+        GroupBox {
+            title: "Speeds";
+            VerticalBox {
+                spacing: 8px;
+                SpeedRow {
+                    label: "Cursor (HJKL)"; min: 1; max: 120;
+                    value <=> root.cursor-speed;
+                    changed => { root.changed(); }
+                }
+                SpeedRow {
+                    label: "Mouse (WASD)"; min: 50; max: 7000;
+                    value <=> root.mouse-speed;
+                    changed => { root.changed(); }
+                }
+                SpeedRow {
+                    label: "Scroll (RF)"; min: 100; max: 3000;
+                    value <=> root.scroll-speed;
+                    changed => { root.changed(); }
+                }
+            }
+        }
+
+        // spacer pushes the footer to the bottom
+        Rectangle { vertical-stretch: 1; }
+
+        Text {
+            text: root.version-text;
+            font-size: 11px;
+            opacity: 0.6;
+            horizontal-alignment: center;
+        }
+    }
+}

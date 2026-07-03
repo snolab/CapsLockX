@@ -38,6 +38,7 @@ Section "Install"
   ; Copy files
   File "clx.exe"
   File "clx-screen-reader.exe"
+  File "clx-prefs-slint.exe"
   ; sherpa-rs runtime DLLs — only present when the `stt` feature is
   ; enabled (currently disabled on Windows because whisper-rs doesn't
   ; compile there). /nonfatal lets the installer build succeed when
@@ -82,6 +83,7 @@ Section "Uninstall"
   ; Remove files
   Delete "$INSTDIR\clx.exe"
   Delete "$INSTDIR\clx-screen-reader.exe"
+  Delete "$INSTDIR\clx-prefs-slint.exe"
   Delete "$INSTDIR\*.dll"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"

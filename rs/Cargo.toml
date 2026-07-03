@@ -8,6 +8,7 @@ members = [
     "adapters/macos",
     "tools/screen-reader",
     "tools/clx-prompt-slint",
+    "tools/clx-prefs-slint",
 ]
 
 [profile.release]

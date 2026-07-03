@@ -59,19 +59,60 @@ pub fn update_tray_icon(active: bool) {
     }
 }
 
-/// Open the preferences window — as a SEPARATE process (`clx prefs-window`).
+/// Open the preferences window — always as a SEPARATE process.
 ///
-/// The prefs UI is a WebView2 window, which CANNOT live in this (the hook)
-/// process: Windows stops delivering the WH_KEYBOARD_LL hook while an in-process
-/// WebView2 window is focused, killing all hotkeys. Spawning it as its own
-/// process keeps the hook process WebView2-free. The subprocess self-limits to a
-/// single instance and focuses an existing window on a repeat open.
+/// Prefers the native Slint prefs (`clx-prefs-slint.exe`, sitting next to
+/// clx.exe): it starts in ~100ms instead of the WebView2 window's ~1-2s cold
+/// start. Falls back to the WebView2/Tauri prefs (`clx prefs-window`) when the
+/// native binary isn't present.
+///
+/// Either way it MUST be a separate process: an in-process WebView2 window makes
+/// Windows stop delivering WH_KEYBOARD_LL while focused, killing all hotkeys.
 ///
 /// Used by the tray "Preferences…" menu and the Space+, hotkey
 /// (`WinPlatform::open_preferences()`).
 pub fn open_prefs_window() {
-    if let Ok(exe) = std::env::current_exe() {
-        let _ = Command::new(exe).arg("prefs-window").spawn();
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+    if let Some(dir) = exe.parent() {
+        let native = dir.join("clx-prefs-slint.exe");
+        if native.exists() {
+            let _ = Command::new(&native).arg(prefs_version_line()).spawn();
+            return;
+        }
+    }
+    let _ = Command::new(exe).arg("prefs-window").spawn();
+}
+
+/// Footer text shown in the native prefs window: "CapsLockX v<ver> · built <ts>".
+fn prefs_version_line() -> String {
+    let ver = env!("CARGO_PKG_VERSION");
+    let built = std::env::current_exe()
+        .ok()
+        .and_then(|p| std::fs::metadata(&p).ok())
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| {
+            // seconds -> "YYYY-MM-DD" (UTC), civil-from-days (Howard Hinnant).
+            let days = (d.as_secs() / 86400) as i64;
+            let z = days + 719468;
+            let era = if z >= 0 { z } else { z - 146096 } / 146097;
+            let doe = z - era * 146097;
+            let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+            let y = yoe + era * 400;
+            let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+            let mp = (5 * doy + 2) / 153;
+            let dd = doy - (153 * mp + 2) / 5 + 1;
+            let mm = if mp < 10 { mp + 3 } else { mp - 9 };
+            let y = if mm <= 2 { y + 1 } else { y };
+            format!("{:04}-{:02}-{:02}", y, mm, dd)
+        })
+        .unwrap_or_default();
+    if built.is_empty() {
+        format!("CapsLockX v{ver}")
+    } else {
+        format!("CapsLockX v{ver} · built {built}")
     }
 }
 
