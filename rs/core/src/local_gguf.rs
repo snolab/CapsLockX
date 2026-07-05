@@ -13,8 +13,8 @@
 //!     a C++ toolchain). When the feature is off, a stub returns a clear error
 //!     so callers still link.
 //!
-//! Enable with: `cargo build -p capslockx-core --features local-llm`
-//! (GPU offload is a follow-up sub-feature; this prototype is CPU-only.)
+//! Enable with: `cargo build -p capslockx-core --features local-llm` (CPU) or a
+//! GPU sub-feature: `local-llm-cuda` / `local-llm-vulkan` / `local-llm-metal`.
 
 use crate::llm_client::Message;
 
@@ -120,8 +120,6 @@ pub fn stream_gguf(
     use llama_cpp_2::context::params::LlamaContextParams;
     use llama_cpp_2::llama_batch::LlamaBatch;
     use llama_cpp_2::model::AddBos;
-    #[allow(deprecated)]
-    use llama_cpp_2::model::Special;
     use llama_cpp_2::sampling::LlamaSampler;
 
     // Cached model load (see `get_or_load_model`) — cheap after the first turn.
@@ -157,6 +155,11 @@ pub fn stream_gguf(
     let mut n_cur = batch.n_tokens();
     let mut out = String::new();
 
+    // Persistent UTF-8 decoder: `token_to_piece` buffers any partial multi-byte
+    // sequence here and only emits it once a following token completes the
+    // character, so CJK (and emoji) aren't corrupted at token boundaries.
+    let mut decoder = encoding_rs::UTF_8.new_decoder();
+
     for _ in 0..MAX_NEW_TOKENS {
         let token = sampler.sample(&ctx, batch.n_tokens() - 1);
         sampler.accept(token);
@@ -165,16 +168,17 @@ pub fn stream_gguf(
             break;
         }
 
-        // `token_to_str` is deprecated in favour of an incremental
-        // `token_to_piece(&mut Decoder, …)` that preserves multi-byte UTF-8
-        // across token boundaries — a TODO for clean CJK streaming. The simple
-        // form is fine for the prototype.
-        #[allow(deprecated)]
+        // `special = false`: don't render special tokens as literal text (we
+        // already stop on EOG above); `lstrip = None`: keep leading spaces.
         let piece = model
-            .token_to_str(token, Special::Tokenize)
+            .token_to_piece(token, &mut decoder, false, None)
             .map_err(|e| format!("detokenize: {e}"))?;
-        out.push_str(&piece);
-        on_token(&piece);
+        // Empty means the decoder is still holding an incomplete character —
+        // skip emitting, but still feed the token back so decoding continues.
+        if !piece.is_empty() {
+            out.push_str(&piece);
+            on_token(&piece);
+        }
 
         // Feed the sampled token back in for the next step.
         batch.clear();

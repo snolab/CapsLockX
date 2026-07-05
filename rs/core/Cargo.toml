@@ -69,6 +69,9 @@ rquickjs     = { version = "0.11", features = ["bindgen"] }
 # pulls in a C++ toolchain (cmake + compiler) to build llama.cpp from source.
 # Off by default; enable with `--features local-llm`.
 llama-cpp-2  = { version = "0.1", optional = true }
+# UTF-8 stream decoder for token_to_piece — buffers partial multi-byte
+# sequences across tokens so CJK output isn't corrupted at token boundaries.
+encoding_rs  = { version = "0.8", optional = true }
 
 # web-time provides a wasm32-compatible Instant (via performance.now()).
 # On native targets this dep is unused.
@@ -90,7 +93,7 @@ ai = []
 # In-process llama.cpp GGUF backend for local-first brainstorm (no Ollama, no
 # server). Requires a C++ toolchain to build llama.cpp. See
 # `docs/dev/local-brainstorm-backends.md` and `src/local_gguf.rs`.
-local-llm = ["dep:llama-cpp-2"]
+local-llm = ["dep:llama-cpp-2", "dep:encoding_rs"]
 # GPU offload sub-features — layer on top of `local-llm`. Pick the one matching
 # the machine's GPU; CPU-only is the default (plain `local-llm`).
 local-llm-cuda = ["local-llm", "llama-cpp-2/cuda"]

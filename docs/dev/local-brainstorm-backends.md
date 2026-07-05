@@ -150,7 +150,7 @@ The recommended path is implemented in `rs/core`, behind the off-by-default
 |---|---|---|
 | `LlmProvider::LocalGguf` | `llm_client.rs` | new provider; GGUF path carried in `base_url` |
 | `LlmConfig::local_gguf(path)` + auto-detect | `llm_client.rs` | a `*.gguf` model or `local` key routes in-process (Windows `\` paths handled) |
-| `stream_gguf()` + `format_chatml()` | `local_gguf.rs` | streams tokens via llama.cpp; Qwen2.5 ChatML prompt |
+| `stream_gguf()` + `format_chatml()` | `local_gguf.rs` | streams tokens via llama.cpp; Qwen2.5 ChatML prompt; persistent `encoding_rs` decoder → UTF-8-safe CJK/emoji at token boundaries |
 | **model cache** (`get_or_load_model`) | `local_gguf.rs` | each multi-GB model stays resident across turns; only the first `clx+B` pays the load |
 | `recommend_gguf()` / `download_gguf()` / `models_dir()` | `local_llm.rs` | tier → weight file + streaming HF downloader (atomic `.part` rename) |
 | **default routing** | `state.rs` | `prefer_local` + `local-llm` → `("local", <gguf path>)`; falls back to Ollama without the feature |
@@ -174,9 +174,6 @@ provider detection, GGUF tiering, and default routing.
 
 ### Remaining follow-ups
 
-- **Per-token CJK streaming** — uses the deprecated `token_to_str`; the
-  incremental `token_to_piece(&mut Decoder, …)` preserves multi-byte UTF-8
-  across token boundaries (matters for zh/ja). `TODO`.
 - **Greedy sampling** — deterministic; swap for a temp/top_p/dist chain.
 - **First-run UX** — the download currently runs before the prompt box on the
   very first `clx+B`; could move to the Tauri setup wizard for a nicer flow.

@@ -976,6 +976,7 @@ dependencies = [
  "boa_gc",
  "cpal",
  "dirs 5.0.1",
+ "encoding_rs",
  "libc",
  "llama-cpp-2",
  "mp3lame-encoder",
