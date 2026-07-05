@@ -287,7 +287,58 @@ fn agent_turn(
     keep_history: &AtomicBool,
     pre_selected: &str,
 ) {
-    // 0. Local-first readiness gate: if routed to a local model but the Ollama
+    // 0a. In-process llama.cpp (LocalGguf): download the weight file on first
+    //     use, streaming progress to the overlay. Guarded so a second Space+B
+    //     while downloading doesn't kick off a duplicate fetch. After this the
+    //     turn continues normally (prompt → generate) with the model resident.
+    #[cfg(all(not(target_arch = "wasm32"), feature = "local-llm"))]
+    if config.provider == crate::llm_client::LlmProvider::LocalGguf {
+        let path = config.base_url.as_deref().unwrap_or(&config.model);
+        if !std::path::Path::new(path).exists() {
+            use std::sync::atomic::AtomicBool;
+            static DOWNLOADING: AtomicBool = AtomicBool::new(false);
+            if DOWNLOADING.swap(true, Ordering::SeqCst) {
+                platform.show_brainstorm_overlay(
+                    "Local model still downloading…\nPress Space+B again once it finishes.",
+                );
+                state.store(STATE_DONE, Ordering::Relaxed);
+                return;
+            }
+            let hw = crate::local_llm::probe_hardware();
+            let spec = crate::local_llm::recommend_gguf(&hw);
+            platform.show_brainstorm_overlay(&format!(
+                "Setting up local AI (first run)…\nDownloading {} — runs fully on your device.",
+                spec.filename
+            ));
+            let mut last = 0u64;
+            let result = crate::local_llm::download_gguf(&spec, &mut |done, total| {
+                if total > 0 && (done.saturating_sub(last) > 25_000_000 || done == total) {
+                    last = done;
+                    platform.show_brainstorm_overlay(&format!(
+                        "Downloading local model {}…\n{}%  ({} / {} MB)",
+                        spec.filename,
+                        done * 100 / total,
+                        done / 1_000_000,
+                        total / 1_000_000,
+                    ));
+                }
+            });
+            DOWNLOADING.store(false, Ordering::SeqCst);
+            match result {
+                Ok(_) => platform.show_brainstorm_overlay("Local AI ready. Loading model…"),
+                Err(e) => {
+                    eprintln!("[CLX] brainstorm: local gguf download failed: {e}");
+                    platform.show_brainstorm_overlay(&format!(
+                        "Local model download failed:\n{e}\n\nCheck your connection, then press Space+B to retry.",
+                    ));
+                    state.store(STATE_DONE, Ordering::Relaxed);
+                    return;
+                }
+            }
+        }
+    }
+
+    // 0b. Local-first readiness gate: if routed to a local model but the Ollama
     //    server isn't ready, open the setup wizard instead of failing later with
     //    a connection error. (Skipped on wasm, which has no local server.)
     #[cfg(not(target_arch = "wasm32"))]

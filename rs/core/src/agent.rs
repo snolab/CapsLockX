@@ -115,6 +115,13 @@ pub fn agent_chat(
             LlmProvider::Gemini => gemini_turn(config, messages, on_token)?,
             LlmProvider::OpenAI | LlmProvider::Ollama => openai_turn(config, messages, on_token)?,
             LlmProvider::Anthropic => anthropic_turn(config, messages, on_token)?,
+            LlmProvider::LocalGguf => {
+                // In-process llama.cpp: plain streaming turn. Small local models
+                // don't reliably follow the tool-calling protocol, so brainstorm
+                // runs them tool-free (path is carried in `base_url`).
+                let path = config.base_url.as_deref().unwrap_or(&config.model);
+                TurnResult::Text(crate::local_gguf::stream_gguf(path, messages, on_token)?)
+            }
         };
 
         match result {
@@ -1074,8 +1081,9 @@ fn append_tool_result(
                 content: response_json.to_string(),
             });
         }
-        LlmProvider::OpenAI | LlmProvider::Ollama => {
+        LlmProvider::OpenAI | LlmProvider::Ollama | LlmProvider::LocalGguf => {
             // OpenAI/Ollama: assistant message with tool_calls, then tool role.
+            // (LocalGguf never emits tool calls, but stays exhaustive here.)
             messages.push(Message {
                 role: "assistant".into(),
                 content: format!("[called {}]", call.name),

@@ -168,11 +168,30 @@ impl ClxConfig {
     }
 
     /// LLM key+model for the brainstorm module. Local-first: when `prefer_local`
-    /// is set, always route to Ollama (cloud keys remain a runtime fallback,
-    /// handled by the brainstorm module when the local server is unavailable).
+    /// is set, route to a local backend (cloud keys remain a runtime fallback).
     /// Otherwise defers to the cloud-priority `best_llm_key_and_model`.
+    ///
+    /// With the in-process llama.cpp backend compiled in (`local-llm`), this
+    /// returns `("local", <gguf path>)` — the hardware-sized weight file under
+    /// the models dir, which the brainstorm module downloads on first use. If a
+    /// `.gguf` path is explicitly configured in `local_model`, that wins.
+    /// Without the feature it falls back to Ollama, as before.
     pub fn brainstorm_llm_key_and_model(&self) -> (String, String) {
         if self.prefer_local {
+            #[cfg(all(feature = "local-llm", not(target_arch = "wasm32")))]
+            {
+                let path = if self.local_model.ends_with(".gguf") {
+                    self.local_model.clone()
+                } else {
+                    let hw = crate::local_llm::probe_hardware();
+                    let spec = crate::local_llm::recommend_gguf(&hw);
+                    crate::local_llm::gguf_model_path(&spec)
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                return ("local".to_string(), path);
+            }
+            #[cfg(not(all(feature = "local-llm", not(target_arch = "wasm32"))))]
             return ("ollama".to_string(), self.local_model.clone());
         }
         self.best_llm_key_and_model()

@@ -48,6 +48,44 @@ pub fn recommend_model(hw: &Hardware) -> &'static str {
     }
 }
 
+/// A downloadable Qwen2.5-Instruct GGUF, sized for the in-process llama.cpp
+/// backend (`local_gguf.rs`). Parallels `recommend_model()` but yields a single
+/// weight file instead of an Ollama tag.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GgufSpec {
+    /// Local filename under the models dir, e.g. `qwen2.5-3b-instruct-q4_k_m.gguf`.
+    pub filename: &'static str,
+    /// Direct Hugging Face `resolve` URL for a one-shot download.
+    pub url: &'static str,
+}
+
+/// Pick the Qwen2.5-Instruct GGUF (Q4_K_M) that fits the machine, mirroring the
+/// tiers in [`recommend_model`]. URLs point at Qwen's official GGUF repos.
+///
+/// Note: the 32B Q4_K_M is split into multiple parts on HF, so the single-file
+/// URL here 404s — the setup wizard should fall back to the repo for that tier.
+/// Everything up to 14B is a single file.
+pub fn recommend_gguf(hw: &Hardware) -> GgufSpec {
+    match hw.ram_gb.max(hw.vram_gb) {
+        0..=7 => GgufSpec {
+            filename: "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+            url: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+        },
+        8..=15 => GgufSpec {
+            filename: "qwen2.5-3b-instruct-q4_k_m.gguf",
+            url: "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf",
+        },
+        16..=31 => GgufSpec {
+            filename: "qwen2.5-7b-instruct-q4_k_m.gguf",
+            url: "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf",
+        },
+        _ => GgufSpec {
+            filename: "qwen2.5-14b-instruct-q4_k_m.gguf",
+            url: "https://huggingface.co/Qwen/Qwen2.5-14B-Instruct-GGUF/resolve/main/qwen2.5-14b-instruct-q4_k_m.gguf",
+        },
+    }
+}
+
 /// Base URL of the local Ollama server.
 pub const OLLAMA_BASE: &str = "http://localhost:11434";
 
@@ -204,6 +242,73 @@ mod native {
         )
     }
 
+    // ── In-process GGUF weights (llama.cpp backend) ───────────────────────────
+
+    use super::GgufSpec;
+    use std::path::PathBuf;
+
+    /// Directory where downloaded GGUF weights live:
+    /// `<config>/CapsLockX/models/` (e.g. `%APPDATA%\CapsLockX\models\`).
+    pub fn models_dir() -> PathBuf {
+        dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("CapsLockX")
+            .join("models")
+    }
+
+    /// Absolute path a given spec resolves to on disk (may not exist yet).
+    pub fn gguf_model_path(spec: &GgufSpec) -> PathBuf {
+        models_dir().join(spec.filename)
+    }
+
+    /// True if the recommended GGUF for this hardware is already downloaded —
+    /// the in-process analogue of `local_status() == Ready`.
+    pub fn local_gguf_ready(hw: &super::Hardware) -> bool {
+        gguf_model_path(&super::recommend_gguf(hw)).is_file()
+    }
+
+    /// Download a GGUF to the models dir if missing, streaming to a `.part`
+    /// file and reporting progress as `(bytes_done, total_bytes)`. Atomic
+    /// rename on success so a Ready file is always complete.
+    pub fn download_gguf(
+        spec: &GgufSpec,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<PathBuf, String> {
+        let dest = gguf_model_path(spec);
+        if dest.is_file() {
+            return Ok(dest);
+        }
+        std::fs::create_dir_all(models_dir()).map_err(|e| format!("create models dir: {e}"))?;
+
+        let resp = ureq::get(spec.url)
+            .call()
+            .map_err(|e| format!("download {}: {e}", spec.url))?;
+        let total: u64 = resp
+            .header("Content-Length")
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+
+        let part = dest.with_extension("gguf.part");
+        let mut file = std::fs::File::create(&part).map_err(|e| format!("create {part:?}: {e}"))?;
+        let mut reader = resp.into_reader();
+        let mut buf = [0u8; 1 << 16];
+        let mut done: u64 = 0;
+        loop {
+            let n = std::io::Read::read(&mut reader, &mut buf)
+                .map_err(|e| format!("read stream: {e}"))?;
+            if n == 0 {
+                break;
+            }
+            std::io::Write::write_all(&mut file, &buf[..n])
+                .map_err(|e| format!("write {part:?}: {e}"))?;
+            done += n as u64;
+            on_progress(done, total);
+        }
+        drop(file);
+        std::fs::rename(&part, &dest).map_err(|e| format!("finalize {dest:?}: {e}"))?;
+        Ok(dest)
+    }
+
     // ── Hardware probing ──────────────────────────────────────────────────────
 
     pub fn probe_hardware() -> Hardware {
@@ -350,8 +455,8 @@ mod native {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use native::{
-    ensure_model, ensure_running, install_ollama, installed_models, local_status, ollama_installed,
-    probe_hardware, server_reachable,
+    download_gguf, ensure_model, ensure_running, gguf_model_path, install_ollama, installed_models,
+    local_gguf_ready, local_status, models_dir, ollama_installed, probe_hardware, server_reachable,
 };
 
 // ── wasm stubs ────────────────────────────────────────────────────────────────
@@ -396,6 +501,51 @@ mod tests {
             cpu_cores: 8,
         };
         assert_eq!(recommend_model(&hw), "qwen2.5:7b");
+    }
+
+    #[test]
+    fn recommend_gguf_sizes_by_tier_and_has_valid_urls() {
+        let hw = |ram| Hardware {
+            ram_gb: ram,
+            vram_gb: 0,
+            cpu_cores: 8,
+        };
+        assert_eq!(
+            recommend_gguf(&hw(4)).filename,
+            "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+        );
+        assert_eq!(
+            recommend_gguf(&hw(12)).filename,
+            "qwen2.5-3b-instruct-q4_k_m.gguf"
+        );
+        assert_eq!(
+            recommend_gguf(&hw(24)).filename,
+            "qwen2.5-7b-instruct-q4_k_m.gguf"
+        );
+        assert_eq!(
+            recommend_gguf(&hw(64)).filename,
+            "qwen2.5-14b-instruct-q4_k_m.gguf"
+        );
+        // URL must reference the same filename it downloads to.
+        for ram in [4, 12, 24, 64] {
+            let spec = recommend_gguf(&hw(ram));
+            assert!(spec.url.starts_with("https://huggingface.co/"));
+            assert!(spec.url.ends_with(spec.filename));
+        }
+    }
+
+    #[test]
+    fn recommend_gguf_uses_larger_of_ram_or_vram() {
+        let hw = Hardware {
+            ram_gb: 8,
+            vram_gb: 24,
+            cpu_cores: 8,
+        };
+        // 24 GB GPU wins → 7B tier.
+        assert_eq!(
+            recommend_gguf(&hw).filename,
+            "qwen2.5-7b-instruct-q4_k_m.gguf"
+        );
     }
 
     #[test]

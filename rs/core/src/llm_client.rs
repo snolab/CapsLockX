@@ -11,6 +11,7 @@ pub enum LlmProvider {
     OpenAI,    // api.openai.com
     Anthropic, // api.anthropic.com
     Ollama,    // localhost:11434 (OpenAI-compatible)
+    LocalGguf, // in-process llama.cpp (no server); path carried in `base_url`
 }
 
 #[derive(Debug, Clone)]
@@ -18,13 +19,30 @@ pub struct LlmConfig {
     pub provider: LlmProvider,
     pub api_key: String,
     pub model: String,
-    /// Base URL override (for Ollama or custom endpoints).
+    /// Base URL override (for Ollama or custom endpoints). For `LocalGguf` this
+    /// instead holds the absolute filesystem path to the `.gguf` weights.
     pub base_url: Option<String>,
 }
 
 impl LlmConfig {
+    /// Construct an in-process llama.cpp config from a GGUF file path.
+    pub fn local_gguf(model_path: &str) -> Self {
+        Self {
+            provider: LlmProvider::LocalGguf,
+            api_key: String::new(),
+            model: model_path.to_string(),
+            base_url: Some(model_path.to_string()),
+        }
+    }
+
     /// Auto-detect provider from API key prefix or explicit model name.
     pub fn from_key_and_model(api_key: &str, model: &str) -> Self {
+        // A `.gguf` model (or the `local` sentinel key) routes to the
+        // in-process llama.cpp backend — checked first so a Windows path
+        // (with `\`) isn't mistaken for an Ollama tag.
+        if model.ends_with(".gguf") || api_key == "local" {
+            return Self::local_gguf(model);
+        }
         let provider = if model.starts_with("claude") || api_key.starts_with("sk-ant-") {
             LlmProvider::Anthropic
         } else if model.starts_with("gemini") || api_key.starts_with("AIza") {
@@ -46,6 +64,9 @@ impl LlmConfig {
                 LlmProvider::OpenAI => "gpt-4o".to_string(),
                 LlmProvider::Anthropic => "claude-opus-4-20250514".to_string(),
                 LlmProvider::Ollama => "qwen3:32b".to_string(),
+                // LocalGguf never reaches here (it returns early above), but the
+                // match must stay exhaustive.
+                LlmProvider::LocalGguf => String::new(),
             })
         } else {
             model.to_string()
@@ -102,6 +123,8 @@ fn discover_best_model(provider: &LlmProvider, api_key: &str) -> Option<String> 
             Some("claude-opus-4-latest".to_string())
         }
         LlmProvider::Ollama => discover_ollama(),
+        // Local GGUF weights are chosen by hardware tier, not API discovery.
+        LlmProvider::LocalGguf => None,
     }
 }
 
@@ -250,6 +273,11 @@ pub fn stream_chat(
         LlmProvider::OpenAI => stream_openai(config, messages, on_token),
         LlmProvider::Anthropic => stream_anthropic(config, messages, on_token),
         LlmProvider::Ollama => stream_ollama(config, messages, on_token),
+        LlmProvider::LocalGguf => {
+            // In-process llama.cpp — the GGUF path lives in `base_url`.
+            let path = config.base_url.as_deref().unwrap_or(&config.model);
+            crate::local_gguf::stream_gguf(path, messages, on_token)
+        }
     }
 }
 
@@ -463,10 +491,17 @@ fn stream_ollama(
 
 #[cfg(any(target_arch = "wasm32", not(feature = "ai")))]
 pub fn stream_chat(
-    _config: &LlmConfig,
-    _messages: &[Message],
-    _on_token: &mut dyn FnMut(&str),
+    config: &LlmConfig,
+    messages: &[Message],
+    on_token: &mut dyn FnMut(&str),
 ) -> Result<String, String> {
+    // The local llama.cpp backend needs no cloud `ai` feature — route it even
+    // in the portable (no-`ai`) build so local-first brainstorm still works.
+    if config.provider == LlmProvider::LocalGguf {
+        let path = config.base_url.as_deref().unwrap_or(&config.model);
+        return crate::local_gguf::stream_gguf(path, messages, on_token);
+    }
+    let _ = (messages, on_token);
     Err("LLM streaming disabled (build without `ai` feature, or running on WASM)".into())
 }
 
@@ -522,6 +557,39 @@ mod tests {
     fn provider_detected_as_ollama_when_key_is_ollama() {
         let cfg = LlmConfig::from_key_and_model("ollama", "qwen3:32b");
         assert_eq!(cfg.provider, LlmProvider::Ollama);
+    }
+
+    #[test]
+    fn provider_detected_as_local_gguf_from_gguf_suffix() {
+        let cfg = LlmConfig::from_key_and_model("", "qwen2.5-3b-instruct-q4_k_m.gguf");
+        assert_eq!(cfg.provider, LlmProvider::LocalGguf);
+        // The path is carried in base_url for the in-process backend.
+        assert_eq!(
+            cfg.base_url.as_deref(),
+            Some("qwen2.5-3b-instruct-q4_k_m.gguf")
+        );
+    }
+
+    #[test]
+    fn provider_detected_as_local_gguf_from_local_sentinel_key() {
+        let cfg = LlmConfig::from_key_and_model("local", "C:/models/qwen.gguf");
+        assert_eq!(cfg.provider, LlmProvider::LocalGguf);
+    }
+
+    #[test]
+    fn windows_gguf_path_is_not_mistaken_for_ollama() {
+        // A backslash path ending in .gguf must route local, not Ollama.
+        let cfg = LlmConfig::from_key_and_model("", r"C:\models\qwen2.5-7b.gguf");
+        assert_eq!(cfg.provider, LlmProvider::LocalGguf);
+    }
+
+    #[test]
+    fn local_gguf_constructor_sets_path_in_both_fields() {
+        let cfg = LlmConfig::local_gguf("/tmp/m.gguf");
+        assert_eq!(cfg.provider, LlmProvider::LocalGguf);
+        assert_eq!(cfg.model, "/tmp/m.gguf");
+        assert_eq!(cfg.base_url.as_deref(), Some("/tmp/m.gguf"));
+        assert!(cfg.api_key.is_empty());
     }
 
     #[test]

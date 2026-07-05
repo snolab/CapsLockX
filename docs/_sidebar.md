@@ -19,6 +19,11 @@
   - [iOS adapter notes](ios-adapter.md)
   - [Android adapter notes](android-adapter.md)
 
+- **Lab notes (dev)**
+  - [Local brainstorm backends (drop Ollama?)](dev/local-brainstorm-backends.md)
+  - [Local agent models](agent/LOCAL-AGENT-MODELS.md)
+  - [Dual-track STT](dev/dual-track-stt.md)
+
 - **Reference**
   - [Roadmap](Roadmap.md)
   - [Window cycle design](WINDOW-CYCLE-DESIGN.md)
