@@ -14,6 +14,7 @@ mod output;
 mod overlay;
 mod prefs_window;
 mod prompt_window;
+mod self_update;
 mod shm;
 mod vd_api;
 mod vk;
@@ -76,14 +77,23 @@ pub fn open_prefs_window() {
     let Ok(exe) = std::env::current_exe() else {
         return;
     };
+    // Pass our PID so the prefs subprocess can self-terminate if we (the parent)
+    // exit/crash/self-update while it's open — otherwise it orphans and lingers.
+    let parent_pid = std::process::id().to_string();
     if let Some(dir) = exe.parent() {
         let native = dir.join("clx-prefs-slint.exe");
         if native.exists() {
-            let _ = Command::new(&native).arg(prefs_version_line()).spawn();
+            let _ = Command::new(&native)
+                .arg(prefs_version_line())
+                .env("CLX_PARENT_PID", &parent_pid)
+                .spawn();
             return;
         }
     }
-    let _ = Command::new(exe).arg("prefs-window").spawn();
+    let _ = Command::new(exe)
+        .arg("prefs-window")
+        .env("CLX_PARENT_PID", &parent_pid)
+        .spawn();
 }
 
 /// Footer text shown in the native prefs window: "CapsLockX v<ver> · built <ts>".
@@ -129,6 +139,13 @@ fn main() {
     // ── CLI subcommands (delegate to external tools, no GUI) ───────────
     if let Some(cmd) = std::env::args().nth(1) {
         match cmd.as_str() {
+            // Print version + build commit and exit. stdout is inherited from
+            // the npm launcher (node) / parent shell, so this reaches the
+            // terminal when run as `clx --version`.
+            "--version" | "-V" | "version" => {
+                self_update::print_version();
+                return;
+            }
             // Out-of-process preferences window. MUST be handled here, before
             // kill_previous / elevation / hook install — this subprocess shares
             // the clx.exe name but must NOT touch the running main instance or
@@ -193,6 +210,9 @@ fn main() {
         }
     }
 
+    // Clear any `clx.exe.old-<pid>` sidecar left by a prior self-update swap.
+    self_update::cleanup_old_binaries();
+
     // ── Ensure only one instance runs at a time. ───────────────────────
     // If we hit a previous instance we can't terminate (it's elevated and
     // we're not), re-launch self elevated and let the elevated child retry.
@@ -214,6 +234,13 @@ fn main() {
     }
 
     let cfg = config_store::load();
+
+    // Background: log version, auto-upgrade (git pull --ff-only) and rebuild if
+    // the local checkout has moved ahead of this binary. No-op for released
+    // (non-git) binaries. Runs off-thread so it never delays hotkey startup, and
+    // relaunches fully detached so it can't couple clx to our launching session.
+    self_update::spawn_check(cfg.auto_rebuild);
+
     hook::init_engine(cfg.clone().into_clx_config());
 
     // Create shared memory for IPC with AHK before installing the hook.
@@ -356,6 +383,7 @@ fn main() {
             let icon = Image::from_bytes(ICON_OFF).expect("embedded ICO must be valid");
             TrayIconBuilder::with_id(TRAY_ID)
                 .icon(icon)
+                .tooltip(self_update::version_string())
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     // Single code path: builds (with hide-on-close handler) or

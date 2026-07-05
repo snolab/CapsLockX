@@ -198,8 +198,32 @@ async fn bs_run_setup(app: tauri::AppHandle, model: String) -> Result<String, St
     .map_err(|e| format!("setup task failed: {e}"))?
 }
 
+/// Exit this prefs process if the parent CLX (PID in `CLX_PARENT_PID`) exits, so
+/// a prefs window can never orphan and linger when clx is killed / self-updates.
+fn exit_with_parent() {
+    let Some(pid) = std::env::var("CLX_PARENT_PID")
+        .ok()
+        .and_then(|s| s.parse::<u32>().ok())
+    else {
+        return;
+    };
+    std::thread::spawn(move || unsafe {
+        use windows::Win32::Foundation::{CloseHandle, WAIT_OBJECT_0};
+        use windows::Win32::System::Threading::{
+            OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE,
+        };
+        if let Ok(h) = OpenProcess(PROCESS_SYNCHRONIZE, false, pid) {
+            if WaitForSingleObject(h, u32::MAX) == WAIT_OBJECT_0 {
+                std::process::exit(0);
+            }
+            let _ = CloseHandle(h);
+        }
+    });
+}
+
 /// Entry point for the `prefs-window` subcommand. Blocks until the window closes.
 pub fn run() {
+    exit_with_parent();
     SETUP_MODE.store(
         std::env::args().any(|a| a == "--setup=brainstorm"),
         Ordering::Relaxed,

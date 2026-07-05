@@ -68,7 +68,36 @@ fn signal_config_changed() {
 #[cfg(not(windows))]
 fn signal_config_changed() {}
 
+/// Exit this prefs process if the parent CLX (PID in `CLX_PARENT_PID`) exits, so
+/// a prefs window can never orphan and linger when clx is killed / self-updates.
+#[cfg(windows)]
+fn exit_with_parent() {
+    let Some(pid) = std::env::var("CLX_PARENT_PID")
+        .ok()
+        .and_then(|s| s.parse::<u32>().ok())
+    else {
+        return;
+    };
+    std::thread::spawn(move || unsafe {
+        use windows::Win32::Foundation::{CloseHandle, WAIT_OBJECT_0};
+        use windows::Win32::System::Threading::{
+            OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE,
+        };
+        if let Ok(h) = OpenProcess(PROCESS_SYNCHRONIZE, false, pid) {
+            // Blocks until the parent process exits, then tears us down too.
+            if WaitForSingleObject(h, u32::MAX) == WAIT_OBJECT_0 {
+                std::process::exit(0);
+            }
+            let _ = CloseHandle(h);
+        }
+    });
+}
+#[cfg(not(windows))]
+fn exit_with_parent() {}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    exit_with_parent();
+
     let version = std::env::args()
         .nth(1)
         .unwrap_or_else(|| "CapsLockX".into());
