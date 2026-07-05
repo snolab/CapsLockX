@@ -81,6 +81,7 @@ const WM_SYSKEYDOWN: u32 = 0x0104;
 const WM_SYSKEYUP: u32 = 0x0105;
 const LLKHF_UP: u32 = 0x80;
 const LLKHF_INJECTED: u32 = 0x10;
+const LLKHF_ALTDOWN: u32 = 0x20;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -237,6 +238,15 @@ unsafe extern "system" fn keyboard_proc(n_code: i32, w_param: WPARAM, l_param: L
 
     if !pressed && !released {
         return call_next(n_code, w_param, l_param);
+    }
+
+    // AHK-parity Alt+Tab / Win+Tab switcher enhancement. While a task-switcher
+    // window is focused and Alt is held, remap WASD→arrows, the media/volume
+    // pad (Q E R F T G H J K L M), and X/C→close. Runs before engine dispatch
+    // and only on non-injected Alt+<key> key-downs, so ordinary typing and CLX
+    // mode are untouched. LLKHF_ALTDOWN gates the class lookup off the hot path.
+    if pressed && (flags & LLKHF_ALTDOWN) != 0 && crate::alt_tab::try_handle(kb.vkCode) {
+        return LRESULT(1);
     }
 
     let engine = ENGINE.get().expect("init_engine not called");

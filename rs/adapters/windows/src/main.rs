@@ -5,6 +5,7 @@
 //! Build (debug):   cargo build -p capslockx-windows
 //! Build (release): cargo build -p capslockx-windows --release
 
+mod alt_tab;
 mod commands;
 mod config_store;
 mod cursor_visibility;

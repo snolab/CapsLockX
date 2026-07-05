@@ -105,6 +105,21 @@ fn send(inputs: &[INPUT]) {
     }
 }
 
+/// Tap a raw virtual-key as an EXTENDED scancode event (down+up), tagged as
+/// self-injected so our own hook skips it.
+///
+/// Used by the Alt+Tab enhancement (`alt_tab.rs`) to emit arrow keys,
+/// media/volume keys, and Delete while the Windows task-switcher is focused.
+/// Scancode injection (like AHK's `SendEvent`) lets the physically-held Alt
+/// modify the injected key — exactly what the switcher's arrow-navigation
+/// needs — and multimedia VKs only inject reliably as extended scancodes.
+pub fn tap_vk_extended(vk: u16) {
+    send(&[
+        kbd(vk, KEYEVENTF_EXTENDEDKEY),
+        kbd(vk, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP),
+    ]);
+}
+
 /// True if `key` is currently physically down. Checks the distinguished VK
 /// (e.g. VK_LSHIFT 0xA0) and falls back to the combined VK (VK_SHIFT 0x10 /
 /// VK_CONTROL 0x11 / VK_MENU 0x12) — the distinguished left/right modifier VKs
