@@ -399,6 +399,11 @@ impl FullConfig {
             wake_word_hold_ms: self.wake_word_hold_ms,
             note_translate_enabled: self.note_translate_enabled,
             note_translate_target: self.note_translate_target,
+            // Brainstorm local-first fields (added on the Windows/rust-port side;
+            // not surfaced in the macOS FullConfig yet) — use ClxConfig defaults
+            // so this initializer stays complete after the beta↔main merge.
+            prefer_local: true,
+            local_model: String::new(),
         }
     }
 }
