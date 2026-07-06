@@ -69,6 +69,24 @@ see the edges of all nearby windows fanning out from the active one.
 
 Implemented on both macOS (AXRaise) and Windows (SetWindowPos).
 
+### Geometry: right edge snaps to the display edge
+
+The cascade only steps the **top-left** corner: window `k` sits at
+`x = ax + dx*k`, `y = ay + dy*k` (`dx = min(72, aw/n)`,
+`dy = min(32, ah/n)`). Rather than giving every window a fixed shared
+width, each window's **right edge is pinned to the display's right edge**:
+
+```
+w = (ax + aw) - x       # right edge == ax + aw for every window
+```
+
+So width shrinks one step per card (top window = full width, each lower
+window narrower by `dx`), and all right edges line up flush against the
+screen's right side. Height keeps the prior rule (the bottom-most window's
+bottom edge reaches the work-area corner). See
+`rs/adapters/macos/src/output.rs::arrange_windows` (`ArrangeMode::Stacked`).
+`SideBySide` (Shift+Space+C) is unaffected.
+
 ### Implementation:
 - Remove `windows.retain(|w| w.display_id == current_display)` filter
 - Cycle all on-screen windows across all monitors (`kCGWindowListOptionOnScreenOnly`)

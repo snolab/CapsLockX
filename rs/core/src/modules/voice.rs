@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 /// CLX-Voice -- V key toggles voice listening (toggle / hold modes).
 ///
 /// Architecture: dual-track STT worker
@@ -258,6 +258,11 @@ pub struct VoiceModule {
     /// Always-on KWS listener — held here so its `Drop` runs on shutdown
     /// and reaps the otoji kws subprocess instead of leaving a zombie.
     wake_word_listener: Mutex<Option<super::wake_word::WakeWordListener>>,
+    /// Warm-pool generation counter. Bumped on every pipeline (re)start and on
+    /// every immediate stop. An armed idle-stop timer captures the value at arm
+    /// time and aborts if it no longer matches — so a new press (or hard stop)
+    /// cancels a pending idle teardown, keeping otoji warm between presses.
+    otoji_idle_gen: Arc<AtomicU64>,
 }
 
 /// Config that can be hot-reloaded from preferences.
@@ -314,6 +319,7 @@ impl VoiceModule {
             otoji_available: super::voice_otoji::OtojiBackend::is_available(),
             ptt,
             wake_word_listener: Mutex::new(None),
+            otoji_idle_gen: Arc::new(AtomicU64::new(0)),
             live_config: Arc::new(std::sync::Mutex::new(VoiceLiveConfig {
                 stt_engine,
                 ptt_vad_auto_release_ms: 0,
@@ -520,16 +526,26 @@ impl VoiceModule {
                 if self.note_active.load(Ordering::Relaxed) {
                     self.note_active.store(false, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note stopped");
-                    // Tear down the audio pipeline so the mic indicator
-                    // disappears immediately. Without this, otoji listen
-                    // (or local STT) keeps the mic open silently after
-                    // the overlay is hidden.
-                    self.stop_pipeline();
+                    if super::voice_otoji::prewarm_enabled() {
+                        // Pre-warm: return otoji to standby (stop ambient VAD)
+                        // but keep it alive for the next press.
+                        self.otoji.send_control("STANDBY");
+                    } else {
+                        // Warm pool: keep otoji alive for the idle window so a
+                        // quick re-toggle (or follow-up PTT) reuses it without a
+                        // model reload; the mic releases once the timer fires.
+                        self.arm_idle_stop();
+                    }
                     self.platform.hide_voice_overlay();
                     self.platform.set_ptt_tray_state(PttTrayState::Idle);
                 } else {
                     self.note_active.store(true, Ordering::Relaxed);
                     eprintln!("[CLX] voice: click → note started");
+                    // Pre-warm: otoji is idling in standby — resume the ambient
+                    // VAD path so the note overlay gets live transcription.
+                    if super::voice_otoji::prewarm_enabled() {
+                        self.otoji.send_control("RESUME");
+                    }
                     self.platform.show_voice_overlay();
                     self.platform.set_ptt_tray_state(PttTrayState::NoteMode);
                 }
@@ -553,7 +569,11 @@ impl VoiceModule {
             self.final_polish_requested.store(true, Ordering::Relaxed);
             eprintln!("[CLX] voice: CLX deactivated while input active → final polish requested");
             if !self.note_active.load(Ordering::Relaxed) {
-                self.stop_pipeline();
+                // Warm pool: keep otoji alive for a short idle window so the
+                // next Space+V reuses it without a model reload. The timer only
+                // tears down after the worker finishes (input_active clears) and
+                // no new press arrives.
+                self.arm_idle_stop();
             }
         }
     }
@@ -578,7 +598,50 @@ impl VoiceModule {
         // Skip in-process STT preload when otoji is available — it provides
         // SenseVoice as an external subprocess, saving ~1 GB in this process.
         if super::voice_otoji::OtojiBackend::is_available() {
-            eprintln!("[CLX] voice: otoji available, skipping in-process STT preload");
+            if super::voice_otoji::prewarm_enabled() {
+                // Pre-warm otoji at startup, in standby: load the SenseVoice
+                // model + open the mic now so the first Space+V is instant
+                // (no ~1s cold start). Standby suppresses the ambient VAD path,
+                // so nothing is transcribed/recorded until the user presses PTT
+                // or starts note mode. Silent — no overlay.
+                eprintln!("[CLX] voice: pre-warming otoji at startup (standby)");
+                let otoji = Arc::clone(&self.otoji);
+                let platform = Arc::clone(&self.platform);
+                let input_active = Arc::clone(&self.input_active);
+                let otoji_typed = Arc::clone(&self.otoji_typed);
+                let ptt = Arc::clone(&self.ptt);
+                let (aec_enabled, stt_engine, whisper_model_path, whisper_language) = {
+                    let lc = self.live_config.lock().unwrap();
+                    let aec = match lc.aec_mode.as_str() {
+                        "always" => true,
+                        "dual-only" => self.with_system_audio.load(Ordering::Relaxed),
+                        _ => false,
+                    };
+                    (
+                        aec,
+                        lc.stt_engine.clone(),
+                        lc.whisper_model_path.clone(),
+                        lc.whisper_language.clone(),
+                    )
+                };
+                std::thread::Builder::new()
+                    .name("otoji-prewarm".into())
+                    .spawn(move || {
+                        otoji.start(
+                            platform,
+                            input_active,
+                            otoji_typed,
+                            Some(ptt),
+                            aec_enabled,
+                            stt_engine,
+                            whisper_model_path,
+                            whisper_language,
+                        );
+                    })
+                    .ok();
+            } else {
+                eprintln!("[CLX] voice: otoji available, skipping in-process STT preload");
+            }
             return;
         }
         let mut bg = self.bg_thread.lock().unwrap();
@@ -632,6 +695,9 @@ impl VoiceModule {
     /// for >200ms or macOS disables the event tap and CLX dies. All subprocess
     /// spawns (otoji, pgrep) happen on a background thread.
     fn ensure_pipeline_running(&self) {
+        // Cancel any pending idle teardown — this press keeps otoji warm and
+        // reuses the live process if it's still running (no model reload).
+        self.otoji_idle_gen.fetch_add(1, Ordering::Relaxed);
         // Immediate (<1ms) tray feedback, before the otoji subprocess spawn.
         super::voice_otoji::notify_tray(super::voice_otoji::TrayState::Starting);
         // Prefer otoji as external STT backend (cached check — no subprocess).
@@ -713,6 +779,9 @@ impl VoiceModule {
     }
 
     fn stop_pipeline(&self) {
+        // Bump the generation so any armed idle-stop timer aborts — this is an
+        // immediate hard teardown and supersedes a pending warm-pool kill.
+        self.otoji_idle_gen.fetch_add(1, Ordering::Relaxed);
         super::voice_otoji::notify_tray(super::voice_otoji::TrayState::Idle);
         // Stop otoji backend if running.
         if self.otoji.is_running() {
@@ -723,6 +792,70 @@ impl VoiceModule {
             eprintln!("[CLX] voice: stopping pipeline");
             self.bg_stop.store(true, Ordering::Relaxed);
         }
+    }
+
+    /// Warm-pool teardown: keep otoji alive after a PTT release so the next
+    /// press reuses the live process (no ~0.3-0.6s SenseVoice reload). Arms a
+    /// background timer that tears the pipeline down only after `IDLE_MS` of
+    /// genuine idle — no new press and nothing still listening. A subsequent
+    /// press (or hard `stop_pipeline`) bumps `otoji_idle_gen`, which this timer
+    /// detects and aborts on. The mic stays open while warm (per user choice).
+    fn arm_idle_stop(&self) {
+        // Pre-warm mode keeps otoji alive permanently (in standby), so there is
+        // nothing to idle-kill — the ambient VAD path is already suppressed and
+        // the next PTT reuses the warm process instantly.
+        if super::voice_otoji::prewarm_enabled() {
+            return;
+        }
+        const IDLE_MS: u64 = 30_000;
+        const TICK_MS: u64 = 1_000;
+
+        // Capture the generation this arming belongs to.
+        let my_gen = self.otoji_idle_gen.fetch_add(1, Ordering::Relaxed) + 1;
+
+        let idle_gen = Arc::clone(&self.otoji_idle_gen);
+        let otoji = Arc::clone(&self.otoji);
+        let platform = Arc::clone(&self.platform);
+        let bg_stop = Arc::clone(&self.bg_stop);
+        let note_active = Arc::clone(&self.note_active);
+        let input_active = Arc::clone(&self.input_active);
+
+        std::thread::Builder::new()
+            .name("otoji-idle-stop".into())
+            .spawn(move || {
+                let mut idle_elapsed = 0u64;
+                loop {
+                    std::thread::sleep(std::time::Duration::from_millis(TICK_MS));
+                    // Superseded by a newer press or a hard stop → abort.
+                    if idle_gen.load(Ordering::Relaxed) != my_gen {
+                        return;
+                    }
+                    // Still in an active session → reset the idle countdown.
+                    if note_active.load(Ordering::Relaxed) || input_active.load(Ordering::Relaxed) {
+                        idle_elapsed = 0;
+                        continue;
+                    }
+                    idle_elapsed += TICK_MS;
+                    if idle_elapsed >= IDLE_MS {
+                        // Re-check we still own the generation before tearing down.
+                        if idle_gen.load(Ordering::Relaxed) != my_gen {
+                            return;
+                        }
+                        eprintln!(
+                            "[CLX] voice: otoji idle {}s → warm-pool teardown",
+                            IDLE_MS / 1000
+                        );
+                        super::voice_otoji::notify_tray(super::voice_otoji::TrayState::Idle);
+                        if otoji.is_running() {
+                            otoji.stop();
+                            platform.hide_voice_overlay();
+                        }
+                        bg_stop.store(true, Ordering::Relaxed);
+                        return;
+                    }
+                }
+            })
+            .ok();
     }
 }
 
@@ -3130,6 +3263,37 @@ struct VadState {
 /// TEN VAD frame size: 256 samples at 16kHz (16ms).
 const TEN_VAD_FRAME_SIZE: usize = 256;
 
+/// `ort` is built in load-dynamic mode, so it dlopens ONNX Runtime from
+/// `ORT_DYLIB_PATH` at first use. Point it at the ONNX Runtime we ship next to
+/// the binary — the `.app`'s `Contents/Frameworks` (bundle) or alongside the
+/// binary (dev/portable) — unless already configured (e.g. by the dev wrapper).
+fn ensure_ort_dylib_path() {
+    use std::sync::Once;
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| {
+        if std::env::var_os("ORT_DYLIB_PATH").is_some_and(|v| !v.is_empty()) {
+            return;
+        }
+        // Must match the ONNX Runtime version ort rc.11 targets (see
+        // scripts/fetch-ort-dylib.sh, which bundles this exact file).
+        const ORT_DYLIB: &str = "libonnxruntime.1.23.2.dylib";
+        let Ok(exe) = std::env::current_exe() else {
+            return;
+        };
+        let Some(dir) = exe.parent() else { return };
+        for cand in [
+            dir.join("../Frameworks").join(ORT_DYLIB),
+            dir.join(ORT_DYLIB),
+        ] {
+            if cand.exists() {
+                eprintln!("[CLX] ort: ORT_DYLIB_PATH={}", cand.display());
+                std::env::set_var("ORT_DYLIB_PATH", &cand);
+                return;
+            }
+        }
+    });
+}
+
 impl VadState {
     fn new() -> Self {
         Self::with_thresholds(
@@ -3146,6 +3310,7 @@ impl VadState {
         start_frames: usize,
         end_frames: usize,
     ) -> Self {
+        ensure_ort_dylib_path();
         let model_bytes = include_bytes!(concat!(
             env!("CARGO_HOME"),
             "/registry/src/index.crates.io-1949cf8c6b5b557f/ten-vad-rs-0.1.6/onnx/ten-vad.onnx"

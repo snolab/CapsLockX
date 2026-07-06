@@ -20,6 +20,10 @@ pub struct FullConfig {
     pub scroll_speed: f64,
     #[serde(default)]
     pub request_admin: bool,
+    /// Auto-upgrade (git pull --ff-only) + rebuild on startup when running from
+    /// a local git checkout and the binary is behind HEAD. See self_update.rs.
+    #[serde(default = "default_auto_rebuild")]
+    pub auto_rebuild: bool,
     /// STT engine: "sherpa" (SenseVoice) or "whisper"
     #[serde(default = "default_stt_engine")]
     pub stt_engine: String,
@@ -67,6 +71,9 @@ fn default_stt_polish_chain() -> String {
 fn default_prefer_local() -> bool {
     true
 }
+fn default_auto_rebuild() -> bool {
+    true
+}
 
 impl Default for FullConfig {
     fn default() -> Self {
@@ -83,6 +90,7 @@ impl Default for FullConfig {
             mouse_speed: 5900.0,
             scroll_speed: 1600.0,
             request_admin: false,
+            auto_rebuild: true,
             stt_engine: "sherpa".to_string(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
@@ -114,6 +122,7 @@ impl FullConfig {
             mouse_speed: cfg.speed.mouse_speed,
             scroll_speed: cfg.speed.scroll_speed,
             request_admin: false,
+            auto_rebuild: true,
             stt_engine: cfg.stt_engine.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
             openai_api_key: cfg.openai_api_key.clone(),

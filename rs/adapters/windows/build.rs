@@ -1,7 +1,48 @@
 fn main() {
+    // Embed the git commit this binary was built from, so the running process
+    // can detect when the local checkout has moved ahead (self_update.rs).
+    embed_git_hash();
     // Icons must be generated before tauri_build::build() checks for them.
     generate_icons();
     tauri_build::build();
+}
+
+/// Record `git rev-parse HEAD` into the `CLX_GIT_HASH` compile-time env var.
+///
+/// Falls back to "unknown" when git isn't available or this isn't a checkout
+/// (e.g. a released binary) — self_update treats "unknown" as "never rebuild".
+///
+/// We watch `.git/logs/HEAD` (the reflog, appended on every commit / checkout /
+/// fetch-that-moves-HEAD / pull / reset) so cargo re-runs this build script and
+/// re-embeds the new hash whenever HEAD moves. Without this, an auto-rebuild
+/// would keep re-embedding the *old* hash and loop forever.
+fn embed_git_hash() {
+    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    // manifest = <root>/rs/adapters/windows → ancestors: [self, adapters, rs, <root>]
+    let root = manifest.ancestors().nth(3).map(|p| p.to_path_buf());
+
+    let hash = root
+        .as_ref()
+        .and_then(|r| {
+            std::process::Command::new("git")
+                .current_dir(r)
+                .args(["rev-parse", "HEAD"])
+                .output()
+                .ok()
+        })
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    println!("cargo:rustc-env=CLX_GIT_HASH={hash}");
+
+    if let Some(r) = root {
+        let logs_head = r.join(".git").join("logs").join("HEAD");
+        if logs_head.exists() {
+            println!("cargo:rerun-if-changed={}", logs_head.display());
+        }
+    }
 }
 
 fn generate_icons() {
@@ -44,14 +85,13 @@ fn make_png() -> Vec<u8> {
     for row in 0..H as usize {
         img[row * row_stride] = 0; // filter byte: None
         for col in 0..W as usize {
-            let border = col < 4 || col >= (W as usize - 4)
-                || row < 4  || row >= (H as usize - 4);
+            let border = col < 4 || col >= (W as usize - 4) || row < 4 || row >= (H as usize - 4);
             let color = if border { AC } else { BG };
             let i = row * row_stride + 1 + col * 4;
-            img[i]   = color[0];
-            img[i+1] = color[1];
-            img[i+2] = color[2];
-            img[i+3] = color[3];
+            img[i] = color[0];
+            img[i + 1] = color[1];
+            img[i + 2] = color[2];
+            img[i + 3] = color[3];
         }
     }
 
@@ -82,14 +122,13 @@ fn make_png_on() -> Vec<u8> {
     for row in 0..H as usize {
         img[row * row_stride] = 0;
         for col in 0..W as usize {
-            let border = col < 4 || col >= (W as usize - 4)
-                || row < 4  || row >= (H as usize - 4);
+            let border = col < 4 || col >= (W as usize - 4) || row < 4 || row >= (H as usize - 4);
             let color = if border { AC } else { BG };
             let i = row * row_stride + 1 + col * 4;
-            img[i]   = color[0];
-            img[i+1] = color[1];
-            img[i+2] = color[2];
-            img[i+3] = color[3];
+            img[i] = color[0];
+            img[i + 1] = color[1];
+            img[i + 2] = color[2];
+            img[i + 3] = color[3];
         }
     }
 
@@ -109,7 +148,7 @@ fn make_png_on() -> Vec<u8> {
 
 /// Wrap PNG bytes in an ICO container (Vista+ PNG-in-ICO format).
 fn make_ico(png: &[u8]) -> Vec<u8> {
-    let size   = png.len() as u32;
+    let size = png.len() as u32;
     let offset = 22u32; // 6-byte header + 16-byte dir entry
 
     let mut ico = Vec::with_capacity(22 + png.len());
@@ -117,11 +156,11 @@ fn make_ico(png: &[u8]) -> Vec<u8> {
     ico.extend_from_slice(&[0x00, 0x00]); // reserved
     ico.extend_from_slice(&[0x01, 0x00]); // type: icon
     ico.extend_from_slice(&[0x01, 0x00]); // image count: 1
-    // Image directory entry
-    ico.push(32);                         // width  (0 = 256)
-    ico.push(32);                         // height
-    ico.push(0);                          // colour count (0 = truecolor)
-    ico.push(0);                          // reserved
+                                          // Image directory entry
+    ico.push(32); // width  (0 = 256)
+    ico.push(32); // height
+    ico.push(0); // colour count (0 = truecolor)
+    ico.push(0); // reserved
     ico.extend_from_slice(&[0x01, 0x00]); // colour planes
     ico.extend_from_slice(&[0x20, 0x00]); // bits per pixel (32)
     ico.extend_from_slice(&size.to_le_bytes());
@@ -137,11 +176,11 @@ fn zlib_store(data: &[u8]) -> Vec<u8> {
     let mut out = vec![0x78, 0x01]; // zlib header (deflate, fastest; 0x7801 % 31 == 0)
     let mut offset = 0;
     while offset < data.len() {
-        let end   = (offset + 65535).min(data.len());
+        let end = (offset + 65535).min(data.len());
         let block = &data[offset..end];
         let bfinal = u8::from(end == data.len());
-        let len   = block.len() as u16;
-        let nlen  = !len;
+        let len = block.len() as u16;
+        let nlen = !len;
         out.push(bfinal);
         out.extend_from_slice(&len.to_le_bytes());
         out.extend_from_slice(&nlen.to_le_bytes());
@@ -156,7 +195,7 @@ fn adler32(data: &[u8]) -> u32 {
     let (mut a, mut b) = (1u32, 0u32);
     for &byte in data {
         a = (a + byte as u32) % 65521;
-        b = (b + a)           % 65521;
+        b = (b + a) % 65521;
     }
     (b << 16) | a
 }
@@ -169,7 +208,11 @@ fn chunk(out: &mut Vec<u8>, ty: &[u8; 4], data: &[u8]) {
     for &b in ty.iter().chain(data) {
         crc ^= b as u32;
         for _ in 0..8 {
-            crc = if crc & 1 != 0 { 0xEDB8_8320 ^ (crc >> 1) } else { crc >> 1 };
+            crc = if crc & 1 != 0 {
+                0xEDB8_8320 ^ (crc >> 1)
+            } else {
+                crc >> 1
+            };
         }
     }
     out.extend_from_slice(&(crc ^ 0xFFFF_FFFF).to_be_bytes());

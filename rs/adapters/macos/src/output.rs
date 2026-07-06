@@ -707,8 +707,18 @@ fn list_all_windows() -> Vec<WindowEntry> {
         // different apps don't interfere. Sequential queries take ~130ms × N apps;
         // parallel reduces that to ~max(single app latency) ≈ 130-200ms.
         let onscreen_wids = std::sync::Arc::new(onscreen_wids);
+        // Never enumerate clx's own windows. Operating on them (e.g. AX frame-set
+        // during Space+C arrange) routes through in-process AppKit, which asserts
+        // "Must only be used from the main thread" and SIGTRAPs — arrange runs on
+        // a worker thread. Cross-process AX is serviced in the target app, so this
+        // only affects our own overlays. Excluding our pid also keeps clx's
+        // overlays out of the Space+Z cycle.
+        let own_pid = std::process::id() as i64;
         let mut handles: Vec<(usize, std::thread::JoinHandle<Vec<WindowEntry>>)> = Vec::new();
         for (order, &pid) in ordered_pids.iter().enumerate() {
+            if pid == own_pid {
+                continue;
+            }
             if !seen_pids.insert(pid) {
                 continue;
             }
@@ -1063,6 +1073,13 @@ fn visible_work_area() -> (f64, f64, f64, f64) {
         };
         #[cfg(target_arch = "x86_64")]
         let vis: NSRect = {
+            extern "C" {
+                fn objc_msgSend_stret(
+                    ret: *mut NSRect,
+                    receiver: *mut std::ffi::c_void,
+                    sel: *mut std::ffi::c_void,
+                );
+            }
             let mut r = NSRect {
                 x: 0.0,
                 y: 0.0,
@@ -1217,6 +1234,13 @@ fn visible_work_area_for_display(target_display_id: u32) -> (f64, f64, f64, f64)
             };
             #[cfg(target_arch = "x86_64")]
             let vis: NSRect = {
+                extern "C" {
+                    fn objc_msgSend_stret(
+                        ret: *mut NSRect,
+                        receiver: *mut std::ffi::c_void,
+                        sel: *mut std::ffi::c_void,
+                    );
+                }
                 let mut r = NSRect {
                     x: 0.0,
                     y: 0.0,
@@ -1322,6 +1346,49 @@ impl MacPlatform {
             }
         }
         flags
+    }
+}
+
+/// Fire a single trackpad haptic tap via `NSHapticFeedbackManager`. Dispatched
+/// to the main queue (AppKit). No-op on hardware without a Taptic Engine.
+pub fn perform_haptic_tap() {
+    use std::ffi::c_void;
+    extern "C" {
+        fn dispatch_async_f(queue: *mut c_void, ctx: *mut c_void, work: extern "C" fn(*mut c_void));
+        fn dlsym(handle: *mut c_void, symbol: *const std::ffi::c_char) -> *mut c_void;
+    }
+    extern "C" fn do_haptic(_ctx: *mut c_void) {
+        unsafe {
+            let cls = objc_getClass(b"NSHapticFeedbackManager\0".as_ptr() as *const _);
+            if cls.is_null() {
+                return;
+            }
+            let performer = objc_msgSend(
+                cls,
+                sel_registerName(b"defaultPerformer\0".as_ptr() as *const _),
+            );
+            if performer.is_null() {
+                return;
+            }
+            // -performFeedbackPattern:(NSInteger)pattern performanceTime:(NSUInteger)time
+            // pattern: Generic = 0 · performanceTime: Now = 1
+            let perform: extern "C" fn(*mut c_void, *mut c_void, i64, u64) =
+                std::mem::transmute(objc_msgSend as *const ());
+            perform(
+                performer,
+                sel_registerName(b"performFeedbackPattern:performanceTime:\0".as_ptr() as *const _),
+                0,
+                1,
+            );
+        }
+    }
+    unsafe {
+        // RTLD_DEFAULT (-2) → the libdispatch main-queue global.
+        let main_q = dlsym(
+            -2isize as *mut c_void,
+            b"_dispatch_main_q\0".as_ptr() as *const _,
+        );
+        dispatch_async_f(main_q, std::ptr::null_mut(), do_haptic);
     }
 }
 
@@ -1707,13 +1774,16 @@ impl Platform for MacPlatform {
 
             match mode {
                 ArrangeMode::Stacked => {
+                    // Cascade the top-left corner as before, but snap every
+                    // window's RIGHT edge to the display's right edge — so
+                    // width shrinks per step instead of staying fixed.
                     let dx = 72.0_f64.min(aw / n as f64);
                     let dy = (48.0_f64 * 2.0 / 3.0).min(ah / n as f64);
-                    let w = (aw / 2.0).max(aw - 2.0 * dx - (n as f64 - 2.0) * dx + dx);
                     let h = (ah / 2.0).max(ah - 2.0 * dy - (n as f64 - 2.0) * dy + dy);
                     for (k, win) in windows.iter().enumerate() {
                         let x = ax + dx * k as f64;
                         let y = ay + dy * k as f64;
+                        let w = (ax + aw) - x; // right edge pinned to display right edge
                         frames.push((*win, x, y, w, h));
                     }
                 }
@@ -1934,6 +2004,10 @@ impl Platform for MacPlatform {
             NoteMode => TrayState::ListenSilent,
         };
         notify_tray(ts);
+    }
+
+    fn haptic_feedback(&self) {
+        crate::output::perform_haptic_tap();
     }
 
     fn get_selected_text(&self) -> String {

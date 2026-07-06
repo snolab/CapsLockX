@@ -9,7 +9,7 @@
 // Or launched by CapsLockX main process via CLX+M hotkey.
 
 use std::ffi::c_void;
-use std::io::{self, Write, BufRead};
+use std::io::{self, BufRead, Write};
 
 // ── Timestamp + File Logging ─────────────────────────────────────────────────
 
@@ -19,7 +19,8 @@ static mut LIVE_FILE: Option<std::sync::Mutex<std::fs::File>> = None;
 
 /// Get the project root directory (where clx binary lives, or CWD).
 fn project_root() -> std::path::PathBuf {
-    std::env::current_exe().ok()
+    std::env::current_exe()
+        .ok()
         .and_then(|e| e.parent().map(|p| p.to_path_buf()))
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| ".".into()))
 }
@@ -35,12 +36,21 @@ fn init_logging() {
         let tmp_dir = project_root().join("tmp");
         let _ = std::fs::create_dir_all(&tmp_dir);
         let log_path = tmp_dir.join("agent.log");
-        if let Ok(f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+        if let Ok(f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+        {
             LOG_FILE = Some(std::sync::Mutex::new(f));
         }
         // Live file: truncated each session, watched by main clx for overlay.
         let live_path = tmp_dir.join("agent-live.log");
-        if let Ok(f) = std::fs::OpenOptions::new().create(true).write(true).truncate(true).open(&live_path) {
+        if let Ok(f) = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&live_path)
+        {
             LIVE_FILE = Some(std::sync::Mutex::new(f));
         }
     }
@@ -48,7 +58,8 @@ fn init_logging() {
 
 fn elapsed_ms() -> u64 {
     unsafe {
-        SESSION_START.as_ref()
+        SESSION_START
+            .as_ref()
             .map(|s| s.elapsed().as_millis() as u64)
             .unwrap_or(0)
     }
@@ -91,22 +102,38 @@ extern "C" {
 
 type AXUIElementCreateApplicationFn = unsafe extern "C" fn(pid: i32) -> AXUIElementRef;
 type AXUIElementCopyAttributeValueFn = unsafe extern "C" fn(
-    element: AXUIElementRef, attribute: CFStringRef, value: *mut CFTypeRef,
+    element: AXUIElementRef,
+    attribute: CFStringRef,
+    value: *mut CFTypeRef,
 ) -> i32;
 
 // RTLD_DEFAULT
 const RTLD_DEFAULT: *mut c_void = -2isize as *mut c_void;
 
 unsafe fn ax_create_app(pid: i32) -> AXUIElementRef {
-    let sym = dlsym(RTLD_DEFAULT, b"AXUIElementCreateApplication\0".as_ptr() as *const _);
-    if sym.is_null() { return std::ptr::null_mut(); }
+    let sym = dlsym(
+        RTLD_DEFAULT,
+        b"AXUIElementCreateApplication\0".as_ptr() as *const _,
+    );
+    if sym.is_null() {
+        return std::ptr::null_mut();
+    }
     let f: AXUIElementCreateApplicationFn = std::mem::transmute(sym);
     f(pid)
 }
 
-unsafe fn ax_copy_attr(element: AXUIElementRef, attribute: CFStringRef, value: *mut CFTypeRef) -> i32 {
-    let sym = dlsym(RTLD_DEFAULT, b"AXUIElementCopyAttributeValue\0".as_ptr() as *const _);
-    if sym.is_null() { return -1; }
+unsafe fn ax_copy_attr(
+    element: AXUIElementRef,
+    attribute: CFStringRef,
+    value: *mut CFTypeRef,
+) -> i32 {
+    let sym = dlsym(
+        RTLD_DEFAULT,
+        b"AXUIElementCopyAttributeValue\0".as_ptr() as *const _,
+    );
+    if sym.is_null() {
+        return -1;
+    }
     let f: AXUIElementCopyAttributeValueFn = std::mem::transmute(sym);
     f(element, attribute, value)
 }
@@ -130,18 +157,23 @@ extern "C" {
 #[link(name = "CoreGraphics", kind = "framework")]
 extern "C" {
     fn CGEventCreateMouseEvent(
-        source: *mut c_void, mouse_type: u32, point: CGPoint, button: u32,
+        source: *mut c_void,
+        mouse_type: u32,
+        point: CGPoint,
+        button: u32,
     ) -> *mut c_void;
     fn CGEventPost(tap: u32, event: *mut c_void);
-    fn CGEventCreateKeyboardEvent(
-        source: *mut c_void, keycode: u16, key_down: bool,
-    ) -> *mut c_void;
+    fn CGEventCreateKeyboardEvent(source: *mut c_void, keycode: u16, key_down: bool)
+        -> *mut c_void;
     fn CGEventSetFlags(event: *mut c_void, flags: u64);
     fn CGEventSetIntegerValueField(event: *mut c_void, field: u32, value: i64);
     fn CGEventKeyboardSetUnicodeString(event: *mut c_void, len: u32, chars: *const u16);
     // Fast pixel capture — no file I/O, returns CGImage directly.
     fn CGWindowListCreateImage(
-        bounds: CGRect, list_option: u32, window_id: u32, image_option: u32,
+        bounds: CGRect,
+        list_option: u32,
+        window_id: u32,
+        image_option: u32,
     ) -> *mut c_void; // CGImageRef
     fn CGImageGetWidth(image: *mut c_void) -> usize;
     fn CGImageGetHeight(image: *mut c_void) -> usize;
@@ -153,8 +185,13 @@ extern "C" {
     fn CGColorSpaceCreateDeviceRGB() -> *mut c_void;
     fn CGColorSpaceRelease(cs: *mut c_void);
     fn CGBitmapContextCreate(
-        data: *mut u8, width: usize, height: usize, bits_per_component: usize,
-        bytes_per_row: usize, color_space: *mut c_void, bitmap_info: u32,
+        data: *mut u8,
+        width: usize,
+        height: usize,
+        bits_per_component: usize,
+        bytes_per_row: usize,
+        color_space: *mut c_void,
+        bitmap_info: u32,
     ) -> *mut c_void;
     fn CGContextDrawImage(ctx: *mut c_void, rect: CGRect, image: *mut c_void);
     fn CGContextRelease(ctx: *mut c_void);
@@ -162,11 +199,17 @@ extern "C" {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-struct CGRect { origin: CGPoint, size: CGRectSize }
+struct CGRect {
+    origin: CGPoint,
+    size: CGRectSize,
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-struct CGRectSize { width: f64, height: f64 }
+struct CGRectSize {
+    width: f64,
+    height: f64,
+}
 
 // ── Target process ───────────────────────────────────────────────────────────
 
@@ -174,7 +217,9 @@ static mut TARGET_PID: i32 = 0; // 0 = global (all apps), >0 = specific process
 
 /// Post a CGEvent, targeting a specific process if --target was set.
 unsafe fn post_event(event: *mut c_void) {
-    if event.is_null() { return; }
+    if event.is_null() {
+        return;
+    }
     let pid = TARGET_PID;
     if pid > 0 {
         // Field 40 = kCGEventTargetUnixProcessID — routes event to specific app.
@@ -196,24 +241,40 @@ fn find_pid_by_name(name: &str) -> Option<i32> {
         let ws_cls = objc_getClass(b"NSWorkspace\0".as_ptr() as *const _);
         let f0: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
-        let ws = f0(ws_cls, sel_registerName(b"sharedWorkspace\0".as_ptr() as *const _));
-        let apps = f0(ws, sel_registerName(b"runningApplications\0".as_ptr() as *const _));
+        let ws = f0(
+            ws_cls,
+            sel_registerName(b"sharedWorkspace\0".as_ptr() as *const _),
+        );
+        let apps = f0(
+            ws,
+            sel_registerName(b"runningApplications\0".as_ptr() as *const _),
+        );
 
         let count = CFArrayGetCount(apps);
         let name_lower = name.to_lowercase();
 
         for i in 0..count {
             let app = CFArrayGetValueAtIndex(apps, i);
-            if app.is_null() { continue; }
+            if app.is_null() {
+                continue;
+            }
 
-            let ns_name = f0(app, sel_registerName(b"localizedName\0".as_ptr() as *const _));
-            if ns_name.is_null() { continue; }
+            let ns_name = f0(
+                app,
+                sel_registerName(b"localizedName\0".as_ptr() as *const _),
+            );
+            if ns_name.is_null() {
+                continue;
+            }
 
             if let Some(app_name) = cfstring_to_string(ns_name) {
                 if app_name.to_lowercase().contains(&name_lower) {
                     let fi: extern "C" fn(*mut c_void, *mut c_void) -> i32 =
                         std::mem::transmute(objc_msgSend as *const ());
-                    let pid = fi(app, sel_registerName(b"processIdentifier\0".as_ptr() as *const _));
+                    let pid = fi(
+                        app,
+                        sel_registerName(b"processIdentifier\0".as_ptr() as *const _),
+                    );
                     return Some(pid);
                 }
             }
@@ -233,22 +294,36 @@ fn activate_pid(pid: i32) {
         let cls = objc_getClass(b"NSRunningApplication\0".as_ptr() as *const _);
         let fi: extern "C" fn(*mut c_void, *mut c_void, i32) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
-        let app = fi(cls, sel_registerName(b"runningApplicationWithProcessIdentifier:\0".as_ptr() as *const _), pid);
+        let app = fi(
+            cls,
+            sel_registerName(b"runningApplicationWithProcessIdentifier:\0".as_ptr() as *const _),
+            pid,
+        );
         if !app.is_null() {
             let fa: extern "C" fn(*mut c_void, *mut c_void, u64) -> bool =
                 std::mem::transmute(objc_msgSend as *const ());
-            fa(app, sel_registerName(b"activateWithOptions:\0".as_ptr() as *const _), 3); // NSApplicationActivateIgnoringOtherApps
+            fa(
+                app,
+                sel_registerName(b"activateWithOptions:\0".as_ptr() as *const _),
+                3,
+            ); // NSApplicationActivateIgnoringOtherApps
         }
     }
 }
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-struct CGPoint { x: f64, y: f64 }
+struct CGPoint {
+    x: f64,
+    y: f64,
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-struct CGSize { w: f64, h: f64 }
+struct CGSize {
+    w: f64,
+    h: f64,
+}
 
 const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
 
@@ -256,13 +331,21 @@ const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
 
 unsafe fn cfstr(s: &str) -> CFStringRef {
     let cstr = std::ffi::CString::new(s).unwrap();
-    CFStringCreateWithCString(std::ptr::null_mut(), cstr.as_ptr() as *const u8, K_CF_STRING_ENCODING_UTF8)
+    CFStringCreateWithCString(
+        std::ptr::null_mut(),
+        cstr.as_ptr() as *const u8,
+        K_CF_STRING_ENCODING_UTF8,
+    )
 }
 
 unsafe fn cfstring_to_string(cf: CFStringRef) -> Option<String> {
-    if cf.is_null() { return None; }
+    if cf.is_null() {
+        return None;
+    }
     let len = CFStringGetLength(cf);
-    if len <= 0 { return Some(String::new()); }
+    if len <= 0 {
+        return Some(String::new());
+    }
     let buf_size = len * 4 + 1;
     let mut buf = vec![0u8; buf_size as usize];
     if CFStringGetCString(cf, buf.as_mut_ptr(), buf_size, K_CF_STRING_ENCODING_UTF8) {
@@ -278,7 +361,9 @@ unsafe fn ax_attr_string(elem: AXUIElementRef, attr: &str) -> Option<String> {
     let mut val: CFTypeRef = std::ptr::null_mut();
     let err = ax_copy_attr(elem, attr_cf, &mut val);
     CFRelease(attr_cf);
-    if err != 0 || val.is_null() { return None; }
+    if err != 0 || val.is_null() {
+        return None;
+    }
     let type_id = CFGetTypeID(val);
     let result = if type_id == CFStringGetTypeID() {
         cfstring_to_string(val)
@@ -294,7 +379,11 @@ unsafe fn ax_attr_ref(elem: AXUIElementRef, attr: &str) -> Option<CFTypeRef> {
     let mut val: CFTypeRef = std::ptr::null_mut();
     let err = ax_copy_attr(elem, attr_cf, &mut val);
     CFRelease(attr_cf);
-    if err != 0 || val.is_null() { None } else { Some(val) }
+    if err != 0 || val.is_null() {
+        None
+    } else {
+        Some(val)
+    }
 }
 
 unsafe fn ax_attr_array(elem: AXUIElementRef, attr: &str) -> Option<(CFArrayRef, isize)> {
@@ -309,7 +398,9 @@ unsafe fn ax_attr_array(elem: AXUIElementRef, attr: &str) -> Option<(CFArrayRef,
 
 unsafe fn ax_value_get(value: CFTypeRef, value_type: i32, value_ptr: *mut c_void) -> bool {
     let sym = dlsym(RTLD_DEFAULT, b"AXValueGetValue\0".as_ptr() as *const _);
-    if sym.is_null() { return false; }
+    if sym.is_null() {
+        return false;
+    }
     let f: unsafe extern "C" fn(CFTypeRef, i32, *mut c_void) -> bool = std::mem::transmute(sym);
     f(value, value_type, value_ptr)
 }
@@ -319,7 +410,11 @@ unsafe fn ax_attr_point(elem: AXUIElementRef, attr: &str) -> Option<CGPoint> {
     let mut point = CGPoint { x: 0.0, y: 0.0 };
     let ok = ax_value_get(val, 1, &mut point as *mut _ as *mut c_void);
     CFRelease(val);
-    if ok { Some(point) } else { None }
+    if ok {
+        Some(point)
+    } else {
+        None
+    }
 }
 
 unsafe fn ax_attr_size(elem: AXUIElementRef, attr: &str) -> Option<CGSize> {
@@ -327,13 +422,19 @@ unsafe fn ax_attr_size(elem: AXUIElementRef, attr: &str) -> Option<CGSize> {
     let mut size = CGSize { w: 0.0, h: 0.0 };
     let ok = ax_value_get(val, 2, &mut size as *mut _ as *mut c_void);
     CFRelease(val);
-    if ok { Some(size) } else { None }
+    if ok {
+        Some(size)
+    } else {
+        None
+    }
 }
 
 // ── Accessibility Tree ───────────────────────────────────────────────────────
 
 unsafe fn read_ax_tree(elem: AXUIElementRef, depth: usize, out: &mut String, max_depth: usize) {
-    if depth > max_depth { return; }
+    if depth > max_depth {
+        return;
+    }
 
     let indent = "  ".repeat(depth);
     let role = ax_attr_string(elem, "AXRole").unwrap_or_default();
@@ -415,7 +516,12 @@ unsafe fn read_ax_tree(elem: AXUIElementRef, depth: usize, out: &mut String, max
     };
 
     // Format line
-    if !label.is_empty() || matches!(short_role, "window" | "toolbar" | "web" | "menubar" | "tabs") {
+    if !label.is_empty()
+        || matches!(
+            short_role,
+            "window" | "toolbar" | "web" | "menubar" | "tabs"
+        )
+    {
         out.push_str(&indent);
         out.push_str(short_role);
         if !label.is_empty() {
@@ -513,10 +619,12 @@ tell application "System Events"
 end tell
 "#;
 
-    match std::process::Command::new("osascript").arg("-e").arg(script).output() {
-        Ok(out) if out.status.success() => {
-            String::from_utf8_lossy(&out.stdout).into_owned()
-        }
+    match std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+    {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).into_owned(),
         Ok(out) => {
             let err = String::from_utf8_lossy(&out.stderr);
             format!("[AX] WARN: osascript: {}\n[AX] app=Unknown\n", err.trim())
@@ -537,21 +645,40 @@ fn get_frontmost_ax_tree_inner() -> String {
         let ws_cls = objc_getClass(b"NSWorkspace\0".as_ptr() as *const _);
         let f0: extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
-        let ws = f0(ws_cls, sel_registerName(b"sharedWorkspace\0".as_ptr() as *const _));
-        let front_app = f0(ws, sel_registerName(b"frontmostApplication\0".as_ptr() as *const _));
+        let ws = f0(
+            ws_cls,
+            sel_registerName(b"sharedWorkspace\0".as_ptr() as *const _),
+        );
+        let front_app = f0(
+            ws,
+            sel_registerName(b"frontmostApplication\0".as_ptr() as *const _),
+        );
 
         let fi: extern "C" fn(*mut c_void, *mut c_void) -> i32 =
             std::mem::transmute(objc_msgSend as *const ());
-        let pid = fi(front_app, sel_registerName(b"processIdentifier\0".as_ptr() as *const _));
+        let pid = fi(
+            front_app,
+            sel_registerName(b"processIdentifier\0".as_ptr() as *const _),
+        );
 
         let app_name = {
-            let ns = f0(front_app, sel_registerName(b"localizedName\0".as_ptr() as *const _));
-            if ns.is_null() { "Unknown".to_string() } else {
+            let ns = f0(
+                front_app,
+                sel_registerName(b"localizedName\0".as_ptr() as *const _),
+            );
+            if ns.is_null() {
+                "Unknown".to_string()
+            } else {
                 let f: extern "C" fn(*mut c_void, *mut c_void) -> *const std::ffi::c_char =
                     std::mem::transmute(objc_msgSend as *const ());
                 let cstr = f(ns, sel_registerName(b"UTF8String\0".as_ptr() as *const _));
-                if cstr.is_null() { "Unknown".to_string() }
-                else { std::ffi::CStr::from_ptr(cstr).to_string_lossy().into_owned() }
+                if cstr.is_null() {
+                    "Unknown".to_string()
+                } else {
+                    std::ffi::CStr::from_ptr(cstr)
+                        .to_string_lossy()
+                        .into_owned()
+                }
             }
         };
 
@@ -583,9 +710,15 @@ fn mouse_click(x: f64, y: f64) {
         // kCGEventLeftMouseDown = 1, kCGEventLeftMouseUp = 2
         let down = CGEventCreateMouseEvent(std::ptr::null_mut(), 1, point, 0);
         let up = CGEventCreateMouseEvent(std::ptr::null_mut(), 2, point, 0);
-        if !down.is_null() { post_event(down); CFRelease(down); }
+        if !down.is_null() {
+            post_event(down);
+            CFRelease(down);
+        }
         std::thread::sleep(std::time::Duration::from_millis(30));
-        if !up.is_null() { post_event(up); CFRelease(up); }
+        if !up.is_null() {
+            post_event(up);
+            CFRelease(up);
+        }
     }
 }
 
@@ -593,8 +726,14 @@ fn key_tap(keycode: u16) {
     unsafe {
         let down = CGEventCreateKeyboardEvent(std::ptr::null_mut(), keycode, true);
         let up = CGEventCreateKeyboardEvent(std::ptr::null_mut(), keycode, false);
-        if !down.is_null() { post_event(down); CFRelease(down); }
-        if !up.is_null() { post_event(up); CFRelease(up); }
+        if !down.is_null() {
+            post_event(down);
+            CFRelease(down);
+        }
+        if !up.is_null() {
+            post_event(up);
+            CFRelease(up);
+        }
     }
 }
 
@@ -649,20 +788,22 @@ use std::sync::{Arc, Mutex as StdMutex};
 
 #[derive(Clone, Debug)]
 struct ScanRule {
-    x: i32, y: i32, w: i32, h: i32,
-    threshold: u32,         // number of "dark" pixels to trigger
-    brightness_max: u8,     // pixel brightness below this = "dark" (default 80)
-    action_keycode: u16,    // key to press when triggered
-    action_flags: u64,      // modifier flags
-    cooldown_ms: u64,       // min ms between triggers (default 300)
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+    threshold: u32,      // number of "dark" pixels to trigger
+    brightness_max: u8,  // pixel brightness below this = "dark" (default 80)
+    action_keycode: u16, // key to press when triggered
+    action_flags: u64,   // modifier flags
+    cooldown_ms: u64,    // min ms between triggers (default 300)
     enabled: bool,
-    id: String,             // rule name for tell/kill
+    id: String, // rule name for tell/kill
 }
 
 static SCAN_RULES: once_cell::sync::Lazy<Arc<StdMutex<Vec<ScanRule>>>> =
     once_cell::sync::Lazy::new(|| Arc::new(StdMutex::new(Vec::new())));
-static SCAN_RUNNING: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
+static SCAN_RUNNING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Read pixels from a screen region via CGWindowListCreateImage.
 /// Fast (~1ms) but requires Screen Recording permission.
@@ -670,17 +811,28 @@ static SCAN_RUNNING: std::sync::atomic::AtomicBool =
 fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
     unsafe {
         let rect = CGRect {
-            origin: CGPoint { x: x as f64, y: y as f64 },
-            size: CGRectSize { width: w as f64, height: h as f64 },
+            origin: CGPoint {
+                x: x as f64,
+                y: y as f64,
+            },
+            size: CGRectSize {
+                width: w as f64,
+                height: h as f64,
+            },
         };
         // kCGWindowListOptionOnScreenOnly = 1, kCGNullWindowID = 0
         // kCGWindowImageDefault = 0
         let image = CGWindowListCreateImage(rect, 1, 0, 0);
-        if image.is_null() { return Vec::new(); }
+        if image.is_null() {
+            return Vec::new();
+        }
 
         let iw = CGImageGetWidth(image);
         let ih = CGImageGetHeight(image);
-        if iw == 0 || ih == 0 { CFRelease(image); return Vec::new(); }
+        if iw == 0 || ih == 0 {
+            CFRelease(image);
+            return Vec::new();
+        }
 
         let bpr = iw * 4;
         let mut buf = vec![0u8; bpr * ih];
@@ -688,13 +840,21 @@ fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
         // kCGImageAlphaPremultipliedFirst = 2, kCGBitmapByteOrder32Little = (2 << 12)
         // This gives BGRA layout which is native on macOS.
         let ctx = CGBitmapContextCreate(
-            buf.as_mut_ptr(), iw, ih, 8, bpr, cs,
+            buf.as_mut_ptr(),
+            iw,
+            ih,
+            8,
+            bpr,
+            cs,
             2 | (2 << 12), // premultiplied first + 32-bit little endian = BGRA
         );
         if !ctx.is_null() {
             let draw_rect = CGRect {
                 origin: CGPoint { x: 0.0, y: 0.0 },
-                size: CGRectSize { width: iw as f64, height: ih as f64 },
+                size: CGRectSize {
+                    width: iw as f64,
+                    height: ih as f64,
+                },
             };
             CGContextDrawImage(ctx, draw_rect, image);
             CGContextRelease(ctx);
@@ -716,7 +876,8 @@ fn read_pixels(x: i32, y: i32, w: i32, h: i32) -> Vec<(u8, u8, u8)> {
 
 /// Count "dark" pixels in a region.
 fn count_dark_pixels(pixels: &[(u8, u8, u8)], brightness_max: u8) -> u32 {
-    pixels.iter()
+    pixels
+        .iter()
         .filter(|(r, g, b)| {
             let brightness = (*r as u16 + *g as u16 + *b as u16) / 3;
             brightness < brightness_max as u16
@@ -729,7 +890,10 @@ fn count_dark_pixels(pixels: &[(u8, u8, u8)], brightness_max: u8) -> u32 {
 fn test_screen_capture() -> bool {
     // Fork a child to test CGWindowListCreateImage.
     // If it hangs (UE), we kill the child after 2s. Parent never hangs.
-    extern "C" { fn fork() -> i32; fn _exit(status: i32) -> !; }
+    extern "C" {
+        fn fork() -> i32;
+        fn _exit(status: i32) -> !;
+    }
     unsafe {
         let pid = fork();
         if pid == 0 {
@@ -741,7 +905,9 @@ fn test_screen_capture() -> bool {
             let start = std::time::Instant::now();
             loop {
                 let mut status: i32 = 0;
-                extern "C" { fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32; }
+                extern "C" {
+                    fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
+                }
                 let r = waitpid(pid, &mut status, 1); // WNOHANG = 1
                 if r > 0 {
                     // Child exited.
@@ -757,7 +923,9 @@ fn test_screen_capture() -> bool {
                 }
                 if start.elapsed().as_secs() >= 2 {
                     // Child hung (UE) — kill it.
-                    extern "C" { fn kill(pid: i32, sig: i32) -> i32; }
+                    extern "C" {
+                        fn kill(pid: i32, sig: i32) -> i32;
+                    }
                     kill(pid, 9); // SIGKILL
                     waitpid(pid, &mut status, 0); // reap
                     eprintln!("[scan] WARNING: screen capture timed out (UE). No Screen Recording permission.");
@@ -791,7 +959,9 @@ fn start_scan_thread() {
                 std::collections::HashMap::new();
 
             loop {
-                if !SCAN_RUNNING.load(std::sync::atomic::Ordering::Relaxed) { break; }
+                if !SCAN_RUNNING.load(std::sync::atomic::Ordering::Relaxed) {
+                    break;
+                }
 
                 let rules_snapshot = rules.lock().unwrap().clone();
                 if rules_snapshot.is_empty() {
@@ -800,7 +970,9 @@ fn start_scan_thread() {
                 }
 
                 for rule in &rules_snapshot {
-                    if !rule.enabled { continue; }
+                    if !rule.enabled {
+                        continue;
+                    }
 
                     // Check cooldown.
                     let now = std::time::Instant::now();
@@ -819,8 +991,14 @@ fn start_scan_thread() {
                     unsafe {
                         DEBUG_COUNTER += 1;
                         if DEBUG_COUNTER % 120 == 1 {
-                            eprintln!("[scan] '{}': pixels={} dark={}/{} (bright<{})",
-                                rule.id, pixels.len(), dark, rule.threshold, rule.brightness_max);
+                            eprintln!(
+                                "[scan] '{}': pixels={} dark={}/{} (bright<{})",
+                                rule.id,
+                                pixels.len(),
+                                dark,
+                                rule.threshold,
+                                rule.brightness_max
+                            );
                         }
                     }
 
@@ -832,7 +1010,10 @@ fn start_scan_thread() {
                             key_tap(rule.action_keycode);
                         }
                         last_trigger.insert(rule.id.clone(), now);
-                        eprintln!("[scan] triggered '{}': dark={} > threshold={}", rule.id, dark, rule.threshold);
+                        eprintln!(
+                            "[scan] triggered '{}': dark={} > threshold={}",
+                            rule.id, dark, rule.threshold
+                        );
                     }
                 }
 
@@ -866,7 +1047,9 @@ fn parse_scan_rule(args: &str) -> Option<ScanRule> {
     };
 
     let parts: Vec<&str> = params.split_whitespace().collect();
-    if parts.len() < 6 { return None; }
+    if parts.len() < 6 {
+        return None;
+    }
 
     let id = parts[0].to_string();
     let x: i32 = parts[1].parse().ok()?;
@@ -893,8 +1076,17 @@ fn parse_scan_rule(args: &str) -> Option<ScanRule> {
     if action_parts.len() >= 2 && action_parts[0] == "k" {
         let (keycode, flags) = parse_mods_and_key(action_parts[1])?;
         Some(ScanRule {
-            x, y, w, h, threshold, brightness_max, action_keycode: keycode,
-            action_flags: flags, cooldown_ms, enabled: true, id,
+            x,
+            y,
+            w,
+            h,
+            threshold,
+            brightness_max,
+            action_keycode: keycode,
+            action_flags: flags,
+            cooldown_ms,
+            enabled: true,
+            id,
         })
     } else {
         None
@@ -905,32 +1097,79 @@ fn parse_scan_rule(args: &str) -> Option<ScanRule> {
 
 fn keyname_to_code(name: &str) -> Option<u16> {
     Some(match name.to_lowercase().as_str() {
-        "a" => 0x00, "s" => 0x01, "d" => 0x02, "f" => 0x03,
-        "h" => 0x04, "g" => 0x05, "z" => 0x06, "x" => 0x07,
-        "c" => 0x08, "v" => 0x09, "b" => 0x0B, "q" => 0x0C,
-        "w" => 0x0D, "e" => 0x0E, "r" => 0x0F, "y" => 0x10,
-        "t" => 0x11, "1" => 0x12, "2" => 0x13, "3" => 0x14,
-        "4" => 0x15, "6" => 0x16, "5" => 0x17, "9" => 0x19,
-        "7" => 0x1A, "8" => 0x1C, "0" => 0x1D, "o" => 0x1F,
-        "u" => 0x20, "i" => 0x22, "p" => 0x23, "l" => 0x25,
-        "j" => 0x26, "k" => 0x28, "n" => 0x2D, "m" => 0x2E,
+        "a" => 0x00,
+        "s" => 0x01,
+        "d" => 0x02,
+        "f" => 0x03,
+        "h" => 0x04,
+        "g" => 0x05,
+        "z" => 0x06,
+        "x" => 0x07,
+        "c" => 0x08,
+        "v" => 0x09,
+        "b" => 0x0B,
+        "q" => 0x0C,
+        "w" => 0x0D,
+        "e" => 0x0E,
+        "r" => 0x0F,
+        "y" => 0x10,
+        "t" => 0x11,
+        "1" => 0x12,
+        "2" => 0x13,
+        "3" => 0x14,
+        "4" => 0x15,
+        "6" => 0x16,
+        "5" => 0x17,
+        "9" => 0x19,
+        "7" => 0x1A,
+        "8" => 0x1C,
+        "0" => 0x1D,
+        "o" => 0x1F,
+        "u" => 0x20,
+        "i" => 0x22,
+        "p" => 0x23,
+        "l" => 0x25,
+        "j" => 0x26,
+        "k" => 0x28,
+        "n" => 0x2D,
+        "m" => 0x2E,
         "ret" | "enter" | "return" => 0x24,
         "tab" => 0x30,
         "space" => 0x31,
         "bksp" | "backspace" | "delete" => 0x33,
         "esc" | "escape" => 0x35,
         "del" => 0x75,
-        "up" => 0x7E, "down" => 0x7D, "left" => 0x7B, "right" => 0x7C,
-        "home" => 0x73, "end" => 0x77,
-        "pgup" | "pageup" => 0x74, "pgdn" | "pagedown" => 0x79,
-        "f1" => 0x7A, "f2" => 0x78, "f3" => 0x63, "f4" => 0x76,
-        "f5" => 0x60, "f6" => 0x61, "f7" => 0x62, "f8" => 0x64,
-        "f9" => 0x65, "f10" => 0x6D, "f11" => 0x67, "f12" => 0x6F,
-        "-" | "minus" => 0x1B, "=" | "equal" => 0x18,
-        "[" => 0x21, "]" => 0x1E, "\\" => 0x2A,
-        ";" | "semicolon" => 0x29, "'" | "quote" => 0x27,
-        "," | "comma" => 0x2B, "." | "period" => 0x2F,
-        "/" | "slash" => 0x2C, "`" | "grave" => 0x32,
+        "up" => 0x7E,
+        "down" => 0x7D,
+        "left" => 0x7B,
+        "right" => 0x7C,
+        "home" => 0x73,
+        "end" => 0x77,
+        "pgup" | "pageup" => 0x74,
+        "pgdn" | "pagedown" => 0x79,
+        "f1" => 0x7A,
+        "f2" => 0x78,
+        "f3" => 0x63,
+        "f4" => 0x76,
+        "f5" => 0x60,
+        "f6" => 0x61,
+        "f7" => 0x62,
+        "f8" => 0x64,
+        "f9" => 0x65,
+        "f10" => 0x6D,
+        "f11" => 0x67,
+        "f12" => 0x6F,
+        "-" | "minus" => 0x1B,
+        "=" | "equal" => 0x18,
+        "[" => 0x21,
+        "]" => 0x1E,
+        "\\" => 0x2A,
+        ";" | "semicolon" => 0x29,
+        "'" | "quote" => 0x27,
+        "," | "comma" => 0x2B,
+        "." | "period" => 0x2F,
+        "/" | "slash" => 0x2C,
+        "`" | "grave" => 0x32,
         _ => return None,
     })
 }
@@ -939,16 +1178,29 @@ fn keyname_to_code(name: &str) -> Option<u16> {
 
 #[derive(Debug)]
 enum Cmd {
-    KeyTap { keycode: u16, flags: u64 },
+    KeyTap {
+        keycode: u16,
+        flags: u64,
+    },
     TypeString(String),
-    MouseMove { x: f64, y: f64 },
-    MouseClick { x: f64, y: f64 },
+    MouseMove {
+        x: f64,
+        y: f64,
+    },
+    MouseClick {
+        x: f64,
+        y: f64,
+    },
     Wait(std::time::Duration),
-    WaitFor { query: String, negate: bool, timeout_ms: u64 },
-    Scan(String),            // scan jump 120 350 200 4 dark>20 { k space }
-    ScanStop(String),        // scan_stop jump | scan_stop all
-    Query(String),           // ? screen, ? mouse, etc.
-    SenseControl(String),    // S screen region 0 0 800 300, etc.
+    WaitFor {
+        query: String,
+        negate: bool,
+        timeout_ms: u64,
+    },
+    Scan(String),         // scan jump 120 350 200 4 dark>20 { k space }
+    ScanStop(String),     // scan_stop jump | scan_stop all
+    Query(String),        // ? screen, ? mouse, etc.
+    SenseControl(String), // S screen region 0 0 800 300, etc.
     Comment(String),
     Unknown(String),
 }
@@ -984,7 +1236,10 @@ fn unescape_string(s: &str) -> String {
                 Some('r') => out.push('\r'),
                 Some('\\') => out.push('\\'),
                 Some('"') => out.push('"'),
-                Some(other) => { out.push('\\'); out.push(other); }
+                Some(other) => {
+                    out.push('\\');
+                    out.push(other);
+                }
                 None => out.push('\\'),
             }
         } else {
@@ -1006,7 +1261,7 @@ fn parse_line(line: &str) -> Cmd {
     match verb {
         "k" => {
             if rest.starts_with('"') && rest.ends_with('"') && rest.len() >= 2 {
-                return Cmd::TypeString(unescape_string(&rest[1..rest.len()-1]));
+                return Cmd::TypeString(unescape_string(&rest[1..rest.len() - 1]));
             }
             if let Some((keycode, flags)) = parse_mods_and_key(rest) {
                 Cmd::KeyTap { keycode, flags }
@@ -1058,22 +1313,36 @@ fn parse_line(line: &str) -> Cmd {
             };
 
             let timeout_ms = if timeout_str.ends_with("ms") {
-                timeout_str.trim_end_matches("ms").parse::<u64>().unwrap_or(5000)
+                timeout_str
+                    .trim_end_matches("ms")
+                    .parse::<u64>()
+                    .unwrap_or(5000)
             } else if timeout_str.ends_with('s') {
-                timeout_str.trim_end_matches('s').parse::<f64>().unwrap_or(5.0) as u64 * 1000
+                timeout_str
+                    .trim_end_matches('s')
+                    .parse::<f64>()
+                    .unwrap_or(5.0) as u64
+                    * 1000
             } else {
                 // Last arg isn't a duration — it's part of the query.
                 5000
             };
 
             // If timeout parse consumed the last arg, use query_part; otherwise whole rest is query.
-            let query = if timeout_ms != 5000 || timeout_str.ends_with('s') || timeout_str.ends_with("ms") {
+            let query = if timeout_ms != 5000
+                || timeout_str.ends_with('s')
+                || timeout_str.ends_with("ms")
+            {
                 query_part.trim_matches('"').to_string()
             } else {
                 rest.trim_matches('"').to_string()
             };
 
-            Cmd::WaitFor { query, negate, timeout_ms }
+            Cmd::WaitFor {
+                query,
+                negate,
+                timeout_ms,
+            }
         }
         "scan" => Cmd::Scan(rest.to_string()),
         "scan_stop" => Cmd::ScanStop(rest.to_string()),
@@ -1115,7 +1384,11 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
             std::thread::sleep(*d);
             format!("w {}ms", d.as_millis())
         }
-        Cmd::WaitFor { query, negate, timeout_ms } => {
+        Cmd::WaitFor {
+            query,
+            negate,
+            timeout_ms,
+        } => {
             let start = std::time::Instant::now();
             let timeout = std::time::Duration::from_millis(*timeout_ms);
             let poll_interval = std::time::Duration::from_millis(200);
@@ -1127,7 +1400,8 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
 
                 if condition_met {
                     // Find the matching line to extract position
-                    let matched_line = tree.lines()
+                    let matched_line = tree
+                        .lines()
                         .find(|l| l.to_lowercase().contains(&query.to_lowercase()))
                         .unwrap_or("")
                         .trim();
@@ -1136,29 +1410,36 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
                 }
 
                 if start.elapsed() > timeout {
-                    let prefix = if *negate { "still present" } else { "not found" };
-                    break format!("[TIMEOUT wf] \"{}\" {} after {}ms", query, prefix, timeout_ms);
+                    let prefix = if *negate {
+                        "still present"
+                    } else {
+                        "not found"
+                    };
+                    break format!(
+                        "[TIMEOUT wf] \"{}\" {} after {}ms",
+                        query, prefix, timeout_ms
+                    );
                 }
 
                 std::thread::sleep(poll_interval);
             }
         }
-        Cmd::Scan(args) => {
-            match parse_scan_rule(args) {
-                Some(rule) => {
-                    let id = rule.id.clone();
-                    let desc = format!("scan {} @{},{} {}x{} dark>{} → k 0x{:02X}",
-                        id, rule.x, rule.y, rule.w, rule.h, rule.threshold, rule.action_keycode);
-                    SCAN_RULES.lock().unwrap().push(rule);
-                    start_scan_thread();
-                    tlog(&format!("[OK scan] {}", desc));
-                    format!("[OK scan] {}", desc)
-                }
-                None => {
-                    format!("# ERR scan: bad format. Use: scan ID x y w h dark>N {{ k keyname }}")
-                }
+        Cmd::Scan(args) => match parse_scan_rule(args) {
+            Some(rule) => {
+                let id = rule.id.clone();
+                let desc = format!(
+                    "scan {} @{},{} {}x{} dark>{} → k 0x{:02X}",
+                    id, rule.x, rule.y, rule.w, rule.h, rule.threshold, rule.action_keycode
+                );
+                SCAN_RULES.lock().unwrap().push(rule);
+                start_scan_thread();
+                tlog(&format!("[OK scan] {}", desc));
+                format!("[OK scan] {}", desc)
             }
-        }
+            None => {
+                format!("# ERR scan: bad format. Use: scan ID x y w h dark>N {{ k keyname }}")
+            }
+        },
         Cmd::ScanStop(id) => {
             let id = id.trim();
             if id == "all" {
@@ -1181,10 +1462,15 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
                 // ? screen — one-shot capture, returns [IMG] marker
                 let region = if q.starts_with("screen region") {
                     // ? screen region x y w h
-                    let nums: Vec<i32> = q["screen region".len()..].split_whitespace()
-                        .filter_map(|s| s.parse().ok()).collect();
-                    if nums.len() == 4 { Some((nums[0], nums[1], nums[2], nums[3])) }
-                    else { unsafe { SCREEN_REGION } }
+                    let nums: Vec<i32> = q["screen region".len()..]
+                        .split_whitespace()
+                        .filter_map(|s| s.parse().ok())
+                        .collect();
+                    if nums.len() == 4 {
+                        Some((nums[0], nums[1], nums[2], nums[3]))
+                    } else {
+                        unsafe { SCREEN_REGION }
+                    }
                 } else {
                     unsafe { SCREEN_REGION }
                 };
@@ -1207,19 +1493,27 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
             if parts.first() == Some(&"screen") {
                 if parts.get(1) == Some(&"region") {
                     // S screen region x y w h
-                    let nums: Vec<i32> = parts[2..].iter()
-                        .filter_map(|s| s.parse().ok()).collect();
+                    let nums: Vec<i32> = parts[2..].iter().filter_map(|s| s.parse().ok()).collect();
                     if nums.len() == 4 {
-                        unsafe { SCREEN_REGION = Some((nums[0], nums[1], nums[2], nums[3])); }
-                        format!("[OK S] screen region set to {},{} {}x{}", nums[0], nums[1], nums[2], nums[3])
+                        unsafe {
+                            SCREEN_REGION = Some((nums[0], nums[1], nums[2], nums[3]));
+                        }
+                        format!(
+                            "[OK S] screen region set to {},{} {}x{}",
+                            nums[0], nums[1], nums[2], nums[3]
+                        )
                     } else {
                         "[ERR S] usage: S screen region x y w h".to_string()
                     }
                 } else if parts.get(1) == Some(&"off") {
-                    unsafe { SCREEN_REGION = None; }
+                    unsafe {
+                        SCREEN_REGION = None;
+                    }
                     "[OK S] screen capture off".to_string()
                 } else if parts.get(1) == Some(&"full") {
-                    unsafe { SCREEN_REGION = None; } // None = full screen
+                    unsafe {
+                        SCREEN_REGION = None;
+                    } // None = full screen
                     "[OK S] screen capture full".to_string()
                 } else {
                     format!("[OK S] screen: {}", s)
@@ -1240,15 +1534,20 @@ fn execute_cmd(cmd: &Cmd, line: &str) -> String {
 fn load_system_prompt() -> String {
     // Search relative to the binary, then CWD, then common locations.
     let search_paths = [
-        // Next to the binary (e.g. /Users/snomiao/CapsLockX/skills/clx-agent/SKILL.md)
-        std::env::current_exe().ok()
+        // Next to the binary (e.g. <app>/Contents/skills/clx-agent/SKILL.md)
+        std::env::current_exe()
+            .ok()
             .and_then(|e| e.parent().map(|p| p.join("../skills/clx-agent/SKILL.md"))),
-        std::env::current_exe().ok()
-            .and_then(|e| e.parent().map(|p| p.join("../../skills/clx-agent/SKILL.md"))),
+        std::env::current_exe().ok().and_then(|e| {
+            e.parent()
+                .map(|p| p.join("../../skills/clx-agent/SKILL.md"))
+        }),
         // CWD
         Some(std::path::PathBuf::from("skills/clx-agent/SKILL.md")),
-        // Absolute fallback
-        Some(std::path::PathBuf::from("/Users/snomiao/CapsLockX/skills/clx-agent/SKILL.md")),
+        // Absolute fallback (legacy install location under the user's home)
+        std::env::var("HOME")
+            .ok()
+            .map(|h| std::path::PathBuf::from(h).join("CapsLockX/skills/clx-agent/SKILL.md")),
     ];
 
     for path in search_paths.iter().flatten() {
@@ -1262,7 +1561,8 @@ fn load_system_prompt() -> String {
     "You are CLX Agent on macOS. Output CLX commands only.\n\
      k a = tap key, m 400 300 = mouse move, m 400 300 c = click, w 200ms = wait.\n\
      w- = Cmd modifier. Use w-p for Cmd+P, w-s for Cmd+S.\n\
-     Output nothing when done.".to_string()
+     Output nothing when done."
+        .to_string()
 }
 
 // ── LLM Loop ─────────────────────────────────────────────────────────────────
@@ -1279,8 +1579,16 @@ fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
     let v: serde_json::Value = serde_json::from_str(&data).ok()?;
 
     // Extract best API key.
-    let api_key = v.get("llm_api_key").and_then(|k| k.as_str()).unwrap_or("").to_string();
-    let model = v.get("llm_model").and_then(|k| k.as_str()).unwrap_or("").to_string();
+    let api_key = v
+        .get("llm_api_key")
+        .and_then(|k| k.as_str())
+        .unwrap_or("")
+        .to_string();
+    let model = v
+        .get("llm_model")
+        .and_then(|k| k.as_str())
+        .unwrap_or("")
+        .to_string();
 
     // Also check env vars.
     let api_key = if api_key.is_empty() {
@@ -1296,13 +1604,17 @@ fn load_llm_config() -> Option<capslockx_core::llm_client::LlmConfig> {
         return None;
     }
 
-    Some(capslockx_core::llm_client::LlmConfig::from_key_and_model(&api_key, &model))
+    Some(capslockx_core::llm_client::LlmConfig::from_key_and_model(
+        &api_key, &model,
+    ))
 }
 
 /// Compute a compact diff between two AX trees.
 /// Returns empty string if no changes.
 fn ax_tree_diff(old: &str, new: &str) -> String {
-    if old.trim() == new.trim() { return String::new(); }
+    if old.trim() == new.trim() {
+        return String::new();
+    }
 
     let old_lines: std::collections::HashSet<&str> = old.lines().collect();
     let new_lines: std::collections::HashSet<&str> = new.lines().collect();
@@ -1338,7 +1650,14 @@ fn capture_screenshot_base64_region(region: Option<(i32, i32, i32, i32)>) -> Opt
     // -o suppresses shadow — but skip it, it causes issues on some macOS versions.
     let status = if let Some((x, y, w, h)) = region {
         std::process::Command::new("screencapture")
-            .args(["-x", "-t", "jpg", "-R", &format!("{},{},{},{}", x, y, w, h), tmp])
+            .args([
+                "-x",
+                "-t",
+                "jpg",
+                "-R",
+                &format!("{},{},{},{}", x, y, w, h),
+                tmp,
+            ])
             .status()
     } else {
         std::process::Command::new("screencapture")
@@ -1352,19 +1671,26 @@ fn capture_screenshot_base64_region(region: Option<(i32, i32, i32, i32)>) -> Opt
             // Region capture failed — fall back to full screen.
             tlog("region capture failed, falling back to full screen");
             let _ = std::process::Command::new("screencapture")
-                .args(["-x", "-t", "jpg", tmp]).status();
+                .args(["-x", "-t", "jpg", tmp])
+                .status();
         }
-        _ => { tlog("screencapture failed"); return None; }
+        _ => {
+            tlog("screencapture failed");
+            return None;
+        }
     }
 
     // Resize to max 512px wide for token efficiency.
     let _ = std::process::Command::new("sips")
         .args(["--resampleWidth", "256", tmp, "--out", tmp])
-        .stderr(std::process::Stdio::null()).output();
+        .stderr(std::process::Stdio::null())
+        .output();
 
     let data = std::fs::read(tmp).ok()?;
     let _ = std::fs::remove_file(tmp);
-    if data.is_empty() { return None; }
+    if data.is_empty() {
+        return None;
+    }
     tlog(&format!("screenshot: {} bytes", data.len()));
     Some(base64_encode(&data))
 }
@@ -1384,8 +1710,16 @@ fn base64_encode(data: &[u8]) -> String {
         let n = (b0 << 16) | (b1 << 8) | b2;
         out.push(CHARS[((n >> 18) & 0x3F) as usize] as char);
         out.push(CHARS[((n >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 { out.push(CHARS[((n >> 6) & 0x3F) as usize] as char); } else { out.push('='); }
-        if chunk.len() > 2 { out.push(CHARS[(n & 0x3F) as usize] as char); } else { out.push('='); }
+        if chunk.len() > 1 {
+            out.push(CHARS[((n >> 6) & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(CHARS[(n & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
     }
     out
 }
@@ -1405,13 +1739,17 @@ fn run_agent_loop(prompt: &str) {
         }
     };
 
-    tlog(&format!("LLM: {:?} model={}", config.provider, config.model));
+    tlog(&format!(
+        "LLM: {:?} model={}",
+        config.provider, config.model
+    ));
 
     // Read initial AX tree (trimmed — skip deep menu items for performance).
     tlog("reading accessibility tree...");
     let full_ax_tree = get_frontmost_ax_tree();
     // Trim: keep only lines with depth ≤2 (at most 4 leading spaces) to reduce tokens.
-    let mut last_ax_tree: String = full_ax_tree.lines()
+    let mut last_ax_tree: String = full_ax_tree
+        .lines()
         .filter(|l| {
             let indent = l.len() - l.trim_start().len();
             indent <= 4 // keep top 2 levels
@@ -1420,14 +1758,24 @@ fn run_agent_loop(prompt: &str) {
         .collect::<Vec<_>>()
         .join("\n");
     if full_ax_tree.lines().count() > 50 {
-        last_ax_tree.push_str(&format!("\n... ({} more lines trimmed)", full_ax_tree.lines().count() - 50));
+        last_ax_tree.push_str(&format!(
+            "\n... ({} more lines trimmed)",
+            full_ax_tree.lines().count() - 50
+        ));
     }
-    tlog(&format!("AX tree: {} lines (from {})", last_ax_tree.lines().count(), full_ax_tree.lines().count()));
+    tlog(&format!(
+        "AX tree: {} lines (from {})",
+        last_ax_tree.lines().count(),
+        full_ax_tree.lines().count()
+    ));
 
     // Capture initial screenshot.
     tlog("capturing screenshot...");
     let mut last_screenshot = capture_screenshot_base64_region(unsafe { SCREEN_REGION });
-    tlog(&format!("screenshot: {} bytes base64", last_screenshot.as_ref().map(|s| s.len()).unwrap_or(0)));
+    tlog(&format!(
+        "screenshot: {} bytes base64",
+        last_screenshot.as_ref().map(|s| s.len()).unwrap_or(0)
+    ));
 
     let system_prompt = load_system_prompt();
 
@@ -1443,19 +1791,20 @@ fn run_agent_loop(prompt: &str) {
             fn CGDisplayPixelsHigh(display: u32) -> usize;
         }
         let main = CGMainDisplayID();
-        (CGDisplayPixelsWide(main) as i32, CGDisplayPixelsHigh(main) as i32)
+        (
+            CGDisplayPixelsWide(main) as i32,
+            CGDisplayPixelsHigh(main) as i32,
+        )
     };
     tlog(&format!("display: {}x{}", display_w, display_h));
 
     // First user message: AX tree + screenshot + task.
-    let mut first_parts = vec![
-        serde_json::json!({"text": format!(
-            "## Display\nResolution: {}x{} (screenshots resized to 256px wide, multiply positions by {:.1})\n\n## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
-            display_w, display_h,
-            display_w as f64 / 256.0,
-            last_ax_tree.trim(), prompt
-        )}),
-    ];
+    let mut first_parts = vec![serde_json::json!({"text": format!(
+        "## Display\nResolution: {}x{} (screenshots resized to 256px wide, multiply positions by {:.1})\n\n## Current Screen (Accessibility Tree)\n```\n{}\n```\n\n## Task\n{}",
+        display_w, display_h,
+        display_w as f64 / 256.0,
+        last_ax_tree.trim(), prompt
+    )})];
     if let Some(ref img) = last_screenshot {
         first_parts.push(serde_json::json!({
             "inlineData": { "mimeType": "image/jpeg", "data": img }
@@ -1470,14 +1819,22 @@ fn run_agent_loop(prompt: &str) {
         // Keep the first user message (task description) + last 3 turns.
         if conversation.len() > 8 {
             let first = conversation[0].clone(); // initial task + screenshot
-            let tail: Vec<_> = conversation[conversation.len()-6..].to_vec();
+            let tail: Vec<_> = conversation[conversation.len() - 6..].to_vec();
             conversation.clear();
             conversation.push(first);
             conversation.extend(tail);
-            tlog(&format!("truncated conversation to {} messages", conversation.len()));
+            tlog(&format!(
+                "truncated conversation to {} messages",
+                conversation.len()
+            ));
         }
 
-        tlog(&format!("turn {}/{} — streaming ({} msgs)...", turn + 1, MAX_TURNS, conversation.len()));
+        tlog(&format!(
+            "turn {}/{} — streaming ({} msgs)...",
+            turn + 1,
+            MAX_TURNS,
+            conversation.len()
+        ));
 
         let mut llm_output = String::new();
         let mut echo_lines: Vec<String> = Vec::new();
@@ -1494,7 +1851,9 @@ fn run_agent_loop(prompt: &str) {
                 line_buf.drain(..=nl_pos);
 
                 let trimmed = line.trim();
-                if trimmed.is_empty() { continue; }
+                if trimmed.is_empty() {
+                    continue;
+                }
 
                 let cmd = parse_line(trimmed);
                 let echo = execute_cmd(&cmd, trimmed);
@@ -1634,11 +1993,23 @@ tell application "System Events"
 end tell
 "#;
     let out = std::process::Command::new("osascript")
-        .arg("-e").arg(script).output().ok()?;
-    if !out.status.success() { return None; }
+        .arg("-e")
+        .arg(script)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
     let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    let nums: Vec<i32> = text.split(',').filter_map(|s| s.trim().parse().ok()).collect();
-    if nums.len() == 4 { Some((nums[0], nums[1], nums[2], nums[3])) } else { None }
+    let nums: Vec<i32> = text
+        .split(',')
+        .filter_map(|s| s.trim().parse().ok())
+        .collect();
+    if nums.len() == 4 {
+        Some((nums[0], nums[1], nums[2], nums[3]))
+    } else {
+        None
+    }
 }
 
 /// Auto-calibrate the game area by scanning pixels for the ground line.
@@ -1648,7 +2019,10 @@ fn calibrate_dino_game(wx: i32, wy: i32, ww: i32, wh: i32) -> Option<(i32, i32, 
     let content_h = wh - 80;
 
     eprintln!("[dino] window: ({},{}) {}x{}", wx, wy, ww, wh);
-    eprintln!("[dino] content area starts at y={}, h={}", content_y, content_h);
+    eprintln!(
+        "[dino] content area starts at y={}, h={}",
+        content_y, content_h
+    );
 
     // Scan the lower half for the ground line.
     // The ground is a thin horizontal dark line.
@@ -1661,7 +2035,12 @@ fn calibrate_dino_game(wx: i32, wy: i32, ww: i32, wh: i32) -> Option<(i32, i32, 
         let dark = count_dark_pixels(&pixels, 120);
         if dark > (pixels.len() as u32 / 4) {
             ground_y = y;
-            eprintln!("[dino] found ground line at y={} (dark={}/{})", y, dark, pixels.len());
+            eprintln!(
+                "[dino] found ground line at y={} (dark={}/{})",
+                y,
+                dark,
+                pixels.len()
+            );
             break;
         }
     }
@@ -1715,7 +2094,9 @@ fn run_dino_mode() {
 
     // Activate Chrome.
     if let Some(pid) = find_pid_by_name("Chrome") {
-        unsafe { TARGET_PID = pid; }
+        unsafe {
+            TARGET_PID = pid;
+        }
         activate_pid(pid);
         std::thread::sleep(std::time::Duration::from_millis(300));
         tlog(&format!("Chrome activated (pid={})", pid));
@@ -1775,10 +2156,24 @@ fn run_dino_mode() {
         id: "dino-duck".into(),
     };
 
-    tlog(&format!("jump rule: scan @{},{} {}x{} dark>{} cooldown={}ms",
-        jump_rule.x, jump_rule.y, jump_rule.w, jump_rule.h, jump_rule.threshold, jump_rule.cooldown_ms));
-    tlog(&format!("duck rule: scan @{},{} {}x{} dark>{} cooldown={}ms",
-        duck_rule.x, duck_rule.y, duck_rule.w, duck_rule.h, duck_rule.threshold, duck_rule.cooldown_ms));
+    tlog(&format!(
+        "jump rule: scan @{},{} {}x{} dark>{} cooldown={}ms",
+        jump_rule.x,
+        jump_rule.y,
+        jump_rule.w,
+        jump_rule.h,
+        jump_rule.threshold,
+        jump_rule.cooldown_ms
+    ));
+    tlog(&format!(
+        "duck rule: scan @{},{} {}x{} dark>{} cooldown={}ms",
+        duck_rule.x,
+        duck_rule.y,
+        duck_rule.w,
+        duck_rule.h,
+        duck_rule.threshold,
+        duck_rule.cooldown_ms
+    ));
 
     SCAN_RULES.lock().unwrap().push(jump_rule);
     SCAN_RULES.lock().unwrap().push(duck_rule);
@@ -1804,7 +2199,10 @@ fn run_dino_mode() {
         let total = center_pixels.len() as u32;
 
         if total > 0 && dark_center > total / 3 {
-            tlog(&format!("GAME OVER detected (dark={}/{} at center)", dark_center, total));
+            tlog(&format!(
+                "GAME OVER detected (dark={}/{} at center)",
+                dark_center, total
+            ));
 
             // Wait a moment, then restart.
             std::thread::sleep(std::time::Duration::from_millis(1000));
@@ -1833,23 +2231,31 @@ fn run_dino_mode() {
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 fn agent_main(args: &[String]) {
-
     // --target "App Name": send events to a specific app (not global).
     if let Some(idx) = args.iter().position(|a| a == "--target") {
         if let Some(target_name) = args.get(idx + 1) {
             match find_pid_by_name(target_name) {
                 Some(pid) => {
-                    unsafe { TARGET_PID = pid; }
+                    unsafe {
+                        TARGET_PID = pid;
+                    }
                     eprintln!("[clx-agent] targeting: {} (pid={})", target_name, pid);
                     // Activate the target app so it receives events.
                     activate_pid(pid);
                     std::thread::sleep(std::time::Duration::from_millis(200));
                 }
                 None => {
-                    eprintln!("[clx-agent] ERROR: app '{}' not found. Running apps:", target_name);
+                    eprintln!(
+                        "[clx-agent] ERROR: app '{}' not found. Running apps:",
+                        target_name
+                    );
                     // List running apps for debugging.
                     let script = r#"tell application "System Events" to get name of every application process whose background only is false"#;
-                    if let Ok(out) = std::process::Command::new("osascript").arg("-e").arg(script).output() {
+                    if let Ok(out) = std::process::Command::new("osascript")
+                        .arg("-e")
+                        .arg(script)
+                        .output()
+                    {
                         eprintln!("  {}", String::from_utf8_lossy(&out.stdout).trim());
                     }
                     return;
