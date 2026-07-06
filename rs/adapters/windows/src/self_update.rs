@@ -74,18 +74,36 @@ fn ulog(msg: &str) {
     crate::hook::debug_log_sync(&format!("[update] {msg}"));
 }
 
-/// Walk up from the running exe to find the enclosing git checkout root.
+/// Walk up from the running exe to find the enclosing **CapsLockX git checkout**.
+///
+/// This is the gate that keeps auto-pull/rebuild exclusive to a git install:
+/// a directory qualifies only if it has BOTH a `.git` AND our source sentinel
+/// (`rs/adapters/windows/Cargo.toml`, the very crate we'd rebuild). So:
+///   - an npm-global / release-downloaded binary (no `.git`, no source) → None
+///   - a released binary that merely happens to sit inside some *unrelated* git
+///     repo → that ancestor lacks the sentinel, so we keep walking and return
+///     None rather than pulling/rebuilding a foreign repository.
+/// Only a genuine, buildable CapsLockX clone returns `Some`.
 fn find_repo_root() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
     let mut dir = exe.parent()?.to_path_buf();
     loop {
-        if dir.join(".git").exists() {
+        if dir.join(".git").exists() && is_capslockx_checkout(&dir) {
             return Some(dir);
         }
         if !dir.pop() {
             return None;
         }
     }
+}
+
+/// True when `dir` is the root of a CapsLockX source tree we can rebuild.
+fn is_capslockx_checkout(dir: &Path) -> bool {
+    dir.join("rs")
+        .join("adapters")
+        .join("windows")
+        .join("Cargo.toml")
+        .exists()
 }
 
 /// A `git` command in `root`, configured to never block on interaction and to
@@ -231,8 +249,10 @@ fn run_check(auto_rebuild: bool) {
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false);
 
+    // Auto-pull/rebuild is exclusive to a git install: only proceed from a real
+    // CapsLockX source clone. Released / npm-downloaded binaries stop here.
     let Some(root) = find_repo_root() else {
-        ulog("not a git checkout — skipping self-update");
+        ulog("not a CapsLockX git checkout (installed binary) — skipping auto-update");
         return;
     };
     if GIT_HASH == "unknown" && !forced {
