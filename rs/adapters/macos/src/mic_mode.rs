@@ -48,95 +48,11 @@ pub fn show_microphone_mode_picker() {
         f(device_cls, sel(b"showSystemUserInterface:\0"), 2); // microphoneModes = 2
     }
 }
-
-/// Check microphone permission via AVCaptureDevice and request access if
-/// not yet determined. Uses a Swift subprocess to trigger the system dialog
-/// because creating ObjC blocks from Rust is fragile.
-pub fn check_and_request_mic_permission() -> bool {
-    unsafe {
-        let device_cls = cls(b"AVCaptureDevice\0");
-        if device_cls.is_null() {
-            return true;
-        }
-
-        // AVMediaTypeAudio = @"soun"
-        let nsstring_cls = cls(b"NSString\0");
-        let media_audio: *mut c_void = {
-            let f: extern "C" fn(*mut c_void, *mut c_void, *const u8) -> *mut c_void =
-                std::mem::transmute(objc_msgSend as *const ());
-            f(
-                nsstring_cls,
-                sel(b"stringWithUTF8String:\0"),
-                b"soun\0".as_ptr(),
-            )
-        };
-
-        // authorizationStatusForMediaType: -> NSInteger
-        let status: isize = {
-            let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> isize =
-                std::mem::transmute(objc_msgSend as *const ());
-            f(
-                device_cls,
-                sel(b"authorizationStatusForMediaType:\0"),
-                media_audio,
-            )
-        };
-
-        match status {
-            0 => {
-                eprintln!("[CLX] mic permission: not determined — requesting via subprocess...");
-                // Spawn a swift process that requests mic access and waits for user response.
-                let result = std::process::Command::new("swift")
-                    .args([
-                        "-e",
-                        r#"
-import AVFoundation
-import Foundation
-let sem = DispatchSemaphore(value: 0)
-AVCaptureDevice.requestAccess(for: .audio) { granted in
-    if granted { print("granted") } else { print("denied") }
-    sem.signal()
-}
-sem.wait()
-"#,
-                    ])
-                    .output();
-                match result {
-                    Ok(out) => {
-                        let stdout = String::from_utf8_lossy(&out.stdout);
-                        if stdout.trim() == "granted" {
-                            eprintln!("[CLX] mic permission: authorized (user granted)");
-                            return true;
-                        } else {
-                            eprintln!("[CLX] mic permission: denied by user");
-                            return false;
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("[CLX] mic permission: swift subprocess failed: {e}");
-                        return false;
-                    }
-                }
-            }
-            1 => {
-                eprintln!("[CLX] mic permission: RESTRICTED");
-                false
-            }
-            2 => {
-                eprintln!("[CLX] mic permission: DENIED — enable in System Settings → Privacy & Security → Microphone");
-                false
-            }
-            3 => {
-                eprintln!("[CLX] mic permission: authorized");
-                true
-            }
-            _ => {
-                eprintln!("[CLX] mic permission: unknown status {status}");
-                true
-            }
-        }
-    }
-}
+// NOTE: clx intentionally has no mic-permission request. The microphone is
+// owned by the otoji subprocess (`otoji listen`), which holds its own
+// Microphone TCC grant — see the note in main.rs and voice_otoji.rs. Only the
+// query-only mic *mode* helpers above are used here (for the tray label and
+// the Voice Isolation tip).
 
 /// Check mic mode and prompt user if Voice Isolation is not active.
 /// Called at voice startup.

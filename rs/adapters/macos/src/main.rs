@@ -268,8 +268,12 @@ fn main() {
     tray::setup_tray();
     voice_overlay::init_overlay();
 
-    // Check & request microphone permission (triggers system dialog if needed).
-    mic_mode::check_and_request_mic_permission();
+    // NOTE: clx does NOT request microphone permission. The mic is owned by the
+    // otoji subprocess (`otoji listen` opens the input device itself — see
+    // voice_otoji.rs), so the Microphone TCC grant belongs to otoji, not clx.
+    // Requesting it here would put clx in the Microphone privacy list too and
+    // pop a redundant permission dialog. We still read the mic *mode* below
+    // (a query-only system setting) for the tray label and Voice Isolation tip.
 
     // Prompt user to enable Voice Isolation if not active.
     mic_mode::ensure_voice_isolation();
