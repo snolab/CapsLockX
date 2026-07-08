@@ -127,6 +127,9 @@ mod tests {
 
         // After mic_ready + placeholder delay, tail = "-" (listening, no VAD).
         // VAD on would flip it to "~".
+        // Shrink the placeholder delay so the 200ms sleeps below have a
+        // wide margin for the placeholder to appear, even on a slow runner.
+        ptt.set_placeholder_delay_ms(30);
         ptt.set_mic_ready();
         ptt.on_press();
         std::thread::sleep(Duration::from_millis(200));
@@ -159,12 +162,16 @@ mod tests {
 
     #[test]
     fn test_tap_no_text() {
-        // Quick tap (<150ms) should not type anything.
+        // Quick tap (under the placeholder delay) should not type anything.
         let platform = Arc::new(MockPlatform::with_existing_text("existing"));
         let ptt = PttSession::new(
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Widen the delay so a stalled CI runner can't overshoot the 50ms
+        // sleep past the placeholder threshold (which would type a tail
+        // glyph and turn this tap into a hold).
+        ptt.set_placeholder_delay_ms(60_000);
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -192,6 +199,9 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Shrink the placeholder delay so the 200ms sleeps below have a
+        // wide margin for the placeholder to appear, even on a slow runner.
+        ptt.set_placeholder_delay_ms(30);
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -228,6 +238,9 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Shrink the placeholder delay so the 200ms sleeps below have a
+        // wide margin for the placeholder to appear, even on a slow runner.
+        ptt.set_placeholder_delay_ms(30);
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -255,6 +268,8 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Taps must stay under the placeholder delay even on a stalled runner.
+        ptt.set_placeholder_delay_ms(60_000);
         ptt.set_mic_ready();
 
         // First tap
@@ -279,6 +294,9 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Taps must stay under the placeholder delay even on a stalled runner.
+        // (The exit-on-press path below doesn't assert on the placeholder.)
+        ptt.set_placeholder_delay_ms(60_000);
         ptt.set_mic_ready();
 
         // Enter locked mode via double-tap
@@ -308,6 +326,9 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Shrink the placeholder delay so the 200ms sleeps below have a
+        // wide margin for the placeholder to appear, even on a slow runner.
+        ptt.set_placeholder_delay_ms(30);
         ptt.set_mic_ready();
 
         ptt.on_press();
@@ -331,6 +352,8 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Taps must stay under the placeholder delay even on a stalled runner.
+        ptt.set_placeholder_delay_ms(60_000);
         ptt.set_mic_ready();
 
         // First tap
@@ -364,6 +387,9 @@ mod tests {
             Arc::clone(&platform) as Arc<dyn Platform>,
             Arc::new(OtojiBackend::new()),
         );
+        // Shrink the placeholder delay so the 200ms sleeps below have a
+        // wide margin for the placeholder to appear, even on a slow runner.
+        ptt.set_placeholder_delay_ms(30);
         ptt.set_mic_ready();
 
         ptt.on_press();

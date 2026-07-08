@@ -100,6 +100,9 @@ pub struct PttSession {
     vad_token: AtomicU64,
     /// Shared reference to OtojiBackend for getting pid.
     otoji: Arc<super::voice_otoji::OtojiBackend>,
+    /// Placeholder delay (ms). Defaults to PLACEHOLDER_DELAY_MS; tests widen
+    /// it so a slow runner can't race a quick tap past the threshold.
+    placeholder_delay_ms: AtomicU64,
 }
 
 impl PttSession {
@@ -120,7 +123,14 @@ impl PttSession {
             vad_auto_release_ms: AtomicU64::new(0),
             vad_token: AtomicU64::new(0),
             otoji,
+            placeholder_delay_ms: AtomicU64::new(PLACEHOLDER_DELAY_MS),
         })
+    }
+
+    /// Test hook: override the placeholder delay (see field doc).
+    #[cfg(test)]
+    pub fn set_placeholder_delay_ms(&self, ms: u64) {
+        self.placeholder_delay_ms.store(ms, Ordering::Relaxed);
     }
 
     /// Returns true while the user is holding V (PTT recording in progress).
@@ -218,7 +228,8 @@ impl PttSession {
             .name("ptt-init".into())
             .spawn(move || {
                 // Wait for placeholder delay.
-                std::thread::sleep(Duration::from_millis(PLACEHOLDER_DELAY_MS));
+                let delay = this.placeholder_delay_ms.load(Ordering::Relaxed);
+                std::thread::sleep(Duration::from_millis(delay));
                 if this.token_counter.load(Ordering::Relaxed) != token {
                     return;
                 }
@@ -295,7 +306,8 @@ impl PttSession {
                 std::thread::Builder::new()
                     .name("ptt-lock-init".into())
                     .spawn(move || {
-                        std::thread::sleep(Duration::from_millis(PLACEHOLDER_DELAY_MS));
+                        let delay = this.placeholder_delay_ms.load(Ordering::Relaxed);
+                        std::thread::sleep(Duration::from_millis(delay));
                         if this.token_counter.load(Ordering::Relaxed) != token {
                             return;
                         }
