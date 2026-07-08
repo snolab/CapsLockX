@@ -342,6 +342,18 @@ unsafe extern "C" fn action_show_mic_picker(
     crate::mic_mode::show_microphone_mode_picker();
 }
 
+/// Action handler for "Launch at Login" checkbox menu item — toggles the
+/// LaunchAgent and refreshes the checkmark.
+unsafe extern "C" fn action_toggle_launch_at_login(
+    _this: *mut c_void,
+    _cmd: *mut c_void,
+    _sender: *mut c_void,
+) {
+    let now_enabled = crate::launch_at_login::toggle();
+    eprintln!("[CLX] launch-at-login: toggled to {}", now_enabled);
+    crate::tray::refresh_login_item();
+}
+
 /// Action handler for "Restart" menu item — spawn new process and exit.
 /// Using spawn+exit instead of execv so macOS properly cleans up the old
 /// NSStatusItem (execv leaves a ghost/transparent icon in the menu bar).
@@ -428,6 +440,17 @@ unsafe fn ensure_action_class() {
         );
         if !added {
             eprintln!("[CLX] prefs: failed to add openVoiceFolder: method");
+        }
+
+        let sel_login = sel(b"toggleLaunchAtLogin:\0");
+        let added = class_addMethod(
+            new_cls,
+            sel_login,
+            action_toggle_launch_at_login as *const c_void,
+            b"v@:@\0".as_ptr() as *const _,
+        );
+        if !added {
+            eprintln!("[CLX] prefs: failed to add toggleLaunchAtLogin: method");
         }
 
         let sel_mic = sel(b"showMicPicker:\0");

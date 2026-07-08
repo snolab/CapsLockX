@@ -23,6 +23,8 @@ mod key_map;
 #[cfg(target_os = "macos")]
 mod keyboard_layout_overlay;
 #[cfg(target_os = "macos")]
+mod launch_at_login;
+#[cfg(target_os = "macos")]
 mod mic_mode;
 #[cfg(target_os = "macos")]
 mod observe_cmd;

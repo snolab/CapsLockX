@@ -129,6 +129,49 @@ pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
 
 extern "C" {
     fn AXIsProcessTrusted() -> bool;
+    fn AXIsProcessTrustedWithOptions(options: *const std::ffi::c_void) -> bool;
+    fn CFDictionaryCreate(
+        allocator: *const std::ffi::c_void,
+        keys: *const *const std::ffi::c_void,
+        values: *const *const std::ffi::c_void,
+        num_values: isize,
+        key_callbacks: *const std::ffi::c_void,
+        value_callbacks: *const std::ffi::c_void,
+    ) -> *mut std::ffi::c_void;
+    fn CFRelease(cf: *const std::ffi::c_void);
+
+    static kCFTypeDictionaryKeyCallBacks: std::ffi::c_void;
+    static kCFTypeDictionaryValueCallBacks: std::ffi::c_void;
+    static kCFBooleanTrue: *mut std::ffi::c_void;
+    /// CFStringRef constant exported by ApplicationServices/HIServices —
+    /// the key AXIsProcessTrustedWithOptions looks for to decide whether to
+    /// show the "clx would like to control this computer" system prompt.
+    static kAXTrustedCheckOptionPrompt: *mut std::ffi::c_void;
+}
+
+/// Like `AXIsProcessTrusted()` but, if untrusted, also triggers the system's
+/// native "clx would like to control this computer" prompt — which is what
+/// actually adds clx as its own row in System Settings → Privacy & Security →
+/// Accessibility. Without this, a process launched with no GUI parent (e.g.
+/// via a LaunchAgent) never gets added to that list at all: interactive
+/// terminal launches "ride along" on the parent app's (e.g. Terminal.app's)
+/// existing grant, so the plain trusted-check never had a reason to prompt.
+unsafe fn ax_is_process_trusted_with_prompt() -> bool {
+    let key = kAXTrustedCheckOptionPrompt;
+    let value = kCFBooleanTrue;
+    let options = CFDictionaryCreate(
+        ptr::null(),
+        &(key as *const std::ffi::c_void) as *const _,
+        &(value as *const std::ffi::c_void) as *const _,
+        1,
+        &kCFTypeDictionaryKeyCallBacks as *const _ as *const std::ffi::c_void,
+        &kCFTypeDictionaryValueCallBacks as *const _ as *const std::ffi::c_void,
+    );
+    let trusted = AXIsProcessTrustedWithOptions(options);
+    if !options.is_null() {
+        CFRelease(options as *const std::ffi::c_void);
+    }
+    trusted
 }
 
 type CGEventRef = *mut std::ffi::c_void;
@@ -328,16 +371,33 @@ pub fn install_and_run() {
     // Check Accessibility permission *before* CGEventTapCreate — on some
     // macOS versions the latter blocks indefinitely waiting for a dialog
     // that never appears when launched without a GUI session.
+    //
+    // IMPORTANT: poll-and-wait *in this same process* rather than exit(1)
+    // and rely on the watchdog to retry. The watchdog's crash-restart
+    // backoff starts at 10ms, so exiting here spawns a fresh process (which
+    // would call the *prompting* variant again) faster than a human can
+    // click through the system dialog — producing an endless storm of
+    // re-triggered prompts that never gives the approval a chance to stick.
+    // One process, one prompt, then just wait quietly.
     if !unsafe { AXIsProcessTrusted() } {
         eprintln!("[CLX] ERROR: Missing Accessibility permission.");
         eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
-        eprintln!(
-            "[CLX] Opening System Settings — grant permission then CLX will restart automatically."
-        );
+        eprintln!("[CLX] Requesting permission — check the box for clx, then CLX will continue automatically (no restart needed).");
+        // Triggers the native system prompt exactly once, adding clx to the
+        // Accessibility list (unchecked) if it isn't already there.
+        unsafe {
+            ax_is_process_trusted_with_prompt();
+        }
         let _ = std::process::Command::new("open")
             .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
             .status();
-        std::process::exit(1);
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            if unsafe { AXIsProcessTrusted() } {
+                eprintln!("[CLX] Accessibility permission granted — continuing.");
+                break;
+            }
+        }
     }
 
     let tap: CFMachPortRef = unsafe {

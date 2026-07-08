@@ -15,6 +15,7 @@ static ICON_BLUE: &[u8] = include_bytes!("../../../../Data/XIconBlue.png");
 
 static STATUS_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static MIC_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
+static LOGIN_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 
 // ── Objective-C runtime FFI ──────────────────────────────────────────────────
 
@@ -131,6 +132,23 @@ unsafe fn nsstring(s: &str) -> *mut c_void {
     f(cls_str, sel_utf8, cstr.as_ptr())
 }
 
+// ── Launch-at-Login checkbox refresh ─────────────────────────────────────────
+
+/// Sync the "Launch at Login" checkmark with the actual LaunchAgent state.
+/// Safe to call from the main thread only (NSMenuItem is not thread-safe).
+pub fn refresh_login_item() {
+    unsafe {
+        let item = LOGIN_ITEM.load(Ordering::Acquire);
+        if item.is_null() {
+            return;
+        }
+        let enabled = crate::launch_at_login::is_enabled();
+        let f: extern "C" fn(*mut c_void, *mut c_void, i64) =
+            std::mem::transmute(objc_msgSend as *const ());
+        f(item, sel(b"setState:\0"), if enabled { 1 } else { 0 }); // NSControlStateValueOn/Off
+    }
+}
+
 // ── Mic mode label refresh ───────────────────────────────────────────────────
 
 /// Update the "Mic: …" menu item title to reflect the currently active mode and STT engine.
@@ -185,6 +203,7 @@ unsafe fn create_menu_delegate() -> *mut c_void {
             _menu: *mut c_void,
         ) {
             refresh_mic_item();
+            refresh_login_item();
         }
         let proto = objc_getProtocol(b"NSMenuDelegate\0".as_ptr() as *const _);
         if !proto.is_null() {
@@ -334,6 +353,34 @@ pub fn setup_tray() {
         }
         msg1_ptr(menu, sel(b"addItem:\0"), restart_item);
 
+        // ── "Launch at Login" checkbox menu item ────────────────────────
+        let login_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
+        let login_title = nsstring("Launch at Login");
+        let login_action = sel(b"toggleLaunchAtLogin:\0");
+        let login_key = nsstring("");
+        let login_item: *mut c_void = {
+            let f: extern "C" fn(
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            f(
+                login_alloc,
+                sel_init_item,
+                login_title,
+                login_action,
+                login_key,
+            )
+        };
+        if !action_target.is_null() {
+            msg1_ptr(login_item, sel(b"setTarget:\0"), action_target);
+        }
+        msg0(login_item, sel(b"retain\0"));
+        LOGIN_ITEM.store(login_item, Ordering::Release);
+        msg1_ptr(menu, sel(b"addItem:\0"), login_item);
+
         // ── "Voice Recordings…" menu item ───────────────────────────────
         let voice_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
         let voice_title = nsstring("Voice Recordings\u{2026}");
@@ -388,8 +435,9 @@ pub fn setup_tray() {
             msg0(delegate, sel(b"retain\0"));
             msg1_ptr(menu, sel(b"setDelegate:\0"), delegate);
         }
-        // Populate label immediately so first open isn't blank.
+        // Populate label/checkbox immediately so first open isn't blank/stale.
         refresh_mic_item();
+        refresh_login_item();
 
         // ── Separator ───────────────────────────────────────────────────
         let separator = msg0(menuitem_cls, sel(b"separatorItem\0"));
