@@ -3,7 +3,7 @@ use crate::key_code::KeyCode;
 use crate::platform::{MouseButton, Platform};
 use crate::state::{ClxState, SpeedConfig};
 use std::sync::atomic::{AtomicBool, Ordering};
-/// CLX-Mouse – virtual mouse via WASD + QE buttons + RF scroll.
+/// CLX-Mouse – virtual mouse via WASD + QE buttons + RF scroll (R+F chord = middle button).
 use std::sync::Arc;
 
 pub struct MouseModule {
@@ -11,6 +11,9 @@ pub struct MouseModule {
     scroll_model: AccModel2D,
     left_btn: Arc<AtomicBool>,
     right_btn: Arc<AtomicBool>,
+    middle_btn: Arc<AtomicBool>,
+    r_held: AtomicBool,
+    f_held: AtomicBool,
     platform: Arc<dyn Platform>,
 }
 
@@ -19,6 +22,7 @@ impl MouseModule {
         let speed = state.config.read().unwrap().speed.clone();
         let left_btn = Arc::new(AtomicBool::new(false));
         let right_btn = Arc::new(AtomicBool::new(false));
+        let middle_btn = Arc::new(AtomicBool::new(false));
 
         let (p, s) = (Arc::clone(&platform), Arc::clone(&state));
         let mouse_model = AccModel2D::new(
@@ -39,6 +43,9 @@ impl MouseModule {
             scroll_model,
             left_btn,
             right_btn,
+            middle_btn,
+            r_held: AtomicBool::new(false),
+            f_held: AtomicBool::new(false),
             platform,
         }
     }
@@ -65,6 +72,11 @@ impl MouseModule {
         if self.right_btn.swap(false, Ordering::Relaxed) {
             self.platform.mouse_button(MouseButton::Right, false);
         }
+        if self.middle_btn.swap(false, Ordering::Relaxed) {
+            self.platform.mouse_button(MouseButton::Middle, false);
+        }
+        self.r_held.store(false, Ordering::Relaxed);
+        self.f_held.store(false, Ordering::Relaxed);
     }
 
     pub fn on_key_down(&self, key: KeyCode) -> bool {
@@ -97,15 +109,40 @@ impl MouseModule {
                 }
                 true
             }
+            // R+F held together = middle button (matches AHK CLX-Mouse).
+            // Scrolling stops while the chord is held; the button releases
+            // only once BOTH keys are up.
             KeyCode::R => {
-                self.scroll_model.press_up();
+                self.r_held.store(true, Ordering::Relaxed);
+                if self.middle_btn.load(Ordering::Relaxed) {
+                    // re-press while chord active: swallow, keep middle held
+                } else if self.f_held.load(Ordering::Relaxed) {
+                    self.enter_middle_chord();
+                } else {
+                    self.scroll_model.press_up();
+                }
                 true
             }
             KeyCode::F => {
-                self.scroll_model.press_down();
+                self.f_held.store(true, Ordering::Relaxed);
+                if self.middle_btn.load(Ordering::Relaxed) {
+                    // re-press while chord active: swallow, keep middle held
+                } else if self.r_held.load(Ordering::Relaxed) {
+                    self.enter_middle_chord();
+                } else {
+                    self.scroll_model.press_down();
+                }
                 true
             }
             _ => false,
+        }
+    }
+
+    fn enter_middle_chord(&self) {
+        self.scroll_model.release_up();
+        self.scroll_model.release_down();
+        if !self.middle_btn.swap(true, Ordering::Relaxed) {
+            self.platform.mouse_button(MouseButton::Middle, true);
         }
     }
 
@@ -140,14 +177,33 @@ impl MouseModule {
                 true
             }
             KeyCode::R => {
-                self.scroll_model.release_up();
+                self.r_held.store(false, Ordering::Relaxed);
+                if self.middle_btn.load(Ordering::Relaxed) {
+                    self.maybe_release_middle_chord();
+                } else {
+                    self.scroll_model.release_up();
+                }
                 true
             }
             KeyCode::F => {
-                self.scroll_model.release_down();
+                self.f_held.store(false, Ordering::Relaxed);
+                if self.middle_btn.load(Ordering::Relaxed) {
+                    self.maybe_release_middle_chord();
+                } else {
+                    self.scroll_model.release_down();
+                }
                 true
             }
             _ => false,
+        }
+    }
+
+    fn maybe_release_middle_chord(&self) {
+        if self.r_held.load(Ordering::Relaxed) || self.f_held.load(Ordering::Relaxed) {
+            return; // one key still down: keep middle button held
+        }
+        if self.middle_btn.swap(false, Ordering::Relaxed) {
+            self.platform.mouse_button(MouseButton::Middle, false);
         }
     }
 
@@ -391,6 +447,104 @@ mod tests {
         m.stop();
         let count = plat.count(|c| matches!(c, Call::MouseButton(_, _)));
         assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn rf_chord_presses_middle_button() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::R);
+        m.on_key_down(KeyCode::F);
+        assert!(plat
+            .calls()
+            .contains(&Call::MouseButton(MouseButton::Middle, true)));
+    }
+
+    #[test]
+    fn fr_chord_presses_middle_button() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::F);
+        m.on_key_down(KeyCode::R);
+        assert!(plat
+            .calls()
+            .contains(&Call::MouseButton(MouseButton::Middle, true)));
+    }
+
+    #[test]
+    fn middle_button_stays_held_until_both_keys_released() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::R);
+        m.on_key_down(KeyCode::F);
+        plat.clear();
+        m.on_key_up(KeyCode::R);
+        assert_eq!(
+            plat.count(|c| matches!(c, Call::MouseButton(MouseButton::Middle, false))),
+            0,
+            "middle must stay held while F is still down"
+        );
+        m.on_key_up(KeyCode::F);
+        assert!(plat
+            .calls()
+            .contains(&Call::MouseButton(MouseButton::Middle, false)));
+    }
+
+    #[test]
+    fn rf_chord_emits_middle_press_only_once() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::R);
+        m.on_key_down(KeyCode::F);
+        m.on_key_down(KeyCode::F); // key repeat
+        m.on_key_down(KeyCode::R); // key repeat
+        let count = plat.count(|c| matches!(c, Call::MouseButton(MouseButton::Middle, true)));
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn single_r_release_after_chord_does_not_scroll_release_middle() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::R);
+        m.on_key_down(KeyCode::F);
+        m.on_key_up(KeyCode::F);
+        m.on_key_up(KeyCode::R);
+        // exactly one down + one up, in order
+        assert_eq!(
+            plat.count(|c| matches!(c, Call::MouseButton(MouseButton::Middle, true))),
+            1
+        );
+        assert_eq!(
+            plat.count(|c| matches!(c, Call::MouseButton(MouseButton::Middle, false))),
+            1
+        );
+    }
+
+    #[test]
+    fn scroll_works_again_after_middle_chord() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::R);
+        m.on_key_down(KeyCode::F);
+        m.on_key_up(KeyCode::R);
+        m.on_key_up(KeyCode::F);
+        plat.clear();
+        // a fresh single-key press must scroll, not re-trigger middle
+        m.on_key_down(KeyCode::R);
+        sleep(Duration::from_millis(100));
+        m.on_key_up(KeyCode::R);
+        m.stop();
+        assert_eq!(
+            plat.count(|c| matches!(c, Call::MouseButton(MouseButton::Middle, _))),
+            0
+        );
+    }
+
+    #[test]
+    fn stop_releases_held_middle_button() {
+        let (plat, _s, m) = setup();
+        m.on_key_down(KeyCode::R);
+        m.on_key_down(KeyCode::F);
+        plat.clear();
+        m.stop();
+        assert!(plat
+            .calls()
+            .contains(&Call::MouseButton(MouseButton::Middle, false)));
     }
 
     #[test]

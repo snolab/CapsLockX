@@ -2,6 +2,12 @@
 
 - [x] otoji-tray: replace text title with SF Symbol mic icon
 - [x] otoji listen: idle CPU gate before RNNoise (76% → ~0%)
+- [x] macOS: "Launch at Login" tray toggle — `rs/adapters/macos/src/launch_at_login.rs` (writes/removes `~/Library/LaunchAgents/com.snomiao.capslockx.plist`; enable only registers for next login, disable also `launchctl bootout`s), checkbox item wired in `tray.rs`/`prefs.rs`. Runs `dist/CapsLockX-dev.app/Contents/MacOS/clx -f` (branded .app identity for the Accessibility list) with `ORT_DYLIB_PATH` set for ten-vad's dlopen; deliberately no `KeepAlive` (would fight clx's startup dedup).
+- [ ] Windows: "Launch at Login" tray toggle (mirror of the macOS feature above)
+  - Add a `CheckMenuItemBuilder`-based checkbox item to the tray menu built in `rs/adapters/windows/src/main.rs` (alongside the existing `prefs`/`config_dir`/`quit` items around line 234-246), wired via `on_menu_event`.
+  - Backing store: a new module (e.g. `rs/adapters/windows/src/launch_at_login.rs`) that writes/removes a value under the per-user registry key `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (name `CapsLockX`, value = path to the exe, quoted). This is the standard lightweight mechanism for per-user autostart — no admin rights, no Task Scheduler XML. Use the `windows` crate (already a dependency here) via `RegSetValueExW`/`RegDeleteValueW` on `HKEY_CURRENT_USER`, or pull in the `auto-launch` crate if it simplifies things.
+  - `is_enabled()` = registry value exists and points at the current exe path (like the mac version, treat the registry as the single source of truth — no separate config flag to desync).
+  - Note: unlike macOS, Windows Run-key autostart just launches the exe directly at login — there's no separate watchdog/crash-restart wrapper on this platform to route through, so `Program` = current exe path with no wrapper args.
 - [ ] otoji-tray: extract `objc-helpers.rs` shared with CLX `tray.rs` (~150 lines duplicated)
 - [ ] CLX↔otoji-tray state channel: drop CLX's own tray, otoji-tray reflects CLX mode/PTT via state file
 
