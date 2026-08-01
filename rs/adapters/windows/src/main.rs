@@ -130,9 +130,17 @@ fn prefs_version_line() -> String {
 fn main() {
     // Log panics to file since we're a windows subsystem app with no console.
     // Panics use the synchronous logger so they're recorded even if the async
-    // writer isn't running (CLX_DEBUG disabled, or panic before init).
+    // writer isn't running (CLX_DEBUG disabled, or panic before init). The
+    // record also goes to the durable `%LOCALAPPDATA%\CapsLockX\crash.log` so a
+    // post-mortem days later still has the message + location even after TEMP is
+    // wiped. Thread name is included because panics that unwind across an
+    // `extern "system"` callback (WndProc / the LL keyboard hook / a COM vtable
+    // up-call) abort the whole process, and the thread tells us which boundary.
     std::panic::set_hook(Box::new(|info| {
-        hook::debug_log_sync(&format!("[PANIC] {}", info));
+        let thread = std::thread::current();
+        let tname = thread.name().unwrap_or("<unnamed>");
+        let ver = self_update::version_string();
+        hook::crash_log_sync(&format!("[PANIC] {ver} thread '{tname}' {info}"));
     }));
     hook::init_debug_log();
     hook::debug_log("[main] started");
@@ -179,9 +187,11 @@ fn main() {
                 vd_api::init();
                 let idx = vd_api::current_desktop_idx();
                 vd_api::log_line(&format!(
-                    "[vd_api] vd-test: current_desktop_idx = {:?}",
-                    idx
+                    "[vd_api] vd-test: current_desktop_idx = {:?} of {:?}",
+                    idx,
+                    vd_api::desktop_count()
                 ));
+                vd_api::dump();
                 return;
             }
             // Dev smoke test for the overlay pipeline (no LLM needed).
@@ -385,18 +395,28 @@ fn main() {
                 .icon(icon)
                 .tooltip(self_update::version_string())
                 .menu(&menu)
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    // Single code path: builds (with hide-on-close handler) or
-                    // re-shows the prefs window.
-                    "prefs" => open_prefs_window(),
-                    "config_dir" => {
-                        if let Some(dir) = config_store::config_path().parent() {
-                            let _ = std::fs::create_dir_all(dir);
-                            let _ = Command::new("explorer").arg(dir).spawn();
+                .on_menu_event(|app, event| {
+                    // This closure fires from inside the framework's `extern
+                    // "system"` WndProc; a panic here would unwind across that
+                    // boundary and abort the process. Firewall it.
+                    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        match event.id().as_ref() {
+                            // Single code path: builds (with hide-on-close
+                            // handler) or re-shows the prefs window.
+                            "prefs" => open_prefs_window(),
+                            "config_dir" => {
+                                if let Some(dir) = config_store::config_path().parent() {
+                                    let _ = std::fs::create_dir_all(dir);
+                                    let _ = Command::new("explorer").arg(dir).spawn();
+                                }
+                            }
+                            "quit" => app.exit(0),
+                            _ => {}
                         }
+                    }));
+                    if r.is_err() {
+                        hook::crash_log_sync("[PANIC] recovered in tray on_menu_event");
                     }
-                    "quit" => app.exit(0),
-                    _ => {}
                 })
                 .build(app)?;
             Ok(())

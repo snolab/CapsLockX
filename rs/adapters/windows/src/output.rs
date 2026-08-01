@@ -528,6 +528,16 @@ impl Platform for WinPlatform {
 // ── Window enumeration ────────────────────────────────────────────────────────
 
 extern "system" fn enum_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    // `extern "system"` callback invoked by EnumWindows: a panic unwinding out of
+    // here would abort the process. Catch it and stop enumeration (BOOL(0)) with a
+    // partial list rather than crashing.
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        enum_callback_inner(hwnd, lparam)
+    }))
+    .unwrap_or(BOOL(0))
+}
+
+fn enum_callback_inner(hwnd: HWND, lparam: LPARAM) -> BOOL {
     unsafe {
         if !IsWindowVisible(hwnd).as_bool() {
             return BOOL(1);

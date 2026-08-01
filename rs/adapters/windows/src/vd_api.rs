@@ -151,6 +151,21 @@ unsafe fn vt<F: Copy>(obj: *mut c_void, n: usize) -> F {
 }
 
 // ── Cached VDMI pointer (acquired once at startup, reused from hook callback) ─
+//
+// CRITICAL: the manager is acquired exactly ONCE, on the main STA thread, at
+// startup — and the raw pointer is then reused for the life of the process. We
+// deliberately do NOT re-`CoCreateInstance` at runtime.
+//
+// vd_api's public functions run inside the WH_KEYBOARD_LL callback, which is an
+// *input-synchronous* context. An outbound COM activation there fails with
+// RPC_E_CANTCALLOUT_ININPUTSYNCCALL (0x8001010D) and/or CO_E_NOTINITIALIZED
+// (0x800401F0), and worse, blocks the hook callback long enough to risk Windows
+// silently evicting the hook (LowLevelHooksTimeout) — i.e. all hotkeys go dead
+// while the process stays alive. Reusing the already-created pointer's vtable is
+// safe (no outbound activation). If the pointer goes stale (e.g. Explorer
+// restarted) calls fail gracefully and we fall back to the Win+Ctrl+Arrow path;
+// recovering the pointer requires a clx restart. (A previous attempt to
+// auto-re-acquire on failure was reverted for exactly the reasons above.)
 
 struct CachedVdmi {
     ptr: *mut c_void,
@@ -163,68 +178,73 @@ unsafe impl Sync for CachedVdmi {}
 
 static VDMI_CACHE: OnceLock<Option<CachedVdmi>> = OnceLock::new();
 
+/// Do the `CoCreateInstance(ImmersiveShell)` → `QueryService(VDMI)` dance and
+/// return the manager, or `None` if the COM interfaces are unavailable. Called
+/// exactly once, from `init`, on the main STA thread — never from the hot path.
+fn acquire_fresh() -> Option<CachedVdmi> {
+    unsafe {
+        let mut sp: *mut c_void = std::ptr::null_mut();
+        let hr = CoCreateInstance(
+            &CLSID_IMMERSIVE_SHELL,
+            std::ptr::null_mut(),
+            CLSCTX_ALL,
+            &IID_ISERVICE_PROVIDER,
+            &mut sp,
+        );
+        if hr != S_OK || sp.is_null() {
+            log(&format!(
+                "[vd_api] init: CoCreateInstance FAILED hr=0x{:08X}",
+                hr as u32
+            ));
+            return None;
+        }
+
+        type QsFn = unsafe extern "system" fn(
+            *mut c_void,
+            *const GUID,
+            *const GUID,
+            *mut *mut c_void,
+        ) -> i32;
+        let qs: QsFn = vt(sp, 3);
+
+        let mut result = None;
+        for &(ref iid, ver) in &[
+            (IID_VDMI_W12, Ver::W12),
+            (IID_VDMI_W11, Ver::W11),
+            (IID_VDMI_W10, Ver::W10),
+        ] {
+            let mut mgr: *mut c_void = std::ptr::null_mut();
+            let hr2 = qs(sp, &SID_VDMI, iid, &mut mgr);
+            if hr2 == S_OK && !mgr.is_null() {
+                let ver_name = match ver {
+                    Ver::W10 => "W10",
+                    Ver::W11 => "W11",
+                    Ver::W12 => "W12",
+                };
+                log(&format!("[vd_api] init: acquired VDMI ver={}", ver_name));
+                result = Some(CachedVdmi { ptr: mgr, ver });
+                break;
+            }
+        }
+
+        // Release IServiceProvider (manager has its own ref)
+        let release: unsafe extern "system" fn(*mut c_void) -> u32 = vt(sp, 2);
+        release(sp);
+
+        if result.is_none() {
+            log("[vd_api] init: QueryService failed for all version GUIDs");
+        }
+        result
+    }
+}
+
 /// Initialize COM and pre-acquire the virtual desktop manager interface.
 /// Must be called on the main thread before the keyboard hook is installed.
 pub fn init() {
     unsafe {
         CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED);
     }
-    VDMI_CACHE.get_or_init(|| {
-        unsafe {
-            let mut sp: *mut c_void = std::ptr::null_mut();
-            let hr = CoCreateInstance(
-                &CLSID_IMMERSIVE_SHELL,
-                std::ptr::null_mut(),
-                CLSCTX_ALL,
-                &IID_ISERVICE_PROVIDER,
-                &mut sp,
-            );
-            if hr != S_OK || sp.is_null() {
-                log(&format!(
-                    "[vd_api] init: CoCreateInstance FAILED hr=0x{:08X}",
-                    hr as u32
-                ));
-                return None;
-            }
-
-            type QsFn = unsafe extern "system" fn(
-                *mut c_void,
-                *const GUID,
-                *const GUID,
-                *mut *mut c_void,
-            ) -> i32;
-            let qs: QsFn = vt(sp, 3);
-
-            let mut result = None;
-            for &(ref iid, ver) in &[
-                (IID_VDMI_W12, Ver::W12),
-                (IID_VDMI_W11, Ver::W11),
-                (IID_VDMI_W10, Ver::W10),
-            ] {
-                let mut mgr: *mut c_void = std::ptr::null_mut();
-                let hr2 = qs(sp, &SID_VDMI, iid, &mut mgr);
-                if hr2 == S_OK && !mgr.is_null() {
-                    let ver_name = match ver {
-                        Ver::W10 => "W10",
-                        Ver::W11 => "W11",
-                        Ver::W12 => "W12",
-                    };
-                    log(&format!("[vd_api] init: acquired VDMI ver={}", ver_name));
-                    result = Some(CachedVdmi { ptr: mgr, ver });
-                    break;
-                }
-            }
-
-            // Release IServiceProvider (manager has its own ref)
-            let release: unsafe extern "system" fn(*mut c_void) -> u32 = vt(sp, 2);
-            release(sp);
-
-            if result.is_none() {
-                log("[vd_api] init: QueryService failed for all version GUIDs");
-            }
-            result
-        }
-    });
+    VDMI_CACHE.get_or_init(acquire_fresh);
 }
 
 // ── Windows-version variant ───────────────────────────────────────────────────
@@ -334,6 +354,19 @@ unsafe fn arr_count(arr: *mut c_void) -> u32 {
     n
 }
 
+/// `IVirtualDesktop::GetID(this, GUID* out)` – vtable slot 4 on every Windows
+/// build we support (W10 / W11 / W11 24H2 "W12" all keep `IsViewVisible` at 3
+/// and `GetID` at 4; only the trailing name/wallpaper methods differ).
+unsafe fn desktop_id(d: *mut c_void) -> Option<GUID> {
+    let mut id = g(0, 0, 0, [0; 8]);
+    let f: unsafe extern "system" fn(*mut c_void, *mut GUID) -> i32 = vt(d, 4);
+    if f(d, &mut id) == S_OK {
+        Some(id)
+    } else {
+        None
+    }
+}
+
 unsafe fn arr_get_at(arr: *mut c_void, i: u32, iid: &GUID) -> Option<ComPtr> {
     let mut ptr: *mut c_void = std::ptr::null_mut();
     let f: unsafe extern "system" fn(*mut c_void, u32, *const GUID, *mut *mut c_void) -> i32 =
@@ -371,8 +404,21 @@ pub fn switch_desktop(idx: usize) -> bool {
     }
 }
 
+/// Total number of virtual desktops, or `None` if the API is unavailable.
+pub fn desktop_count() -> Option<usize> {
+    let mgr = acquire()?;
+    unsafe {
+        let arr = mgr.get_desktops()?;
+        Some(arr_count(arr.ptr()) as usize)
+    }
+}
+
 /// Query the real current 1-based desktop index from the OS.
 /// Returns `None` if the API is unavailable.
+///
+/// This is the Rust equivalent of AHK's `GetCurrentVirtualDesktopIdxFromAPI`:
+/// `GetCurrentDesktop()` gives an opaque `IVirtualDesktop`, which only becomes
+/// a *position* by locating it inside the `GetDesktops()` array.
 pub fn current_desktop_idx() -> Option<usize> {
     let mgr = acquire()?;
     unsafe {
@@ -380,15 +426,69 @@ pub fn current_desktop_idx() -> Option<usize> {
         let arr = mgr.get_desktops()?;
         let iid = mgr.1.desktop_iid();
         let count = arr_count(arr.ptr());
+        // Match on the desktop's stable GUID rather than on pointer identity.
+        // AHK compared raw pointers; that happens to work today but COM only
+        // guarantees pointer identity for `IUnknown`, so a proxy handed back by
+        // a later `GetAt` call may legitimately differ from the one
+        // `GetCurrentDesktop` returned. Pointer equality stays as the fallback
+        // for any build where `GetID` isn't at vtable[4].
+        let cur_id = desktop_id(current.ptr());
         for i in 0..count {
             if let Some(d) = arr_get_at(arr.ptr(), i, &iid) {
-                if d.ptr() == current.ptr() {
-                    log(&format!("[vd_api] current_desktop_idx -> {}", i + 1));
+                let hit = match (cur_id, desktop_id(d.ptr())) {
+                    (Some(a), Some(b)) => a == b,
+                    _ => d.ptr() == current.ptr(),
+                };
+                if hit {
+                    log(&format!(
+                        "[vd_api] current_desktop_idx -> {}/{} (by {})",
+                        i + 1,
+                        count,
+                        if cur_id.is_some() { "guid" } else { "ptr" }
+                    ));
                     return Some(i as usize + 1);
                 }
             }
         }
-        log("[vd_api] current_desktop_idx: no match found");
+        log(&format!(
+            "[vd_api] current_desktop_idx: no match among {} desktops",
+            count
+        ));
         None
+    }
+}
+
+/// Read-only diagnostic dump: manager version, desktop count, current index and
+/// every desktop GUID. Written to `%TEMP%\capslockx_vd.log` (`clx vd-test`).
+pub fn dump() {
+    let Some(mgr) = acquire() else {
+        log("[vd_api] dump: no manager (COM interface unavailable)");
+        return;
+    };
+    unsafe {
+        let ver = match mgr.1 {
+            Ver::W10 => "W10",
+            Ver::W11 => "W11",
+            Ver::W12 => "W12",
+        };
+        let cur_id = mgr.get_current_desktop().and_then(|c| desktop_id(c.ptr()));
+        let Some(arr) = mgr.get_desktops() else {
+            log(&format!("[vd_api] dump: ver={} get_desktops FAILED", ver));
+            return;
+        };
+        let iid = mgr.1.desktop_iid();
+        let count = arr_count(arr.ptr());
+        log(&format!("[vd_api] dump: ver={} count={}", ver, count));
+        for i in 0..count {
+            if let Some(d) = arr_get_at(arr.ptr(), i, &iid) {
+                let id = desktop_id(d.ptr());
+                let mark = if id.is_some() && id == cur_id {
+                    " <== CURRENT"
+                } else {
+                    ""
+                };
+                log(&format!("[vd_api]   #{} {:?}{}", i + 1, id, mark));
+            }
+        }
     }
 }

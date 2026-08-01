@@ -53,11 +53,21 @@ pub fn init_tray_worker() {
                 while let Ok(next) = rx.try_recv() {
                     latest = next;
                 }
-                crate::update_tray_icon(latest);
-                if latest {
-                    crate::cursor_visibility::enable();
-                } else {
-                    crate::cursor_visibility::disable();
+                // Firewall each iteration: `update_tray_icon` calls into Tauri
+                // and `cursor_visibility` calls into Win32. A panic here would
+                // otherwise kill this worker for the rest of the session (tray
+                // icon + cursor visibility would silently stop tracking mode),
+                // or abort the process if it unwound through a framework WndProc.
+                let r = std::panic::catch_unwind(|| {
+                    crate::update_tray_icon(latest);
+                    if latest {
+                        crate::cursor_visibility::enable();
+                    } else {
+                        crate::cursor_visibility::disable();
+                    }
+                });
+                if r.is_err() {
+                    crash_log_sync("[PANIC] recovered in clx-tray-worker");
                 }
             }
         });
@@ -180,10 +190,14 @@ pub fn install_hook() {
 }
 
 unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _time: u32) {
-    let active = LAST_TRAY_ACTIVE.load(Ordering::Relaxed);
-    if active != 0 && active != u32::MAX {
-        crate::cursor_visibility::nudge();
-    }
+    // Also an `extern "system"` callback — same panic firewall rationale as
+    // `keyboard_proc`. Swallow on panic (the nudge is best-effort cosmetics).
+    let _ = std::panic::catch_unwind(|| {
+        let active = LAST_TRAY_ACTIVE.load(Ordering::Relaxed);
+        if active != 0 && active != u32::MAX {
+            crate::cursor_visibility::nudge();
+        }
+    });
 }
 
 pub fn uninstall_hook() {
@@ -198,6 +212,23 @@ pub fn uninstall_hook() {
 // ── Hook callback ─────────────────────────────────────────────────────────────
 
 unsafe extern "system" fn keyboard_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    // Panic firewall. This is an `extern "system"` boundary: if a panic unwound
+    // out of here (engine dispatch, a module, a COM call), Rust would abort the
+    // whole process (STATUS_STACK_BUFFER_OVERRUN / 0xC0000409). Catch it, log it,
+    // and pass the key through so a transient bug degrades to one dropped hotkey
+    // instead of taking clx down.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| unsafe {
+        keyboard_proc_inner(n_code, w_param, l_param)
+    })) {
+        Ok(r) => r,
+        Err(_) => {
+            crash_log_sync("[PANIC] recovered in keyboard_proc — passing key through");
+            call_next(n_code, w_param, l_param)
+        }
+    }
+}
+
+unsafe fn keyboard_proc_inner(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     if n_code < 0 {
         return call_next(n_code, w_param, l_param);
     }
@@ -387,6 +418,42 @@ pub fn debug_log_sync(msg: &str) {
             let _ = writeln!(f, "{}", msg);
         }
     }
+}
+
+/// Stable crash-log path under `%LOCALAPPDATA%\CapsLockX\crash.log`.
+///
+/// Unlike `capslockx_hook.log` (which lives in `%TEMP%` and gets wiped by Disk
+/// Cleanup / Storage Sense), this survives so a post-mortem days later still has
+/// the panic message + location. A 12-day-uptime abort on 2026-08-01 was lost
+/// precisely because the only record was the TEMP hook log, which was gone by
+/// the time anyone looked.
+fn crash_log_path() -> Option<std::path::PathBuf> {
+    std::env::var("LOCALAPPDATA").ok().map(|base| {
+        std::path::PathBuf::from(base)
+            .join("CapsLockX")
+            .join("crash.log")
+    })
+}
+
+/// Append a critical (crash/panic) record to the durable crash log. Best-effort,
+/// synchronous, and allocation-light — safe to call from a panic hook.
+pub fn crash_log_sync(msg: &str) {
+    use std::io::Write as _;
+    if let Some(path) = crash_log_path() {
+        if let Some(dir) = path.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+        {
+            let _ = writeln!(f, "{}", msg);
+        }
+    }
+    // Mirror to the TEMP hook log too, so a single `clx` session's story stays
+    // in one place while it lasts.
+    debug_log_sync(msg);
 }
 
 #[inline(always)]
