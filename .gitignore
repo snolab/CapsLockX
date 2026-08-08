@@ -32,6 +32,9 @@ debug.log
 # claude
 .claude/
 
+# agent tooling logs (pm2 agent-yes; per-PID .log/.raw.log transcripts)
+/.agent-yes/
+
 #cache
 .eslintcache
 /worktrees
