@@ -67,8 +67,17 @@ CLX_ConfigWindow()
     Gui, Add, Button, w200 gButtonLanguageSwitch, % t("切换語言") . "`n" . t("当前語言") . " = " .  CLX_Lang
     Gui, Add, Button, w200 gButton打开BUG反馈与建议页面, % t("打开BUG反馈与建议页面")
     Gui, Add, Button, w200 gButton打开官方文档, % t("打开官方文档")
-    Gui, Add, Button, w200 gButton添加开机自动启动, % t("添加开机自动启动")
-    Gui, Add, Button, w200 gButtonSetupAutostart, % t("设置Windows自动启动")
+    ; 开机自启动：单个按钮，按当前状态显示「添加」或「取消」
+    ; CLX-RunOnLogin 模块可以在配置里被禁用，那时这些函数不存在。AHK v1 在
+    ; **加载期**就会检查直接调用的函数是否存在，写成 CLX_AutostartEnabled()
+    ; 会让整个配置模块在模块禁用时加载失败，所以必须用 Func().Call() 动态调用。
+    if (IsFunc("CLX_AutostartEnabled")) {
+        if (Func("CLX_AutostartEnabled").Call()) {
+            Gui, Add, Button, w200 gButtonAutostartToggle, % t("取消开机自动启动")
+        } else {
+            Gui, Add, Button, w200 gButtonAutostartToggle, % t("添加开机自动启动")
+        }
+    }
     Gui, Add, Button, w200 gButton配置文件编辑, % t("配置文件编辑")
     Gui, Add, Button, w200 gButton重新載入, % t("重新載入CapsLockX")
     
@@ -130,11 +139,9 @@ ButtonLanguageSwitchWindow:
     LV_ModifyCol()  ; Auto-size each column to fit its contents.
 return
 
-Button添加开机自动启动:
-    Func("CLX_MakeStartup").Call()
-return
-ButtonSetupAutostart:
-    Run *RunAs CMD.exe /k %A_ScriptDir%\..\setup_autostart.bat
+ButtonAutostartToggle:
+    Func("CLX_AutostartToggle").Call() ; 动态调用，理由同上
+    CLX_ConfigWindow() ; 重建窗口，让按钮文字跟上新状态
 return
 Button打开BUG反馈与建议页面:
     Run https://github.com/snolab/CapsLockX/issues
