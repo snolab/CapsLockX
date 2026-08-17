@@ -1,4 +1,80 @@
-import { Button, CheckBox, Slider, GroupBox, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { Button, CheckBox, Slider, GroupBox, VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
+
+// Vertical scroll container with an ALWAYS-VISIBLE scrollbar.
+//
+// Deliberately not std-widgets' ScrollView: its Fluent scrollbar rests at 2px
+// and only grows on hover, so on a window too small for its content it reads as
+// "the page is just cut off" rather than "there is more below". This draws a
+// plain 10px track + draggable thumb that shows up the moment the content
+// overflows, and hides itself when it doesn't.
+//
+// The Flickable's `viewport-height` is filled in by the compiler as
+// `max(own height, min-height of its builtin-layout children)` — which is why
+// the single child must be a VerticalLayout (a VerticalBox works too, it is
+// inlined down to one) and not, say, a Rectangle. See i-slint-compiler
+// `passes/flickable.rs::fixup_geometry`.
+component ScrollArea inherits Rectangle {
+    // How much taller the content is than the visible area; 0 = fits, no bar.
+    private property <length> overflow: max(0px, fl.viewport-height - fl.height);
+    private property <bool> dark: Palette.color-scheme == ColorScheme.dark;
+
+    fl := Flickable {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        // Drag-to-flick is a touch idiom and would fight the sliders; the mouse
+        // wheel is handled by Flickable itself regardless of this flag.
+        interactive: false;
+        @children
+    }
+
+    if root.overflow > 0px : Rectangle {
+        width: 10px;
+        x: parent.width - self.width - 3px;
+        y: 4px;
+        height: parent.height - 8px;
+        border-radius: self.width / 2;
+        background: root.dark ? #ffffff1a : #0000001a;
+
+        thumb := Rectangle {
+            x: 0;
+            width: parent.width;
+            // Proportional, but never so small it can't be grabbed.
+            height: max(28px, parent.height * (fl.height / fl.viewport-height));
+            y: (parent.height - self.height) * (-fl.viewport-y / root.overflow);
+            border-radius: parent.width / 2;
+            background: ta.pressed || ta.has-hover
+                ? (root.dark ? #ffffff99 : #00000099)
+                : (root.dark ? #ffffff59 : #00000059);
+        }
+
+        ta := TouchArea {
+            // Scroll offset when the drag started, so the thumb tracks the
+            // pointer instead of jumping by the delta on every move event.
+            private property <length> pressed-offset;
+
+            width: parent.width;
+            height: parent.height;
+
+            pointer-event(e) => {
+                if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                    self.pressed-offset = -fl.viewport-y;
+                }
+            }
+            moved => {
+                fl.viewport-y = -max(0px, min(root.overflow, self.pressed-offset
+                    + (self.mouse-y - self.pressed-y)
+                      * (root.overflow / max(1px, parent.height - thumb.height))));
+            }
+            // Wheeling over the bar itself should scroll too, not do nothing.
+            scroll-event(e) => {
+                fl.viewport-y = -max(0px, min(root.overflow, -fl.viewport-y - e.delta-y));
+                accept
+            }
+        }
+    }
+}
 
 // One labelled slider row: "Label  [====o====]  value"
 component SpeedRow inherits HorizontalBox {
@@ -50,88 +126,138 @@ export component PrefsWindow inherits Window {
     in-out property <bool> autostart;
     in property <bool> autostart-supported: true;
     in property <string> autostart-hint;
-    // Footer
+    // About
     in property <string> version-text: "CapsLockX";
+    in property <string> about-source;
+    in property <string> about-exe;
+    in property <string> about-config;
+    in property <string> releases-url;
 
     callback changed();
     callback autostart-toggled(bool);
+    callback open-url(string);
+    callback open-config-folder();
 
     title: "CapsLockX Preferences";
     preferred-width: 460px;
-    preferred-height: 540px;
-    min-width: 400px;
-    min-height: 420px;
+    preferred-height: 560px;
+    min-width: 380px;
+    // Everything scrolls, so the window may be shrunk well below the height its
+    // content needs — this only has to leave room for a usable viewport.
+    min-height: 180px;
 
-    VerticalBox {
-        padding: 16px;
-        spacing: 14px;
+    ScrollArea {
+        VerticalLayout {
+            padding: 16px;
+            // Extra room on the right so the scrollbar doesn't sit on top of the
+            // sliders' value labels.
+            padding-right: 32px;
+            spacing: 14px;
+            // Keep rows at their natural height, stacked from the top —
+            // otherwise they stretch to fill a taller-than-content window.
+            alignment: start;
 
-        Text {
-            text: "CapsLockX Preferences";
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        GroupBox {
-            title: "Trigger keys  (hold to enter CLX mode)";
-            VerticalBox {
-                spacing: 4px;
-                CheckBox { text: "CapsLock"; checked <=> root.use-capslock; toggled => { root.changed(); } }
-                CheckBox { text: "Space"; checked <=> root.use-space; toggled => { root.changed(); } }
-                CheckBox { text: "Insert"; checked <=> root.use-insert; toggled => { root.changed(); } }
-                CheckBox { text: "ScrollLock"; checked <=> root.use-scroll-lock; toggled => { root.changed(); } }
-                CheckBox { text: "Right Alt"; checked <=> root.use-ralt; toggled => { root.changed(); } }
+            Text {
+                text: "CapsLockX Preferences";
+                font-size: 18px;
+                font-weight: 700;
             }
-        }
 
-        if root.autostart-supported : GroupBox {
-            title: "Startup";
-            VerticalBox {
-                spacing: 4px;
-                CheckBox {
-                    text: "Launch CapsLockX at login";
-                    checked <=> root.autostart;
-                    toggled => { root.autostart-toggled(self.checked); }
-                }
-                Text {
-                    text: root.autostart-hint;
-                    font-size: 11px;
-                    opacity: 0.6;
-                    wrap: word-wrap;
+            GroupBox {
+                title: "Trigger keys  (hold to enter CLX mode)";
+                VerticalBox {
+                    spacing: 4px;
+                    CheckBox { text: "CapsLock"; checked <=> root.use-capslock; toggled => { root.changed(); } }
+                    CheckBox { text: "Space"; checked <=> root.use-space; toggled => { root.changed(); } }
+                    CheckBox { text: "Insert"; checked <=> root.use-insert; toggled => { root.changed(); } }
+                    CheckBox { text: "ScrollLock"; checked <=> root.use-scroll-lock; toggled => { root.changed(); } }
+                    CheckBox { text: "Right Alt"; checked <=> root.use-ralt; toggled => { root.changed(); } }
                 }
             }
-        }
 
-        GroupBox {
-            title: "Speeds";
-            VerticalBox {
-                spacing: 8px;
-                SpeedRow {
-                    label: "Cursor (HJKL)"; min: 1; max: 120;
-                    value <=> root.cursor-speed;
-                    changed => { root.changed(); }
-                }
-                SpeedRow {
-                    label: "Mouse (WASD)"; min: 50; max: 7000;
-                    value <=> root.mouse-speed;
-                    changed => { root.changed(); }
-                }
-                SpeedRow {
-                    label: "Scroll (RF)"; min: 100; max: 3000;
-                    value <=> root.scroll-speed;
-                    changed => { root.changed(); }
+            if root.autostart-supported : GroupBox {
+                title: "Startup";
+                VerticalBox {
+                    spacing: 4px;
+                    CheckBox {
+                        text: "Launch CapsLockX at login";
+                        checked <=> root.autostart;
+                        toggled => { root.autostart-toggled(self.checked); }
+                    }
+                    Text {
+                        text: root.autostart-hint;
+                        font-size: 11px;
+                        opacity: 0.6;
+                        wrap: word-wrap;
+                    }
                 }
             }
-        }
 
-        // spacer pushes the footer to the bottom
-        Rectangle { vertical-stretch: 1; }
+            GroupBox {
+                title: "Speeds";
+                VerticalBox {
+                    spacing: 8px;
+                    SpeedRow {
+                        label: "Cursor (HJKL)"; min: 1; max: 120;
+                        value <=> root.cursor-speed;
+                        changed => { root.changed(); }
+                    }
+                    SpeedRow {
+                        label: "Mouse (WASD)"; min: 50; max: 7000;
+                        value <=> root.mouse-speed;
+                        changed => { root.changed(); }
+                    }
+                    SpeedRow {
+                        label: "Scroll (RF)"; min: 100; max: 3000;
+                        value <=> root.scroll-speed;
+                        changed => { root.changed(); }
+                    }
+                }
+            }
 
-        Text {
-            text: root.version-text;
-            font-size: 11px;
-            opacity: 0.6;
-            horizontal-alignment: center;
+            GroupBox {
+                title: "About";
+                VerticalBox {
+                    spacing: 4px;
+                    Text {
+                        text: root.version-text;
+                        font-weight: 600;
+                        wrap: word-wrap;
+                    }
+                    Text {
+                        text: root.about-source;
+                        font-size: 11px;
+                        opacity: 0.7;
+                        wrap: word-wrap;
+                    }
+                    Text {
+                        text: root.about-exe;
+                        font-size: 11px;
+                        opacity: 0.6;
+                        wrap: word-wrap;
+                    }
+                    Text {
+                        text: root.about-config;
+                        font-size: 11px;
+                        opacity: 0.6;
+                        wrap: word-wrap;
+                    }
+                    HorizontalBox {
+                        padding: 0px;
+                        padding-top: 6px;
+                        spacing: 8px;
+                        alignment: start;
+                        Button {
+                            text: "Releases…";
+                            clicked => { root.open-url(root.releases-url); }
+                        }
+                        Button {
+                            text: "Config folder";
+                            clicked => { root.open-config-folder(); }
+                        }
+                    }
+                }
+            }
         }
     }
 }
