@@ -1,0 +1,23 @@
+[package]
+name = "clx-autostart"
+version = "0.1.0"
+edition = "2021"
+description = "CapsLockX launch-at-login (Windows Task Scheduler logon task)"
+license = "GPL-3.0"
+
+# Deliberately tiny: shared by both prefs UIs (the native Slint window and the
+# Tauri/WebView2 fallback) so the autostart logic has exactly one home. Keeping
+# it dependency-light is what lets clx-prefs-slint stay a fast-starting binary.
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    # SHELLEXECUTEINFOW carries an HKEY field, so windows-rs 0.58 gates both it
+    # and ShellExecuteExW behind Win32_System_Registry.
+    "Win32_System_Registry",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }

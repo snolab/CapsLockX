@@ -133,6 +133,15 @@
   </section>
 
   <section>
+    <h2>Startup</h2>
+    <div class="cb-row">
+      <input type="checkbox" id="autostart">
+      <label for="autostart">Launch CapsLockX at login</label>
+    </div>
+    <p id="autostart_hint" style="font-size:12px;opacity:.6;margin:4px 0 0"></p>
+  </section>
+
+  <section>
     <h2>Speeds</h2>
     <div class="sl-row">
       <label for="cursor_speed">Cursor Speed</label>
@@ -243,7 +252,9 @@
       }, 300);
     }
 
-    document.querySelectorAll('input').forEach(el => {
+    // #autostart is excluded: it is NOT part of config.json (the scheduled task
+    // is the source of truth), so it must not be swept into set_config.
+    document.querySelectorAll('input:not(#autostart)').forEach(el => {
       el.addEventListener('change', schedulesSave);
       el.addEventListener('input',  schedulesSave);
     });
@@ -252,6 +263,37 @@
     invoke('get_config')
       .then(cfg => { populateForm(cfg); status.textContent = ''; })
       .catch(err => { status.textContent = 'Failed to load: ' + err; status.className = 'error'; });
+
+    // ── Launch at login ───────────────────────────────────────────────────
+    const autostartBox = document.getElementById('autostart');
+    invoke('get_autostart').then(on => { autostartBox.checked = on; });
+    invoke('autostart_hint').then(t => {
+      document.getElementById('autostart_hint').textContent = t;
+    });
+    autostartBox.addEventListener('change', () => {
+      const want = autostartBox.checked;
+      autostartBox.disabled = true;
+      // Reflect what the system actually ended up as — declining the UAC prompt
+      // must snap the checkbox back rather than leave it looking enabled.
+      invoke('set_autostart', { on: want })
+        .then(actual => {
+          autostartBox.checked = actual;
+          if (actual !== want) {
+            status.textContent = want ? 'Could not enable (needs admin)' : 'Could not disable (needs admin)';
+            status.className = 'error';
+          } else {
+            status.textContent = 'Saved ✓';
+            status.className = 'saved';
+            setTimeout(() => { status.textContent = ''; status.className = ''; }, 2000);
+          }
+        })
+        .catch(err => {
+          autostartBox.checked = !want;
+          status.textContent = 'Error: ' + err;
+          status.className = 'error';
+        })
+        .finally(() => { autostartBox.disabled = false; });
+    });
 
     // ── Local AI (Brainstorm) wizard ──────────────────────────────────────
     const bsDetect = document.getElementById('bs-detect');

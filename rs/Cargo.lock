@@ -1028,6 +1028,7 @@ version = "2.0.0"
 dependencies = [
  "arboard",
  "capslockx-core",
+ "clx-autostart",
  "dirs 5.0.1",
  "once_cell",
  "serde",
@@ -1240,9 +1241,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "clx-autostart"
+version = "0.1.0"
+dependencies = [
+ "windows 0.58.0",
+]
+
+[[package]]
 name = "clx-prefs-slint"
 version = "0.1.0"
 dependencies = [
+ "clx-autostart",
  "dirs 5.0.1",
  "serde_json",
  "slint",

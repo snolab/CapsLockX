@@ -44,10 +44,17 @@ export component PrefsWindow inherits Window {
     in-out property <float> cursor-speed;
     in-out property <float> mouse-speed;
     in-out property <float> scroll-speed;
+    // Launch at login. `autostart` mirrors the real Task Scheduler state, so it
+    // is set back from Rust after every toggle (a declined UAC prompt must snap
+    // the checkbox back rather than leave it looking enabled).
+    in-out property <bool> autostart;
+    in property <bool> autostart-supported: true;
+    in property <string> autostart-hint;
     // Footer
     in property <string> version-text: "CapsLockX";
 
     callback changed();
+    callback autostart-toggled(bool);
 
     title: "CapsLockX Preferences";
     preferred-width: 460px;
@@ -74,6 +81,24 @@ export component PrefsWindow inherits Window {
                 CheckBox { text: "Insert"; checked <=> root.use-insert; toggled => { root.changed(); } }
                 CheckBox { text: "ScrollLock"; checked <=> root.use-scroll-lock; toggled => { root.changed(); } }
                 CheckBox { text: "Right Alt"; checked <=> root.use-ralt; toggled => { root.changed(); } }
+            }
+        }
+
+        if root.autostart-supported : GroupBox {
+            title: "Startup";
+            VerticalBox {
+                spacing: 4px;
+                CheckBox {
+                    text: "Launch CapsLockX at login";
+                    checked <=> root.autostart;
+                    toggled => { root.autostart-toggled(self.checked); }
+                }
+                Text {
+                    text: root.autostart-hint;
+                    font-size: 11px;
+                    opacity: 0.6;
+                    wrap: word-wrap;
+                }
             }
         }
 

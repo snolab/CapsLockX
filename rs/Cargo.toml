@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "core",
+    "autostart",
     "adapters/windows",
     "adapters/browser",
     "adapters/linux",

@@ -160,7 +160,9 @@ fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
 
 impl Platform for WinPlatform {
     fn open_preferences(&self) {
-        crate::open_prefs_window();
+        // Space+, toggles: pressing it again closes the window instead of
+        // stacking another one. The tray menu still uses open_prefs_window().
+        crate::toggle_prefs_window();
     }
 
     // ── Brainstorm (CLX+B) support ──────────────────────────────────────────

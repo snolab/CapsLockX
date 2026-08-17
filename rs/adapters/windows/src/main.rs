@@ -71,29 +71,128 @@ pub fn update_tray_icon(active: bool) {
 /// Either way it MUST be a separate process: an in-process WebView2 window makes
 /// Windows stop delivering WH_KEYBOARD_LL while focused, killing all hotkeys.
 ///
-/// Used by the tray "Preferences…" menu and the Space+, hotkey
-/// (`WinPlatform::open_preferences()`).
+/// Used by the tray "Preferences…" menu, which focuses an already-open window.
+/// The Space+, hotkey uses [`toggle_prefs_window`] instead.
 pub fn open_prefs_window() {
-    let Ok(exe) = std::env::current_exe() else {
+    let mut slot = PREFS_CHILD.lock().unwrap_or_else(|e| e.into_inner());
+    if prefs_alive(&mut slot) || prefs_window_exists() {
+        focus_prefs_window();
         return;
-    };
+    }
+    *slot = spawn_prefs_window();
+}
+
+/// Space+,: a toggle, not an "open another one" key. Closes the prefs window if
+/// it's already up, otherwise opens it.
+pub fn toggle_prefs_window() {
+    let mut slot = PREFS_CHILD.lock().unwrap_or_else(|e| e.into_inner());
+    // Close if we spawned it, OR if a prefs window is up that we did NOT spawn.
+    // The second check matters: a window survives a clx restart or self-update
+    // (and can be launched directly), leaving our tracked slot empty — without
+    // it, the next press cheerfully opens a second window beside the first,
+    // which is precisely the pile-up this toggle exists to prevent.
+    if prefs_alive(&mut slot) || prefs_window_exists() {
+        close_prefs_window(&mut slot);
+        return;
+    }
+    *slot = spawn_prefs_window();
+}
+
+/// The prefs subprocess we spawned, while it's still running.
+///
+/// Tracking the child — instead of only looking for its window — is what makes
+/// the toggle reliable during the ~100ms (Slint) to ~2s (WebView2) before the
+/// window actually exists: a quick second Space+, would otherwise find no window
+/// yet and spawn a duplicate, which is exactly how prefs windows piled up.
+static PREFS_CHILD: std::sync::Mutex<Option<Child>> = std::sync::Mutex::new(None);
+
+/// True if our prefs child is still running. Clears the slot when it has exited
+/// (e.g. the user closed the window), so the next press opens a fresh one.
+fn prefs_alive(slot: &mut Option<Child>) -> bool {
+    match slot {
+        Some(child) => match child.try_wait() {
+            Ok(None) => true,
+            _ => {
+                *slot = None;
+                false
+            }
+        },
+        None => false,
+    }
+}
+
+fn spawn_prefs_window() -> Option<Child> {
+    let exe = std::env::current_exe().ok()?;
     // Pass our PID so the prefs subprocess can self-terminate if we (the parent)
     // exit/crash/self-update while it's open — otherwise it orphans and lingers.
     let parent_pid = std::process::id().to_string();
     if let Some(dir) = exe.parent() {
         let native = dir.join("clx-prefs-slint.exe");
         if native.exists() {
-            let _ = Command::new(&native)
+            return Command::new(&native)
                 .arg(prefs_version_line())
                 .env("CLX_PARENT_PID", &parent_pid)
-                .spawn();
-            return;
+                .spawn()
+                .ok();
         }
     }
-    let _ = Command::new(exe)
+    Command::new(exe)
         .arg("prefs-window")
         .env("CLX_PARENT_PID", &parent_pid)
-        .spawn();
+        .spawn()
+        .ok()
+}
+
+/// Both prefs UIs — native Slint and the Tauri/WebView2 fallback — use this
+/// exact window title, so one lookup covers either.
+fn find_prefs_window() -> Option<windows::Win32::Foundation::HWND> {
+    use windows::core::{w, PCWSTR};
+    use windows::Win32::UI::WindowsAndMessaging::FindWindowW;
+    unsafe {
+        match FindWindowW(PCWSTR::null(), w!("CapsLockX Preferences")) {
+            Ok(hwnd) if !hwnd.0.is_null() => Some(hwnd),
+            _ => None,
+        }
+    }
+}
+
+fn prefs_window_exists() -> bool {
+    find_prefs_window().is_some()
+}
+
+/// Ask the prefs window to close. Returns false if no window was found — which
+/// means the spawn is still in flight and the caller should kill the process.
+fn post_close_to_prefs_window() -> bool {
+    use windows::Win32::Foundation::{LPARAM, WPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{PostMessageW, WM_CLOSE};
+    let Some(hwnd) = find_prefs_window() else {
+        return false;
+    };
+    unsafe { PostMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0)).is_ok() }
+}
+
+fn close_prefs_window(slot: &mut Option<Child>) {
+    let closed = post_close_to_prefs_window();
+    if let Some(mut child) = slot.take() {
+        if !closed {
+            // Window isn't up yet — kill the starting process instead.
+            let _ = child.kill();
+        }
+        // Deliberately no wait(): this can run on the WH_KEYBOARD_LL hook
+        // thread, and blocking there risks Windows silently dropping our hook.
+        // Dropping a Child on Windows just closes the handle — no zombie.
+    }
+}
+
+fn focus_prefs_window() {
+    use windows::Win32::UI::WindowsAndMessaging::{SetForegroundWindow, ShowWindow, SW_RESTORE};
+    let Some(hwnd) = find_prefs_window() else {
+        return;
+    };
+    unsafe {
+        let _ = ShowWindow(hwnd, SW_RESTORE);
+        let _ = SetForegroundWindow(hwnd);
+    }
 }
 
 /// Footer text shown in the native prefs window: "CapsLockX v<ver> · built <ts>".

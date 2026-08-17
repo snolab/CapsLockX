@@ -118,6 +118,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         win.set_version_text(version.into());
     }
 
+    // Launch at login is NOT part of config.json — the Task Scheduler entry is
+    // the source of truth, so read it live and never persist a mirror flag.
+    win.set_autostart_supported(cfg!(windows));
+    win.set_autostart(clx_autostart::is_enabled());
+    win.set_autostart_hint(autostart_hint().into());
+
     // Auto-apply on any change: fold the UI state back into the (preserved)
     // config object and write + signal.
     {
@@ -138,6 +144,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
+    // Toggling autostart can raise a UAC prompt, so drive the checkbox from what
+    // the system actually ends up as rather than from what was requested.
+    {
+        let win_weak = win.as_weak();
+        win.on_autostart_toggled(move |want| {
+            let actual = clx_autostart::set_enabled(want);
+            if let Some(w) = win_weak.upgrade() {
+                w.set_autostart(actual);
+            }
+        });
+    }
+
     win.run()?;
     Ok(())
+}
+
+/// Caption under the checkbox: which binary the logon task starts, so it's
+/// obvious when prefs is running next to a different clx.exe than you expect.
+fn autostart_hint() -> String {
+    match clx_autostart::target_exe() {
+        Ok(p) => format!(
+            "Runs {} at logon, elevated. Task Scheduler entry: {}",
+            p.display(),
+            clx_autostart::TASK_NAME
+        ),
+        Err(_) => String::new(),
+    }
 }

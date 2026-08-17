@@ -40,6 +40,33 @@ fn is_setup_mode() -> bool {
     SETUP_MODE.load(Ordering::Relaxed)
 }
 
+/// Launch-at-login state. Deliberately NOT part of `FullConfig`: the Task
+/// Scheduler entry is the source of truth, so there is no mirror flag in
+/// config.json that could drift out of sync with reality.
+#[tauri::command]
+fn get_autostart() -> bool {
+    clx_autostart::is_enabled()
+}
+
+/// Apply the requested state and return what the system actually ended up as,
+/// so a declined UAC prompt snaps the checkbox back instead of lying.
+#[tauri::command]
+fn set_autostart(on: bool) -> bool {
+    clx_autostart::set_enabled(on)
+}
+
+#[tauri::command]
+fn autostart_hint() -> String {
+    match clx_autostart::target_exe() {
+        Ok(p) => format!(
+            "Runs {} at logon, elevated. Task Scheduler entry: {}",
+            p.display(),
+            clx_autostart::TASK_NAME
+        ),
+        Err(_) => String::new(),
+    }
+}
+
 /// Version + build time + install source shown in the prefs footer so you can
 /// confirm WHICH build is running and where it came from. The build time is the
 /// running exe's mtime (changes on every rebuild — handy for verifying a fix got
@@ -242,6 +269,9 @@ pub fn run() {
             set_config,
             is_setup_mode,
             get_version,
+            get_autostart,
+            set_autostart,
+            autostart_hint,
             bs_detect,
             bs_run_setup
         ])
