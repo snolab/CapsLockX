@@ -2168,6 +2168,10 @@ impl Platform for MacPlatform {
         crate::keyboard_layout_overlay::toggle_overlay();
     }
 
+    fn toggle_dark_mode(&self) {
+        crate::dark_mode::toggle();
+    }
+
     fn show_brainstorm_overlay(&self, text: &str) {
         crate::brainstorm_overlay::show_overlay(text);
     }

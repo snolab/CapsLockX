@@ -35,6 +35,7 @@ pub enum Call {
     ShowBrainstormOverlay(String),
     HideBrainstormOverlay,
     ShowPromptInput(String, String, String),
+    ToggleDarkMode,
     Restart,
 }
 
@@ -188,6 +189,9 @@ impl Platform for MockPlatform {
     fn show_prompt_input(&self, title: &str, msg: &str, pre: &str) -> Option<String> {
         self.log(Call::ShowPromptInput(title.into(), msg.into(), pre.into()));
         self.prompt_response.lock().unwrap().clone()
+    }
+    fn toggle_dark_mode(&self) {
+        self.log(Call::ToggleDarkMode);
     }
     fn restart(&self) {
         self.log(Call::Restart);

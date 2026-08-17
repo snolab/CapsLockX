@@ -313,6 +313,12 @@ pub trait Platform: Send + Sync + 'static {
     /// Toggle the keyboard layout HUD overlay (shows CLX hotkey map).
     fn toggle_keyboard_layout_hud(&self) {}
 
+    // ── System appearance (optional, default = no-op) ──────────────────────
+
+    /// Flip the OS-wide light/dark appearance. Must return immediately —
+    /// implementations run the actual switch off the hook thread.
+    fn toggle_dark_mode(&self) {}
+
     // ── Lifecycle (optional, default = no-op) ────────────────────────────────
 
     /// Restart the entire application (spawn new instance, exit current).

@@ -54,6 +54,7 @@ docs/agent/               — comprehensive design docs for the agent system
 | C | Tile windows (Shift=side-by-side) | window_manager.rs |
 | 1-9 | Switch virtual desktop | virtual_desktop.rs |
 | ESC | Dismiss overlays / kill agent (bare, no trigger needed) | engine.rs |
+| Ctrl+Cmd+Shift+T | Toggle system Dark Mode (global, no trigger needed) | engine.rs → dark_mode.rs |
 
 ## Build (macOS)
 **Always use `./build.sh`** — it builds, copies, AND code-signs the binary.

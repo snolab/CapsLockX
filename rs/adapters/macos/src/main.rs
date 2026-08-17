@@ -17,6 +17,8 @@ mod capslock_remap;
 #[cfg(target_os = "macos")]
 mod config_store;
 #[cfg(target_os = "macos")]
+mod dark_mode;
+#[cfg(target_os = "macos")]
 mod hook;
 #[cfg(target_os = "macos")]
 mod key_map;

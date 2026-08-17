@@ -124,6 +124,23 @@ impl ClxEngine {
             }
         }
 
+        // ── 3c. Ctrl+Cmd+Shift+T toggles the OS light/dark appearance ─────────
+        // Global: no CLX trigger involved, works whether or not CLX is active.
+        // Ctrl and Shift share the left pinky column, so one finger covers both
+        // — that ergonomics is why this cluster won over the other four-modifier
+        // candidates. macOS already uses Ctrl+Cmd+Shift for screenshot-to-
+        // clipboard, so it reads as system-level, and nothing claims T within
+        // it. Note the near-miss: dropping Ctrl leaves Cmd+Shift+T, which
+        // reopens the last closed tab — so all three are required, never a
+        // subset.
+        if code == KeyCode::T && pressed && !is_repeat {
+            let mods = self.compute_mods();
+            if mods.ctrl && mods.shift && mods.win {
+                self.platform.toggle_dark_mode();
+                return CoreResponse::Suppress;
+            }
+        }
+
         // ── 4. Non-trigger key while CLX is active ────────────────────────────
         if self.state.is_clx_active() {
             if pressed && !is_repeat {
@@ -372,6 +389,45 @@ mod tests {
         let resp = engine.on_key_event(KeyCode::Space, true);
         assert_eq!(resp, CoreResponse::Suppress);
         assert!(engine.state().is_clx_active());
+    }
+
+    fn dark_mode_toggles(platform: &MockPlatform) -> usize {
+        platform.count(|c| matches!(c, Call::ToggleDarkMode))
+    }
+
+    #[test]
+    fn ctrl_cmd_shift_t_toggles_dark_mode() {
+        let (engine, platform) = engine_with_space();
+        for m in [KeyCode::LCtrl, KeyCode::LShift, KeyCode::LWin] {
+            engine.on_key_event(m, true);
+        }
+        let resp = engine.on_key_event(KeyCode::T, true);
+        assert_eq!(resp, CoreResponse::Suppress);
+        assert_eq!(dark_mode_toggles(&platform), 1);
+    }
+
+    #[test]
+    fn ctrl_cmd_shift_t_does_not_repeat_while_held() {
+        let (engine, platform) = engine_with_space();
+        for m in [KeyCode::LCtrl, KeyCode::LShift, KeyCode::LWin] {
+            engine.on_key_event(m, true);
+        }
+        engine.on_key_event(KeyCode::T, true);
+        engine.on_key_event(KeyCode::T, true); // auto-repeat
+        assert_eq!(dark_mode_toggles(&platform), 1);
+    }
+
+    #[test]
+    fn partial_modifiers_leave_t_alone() {
+        let (engine, platform) = engine_with_space();
+        // Cmd+Shift+T (no Ctrl) reopens the last closed tab in browsers and
+        // editors — slipping off Ctrl must not swallow it.
+        for m in [KeyCode::LShift, KeyCode::LWin] {
+            engine.on_key_event(m, true);
+        }
+        let resp = engine.on_key_event(KeyCode::T, true);
+        assert_eq!(resp, CoreResponse::PassThrough);
+        assert_eq!(dark_mode_toggles(&platform), 0);
     }
 
     #[test]
