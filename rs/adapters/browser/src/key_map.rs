@@ -42,6 +42,8 @@ pub fn code_to_keycode(code: &str) -> KeyCode {
         "Period" => KeyCode::Period,
         "Comma" => KeyCode::Comma,
         "Slash" => KeyCode::Slash,
+        "Minus" => KeyCode::Minus,
+        "Equal" => KeyCode::Equal,
 
         // ── Digits ────────────────────────────────────────────────────────────
         "Digit0" => KeyCode::D0,
@@ -156,6 +158,8 @@ pub fn keycode_to_event_strs(key: KeyCode) -> (&'static str, &'static str) {
         KeyCode::Period => (".", "Period"),
         KeyCode::Comma => (",", "Comma"),
         KeyCode::Slash => ("/", "Slash"),
+        KeyCode::Minus => ("-", "Minus"),
+        KeyCode::Equal => ("=", "Equal"),
 
         KeyCode::D0 => ("0", "Digit0"),
         KeyCode::D1 => ("1", "Digit1"),

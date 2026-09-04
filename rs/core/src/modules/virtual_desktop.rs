@@ -1,5 +1,6 @@
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
+use crate::state::ClxState;
 /// CLX-VirtualDesktop – switch / move windows between virtual desktops.
 ///
 /// CLX + 1–9  → switch to desktop 1–9
@@ -9,14 +10,21 @@ use std::sync::Arc;
 
 pub struct VirtualDesktopModule {
     platform: Arc<dyn Platform>,
+    state: Arc<ClxState>,
 }
 
 impl VirtualDesktopModule {
-    pub fn new(platform: Arc<dyn Platform>) -> Self {
-        Self { platform }
+    pub fn new(platform: Arc<dyn Platform>, state: Arc<ClxState>) -> Self {
+        Self { platform, state }
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {
+        // While both triggers are held the number row belongs to the F-row
+        // layer. Guarded explicitly rather than relying on dispatch order,
+        // which is too easy to reorder by accident later.
+        if self.state.is_chord_active() {
+            return false;
+        }
         let idx = match key {
             KeyCode::D1 => 1,
             KeyCode::D2 => 2,
@@ -62,7 +70,8 @@ mod tests {
 
     fn setup() -> (Arc<MockPlatform>, VirtualDesktopModule) {
         let mock = Arc::new(MockPlatform::new());
-        let module = VirtualDesktopModule::new(mock.clone());
+        let state = Arc::new(crate::state::ClxState::default());
+        let module = VirtualDesktopModule::new(mock.clone(), state);
         (mock, module)
     }
 

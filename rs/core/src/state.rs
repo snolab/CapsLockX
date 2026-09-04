@@ -205,6 +205,9 @@ pub struct ClxState {
     mode: AtomicU32,
     paused: AtomicBool,
     shift_held: AtomicBool,
+    /// Both triggers physically down. Gates the F-row layer; kept in sync
+    /// with `held_keys` by the engine on every trigger edge.
+    chord_active: AtomicBool,
 }
 
 impl Default for ClxState {
@@ -220,6 +223,7 @@ impl ClxState {
             mode: AtomicU32::new(CM_NORMAL),
             paused: AtomicBool::new(false),
             shift_held: AtomicBool::new(false),
+            chord_active: AtomicBool::new(false),
         }
     }
 
@@ -238,6 +242,14 @@ impl ClxState {
     #[inline]
     pub fn set_shift_held(&self, held: bool) {
         self.shift_held.store(held, Ordering::Relaxed);
+    }
+    #[inline]
+    pub fn set_chord_active(&self, active: bool) {
+        self.chord_active.store(active, Ordering::Relaxed);
+    }
+    #[inline]
+    pub fn is_chord_active(&self) -> bool {
+        self.chord_active.load(Ordering::Relaxed)
     }
     #[inline]
     pub fn is_shift_held(&self) -> bool {

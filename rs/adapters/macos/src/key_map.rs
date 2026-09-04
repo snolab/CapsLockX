@@ -87,6 +87,8 @@ pub fn cg_keycode_to_keycode(code: u16) -> KeyCode {
         0x2F => KeyCode::Period,       // kVK_ANSI_Period
         0x2B => KeyCode::Comma,        // kVK_ANSI_Comma
         0x2C => KeyCode::Slash,        // kVK_ANSI_Slash
+        0x1B => KeyCode::Minus,        // kVK_ANSI_Minus
+        0x18 => KeyCode::Equal,        // kVK_ANSI_Equal
 
         // ── Function keys ─────────────────────────────────────────────────────
         0x7A => KeyCode::F1,
@@ -189,6 +191,8 @@ pub fn keycode_to_cg_keycode(key: KeyCode) -> Option<u16> {
         KeyCode::Period => 0x2F,
         KeyCode::Comma => 0x2B,
         KeyCode::Slash => 0x2C,
+        KeyCode::Minus => 0x1B,
+        KeyCode::Equal => 0x18,
 
         // ── Function keys ─────────────────────────────────────────────────────
         KeyCode::F1 => 0x7A,

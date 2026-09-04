@@ -83,6 +83,8 @@ pub enum KeyCode {
     Period,       // . (OEM_PERIOD)
     Comma,        // , (OEM_COMMA)
     Slash,        // / (OEM_2)
+    Minus,        // - (OEM_MINUS)
+    Equal,        // = (OEM_PLUS); JIS boards carry ^ in this position
 
     // ── Function ──────────────────────────────────────────────────────────────
     F1,

@@ -38,6 +38,10 @@ pub fn vk_to_keycode(vk: u32) -> KeyCode {
         0xBE => KeyCode::Period,
         0xBC => KeyCode::Comma,
         0xBF => KeyCode::Slash,
+        0xBD => KeyCode::Minus,
+        0xBB => KeyCode::Equal,
+        // JIS keyboards have ^ where US has =; treat it as the F12 slot.
+        0xDE => KeyCode::Equal,
 
         0x30 => KeyCode::D0,
         0x31 => KeyCode::D1,
@@ -139,6 +143,8 @@ pub fn keycode_to_vk(key: KeyCode) -> u16 {
         KeyCode::Period => 0xBE,
         KeyCode::Comma => 0xBC,
         KeyCode::Slash => 0xBF,
+        KeyCode::Minus => 0xBD,
+        KeyCode::Equal => 0xBB,
 
         KeyCode::D0 => 0x30,
         KeyCode::D1 => 0x31,
