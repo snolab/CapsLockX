@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>(capslock+space)[ number row ] — F1–F12 · Design Review</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#ffffff; --ink:#1a1a1c; --muted:#63636b; --line:#e5e3de;
+  --accent:#2f5fd8; --code-bg:#f2f1ed;
+  --crit:#b3261e; --crit-bg:#fdeceb; --high:#a35a00; --high-bg:#fdf1e0;
+  --med:#6b6320; --med-bg:#f8f5e2; --low:#3d6b52; --low-bg:#eaf4ee;
+  --ok:#2f6b4f; --win:#1f7a52; --win-bg:#e7f4ec;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+    --accent:#8fb0ff; --code-bg:#232329;
+    --crit:#ff9b93; --crit-bg:#3a1e1c; --high:#f3bd72; --high-bg:#382914;
+    --med:#ddd28a; --med-bg:#33301c; --low:#8fd3ae; --low-bg:#1d2f26;
+    --ok:#8fd3ae; --win:#8fd3ae; --win-bg:#1d2f26;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329;
+  --crit:#ff9b93; --crit-bg:#3a1e1c; --high:#f3bd72; --high-bg:#382914;
+  --med:#ddd28a; --med-bg:#33301c; --low:#8fd3ae; --low-bg:#1d2f26;
+  --ok:#8fd3ae; --win:#8fd3ae; --win-bg:#1d2f26;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);
+  font:16px/1.62 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  margin:0;padding:0 1.25rem 6rem}
+.wrap{max-width:74rem;margin:0 auto}
+header{padding:3rem 0 1.5rem;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(1.6rem,3.4vw,2.3rem);line-height:1.2;margin:0 0 .5rem;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0;font-size:1.02rem}
+.meta{margin-top:1rem;color:var(--muted);font-size:.86rem;display:flex;gap:1.2rem;flex-wrap:wrap}
+h2{font-size:1.3rem;margin:3rem 0 .35rem;letter-spacing:-.01em;scroll-margin-top:1rem}
+h2 .num{color:var(--muted);font-weight:500;margin-right:.5rem}
+h3{font-size:1.02rem;margin:1.8rem 0 .4rem}
+p{margin:.6rem 0}
+.lede{color:var(--muted)}
+code,kbd{font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;font-size:.86em}
+code{background:var(--code-bg);padding:.1em .35em;border-radius:4px}
+kbd{background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;
+  border-radius:5px;padding:.08em .4em;white-space:nowrap;font-size:.8em}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+  padding:.9rem 1rem;overflow-x:auto;font-size:.83rem;line-height:1.55}
+pre code{background:none;padding:0}
+a{color:var(--accent)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:1rem 0}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:52rem}
+th,td{text-align:left;vertical-align:top;padding:.62rem .8rem;border-bottom:1px solid var(--line)}
+th{font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);background:var(--bg);position:sticky;top:0;z-index:1}
+tbody tr:last-child td{border-bottom:none}
+td.id{font-family:ui-monospace,monospace;font-weight:600;white-space:nowrap;color:var(--muted)}
+.sev{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;
+  padding:.16em .5em;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.sev.crit{color:var(--crit);background:var(--crit-bg)}
+.sev.high{color:var(--high);background:var(--high-bg)}
+.sev.med{color:var(--med);background:var(--med-bg)}
+.sev.low{color:var(--low);background:var(--low-bg)}
+.sev.none{color:var(--muted);background:var(--code-bg)}
+.sev.win{color:var(--win);background:var(--win-bg)}
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);
+  background:var(--panel);border-radius:0 10px 10px 0;padding:.9rem 1.1rem;margin:1.2rem 0}
+.callout.danger{border-left-color:var(--crit)}
+.callout.ok{border-left-color:var(--ok)}
+.callout h4{margin:0 0 .3rem;font-size:.94rem}
+.callout p{margin:.3rem 0;font-size:.93rem}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:.9rem 1.2rem;margin:1.8rem 0;font-size:.9rem}
+nav.toc ol{margin:.3rem 0;padding-left:1.3rem}
+nav.toc li{margin:.18rem 0}
+.grid{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));margin:1rem 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem}
+.card h4{margin:0 0 .3rem;font-size:.9rem}
+.card p{margin:0;font-size:.86rem;color:var(--muted)}
+ul.tight{margin:.5rem 0;padding-left:1.2rem}
+ul.tight li{margin:.3rem 0}
+.filerow{font-family:ui-monospace,monospace;font-size:.82rem}
+footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.85rem}
+.pill{display:inline-block;background:var(--code-bg);border-radius:20px;
+  padding:.1em .7em;font-size:.76rem;color:var(--muted)}
+.crumb{font-size:.85rem;color:var(--muted);margin:0 0 1.5rem}
+/* -- gesture notation: (group)[ tap ] --------------------------------- */
+.gest{white-space:nowrap;display:inline-flex;align-items:center;vertical-align:baseline}
+.grp{display:inline-flex;align-items:center;gap:.16em;vertical-align:baseline}
+.grp::before,.grp::after{color:var(--muted);font-weight:600;opacity:.8;
+  font-family:ui-monospace,monospace;font-size:1.05em}
+.grp::before{content:"(";margin-right:.1em}
+.grp::after{content:")";margin-left:.1em}
+.br{color:var(--accent);font-weight:800;font-family:ui-monospace,monospace;
+  font-size:1.15em;padding:0 .2em}
+.void{display:inline-block;min-width:.5em}
+kbd.k-hold{border-color:var(--accent);border-bottom-color:var(--accent);color:var(--accent)}
+kbd.k-tap{border-bottom-width:3px;border-color:var(--ink);font-weight:700}
+.plus{color:var(--muted);font-size:.75em;font-weight:600;padding:0 .04em}
+.orop{color:var(--muted);font-size:.85em;font-weight:700;padding:0 .18em;font-family:ui-monospace,monospace}
+.dot{color:var(--accent);font-weight:800;font-size:1.2em;padding-left:.14em;font-family:ui-monospace,monospace}
+.then{color:var(--muted);font-size:.82em;font-style:italic}
+.legend td:first-child{white-space:nowrap}
+.legend code{font-size:.95em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb" style="padding-top:1.5rem">
+  <a href="/lab/">lab</a> / chord-fn-row &nbsp;·&nbsp; <strong>see also <a href="/lab/fn-row-rethink/">fn-row-rethink</a></strong> &nbsp;·&nbsp; supersedes <a href="/lab/alt-fn-row/">alt-fn-row</a>
+  (the Alt-based variant, rejected: it costs <kbd>Alt</kbd>+<kbd>Space</kbd>)
+</p>
+
+<header>
+  <h1><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">number row</kbd><span class="br">]</span></span> <span style="color:var(--muted)">&mdash; F1&ndash;F12</span></h1>
+  <p class="sub">Using the two-trigger chord as the layer selector instead of Alt. Full edge-case audit and blast radius. <strong>Nothing implemented yet.</strong></p>
+  <div class="meta">
+    <span>CapsLockX 2.0 · branch <code>beta</code></span>
+    <span>Rust core + Windows adapter</span>
+    <span>2026-09-04</span>
+  </div>
+</header>
+
+<div class="callout ok">
+  <h4>The idea is better than the Alt variant — three whole problem classes vanish</h4>
+  <p><strong>1.</strong> <kbd>Alt</kbd>+<kbd>Space</kbd> keeps its Windows window-menu behaviour; the Space bypass rule is untouched. <strong>2.</strong> No Alt suppression, so no <kbd>Alt</kbd>+<kbd>F4</kbd> hazard, no menu-bar activation, no AltGr problem, no <code>GetAsyncKeyState</code> unknown. <strong>3.</strong> <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">1–0</kbd><span class="br">]</span></span> (virtual desktop) and <span class="gest"><span class="grp"><kbd class="k-hold">CLX</kbd><span class="plus">+</span><kbd class="k-hold">Shift</kbd></span><span class="br">[</span><kbd class="k-tap">1–0</kbd><span class="br">]</span></span> (move window) are preserved <em>exactly</em>, because a two-trigger chord is a genuinely different gesture rather than a modifier the desktop module was ignoring.</p>
+  <p>And your intuition about modifiers is right: <kbd>Ctrl</kbd>/<kbd>Shift</kbd>/<kbd>Alt</kbd>/<kbd>Win</kbd> stay physically held and decorate the injected F-key for free. <kbd>Alt</kbd>+<span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">4</kbd><span class="br">]</span></span> is a real <kbd>Alt</kbd>+<kbd>F4</kbd> — now a feature rather than an accident.</p>
+</div>
+
+<div class="callout danger">
+  <h4>But the chord is already taken — and it locks <em>eagerly</em></h4>
+  <p>You're right that <span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span> is the CLX-lock gesture, and the collision is worse than a naming clash: <code>clx_dn</code> calls <code>enter_clx_mode()</code> the instant the second trigger goes <em>down</em>, before any digit is pressed. So <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span> would emit F1 <strong>and leave you in locked CLX mode</strong> — your next <code>hello</code> becomes cursor-left, page-nav, and friends. Every single use of the F-layer would strand you in locked mode.</p>
+  <p>The fix is a one-word change in discipline: make the lock <strong>deferred</strong> — decided on release, and skipped when the chord was consumed by another key. That is exactly the <code>fn_acted</code> tap-vs-hold rule CLX already applies to a single trigger.</p>
+</div>
+
+<h2 id="notation" style="margin-top:2.4rem">Notation</h2>
+<p class="lede">A gesture is a <em>timeline</em>, not a set of keys &mdash; and every bug in this document lives on a press or release edge. So the notation makes those edges explicit: <code>(&hellip;)</code> groups keys, <code>[</code> is the moment the group goes down, <code>]</code> is the moment it comes back up, and a bare key name in between is a tap.</p>
+<div class="scroll">
+<table class="legend">
+<thead><tr><th style="width:9rem">Token</th><th style="width:10rem">Reads as</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td><code>(&nbsp;a+b&nbsp;)</code></td><td>group</td><td>Keys treated as one unit. <code>+</code> is <strong>commutative</strong> (&#20132;&#25442;&#24459;) &mdash; press order within a group is irrelevant. Parentheses are optional for a single key.</td></tr>
+<tr><td><code>[</code></td><td>&hellip; goes down</td><td>The group to the left is pressed and <strong>held</strong>. Everything after it happens while it stays down.</td></tr>
+<tr><td><code>]</code></td><td>&hellip; comes back up</td><td>The hold ends. <strong>All</strong> keys in the group must be released &mdash; letting go of just one does not close the bracket. This is the rule the deferred lock toggle turns on.</td></tr>
+<tr><td><code>k</code></td><td>tap</td><td>A bare key name is struck and released. Several in a row are taps in sequence.</td></tr>
+<tr><td><code>X.</code></td><td>tap the group</td><td>Down and straight back up with nothing in between &mdash; sugar for an empty body, <code>X[&nbsp;]</code>. <code>space.</code> is a literal space character; <code>(s+c).</code> is the lock toggle.</td></tr>
+<tr><td><code>(&nbsp;a|b&nbsp;)</code></td><td>either one</td><td>Alternation, and commutative like <code>+</code> &mdash; but it means <em>one of these</em>, not <em>both of these</em>. <code>(space|capslock)</code> is "whichever trigger you happen to use".</td></tr>
+<tr><td><code>clx</code></td><td>abbreviation</td><td>Short for <code>(space|capslock)</code>. <code>clx[ h ]</code> is the familiar "hold a trigger, tap H".</td></tr>
+<tr><td><em>nesting</em></td><td>explicit order</td><td>Order is only expressed where it matters: an inner hold was pressed <em>after</em> the outer one, and is released <em>before</em> it.</td></tr>
+<tr><td><code>X[</code> <em>unclosed</em></td><td>never released</td><td>A hold with no <code>]</code> is a key that was never let go &mdash; the shape of the stuck-modifier bug in <a href="#mods">M5</a> / <a href="#trigger">B8</a>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout">
+  <h4>Why the brackets earn their keep here</h4>
+  <p>The whole proposal turns on release semantics: the lock toggle must fire on the release of the <em>last</em> trigger, a partial release must not count, and the release order of the two triggers decides whether a stray character escapes (<a href="#trigger">T4</a>). A flat "hold-plus-key" notation cannot say any of that. This one says it in punctuation.</p>
+</div>
+
+<h3>The vocabulary, applied</h3>
+<div class="scroll">
+<table class="legend">
+<thead><tr><th style="width:20rem">Gesture</th><th style="width:8rem">Name</th><th>Reading</th></tr></thead>
+<tbody>
+<tr><td><span class="grp"><kbd class="k-hold">Space</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd></span></td><td><strong>chord</strong></td><td>Both triggers as one group. Names the thing; says nothing yet about when it goes down.</td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd></span><span class="dot">.</span></span></td><td><strong>chord tap</strong></td><td>Down, nothing struck, back up &mdash; the <code>.</code> is sugar for an empty body. That emptiness is precisely the condition for toggling the CLX lock, and it opens the unclosed hold below. The F-layer must not steal this.</td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd></span><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span></td><td><strong>combo</strong></td><td>Hold the chord, tap <kbd>1</kbd>, release. Emits <kbd>F1</kbd>. A non-empty body, so no lock toggle.</td></tr>
+<tr><td><span class="gest"><kbd class="k-hold">Space</kbd><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span></td><td>combo</td><td>A <em>single</em> trigger held. Switches to virtual desktop 3 &mdash; visibly a different gesture from the chord above, which is why the two can coexist.</td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">Alt</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">4</kbd><span class="br">]</span></span></td><td>combo</td><td>Alt is part of the held group, so it is still down when <kbd>4</kbd> is struck. Emits <kbd>Alt</kbd>+<kbd>F4</kbd>.</td></tr>
+<tr><td><span class="gest"><kbd class="k-hold">CapsLock</kbd><span class="br">[</span><kbd class="k-hold">Alt</kbd><span class="br">[</span><kbd class="k-hold">Space</kbd><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span><span class="br">]</span><span class="br">]</span></span></td><td><em>ordered</em></td><td>The same three keys, but pressed in that order &mdash; and that order is the T1 failure: Space arrives with Alt as the previous key, so the chord is never detected.</td></tr>
+<tr><td><span class="gest"><kbd class="k-hold">Alt</kbd><span class="br">[</span><span class="void">&nbsp;</span></span></td><td><em>leaked</em></td><td>Pressed, never released. What a UAC prompt or focus steal leaves in <code>held_keys</code> (B8).</td></tr>
+<tr><td><span class="grp"><kbd class="k-tap">Alt</kbd><span class="plus">+</span><kbd class="k-tap">Space</kbd></span></td><td><em>not CLX</em></td><td>A tapped group with no hold span at all: an ordinary Windows shortcut. Opens the window system menu &mdash; the behaviour you asked to keep.</td></tr>
+</tbody>
+</table>
+</div>
+
+
+<h3>The three modes, written down</h3>
+<p class="lede">Your question &mdash; whether a locked session behaves exactly like a held trigger &mdash; has a precise answer in the code, and the notation turns out to say it neatly. <code>on_key_event</code> step&nbsp;4 gates on <code>is_clx_active()</code>, which is true for <em>both</em> <code>CM_FN</code> and <code>CM_CLX</code>, so a non-trigger key is dispatched through the identical path either way.</p>
+<div class="scroll">
+<table class="legend">
+<thead><tr><th style="width:16rem">Notation</th><th style="width:8rem">Mode</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td><kbd class="k-tap">h</kbd></td><td><code>CM_NORMAL</code></td><td>A key is just a key.</td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="orop">|</span><kbd class="k-hold">CapsLock</kbd></span><span class="br">[</span><kbd class="k-tap">h</kbd><span class="br">]</span></span></td><td><code>CM_FN</code></td><td>A trigger is physically held. The hold span is bounded by your finger.</td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd></span><span class="dot">.</span></span> &nbsp;<span class="then">then</span>&nbsp; <span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="orop">|</span><kbd class="k-hold">CapsLock</kbd></span><span class="br">[</span><span class="void">&nbsp;</span></span></td><td><code>CM_CLX</code></td><td><strong>Yes &mdash; locked mode is the same hold span, just unclosed.</strong> The chord tap opens a hold that outlives your fingers; every later key lands in the same dispatch path as <code>CM_FN</code>. The lock is not a separate behaviour, it is a bracket nobody closed.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout danger">
+  <h4>Two caveats before you rely on that equivalence</h4>
+  <p><strong>You cannot nest a hold inside the lock.</strong> Pressing a trigger while locked runs <code>enter_fn_mode()</code>, which does <code>mode &amp;= !CM_CLX</code> &mdash; the outer bracket is torn up by the inner press rather than nesting inside it. So <code>clx[ &hellip; clx[ &hellip; ] &hellip; ]</code> is unwritable, by construction.</p>
+  <p><strong>That is also the mechanism behind <a href="#lock">L4</a>.</strong> Because the lock bit is already gone by the time <code>clx_up</code> tests <code>is_clx_locked()</code>, the "unlock instead of emitting" branch never runs and a real <kbd>CapsLock</kbd> is tapped instead. In notation: the <code>]</code> you meant to write silently became <code>capslock.</code> &mdash; an actual keystroke leaking into your document, and your Caps Lock LED with it.</p>
+</div>
+
+<p class="lede">One more consequence worth stating plainly: in locked mode <code>space.</code> both types a space <em>and</em> closes the lock, because Space is a trigger and is consumed by step&nbsp;3 before the module dispatch of step&nbsp;4 ever sees it.</p>
+
+<h3>When does each part fire?</h3>
+<p class="lede">The bracket is not a trigger condition. A key in the body acts on its own <em>key-down</em>, the moment it is struck &mdash; <code>modules.on_key_down</code> is called from step&nbsp;4 of <code>on_key_event</code>, long before anything is released. Only the closing bracket waits.</p>
+<div class="scroll">
+<table class="legend">
+<thead><tr><th style="width:15rem">Written</th><th style="width:11rem">Fires on</th><th>Consequence</th></tr></thead>
+<tbody>
+<tr><td><code>(s+c)[ 1</code></td><td>the <code>1</code> key-down</td><td>F1 is already emitted. The <code>]</code> is not needed to make the combo work &mdash; you may leave it off when the point is that the action has happened regardless of how the hold ends.</td></tr>
+<tr><td><code>&hellip;]</code></td><td>release of the <em>last</em> key in the group</td><td>Decides only what the chord <em>meant</em>: empty body &rarr; toggle the lock, non-empty body &rarr; the body already did the work, so do nothing.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="callout ok">
+  <h4>This is why the deferred lock needs no timeout</h4>
+  <p>Because every key in the body has already fired by the time <code>]</code> arrives, "was the body empty?" is answered by then &mdash; no hold threshold, no timer, no guessing at intent. That is the one property that makes <a href="#lock">L1</a> implementable as a clean rule rather than a heuristic, and it is exactly where the existing 200&nbsp;ms Space timeout (<a href="#trigger">T2</a>) went wrong by guessing on a clock instead.</p>
+</div>
+
+<p class="lede">Typed plainly: <code>(s+c).</code> taps the chord, <code>(s+c)[ 1 ]</code> is the proposed F1, <code>(s|c)[ h ]</code> is any ordinary CLX binding, <code>capslock[ alt[ space[ 1 ] ] ]</code> is the T1 failure, and <code>clx[</code> on its own is locked mode. All ASCII &mdash; this has to survive being typed into <code>CLAUDE.md</code>, a commit message, a Rust doc comment and the HUD.</p>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#notation">Notation &amp; vocabulary</a></li>
+    <li><a href="#trace">What the chord does today (code trace)</a></li>
+    <li><a href="#mapping">Proposed mapping &amp; gesture grammar</a></li>
+    <li><a href="#lock">L · Lock-toggle collision</a></li>
+    <li><a href="#trigger">T · Trigger &amp; ordering</a></li>
+    <li><a href="#keys">K · Keys &amp; layout</a></li>
+    <li><a href="#mods">M · Modifiers &amp; rollover</a></li>
+    <li><a href="#collide">C · Collisions with existing bindings</a></li>
+    <li><a href="#ergo">E · Ergonomics &amp; discoverability</a></li>
+    <li><a href="#plat">P · Platform &amp; plumbing</a></li>
+    <li><a href="#compare">Alt variant vs chord variant</a></li>
+    <li><a href="#solution">Recommended solution</a></li>
+    <li><a href="#decisions">Decisions I need from you</a></li>
+    <li><a href="#tests">Verification matrix</a></li>
+  </ol>
+</nav>
+
+<h2 id="trace"><span class="num">1</span>What the chord does today</h2>
+<p class="lede">Traced through <code>rs/core/src/engine.rs</code> and <code>rs/core/src/state.rs</code>. Two surprises are hiding in here.</p>
+
+<pre><code>// engine.rs :: clx_dn — chord is detected from prior_key, and locks immediately
+let chord = (code == CapsLock &amp;&amp; prior == Space) || (code == Space &amp;&amp; prior == CapsLock);
+if chord {
+    self.state.enter_clx_mode();          // &lt;- LOCKS on key-DOWN, before any digit
+    self.store_trigger(code);
+    self.fn_acted.store(true, ...);       // &lt;- so release never re-evaluates
+    return false;
+}
+
+// state.rs :: the mode bits
+enter_fn_mode()  { mode |= CM_FN;  mode &amp;= !CM_CLX; }   // &lt;- pressing a trigger CLEARS the lock
+enter_clx_mode() { mode |= CM_CLX; }                    // &lt;- always sets; never toggles</code></pre>
+
+<div class="grid">
+  <div class="card">
+    <h4>Surprise 1 — the chord is not a toggle</h4>
+    <p><code>enter_clx_mode()</code> is <code>fetch_or</code>: pressing the chord while already locked just locks again. What actually unlocks is a <em>single</em> trigger tap. So the gesture is asymmetric: chord to lock, tap to unlock.</p>
+  </div>
+  <div class="card">
+    <h4>Surprise 2 — the unlock branch is dead code</h4>
+    <p><code>clx_up</code> tests <code>is_clx_locked()</code> to decide "unlock instead of emitting the native key" — but <code>enter_fn_mode()</code> already cleared <code>CM_CLX</code> on the key-<em>down</em>. The test is always false, so the <code>else</code> branch runs and taps a real <kbd>CapsLock</kbd>. See <a href="#lock">L4</a>.</p>
+  </div>
+</div>
+
+<h2 id="mapping"><span class="num">2</span>Proposed mapping &amp; gesture grammar</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:20rem">Gesture</th><th>Meaning</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="dot">.</span></span></td><td>Toggle CLX lock</td><td><span class="sev win">preserved</span> (becomes a true toggle)</td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span>…<kbd>9</kbd></td><td>F1…F9</td><td><span class="sev low">new</span></td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">0</kbd><span class="br">]</span></span></td><td>F10</td><td><span class="sev low">new</span></td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">-</kbd><span class="br">]</span></span> / <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">=</kbd><span class="br">]</span></span></td><td>F11 / F12</td><td><span class="sev low">new</span> — needs <code>KeyCode::Minus</code>/<code>Equal</code></td></tr>
+<tr><td><em>any modifier</em> + the chord + digit</td><td>Ctrl / Shift / Alt / Win + F<em>n</em></td><td><span class="sev win">free</span> — modifiers are never injected or suppressed</td></tr>
+<tr><td><span class="gest"><kbd class="k-hold">Space</kbd><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span>–<kbd>0</kbd> <em>(single trigger)</em></td><td>Switch virtual desktop</td><td><span class="sev win">untouched</span></td></tr>
+<tr><td><span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="plus">+</span><kbd class="k-hold">Shift</kbd></span><span class="br">[</span><kbd class="k-tap">1–0</kbd><span class="br">]</span></span></td><td>Move window to desktop</td><td><span class="sev win">untouched</span></td></tr>
+<tr><td><kbd>Alt</kbd>+<kbd>Space</kbd></td><td>Windows window system menu</td><td><span class="sev win">untouched</span> — the bypass rule stays exactly as it is</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="lock"><span class="num">3</span>L · Lock-toggle collision</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:19rem">Case</th><th>Behaviour</th><th style="width:6rem">Severity</th><th style="width:19rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">L1</td><td>Chord locks eagerly on key-down</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span> emits F1 <em>and</em> strands you in locked CLX mode. Every subsequent letter is a CLX binding until you notice and tap a trigger.</td><td><span class="sev crit">critical</span></td><td>Defer: on chord, enter an active-but-unlatched state; on release of the <em>last</em> trigger, toggle the lock only if <code>chord_acted == false</code>. Mirrors the existing single-trigger <code>fn_acted</code> rule.</td></tr>
+<tr><td class="id">L2</td><td>Deferring changes existing behaviour</td><td>Today <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">H</kbd><span class="br">]</span></span> both moves the cursor <em>and</em> leaves you locked. Under the deferred rule it only moves the cursor.</td><td><span class="sev high">decision</span></td><td>Recommend accepting: "a chord that did something is not a lock request" is the more defensible rule, and it's what makes the F-layer possible at all.</td></tr>
+<tr><td class="id">L3</td><td>The chord only ever locks, never unlocks</td><td><code>enter_clx_mode()</code> is <code>fetch_or</code>. Unlocking is a different gesture (single-trigger tap), so the mental model "chord toggles the lock" is not what the code does.</td><td><span class="sev med">medium</span></td><td>The deferred rewrite is the natural place to make it a genuine toggle — lock if unlocked, unlock if locked. Behaviour change; call it out in the changelog.</td></tr>
+<tr><td class="id">L4</td><td><strong>Suspected pre-existing bug:</strong> unlocking taps a real <kbd>CapsLock</kbd></td><td><code>enter_fn_mode()</code> clears <code>CM_CLX</code> on the key-down, so <code>clx_up</code>'s <code>is_clx_locked()</code> check is always false and the <code>else</code> branch fires <code>platform.key_tap(CapsLock)</code> — toggling the OS Caps Lock LED every time you leave locked mode. The <code>clx_locked_tap_unlocks</code> test passes for the wrong reason.</td><td><span class="sev high">high</span></td><td><strong>Verify on the running build first</strong> (does your Caps Lock light come on when you exit locked mode?), then fix while the lock logic is open. Snapshot the locked flag <em>before</em> <code>enter_fn_mode</code> clears it.</td></tr>
+<tr><td class="id">L5</td><td>How long must the chord be held?</td><td>No timeout needed — "both triggers currently in <code>held_keys</code>" is a precise, instantaneous test.</td><td><span class="sev none">n/a</span></td><td>Avoid adding any hold threshold. Timing thresholds are what made C3/T2 below fragile.</td></tr>
+<tr><td class="id">L6</td><td>Using the layer while <em>already</em> locked</td><td>From locked mode, pressing CapsLock calls <code>enter_fn_mode()</code> which clears the lock, then Space forms the chord and re-locks. Net effect after a digit: ambiguous — do you come back to locked, or to normal?</td><td><span class="sev med">medium</span></td><td>Define it: the chord layer should <em>restore</em> the pre-chord lock state when it was consumed by an action. Requires snapshotting the lock bit on chord entry.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="trigger"><span class="num">4</span>T · Trigger &amp; ordering</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:19rem">Case</th><th>Behaviour</th><th style="width:6rem">Severity</th><th style="width:19rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">T1</td><td>Chord detection uses <code>prior_key</code>, not <code>held_keys</code></td><td><span class="gest"><kbd class="k-hold">CapsLock</kbd><span class="br">[</span><kbd class="k-hold">Alt</kbd><span class="br">[</span><kbd class="k-hold">Space</kbd><span class="br">[</span><span class="void">&nbsp;</span><span class="br">]</span><span class="br">]</span><span class="br">]</span></span> fails to form the chord, because <code>prior</code> is now <code>Alt</code>. It falls through to the Space bypass (a modifier is held) and Windows opens the window menu. Since "modifiers work naturally" is the whole point of this design, this breaks it for every modified chord where the modifier is pressed second.</td><td><span class="sev crit">critical</span></td><td>Detect the chord from <code>held_keys</code> — "is the other trigger currently down?". The bypass check three lines below already does exactly this, and its comment explains why <code>prior</code> is unreliable.</td></tr>
+<tr><td class="id">T2</td><td>Space-first, then CapsLock, slower than 200 ms</td><td>The Space hold-timeout thread fires: a literal space is typed and starts <strong>auto-repeating</strong>, then the chord forms. A deliberate three-key chord is exactly the slow, aimed motion that trips this.</td><td><span class="sev high">high</span></td><td>Treat "a second trigger went down" as <code>fn_acted</code>, and re-check inside the auto-repeat loop rather than only before it. Needed regardless of this feature.</td></tr>
+<tr><td class="id">T3</td><td>CapsLock-first is clean</td><td>The 200 ms hold timer is spawned only for <kbd>Space</kbd>, so <span class="gest"><kbd class="k-hold">CapsLock</kbd><span class="br">[</span><kbd class="k-hold">Space</kbd><span class="br">[</span><span class="void">&nbsp;</span></span> has no race at all.</td><td><span class="sev none">ok</span></td><td>Document CapsLock-first as the canonical order; fix T2 anyway so the other order isn't a trap.</td></tr>
+<tr><td class="id">T4</td><td>Release order of the two triggers</td><td>Safe: <code>clx_up</code> nulls <code>trigger_key</code> on the first release, so the second release matches nothing and emits no stray <kbd>Space</kbd> or <kbd>CapsLock</kbd>.</td><td><span class="sev none">verified ok</span></td><td>No action — but the deferred-lock rewrite must preserve this property.</td></tr>
+<tr><td class="id">T5</td><td>Either trigger disabled in prefs</td><td><code>use_capslock</code> / <code>use_space</code> are independently toggleable. Turn one off and the layer is silently unreachable.</td><td><span class="sev med">medium</span></td><td>Grey out the F-row toggle in prefs with an explanatory line when only one trigger is enabled.</td></tr>
+<tr><td class="id">T6</td><td>Other trigger keys exist</td><td><code>is_trigger_key</code> also accepts <kbd>Insert</kbd>, <kbd>ScrollLock</kbd> and <kbd>RAlt</kbd> when enabled. Should <span class="grp"><kbd class="k-hold">Insert</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span> count as the chord?</td><td><span class="sev low">decision</span></td><td>Recommend strict <span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span>. "Any two enabled triggers" is more general but makes <span class="grp"><kbd class="k-hold">RAlt</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span> a chord, which collides with real AltGr use.</td></tr>
+<tr><td class="id">T7</td><td>Auto-repeat of a held trigger</td><td>Handled: the engine deduplicates repeats via <code>held_keys</code> insertion, so holding the chord doesn't re-enter <code>clx_dn</code>.</td><td><span class="sev none">ok</span></td><td>No action.</td></tr>
+<tr><td class="id">T8</td><td><code>emergency_stop</code> during the chord</td><td>Clears <code>held_keys</code> and exits both modes — the chord state must be cleared with it, or a stale "chord active" flag makes plain digits emit F-keys.</td><td><span class="sev med">medium</span></td><td>Reset the chord flag in <code>emergency_stop</code>. Cheap, but easy to forget.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="keys"><span class="num">5</span>K · Keys &amp; layout</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:19rem">Case</th><th>Behaviour</th><th style="width:6rem">Severity</th><th style="width:19rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">K1</td><td><code>-</code> and <code>=</code> have no <code>KeyCode</code> variant</td><td><code>key_code.rs</code>'s punctuation block stops at <code>Slash</code>; both keys currently land in <code>Unknown(vk)</code> and can't be bound.</td><td><span class="sev crit">blocker</span></td><td>Add <code>Minus</code> + <code>Equal</code> to the core enum and to all four adapter tables (<code>windows/vk.rs</code> <code>0xBD</code>/<code>0xBB</code>, <code>macos/key_map.rs</code> <code>0x1B</code>/<code>0x18</code>, <code>linux/key_map.rs</code> <code>12</code>/<code>13</code>, <code>browser/key_map.rs</code> <code>"Minus"</code>/<code>"Equal"</code>). The exhaustive matches make the compiler list every site.</td></tr>
+<tr><td class="id">K2</td><td>JIS / AZERTY number rows</td><td>JIS is <code>1234567890-^¥</code> — there is no <code>=</code> key, so F12 is unreachable. AZERTY digits need Shift.</td><td><span class="sev med">medium</span></td><td>Accept <code>VK_OEM_7 (0xDE)</code> as a second F12 source, or bind by scancode <code>0x02–0x0D</code> (layout-independent). Your machine reports layout <code>00000409</code> (US), so this only blocks other users.</td></tr>
+<tr><td class="id">K3</td><td>Numpad digits</td><td><code>VK_NUMPAD0-9</code> fall to <code>Unknown</code> today and are inert — but a "bind all digits" implementation would capture them.</td><td><span class="sev med">medium</span></td><td>Bind top-row VKs explicitly. <kbd>Alt</kbd>+numpad Alt-code entry must survive.</td></tr>
+<tr><td class="id">K4</td><td><code>is_mapped_key()</code> takes no state or modifiers</td><td>It gates auto-repeat suppression. If <code>Minus</code>/<code>Equal</code> report unmapped, holding <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">-</kbd><span class="br">]</span></span> <strong>leaks a stream of <code>-</code> into the app</strong>. If they report mapped, bare <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">-</kbd><span class="br">]</span></span> stops repeating a literal <code>-</code>.</td><td><span class="sev med">medium</span></td><td>Make the predicate chord-aware by giving the module an <code>Arc&lt;ClxState&gt;</code> (as <code>EditModule</code> already has), rather than picking the lesser evil.</td></tr>
+<tr><td class="id">K5</td><td>F-key auto-repeat</td><td>Digits are already "mapped", so repeats are suppressed: holding <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span> gives exactly one F5.</td><td><span class="sev low">low</span></td><td>Matches current digit behaviour; ship as-is. Avoids F5-refresh spam.</td></tr>
+<tr><td class="id">K6</td><td>F13–F24</td><td>No keys left on the row.</td><td><span class="sev none">n/a</span></td><td>Out of scope.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="mods"><span class="num">6</span>M · Modifiers &amp; rollover</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:19rem">Case</th><th>Behaviour</th><th style="width:6rem">Severity</th><th style="width:19rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">M1</td><td>Modifiers decorate the F-key for free</td><td>The engine never injects or suppresses Ctrl/Alt/Win, and deliberately doesn't touch Shift either. A physically-held modifier applies to the injected scancode directly.</td><td><span class="sev win">the payoff</span></td><td>No code needed. <kbd>Ctrl</kbd>+<span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span> = Ctrl+F5, <kbd>Alt</kbd>+<span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">4</kbd><span class="br">]</span></span> = a real Alt+F4.</td></tr>
+<tr><td class="id">M2</td><td>Shift specifically</td><td>Arrows are injected by scancode with <code>KEYEVENTF_EXTENDEDKEY</code> precisely so a physical Shift modifies them without the OS isolating it — the same mechanism carries F-keys.</td><td><span class="sev none">ok</span></td><td>Use the same <code>kbd()</code> injection path; do not add a synthetic Shift.</td></tr>
+<tr><td class="id">M3</td><td><strong>Keyboard rollover / ghosting</strong></td><td>The base chord is already 3 simultaneous keys; add Ctrl+Shift and it's 5–6. Membrane keyboards routinely fail past 3–4 non-modifier keys, and <span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span>+digit are three <em>non-modifier</em> keys in the matrix.</td><td><span class="sev high">high</span></td><td><strong>Test on the actual keyboard before building.</strong> Your device reports only as "HID Keyboard Device", so the matrix is unknown. This is the one risk that could kill the design outright.</td></tr>
+<tr><td class="id">M4</td><td>Lone Alt still reaches the app</td><td>If you press Alt and don't complete a combo, Windows activates the menu bar — as it always has.</td><td><span class="sev none">none</span></td><td>Not introduced by this feature. No action. (The Alt variant, by contrast, <em>had</em> to solve this.)</td></tr>
+<tr><td class="id">M5</td><td>Stale modifier in <code>held_keys</code></td><td>A UAC prompt or focus steal can eat a modifier's key-up. Less damaging here than in the Alt design (no bypass rule depends on it), but <code>mods</code> can still lie.</td><td><span class="sev low">low</span></td><td>Reconcile <code>held_keys</code> against <code>GetAsyncKeyState</code> on the existing 250 ms nudge timer.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="collide"><span class="num">7</span>C · Collisions with existing bindings</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:17rem">Existing behaviour</th><th style="width:15rem">Where</th><th>Impact</th><th style="width:6rem">Severity</th></tr></thead>
+<tbody>
+<tr><td class="id">C1</td><td><span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">1–0</kbd><span class="br">]</span></span> &mdash; switch virtual desktop</td><td class="filerow">modules/virtual_desktop.rs:22</td><td><strong>Fully preserved.</strong> A single trigger keeps switching desktops; the chord is a separate gesture. This is the design's decisive advantage — the Alt variant silently stole <span class="gest"><span class="grp"><kbd class="k-hold">CLX</kbd><span class="plus">+</span><kbd class="k-hold">Alt</kbd></span><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span>, which already worked as "desktop 3" because the module ignores <code>mods.alt</code>.</td><td><span class="sev win">preserved</span></td></tr>
+<tr><td class="id">C2</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CLX</kbd><span class="plus">+</span><kbd class="k-hold">Shift</kbd></span><span class="br">[</span><kbd class="k-tap">1–0</kbd><span class="br">]</span></span> &mdash; move window to desktop</td><td class="filerow">modules/virtual_desktop.rs:33</td><td>Preserved. But dispatch order matters: the F-row module must run <em>before</em> <code>virtual_desktop</code>, and <code>virtual_desktop</code> must early-return while the chord is active — otherwise <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span> both emits F3 and switches desktop. Belt and braces; don't rely on ordering alone.</td><td><span class="sev high">high</span></td></tr>
+<tr><td class="id">C3</td><td><span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">F5–F11</kbd><span class="br">]</span></span> &mdash; media / volume keys</td><td class="filerow">modules/media.rs:19</td><td>No feedback loop on Windows: injected events carry <code>CLX_EXTRA_INFO</code> and the hook skips them, so an emitted F5 cannot return as Play/Pause. <strong>Verify the same filter exists on macOS and Linux.</strong> The mental-model clash remains — <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">F5</kbd><span class="br">]</span></span> is Play/Pause while <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span> is a real F5 — worth one documentation line.</td><td><span class="sev med">medium</span></td></tr>
+<tr><td class="id">C4</td><td><span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">,</kbd><span class="br">]</span></span> prefs &middot; <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">/</kbd><span class="br">]</span></span> layout HUD</td><td class="filerow">modules/mod.rs:154</td><td>Both are checked ahead of every module and ignore all state, so <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">,</kbd><span class="br">]</span></span> still opens Preferences. Harmless, but it means <code>,</code> and <code>/</code> can never join the chord layer.</td><td><span class="sev low">low</span></td></tr>
+<tr><td class="id">C5</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CLX</kbd><span class="plus">+</span><kbd class="k-hold">Ctrl</kbd><span class="plus">+</span><kbd class="k-hold">Alt</kbd></span><span class="br">[</span><kbd class="k-tap">X</kbd><span class="br">]</span></span> &mdash; kill process</td><td class="filerow">modules/window_manager.rs:66</td><td>Untouched — and unlike the Alt design, there's no Alt-suppression scheme that could accidentally strip <code>mods.alt</code> out from under it.</td><td><span class="sev win">preserved</span></td></tr>
+<tr><td class="id">C6</td><td>Alt+Tab / Win+Tab switcher remaps</td><td class="filerow">adapters/windows/src/alt_tab.rs</td><td>Runs before engine dispatch, gated on a focused switcher + held Alt; digits aren't in its set. No collision — and because Alt is never suppressed, starting Alt+Tab from inside CLX still works. Strictly better than the Alt variant.</td><td><span class="sev win">preserved</span></td></tr>
+<tr><td class="id">C7</td><td>Space bypass (Shift/Ctrl/Cmd+Space &mdash; IME, Spotlight, window menu)</td><td class="filerow">core/src/engine.rs:229</td><td><strong>Untouched — this is what you asked for.</strong> <kbd>Alt</kbd>+<kbd>Space</kbd> keeps opening the Windows window menu. Only T1's chord-detection source changes, and that runs <em>before</em> the bypass check.</td><td><span class="sev win">preserved</span></td></tr>
+<tr><td class="id">C8</td><td>Bare <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">-</kbd><span class="br">]</span></span> / <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">=</kbd><span class="br">]</span></span></td><td class="filerow">core/src/engine.rs:138</td><td>Currently unmapped, so they pass through and type <code>-</code>/<code>=</code>. Must keep doing so outside the chord — see K4.</td><td><span class="sev med">medium</span></td></tr>
+<tr><td class="id">C9</td><td>Test <code>capslock_space_chord_locks_clx_mode</code></td><td class="filerow">core/src/engine.rs (tests)</td><td>Asserts the <em>eager</em> lock and will fail under the deferred design. That failure is the honest signal that L1/L2 is a real behaviour change, not an incidental one — rewrite it to assert "clean chord tap toggles the lock; chord + digit does not".</td><td><span class="sev med">medium</span></td></tr>
+<tr><td class="id">C10</td><td>Test <code>clx_locked_tap_unlocks</code></td><td class="filerow">core/src/engine.rs (tests)</td><td>Passes today only because <code>enter_fn_mode</code> clears <code>CM_CLX</code> — it does not actually exercise the unlock branch (L4). Any rewrite must add an assertion that no stray <kbd>CapsLock</kbd> is emitted.</td><td><span class="sev med">medium</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ergo"><span class="num">8</span>E · Ergonomics &amp; discoverability</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:19rem">Case</th><th>Behaviour</th><th style="width:6rem">Severity</th><th style="width:19rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">E1</td><td>Hand geometry</td><td><b>Withdrawn.</b> I claimed the left hand is pinned and F1–F5 need the right hand. It is not: pinky and ring take the left column (<kbd>CapsLock</kbd>/<kbd>Shift</kbd>/<kbd>Ctrl</kbd> are stacked there), the thumb takes <kbd>Space</kbd>, and since nothing is anchored on home row the middle and index fingers reach 1–5 freely.</td><td><span class="sev none">not an issue</span></td><td>No action. See <a href="/lab/fn-row-rethink/#ergo">fn-row-rethink §1.5</a>.</td></tr>
+<tr><td class="id">E2</td><td>Accidental chord</td><td>Resting a pinky on CapsLock while doing <span class="gest"><kbd class="k-hold">Space</kbd><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span> silently turns a desktop switch into F3.</td><td><span class="sev med">medium</span></td><td>Inherent to the gesture. Mitigate with HUD feedback (E4) rather than a timing threshold.</td></tr>
+<tr><td class="id">E3</td><td>Discoverability</td><td>The <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">/</kbd><span class="br">]</span></span> HUD, <code>docs/keyboard-layout.svg</code>, README tables and <code>CLAUDE.md</code>'s hotkey map all show the number row as virtual-desktop only.</td><td><span class="sev low">low</span></td><td>Update alongside. Note the Windows adapter has no <code>toggle_keyboard_layout_hud</code> implementation yet — only macOS and browser do.</td></tr>
+<tr><td class="id">E4</td><td>No feedback that the layer is armed</td><td>Nothing on screen distinguishes "one trigger held" from "chord held", yet the number row means two different things.</td><td><span class="sev med">medium</span></td><td>Worth a small HUD/tray affordance — the tray already tracks mode edges through <code>TRAY_TX</code>, so a third state is cheap.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="plat"><span class="num">9</span>P · Platform &amp; plumbing</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:19rem">Case</th><th>Behaviour</th><th style="width:6rem">Severity</th><th style="width:19rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">P1</td><td>Chord state must reach the modules</td><td>Modules receive only <code>&amp;Modifiers</code> (shift/ctrl/alt/win) — there is no way for a module to know both triggers are held.</td><td><span class="sev high">high</span></td><td>Add a <code>chord_active: AtomicBool</code> to <code>ClxState</code>, maintained from <code>held_keys</code> on every trigger event, and hand the module an <code>Arc&lt;ClxState&gt;</code>. Cleaner than widening <code>Modifiers</code>, which every module would then have to ignore.</td></tr>
+<tr><td class="id">P2</td><td>macOS parity</td><td>Same core logic, no adapter-specific work beyond the key map — a real advantage over the Alt design, which needed <code>CGEventSetFlags</code> surgery to dodge Option+F-key system shortcuts.</td><td><span class="sev win">easy</span></td><td>Verify the macOS adapter filters its own injected events so <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span> can't re-enter as media Play/Pause.</td></tr>
+<tr><td class="id">P3</td><td>Linux / browser adapters</td><td>Won't compile until <code>Minus</code>/<code>Equal</code> are added; browser also needs HUD glyphs.</td><td><span class="sev low">low</span></td><td>Mechanical, compiler-enforced.</td></tr>
+<tr><td class="id">P4</td><td>Prefs plumbing</td><td>Needs a <code>fn_row_enabled</code> flag in <code>ClxConfig</code> + <code>config_store</code> + the prefs UI.</td><td><span class="sev low">low</span></td><td>Follow the existing pattern; Windows prefs must stay out-of-process (WebView2 in the hook process kills the hook).</td></tr>
+<tr><td class="id">P5</td><td>Elevated windows (UIPI), games, RDP</td><td>Injection into an elevated foreground window fails unless clx is elevated; some games read raw HID.</td><td><span class="sev low">low</span></td><td>Unchanged limitations. clx already runs elevated here via the <code>CapsLockX_Rust</code> logon task.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="compare"><span class="num">10</span>Alt variant vs chord variant</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:20rem">Dimension</th><th>Alt + digit</th><th>CapsLock+Space + digit</th></tr></thead>
+<tbody>
+<tr><td><kbd>Alt</kbd>+<kbd>Space</kbd> window menu</td><td>Lost (or the feature is order-dependent)</td><td><strong>Kept</strong></td></tr>
+<tr><td><kbd>Alt</kbd>+<kbd>F4</kbd> hazard</td><td>Critical — needs hook-level Alt suppression</td><td><strong>None</strong> — Alt is not part of the gesture</td></tr>
+<tr><td>Menu-bar activation, AltGr, IME language flip, <code>GetAsyncKeyState</code></td><td>Four separate unknowns to solve</td><td><strong>All moot</strong></td></tr>
+<tr><td>Collision with <kbd>CLX</kbd>+digit desktop switching</td><td>Silently steals a working chord</td><td><strong>None</strong> — distinct gesture</td></tr>
+<tr><td>Modifiers on the F-keys</td><td>Ctrl/Shift/Win free; Alt impossible (it's the selector)</td><td><strong>All four free, Alt included</strong></td></tr>
+<tr><td>Collision with the lock toggle</td><td>None</td><td><strong>Critical</strong> — needs the deferred-lock rewrite</td></tr>
+<tr><td>Hand geometry for F1–F5</td><td><strong>Comfortable</strong> (left thumb + left hand)</td><td>Awkward — left hand is pinned</td></tr>
+<tr><td>Keyboard rollover demand</td><td>2 non-modifier keys</td><td><strong>3 non-modifier keys</strong> — must be tested</td></tr>
+<tr><td>Engine surgery required</td><td>Alt suppression + bypass rule + timeout race</td><td>Deferred lock + chord detection from <code>held_keys</code> + timeout race</td></tr>
+<tr><td>Verdict</td><td>Rejected — costs <kbd>Alt</kbd>+<kbd>Space</kbd></td><td><strong>Recommended</strong>, pending the rollover test (M3) and a hands-on ergonomics check (E1)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="solution"><span class="num">11</span>Recommended solution</h2>
+
+<h3>The one behavioural rule that makes it work</h3>
+<div class="callout">
+  <p><strong>A chord that did something is not a lock request.</strong> <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="dot">.</span></span> toggles the CLX lock only when it is released without any other key having been pressed — the same tap-vs-hold discipline <code>fn_acted</code> already applies to a single trigger. Everything else follows from that.</p>
+</div>
+
+<h3>Implementation plan</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">Step</th><th style="width:22rem">Change</th><th>Files</th></tr></thead>
+<tbody>
+<tr><td class="id">1</td><td>Detect the chord from <code>held_keys</code> instead of <code>prior_key</code> (T1), and add <code>chord_active</code> + <code>chord_acted</code> to <code>ClxState</code></td><td class="filerow">core/src/engine.rs:196 · core/src/state.rs:218</td></tr>
+<tr><td class="id">2</td><td>Defer the lock: chord key-down no longer calls <code>enter_clx_mode()</code>; the last trigger release toggles the lock only when <code>!chord_acted</code> (L1–L3), restoring the pre-chord lock state otherwise (L6)</td><td class="filerow">core/src/engine.rs:196, :290</td></tr>
+<tr><td class="id">3</td><td>Fix the dead unlock branch: snapshot the locked flag before <code>enter_fn_mode()</code> clears it, so unlocking stops emitting a real <kbd>CapsLock</kbd> (L4) — <em>verify the symptom first</em></td><td class="filerow">core/src/engine.rs:257, :303</td></tr>
+<tr><td class="id">4</td><td>Fix the Space hold-timeout race: treat a second trigger as <code>fn_acted</code>, and re-check inside the auto-repeat loop (T2)</td><td class="filerow">core/src/engine.rs:246</td></tr>
+<tr><td class="id">5</td><td>Add <code>KeyCode::Minus</code>/<code>Equal</code> across the core enum and all four adapter maps, plus the JIS <code>0xDE</code> fallback for F12 (K1, K2)</td><td class="filerow">core/src/key_code.rs · adapters/{windows/src/vk.rs, macos/src/key_map.rs, linux/src/key_map.rs, browser/src/key_map.rs}</td></tr>
+<tr><td class="id">6</td><td>New <code>FnRowModule</code> holding <code>Arc&lt;ClxState&gt;</code>: fires only while <code>chord_active</code>; maps digit/minus/equal to F1–F12 via a plain <code>key_tap</code>; chord-aware <code>is_mapped_key</code> (K4)</td><td class="filerow">core/src/modules/fn_row.rs (new) · modules/mod.rs</td></tr>
+<tr><td class="id">7</td><td>Dispatch <code>fn_row</code> <strong>before</strong> <code>virtual_desktop</code>, and early-return from <code>VirtualDesktopModule::on_key_down</code> while the chord is active (C2)</td><td class="filerow">core/src/modules/mod.rs:166 · modules/virtual_desktop.rs:22</td></tr>
+<tr><td class="id">8</td><td>Clear the chord flags in <code>emergency_stop</code> (T8); reconcile <code>held_keys</code> against <code>GetAsyncKeyState</code> on the 250 ms nudge timer (M5)</td><td class="filerow">core/src/engine.rs:160 · adapters/windows/src/hook.rs:186</td></tr>
+<tr><td class="id">9</td><td>Rewrite the two lock tests to assert the new grammar (C9, C10); add tests for chord+digit, chord+modifier, and "no stray space/CapsLock"</td><td class="filerow">core/src/engine.rs (tests)</td></tr>
+<tr><td class="id">10</td><td>Prefs toggle, HUD/tray chord indicator, and docs: <code>CLAUDE.md</code> hotkey map, README tables, <code>docs/keyboard-layout.svg</code></td><td class="filerow">core/src/state.rs · adapters/windows/src/{config_store.rs, prefs/} · CLAUDE.md · docs/</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Shape of the gesture logic</h3>
+<pre><code>// engine.rs :: clx_dn — chord from held_keys, and NO eager lock
+let other = if code == CapsLock { Space } else { CapsLock };
+let chord = matches!(code, CapsLock | Space) &amp;&amp; self.held_keys.lock().unwrap().contains(&amp;other);
+if chord {
+    self.state.set_chord_active(true);
+    self.state.set_chord_was_locked(self.state.is_clx_locked());  // L6
+    self.state.enter_fn_mode();       // active, but NOT latched
+    self.store_trigger(code);
+    self.fn_acted.store(true, ...);   // suppresses the native Space/CapsLock tap
+    return false;                     // never bypass -> Alt+Space rule untouched
+}
+
+// engine.rs :: clx_up — decide the lock on release of the LAST trigger
+if self.state.chord_active() &amp;&amp; !self.other_trigger_still_held(code) {
+    if self.state.chord_acted() {
+        self.state.restore_pre_chord_lock();   // chord was consumed -> no toggle
+    } else {
+        self.toggle_clx_lock();                // clean chord tap -> real toggle
+    }
+    self.state.set_chord_active(false);
+}</code></pre>
+
+<h2 id="decisions"><span class="num">12</span>Decisions I need from you</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:24rem">Question</th><th>My recommendation</th></tr></thead>
+<tbody>
+<tr><td class="id">Q1</td><td>Accept the deferred lock — <span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span> toggles the lock only when released with no other key pressed?</td><td><strong>Yes.</strong> Without it, every use of the F-layer strands you in locked mode. Side effect: <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">H</kbd><span class="br">]</span></span> no longer locks as well as moving the cursor.</td></tr>
+<tr><td class="id">Q2</td><td>Make the chord a genuine toggle (it currently only ever locks; unlocking is a separate single-tap)?</td><td><strong>Yes</strong> — matches how you already describe it, and it's the natural place to fix L4.</td></tr>
+<tr><td class="id">Q3</td><td>Should I verify L4 (does unlocking toggle your physical Caps Lock LED?) before touching anything?</td><td><strong>Yes — first thing.</strong> If confirmed it's an independent bug fix worth landing on its own.</td></tr>
+<tr><td class="id">Q4</td><td>Strict <span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span>, or any two enabled trigger keys?</td><td><strong>Strict.</strong> "Any two" makes <span class="grp"><kbd class="k-hold">RAlt</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span> a chord, which collides with real AltGr use.</td></tr>
+<tr><td class="id">Q5</td><td>Have you tried the three-key chord on this keyboard yet (M3)?</td><td>Please test <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span> and <span class="gest"><span class="grp"><kbd class="k-hold">Ctrl</kbd><span class="plus">+</span><kbd class="k-hold">Shift</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span> before I build anything — ghosting would sink the design.</td></tr>
+<tr><td class="id">Q6</td><td>F-key auto-repeat while held?</td><td><strong>No</strong> — matches current digit behaviour, avoids F5 spam. Easy to add later.</td></tr>
+<tr><td class="id">Q7</td><td>JIS <code>^</code> (<code>0xDE</code>) as a second source for F12?</td><td><strong>Yes</strong> — one line, and it stops the layer being US-only.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="tests"><span class="num">13</span>Verification matrix</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:16rem">Probe</th><th style="width:20rem">Action</th><th>Pass condition</th></tr></thead>
+<tbody>
+<tr><td>Any editor</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span>, release, then type <code>hello</code></td><td><strong><code>hello</code> appears literally.</strong> The headline test — proves you were not left in locked mode (L1).</td></tr>
+<tr><td>Notepad</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span></td><td>F5 inserts a date/time stamp — positive proof of a bare F5.</td></tr>
+<tr><td>Explorer, file selected</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">2</kbd><span class="br">]</span></span></td><td>F2 starts rename.</td></tr>
+<tr><td>Chrome</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">=</kbd><span class="br">]</span></span></td><td>F12 opens DevTools (K1/K2).</td></tr>
+<tr><td>Any app</td><td><kbd>Alt</kbd> held, then <span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">4</kbd><span class="br">]</span></span></td><td>Window closes — Alt+F4 works <em>on purpose</em> (M1).</td></tr>
+<tr><td>Any app</td><td><span class="gest"><kbd class="k-hold">CapsLock</kbd><span class="br">[</span><kbd class="k-hold">Alt</kbd><span class="br">[</span><kbd class="k-hold">Space</kbd><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span><span class="br">]</span><span class="br">]</span></span></td><td>Alt+F1, <strong>not</strong> the window system menu (T1).</td></tr>
+<tr><td>Any app</td><td><kbd>Alt</kbd>+<kbd>Space</kbd> alone</td><td>Window system menu still opens (C7) — the thing you asked to keep.</td></tr>
+<tr><td>Any app</td><td><kbd>Space</kbd> down, wait 1 s, then <span class="gest"><kbd class="k-hold">CapsLock</kbd><span class="br">[</span><kbd class="k-tap">1</kbd><span class="br">]</span></span></td><td>F1 only — no leading literal space, no repeat burst (T2).</td></tr>
+<tr><td>Any app</td><td><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span> tapped clean, twice</td><td>Locks, then unlocks. <strong>Caps Lock LED never changes</strong> (L3, L4).</td></tr>
+<tr><td>Any app</td><td><span class="gest"><kbd class="k-hold">Space</kbd><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span> (single trigger)</td><td>Still switches to virtual desktop 3 (C1).</td></tr>
+<tr><td>Any app</td><td><span class="gest"><span class="grp"><kbd class="k-hold">Space</kbd><span class="plus">+</span><kbd class="k-hold">Shift</kbd></span><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span></td><td>Still moves the window to desktop 3 (C2).</td></tr>
+<tr><td>Any app</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">3</kbd><span class="br">]</span></span></td><td>F3 only — the desktop does <strong>not</strong> also switch (C2).</td></tr>
+<tr><td>Editor</td><td><span class="gest"><span class="grp"><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">-</kbd><span class="br">]</span></span> held down</td><td>One F11; no stream of <code>-</code> characters (K4).</td></tr>
+<tr><td>Editor</td><td>Bare <span class="gest"><kbd class="k-hold">CLX</kbd><span class="br">[</span><kbd class="k-tap">-</kbd><span class="br">]</span></span> held</td><td>Still types repeating <code>-</code> (C8).</td></tr>
+<tr><td>Keyboard matrix</td><td><span class="gest"><span class="grp"><kbd class="k-hold">Ctrl</kbd><span class="plus">+</span><kbd class="k-hold">Shift</kbd><span class="plus">+</span><kbd class="k-hold">CapsLock</kbd><span class="plus">+</span><kbd class="k-hold">Space</kbd></span><span class="br">[</span><kbd class="k-tap">5</kbd><span class="br">]</span></span></td><td>Ctrl+Shift+F5 registers — no ghosting (M3). <strong>Test this before writing code.</strong></td></tr>
+<tr><td>Numpad</td><td><kbd>Alt</kbd>+numpad <code>6</code><code>5</code>, no triggers</td><td>Still types <code>A</code> — Alt codes intact (K3).</td></tr>
+</tbody>
+</table>
+</div>
+
+<footer>
+  Sources read for this audit: <code>rs/core/src/{engine,state,key_code}.rs</code>, <code>rs/core/src/modules/{mod,virtual_desktop,media,window_manager}.rs</code>,
+  <code>rs/adapters/windows/src/{hook,vk,output,alt_tab}.rs</code>. Line references are to branch <code>beta</code> at <code>5419e7b1</code>.
+  Severity is my estimate of user-visible damage if the case is ignored, not of implementation cost. L4 is a suspected pre-existing bug derived from reading the state machine — confirm it on a running build before treating it as fact.
+</footer>
+
+</div>
+</body>
+</html>

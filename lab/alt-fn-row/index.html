@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CLX+Alt+Number Row → F1–F12 · Design Review</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#ffffff; --ink:#1a1a1c; --muted:#63636b; --line:#e5e3de;
+  --accent:#2f5fd8; --code-bg:#f2f1ed;
+  --crit:#b3261e; --crit-bg:#fdeceb; --high:#a35a00; --high-bg:#fdf1e0;
+  --med:#6b6320; --med-bg:#f8f5e2; --low:#3d6b52; --low-bg:#eaf4ee;
+  --ok:#2f6b4f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+    --accent:#8fb0ff; --code-bg:#232329;
+    --crit:#ff9b93; --crit-bg:#3a1e1c; --high:#f3bd72; --high-bg:#38291445;
+    --med:#ddd28a; --med-bg:#33301c; --low:#8fd3ae; --low-bg:#1d2f26;
+    --ok:#8fd3ae;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329;
+  --crit:#ff9b93; --crit-bg:#3a1e1c; --high:#f3bd72; --high-bg:#382914;
+  --med:#ddd28a; --med-bg:#33301c; --low:#8fd3ae; --low-bg:#1d2f26;
+  --ok:#8fd3ae;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);
+  font:16px/1.62 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  margin:0;padding:0 1.25rem 6rem}
+.wrap{max-width:74rem;margin:0 auto}
+header{padding:3.5rem 0 1.5rem;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(1.6rem,3.4vw,2.3rem);line-height:1.2;margin:0 0 .5rem;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0;font-size:1.02rem}
+.meta{margin-top:1rem;color:var(--muted);font-size:.86rem;display:flex;gap:1.2rem;flex-wrap:wrap}
+h2{font-size:1.3rem;margin:3rem 0 .35rem;letter-spacing:-.01em;scroll-margin-top:1rem}
+h2 .num{color:var(--muted);font-weight:500;margin-right:.5rem}
+h3{font-size:1.02rem;margin:1.8rem 0 .4rem}
+p{margin:.6rem 0}
+.lede{color:var(--muted)}
+code,kbd{font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;font-size:.86em}
+code{background:var(--code-bg);padding:.1em .35em;border-radius:4px}
+kbd{background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;
+  border-radius:5px;padding:.08em .4em;white-space:nowrap;font-size:.8em}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+  padding:.9rem 1rem;overflow-x:auto;font-size:.84rem;line-height:1.5}
+pre code{background:none;padding:0}
+a{color:var(--accent)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:1rem 0}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:52rem}
+th,td{text-align:left;vertical-align:top;padding:.62rem .8rem;border-bottom:1px solid var(--line)}
+th{font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);background:var(--bg);position:sticky;top:0;z-index:1}
+tbody tr:last-child td{border-bottom:none}
+td.id{font-family:ui-monospace,monospace;font-weight:600;white-space:nowrap;color:var(--muted)}
+.sev{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;
+  padding:.16em .5em;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.sev.crit{color:var(--crit);background:var(--crit-bg)}
+.sev.high{color:var(--high);background:var(--high-bg)}
+.sev.med{color:var(--med);background:var(--med-bg)}
+.sev.low{color:var(--low);background:var(--low-bg)}
+.sev.none{color:var(--muted);background:var(--code-bg)}
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);
+  background:var(--panel);border-radius:0 10px 10px 0;padding:.9rem 1.1rem;margin:1.2rem 0}
+.callout.danger{border-left-color:var(--crit)}
+.callout.ok{border-left-color:var(--ok)}
+.callout h4{margin:0 0 .3rem;font-size:.94rem}
+.callout p{margin:.3rem 0;font-size:.93rem}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:.9rem 1.2rem;margin:1.8rem 0;font-size:.9rem}
+nav.toc ol{margin:.3rem 0;padding-left:1.3rem}
+nav.toc li{margin:.18rem 0}
+.grid{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));margin:1rem 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem}
+.card h4{margin:0 0 .3rem;font-size:.9rem}
+.card p{margin:0;font-size:.86rem;color:var(--muted)}
+ul.tight{margin:.5rem 0;padding-left:1.2rem}
+ul.tight li{margin:.25rem 0}
+.filerow{font-family:ui-monospace,monospace;font-size:.82rem}
+footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.85rem}
+.pill{display:inline-block;background:var(--code-bg);border-radius:20px;
+  padding:.1em .7em;font-size:.76rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p style="font-size:.85rem;color:var(--muted);margin:0;padding-top:1.5rem">
+  <a href="/lab/">lab</a> / alt-fn-row &nbsp;·&nbsp; <strong>see also <a href="/lab/fn-row-rethink/">fn-row-rethink</a></strong> &nbsp;·&nbsp; <strong>superseded by <a href="/lab/chord-fn-row/">chord-fn-row</a></strong>
+  &mdash; this Alt-based variant was rejected because it costs <kbd>Alt</kbd>+<kbd>Space</kbd>.
+</p>
+
+<header>
+  <h1>CLX + Alt + number row → F1–F12</h1>
+  <p class="sub">Edge-case audit, blast radius on the existing hotkey layers, and a recommended implementation plan. <strong>Nothing implemented yet.</strong></p>
+  <div class="meta">
+    <span>CapsLockX 2.0 · branch <code>beta</code></span>
+    <span>Rust core + Windows adapter</span>
+    <span>2026-09-04</span>
+  </div>
+</header>
+
+<div class="callout danger">
+  <h4>Two findings dominate everything else</h4>
+  <p><strong>1. <kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>4</kbd> would close the focused window.</strong> The engine never suppresses a physical Alt, so an injected <kbd>F4</kbd> lands on the app as <kbd>Alt</kbd>+<kbd>F4</kbd>. Same class: <kbd>Alt</kbd>+<kbd>F1</kbd>, and a bare Alt transition activating the menu bar/ribbon.</p>
+  <p><strong>2. <kbd>Alt</kbd> pressed before <kbd>Space</kbd> never reaches CLX at all.</strong> <code>clx_dn</code> bypasses Space whenever <em>any</em> modifier is held, so the OS gets <kbd>Alt</kbd>+<kbd>Space</kbd> (window system menu) instead. Only "Space first, then Alt" works today, and only for the Space trigger — CapsLock is fine either order.</p>
+</div>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#mapping">Proposed mapping</a></li>
+    <li><a href="#edge">Edge cases (28)</a></li>
+    <li><a href="#blast">Blast radius on existing hotkey systems</a></li>
+    <li><a href="#solution">Recommended solution</a></li>
+    <li><a href="#decisions">Decisions I need from you</a></li>
+    <li><a href="#tests">Verification matrix</a></li>
+  </ol>
+</nav>
+
+<h2 id="mapping"><span class="num">1</span>Proposed mapping</h2>
+<p class="lede">Trigger = <kbd>CapsLock</kbd> or <kbd>Space</kbd> (either, as today). The layer only exists while Alt is also held.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th style="width:16rem">Chord</th><th>Emits</th><th>Key (US)</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd></td><td>F1…F9</td><td><code>VK 0x31–0x39</code></td><td>Straight positional map</td></tr>
+<tr><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>0</kbd></td><td>F10</td><td><code>VK 0x30</code></td><td>Bare F10 activates the menu bar in Win32 apps — that <em>is</em> F10's behaviour, not a bug</td></tr>
+<tr><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>-</kbd></td><td>F11</td><td><code>VK_OEM_MINUS 0xBD</code></td><td>New <code>KeyCode::Minus</code> needed</td></tr>
+<tr><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>=</kbd></td><td>F12</td><td><code>VK_OEM_PLUS 0xBB</code></td><td>New <code>KeyCode::Equal</code> needed; JIS keyboards have <code>^</code> here instead (see A2)</td></tr>
+<tr><td>+ <kbd>Shift</kbd> / <kbd>Ctrl</kbd> / <kbd>Win</kbd></td><td>Shift/Ctrl/Win + F<em>n</em></td><td>—</td><td>Free: those modifiers stay physically held and decorate the injected key (the documented Shift model in <code>engine.rs</code>)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="edge"><span class="num">2</span>Edge cases</h2>
+
+<h3>A · Key coverage &amp; keyboard layout</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:20rem">Case</th><th>Naive behaviour</th><th style="width:6rem">Severity</th><th style="width:20rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">A1</td><td><code>-</code> and <code>=</code> have no <code>KeyCode</code> variant</td><td>Won't compile / can't be bound. <code>key_code.rs</code> stops at <code>Slash</code>.</td><td><span class="sev crit">blocker</span></td><td>Add <code>Minus</code>+<code>Equal</code> to the core enum and to all four adapter tables. The exhaustive <code>match</code> in each <code>keycode_to_vk</code> makes the compiler find every site for you.</td></tr>
+<tr><td class="id">A2</td><td>JIS / AZERTY / non-US number rows</td><td>JIS has <code>1234567890-^¥</code>: there is no <code>=</code> key, so F12 is unreachable. AZERTY digits require Shift.</td><td><span class="sev med">medium</span></td><td>Either also accept <code>VK_OEM_7 (0xDE)</code> for F12, or bind by <em>scancode</em> <code>0x02–0x0D</code> which is layout-independent. Your current layout is <code>00000409</code> (US), so this is a ship-blocker only for other users.</td></tr>
+<tr><td class="id">A3</td><td>Numpad digits</td><td><code>VK_NUMPAD0-9</code> currently fall to <code>KeyCode::Unknown</code>, so they're inert — but a "bind all digits" implementation would grab them.</td><td><span class="sev med">medium</span></td><td>Explicitly bind top-row VKs only. <kbd>Alt</kbd>+numpad is Windows Alt-code character entry and must survive.</td></tr>
+<tr><td class="id">A4</td><td><code>is_mapped_key()</code> has no <code>mods</code> parameter</td><td>If <code>Minus</code>/<code>Equal</code> report "mapped", the engine suppresses their auto-repeat while CLX is active — holding <kbd>CLX</kbd>+<kbd>-</kbd> stops typing <code>-</code>.</td><td><span class="sev med">medium</span></td><td>Keep <code>is_mapped_key(Minus|Equal) == false</code>, or thread modifiers into the predicate. Digits are already "mapped" (virtual desktop), so no new regression there.</td></tr>
+<tr><td class="id">A5</td><td>F13–F24</td><td>Out of scope; no keys left on the row.</td><td><span class="sev none">n/a</span></td><td>Note only.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>B · The Alt problem <span class="pill">highest risk cluster</span></h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:20rem">Case</th><th>Naive behaviour</th><th style="width:6rem">Severity</th><th style="width:20rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">B1</td><td>Physical Alt decorates the injected F-key</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>4</kbd> → app receives <kbd>Alt</kbd>+<kbd>F4</kbd> → <strong>window closes</strong>. <kbd>Alt</kbd>+<kbd>F1</kbd>, <kbd>Alt</kbd>+<kbd>F7</kbd> etc. likewise hit app shortcuts.</td><td><span class="sev crit">critical</span></td><td>Alt must be neutralised before injection — see the recommended strategy S1 below. This single case decides the design.</td></tr>
+<tr><td class="id">B2</td><td>Lone Alt down→up activates the menu bar</td><td>In Office / Explorer / Chrome / Firefox, an Alt transition with no intervening keystroke focuses the menu or ribbon. Injecting "Alt↑ then F1" produces exactly that pattern.</td><td><span class="sev high">high</span></td><td>Don't inject an Alt release <em>after</em> the OS already saw Alt down. Suppress the Alt key-down at the hook so the OS never sees it at all.</td></tr>
+<tr><td class="id">B3</td><td>Save-and-restore Alt (release, tap F, re-press) re-arms B2</td><td>The user's later physical Alt-up then reads as a lone Alt tap → menu bar again.</td><td><span class="sev high">high</span></td><td>Rules out the obvious "isolate at injection time" approach as the primary strategy. Keep it only as a fallback for platforms where hook-level suppression isn't possible.</td></tr>
+<tr><td class="id">B4</td><td>Alt held → digits arrive as <code>WM_SYSKEYDOWN</code></td><td>Would be dropped if the hook only handled <code>WM_KEYDOWN</code>.</td><td><span class="sev none">verified ok</span></td><td>Already handled: <code>hook.rs</code> treats <code>WM_SYSKEYDOWN</code>/<code>WM_SYSKEYUP</code> as pressed/released. Prerequisite satisfied.</td></tr>
+<tr><td class="id">B5</td><td>AltGr = Ctrl+RAlt on EU layouts</td><td>Holding RAlt reports <code>alt&amp;&amp;ctrl</code>, so the layer would fire <em>and</em> be decorated with Ctrl, while the layout expects AltGr to produce special characters.</td><td><span class="sev med">medium</span></td><td>Decide whether RAlt participates. Safest: LAlt only, or "alt &amp;&amp; !ctrl". Not an issue on US 00000409.</td></tr>
+<tr><td class="id">B6</td><td>Apps that poll <code>GetAsyncKeyState(VK_MENU)</code></td><td>Games and some editors read raw device state rather than the message queue, and may still see Alt down even after the hook suppresses the event.</td><td><span class="sev med">unknown</span></td><td><strong>Must be verified empirically</strong> with a probe app before shipping — do not assume either way.</td></tr>
+<tr><td class="id">B7</td><td><kbd>Alt</kbd>+<kbd>Shift</kbd> is the Windows input-language switch</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> can flip the IME language as a side effect.</td><td><span class="sev med">medium</span></td><td>Suppressing Alt at the hook fixes this for free — a small bonus of S1.</td></tr>
+<tr><td class="id">B8</td><td>Stale Alt in <code>held_keys</code></td><td>A UAC prompt / secure desktop / focus steal can eat the Alt key-up. <code>modifier_held</code> then stays true forever → <strong>Space permanently bypasses and stops being a trigger</strong>.</td><td><span class="sev high">high (latent)</span></td><td>Pre-existing, but this feature makes users hold Alt constantly, so it will start biting. Add a periodic reconciliation of <code>held_keys</code> against <code>GetAsyncKeyState</code> on the existing 250 ms nudge timer.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>C · Trigger &amp; engine interaction</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:20rem">Case</th><th>Naive behaviour</th><th style="width:6rem">Severity</th><th style="width:20rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">C1</td><td>Alt pressed <em>before</em> Space</td><td><code>clx_dn</code>: <code>bypass = modifier_held</code> for Space → passes through → Windows opens the window system menu. The whole feature is unreachable in that order.</td><td><span class="sev high">high</span></td><td>Narrow the bypass set: <code>shift || ctrl || win || (alt &amp;&amp; !fn_row_enabled)</code>. Costs <kbd>Alt</kbd>+<kbd>Space</kbd> (window menu) — worth a pref.</td></tr>
+<tr><td class="id">C2</td><td>Alt pressed <em>before</em> CapsLock</td><td>Works. The bypass rule for non-Space triggers tests <em>non-modifier</em> keys only, so a held Alt doesn't bypass CapsLock.</td><td><span class="sev none">ok</span></td><td>Asymmetry worth documenting: CapsLock is order-free, Space is not.</td></tr>
+<tr><td class="id">C3</td><td>200 ms Space-hold timeout races the Alt press</td><td>The <code>modifier_held</code> guard is evaluated <em>once</em> at t=200 ms. Press Space, pause, then <kbd>Alt</kbd>+<kbd>1</kbd> → a literal space is typed and starts auto-repeating first.</td><td><span class="sev med">medium</span></td><td>Break the repeat loop when <code>fn_acted</code> flips true, and re-check <code>modifier_held</code> inside the loop rather than only before it.</td></tr>
+<tr><td class="id">C4</td><td>CLX-locked mode (<kbd>CapsLock</kbd>+<kbd>Space</kbd> chord)</td><td>No trigger is held, yet CLX is active — so bare <kbd>Alt</kbd>+<kbd>1</kbd> fires F1, and if Alt were suppressed here, <strong>Alt would be globally dead until unlock</strong>.</td><td><span class="sev high">high</span></td><td>Scope Alt suppression to FN mode (trigger physically held) only, never to locked mode. Decide separately whether the layer itself is active in locked mode (recommend: yes, but without Alt suppression).</td></tr>
+<tr><td class="id">C5</td><td>Auto-repeat of the F-key</td><td>Digits are already <code>is_mapped_key</code>, so the engine suppresses repeats: holding <kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>5</kbd> gives exactly one F5.</td><td><span class="sev low">low</span></td><td>Matches current digit behaviour. Ship as-is; add repeat later if you miss it (F5-spam is arguably a feature you don't want).</td></tr>
+<tr><td class="id">C6</td><td><code>emergency_stop</code> mid-chord</td><td>Clears <code>held_keys</code>, so a held Alt is forgotten and the next digit falls through to virtual-desktop switching.</td><td><span class="sev low">low</span></td><td>Acceptable — it's the secure-input escape hatch. No action.</td></tr>
+<tr><td class="id">C7</td><td>Tap-through semantics</td><td>A bare <kbd>Space</kbd>+<kbd>Alt</kbd> press with no digit does nothing at all (Space is swallowed, Alt is suppressed). Slightly surprising.</td><td><span class="sev low">low</span></td><td>Acceptable and predictable. Alternative — replay a real Alt tap on release if unused — re-introduces B2. Don't.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>D · Platform &amp; surface area</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:20rem">Case</th><th>Naive behaviour</th><th style="width:6rem">Severity</th><th style="width:20rem">Resolution</th></tr></thead>
+<tbody>
+<tr><td class="id">E1</td><td>macOS: Option+F-keys are system-reserved</td><td><kbd>Option</kbd>+<kbd>F1</kbd>/<kbd>F2</kbd> open Display settings, <kbd>Option</kbd>+<kbd>F10</kbd>–<kbd>F12</kbd> open Sound settings — the exact B1 failure in Mac clothing.</td><td><span class="sev med">medium</span></td><td>Clear flags explicitly with <code>CGEventSetFlags(evt, 0)</code> on the injected event; verify the CGEventTap doesn't re-add the physical Option flag.</td></tr>
+<tr><td class="id">E2</td><td>Linux / browser adapters</td><td>Won't compile until <code>Minus</code>/<code>Equal</code> are added to <code>linux/key_map.rs</code> (evdev 12/13) and <code>browser/key_map.rs</code> (<code>"Minus"</code>/<code>"Equal"</code>, plus HUD glyphs).</td><td><span class="sev low">low</span></td><td>Mechanical. Compiler-enforced.</td></tr>
+<tr><td class="id">E3</td><td>Prefs / config plumbing</td><td>New toggles need <code>ClxConfig</code> + <code>config_store</code> + the out-of-process <code>clx prefs-window</code> UI (Slint on Windows, HTML on macOS).</td><td><span class="sev low">low</span></td><td>Follow the existing pattern; remember Windows prefs must stay out-of-process (WebView2 in the hook process kills the hook).</td></tr>
+<tr><td class="id">E4</td><td>Discoverability</td><td>The <kbd>CLX</kbd>+<kbd>/</kbd> keyboard-layout HUD, <code>docs/keyboard-layout.svg</code>, README tables and <code>CLAUDE.md</code>'s hotkey map all show the number row as "virtual desktop" only.</td><td><span class="sev low">low</span></td><td>Update alongside. Note the Windows adapter has no <code>toggle_keyboard_layout_hud</code> implementation yet — only macOS/browser do.</td></tr>
+<tr><td class="id">E5</td><td>Elevated foreground windows (UIPI)</td><td>A non-elevated clx cannot inject into an elevated window — F-keys silently do nothing there.</td><td><span class="sev low">low</span></td><td>Already fine on this machine: the <code>CapsLockX_Rust</code> logon task runs clx elevated. Not true for plain-launch users.</td></tr>
+<tr><td class="id">E6</td><td>Games / RDP / DirectInput</td><td>Some full-screen games ignore <code>SendInput</code> or read raw HID.</td><td><span class="sev low">low</span></td><td>Same limitation as every existing CLX binding. Note only.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="blast"><span class="num">3</span>Blast radius on existing hotkey systems</h2>
+<p class="lede">Everything the number row, Alt, and the Space trigger already touch.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:18rem">Existing behaviour</th><th style="width:16rem">Where</th><th>Impact</th><th style="width:6rem">Severity</th></tr></thead>
+<tbody>
+<tr><td class="id">D1</td><td><kbd>CLX</kbd>+<kbd>1</kbd>–<kbd>0</kbd> → switch virtual desktop 1–10</td><td class="filerow">modules/virtual_desktop.rs:22</td><td><strong>Directly overlapped.</strong> <code>mods.alt</code> is currently <em>ignored</em>, so <kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>3</kbd> already switches to desktop 3 today — the new layer silently steals a working chord. Fix explicitly: early-return from <code>VirtualDesktopModule::on_key_down</code> when <code>mods.alt</code>, <em>and</em> dispatch the Fn-row module before it in <code>Modules::on_key_down</code>. Relying on dispatch order alone is too subtle to survive future edits.</td><td><span class="sev high">high</span></td></tr>
+<tr><td class="id">D2</td><td><kbd>CLX</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>–<kbd>0</kbd> → move window to desktop</td><td class="filerow">modules/virtual_desktop.rs:33</td><td>Unchanged when Alt is absent. Ambiguity when both are held: is <kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd> "Shift+F3" or "move window to desktop 3"? <strong>Recommend Alt wins</strong> — Alt is the explicit layer selector, Shift is a decorator. That yields the full Shift/Ctrl/Win+F<em>n</em> set for free, and move-window keeps its own unambiguous chord.</td><td><span class="sev high">decision</span></td></tr>
+<tr><td class="id">D3</td><td><kbd>CLX</kbd>+<kbd>F5</kbd>–<kbd>F11</kbd> → media / volume keys</td><td class="filerow">modules/media.rs:19</td><td>No loop on Windows: injected events carry <code>CLX_EXTRA_INFO</code> and the hook skips them, so an emitted F5 cannot come back as Play/Pause. <strong>Verify the same filtering exists on macOS and Linux before shipping.</strong> Mental-model clash remains: <kbd>CLX</kbd>+<kbd>F5</kbd> is Play/Pause while <kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>5</kbd> is a real F5 — worth one line in the docs.</td><td><span class="sev med">medium</span></td></tr>
+<tr><td class="id">D4</td><td><kbd>CLX</kbd>+<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>X</kbd> → kill process</td><td class="filerow">modules/window_manager.rs:66</td><td>Alt is <em>already</em> a live in-CLX modifier. If Alt suppression removes it from <code>held_keys</code> rather than merely from the OS, <code>mods.alt</code> goes false and this chord dies. <strong>Rule: suppress the event, keep the tracking.</strong></td><td><span class="sev high">high</span></td></tr>
+<tr><td class="id">D5</td><td>Alt+Tab / Win+Tab switcher remaps (WASD→arrows, media pad, X/C→close)</td><td class="filerow">adapters/windows/src/alt_tab.rs</td><td>Runs <em>before</em> engine dispatch on every Alt-down key-down, gated on a focused switcher window. Digits aren't in its remap set, so no collision. But suppressing Alt while a trigger is held means you can't <em>start</em> Alt+Tab from inside CLX — you'd release Space first. Low real-world cost: a switcher is rarely focused while a trigger is held.</td><td><span class="sev low">low</span></td></tr>
+<tr><td class="id">D6</td><td>Desktop-switch keystroke fallback (Win+Ctrl+←/→)</td><td class="filerow">adapters/windows/src/output.rs:606</td><td>Latent bug the new feature makes reachable: with Alt physically held, the fallback sends <kbd>Alt</kbd>+<kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd> and misfires. Also applies to <code>navigate_desktops</code>. Alt neutralisation <strong>fixes an existing bug</strong> here — the same contamination affects any CLX action taken while Alt happens to be down.</td><td><span class="sev med">medium</span></td></tr>
+<tr><td class="id">D7</td><td>Space bypass rule (Shift/Ctrl/Cmd+Space → IME, Spotlight)</td><td class="filerow">core/src/engine.rs:229</td><td>Changing the rule for Alt is the C1 fix. Shift/Ctrl/Win bypasses must stay exactly as they are — they're IME and Spotlight. Only the Alt arm moves.</td><td><span class="sev high">high</span></td></tr>
+<tr><td class="id">D8</td><td><kbd>CLX</kbd>+<kbd>,</kbd> prefs and <kbd>CLX</kbd>+<kbd>/</kbd> layout HUD</td><td class="filerow">core/src/modules/mod.rs:154</td><td>Checked before every module and ignore modifiers entirely — untouched. Worth noting they'd also fire with Alt held, which is harmless.</td><td><span class="sev none">none</span></td></tr>
+<tr><td class="id">D9</td><td>Bare <kbd>CLX</kbd>+<kbd>-</kbd> / <kbd>CLX</kbd>+<kbd>=</kbd></td><td class="filerow">core/src/engine.rs:138</td><td>Currently unmapped, so they pass through and type <code>-</code>/<code>=</code>. Must keep doing so when Alt is absent — see A4 about <code>is_mapped_key</code>.</td><td><span class="sev med">medium</span></td></tr>
+<tr><td class="id">D10</td><td>Engine unit tests</td><td class="filerow">core/src/engine.rs (tests)</td><td><code>shift_space_bypasses_to_pass_through</code> and friends stay green. There is no Alt+Space bypass test today — the C1 change needs a new one asserting the <em>opposite</em> for Alt. <code>is_mapped_key_reflects_module_mapping</code> asserts <code>!is_mapped_key(F1)</code>; unaffected since we emit F-keys, never consume them.</td><td><span class="sev low">low</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="solution"><span class="num">4</span>Recommended solution</h2>
+
+<h3>Strategy choice for Alt neutralisation</h3>
+<div class="grid">
+  <div class="card">
+    <h4>S1 — Suppress Alt at the hook <span class="pill">recommended</span></h4>
+    <p>While in <em>FN mode</em> (a trigger physically held), return <code>Suppress</code> for LAlt/RAlt down and up, but keep them in <code>held_keys</code>. The OS never sees Alt: no Alt+F4, no menu bar, no <code>WM_SYSKEYDOWN</code>, no IME language flip. Fixes D6's latent bug too.</p>
+  </div>
+  <div class="card">
+    <h4>S2 — Isolate at injection time <span class="pill">fallback</span></h4>
+    <p>Batch <code>[Alt↑, F<em>n</em>↓, F<em>n</em>↑]</code> in one <code>SendInput</code>. Simpler, but hits B2/B3 — the injected Alt↑ reads as a lone Alt tap and pops the menu bar. Needs the AHK "dummy Ctrl tap" trick to defuse, which is fragile. Keep only for platforms where hook suppression isn't available.</p>
+  </div>
+</div>
+
+<div class="callout ok">
+  <h4>Why S1 is the right default</h4>
+  <p>It is the only option that makes <kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>4</kbd> provably safe rather than probabilistically safe, and it retroactively fixes every existing CLX chord that misfires when Alt happens to be held (D6). The cost — no starting Alt+Tab while a trigger is held — is small and reversible.</p>
+</div>
+
+<h3>Implementation plan</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">Step</th><th style="width:22rem">Change</th><th>Files</th></tr></thead>
+<tbody>
+<tr><td class="id">1</td><td>Add <code>KeyCode::Minus</code> and <code>KeyCode::Equal</code>; wire all four adapter maps (US VKs + JIS <code>0xDE</code> fallback for F12)</td><td class="filerow">core/src/key_code.rs · adapters/{windows/src/vk.rs, macos/src/key_map.rs, linux/src/key_map.rs, browser/src/key_map.rs}</td></tr>
+<tr><td class="id">2</td><td>New <code>FnRowModule</code>: returns <code>false</code> unless <code>mods.alt</code>; maps digit/minus/equal → F1–F12; keeps <code>is_mapped_key</code> false for <code>Minus</code>/<code>Equal</code></td><td class="filerow">core/src/modules/fn_row.rs (new) · modules/mod.rs</td></tr>
+<tr><td class="id">3</td><td>Dispatch <code>fn_row</code> <strong>before</strong> <code>virtual_desktop</code>, and add an explicit <code>if mods.alt { return false }</code> guard inside <code>VirtualDesktopModule::on_key_down</code></td><td class="filerow">core/src/modules/mod.rs:166 · modules/virtual_desktop.rs:22</td></tr>
+<tr><td class="id">4</td><td>Alt suppression (S1): in <code>on_key_event</code>, when <code>is_fn_mode()</code> and the code is LAlt/RAlt — record in <code>held_keys</code>, return <code>Suppress</code>. Never in locked mode (C4).</td><td class="filerow">core/src/engine.rs:96</td></tr>
+<tr><td class="id">5</td><td>Narrow the Space bypass so Alt no longer bypasses when the feature is on (C1); add a regression test</td><td class="filerow">core/src/engine.rs:229</td></tr>
+<tr><td class="id">6</td><td>Fix the 200 ms timeout race: re-check <code>fn_acted</code>/<code>modifier_held</code> inside the auto-repeat loop (C3)</td><td class="filerow">core/src/engine.rs:246</td></tr>
+<tr><td class="id">7</td><td>Reconcile <code>held_keys</code> against <code>GetAsyncKeyState</code> on the existing 250 ms nudge timer, to clear a stale Alt (B8)</td><td class="filerow">adapters/windows/src/hook.rs:186</td></tr>
+<tr><td class="id">8</td><td>Prefs: <code>fn_row_enabled</code> (default on) and <code>alt_space_bypass</code> (default off when the layer is on)</td><td class="filerow">core/src/state.rs · adapters/windows/src/{config_store.rs, prefs/}</td></tr>
+<tr><td class="id">9</td><td>Docs: hotkey map in <code>CLAUDE.md</code>, README tables, <code>docs/keyboard-layout.svg</code>, HUD</td><td class="filerow">CLAUDE.md · docs/</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Shape of the module</h3>
+<pre><code>// core/src/modules/fn_row.rs
+pub fn on_key_down(&amp;self, key: KeyCode, mods: &amp;Modifiers) -&gt; bool {
+    if !mods.alt { return false; }          // layer is Alt-gated
+    let f = match key {
+        KeyCode::D1 =&gt; KeyCode::F1,  /* … */  KeyCode::D9 =&gt; KeyCode::F9,
+        KeyCode::D0 =&gt; KeyCode::F10,
+        KeyCode::Minus =&gt; KeyCode::F11,
+        KeyCode::Equal =&gt; KeyCode::F12,
+        _ =&gt; return false,
+    };
+    // Alt is already suppressed at the hook (S1), so a plain tap is clean;
+    // physically-held Shift/Ctrl/Win decorate it for free.
+    self.platform.key_tap(f);
+    true
+}</code></pre>
+
+<h2 id="decisions"><span class="num">5</span>Decisions I need from you</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:24rem">Question</th><th>My recommendation</th></tr></thead>
+<tbody>
+<tr><td class="id">Q1</td><td>Sacrifice <kbd>Alt</kbd>+<kbd>Space</kbd> (Windows window system menu) so Alt-then-Space works, or keep the bypass and require Space-then-Alt order?</td><td><strong>Sacrifice it</strong>, behind a pref. An order-dependent hotkey is a bug report waiting to happen; the window menu is reachable from the title bar.</td></tr>
+<tr><td class="id">Q2</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd> — Shift+F3, or keep "move window to desktop 3"?</td><td><strong>Shift+F3.</strong> Alt is the layer selector and wins; move-window keeps its own unambiguous chord.</td></tr>
+<tr><td class="id">Q3</td><td>Should F-keys auto-repeat while held?</td><td><strong>No</strong> — matches current digit behaviour and avoids F5-spam. Trivial to add later.</td></tr>
+<tr><td class="id">Q4</td><td>Should the layer work in CLX-<em>locked</em> mode (bare <kbd>Alt</kbd>+<kbd>1</kbd> after the CapsLock+Space chord)?</td><td><strong>Yes for the layer, no for Alt suppression</strong> — suppressing Alt globally while locked would be far too invasive.</td></tr>
+<tr><td class="id">Q5</td><td>Does RAlt/AltGr participate?</td><td><strong>LAlt only</strong>, or <code>alt &amp;&amp; !ctrl</code>. Costs nothing on your US layout and avoids breaking EU users.</td></tr>
+<tr><td class="id">Q6</td><td>Bind by VK or by scancode?</td><td><strong>VK now, with a JIS <code>0xDE</code> fallback for F12.</strong> Scancode is more correct but touches the injection path too; not worth it for a single-layout user today.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="tests"><span class="num">6</span>Verification matrix</h2>
+<p class="lede">The first row is the one that decides whether this ships.</p>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:16rem">Probe</th><th style="width:18rem">Action</th><th>Pass condition</th></tr></thead>
+<tbody>
+<tr><td>Notepad, unsaved file</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>4</kbd></td><td><strong>Window does NOT close.</strong> An F4 arrives (Notepad ignores it); no save prompt.</td></tr>
+<tr><td>Notepad</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>5</kbd></td><td>F5 inserts a date/time stamp — clean positive proof of a bare F5.</td></tr>
+<tr><td>Explorer, file selected</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>2</kbd></td><td>F2 starts rename; the ribbon does <em>not</em> receive focus (B2).</td></tr>
+<tr><td>Chrome</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>=</kbd></td><td>F12 opens DevTools; no menu-bar flash.</td></tr>
+<tr><td>VS Code</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd></td><td>F1 opens the command palette (not "focus editor group 1", which is Alt+1).</td></tr>
+<tr><td>Any app</td><td><kbd>Alt</kbd> down → <kbd>Space</kbd> down → <kbd>1</kbd></td><td>F1, not the window system menu (C1).</td></tr>
+<tr><td>Any app</td><td><kbd>Space</kbd> down, wait 1 s, then <kbd>Alt</kbd>+<kbd>1</kbd></td><td>F1 only — no leading literal space, no repeat burst (C3).</td></tr>
+<tr><td>Any app</td><td><kbd>CLX</kbd>+<kbd>3</kbd> with no Alt</td><td>Still switches to virtual desktop 3 (D1).</td></tr>
+<tr><td>Any app</td><td><kbd>CLX</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd></td><td>Still moves the window to desktop 3 (D2).</td></tr>
+<tr><td>Any app</td><td><kbd>CLX</kbd>+<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>X</kbd></td><td>Still kills the process — proves suppression kept <code>held_keys</code> tracking (D4).</td></tr>
+<tr><td>Word or Excel</td><td>Hold <kbd>CLX</kbd>+<kbd>Alt</kbd>, release both, press nothing</td><td>No ribbon key-tips appear (B2/B3).</td></tr>
+<tr><td>Key-state probe app</td><td><kbd>CLX</kbd>+<kbd>Alt</kbd> held</td><td>Record what <code>GetAsyncKeyState(VK_MENU)</code> reports — settles B6 one way or the other.</td></tr>
+<tr><td>Editor</td><td>Bare <kbd>CLX</kbd>+<kbd>-</kbd> held</td><td>Still types repeating <code>-</code> (A4/D9).</td></tr>
+<tr><td>Numpad</td><td><kbd>Alt</kbd>+numpad <code>6</code><code>5</code> (no trigger)</td><td>Still types <code>A</code> — Alt codes intact (A3).</td></tr>
+</tbody>
+</table>
+</div>
+
+<footer>
+  Sources read for this audit: <code>rs/core/src/engine.rs</code>, <code>key_code.rs</code>, <code>modules/{mod,virtual_desktop,media,window_manager}.rs</code>,
+  <code>rs/adapters/windows/src/{hook,vk,output,alt_tab}.rs</code>. Severity is my estimate of user-visible damage if the case is ignored, not of implementation cost.
+</footer>
+
+</div>
+</body>
+</html>
