@@ -297,6 +297,9 @@ impl Platform for WinPlatform {
         send(&inputs);
     }
 
+    /// Reads the hardware state, so it stays correct even when our own hook
+    /// has stopped being serviced — the case the Space auto-repeat loop in
+    /// `engine.rs` has to survive.
     fn is_key_physically_down(&self, key: KeyCode) -> bool {
         modifier_held(key)
     }

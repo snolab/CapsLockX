@@ -313,12 +313,49 @@ impl ClxEngine {
                         // back to a 33 ms default (~30 Hz, macOS default).
                         let repeat_ms =
                             platform.system_key_repeat_ms().unwrap_or(33).clamp(15, 500);
+                        // This thread is detached and outlives the keyboard
+                        // hook. Its old sole exit -- `trigger_key` being
+                        // cleared by clx_up -- required the key-UP to reach the
+                        // engine, so a wedged hook turned it into a ~30 Hz
+                        // SendInput firehose that no amount of typing could
+                        // stop. Five independent exits now; any one ends it.
+                        // Self-calibrate: Space is genuinely held right now, so
+                        // an adapter that still reports it up cannot answer this
+                        // question (the trait default is a flat `false`) and its
+                        // verdict has to be ignored rather than believed.
+                        let trust_hw = platform.is_key_physically_down(KeyCode::Space);
+                        const MAX_REPEAT_MS: u128 = 20_000;
+                        let started = std::time::Instant::now();
                         loop {
                             std::thread::sleep(std::time::Duration::from_millis(repeat_ms));
-                            let still = *trigger_key.lock().unwrap() == Some(KeyCode::Space);
-                            if !still {
+
+                            // 1. the engine's own view of the trigger
+                            if *trigger_key.lock().unwrap() != Some(KeyCode::Space) {
                                 break;
                             }
+                            // 2. Space left the held set
+                            if !held_keys.lock().unwrap().contains(&KeyCode::Space) {
+                                break;
+                            }
+                            // 3. a combo fired, so the user did not mean spaces
+                            if fn_acted.load(Ordering::Relaxed) {
+                                break;
+                            }
+                            // 4. the hardware disagrees -- the one check that
+                            //    still works when the hook is dead
+                            if trust_hw && !platform.is_key_physically_down(KeyCode::Space) {
+                                break;
+                            }
+                            // 5. a ceiling, for adapters that cannot answer 4
+                            if started.elapsed().as_millis() > MAX_REPEAT_MS {
+                                eprintln!(
+                                    "[CLX] Space auto-repeat hit the {} ms ceiling — \
+                                     stopping (the key-up was never seen)",
+                                    MAX_REPEAT_MS
+                                );
+                                break;
+                            }
+
                             platform.key_tap(KeyCode::Space);
                         }
                     }
