@@ -128,9 +128,25 @@ jobs:
           & "$NSIS_DIR\makensis.exe" /DVERSION=$VERSION scripts\installer.nsi
           Move-Item scripts\CapsLockX-setup-x86_64.exe CapsLockX-setup-windows-x86_64.exe
 
-      # Commit binaries back to main only for stable releases
+      # Upload BEFORE the commit-back step: that step pushes to a protected
+      # branch and can fail (it did for v2.1.0, leaving the stable release
+      # with no Windows assets at all).
+      - name: Upload Windows packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            CapsLockX-portable-windows-x86_64.zip \
+            CapsLockX-setup-windows-x86_64.exe \
+            --clobber
+
+      # Commit binaries back to main only for stable releases. Best effort:
+      # `main` requires pull requests, so a direct push is rejected (GH006)
+      # and must never fail the release itself.
       - name: Commit binaries to main
         if: "!contains(github.ref_name, '-')"
+        continue-on-error: true
         shell: pwsh
         run: |
           git fetch origin main
@@ -142,16 +158,6 @@ jobs:
           git add clx.exe clx-screen-reader.exe
           git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
           git push origin main
-
-      - name: Upload Windows packages
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          gh release upload "${{ github.ref_name }}" \
-            CapsLockX-portable-windows-x86_64.zip \
-            CapsLockX-setup-windows-x86_64.exe \
-            --clobber
 
   build-linux:
     name: Build Linux (x86_64-unknown-linux-gnu)
@@ -317,9 +323,21 @@ jobs:
           || true
           test -f CapsLockX-setup-macos-arm64.dmg
 
-      # Commit binary to main only for stable releases
+      # Upload BEFORE the commit-back step (see the Windows job).
+      - name: Upload macOS packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            CapsLockX-portable-macos-arm64.tar.gz \
+            CapsLockX-setup-macos-arm64.dmg \
+            --clobber
+
+      # Commit binary to main only for stable releases. Best effort: `main`
+      # requires pull requests, so a direct push is rejected (GH006).
       - name: Commit macOS binary to main
         if: "!contains(github.ref_name, '-')"
+        continue-on-error: true
         run: |
           git fetch origin main
           git checkout main
@@ -330,12 +348,3 @@ jobs:
           git add capslockx-macos-arm64
           git diff --cached --quiet || git commit -m "chore: update macOS binary for ${{ github.ref_name }}"
           git push origin main
-
-      - name: Upload macOS packages
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ github.ref_name }}" \
-            CapsLockX-portable-macos-arm64.tar.gz \
-            CapsLockX-setup-macos-arm64.dmg \
-            --clobber
