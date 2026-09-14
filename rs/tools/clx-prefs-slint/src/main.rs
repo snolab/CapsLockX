@@ -98,9 +98,13 @@ fn exit_with_parent() {}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     exit_with_parent();
 
+    // clx passes its own version line as argv[1] (it knows the crate version;
+    // this binary only knows its own). Launched standalone, fall back to the
+    // build date of the clx.exe we sit next to.
+    let clx_exe = clx_exe_path();
     let version = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "CapsLockX".into());
+        .unwrap_or_else(|| default_version_line(&clx_exe));
 
     let cfg = Rc::new(RefCell::new(load_config()));
     let win = PrefsWindow::new()?;
@@ -115,8 +119,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         win.set_cursor_speed(cfg_f32(&c, "cursor_speed", 60.0));
         win.set_mouse_speed(cfg_f32(&c, "mouse_speed", 5900.0));
         win.set_scroll_speed(cfg_f32(&c, "scroll_speed", 1500.0));
-        win.set_version_text(version.into());
     }
+
+    // About: which build this is and where it lives, so it's obvious when prefs
+    // is running next to a different clx.exe than the one you just built.
+    win.set_version_text(version.into());
+    win.set_about_source(format!("Installed as: {}", detect_source(&clx_exe)).into());
+    win.set_about_exe(format!("Program: {}", clx_exe.display()).into());
+    win.set_about_config(format!("Config: {}", config_path().display()).into());
+    win.set_releases_url(RELEASES_URL.into());
+    win.on_open_url(|url| open_in_shell(url.as_str()));
+    win.on_open_config_folder(|| {
+        if let Some(dir) = config_path().parent() {
+            open_in_shell(&dir.to_string_lossy());
+        }
+    });
 
     // Launch at login is NOT part of config.json — the Task Scheduler entry is
     // the source of truth, so read it live and never persist a mirror flag.
@@ -158,6 +175,97 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     win.run()?;
     Ok(())
+}
+
+/// Official repo, for the About section's "Releases…" button.
+const RELEASES_URL: &str = "https://github.com/snolab/CapsLockX/releases";
+
+/// The CapsLockX binary this prefs window belongs to — normally the clx.exe
+/// sitting next to us. Falls back to our own path when there isn't one (running
+/// straight out of `target/release`), so About always shows something real.
+fn clx_exe_path() -> PathBuf {
+    clx_autostart::target_exe()
+        .unwrap_or_else(|_| std::env::current_exe().unwrap_or_else(|_| PathBuf::from("clx")))
+}
+
+/// Fallback headline when clx didn't pass a version line: no crate version is
+/// available here, but the binary's mtime still identifies the build.
+fn default_version_line(exe: &std::path::Path) -> String {
+    match build_date(exe) {
+        Some(d) => format!("CapsLockX · built {d}"),
+        None => "CapsLockX".into(),
+    }
+}
+
+/// Build date as "YYYY-MM-DD" from the executable's mtime (civil-from-days,
+/// Howard Hinnant) — mirrors `prefs_version_line()` in the Windows adapter.
+fn build_date(exe: &std::path::Path) -> Option<String> {
+    let secs = std::fs::metadata(exe)
+        .ok()?
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    let z = (secs / 86400) as i64 + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    Some(format!("{y:04}-{m:02}-{d:02}"))
+}
+
+/// Infer how this binary was installed from its path (same rules as the
+/// Tauri prefs' `detect_source`; duplicated because that one lives in the
+/// Windows adapter, which this cross-platform tool doesn't depend on).
+fn detect_source(exe: &std::path::Path) -> String {
+    let p = exe.to_string_lossy().to_lowercase().replace('\\', "/");
+    if p.contains("/target/release/") || p.contains("/target/debug/") {
+        return "git (dev build)".into();
+    }
+    if p.contains("/chocolatey/") {
+        return "chocolatey".into();
+    }
+    if p.contains("/npm/") || p.contains("/node_modules/") {
+        return "npm".into();
+    }
+    if exe
+        .ancestors()
+        .any(|a| a.join(".git").exists() || a.file_name().is_some_and(|n| n == "CapsLockX"))
+    {
+        return "git (source tree)".into();
+    }
+    "installed".into()
+}
+
+/// Hand a URL or folder path to the OS to open in the default app.
+fn open_in_shell(target: &str) {
+    #[cfg(windows)]
+    let mut cmd = {
+        // `start` is a cmd builtin; the empty "" is the window title, otherwise
+        // cmd would swallow a quoted path as the title and open nothing.
+        let mut c = std::process::Command::new("cmd");
+        c.args(["/C", "start", "", target]);
+        c
+    };
+    #[cfg(target_os = "macos")]
+    let mut cmd = {
+        let mut c = std::process::Command::new("open");
+        c.arg(target);
+        c
+    };
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    let mut cmd = {
+        let mut c = std::process::Command::new("xdg-open");
+        c.arg(target);
+        c
+    };
+    let _ = cmd.spawn();
 }
 
 /// Caption under the checkbox: which binary the logon task starts, so it's

@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Gesture Parser — keystrokes to CLX notation</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#ffffff; --ink:#1a1a1c; --muted:#63636b; --line:#e5e3de;
+  --accent:#2f5fd8; --code-bg:#f2f1ed; --ok:#1f7a52; --ok-bg:#e7f4ec;
+  --warn:#a35a00; --warn-bg:#fdf1e0; --crit:#b3261e; --crit-bg:#fdeceb;
+  --live:#2f5fd8; --live-bg:#eaf0fd;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+    --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+    --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;
+    --live:#8fb0ff; --live-bg:#1b2333;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;
+  --live:#8fb0ff; --live-bg:#1b2333;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);
+  font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  margin:0;padding:0 1.25rem 5rem}
+.wrap{max-width:60rem;margin:0 auto}
+.crumb{font-size:.85rem;color:var(--muted);margin:0;padding-top:1.5rem}
+header{padding:1.4rem 0 1.2rem;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(1.5rem,3vw,2.1rem);margin:0 0 .4rem;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0}
+h2{font-size:1.15rem;margin:2.4rem 0 .5rem;letter-spacing:-.01em}
+h3{font-size:.95rem;margin:1.4rem 0 .4rem}
+p{margin:.55rem 0}
+.lede{color:var(--muted);font-size:.95rem}
+code{font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  background:var(--code-bg);padding:.1em .35em;border-radius:4px;font-size:.86em}
+kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel);
+  border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;
+  padding:.1em .42em;font-size:.8em;white-space:nowrap}
+a{color:var(--accent)}
+
+/* ── capture pad ─────────────────────────────────────────────────────── */
+#pad{margin:1.4rem 0;border:2px dashed var(--line);border-radius:14px;
+  background:var(--panel);padding:1.6rem 1.4rem;text-align:center;cursor:pointer;
+  transition:border-color .15s,background .15s;outline:none}
+#pad.armed{border-style:solid;border-color:var(--accent);background:var(--live-bg)}
+#pad .hint{color:var(--muted);font-size:.9rem}
+#pad.armed .hint{color:var(--accent);font-weight:600}
+#held{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;
+  min-height:2.1rem;align-items:center;margin-top:.9rem}
+#held .pk{background:var(--accent);color:var(--bg);border:none;font-weight:700;
+  padding:.22em .6em;border-radius:6px;font-size:.82rem;
+  font-family:ui-monospace,monospace}
+#held .none{color:var(--muted);font-size:.85rem}
+
+/* ── notation readout ────────────────────────────────────────────────── */
+.readout{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;
+  padding:1.1rem 1.2rem;margin:1rem 0}
+.readout .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);font-weight:700;margin-bottom:.5rem}
+#notation{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:clamp(1.05rem,2.6vw,1.5rem);font-weight:600;word-break:break-word;
+  min-height:1.6em;line-height:1.5}
+#notation .br{color:var(--accent);font-weight:800}
+#notation .dot{color:var(--accent);font-weight:800}
+#notation .paren,#notation .plus{color:var(--muted)}
+#notation .hk{color:var(--accent)}
+#notation .tk{color:var(--ink)}
+#notation .open{color:var(--warn)}
+#notation .ph{color:var(--muted);font-weight:400;font-style:italic;font-size:.8em}
+#bar{height:3px;border-radius:2px;background:var(--line);margin-top:.7rem;
+  overflow:hidden;opacity:0;transition:opacity .2s}
+#bar.live{opacity:1}
+#bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px}
+#hist li .t{font-family:ui-sans-serif,system-ui,sans-serif;font-size:.72rem;
+  color:var(--muted);min-width:4.5rem}
+#meaning{margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--line);
+  font-size:.92rem;color:var(--muted)}
+#meaning b{color:var(--ink)}
+#meaning.hit b{color:var(--ok)}
+
+.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.9rem 0}
+button{font:inherit;font-size:.85rem;padding:.4em .9em;border-radius:8px;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.on{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600}
+label.chk{font-size:.85rem;color:var(--muted);display:inline-flex;align-items:center;gap:.35em;cursor:pointer}
+
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);margin:.9rem 0}
+table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:32rem}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+tbody tr:last-child td{border-bottom:none}
+td.mono,th.mono{font-family:ui-monospace,monospace}
+.dim{color:var(--muted)}
+
+.cards{display:grid;gap:.7rem;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));margin:.9rem 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.75rem .9rem}
+.stat .n{font-size:1.5rem;font-weight:700;font-family:ui-monospace,monospace;line-height:1.1}
+.stat .t{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem}
+.stat.good .n{color:var(--ok)}
+.stat.bad .n{color:var(--crit)}
+
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);
+  background:var(--panel);border-radius:0 10px 10px 0;padding:.85rem 1.05rem;margin:1rem 0}
+.callout.warn{border-left-color:var(--warn)}
+.callout.ok{border-left-color:var(--ok)}
+.callout h4{margin:0 0 .3rem;font-size:.92rem}
+.callout p{margin:.3rem 0;font-size:.9rem}
+ul.tight{margin:.5rem 0;padding-left:1.2rem;font-size:.92rem}
+ul.tight li{margin:.3rem 0}
+#log{max-height:17rem;overflow-y:auto}
+.tag{font-size:.68rem;font-weight:700;padding:.12em .45em;border-radius:4px;
+  text-transform:uppercase;letter-spacing:.04em}
+.tag.dn{color:var(--accent);background:var(--live-bg)}
+.tag.up{color:var(--muted);background:var(--code-bg)}
+.tag.rp{color:var(--warn);background:var(--warn-bg)}
+#hist li{font-family:ui-monospace,monospace;font-size:.86rem;margin:.3rem 0;
+  list-style:none;display:flex;gap:.6rem;align-items:baseline}
+#hist li .m{font-family:ui-sans-serif,system-ui,sans-serif;font-size:.8rem;color:var(--muted)}
+#hist{padding:0;margin:.5rem 0}
+footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / gesture-parser &nbsp;·&nbsp;
+  notation defined in <a href="/lab/chord-fn-row/#notation">chord-fn-row</a></p>
+
+<header>
+  <h1>Gesture parser</h1>
+  <p class="sub">Type on the pad; it parses your real key edges into the CLX gesture notation, live.</p>
+</header>
+
+<div id="pad" tabindex="0" role="application" aria-label="Keystroke capture pad">
+  <div class="hint" id="hint">Click here, then press keys — <kbd>Esc</kbd> to disarm</div>
+  <div id="held"><span class="none">nothing held</span></div>
+</div>
+
+<div class="readout">
+  <div class="label">Notation</div>
+  <div id="notation"><span class="ph">press something…</span></div>
+  <div id="bar"><i id="barFill"></i></div>
+  <div id="meaning">&nbsp;</div>
+</div>
+
+<div class="row">
+  <button id="btnClear">Clear</button>
+  <button id="btnCopy">Copy notation</button>
+  <button id="btnStrict">Strict nesting: off</button>
+  <button id="btnConn" title="Release order is not something you control, so the recognizer normalises groups to +">Connector: + <span class="dim">(normalized)</span></button>
+  <label class="chk">idle split
+    <input type="number" id="inpIdle" value="3" min="0.3" max="30" step="0.5"
+           style="width:4.2rem;font:inherit;font-size:.85rem;padding:.25em .4em;
+                  border:1px solid var(--line);border-radius:6px;
+                  background:var(--panel);color:var(--ink)"> s
+  </label>
+  <label class="chk"><input type="checkbox" id="chkCaps" checked> CapsLock toggle-fallback</label>
+</div>
+
+<h2>Rollover check <span class="dim" style="font-size:.8rem;font-weight:400">— the M3 test</span></h2>
+<p class="lede">The proposed chord needs three non-modifier keys down at once (<code>capslock</code>, <code>space</code>, a digit), and five with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>. Membrane keyboards often ghost past three. Hold them all and watch the counter.</p>
+<div class="cards">
+  <div class="stat"><div class="n" id="statNow">0</div><div class="t">held now</div></div>
+  <div class="stat" id="statMaxCard"><div class="n" id="statMax">0</div><div class="t">max simultaneous</div></div>
+  <div class="stat"><div class="n" id="statNonMod">0</div><div class="t">max non-modifier</div></div>
+  <div class="stat"><div class="n" id="statEvents">0</div><div class="t">edges seen</div></div>
+</div>
+<div class="callout" id="rollBox">
+  <h4 id="rollTitle">Target: <code>ctrl+shift+capslock+space+5</code></h4>
+  <p id="rollMsg">Hold all five at once. If “max simultaneous” reaches 5 and every key shows in the pad, your keyboard has the rollover this design needs.</p>
+</div>
+
+<h2>Edge log</h2>
+<div class="scroll" id="log">
+<table>
+<thead><tr><th style="width:5rem">t (ms)</th><th style="width:5rem">edge</th><th class="mono">key</th><th class="mono">event.code</th><th style="width:6rem">held after</th></tr></thead>
+<tbody id="logBody"><tr><td colspan="5" class="dim">no events yet</td></tr></tbody>
+</table>
+</div>
+
+<h2>Pattern log <span class="dim" style="font-size:.8rem;font-weight:400">— last 10</span></h2>
+<p class="lede">A pattern closes after <b id="idleLbl">3</b>&nbsp;s of no key activity, so consecutive gestures accumulate into one line until you pause. Holding a key keeps the pattern open &mdash; the countdown only starts once everything is back up.</p>
+<ul id="hist"><li class="dim" style="font-family:inherit">none yet — press something, then pause</li></ul>
+
+<h2>How the parse works</h2>
+<p class="lede">Three passes, no timers anywhere — the structure comes from edge <em>order</em> alone, which is the same thing the engine has to reason about.</p>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:8rem">Pass</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><b>1. tree</b></td><td>Each key-down opens a node inside the currently-innermost open node; each key-up closes it. Containment falls out of the edge order, so a key pressed while another is held becomes its child.</td></tr>
+<tr><td><b>2. collapse</b></td><td>A node holding exactly one child collapses into a <em>group</em> when their two up-edges are <b>adjacent</b> in the log — nothing happened between them. That is precisely the rule that <code>]</code> needs the whole group released; a partial release leaves the nesting intact instead. A child that has a <b>body</b> is demonstrably a hold — something was struck while it was down — so holding <code>a</code> and <code>b</code> and striking <code>e</code> gives <code>(a-&gt;b)[ e ]</code> for any keys at all, with no key table and no clock. Only the childless case is ambiguous: <code>c&#8595; s&#8595; s&#8593; c&#8593;</code> and <code>space&#8595; 3&#8595; 3&#8593; space&#8593;</code> are the same shape, so there the key roles break the tie.</td></tr>
+<tr><td><b>2b. connect</b></td><td>Group members are joined with <code>+</code>. Whether your fingers happen to nest or cross on release is not something anyone controls, so that difference is <em>noise</em> in captured input &mdash; the same intended gesture would otherwise render two ways. Nothing is lost, because the trace line still records the exact edges: observation lives in the trace, the binding lives in the spec. Flip the connector button to <code>-&gt;</code> to see the order as actually pressed; crossings still show <code>+</code> there, since a crossing is real evidence of symmetry.</td></tr>
+<tr><td><b>3. render</b></td><td>Empty body and closed → <code>X.</code> &nbsp;· empty and still held → <code>X[</code> &nbsp;· non-empty → <code>X[ body ]</code>, or <code>X[ body</code> while the hold is still open. Body keys print bare, because inside a hold a bare name already means a tap.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="lede"><b>Strict nesting</b> turns pass&nbsp;2 off, so you can see the raw press order the engine sees — useful for reproducing <a href="/lab/chord-fn-row/#trigger">T1</a>, where <code>capslock[ alt[ space[ 1 ] ] ]</code> fails to form a chord because <code>prior_key</code> is <code>alt</code> when Space arrives.</p>
+
+<h2>What this can and cannot see</h2>
+<div class="callout warn">
+  <h4>It reads the browser's key events, not the hardware</h4>
+  <ul class="tight">
+    <li><b>clx is upstream of it.</b> If clx is running, keys its hook suppresses never reach this page — hold Space and you may see nothing at all. That is itself informative: run it once with clx paused to see raw input, once with clx active to see what survives the hook.</li>
+    <li><b>CapsLock is unreliable in browsers.</b> Several report it as a lock toggle rather than a physical press, so the key-up can arrive at the wrong moment or not at all. The toggle-fallback checkbox treats a second CapsLock down as an up. For a clean rollover measurement, substitute another key.</li>
+    <li><b>Some keys are stolen by the browser or the OS</b> — F5, F12, Win, Alt+Tab. <code>preventDefault</code> catches most but not all.</li>
+    <li><b>Auto-repeat</b> is tagged and excluded from the tree, matching the engine, which deduplicates repeats via <code>held_keys</code>.</li>
+  </ul>
+</div>
+
+<footer>
+  Notation and semantics: <a href="/lab/chord-fn-row/#notation">chord-fn-row</a>.
+  Interpretations below the readout use the documented CLX map plus the <em>proposed</em> chord layer, so a chord + digit reads as an F-key even though nothing is implemented yet.
+</footer>
+
+</div>
+
+<script src="parse.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var P = self.CLXParse;   // the tested parse core (parse.js, parse.test.cjs)
+
+  // ── key naming ────────────────────────────────────────────────────────────
+  var MODS = {
+    ShiftLeft:'shift', ShiftRight:'shift', ControlLeft:'ctrl', ControlRight:'ctrl',
+    AltLeft:'alt', AltRight:'alt', MetaLeft:'win', MetaRight:'win'
+  };
+  var NAMED = {
+    Space:'space', CapsLock:'capslock', Enter:'enter', Tab:'tab', Escape:'esc',
+    Backspace:'backspace', Delete:'del', Insert:'insert', ScrollLock:'scrolllock',
+    Minus:'-', Equal:'=', BracketLeft:'[', BracketRight:']', Backslash:'\\',
+    Semicolon:';', Quote:"'", Comma:',', Period:'.', Slash:'/', Backquote:'`',
+    ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+    Home:'home', End:'end', PageUp:'pgup', PageDown:'pgdn'
+  };
+  function nameOf(code) {
+    if (MODS[code]) return MODS[code];
+    if (NAMED[code]) return NAMED[code];
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+    if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+    if (/^Numpad/.test(code)) return 'num' + code.slice(6).toLowerCase();
+    if (/^F\d{1,2}$/.test(code)) return code.toLowerCase();
+    return code.toLowerCase();
+  }
+  var MODNAMES = { shift:1, ctrl:1, alt:1, win:1 };
+  var TRIGGERS = { space:1, capslock:1 };
+
+  // ── state ─────────────────────────────────────────────────────────────────
+  var S = {
+    armed:false, strict:false, capsFallback:true,
+    events:[],           // {i, t, type:'down'|'up', name, code}
+    held:[],             // names, in press order
+    downAt:{},           // name -> event index
+    maxHeld:0, maxNonMod:0, crossed:false, idleMs:3000, conn:'+'
+  };
+  var t0 = 0;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pad = $('pad'), notationEl = $('notation'), meaningEl = $('meaning');
+
+  // ── capture ───────────────────────────────────────────────────────────────
+  function arm(on) {
+    S.armed = on;
+    pad.classList.toggle('armed', on);
+    $('hint').textContent = on
+      ? 'Listening — press keys. Esc to disarm.'
+      : 'Click here, then press keys — Esc to disarm';
+    if (on) pad.focus();
+  }
+  pad.addEventListener('mousedown', function (e) { e.preventDefault(); arm(true); });
+  pad.addEventListener('blur', function () { arm(false); releaseAll(); });
+
+  function releaseAll() {
+    for (var i = S.held.length - 1; i >= 0; i--) push('up', S.held[i], '(blur)');
+    redraw();
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (!S.armed) return;
+    if (e.code === 'Escape' && !S.held.length) { arm(false); return; }
+    e.preventDefault();
+    var n = nameOf(e.code);
+    if (e.repeat) { logRepeat(n, e.code); return; }
+    // CapsLock toggle-fallback: a second down with no up means the up was lost.
+    if (n === 'capslock' && S.capsFallback && S.held.indexOf(n) >= 0) {
+      push('up', n, e.code); redraw(); return;
+    }
+    if (S.held.indexOf(n) >= 0) return;   // already down, ignore duplicate
+    push('down', n, e.code);
+    redraw();
+  }, true);
+
+  document.addEventListener('keyup', function (e) {
+    if (!S.armed) return;
+    e.preventDefault();
+    var n = nameOf(e.code);
+    if (n === 'capslock' && S.capsFallback) return;  // handled on the next down
+    if (S.held.indexOf(n) < 0) return;
+    push('up', n, e.code);
+    redraw();
+  }, true);
+
+  function push(type, name, code) {
+    if (!S.events.length) t0 = performance.now();
+    var ev = { i:S.events.length, t:Math.round(performance.now() - t0),
+               type:type, name:name, code:code };
+    S.events.push(ev);
+    if (type === 'down') {
+      S.held.push(name);
+      S.downAt[name] = ev.i;
+      if (S.held.length > S.maxHeld) S.maxHeld = S.held.length;
+      var nm = S.held.filter(function (k) { return !MODNAMES[k]; }).length;
+      if (nm > S.maxNonMod) S.maxNonMod = nm;
+    } else {
+      var j = S.held.indexOf(name);
+      if (j >= 0) S.held.splice(j, 1);
+    }
+    logRow(ev);
+    // Pattern boundaries are decided by the idle timer, not by all-keys-up,
+    // so consecutive gestures accumulate until the user actually pauses.
+  }
+
+  // ── rendering: the parse itself lives in parse.js, covered by parse.test.cjs ─
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  // Plain text of a trusted markup string (interpret() output): let the DOM
+  // parse it rather than stripping tags with a regex.
+  function plain(html) { var d = document.createElement('div'); d.innerHTML = html; return d.textContent; }
+  var HTML = {
+    key: function (k, head) {
+      return '<span class="' + (head ? 'hk' : 'tk') + '">' + esc(k) + '</span>';
+    },
+    conn: P.COMMUTATIVE,
+    group: function (ks, nodeConn) {
+      return '<span class="paren">(</span>' + ks.map(function (k) {
+        return '<span class="hk">' + esc(k) + '</span>';
+      }).join('<span class="plus">' + esc(nodeConn || this.conn) + '</span>') +
+      '<span class="paren">)</span>';
+    },
+    open: function () { return '<span class="br">[</span>'; },
+    close: function () { return '<span class="br">]</span>'; },
+    dot: function () { return '<span class="dot">.</span>'; }
+  };
+
+  function treeOf(events) {
+    var t = P.collapse(P.buildTree(events), S.strict);
+    S.crossed = !!t.crossed;
+    return t;
+  }
+
+  // ── interpretation against the CLX map ───────────────────────────────────
+  var EDIT = { h:'cursor left', j:'cursor down', k:'cursor up', l:'cursor right',
+    y:'Home', u:'End', i:'PageUp', o:'PageDown', g:'Enter', t:'Delete',
+    n:'Tab', p:'Shift+Tab', w:'mouse up', a:'mouse left', s:'mouse down', d:'mouse right',
+    v:'voice input', b:'brainstorm', m:'agent', z:'window cycle', x:'close tab',
+    c:'tile windows', ',':'preferences', '/':'keyboard layout HUD' };
+  var FKEY = { '1':'F1','2':'F2','3':'F3','4':'F4','5':'F5','6':'F6','7':'F7',
+    '8':'F8','9':'F9','0':'F10','-':'F11','=':'F12' };
+
+  function interpret(root) {
+    if (root.items.length !== 1) return null;
+    var n = root.items[0];
+    var keys = (n.group || [n.name]).slice();
+    var trig = keys.filter(function (k) { return TRIGGERS[k]; });
+    var mods = keys.filter(function (k) { return MODNAMES[k]; });
+    var other = keys.filter(function (k) { return !TRIGGERS[k] && !MODNAMES[k]; });
+    if (!trig.length || other.length) return null;
+
+    var chord = trig.length === 2;
+    var bodyKeys = n.items.map(function (c) { return (c.group || [c.name]).join('+'); });
+
+    if (!n.items.length && n.up !== null) {
+      if (chord) return { hit:true, txt:'<b>Toggle CLX lock</b> — the empty body is exactly the condition. This is the gesture the F-layer must not steal (L1).' };
+      return { hit:false, txt:'A bare trigger tap — emits the native <b>' + esc(trig[0]) + '</b>.' };
+    }
+    if (!n.items.length && n.up === null) {
+      return { hit:false, txt:chord
+        ? 'Chord held, nothing struck yet. Release it now and it toggles the lock.'
+        : 'Trigger held — CLX is in <code>CM_FN</code>. Waiting for a key.' };
+    }
+    if (bodyKeys.length !== 1) {
+      return { hit:false, txt:'Multi-key body — each fires on its own key-down, in order: ' + esc(bodyKeys.join(', ')) + '.' };
+    }
+    var k = bodyKeys[0];
+    var shift = mods.indexOf('shift') >= 0;
+    var pre = mods.filter(function (m) { return m !== 'shift'; })
+                  .map(function (m) { return m.charAt(0).toUpperCase() + m.slice(1); });
+
+    if (chord && FKEY[k]) {
+      var f = (shift ? 'Shift+' : '') + (pre.length ? pre.join('+') + '+' : '') + FKEY[k];
+      return { hit:true, txt:'<b>Proposed chord layer</b> — emits <b>' + f + '</b>. Not implemented yet.' };
+    }
+    if (!chord && /^[0-9]$/.test(k)) {
+      var idx = k === '0' ? 10 : Number(k);
+      return { hit:true, txt: shift
+        ? '<b>Move window to virtual desktop ' + idx + '</b> (today’s binding).'
+        : '<b>Switch to virtual desktop ' + idx + '</b> (today’s binding).' };
+    }
+    if (!chord && (k === '-' || k === '=')) {
+      return { hit:false, txt:'Unmapped today — passes through and types <b>' + esc(k) + '</b>. Needs <code>KeyCode::Minus</code>/<code>Equal</code> (K1).' };
+    }
+    if (EDIT[k]) {
+      return { hit:true, txt:'<b>' + EDIT[k] + '</b>' + (chord
+        ? ' — but the chord also locks CLX today, eagerly on key-down (L1).' : '.') };
+    }
+    return { hit:false, txt:'No binding for <b>' + esc(k) + '</b> in the documented map.' };
+  }
+
+  // ── redraw ────────────────────────────────────────────────────────────────
+  function redraw() {
+    var tree = treeOf(S.events);
+    var html = P.renderTree(tree, HTML);
+    notationEl.innerHTML = html || '<span class="ph">press something…</span>';
+
+    var m = interpret(tree);
+    if (S.crossed) {
+      meaningEl.className = '';
+      meaningEl.innerHTML = '<b>Crossing holds — commutative evidence.</b> One key came up while a key pressed after it was still down, so neither contains the other and the two were held symmetrically. That earns a real <code>+</code>: order demonstrably did not matter. A nesting would only have earned <code>-&gt;</code>.';
+    } else if (m) {
+      meaningEl.className = m.hit ? 'hit' : '';
+      meaningEl.innerHTML = m.txt;
+    } else {
+      meaningEl.className = '';
+      meaningEl.innerHTML = S.events.length ? '&nbsp;' : '&nbsp;';
+    }
+
+    var h = $('held');
+    h.innerHTML = S.held.length
+      ? S.held.map(function (k) { return '<span class="pk">' + esc(k) + '</span>'; }).join('')
+      : '<span class="none">nothing held</span>';
+
+    $('statNow').textContent = S.held.length;
+    $('statMax').textContent = S.maxHeld;
+    $('statNonMod').textContent = S.maxNonMod;
+    $('statEvents').textContent = S.events.length;
+
+    armIdle();
+
+    var card = $('statMaxCard');
+    card.className = 'stat' + (S.maxHeld >= 5 ? ' good' : '');
+    if (S.maxHeld >= 5) {
+      $('rollTitle').innerHTML = 'Rollover looks fine — 5 keys registered at once';
+      $('rollMsg').textContent = 'Your keyboard handles the chord plus two modifiers. M3 is not a blocker.';
+      $('rollBox').className = 'callout ok';
+    } else if (S.maxNonMod >= 3) {
+      $('rollTitle').innerHTML = 'Three non-modifier keys registered — the base chord works';
+      $('rollMsg').textContent = 'Now add Ctrl and Shift to check the full five-key case.';
+      $('rollBox').className = 'callout';
+    }
+  }
+
+  // ── logging ───────────────────────────────────────────────────────────────
+  var logBody = $('logBody'), logSeeded = false;
+  function logRow(ev) {
+    if (!logSeeded) { logBody.innerHTML = ''; logSeeded = true; }
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="mono dim">' + ev.t + '</td>' +
+      '<td><span class="tag ' + (ev.type === 'down' ? 'dn">down' : 'up">up') + '</span></td>' +
+      '<td class="mono"><b>' + esc(ev.name) + '</b></td>' +
+      '<td class="mono dim">' + esc(ev.code) + '</td>' +
+      '<td class="mono dim">' + S.held.length + '</td>';
+    logBody.appendChild(tr);
+    logBody.parentNode.parentNode.scrollTop = 1e6;
+  }
+  function logRepeat(name, code) {
+    if (!logSeeded) { logBody.innerHTML = ''; logSeeded = true; }
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="mono dim">—</td><td><span class="tag rp">repeat</span></td>' +
+      '<td class="mono dim">' + esc(name) + '</td><td class="mono dim">' + esc(code) +
+      '</td><td class="mono dim">' + S.held.length + '</td>';
+    logBody.appendChild(tr);
+    logBody.parentNode.parentNode.scrollTop = 1e6;
+  }
+
+  // ── gesture history ───────────────────────────────────────────────────────
+  var hist = $('hist'), histSeeded = false;
+  var HIST_MAX = 10;
+
+  // ── pattern boundary: N seconds of no key activity ────────────────────────
+  var idleTimer = null, idleRaf = null, idleFrom = 0;
+
+  function setBar(frac, live) {
+    $('bar').classList.toggle('live', !!live);
+    $('barFill').style.width = (Math.max(0, Math.min(1, frac)) * 100) + '%';
+  }
+
+  function armIdle() {
+    clearTimeout(idleTimer);
+    if (idleRaf) cancelAnimationFrame(idleRaf);
+    idleTimer = idleRaf = null;
+    // A held key keeps the pattern open — an unclosed hold is part of it.
+    if (S.held.length || !S.events.length) { setBar(0, false); return; }
+    idleFrom = performance.now();
+    idleTimer = setTimeout(closePattern, S.idleMs);
+    tickBar();
+  }
+
+  function tickBar() {
+    var done = (performance.now() - idleFrom) / S.idleMs;
+    setBar(1 - done, true);
+    if (done < 1) idleRaf = requestAnimationFrame(tickBar);
+  }
+
+  function closePattern() {
+    setBar(0, false);
+    if (S.held.length || !S.events.length) return;
+    var tree = treeOf(S.events);
+    var txt = P.renderTree(tree, P.textFmt(S.conn));
+    if (txt) {
+      var m = interpret(tree);
+      if (!histSeeded) { hist.innerHTML = ''; histSeeded = true; }
+      var span = S.events[S.events.length - 1].t - S.events[0].t;
+      var li = document.createElement('li');
+      li.innerHTML =
+        '<span class="t">' + new Date().toLocaleTimeString() + '</span>' +
+        '<span>' + esc(txt) + '</span>' +
+        '<span class="m">' + (span + ' ms') +
+        (m ? ' · ' + esc(plain(m.txt)) : '') + '</span>';
+      hist.insertBefore(li, hist.firstChild);
+      while (hist.children.length > HIST_MAX) hist.removeChild(hist.lastChild);
+    }
+    S.events = []; S.downAt = {}; S.crossed = false;
+    redraw();
+  }
+
+  // ── controls ──────────────────────────────────────────────────────────────
+  $('btnClear').addEventListener('click', function () {
+    S.events = []; S.held = []; S.downAt = {}; S.maxHeld = 0; S.maxNonMod = 0;
+    S.crossed = false; logBody.innerHTML = '<tr><td colspan="5" class="dim">no events yet</td></tr>';
+    logSeeded = false; setBar(0, false); redraw(); arm(true);
+  });
+  $('btnCopy').addEventListener('click', function () {
+    var txt = P.renderTree(treeOf(S.events), P.textFmt(S.conn));
+    if (navigator.clipboard && txt) navigator.clipboard.writeText(txt);
+    var b = $('btnCopy'), old = b.textContent;
+    b.textContent = txt ? 'Copied: ' + txt : 'Nothing to copy';
+    setTimeout(function () { b.textContent = old; }, 1400);
+  });
+  $('btnConn').addEventListener('click', function () {
+    S.conn = S.conn === P.COMMUTATIVE ? P.OBSERVED : P.COMMUTATIVE;
+    HTML.conn = S.conn;
+    this.innerHTML = S.conn === '+'
+      ? 'Connector: + <span class="dim">(normalized)</span>'
+      : 'Connector: -&gt; <span class="dim">(as pressed)</span>';
+    this.classList.toggle('on', S.conn === P.OBSERVED);
+    redraw();
+  });
+  $('btnStrict').addEventListener('click', function () {
+    S.strict = !S.strict;
+    this.textContent = 'Strict nesting: ' + (S.strict ? 'on' : 'off');
+    this.classList.toggle('on', S.strict);
+    redraw();
+  });
+  $('chkCaps').addEventListener('change', function () { S.capsFallback = this.checked; });
+  $('inpIdle').addEventListener('input', function () {
+    var v = parseFloat(this.value);
+    if (!isFinite(v) || v < 0.3) return;
+    S.idleMs = v * 1000;
+    $('idleLbl').textContent = String(v);
+    armIdle();
+  });
+
+  redraw();
+})();
+</script>
+</body>
+</html>

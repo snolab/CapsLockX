@@ -32,6 +32,14 @@ pub struct ClxEngine {
     /// When a trigger key is bypassed (e.g. Cmd+Space), the key-up must also
     /// pass through so the OS sees the complete down+up pair.
     trigger_bypassed: AtomicBool,
+    /// A trigger chord is open. The lock latches when it CLOSES (both
+    /// triggers up), not on key-down — `(capslock] + space])`.
+    chord_pending: AtomicBool,
+    /// Was CLX locked when the first trigger went down? `enter_fn_mode`
+    /// clears `CM_CLX` on the key-down, so by key-up `is_clx_locked()` can no
+    /// longer answer this — and answering it wrong makes the unlock tap leak a
+    /// real CapsLock (and its LED) into the focused app.
+    entered_from_locked: AtomicBool,
 }
 
 impl ClxEngine {
@@ -52,6 +60,8 @@ impl ClxEngine {
             fn_acted: Arc::new(AtomicBool::new(false)),
             trigger_timeout_fired: Arc::new(AtomicBool::new(false)),
             trigger_bypassed: AtomicBool::new(false),
+            chord_pending: AtomicBool::new(false),
+            entered_from_locked: AtomicBool::new(false),
         })
     }
 
@@ -71,6 +81,18 @@ impl ClxEngine {
                 false
             }
         };
+
+        // ── 1b. Keep the chord flag in step with the physical key set ────────
+        // The F-row layer is active exactly while BOTH triggers are down, so
+        // it is derived from `held_keys` rather than from press order — which
+        // a modifier pressed between the two triggers would otherwise ruin.
+        if self.state.is_trigger_key(code) {
+            let chord = {
+                let held = self.held_keys.lock().unwrap();
+                held.contains(&KeyCode::CapsLock) && held.contains(&KeyCode::Space)
+            };
+            self.state.set_chord_active(chord);
+        }
 
         // ── 2. Track prior key ────────────────────────────────────────────────
         let prior = *self.prior_key.lock().unwrap();
@@ -172,6 +194,9 @@ impl ClxEngine {
     /// AccModel doesn't keep running with phantom held keys.
     pub fn emergency_stop(&self) {
         self.held_keys.lock().unwrap().clear();
+        self.state.set_chord_active(false);
+        self.chord_pending.store(false, Ordering::Relaxed);
+        self.entered_from_locked.store(false, Ordering::Relaxed);
         self.state.exit_clx_mode();
         self.state.exit_fn_mode();
         self.modules.stop_all();
@@ -215,15 +240,32 @@ impl ClxEngine {
     // ── CLX_Dn ────────────────────────────────────────────────────────────────
 
     /// Returns `true` if the trigger key should be passed through (bypass).
-    fn clx_dn(&self, code: KeyCode, prior: KeyCode) -> bool {
-        // CapsLock+Space chord (either order)
-        let chord = (code == KeyCode::CapsLock && prior == KeyCode::Space)
-            || (code == KeyCode::Space && prior == KeyCode::CapsLock);
-        if chord {
-            self.state.enter_clx_mode();
+    fn clx_dn(&self, code: KeyCode, _prior: KeyCode) -> bool {
+        // Detect the chord from the held set, not from `prior`: pressing a
+        // modifier between the two triggers overwrites `prior` and would drop
+        // the chord into the Space-bypass path (Alt+Space, window menu).
+        let other_trigger_held = {
+            let held = self.held_keys.lock().unwrap();
+            (code == KeyCode::CapsLock && held.contains(&KeyCode::Space))
+                || (code == KeyCode::Space && held.contains(&KeyCode::CapsLock))
+        };
+
+        // Snapshot the lock state on the FIRST trigger down, before
+        // `enter_fn_mode` clears CM_CLX out from under the key-up path.
+        if !other_trigger_held {
+            self.entered_from_locked
+                .store(self.state.is_clx_locked(), Ordering::Relaxed);
+        }
+
+        if other_trigger_held {
+            // The chord is a hold like any other. It does NOT latch the lock
+            // here — that happens when the group closes, in `clx_up`, so
+            // `(capslock+space)[ 1 ]` can emit F1 on the way through.
+            self.state.enter_fn_mode();
+            self.chord_pending.store(true, Ordering::Relaxed);
             self.store_trigger(code);
-            // Mark as "acted" so releasing either chord key doesn't trigger
-            // the single-tap-unlock path in clx_up.
+            // Mark as "acted" so releasing either chord key doesn't emit the
+            // native Space/CapsLock via the single-tap path in clx_up.
             self.fn_acted.store(true, Ordering::Relaxed);
             return false;
         }
@@ -288,12 +330,49 @@ impl ClxEngine {
                         // back to a 33 ms default (~30 Hz, macOS default).
                         let repeat_ms =
                             platform.system_key_repeat_ms().unwrap_or(33).clamp(15, 500);
+                        // This thread is detached and outlives the keyboard
+                        // hook. Its old sole exit -- `trigger_key` being
+                        // cleared by clx_up -- required the key-UP to reach the
+                        // engine, so a wedged hook turned it into a ~30 Hz
+                        // SendInput firehose that no amount of typing could
+                        // stop. Five independent exits now; any one ends it.
+                        // Self-calibrate: Space is genuinely held right now, so
+                        // an adapter that still reports it up cannot answer this
+                        // question (the trait default is a flat `false`) and its
+                        // verdict has to be ignored rather than believed.
+                        let trust_hw = platform.is_key_physically_down(KeyCode::Space);
+                        const MAX_REPEAT_MS: u128 = 20_000;
+                        let started = std::time::Instant::now();
                         loop {
                             std::thread::sleep(std::time::Duration::from_millis(repeat_ms));
-                            let still = *trigger_key.lock().unwrap() == Some(KeyCode::Space);
-                            if !still {
+
+                            // 1. the engine's own view of the trigger
+                            if *trigger_key.lock().unwrap() != Some(KeyCode::Space) {
                                 break;
                             }
+                            // 2. Space left the held set
+                            if !held_keys.lock().unwrap().contains(&KeyCode::Space) {
+                                break;
+                            }
+                            // 3. a combo fired, so the user did not mean spaces
+                            if fn_acted.load(Ordering::Relaxed) {
+                                break;
+                            }
+                            // 4. the hardware disagrees -- the one check that
+                            //    still works when the hook is dead
+                            if trust_hw && !platform.is_key_physically_down(KeyCode::Space) {
+                                break;
+                            }
+                            // 5. a ceiling, for adapters that cannot answer 4
+                            if started.elapsed().as_millis() > MAX_REPEAT_MS {
+                                eprintln!(
+                                    "[CLX] Space auto-repeat hit the {} ms ceiling — \
+                                     stopping (the key-up was never seen)",
+                                    MAX_REPEAT_MS
+                                );
+                                break;
+                            }
+
                             platform.key_tap(KeyCode::Space);
                         }
                     }
@@ -311,6 +390,26 @@ impl ClxEngine {
 
         self.state.exit_fn_mode();
 
+        // ── the chord's closing bracket: `(capslock] + space])` ───────────
+        // A partial release does not close the group — both triggers must be
+        // up — which is also why the outcome cannot depend on release order.
+        let both_triggers_up = {
+            let held = self.held_keys.lock().unwrap();
+            !held.contains(&KeyCode::CapsLock) && !held.contains(&KeyCode::Space)
+        };
+        if self.chord_pending.load(Ordering::Relaxed) && both_triggers_up {
+            self.chord_pending.store(false, Ordering::Relaxed);
+            // A genuine toggle: chord out of locked mode as well as into it.
+            if self.entered_from_locked.swap(false, Ordering::Relaxed) {
+                self.modules.stop_all();
+            } else {
+                self.state.enter_clx_mode();
+            }
+            *self.trigger_key.lock().unwrap() = None;
+            self.fn_acted.store(false, Ordering::Relaxed);
+            return;
+        }
+
         // Stop physics if CLX mode is now fully off
         if !self.state.is_clx_active() {
             self.modules.stop_all();
@@ -322,8 +421,12 @@ impl ClxEngine {
         // and we skip the duplicate tap.
         if trigger == Some(code) && !fn_acted {
             if !self.trigger_timeout_fired.swap(true, Ordering::SeqCst) {
-                if self.state.is_clx_locked() {
-                    // Tap inside locked mode → unlock
+                // A tap that LEFT locked mode must not also type the native
+                // key. `enter_fn_mode` already cleared CM_CLX on the key-down,
+                // so `is_clx_locked()` is always false here and the old test
+                // never fired — every unlock tapped a real CapsLock, taking
+                // the OS Caps Lock state with it.
+                if self.entered_from_locked.swap(false, Ordering::Relaxed) {
                     self.state.exit_clx_mode();
                     self.modules.stop_all();
                 } else {
@@ -336,6 +439,9 @@ impl ClxEngine {
             }
         }
 
+        if both_triggers_up {
+            self.entered_from_locked.store(false, Ordering::Relaxed);
+        }
         *self.trigger_key.lock().unwrap() = None;
         self.fn_acted.store(false, Ordering::Relaxed);
     }
@@ -653,6 +759,112 @@ mod tests {
         engine.on_key_event(KeyCode::CapsLock, true);
         engine.on_key_event(KeyCode::CapsLock, false);
         assert!(!engine.state().is_clx_locked());
+    }
+
+    // ── design B: (capslock+space)[ 1..= ] -> F1..F12 ─────────────────────
+
+    fn chord_engine() -> (Arc<ClxEngine>, Arc<MockPlatform>) {
+        let platform = Arc::new(MockPlatform::new());
+        let mut cfg = ClxConfig::default();
+        cfg.use_space = true;
+        cfg.use_capslock = true;
+        (ClxEngine::with_config(platform.clone(), cfg), platform)
+    }
+
+    fn chord_down(engine: &ClxEngine) {
+        engine.on_key_event(KeyCode::CapsLock, true);
+        engine.on_key_event(KeyCode::Space, true);
+    }
+    fn chord_up(engine: &ClxEngine) {
+        engine.on_key_event(KeyCode::CapsLock, false);
+        engine.on_key_event(KeyCode::Space, false);
+    }
+
+    #[test]
+    fn chord_plus_digit_emits_function_key() {
+        let (engine, platform) = chord_engine();
+        chord_down(&engine);
+        assert!(engine.state().is_chord_active());
+        engine.on_key_event(KeyCode::D1, true);
+        engine.on_key_event(KeyCode::D1, false);
+        assert!(
+            key_taps(&platform, KeyCode::F1) >= 1,
+            "chord+1 should emit F1"
+        );
+        // ... and the lock latches only when the group closes.
+        assert!(!engine.state().is_clx_locked());
+        chord_up(&engine);
+        assert!(engine.state().is_clx_locked());
+        assert!(!engine.state().is_chord_active());
+    }
+
+    #[test]
+    fn chord_minus_and_equal_emit_f11_f12() {
+        for (key, f) in [
+            (KeyCode::Minus, KeyCode::F11),
+            (KeyCode::Equal, KeyCode::F12),
+        ] {
+            let (engine, platform) = chord_engine();
+            chord_down(&engine);
+            engine.on_key_event(key, true);
+            assert!(key_taps(&platform, f) >= 1, "{:?} should emit {:?}", key, f);
+        }
+    }
+
+    #[test]
+    fn single_trigger_digit_still_switches_desktop() {
+        let (engine, platform) = chord_engine();
+        engine.on_key_event(KeyCode::Space, true);
+        engine.on_key_event(KeyCode::D3, true);
+        engine.on_key_event(KeyCode::D3, false);
+        engine.on_key_event(KeyCode::Space, false);
+        assert!(platform
+            .calls()
+            .iter()
+            .any(|c| matches!(c, Call::SwitchToDesktop(3))));
+        assert_eq!(key_taps(&platform, KeyCode::F3), 0);
+    }
+
+    #[test]
+    fn chord_forms_even_with_a_modifier_pressed_between_the_triggers() {
+        // `prior_key` would be Alt here; the chord must come from held_keys.
+        let (engine, platform) = chord_engine();
+        engine.on_key_event(KeyCode::CapsLock, true);
+        engine.on_key_event(KeyCode::LAlt, true);
+        let resp = engine.on_key_event(KeyCode::Space, true);
+        assert_eq!(resp, CoreResponse::Suppress, "Space must not bypass here");
+        assert!(engine.state().is_chord_active());
+        engine.on_key_event(KeyCode::D4, true);
+        assert!(key_taps(&platform, KeyCode::F4) >= 1);
+    }
+
+    #[test]
+    fn leaving_locked_mode_does_not_emit_a_real_capslock() {
+        let (engine, platform) = chord_engine();
+        chord_down(&engine);
+        chord_up(&engine);
+        assert!(engine.state().is_clx_locked());
+
+        platform.clear();
+        engine.on_key_event(KeyCode::CapsLock, true);
+        engine.on_key_event(KeyCode::CapsLock, false);
+        assert!(!engine.state().is_clx_locked(), "tap should unlock");
+        assert_eq!(
+            key_taps(&platform, KeyCode::CapsLock),
+            0,
+            "unlocking must not tap a real CapsLock (it would flip the OS Caps Lock)"
+        );
+    }
+
+    #[test]
+    fn chord_out_of_locked_mode_toggles_it_off() {
+        let (engine, _platform) = chord_engine();
+        chord_down(&engine);
+        chord_up(&engine);
+        assert!(engine.state().is_clx_locked());
+        chord_down(&engine);
+        chord_up(&engine);
+        assert!(!engine.state().is_clx_locked(), "the chord is a toggle");
     }
 
     #[test]

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>F1–F12, rethought in the notation</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#ffffff; --ink:#1a1a1c; --muted:#63636b; --line:#e5e3de;
+  --accent:#2f5fd8; --code-bg:#f2f1ed; --ok:#1f7a52; --ok-bg:#e7f4ec;
+  --warn:#a35a00; --warn-bg:#fdf1e0; --crit:#b3261e; --crit-bg:#fdeceb;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;}}
+:root[data-theme="dark"]{
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);
+  font:16px/1.62 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  margin:0;padding:0 1.25rem 6rem}
+.wrap{max-width:70rem;margin:0 auto}
+.crumb{font-size:.85rem;color:var(--muted);margin:0;padding-top:1.5rem}
+header{padding:1.4rem 0 1.3rem;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(1.55rem,3.2vw,2.2rem);margin:0 0 .45rem;letter-spacing:-.02em;line-height:1.2}
+.sub{color:var(--muted);margin:0}
+h2{font-size:1.28rem;margin:2.9rem 0 .4rem;letter-spacing:-.01em;scroll-margin-top:1rem}
+h2 .num{color:var(--muted);font-weight:500;margin-right:.5rem}
+h3{font-size:1rem;margin:1.7rem 0 .4rem}
+p{margin:.6rem 0}
+.lede{color:var(--muted)}
+code{font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  background:var(--code-bg);padding:.1em .38em;border-radius:4px;font-size:.87em}
+code.g{white-space:nowrap;font-weight:600}
+code.g .b{color:var(--accent);font-weight:800}
+code.g .c{color:var(--muted)}
+kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel);
+  border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;
+  padding:.08em .4em;font-size:.8em;white-space:nowrap}
+a{color:var(--accent)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:1rem 0}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:48rem}
+th,td{text-align:left;vertical-align:top;padding:.6rem .8rem;border-bottom:1px solid var(--line)}
+th{font-weight:600;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);background:var(--bg);position:sticky;top:0;z-index:1}
+tbody tr:last-child td{border-bottom:none}
+td.id{font-family:ui-monospace,monospace;font-weight:700;white-space:nowrap;color:var(--muted)}
+.sev{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;
+  padding:.15em .5em;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.sev.win{color:var(--ok);background:var(--ok-bg)}
+.sev.bad{color:var(--crit);background:var(--crit-bg)}
+.sev.mid{color:var(--warn);background:var(--warn-bg)}
+.sev.none{color:var(--muted);background:var(--code-bg)}
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);
+  background:var(--panel);border-radius:0 10px 10px 0;padding:.9rem 1.1rem;margin:1.2rem 0}
+.callout.ok{border-left-color:var(--ok)}
+.callout.warn{border-left-color:var(--warn)}
+.callout.danger{border-left-color:var(--crit)}
+.callout h4{margin:0 0 .3rem;font-size:.94rem}
+.callout p{margin:.35rem 0;font-size:.93rem}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:.85rem 1.2rem;margin:1.7rem 0;font-size:.9rem}
+nav.toc ol{margin:.3rem 0;padding-left:1.3rem}
+nav.toc li{margin:.18rem 0}
+ul.tight{margin:.5rem 0;padding-left:1.2rem}
+ul.tight li{margin:.32rem 0}
+.filerow{font-family:ui-monospace,monospace;font-size:.82rem}
+footer{margin-top:3.5rem;padding-top:1.4rem;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / fn-row-rethink &nbsp;·&nbsp;
+  notation: <a href="/lab/chord-fn-row/#notation">chord-fn-row</a> &nbsp;·&nbsp;
+  recognizer: <a href="/lab/gesture-parser/">gesture-parser</a></p>
+
+<header>
+  <h1>F1–F12, rethought in the notation</h1>
+  <p class="sub">Writing the recognizer changed what the design question even is. Five options, compared in the language rather than in prose.</p>
+</header>
+
+<div class="callout ok">
+  <h4>The short version</h4>
+  <p>Building the parser settled the chord's safety question — an empty body is <em>structurally</em> distinct from a non-empty one, so the lock toggle can never collide with the F-layer and needs no timeout. But it also made the alternation <code class="g">(space|capslock)</code> visible on the page, and once you can see it you have to ask why it is there: <strong>the two triggers are redundant, and that redundancy is an entire unused layer.</strong> Spending it is cheaper than the chord and needs no state-machine surgery at all.</p>
+</div>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#learned">What building the recognizer taught us</a></li>
+    <li><a href="#ergo">Correction: the left hand is not pinned</a></li>
+    <li><a href="#space">The design space, in notation</a></li>
+    <li><a href="#rec">Recommendation</a></li>
+    <li><a href="#cost">What each option costs in code</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</nav>
+
+<h2 id="learned"><span class="num">1</span>What building the recognizer taught us</h2>
+
+<h3>1.1 — The empty body is the lock's signature, and it is structural</h3>
+<p>These two are different <em>shapes</em>, not different timings:</p>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:16rem">Gesture</th><th style="width:11rem">Body</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code class="g">(capslock+space).</code></td><td>empty</td><td>Toggle the CLX lock</td></tr>
+<tr><td><code class="g">(capslock+space)[ 1 ]</code></td><td>one tap</td><td>F1 — the proposal</td></tr>
+</tbody>
+</table>
+</div>
+<p>Every key in a body fires on its own key-<em>down</em>, so by the time the closing bracket arrives, "was the body empty?" is already answered. No hold threshold, no clock, no guessing at intent — which is exactly where the existing 200&nbsp;ms Space timeout goes wrong. The chord design is safe <em>by construction</em>, not by tuning.</p>
+
+<h3>1.2 — Release order is noise, and the engine currently listens to it</h3>
+<p>The recognizer normalises every group to <code>+</code> because which finger lifts first is not something a person controls. The engine should hold the same view — but today it does not quite: <code>clx_up</code> acts only when <code>trigger == Some(code)</code>, and <code>trigger_key</code> is nulled by the <em>first</em> release. Behaviour therefore depends on release order. It happens to be benign now; it is fragile the moment a second gesture depends on the same edges.</p>
+
+<h3>1.3 — The letter space is already full</h3>
+<p>A tempting option the notation surfaces is a sub-layer: <code class="g">clx[ f[ 1 ] ]</code> — hold a trigger, hold a layer key, strike a digit. The body can contain a hold, so the language expresses it fine. The keyboard does not:</p>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:12rem">Module</th><th>Claims</th></tr></thead>
+<tbody>
+<tr><td>edit</td><td class="filerow">H J K L Y U I O G T P N Enter Backspace</td></tr>
+<tr><td>mouse</td><td class="filerow">W A S D Q E R F</td></tr>
+<tr><td>window_manager</td><td class="filerow">Z X C .</td></tr>
+<tr><td>media</td><td class="filerow">F5–F11 [ ] \</td></tr>
+<tr><td>virtual_desktop</td><td class="filerow">0 1 2 3 4 5 6 7 8 9</td></tr>
+<tr><td>brainstorm / agent / voice</td><td class="filerow">B · M · V</td></tr>
+<tr><td>mod.rs</td><td class="filerow">, /</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Every letter A–Z is taken.</strong> A sub-layer prefix would have to evict something — <kbd>F</kbd> is mouse scroll — so that branch is closed. What is genuinely free: <code>-</code>, <code>=</code>, <code>;</code>, <code>'</code>, <code>`</code>, and the second trigger.</p>
+
+<h3>1.4 — <code class="g">(space|capslock)</code> is a wasted layer</h3>
+<p>Writing the alternation down is what exposed it. The two triggers are interchangeable everywhere: <code class="g">space[ h ]</code> and <code class="g">capslock[ h ]</code> do the identical thing, and <code>is_trigger_key</code> treats them as one. That redundancy is not free — it is a whole second layer of the entire keyboard, sitting unused, and it costs no new key to spend.</p>
+
+<h3 id="ergo">1.5 — Correction: the left hand is not pinned</h3>
+<div class="callout warn">
+  <p>I claimed the chord strands F1–F5 on the wrong hand. That is wrong, and the counter-example is a posture I had not considered: <b>pinky and ring finger take the whole left column</b> — <kbd>CapsLock</kbd>, <kbd>Shift</kbd>, <kbd>Ctrl</kbd> are stacked there — <b>the thumb takes <kbd>Space</kbd></b>, and because nothing is anchored on home row the <b>middle and index fingers roam the number row freely</b>, reaching 1–5 without the right hand moving at all.</p>
+  <p>So the reach objection to design B is withdrawn, and B's score improves from third to a close second. The same posture is what makes design D comfortable too — D just asks for fewer fingers.</p>
+</div>
+
+<h2 id="space"><span class="num">2</span>The design space, in notation</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:15rem">Gesture for F1</th><th style="width:6rem">Keys down</th><th>Costs</th><th style="width:7rem">Verdict</th></tr></thead>
+<tbody>
+<tr>
+  <td class="id">A</td>
+  <td><code class="g">(clx+alt)[ 1 ]</code></td><td>3</td>
+  <td>Loses <kbd>Alt</kbd>+<kbd>Space</kbd>, or becomes order-dependent. Needs hook-level Alt suppression to avoid <kbd>Alt</kbd>+<kbd>F4</kbd> closing the window, plus the menu-bar, AltGr and <code>GetAsyncKeyState</code> unknowns. Silently steals <code class="g">(clx+alt)[ 3 ]</code>, which already switches desktop today.</td>
+  <td><span class="sev bad">rejected</span></td>
+</tr>
+<tr>
+  <td class="id">B</td>
+  <td><code class="g">(capslock+space)[ 1 ]</code></td><td>3</td>
+  <td>Collides with the lock gesture <code class="g">(capslock+space).</code> — resolvable by construction (§1.1), but it forces the deferred-lock rewrite, chord detection from <code>held_keys</code>, and the 200&nbsp;ms race fix. Three <em>non-modifier</em> keys, so rollover still wants one measurement. <s>Left hand pinned</s> — <a href="#ergo">withdrawn</a>.</td>
+  <td><span class="sev mid">close 2nd</span></td>
+</tr>
+<tr>
+  <td class="id">C</td>
+  <td><code class="g">clx[ f[ 1 ] ]</code></td><td>3</td>
+  <td>A sub-layer. The language expresses it; the keyboard cannot host it — every letter is claimed (§1.3), and <kbd>F</kbd> is mouse scroll.</td>
+  <td><span class="sev bad">closed</span></td>
+</tr>
+<tr>
+  <td class="id">D</td>
+  <td><code class="g">capslock[ 1 ]</code></td><td><b>2</b></td>
+  <td>Split the triggers: <kbd>CapsLock</kbd> carries the F-row, <kbd>Space</kbd> keeps the virtual desktops. Costs the trigger-symmetry invariant, and <code class="g">capslock[ 3 ]</code> stops switching desktop.</td>
+  <td><span class="sev win">recommended</span></td>
+</tr>
+<tr>
+  <td class="id">E</td>
+  <td><code class="g">clx[ ; 1 ]</code></td><td>2</td>
+  <td>A tapped prefix inside the hold, vim-style. Uses a genuinely free key, but introduces modal state: a pending prefix needs a timeout or an explicit reset, and a mistimed second key does the wrong thing silently.</td>
+  <td><span class="sev none">fallback</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="rec"><span class="num">3</span>Recommendation — D, split the triggers</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:17rem">Gesture</th><th>Emits</th><th style="width:8rem">Status</th></tr></thead>
+<tbody>
+<tr><td><code class="g">capslock[ 1 ]</code> … <code class="g">capslock[ = ]</code></td><td>F1 … F12</td><td><span class="sev win">new</span></td></tr>
+<tr><td><code class="g">(capslock+shift)[ 1 ]</code></td><td>Shift+F1</td><td>free — modifiers decorate</td></tr>
+<tr><td><code class="g">(capslock+ctrl)[ 5 ]</code></td><td>Ctrl+F5</td><td>free</td></tr>
+<tr><td><code class="g">(capslock+alt)[ 4 ]</code></td><td>Alt+F4, on purpose</td><td>free</td></tr>
+<tr><td><code class="g">space[ 3 ]</code></td><td>switch to desktop 3</td><td><span class="sev none">unchanged</span></td></tr>
+<tr><td><code class="g">(space+shift)[ 3 ]</code></td><td>move window to desktop 3</td><td><span class="sev none">unchanged</span></td></tr>
+<tr><td><code class="g">(capslock+space).</code></td><td>toggle CLX lock</td><td><span class="sev none">unchanged</span></td></tr>
+<tr><td><code>alt+space</code></td><td>window system menu</td><td><span class="sev none">unchanged</span></td></tr>
+<tr><td><code class="g">capslock[ h ]</code></td><td>cursor left — every other binding still works on both triggers</td><td><span class="sev none">unchanged</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout ok">
+  <h4>Why this wins</h4>
+  <ul class="tight">
+    <li><b>Two keys, not three.</b> Rollover stops being a blocker — no three-non-modifier chord, so M3 evaporates.</li>
+    <li><b>No engine surgery.</b> No deferred lock, no chord detection, no 200&nbsp;ms race to fix, no <code>chord_active</code> plumbing. The engine already records which trigger is held; the module just has to read it.</li>
+    <li><b>Nothing is given up.</b> <kbd>Alt</kbd>+<kbd>Space</kbd> stays, the desktop bindings stay, the lock gesture stays, and all four modifiers stay free to decorate the F-key.</li>
+    <li><b>It spends a resource that was already being wasted</b> rather than borrowing one that is in use.</li>
+    <li><b>CLX is out of keyspace</b> — every letter A–Z is claimed (§1.3). D is the only option on the table that <em>manufactures</em> room rather than consuming the last of it.</li>
+  </ul>
+  <p style="margin-top:.6rem;font-size:.93rem">With the reach objection withdrawn, B is genuinely close. The trade is now clean: <b>B pays once in engine work</b> (and gets the L4 and T2 bug fixes bundled in) <b>to preserve the mental model; D pays forever in a learned asymmetry</b> to get a two-key gesture and near-zero implementation risk. I still lean D on the keyspace argument, but this is a preference call, not a technical one.</p>
+</div>
+
+<div class="callout warn">
+  <h4>What it costs, honestly</h4>
+  <p><b>Trigger symmetry.</b> Today the two triggers are interchangeable and you never think about which one you grabbed. Afterwards, the number row means two different things depending on that choice. Everything else stays symmetric, so the asymmetry is confined to one row — but it is a real thing to learn, and it is the whole price of the design.</p>
+  <p><b><code class="g">capslock[ 3 ]</code> stops switching desktop.</b> If that is in your fingers, this will bite for a week.</p>
+  <p><b>Locked mode has no trigger held</b>, so <code>active_trigger</code> is <code>None</code> and a bare digit has to pick a layer. Keep the status quo — desktops — which means the F-row is unavailable while locked.</p>
+  <p><b>If you disable CapsLock as a trigger</b>, the layer disappears. Prefs should say so.</p>
+</div>
+
+<h2 id="cost"><span class="num">4</span>What each option costs in code</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:14rem">Change</th><th style="width:6rem">D (split)</th><th style="width:6rem">B (chord)</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>KeyCode::Minus</code> / <code>Equal</code> + 4 adapter maps</td><td>needed</td><td>needed</td><td class="filerow">core/src/key_code.rs · adapters/{windows,macos,linux,browser}</td></tr>
+<tr><td>New <code>FnRowModule</code></td><td>needed</td><td>needed</td><td class="filerow">core/src/modules/fn_row.rs</td></tr>
+<tr><td>Expose which trigger is held</td><td><b>needed</b></td><td>—</td><td>Mirror <code>trigger_key</code> from <code>ClxEngine</code> into <code>ClxState</code>; modules already hold an <code>Arc&lt;ClxState&gt;</code>.</td></tr>
+<tr><td>Gate <code>virtual_desktop</code> on the trigger</td><td>needed</td><td>needed</td><td>Explicit early-return, not dispatch order.</td></tr>
+<tr><td>Deferred lock rewrite</td><td>—</td><td><b>needed</b></td><td>Chord must stop locking eagerly on key-down.</td></tr>
+<tr><td>Chord detection from <code>held_keys</code></td><td>—</td><td><b>needed</b></td><td><code>prior_key</code> is unreliable once a modifier is pressed between the triggers.</td></tr>
+<tr><td>200&nbsp;ms Space-timeout race</td><td>—</td><td><b>needed</b></td><td>Reaching for the second trigger too slowly types a space.</td></tr>
+<tr><td>Alt suppression at the hook</td><td>—</td><td>—</td><td>Only design A needed this. Good riddance.</td></tr>
+<tr><td>L4 CapsLock-leak fix</td><td>optional</td><td>bundled</td><td>Independent bug either way — worth landing on its own.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="lede">Design D is roughly the first two rows plus one accessor. Design B is the whole table.</p>
+
+<h2 id="open"><span class="num">5</span>Open questions</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:3rem">#</th><th style="width:23rem">Question</th><th>My answer</th></tr></thead>
+<tbody>
+<tr><td class="id">Q1</td><td>Is losing trigger symmetry acceptable? It is the entire price of D.</td><td>Yes — the redundancy buys a layer, and the asymmetry is confined to the number row. But it is your muscle memory, so it is your call.</td></tr>
+<tr><td class="id">Q2</td><td>Which trigger gets the F-row?</td><td><kbd>CapsLock</kbd>. <kbd>Space</kbd> is the one you hold while typing, so leaving the more disruptive layer on the less-used trigger is safer.</td></tr>
+<tr><td class="id">Q3</td><td>What should <code class="g">(capslock+space)[ 1 ]</code> do — both triggers held, non-empty body?</td><td>Emit F1. CapsLock is present, and the body is non-empty so it is not a lock request. Costs nothing to allow.</td></tr>
+<tr><td class="id">Q4</td><td>Should the L4 CapsLock leak be fixed first, independently?</td><td>Yes. It is a live bug in the current build regardless of which design lands — please check whether your Caps Lock LED toggles when you exit locked mode.</td></tr>
+<tr><td class="id">Q5</td><td>Still worth measuring rollover?</td><td>Not for D — two keys. For B yes, and it is now the only open objection to it: your posture proves the <em>reach</em>, but not that five simultaneous keys all register. One minute on the <a href="/lab/gesture-parser/">parser page</a> settles it.</td></tr>
+<tr><td class="id">Q6</td><td>Given the correction, do you want B after all?</td><td>Defensible now. If trigger symmetry is worth more to you than two keystrokes' worth of comfort and a week of my time, say so and I will plan B instead.</td></tr>
+</tbody>
+</table>
+</div>
+
+<footer>
+  Supersedes <a href="/lab/alt-fn-row/">alt-fn-row</a> (design A) and reframes <a href="/lab/chord-fn-row/">chord-fn-row</a> (design B), whose edge-case audit still applies in full to B and partly to D.
+  Module key claims read from each module's <code>is_mapped_key</code> on branch <code>beta</code>.
+</footer>
+
+</div>
+<script>
+// Colourise the notation inside code.g: brackets and the dot are structure.
+document.querySelectorAll('code.g').forEach(function (el) {
+  // Escape first: the text is re-inserted as HTML below.
+  var text = el.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  el.innerHTML = text
+    .replace(/[\[\]]/g, '<span class="b">$&</span>')
+    .replace(/[()+|]|-&gt;|->/g, '<span class="c">$&</span>')
+    .replace(/\.(?=$|\s)/g, '<span class="b">.</span>');
+});
+</script>
+</body>
+</html>

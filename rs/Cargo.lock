@@ -958,7 +958,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-browser"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "capslockx-core",
  "js-sys",
@@ -969,7 +969,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-core"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "aec3",
  "boa_engine",
@@ -998,7 +998,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-linux"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "capslockx-core",
  "evdev",
@@ -1007,7 +1007,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-macos"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "capslockx-core",
  "cc",
@@ -1024,7 +1024,7 @@ dependencies = [
 
 [[package]]
 name = "capslockx-windows"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "arboard",
  "capslockx-core",
@@ -1270,7 +1270,7 @@ dependencies = [
 
 [[package]]
 name = "clx-screen-reader"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "windows 0.58.0",
 ]

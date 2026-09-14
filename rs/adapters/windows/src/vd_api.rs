@@ -5,9 +5,28 @@
 //! with no need to know the current desktop position.
 //!
 //! Handles Win10 / Win11 / Win12 GUID variants automatically.
-//! Falls back silently (returns false / None) if the COM interfaces fail.
+//!
+//! # Threading
+//!
+//! `ImmersiveShell` is hosted in explorer.exe, so every method call is an
+//! outbound cross-process COM call. Those are *refused* from inside the
+//! `WH_KEYBOARD_LL` callback (an input-synchronous context –
+//! `RPC_E_CANTCALLOUT_ININPUTSYNCCALL`), which is why an earlier design that
+//! cached a manager pointer on the main thread and called it from the hook
+//! logged `get_desktops failed` on every keypress and always fell back to
+//! Win+Ctrl+Arrow. AHK never hits this because its hotkey bodies run on the
+//! main thread *after* the hook has returned.
+//!
+//! So the hook never touches COM: [`switch_desktop`], [`step_desktop`] and
+//! [`move_window_to_desktop`] just post a request to the `clx-vd-worker`
+//! thread, which owns its own STA apartment and its own manager pointer and
+//! performs the COM call (falling back to the hotkey path when COM fails).
+//! Owning the pointer on the worker also makes it safe to re-acquire when the
+//! pointer goes stale (explorer restart) – something the hook-side design
+//! could not do.
 
 use std::ffi::c_void;
+use std::sync::mpsc;
 use std::sync::OnceLock;
 use windows::core::GUID;
 
@@ -60,6 +79,16 @@ const IID_VDMI_W12: GUID = g(
     0x158F,
     0x4124,
     [0x90, 0x0C, 0x05, 0x71, 0x58, 0x06, 0x0B, 0x27],
+);
+
+/// IApplicationViewCollection – service GUID == IID, stable across Win10/11.
+/// Needed to turn an HWND into the `IApplicationView` that
+/// `IVirtualDesktopManagerInternal::MoveViewToDesktop` wants.
+const IID_APP_VIEW_COLLECTION: GUID = g(
+    0x1841C6D7,
+    0x4F9D,
+    0x42C0,
+    [0xAF, 0x41, 0x87, 0x47, 0x53, 0x8F, 0x10, 0xE5],
 );
 
 // IVirtualDesktop – different IID per Windows build
@@ -150,38 +179,14 @@ unsafe fn vt<F: Copy>(obj: *mut c_void, n: usize) -> F {
     std::mem::transmute_copy(&*vtbl.add(n))
 }
 
-// ── Cached VDMI pointer (acquired once at startup, reused from hook callback) ─
-//
-// CRITICAL: the manager is acquired exactly ONCE, on the main STA thread, at
-// startup — and the raw pointer is then reused for the life of the process. We
-// deliberately do NOT re-`CoCreateInstance` at runtime.
-//
-// vd_api's public functions run inside the WH_KEYBOARD_LL callback, which is an
-// *input-synchronous* context. An outbound COM activation there fails with
-// RPC_E_CANTCALLOUT_ININPUTSYNCCALL (0x8001010D) and/or CO_E_NOTINITIALIZED
-// (0x800401F0), and worse, blocks the hook callback long enough to risk Windows
-// silently evicting the hook (LowLevelHooksTimeout) — i.e. all hotkeys go dead
-// while the process stays alive. Reusing the already-created pointer's vtable is
-// safe (no outbound activation). If the pointer goes stale (e.g. Explorer
-// restarted) calls fail gracefully and we fall back to the Win+Ctrl+Arrow path;
-// recovering the pointer requires a clx restart. (A previous attempt to
-// auto-re-acquire on failure was reverted for exactly the reasons above.)
-
-struct CachedVdmi {
-    ptr: *mut c_void,
-    ver: Ver,
-}
-
-// SAFETY: COM object lives on main STA thread; hook callback also runs on main thread.
-unsafe impl Send for CachedVdmi {}
-unsafe impl Sync for CachedVdmi {}
-
-static VDMI_CACHE: OnceLock<Option<CachedVdmi>> = OnceLock::new();
+// ── Manager acquisition ───────────────────────────────────────────────────────
 
 /// Do the `CoCreateInstance(ImmersiveShell)` → `QueryService(VDMI)` dance and
-/// return the manager, or `None` if the COM interfaces are unavailable. Called
-/// exactly once, from `init`, on the main STA thread — never from the hot path.
-fn acquire_fresh() -> Option<CachedVdmi> {
+/// return the manager, or `None` if the COM interfaces are unavailable.
+///
+/// Must be called on a thread that has initialised COM and is *not* inside an
+/// input-synchronous callback (see module docs).
+fn acquire_fresh() -> Option<Manager> {
     unsafe {
         let mut sp: *mut c_void = std::ptr::null_mut();
         let hr = CoCreateInstance(
@@ -193,7 +198,7 @@ fn acquire_fresh() -> Option<CachedVdmi> {
         );
         if hr != S_OK || sp.is_null() {
             log(&format!(
-                "[vd_api] init: CoCreateInstance FAILED hr=0x{:08X}",
+                "[vd_api] acquire: CoCreateInstance FAILED hr=0x{:08X}",
                 hr as u32
             ));
             return None;
@@ -216,14 +221,29 @@ fn acquire_fresh() -> Option<CachedVdmi> {
             let mut mgr: *mut c_void = std::ptr::null_mut();
             let hr2 = qs(sp, &SID_VDMI, iid, &mut mgr);
             if hr2 == S_OK && !mgr.is_null() {
-                let ver_name = match ver {
-                    Ver::W10 => "W10",
-                    Ver::W11 => "W11",
-                    Ver::W12 => "W12",
-                };
-                log(&format!("[vd_api] init: acquired VDMI ver={}", ver_name));
-                result = Some(CachedVdmi { ptr: mgr, ver });
+                log(&format!("[vd_api] acquire: VDMI ver={}", ver.name()));
+                result = Some(Manager(ComPtr(mgr), ver, None));
                 break;
+            }
+        }
+
+        // The view collection is optional: without it window moves fall back
+        // to hide/switch/show, but desktop switching still works.
+        if let Some(m) = result.as_mut() {
+            let mut views: *mut c_void = std::ptr::null_mut();
+            let hr3 = qs(
+                sp,
+                &IID_APP_VIEW_COLLECTION,
+                &IID_APP_VIEW_COLLECTION,
+                &mut views,
+            );
+            if hr3 == S_OK && !views.is_null() {
+                m.2 = Some(ComPtr(views));
+            } else {
+                log(&format!(
+                    "[vd_api] acquire: IApplicationViewCollection FAILED hr=0x{:08X}",
+                    hr3 as u32
+                ));
             }
         }
 
@@ -232,19 +252,198 @@ fn acquire_fresh() -> Option<CachedVdmi> {
         release(sp);
 
         if result.is_none() {
-            log("[vd_api] init: QueryService failed for all version GUIDs");
+            log("[vd_api] acquire: QueryService failed for all version GUIDs");
         }
         result
     }
 }
 
-/// Initialize COM and pre-acquire the virtual desktop manager interface.
-/// Must be called on the main thread before the keyboard hook is installed.
-pub fn init() {
+/// Initialise COM on the calling thread (STA, like AHK and the main thread).
+fn co_init_sta() {
     unsafe {
         CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED);
     }
-    VDMI_CACHE.get_or_init(acquire_fresh);
+}
+
+// ── Worker thread ─────────────────────────────────────────────────────────────
+
+/// A request from the hook to the worker. Everything the hook needs to know
+/// is captured up front (e.g. the foreground HWND), so the hook returns
+/// immediately and the worker does all the slow / COM work.
+enum Req {
+    /// Switch to the 1-based desktop index.
+    Switch(usize),
+    /// Step one desktop left (-1) or right (+1) of the current one.
+    Step(i32),
+    /// Move `hwnd` to the 1-based desktop index and follow it.
+    MoveWindow(isize, usize),
+}
+
+static VD_TX: OnceLock<mpsc::Sender<Req>> = OnceLock::new();
+
+/// Spawn the `clx-vd-worker` thread. Call once at startup, before the
+/// keyboard hook is installed, so the first Space+digit already has somewhere
+/// to go. Idempotent.
+pub fn init() {
+    let (tx, rx) = mpsc::channel::<Req>();
+    if VD_TX.set(tx).is_err() {
+        return;
+    }
+    let _ = std::thread::Builder::new()
+        .name("clx-vd-worker".into())
+        .spawn(move || {
+            co_init_sta();
+            let mut worker = Worker {
+                mgr: acquire_fresh(),
+                tracked_idx: 1,
+            };
+            while let Ok(req) = rx.recv() {
+                // Firewall each request like the tray worker does: a panic in
+                // a COM call must not kill the worker for the rest of the
+                // session (every later Space+digit would silently no-op).
+                let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    worker.handle(req);
+                }));
+                if r.is_err() {
+                    crate::hook::crash_log_sync("[PANIC] recovered in clx-vd-worker");
+                }
+            }
+        });
+}
+
+fn post(req: Req) {
+    match VD_TX.get() {
+        Some(tx) => {
+            let _ = tx.send(req);
+        }
+        None => log("[vd_api] request dropped: worker not initialised"),
+    }
+}
+
+/// Worker-thread state: the COM manager (re-acquired on demand) plus the last
+/// desktop index we believe we are on, used only when COM cannot tell us.
+struct Worker {
+    mgr: Option<Manager>,
+    tracked_idx: usize,
+}
+
+impl Worker {
+    /// Run `f` against the manager; if it fails, re-acquire once (explorer may
+    /// have restarted and left us with a dead proxy) and retry.
+    fn with_mgr<T>(&mut self, f: impl Fn(&Manager) -> Option<T>) -> Option<T> {
+        if let Some(m) = &self.mgr {
+            if let Some(v) = f(m) {
+                return Some(v);
+            }
+        }
+        log("[vd_api] manager call failed – re-acquiring");
+        self.mgr = acquire_fresh();
+        self.mgr.as_ref().and_then(|m| f(m))
+    }
+
+    fn current_idx(&mut self) -> Option<usize> {
+        self.with_mgr(|m| unsafe { m.current_index() })
+    }
+
+    /// COM switch with fallback to Win+Ctrl+Arrow.
+    fn switch(&mut self, idx: usize) {
+        if self
+            .with_mgr(|m| unsafe { m.switch_to_index(idx) })
+            .is_some()
+        {
+            log(&format!("[vd_api] switch_desktop({}) via COM", idx));
+            self.tracked_idx = idx;
+            return;
+        }
+        let cur = self.current_idx().unwrap_or(self.tracked_idx);
+        log(&format!(
+            "[vd_api] switch_desktop({}) via hotkey fallback from {}",
+            idx, cur
+        ));
+        if cur != idx {
+            crate::output::navigate_desktops(cur, idx);
+        }
+        self.tracked_idx = idx;
+    }
+
+    fn handle(&mut self, req: Req) {
+        match req {
+            Req::Switch(idx) => self.switch(idx),
+            Req::Step(dir) => {
+                if let Some(cur) = self.current_idx() {
+                    let count = self
+                        .with_mgr(|m| unsafe { m.count() })
+                        .unwrap_or(usize::MAX);
+                    let next = (cur as i64 + dir as i64).clamp(1, count.max(1) as i64) as usize;
+                    if next != cur {
+                        self.switch(next);
+                    }
+                } else {
+                    // No COM at all: blind Win+Ctrl+Arrow, one step.
+                    crate::output::navigate_desktops_step(dir);
+                }
+            }
+            Req::MoveWindow(hwnd, idx) => self.move_window(hwnd, idx),
+        }
+    }
+
+    fn move_window(&mut self, hwnd: isize, idx: usize) {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            SetForegroundWindow, ShowWindow, SW_HIDE, SW_SHOW,
+        };
+        let raw = hwnd as *mut c_void;
+        if raw.is_null() {
+            return;
+        }
+        let hwnd = HWND(raw);
+        let cur = self.current_idx().unwrap_or(self.tracked_idx);
+        if cur == idx {
+            return;
+        }
+
+        // Preferred: re-home the window via MoveViewToDesktop *first*, then
+        // switch and activate. The window is already on the target desktop
+        // by the time we activate it, so nothing can yank us back.
+        if self
+            .with_mgr(|m| unsafe { m.move_window_to_index(raw, idx) })
+            .is_some()
+        {
+            log(&format!("[vd_api] move_window({}) via COM", idx));
+            self.switch(idx);
+            unsafe {
+                let _ = SetForegroundWindow(hwnd);
+            }
+            return;
+        }
+
+        // Fallback – AHK's MoveActiveWindowToDesktop trick: hide the window,
+        // switch, show it again and it re-appears on the (new) current
+        // desktop. SwitchDesktop returns before explorer has actually finished
+        // the switch, and re-showing + activating the window while it is still
+        // bound to the old desktop makes Windows switch *back* to that desktop
+        // (a brief flash of the target desktop, then back). So wait until the
+        // OS reports the target desktop as current before showing the window.
+        // SW_SHOW, not SW_RESTORE: RESTORE would un-maximize the window.
+        log(&format!(
+            "[vd_api] move_window({}) via hide/switch/show fallback",
+            idx
+        ));
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_HIDE);
+        }
+        self.switch(idx);
+        for _ in 0..50 {
+            if self.current_idx().map_or(true, |c| c == idx) {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+            let _ = SetForegroundWindow(hwnd);
+        }
+    }
 }
 
 // ── Windows-version variant ───────────────────────────────────────────────────
@@ -257,6 +456,13 @@ enum Ver {
 }
 
 impl Ver {
+    fn name(self) -> &'static str {
+        match self {
+            Ver::W10 => "W10",
+            Ver::W11 => "W11",
+            Ver::W12 => "W12",
+        }
+    }
     /// Only the Win11 vtable variant takes an extra null `*mut c_void` after
     /// `this`. W10 and W12 use the plain `(this, out)` form — this matches the
     /// working AHK implementation (`SwitchToDesktopByInternalAPI`), where the
@@ -278,19 +484,11 @@ impl Ver {
 
 // ── IVirtualDesktopManagerInternal wrapper ────────────────────────────────────
 
-struct Manager(ComPtr, Ver);
-
-/// Return a Manager backed by the cached VDMI pointer (acquired at startup).
-/// AddRefs so the caller's Drop doesn't release the cached pointer.
-fn acquire() -> Option<Manager> {
-    let cached = VDMI_CACHE.get()?.as_ref()?;
-    unsafe {
-        // AddRef so the caller's ComPtr::drop doesn't release our cached pointer.
-        let addref: unsafe extern "system" fn(*mut c_void) -> u32 = vt(cached.ptr, 1);
-        addref(cached.ptr);
-    }
-    Some(Manager(ComPtr(cached.ptr), cached.ver))
-}
+/// `IVirtualDesktopManagerInternal`, the vtable variant it was acquired as,
+/// and (if available) the `IApplicationViewCollection` used for window moves.
+/// Lives on exactly one thread (the worker, or the main thread for
+/// `vd-test`) – it is deliberately neither `Send` nor `Sync`.
+struct Manager(ComPtr, Ver, Option<ComPtr>);
 
 impl Manager {
     /// vtable[7]: GetDesktops(this, [0,] **IObjectArray)
@@ -308,6 +506,10 @@ impl Manager {
         if hr == S_OK && !arr.is_null() {
             Some(ComPtr(arr))
         } else {
+            log(&format!(
+                "[vd_api] GetDesktops FAILED hr=0x{:08X}",
+                hr as u32
+            ));
             None
         }
     }
@@ -327,6 +529,10 @@ impl Manager {
         if hr == S_OK && !d.is_null() {
             Some(ComPtr(d))
         } else {
+            log(&format!(
+                "[vd_api] GetCurrentDesktop FAILED hr=0x{:08X}",
+                hr as u32
+            ));
             None
         }
     }
@@ -341,7 +547,110 @@ impl Manager {
             let f: unsafe extern "system" fn(*mut c_void, *mut c_void) -> i32 = vt(self.0.ptr(), 9);
             f(self.0.ptr(), desktop)
         };
+        if hr != S_OK {
+            log(&format!(
+                "[vd_api] SwitchDesktop FAILED hr=0x{:08X}",
+                hr as u32
+            ));
+        }
         hr == S_OK
+    }
+
+    // ── High-level operations (all run on the owning thread) ──────────────
+
+    /// Switch to the 1-based desktop index. `None` on any COM failure or if
+    /// the index is out of range.
+    unsafe fn switch_to_index(&self, idx: usize) -> Option<()> {
+        let arr = self.get_desktops()?;
+        let iid = self.1.desktop_iid();
+        let Some(desktop) = arr_get_at(arr.ptr(), (idx - 1) as u32, &iid) else {
+            log(&format!("[vd_api] GetAt({}) failed", idx - 1));
+            return None;
+        };
+        self.switch_to(desktop.ptr()).then_some(())
+    }
+
+    /// Move the top-level window `hwnd` (any process) to the 1-based desktop
+    /// index without switching. This is how every virtual-desktop tool does it
+    /// (the public `IVirtualDesktopManager::MoveWindowToDesktop` only accepts
+    /// the caller's own windows):
+    ///   `IApplicationViewCollection::GetViewForHwnd` (vtable[6]) → view,
+    ///   `IVirtualDesktopManagerInternal::MoveViewToDesktop` (vtable[4],
+    ///   `(this, view, desktop)` on every build – no monitor arg even on W11).
+    unsafe fn move_window_to_index(&self, hwnd: *mut c_void, idx: usize) -> Option<()> {
+        let views = self.2.as_ref()?;
+        let mut view: *mut c_void = std::ptr::null_mut();
+        let get_view: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut *mut c_void) -> i32 =
+            vt(views.ptr(), 6);
+        let hr = get_view(views.ptr(), hwnd, &mut view);
+        if hr != S_OK || view.is_null() {
+            log(&format!(
+                "[vd_api] GetViewForHwnd FAILED hr=0x{:08X}",
+                hr as u32
+            ));
+            return None;
+        }
+        let view = ComPtr(view);
+
+        let arr = self.get_desktops()?;
+        let iid = self.1.desktop_iid();
+        let Some(desktop) = arr_get_at(arr.ptr(), (idx - 1) as u32, &iid) else {
+            log(&format!("[vd_api] GetAt({}) failed", idx - 1));
+            return None;
+        };
+
+        let move_view: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32 =
+            vt(self.0.ptr(), 4);
+        let hr = move_view(self.0.ptr(), view.ptr(), desktop.ptr());
+        if hr != S_OK {
+            log(&format!(
+                "[vd_api] MoveViewToDesktop FAILED hr=0x{:08X}",
+                hr as u32
+            ));
+            return None;
+        }
+        Some(())
+    }
+
+    /// Total number of virtual desktops.
+    unsafe fn count(&self) -> Option<usize> {
+        let arr = self.get_desktops()?;
+        Some(arr_count(arr.ptr()) as usize)
+    }
+
+    /// The real current 1-based desktop index.
+    ///
+    /// This is the Rust equivalent of AHK's `GetCurrentVirtualDesktopIdxFromAPI`:
+    /// `GetCurrentDesktop()` gives an opaque `IVirtualDesktop`, which only
+    /// becomes a *position* by locating it inside the `GetDesktops()` array.
+    unsafe fn current_index(&self) -> Option<usize> {
+        let current = self.get_current_desktop()?;
+        let arr = self.get_desktops()?;
+        let iid = self.1.desktop_iid();
+        let count = arr_count(arr.ptr());
+        // Match on the desktop's stable GUID rather than on pointer identity.
+        // AHK compared raw pointers; that happens to work today but COM only
+        // guarantees pointer identity for `IUnknown`, so a proxy handed back by
+        // a later `GetAt` call may legitimately differ from the one
+        // `GetCurrentDesktop` returned. Pointer equality stays as the fallback
+        // for any build where `GetID` isn't at vtable[4].
+        let cur_id = desktop_id(current.ptr());
+        for i in 0..count {
+            if let Some(d) = arr_get_at(arr.ptr(), i, &iid) {
+                let hit = match (cur_id, desktop_id(d.ptr())) {
+                    (Some(a), Some(b)) => a == b,
+                    _ => d.ptr() == current.ptr(),
+                };
+                if hit {
+                    return Some(i as usize + 1);
+                }
+            }
+        }
+        log(&format!(
+            "[vd_api] current_index: no match among {} desktops",
+            count
+        ));
+        None
     }
 }
 
@@ -378,99 +687,38 @@ unsafe fn arr_get_at(arr: *mut c_void, i: u32, iid: &GUID) -> Option<ComPtr> {
     }
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// ── Public API (safe to call from the hook callback) ─────────────────────────
+//
+// None of these touch COM; they post to the worker and return immediately.
 
-/// Switch to the given 1-based desktop index via the internal COM API.
-/// Returns `true` on success, `false` if the API is unavailable (e.g. Win7/8)
-/// or the index is out of range.
-pub fn switch_desktop(idx: usize) -> bool {
-    let Some(mgr) = acquire() else { return false };
-    unsafe {
-        let Some(arr) = mgr.get_desktops() else {
-            log("[vd_api] switch_desktop: get_desktops failed");
-            return false;
-        };
-        let iid = mgr.1.desktop_iid();
-        let Some(desktop) = arr_get_at(arr.ptr(), (idx - 1) as u32, &iid) else {
-            log(&format!(
-                "[vd_api] switch_desktop: GetAt({}) failed",
-                idx - 1
-            ));
-            return false;
-        };
-        let ok = mgr.switch_to(desktop.ptr());
-        log(&format!("[vd_api] switch_desktop({}) -> {}", idx, ok));
-        ok
-    }
+/// Switch to the given 1-based desktop index (COM first, hotkey fallback).
+pub fn switch_desktop(idx: usize) {
+    post(Req::Switch(idx));
 }
 
-/// Total number of virtual desktops, or `None` if the API is unavailable.
-pub fn desktop_count() -> Option<usize> {
-    let mgr = acquire()?;
-    unsafe {
-        let arr = mgr.get_desktops()?;
-        Some(arr_count(arr.ptr()) as usize)
-    }
+/// Step one desktop in `dir` direction (+1 or -1), clamped to the real range.
+pub fn step_desktop(dir: i32) {
+    post(Req::Step(dir));
 }
 
-/// Query the real current 1-based desktop index from the OS.
-/// Returns `None` if the API is unavailable.
-///
-/// This is the Rust equivalent of AHK's `GetCurrentVirtualDesktopIdxFromAPI`:
-/// `GetCurrentDesktop()` gives an opaque `IVirtualDesktop`, which only becomes
-/// a *position* by locating it inside the `GetDesktops()` array.
-pub fn current_desktop_idx() -> Option<usize> {
-    let mgr = acquire()?;
-    unsafe {
-        let current = mgr.get_current_desktop()?;
-        let arr = mgr.get_desktops()?;
-        let iid = mgr.1.desktop_iid();
-        let count = arr_count(arr.ptr());
-        // Match on the desktop's stable GUID rather than on pointer identity.
-        // AHK compared raw pointers; that happens to work today but COM only
-        // guarantees pointer identity for `IUnknown`, so a proxy handed back by
-        // a later `GetAt` call may legitimately differ from the one
-        // `GetCurrentDesktop` returned. Pointer equality stays as the fallback
-        // for any build where `GetID` isn't at vtable[4].
-        let cur_id = desktop_id(current.ptr());
-        for i in 0..count {
-            if let Some(d) = arr_get_at(arr.ptr(), i, &iid) {
-                let hit = match (cur_id, desktop_id(d.ptr())) {
-                    (Some(a), Some(b)) => a == b,
-                    _ => d.ptr() == current.ptr(),
-                };
-                if hit {
-                    log(&format!(
-                        "[vd_api] current_desktop_idx -> {}/{} (by {})",
-                        i + 1,
-                        count,
-                        if cur_id.is_some() { "guid" } else { "ptr" }
-                    ));
-                    return Some(i as usize + 1);
-                }
-            }
-        }
-        log(&format!(
-            "[vd_api] current_desktop_idx: no match among {} desktops",
-            count
-        ));
-        None
-    }
+/// Move the window `hwnd` to the 1-based desktop index and switch to it.
+pub fn move_window_to_desktop(hwnd: isize, idx: usize) {
+    post(Req::MoveWindow(hwnd, idx));
 }
+
+// ── Diagnostics (`clx vd-test`; runs on the main thread, no hook installed) ──
 
 /// Read-only diagnostic dump: manager version, desktop count, current index and
-/// every desktop GUID. Written to `%TEMP%\capslockx_vd.log` (`clx vd-test`).
+/// every desktop GUID. Written to `%TEMP%\capslockx_vd.log`.
 pub fn dump() {
-    let Some(mgr) = acquire() else {
+    co_init_sta();
+    let Some(mgr) = acquire_fresh() else {
         log("[vd_api] dump: no manager (COM interface unavailable)");
         return;
     };
     unsafe {
-        let ver = match mgr.1 {
-            Ver::W10 => "W10",
-            Ver::W11 => "W11",
-            Ver::W12 => "W12",
-        };
+        let ver = mgr.1.name();
+        let cur_idx = mgr.current_index();
         let cur_id = mgr.get_current_desktop().and_then(|c| desktop_id(c.ptr()));
         let Some(arr) = mgr.get_desktops() else {
             log(&format!("[vd_api] dump: ver={} get_desktops FAILED", ver));
@@ -478,7 +726,13 @@ pub fn dump() {
         };
         let iid = mgr.1.desktop_iid();
         let count = arr_count(arr.ptr());
-        log(&format!("[vd_api] dump: ver={} count={}", ver, count));
+        log(&format!(
+            "[vd_api] dump: ver={} current={:?} count={} views={}",
+            ver,
+            cur_idx,
+            count,
+            mgr.2.is_some()
+        ));
         for i in 0..count {
             if let Some(d) = arr_get_at(arr.ptr(), i, &iid) {
                 let id = desktop_id(d.ptr());

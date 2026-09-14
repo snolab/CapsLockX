@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod brainstorm;
 pub mod edit;
+pub mod fn_row;
 pub mod media;
 pub mod mouse;
 pub mod virtual_desktop;
@@ -75,6 +76,7 @@ use std::sync::Arc;
 use agent::AgentModule;
 use brainstorm::BrainstormModule;
 use edit::EditModule;
+use fn_row::FnRowModule;
 use media::MediaModule;
 use mouse::MouseModule;
 use virtual_desktop::VirtualDesktopModule;
@@ -107,6 +109,7 @@ pub struct Modules {
     pub agent: AgentModule,
     pub brainstorm: BrainstormModule,
     edit: EditModule,
+    fn_row: FnRowModule,
     mouse: MouseModule,
     media: MediaModule,
     virtual_desktop: VirtualDesktopModule,
@@ -126,9 +129,10 @@ impl Modules {
             agent: AgentModule::new(Arc::clone(&platform)),
             brainstorm: BrainstormModule::new(Arc::clone(&platform), bs_key, bs_model),
             edit: EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            fn_row: FnRowModule::new(Arc::clone(&platform), Arc::clone(&state)),
             mouse: MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
             media: MediaModule::new(Arc::clone(&platform)),
-            virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform)),
+            virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform), Arc::clone(&state)),
             voice: VoiceModule::with_stt_engine(Arc::clone(&platform), cfg.stt_engine.clone())
                 .with_llm_config(best_key, best_model, cfg.stt_correction),
             window_manager: WindowManagerModule::new(Arc::clone(&platform), Arc::clone(&state)),
@@ -163,6 +167,11 @@ impl Modules {
         }
 
         // Core modules (keyboard/mouse) — must NEVER crash. Run directly.
+        // The F-row layer runs before virtual_desktop: both claim the number
+        // row, and the chord is the more specific gesture.
+        if self.fn_row.on_key_down(key, mods) {
+            return true;
+        }
         if self.edit.on_key_down(key, &*self.platform) {
             return true;
         }
@@ -222,6 +231,7 @@ impl Modules {
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
         key == KeyCode::Comma  // Space+Comma = preferences
             || key == KeyCode::Slash  // Space+Slash = keyboard layout HUD
+            || self.fn_row.is_mapped_key(key)
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)

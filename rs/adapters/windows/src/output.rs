@@ -23,7 +23,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetWindowThreadProcessId, IsWindowVisible, SendMessageW, SetForegroundWindow,
     SetLayeredWindowAttributes, SetWindowLongW, SetWindowPos, ShowWindow, GWL_EXSTYLE, GWL_STYLE,
     HWND_NOTOPMOST, HWND_TOPMOST, LWA_ALPHA, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE,
-    SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, SW_HIDE, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
+    SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
 };
 
 use crate::vd_api;
@@ -45,8 +45,6 @@ const WM_CLOSE: u32 = 0x0010;
 pub struct WinPlatform {
     /// HWND stored during V-hold transparent (0 = none).
     v_hwnd: AtomicUsize,
-    /// Tracked current virtual desktop index (1-based).
-    desktop_idx: AtomicUsize,
     /// Monotonic counter for unique prompt-result temp file names.
     prompt_seq: AtomicUsize,
 }
@@ -55,7 +53,6 @@ impl WinPlatform {
     pub fn new() -> Self {
         Self {
             v_hwnd: AtomicUsize::new(0),
-            desktop_idx: AtomicUsize::new(1),
             prompt_seq: AtomicUsize::new(0),
         }
     }
@@ -297,6 +294,9 @@ impl Platform for WinPlatform {
         send(&inputs);
     }
 
+    /// Reads the hardware state, so it stays correct even when our own hook
+    /// has stopped being serviced — the case the Space auto-repeat loop in
+    /// `engine.rs` has to survive.
     fn is_key_physically_down(&self, key: KeyCode) -> bool {
         modifier_held(key)
     }
@@ -370,7 +370,7 @@ impl Platform for WinPlatform {
                     // TODO: wrap around with modulo instead of switching desktop.
                     // Match macOS behavior: cycle through all windows, wrap E→A.
                     // For now, keep the desktop-switching behavior.
-                    switch_desktop_step(dir);
+                    vd_api::step_desktop(dir);
                 }
             }
         }
@@ -478,20 +478,12 @@ impl Platform for WinPlatform {
 
     // ── Virtual desktop ────────────────────────────────────────────────────────
 
+    // Both desktop methods run inside the WH_KEYBOARD_LL callback, where COM
+    // calls are refused (see vd_api module docs). They only post to the
+    // clx-vd-worker thread, which does COM-first / hotkey-fallback itself.
+
     fn switch_to_desktop(&self, idx: u32) {
-        let idx = idx.clamp(1, 10) as usize;
-        // Try instant COM API first (Win10+, position-independent).
-        if vd_api::switch_desktop(idx) {
-            return;
-        }
-        // Hotkey fallback: query real current position, then send Win+Ctrl+Arrow.
-        let cur = vd_api::current_desktop_idx()
-            .unwrap_or_else(|| self.desktop_idx.load(Ordering::Relaxed));
-        if cur == idx {
-            return;
-        }
-        navigate_desktops(cur, idx);
-        self.desktop_idx.store(idx, Ordering::Relaxed);
+        vd_api::switch_desktop(idx.clamp(1, 10) as usize);
     }
 
     fn restart(&self) {
@@ -505,25 +497,10 @@ impl Platform for WinPlatform {
     }
 
     fn move_window_to_desktop(&self, idx: u32) {
-        let idx = idx.clamp(1, 10) as usize;
-        let cur = vd_api::current_desktop_idx()
-            .unwrap_or_else(|| self.desktop_idx.load(Ordering::Relaxed));
-        if cur == idx {
-            return;
-        }
-        // Hide window, switch desktop, show it on the new desktop.
+        // Capture the foreground window *now*, on the hook thread, so the
+        // worker moves the window the user was actually looking at.
         let hwnd = unsafe { GetForegroundWindow() };
-        unsafe {
-            let _ = ShowWindow(hwnd, SW_HIDE);
-        }
-        if !vd_api::switch_desktop(idx) {
-            navigate_desktops(cur, idx);
-            self.desktop_idx.store(idx, Ordering::Relaxed);
-        }
-        unsafe {
-            let _ = ShowWindow(hwnd, SW_RESTORE);
-            let _ = SetForegroundWindow(hwnd);
-        }
+        vd_api::move_window_to_desktop(hwnd.0 as isize, idx.clamp(1, 10) as usize);
     }
 }
 
@@ -592,19 +569,13 @@ fn get_app_windows() -> Vec<HWND> {
     v
 }
 
-// ── Virtual desktop helpers ───────────────────────────────────────────────────
+// ── Virtual desktop hotkey fallback (Win+Ctrl+Arrow) ─────────────────────────
+//
+// Both helpers are called from the clx-vd-worker thread when the COM API is
+// unavailable; the hook itself never sends these.
 
-/// Step one virtual desktop in `dir` direction (+1 or -1).
-/// Uses the instant COM API when available; falls back to Win+Ctrl+Arrow.
-fn switch_desktop_step(dir: i32) {
-    // Query real current index so we don't drift if user switched manually.
-    if let Some(cur) = vd_api::current_desktop_idx() {
-        let next = (cur as i32 + dir).max(1) as usize;
-        if vd_api::switch_desktop(next) {
-            return;
-        }
-    }
-    // Hotkey fallback.
+/// Blind single step in `dir` direction (+1 or -1) via Win+Ctrl+Arrow.
+pub(crate) fn navigate_desktops_step(dir: i32) {
     const VK_LWIN: u16 = 0x5B;
     const VK_LCTRL: u16 = 0xA2;
     const VK_LEFT: u16 = 0x25;
@@ -621,7 +592,7 @@ fn switch_desktop_step(dir: i32) {
 }
 
 /// Navigate from desktop `from` to desktop `to` by sending Win+Ctrl+Left/Right.
-fn navigate_desktops(from: usize, to: usize) {
+pub(crate) fn navigate_desktops(from: usize, to: usize) {
     // VK codes
     const VK_LWIN: u16 = 0x5B;
     const VK_LCTRL: u16 = 0xA2;

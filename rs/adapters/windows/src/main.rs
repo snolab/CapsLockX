@@ -49,7 +49,24 @@ static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 const TRAY_ID: &str = "main";
 
 /// Switch tray icon between on (blue) and off (white).
+///
+/// Marshalled onto the UI thread. `tray-icon`'s Windows `set_icon` ends with
+/// a synchronous `SendMessageW` to the tray's hidden window, which lives on
+/// the event-loop thread -- the same thread that owns the WH_KEYBOARD_LL
+/// hook. Calling it from the tray worker therefore parked the worker in a
+/// cross-thread wait *into the hook thread* on every mode edge. That is the
+/// shape of the 3-way GUI-lock deadlock `hook.rs` warns about, and the prime
+/// suspect for the unkillable 2-thread wedge (tmp/2026-09-11-clx-wedge-
+/// incident.md). `run_on_main_thread` only posts to the event loop, so the
+/// worker never blocks on the UI thread, and `set_icon` runs on the thread
+/// that owns the icon, which is what the crate expects anyway.
 pub fn update_tray_icon(active: bool) {
+    let Some(app) = APP_HANDLE.get() else { return };
+    let _ = app.run_on_main_thread(move || update_tray_icon_on_ui_thread(active));
+}
+
+/// The actual icon swap. Must run on the event-loop thread -- see above.
+fn update_tray_icon_on_ui_thread(active: bool) {
     let Some(app) = APP_HANDLE.get() else { return };
     let id = TrayIconId::new(TRAY_ID);
     let Some(tray) = app.tray_by_id(&id) else {
@@ -279,17 +296,12 @@ fn main() {
                 overlay::run();
                 return;
             }
-            // Read-only diagnostic: init the virtual-desktop COM interface and
-            // query the current desktop index (exercises GetCurrentDesktop +
-            // GetDesktops without switching). Result goes to %TEMP%\capslockx_vd.log.
+            // Read-only diagnostic: acquire the virtual-desktop COM interface on
+            // this (main, hook-less) thread and dump version / count / current
+            // index / GUIDs (exercises GetCurrentDesktop + GetDesktops without
+            // switching). Result goes to %TEMP%\capslockx_vd.log.
             "vd-test" => {
-                vd_api::init();
-                let idx = vd_api::current_desktop_idx();
-                vd_api::log_line(&format!(
-                    "[vd_api] vd-test: current_desktop_idx = {:?} of {:?}",
-                    idx,
-                    vd_api::desktop_count()
-                ));
+                vd_api::log_line("[vd_api] vd-test");
                 vd_api::dump();
                 return;
             }

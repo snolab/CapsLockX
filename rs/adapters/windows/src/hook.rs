@@ -53,7 +53,8 @@ pub fn init_tray_worker() {
                 while let Ok(next) = rx.try_recv() {
                     latest = next;
                 }
-                // Firewall each iteration: `update_tray_icon` calls into Tauri
+                // Firewall each iteration: `update_tray_icon` posts to the UI
+                // thread (it must never block on it -- see its doc comment)
                 // and `cursor_visibility` calls into Win32. A panic here would
                 // otherwise kill this worker for the rest of the session (tray
                 // icon + cursor visibility would silently stop tracking mode),
