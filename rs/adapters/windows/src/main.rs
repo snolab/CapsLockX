@@ -296,17 +296,12 @@ fn main() {
                 overlay::run();
                 return;
             }
-            // Read-only diagnostic: init the virtual-desktop COM interface and
-            // query the current desktop index (exercises GetCurrentDesktop +
-            // GetDesktops without switching). Result goes to %TEMP%\capslockx_vd.log.
+            // Read-only diagnostic: acquire the virtual-desktop COM interface on
+            // this (main, hook-less) thread and dump version / count / current
+            // index / GUIDs (exercises GetCurrentDesktop + GetDesktops without
+            // switching). Result goes to %TEMP%\capslockx_vd.log.
             "vd-test" => {
-                vd_api::init();
-                let idx = vd_api::current_desktop_idx();
-                vd_api::log_line(&format!(
-                    "[vd_api] vd-test: current_desktop_idx = {:?} of {:?}",
-                    idx,
-                    vd_api::desktop_count()
-                ));
+                vd_api::log_line("[vd_api] vd-test");
                 vd_api::dump();
                 return;
             }
