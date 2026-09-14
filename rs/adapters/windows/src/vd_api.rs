@@ -81,6 +81,16 @@ const IID_VDMI_W12: GUID = g(
     [0x90, 0x0C, 0x05, 0x71, 0x58, 0x06, 0x0B, 0x27],
 );
 
+/// IApplicationViewCollection – service GUID == IID, stable across Win10/11.
+/// Needed to turn an HWND into the `IApplicationView` that
+/// `IVirtualDesktopManagerInternal::MoveViewToDesktop` wants.
+const IID_APP_VIEW_COLLECTION: GUID = g(
+    0x1841C6D7,
+    0x4F9D,
+    0x42C0,
+    [0xAF, 0x41, 0x87, 0x47, 0x53, 0x8F, 0x10, 0xE5],
+);
+
 // IVirtualDesktop – different IID per Windows build
 const IID_VD_W10: GUID = g(
     0xFF72FFDD,
@@ -212,8 +222,28 @@ fn acquire_fresh() -> Option<Manager> {
             let hr2 = qs(sp, &SID_VDMI, iid, &mut mgr);
             if hr2 == S_OK && !mgr.is_null() {
                 log(&format!("[vd_api] acquire: VDMI ver={}", ver.name()));
-                result = Some(Manager(ComPtr(mgr), ver));
+                result = Some(Manager(ComPtr(mgr), ver, None));
                 break;
+            }
+        }
+
+        // The view collection is optional: without it window moves fall back
+        // to hide/switch/show, but desktop switching still works.
+        if let Some(m) = result.as_mut() {
+            let mut views: *mut c_void = std::ptr::null_mut();
+            let hr3 = qs(
+                sp,
+                &IID_APP_VIEW_COLLECTION,
+                &IID_APP_VIEW_COLLECTION,
+                &mut views,
+            );
+            if hr3 == S_OK && !views.is_null() {
+                m.2 = Some(ComPtr(views));
+            } else {
+                log(&format!(
+                    "[vd_api] acquire: IApplicationViewCollection FAILED hr=0x{:08X}",
+                    hr3 as u32
+                ));
             }
         }
 
@@ -353,28 +383,65 @@ impl Worker {
                     crate::output::navigate_desktops_step(dir);
                 }
             }
-            Req::MoveWindow(hwnd, idx) => {
-                use windows::Win32::Foundation::HWND;
-                use windows::Win32::UI::WindowsAndMessaging::{
-                    SetForegroundWindow, ShowWindow, SW_HIDE, SW_RESTORE,
-                };
-                let cur = self.current_idx().unwrap_or(self.tracked_idx);
-                if cur == idx {
-                    return;
-                }
-                // Same trick as AHK's MoveActiveWindowToDesktop: hide the
-                // window, switch, show it again – it re-appears on the new
-                // desktop.
-                let hwnd = HWND(hwnd as *mut c_void);
-                unsafe {
-                    let _ = ShowWindow(hwnd, SW_HIDE);
-                }
-                self.switch(idx);
-                unsafe {
-                    let _ = ShowWindow(hwnd, SW_RESTORE);
-                    let _ = SetForegroundWindow(hwnd);
-                }
+            Req::MoveWindow(hwnd, idx) => self.move_window(hwnd, idx),
+        }
+    }
+
+    fn move_window(&mut self, hwnd: isize, idx: usize) {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            SetForegroundWindow, ShowWindow, SW_HIDE, SW_SHOW,
+        };
+        let raw = hwnd as *mut c_void;
+        if raw.is_null() {
+            return;
+        }
+        let hwnd = HWND(raw);
+        let cur = self.current_idx().unwrap_or(self.tracked_idx);
+        if cur == idx {
+            return;
+        }
+
+        // Preferred: re-home the window via MoveViewToDesktop *first*, then
+        // switch and activate. The window is already on the target desktop
+        // by the time we activate it, so nothing can yank us back.
+        if self
+            .with_mgr(|m| unsafe { m.move_window_to_index(raw, idx) })
+            .is_some()
+        {
+            log(&format!("[vd_api] move_window({}) via COM", idx));
+            self.switch(idx);
+            unsafe {
+                let _ = SetForegroundWindow(hwnd);
             }
+            return;
+        }
+
+        // Fallback – AHK's MoveActiveWindowToDesktop trick: hide the window,
+        // switch, show it again and it re-appears on the (new) current
+        // desktop. SwitchDesktop returns before explorer has actually finished
+        // the switch, and re-showing + activating the window while it is still
+        // bound to the old desktop makes Windows switch *back* to that desktop
+        // (a brief flash of the target desktop, then back). So wait until the
+        // OS reports the target desktop as current before showing the window.
+        // SW_SHOW, not SW_RESTORE: RESTORE would un-maximize the window.
+        log(&format!(
+            "[vd_api] move_window({}) via hide/switch/show fallback",
+            idx
+        ));
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_HIDE);
+        }
+        self.switch(idx);
+        for _ in 0..50 {
+            if self.current_idx().map_or(true, |c| c == idx) {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+            let _ = SetForegroundWindow(hwnd);
         }
     }
 }
@@ -417,10 +484,11 @@ impl Ver {
 
 // ── IVirtualDesktopManagerInternal wrapper ────────────────────────────────────
 
-/// `IVirtualDesktopManagerInternal` plus the vtable variant it was acquired
-/// as. Lives on exactly one thread (the worker, or the main thread for
+/// `IVirtualDesktopManagerInternal`, the vtable variant it was acquired as,
+/// and (if available) the `IApplicationViewCollection` used for window moves.
+/// Lives on exactly one thread (the worker, or the main thread for
 /// `vd-test`) – it is deliberately neither `Send` nor `Sync`.
-struct Manager(ComPtr, Ver);
+struct Manager(ComPtr, Ver, Option<ComPtr>);
 
 impl Manager {
     /// vtable[7]: GetDesktops(this, [0,] **IObjectArray)
@@ -500,6 +568,48 @@ impl Manager {
             return None;
         };
         self.switch_to(desktop.ptr()).then_some(())
+    }
+
+    /// Move the top-level window `hwnd` (any process) to the 1-based desktop
+    /// index without switching. This is how every virtual-desktop tool does it
+    /// (the public `IVirtualDesktopManager::MoveWindowToDesktop` only accepts
+    /// the caller's own windows):
+    ///   `IApplicationViewCollection::GetViewForHwnd` (vtable[6]) → view,
+    ///   `IVirtualDesktopManagerInternal::MoveViewToDesktop` (vtable[4],
+    ///   `(this, view, desktop)` on every build – no monitor arg even on W11).
+    unsafe fn move_window_to_index(&self, hwnd: *mut c_void, idx: usize) -> Option<()> {
+        let views = self.2.as_ref()?;
+        let mut view: *mut c_void = std::ptr::null_mut();
+        let get_view: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut *mut c_void) -> i32 =
+            vt(views.ptr(), 6);
+        let hr = get_view(views.ptr(), hwnd, &mut view);
+        if hr != S_OK || view.is_null() {
+            log(&format!(
+                "[vd_api] GetViewForHwnd FAILED hr=0x{:08X}",
+                hr as u32
+            ));
+            return None;
+        }
+        let view = ComPtr(view);
+
+        let arr = self.get_desktops()?;
+        let iid = self.1.desktop_iid();
+        let Some(desktop) = arr_get_at(arr.ptr(), (idx - 1) as u32, &iid) else {
+            log(&format!("[vd_api] GetAt({}) failed", idx - 1));
+            return None;
+        };
+
+        let move_view: unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32 =
+            vt(self.0.ptr(), 4);
+        let hr = move_view(self.0.ptr(), view.ptr(), desktop.ptr());
+        if hr != S_OK {
+            log(&format!(
+                "[vd_api] MoveViewToDesktop FAILED hr=0x{:08X}",
+                hr as u32
+            ));
+            return None;
+        }
+        Some(())
     }
 
     /// Total number of virtual desktops.
@@ -617,8 +727,11 @@ pub fn dump() {
         let iid = mgr.1.desktop_iid();
         let count = arr_count(arr.ptr());
         log(&format!(
-            "[vd_api] dump: ver={} current={:?} count={}",
-            ver, cur_idx, count
+            "[vd_api] dump: ver={} current={:?} count={} views={}",
+            ver,
+            cur_idx,
+            count,
+            mgr.2.is_some()
         ));
         for i in 0..count {
             if let Some(d) = arr_get_at(arr.ptr(), i, &iid) {
