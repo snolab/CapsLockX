@@ -1,6 +1,6 @@
 [package]
 name = "capslockx-windows"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 description = "CapsLockX Windows adapter – WH_KEYBOARD_LL hook + SendInput + Tauri tray"
 license = "GPL-3.0"

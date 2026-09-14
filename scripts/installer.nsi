@@ -9,7 +9,7 @@
 !define PRODUCT_WEB_SITE "https://github.com/snolab/CapsLockX"
 ; VERSION is injected by CI via /DVERSION=...
 !ifndef VERSION
-  !define VERSION "2.0.0"
+  !define VERSION "2.1.0"
 !endif
 
 Name "${PRODUCT_NAME} ${VERSION}"
