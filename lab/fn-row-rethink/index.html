@@ -267,7 +267,9 @@ footer{margin-top:3.5rem;padding-top:1.4rem;border-top:1px solid var(--line);
 <script>
 // Colourise the notation inside code.g: brackets and the dot are structure.
 document.querySelectorAll('code.g').forEach(function (el) {
-  el.innerHTML = el.textContent
+  // Escape first: the text is re-inserted as HTML below.
+  var text = el.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  el.innerHTML = text
     .replace(/[\[\]]/g, '<span class="b">$&</span>')
     .replace(/[()+|]|-&gt;|->/g, '<span class="c">$&</span>')
     .replace(/\.(?=$|\s)/g, '<span class="b">.</span>');

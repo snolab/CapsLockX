@@ -524,7 +524,7 @@ footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);
         '<span class="t">' + new Date().toLocaleTimeString() + '</span>' +
         '<span>' + esc(txt) + '</span>' +
         '<span class="m">' + (span + ' ms') +
-        (m ? ' · ' + m.txt.replace(/<[^>]+>/g, '') : '') + '</span>';
+        (m ? ' · ' + esc(m.txt.replace(/<[^>]+>/g, '')) : '') + '</span>';
       hist.insertBefore(li, hist.firstChild);
       while (hist.children.length > HIST_MAX) hist.removeChild(hist.lastChild);
     }
