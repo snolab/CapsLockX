@@ -72,11 +72,20 @@
     var h = holders.slice().sort().join("+");
     return struck ? h + "[" + struck + "]" : h + ".";
   }
-  function index(ast, src) {
+  function index(ast, src, diags) {
     var idx = {},
-      skipped = [];
+      skipped = [],
+      errLines = {};
+    (diags || []).forEach(function (d) {
+      if (d.level === "error") errLines[d.line] = true;
+    });
     ast.items.forEach(function (b) {
       var line = src.slice(0, b.span[0]).split("\n").length;
+      // Same rule as compile(): an errored line is not a binding.
+      if (errLines[line]) {
+        skipped.push({ line: line, why: "has errors" });
+        return;
+      }
       if (b.pattern.gestures.length !== 1) {
         skipped.push({ line: line, why: "multi-gesture pattern" });
         return;
@@ -159,7 +168,7 @@
     this.shiftDown = false;
   }
   Sim.prototype.setCompiled = function (r, src) {
-    var ix = index(r.ast, src);
+    var ix = index(r.ast, src, r.diagnostics);
     this.idx = ix.idx;
     this.skipped = ix.skipped;
   };

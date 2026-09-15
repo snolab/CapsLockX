@@ -148,6 +148,9 @@ footer{margin-top:3.5rem;padding-top:1.3rem;border-top:1px solid var(--line);col
   <li><a href="#tooling">Compiler / AST tooling — what to use</a></li>
   <li><a href="#plan">Suggested path</a></li>
   <li><a href="#open">Open design questions</a></li>
+  <li><a href="#corpus">Conformance corpus</a> — what the JS parser got wrong</li>
+  <li><a href="#prior">Prior art</a> — keyd, kanata, Karabiner, QMK</li>
+  <li><a href="#hold">Hold policy</a> — what the engine actually does, and Q3 answered</li>
 </ol></nav>
 
 <h2 id="play">1 · Playground</h2>
@@ -319,7 +322,7 @@ DURATION  := DIGITS ( "ms" | "s" ) ;</code></pre>
 
 <h2 id="plan">4 · Suggested path</h2>
 <ol class="tight">
-  <li><b>Now — design in JS</b> (this page). Iterate the grammar where a change costs a page reload. Grow <code>corpus.json</code> as decisions land.</li>
+  <li><b>Now — design in JS</b> (this page). Iterate the grammar where a change costs a page reload. Grow <code>corpus.json</code> as decisions land — <a href="#corpus">47 cases and a runner exist</a> as of 2026-09-15.</li>
   <li><b>Port to Rust</b> as <code>rs/core/src/clx_lang.rs</code>: lexer → parser → <code>Vec&lt;Binding&gt;</code> → the engine's existing module dispatch. The action side calls the <code>Cmd</code> executor that already exists.</li>
   <li><b>Swap the lab to WASM.</b> Expose <code>compile(src) -&gt; JSON</code> through the browser adapter; this page loads it and the JS twin becomes a fallback. Run the corpus against both in CI.</li>
   <li><b>Round-trip with the recognizer.</b> <code>edges(pattern)</code> here produces exactly what <code>gesture-parser</code> reads; feed one into the other and assert identity. That is the reverse direction asked for earlier, without JS ever needing to inject a key.</li>
@@ -332,17 +335,93 @@ DURATION  := DIGITS ( "ms" | "s" ) ;</code></pre>
 <tbody>
 <tr><td>Q1</td><td>Is a <code>.clx</code> file the whole config, or just bindings?</td><td>Just bindings. Speeds, API keys, feature toggles stay in prefs. Keeps the language small and the file diffable.</td></tr>
 <tr><td>Q2</td><td>Punctuation keys: bare (<code>-</code> <code>=</code>) or named (<code>minus</code> <code>equal</code>)?</td><td>Both accepted for <code>-</code>/<code>=</code> because F11/F12 use them constantly; everything else by name, since <code>.</code> <code>|</code> <code>+</code> are operators.</td></tr>
-<tr><td>Q3</td><td>What does the engine do with a pattern whose hold is a non-trigger, e.g. <code>alt[ 1 ]</code>?</td><td>Undecided. Today the engine only dispatches while a trigger is held. Allowing arbitrary holds is a much bigger engine change than the parser suggests — flag it before anyone writes one.</td></tr>
+<tr><td>Q3</td><td>What does the engine do with a pattern whose hold is a non-trigger, e.g. <code>alt[ 1 ]</code>?</td><td><b>Decided 2026-09-15, in two halves.</b> A <em>modifier</em> hold (<code>alt[ 1 ]</code>) is a global hotkey — the engine already has one hard-coded (Ctrl+Cmd+Shift+T) and modifiers are never deferred, so it is cheap. A <em>plain-key</em> hold (<code>f[ j ]</code>) is a tap-hold: <code>f</code> must be buffered until the engine knows whether a body follows. The parser now warns on it; the v1 loader rejects it. <a href="#hold">Why, with numbers →</a></td></tr>
 <tr><td>Q4</td><td>Sequences at top level — <code>clx[ g ] clx[ g ]</code> as a double-tap?</td><td><b>Decided: no.</b> There is no double-tap feature (<a href="/lab/double-tap/">why</a>). A top-level sequence still parses but is not simulated and should be rejected by the Rust parser.</td></tr>
 <tr><td>Q5</td><td>Built-in names: closed set or free-form?</td><td>Free-form in the parser, resolved by the engine, unknown names rejected at load time with a diagnostic — so adding a built-in never touches the grammar.</td></tr>
 <tr><td>Q7</td><td>Element targets: match by exact name, substring, or glob? Case-sensitive?</td><td>Undecided. Exact-then-substring with a diagnostic on ambiguity is the usual compromise; needs a real UIA/AX backend to test against.</td></tr>
 <tr><td>Q8</td><td>Should <code>click</code> with no target mean "where the pointer is" or "where the <em>gesture</em> started"?</td><td>Pointer position. Gesture-start needs the engine to snapshot the cursor on trigger-down, which is cheap — worth adding as <code>@start</code> rather than changing the default.</td></tr>
 <tr><td>Q9</td><td>Multi-monitor: are <code>400 300</code> and <code>50% 50%</code> primary-display or virtual-desktop coordinates?</td><td>Primary for percent, virtual for absolute px — that matches what <code>SetCursorPos</code> and <code>CGWarpMouseCursorPosition</code> actually take. Needs stating loudly in docs either way.</td></tr>
-<tr><td>Q6</td><td>Where does the file live and when is it reloaded?</td><td>Suggest <code>~/.config/capslockx/bindings.clx</code> (Windows: <code>%APPDATA%</code>), hot-reloaded on save, with load errors shown in the tray and the previous good set kept.</td></tr>
+<tr><td>Q6</td><td>Where does the file live and when is it reloaded?</td><td>Suggest <code>~/.config/capslockx/bindings.clx</code> (Windows: <code>%APPDATA%</code>), hot-reloaded on save, with load errors shown in the tray and the previous good set kept. Prior art agrees on "previous good set kept": keyd needs an explicit <code>keyd reload</code>, kanata a <code>lrld</code> key action, Karabiner watches its JSON — none of them apply a broken file.</td></tr>
+<tr><td>Q10</td><td>Per-application bindings — <code>clx[ h ] => k left</code> only in the terminal?</td><td>Open. Karabiner's <code>frontmost_application_if</code> is the only prior art among the four surveyed (keyd, kanata and QMK sit below the window system and cannot know). CLX <em>does</em> know the foreground window, so a guard is expressible; the question is syntax — a prefix (<code>@app "Terminal": clx[ h ] => …</code>) or a section header. Not needed for v1; the modules have no per-app behaviour today either.</td></tr>
+<tr><td>Q11</td><td>Are <code>scan</code>, <code>S</code>, <code>?</code> (agent-runtime verbs) valid actions?</td><td><b>Decided 2026-09-15: no.</b> The action side is the <em>stable</em> subset of the agent language — <code>k m w wf</code> plus the pointer verbs and built-ins. <code>scan</code>/<code>S</code>/<code>?</code> belong to a running agent session, not to a binding file; they fail to parse here and the corpus pins that.</td></tr>
+<tr><td>Q12</td><td>Is <code>clx[ ]</code> (empty hold body) a tap?</td><td><b>Decided 2026-09-15: warn.</b> It <em>would</em> behave as a tap, but the notation already has <code>clx.</code> for that, and an empty body is far more often a half-typed binding.</td></tr>
 </tbody></table></div>
 
+<h2 id="corpus">6 · Conformance corpus</h2>
+<p class="lede">The spec-by-example promised in §3 now exists: <code>lab/clx-lang/corpus.json</code> (47 cases, each with a <code>why</code> naming the decision it pins) and <code>lab/clx-lang/parse.test.cjs</code>, which runs any file exporting <code>compile()</code> against it. Writing it was the point — building the corpus by probing the JS parser with ~90 inputs found six things a visual check had missed.</p>
+<pre><code>node lab/clx-lang/parse.test.cjs            # ✓ 47 passed, 0 failed (clx.js)
+node lab/clx-lang/parse.test.cjs --impl target/clx_lang_dump.js   # the Rust port, once it prints the same canonical form
+node lab/clx-lang/parse.test.cjs --update   # rewrite expectations from the JS impl — then READ the diff; the corpus is only a spec if a person agreed with it</code></pre>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:18rem">Found by the corpus</th><th>What it was</th><th style="width:20rem">Now</th></tr></thead>
+<tbody>
+<tr><td>A line starting with <code>=&gt;</code> crashed the parser</td><td><code>pattern()</code> computed its span from the previous token; at file start there is none — <code>TypeError</code> instead of a diagnostic.</td><td>Diagnostic: <em>expected a gesture pattern</em>.</td></tr>
+<tr><td>Errored lines still produced bindings</td><td><code>clx[ h ] =&gt; k c-</code> reported the error <em>and</em> emitted a binding with an empty action; the simulator ran it as a silent no-op.</td><td>A line with an error yields no binding (warnings keep it). The simulator applies the same rule.</td></tr>
+<tr><td><code>k -</code> gave nonsense errors</td><td>Bare <code>-</code> on the action side lexed as a modifier prefix with nothing after it: <em>unknown modifier ""</em>, <em>unknown key ""</em>. The pattern side already accepted <code>-</code>/<code>=</code> (Q2).</td><td><code>k -</code> and <code>k =</code> are <code>minus</code>/<code>equal</code>, same as the pattern side.</td></tr>
+<tr><td><code>clx[ ]</code> and <code>{ }</code> passed silently</td><td>An empty hold body is a trigger tap in hold clothing; an empty block is a binding that does nothing.</td><td>Both warn (Q12).</td></tr>
+<tr><td>Unclosed holds normalized with a trailing space</td><td><code>(capslock|space)[ q </code> — invisible, and a Rust port would have had to reproduce it byte-for-byte.</td><td>Canonical form is <code>k[ body ]</code> / <code>k[ body</code>.</td></tr>
+<tr><td>Lexer errors cascaded</td><td><code>? screen</code> produced three errors quoting the lexer's own message inside the parser's.</td><td>One lexer error plus one <em>expected an action</em>; <code>screen N x y</code> gets its own "not supported yet" instead of <em>mix of px and %</em>.</td></tr>
+</tbody></table></div>
+<div class="callout">
+  <h4>What the canonical form compares</h4>
+  <p>Three lists, order-sensitive: <code>bindings</code> as <code>"&lt;line&gt;: &lt;normalized pattern&gt; =&gt; { cmd; cmd }"</code>, <code>variants</code> as the trace form the recognizer already emits (<code>[space h space]</code>), and <code>diags</code> as <code>"level@line: message"</code> — level and line exact, message matched by <em>prefix</em>, so wording can be tightened without touching 47 cases. The Rust port needs to print exactly this; nothing else about its AST is constrained.</p>
+</div>
+
+<h2 id="prior">7 · Prior art — what the other remappers decided</h2>
+<p class="lede">Four tools that solved the same problems, read from their primary documentation (keyd's <code>keyd.scdoc</code>, kanata's <code>config.adoc</code>, Karabiner's manipulator reference, QMK's <code>tap_hold</code> page). The interesting column is the last one: where <code>.clx</code> and the engine already have an answer, and where they have none.</p>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:9rem"></th><th>keyd</th><th>kanata</th><th>Karabiner-Elements</th><th>QMK</th><th style="width:16rem">CLX today / <code>.clx</code></th></tr></thead>
+<tbody>
+<tr><td>Hold = layer</td><td><code>[layer]</code> sections; <code>layer(name)</code> while held; <code>capslock = overload(nav, esc)</code></td><td><code>(layer-while-held nav)</code>; <code>(tap-hold 200 200 esc @nav)</code></td><td>No layers — <code>set_variable</code> on key-down, <code>variable_if</code> conditions on other manipulators</td><td><code>LT(nav, KC_ESC)</code>, <code>MT(MOD_LSFT, KC_A)</code></td><td>Trigger keys are the only layers: <code>clx[ … ]</code>, <code>(capslock+space)[ … ]</code>. One hard-coded layer stack, no user-defined ones.</td></tr>
+<tr><td>Tap-vs-hold rule</td><td><code>overload</code>: layer active immediately, tap on release if nothing else was pressed. <code>overloadt(…, t)</code>: hold only if held &gt; t. <code>overloadt2</code>: hold if another key is <em>tapped</em> meanwhile. <code>overloadi</code>: idle-aware — treat as a letter if the last keystroke was &lt; idle ms ago.</td><td><code>tap-hold</code>: hold after timeout. <code>-press</code>: hold as soon as another key goes down. <code>-release</code>: hold when another key goes down <em>and up</em>. <code>-press-timeout</code>: plus a separate action when the timeout expires with nothing pressed. Two timeouts per key: tap-repress, hold.</td><td><code>to_if_alone</code> (default timeout 1000 ms) vs <code>to_if_held_down</code> (500 ms); <code>to</code> fires immediately as well</td><td><code>TAPPING_TERM</code> 200 ms. Default: hold only past the term. <code>PERMISSIVE_HOLD</code>: hold if another key is pressed <em>and released</em> within the term. <code>HOLD_ON_OTHER_KEY_PRESS</code>: hold on any other key-down. <code>CHORDAL_HOLD</code>: opposite hand only.</td><td>Hold on other key-down (the body key fires on its own key-down — no wait at all). Tap on release with nothing struck. Space only: 200 ms idle → resolves as a <em>tap</em> and starts OS-rate auto-repeat. See <a href="#hold">§8</a>.</td></tr>
+<tr><td>Chords (simultaneous)</td><td><code>j+k = esc</code>, <code>chord_timeout</code> 50 ms</td><td>Input chords exist (<code>defchordsv2</code>); not verified here</td><td><code>simultaneous: [ … ]</code>, <code>simultaneous_threshold</code> 50 ms, optional <code>key_down_order</code></td><td>Combos, <code>COMBO_TERM</code> 50 ms</td><td><code>(capslock+space)</code> — derived from the held-key set, <b>no timeout</b>: order-free and the chord is live the instant both are down. Only the two triggers today.</td></tr>
+<tr><td>Ordered sequence</td><td>none (macros are output only)</td><td>sequence leader (<code>sldr</code>); tap-dance for repeated taps of one key</td><td><code>to_delayed_action</code> + variables, by hand</td><td>tap dance, leader key</td><td><code>(a-&gt;b)</code> group and top-level juxtaposition parse; neither is simulated or loaded (Q4, <a href="/lab/double-tap/">double-tap decision</a>).</td></tr>
+<tr><td>One-shot / sticky</td><td><code>oneshot(layer)</code></td><td><code>one-shot</code></td><td>variables</td><td><code>OSM</code>, <code>OSL</code></td><td><b>None.</b> Not in the notation, not in the engine.</td></tr>
+<tr><td>Toggle / lock</td><td><code>toggle(layer)</code></td><td><code>layer-switch</code></td><td>variables</td><td><code>TG()</code></td><td>CLX lock — the chord <em>tap</em>, latched on release. One lock, not per layer.</td></tr>
+<tr><td>Per-app rules</td><td>no (evdev, below the window system)</td><td>no</td><td><code>frontmost_application_if</code></td><td>n/a (firmware)</td><td>None (Q10). CLX knows the foreground window, so it is expressible.</td></tr>
+<tr><td>Output</td><td>key, <code>macro(C-t 100ms google.com enter)</code>, <code>command(sh)</code></td><td><code>(macro …)</code> with ms delays, <code>cmd</code>, mouse actions</td><td>key events, <code>shell_command</code>, <code>mouse_key</code></td><td>keycodes, macros</td><td>The agent language: <code>k</code>, <code>k "text"</code>, <code>w</code>, <code>wf</code>, pointer verbs, built-ins. No shell command — deliberately, so far.</td></tr>
+<tr><td>File &amp; reload</td><td><code>/etc/keyd/*.conf</code>; <code>keyd reload</code></td><td>path on the command line; <code>lrld</code> key action</td><td><code>~/.config/karabiner/karabiner.json</code></td><td>compiled in</td><td>Q6 draft: <code>bindings.clx</code> in the config dir, hot-reload, keep the last good set.</td></tr>
+</tbody></table></div>
+<div class="callout ok">
+  <h4>Two things the survey says the draft has right</h4>
+  <p><b>Body keys firing on key-down.</b> Every other tool waits — for a term, for a release, for a chord timeout — because its hold keys are letters that must still type. CLX's holds are dedicated keys whose own output is cheap to defer (a space, a caps toggle), so it can act on the first body key-down with zero added latency. That is a property of choosing CapsLock/Space, and the notation should keep it explicit rather than grow per-binding timeouts.</p>
+  <p><b>Chords from the held set, not a timer.</b> keyd, Karabiner and QMK all put a 50 ms window on simultaneity. CLX's <code>(capslock+space)</code> is a set membership test, so it is order-free and never mis-times. The cost is that only keys the engine already suppresses can be chord members — which is exactly the trigger set, and exactly why plain-key chords like <code>(j+k)</code> are a Q3 problem, not a syntax one.</p>
+</div>
+<div class="callout warn">
+  <h4>Two things every other tool has that <code>.clx</code> doesn't</h4>
+  <p><b>One-shot.</b> Tap the layer key, the <em>next</em> key gets the layer. It is the standard answer to "I want Space+H without holding Space while I think". Cheap in the engine (a flag consumed by the next key-down) and it has an obvious notation — but it is a new gesture kind, so it belongs in the recognizer first. Parked.</p>
+  <p><b>An escape hatch to the shell.</b> keyd's <code>command()</code>, kanata's <code>cmd</code>, Karabiner's <code>shell_command</code>. The agent language has none, and <code>.clx</code> inherits that. Worth keeping out: a bindings file that can run arbitrary commands is a different security posture from one that can only press keys.</p>
+</div>
+
+<h2 id="hold">8 · Hold policy — what the engine actually does, and Q3 answered</h2>
+<p class="lede">Read from <code>rs/core/src/engine.rs</code> (<code>on_key_event</code>, <code>clx_dn</code>, <code>clx_up</code>), stated in the vocabulary of §7 so it can be compared.</p>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:15rem">Situation</th><th>Engine rule</th><th style="width:16rem">In QMK / kanata terms</th></tr></thead>
+<tbody>
+<tr><td>Trigger down, then another key down</td><td>The other key is routed to the modules <em>immediately</em>; the trigger is a hold from that moment (<code>fn_acted</code>). Nothing is buffered.</td><td><code>HOLD_ON_OTHER_KEY_PRESS</code> / <code>tap-hold-press</code>, with a zero-length term.</td></tr>
+<tr><td>Trigger up with nothing struck</td><td>Native key is emitted: Space types a space, CapsLock toggles caps. (Locked mode changes what "nothing struck" means.)</td><td><code>to_if_alone</code>; kanata's tap action.</td></tr>
+<tr><td>Space held 200 ms with nothing struck</td><td>A timer thread resolves it as a <em>tap</em>: emits Space, exits FN mode, auto-repeats at the OS rate until release. Skipped if a modifier is held.</td><td>The <em>inverse</em> of QMK's default (there, past the term means hold). kanata's <code>tap-hold-press-timeout</code> with the timeout action set to the tap. Reason: Space is the most-typed key on the board and holding it must still repeat.</td></tr>
+<tr><td>CapsLock held with nothing struck</td><td>No timeout. Resolves only on release.</td><td>Plain <code>overload</code>.</td></tr>
+<tr><td>Modifier already down, then Space</td><td>Bypass: Space passes to the OS untouched (Shift+Space IME, Cmd+Space Spotlight, Alt+Space window menu).</td><td>No equivalent — the others own the whole keyboard and don't need to yield.</td></tr>
+<tr><td>Non-modifier already down, then CapsLock</td><td>Bypass too: typing that overlaps a CapsLock press is typing, not a gesture.</td><td>The rolling-keys (<code>ABAB</code>) problem, solved by refusing to start a hold mid-roll.</td></tr>
+<tr><td>Both triggers down</td><td>Chord flag derived from the held set; the number row becomes F1–F12; the lock latches when the group comes <em>up</em>, so <code>(capslock+space)[ 1 ]</code> passes through cleanly.</td><td>Combo + toggle, without the combo timer.</td></tr>
+</tbody></table></div>
+<h3>Why <code>alt[ 1 ]</code> is cheap and <code>f[ j ]</code> is not</h3>
+<p>Every rule above works because a trigger's own output is <em>deferrable</em>: the engine suppresses the key-down and decides later what, if anything, to emit for it. Modifiers are the other class of key that needs no deferral — their key-down has no visible output, the OS tracks them, and the engine already reads them from <code>held_keys</code>. So a top-level <code>alt[ 1 ]</code> is a global hotkey, structurally identical to the Ctrl+Cmd+Shift+T special case in <code>on_key_event</code> step 3c: match on key-down against held modifiers, suppress, act. The only new work is a table lookup instead of an <code>if</code>.</p>
+<p>A plain key is different. For <code>f[ j ]</code> to work, <code>f</code>-down must be swallowed and held back until either <code>j</code> arrives (hold: run the action, never type <code>f</code>) or <code>f</code> is released (tap: type <code>f</code> now, late). That is home-row-mod territory, and the survey shows what it costs everyone who does it:</p>
+<ul class="tight">
+  <li><b>An input buffer with replay.</b> With <code>HOLD_ON_OTHER_KEY_PRESS</code> semantics — the engine's current rule — typing <code>fj</code> fast (<code>f</code>↓ <code>j</code>↓ <code>f</code>↑ <code>j</code>↑, QMK's "rolling" case) becomes the hold action, never <code>fj</code>. Every tool that supports letter holds therefore offers <code>PERMISSIVE_HOLD</code> / <code>tap-hold-release</code>, which means <code>j</code>-down must <em>also</em> be held back until <code>j</code>-up or a timeout decides. The engine has no such queue today; it decides everything on the event it is handling.</li>
+  <li><b>A tapping term per key,</b> and a timer to enforce it. The one timer the engine has is the 200 ms Space thread, and it is the thread the <a href="/lab/double-tap/">double-tap</a> page catalogued as a bug class: when the hook died it became an unbounded SendInput loop. Generalizing it to N keys multiplies that surface.</li>
+  <li><b>Configuration surface.</b> kanata exposes two timeouts and eight variants per key; QMK five global modes plus per-key overrides. The moment <code>.clx</code> allows letter holds it needs at least a term and a policy, and the one-page grammar stops being one page.</li>
+</ul>
+<div class="callout ok">
+  <h4>Decision for v1 (2026-09-15)</h4>
+  <p>The <em>holder</em> of a top-level hold must be a trigger (<code>space</code>, <code>capslock</code>, <code>insert</code>, <code>scrolllock</code>, the <code>clx</code> alias, or a commutative group of them) or a modifier (<code>alt</code>, <code>ctrl</code>, <code>shift</code>, <code>win</code>, or a group of modifiers). Inside a body, modifiers may nest freely (<code>clx[ shift[ 3 ] ]</code>). Plain-key holds parse — the notation is deliberately more general than the engine — but the parser warns and the loader rejects them with the same message, so a file that loads is a file whose every binding is zero-latency. The corpus pins this (<code>hold on a plain key is a tap-hold</code>).</p>
+  <p>If letter holds are ever wanted, the shape is known: it is the <code>tap-hold-release</code> policy with a per-binding term, and it needs the event queue first. That is an engine project, and it should be started from the recognizer side (the gesture parser would need to <em>emit</em> deferred events) rather than from the grammar.</p>
+</div>
+
 <footer>
-  Prototype source: <code>lab/clx-lang/clx.js</code> — same file this page runs. Nothing here is wired into the engine yet.
+  Prototype source: <code>lab/clx-lang/clx.js</code> — same file this page runs. Corpus: <code>corpus.json</code> + <code>parse.test.cjs</code>. Nothing here is wired into the engine yet.
 </footer>
 </div>
 

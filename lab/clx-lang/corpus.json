@@ -1,0 +1,903 @@
+{
+  "$comment": "Spec-by-example for .clx. Run: node lab/clx-lang/parse.test.cjs. Every implementation (JS prototype, Rust port) must produce exactly these bindings/variants and these diagnostics (level@line exact, message by prefix). `why` records the decision the case pins down; see lab/clx-lang/#corpus.",
+  "cases": [
+    {
+      "name": "hold: clx alias expands to either trigger",
+      "why": "clx is sugar for (space|capslock); alternation yields one variant per trigger, space first.",
+      "src": "clx[ h ] => k left",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k left }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "hold: commutative group is order-insensitive",
+      "why": "(capslock+space) and (space+capslock) normalize to the same pattern, so they collide as duplicates; the variants keep the written order.",
+      "src": "(space+capslock)[ 1 ] => k f1\n(capslock+space)[ 1 ] => k f1",
+      "expect": {
+        "bindings": [
+          "1: (capslock+space)[ 1 ] => { k f1 }",
+          "2: (capslock+space)[ 1 ] => { k f1 }"
+        ],
+        "variants": [
+          [
+            "[space [capslock 1 capslock] space]"
+          ],
+          [
+            "[capslock [space 1 space] capslock]"
+          ]
+        ],
+        "diags": [
+          "warn@2: duplicate pattern, earlier binding on line 1 wins"
+        ]
+      }
+    },
+    {
+      "name": "tap: group tap",
+      "why": "A tapped group is down-in-order, up-in-reverse. Single letters are letters (no s/c trigger aliases).",
+      "src": "(s+c). => lock toggle",
+      "expect": {
+        "bindings": [
+          "1: (c+s). => { lock toggle }"
+        ],
+        "variants": [
+          [
+            "[s c s]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "tap: bare key at top level is a tap",
+      "why": "h and h. are the same pattern; both warn because there is no hold and no trigger.",
+      "src": "h => k left\na. => k b",
+      "expect": {
+        "bindings": [
+          "1: h. => { k left }",
+          "2: a. => { k b }"
+        ],
+        "variants": [
+          [
+            "h"
+          ],
+          [
+            "a"
+          ]
+        ],
+        "diags": [
+          "warn@1: pattern has no hold and no trigger — this would fire on plain typing",
+          "warn@2: pattern has no hold and no trigger — this would fire on plain typing"
+        ]
+      }
+    },
+    {
+      "name": "nesting: inner hold inside outer",
+      "why": "Inner pressed after outer, released before it.",
+      "src": "capslock[ alt[ 4 ] ] => k a-f4",
+      "expect": {
+        "bindings": [
+          "1: capslock[ alt[ 4 ] ] => { k a-f4 }"
+        ],
+        "variants": [
+          [
+            "[capslock [alt 4 alt] capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "nesting: modifier decorates body",
+      "why": "shift[ 3 ] inside clx is how Space+Shift+3 (move window) is written.",
+      "src": "clx[ shift[ 3 ] ] => desktop move 3",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ shift[ 3 ] ] => { desktop move 3 }"
+        ],
+        "variants": [
+          [
+            "[space [shift 3 shift] space]",
+            "[capslock [shift 3 shift] capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "body: multi-key body is a sequence",
+      "why": "Each body key fires on its own key-down, in order.",
+      "src": "clx[ a b ] => k c",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ a b ] => { k c }"
+        ],
+        "variants": [
+          [
+            "[space a b space]",
+            "[capslock a b capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "body: explicit tap inside body equals bare key",
+      "why": "a. and a are the same inside a body (normalize drops the dot at depth>0).",
+      "src": "clx[ a. ] => k c",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ a ] => { k c }"
+        ],
+        "variants": [
+          [
+            "[space a space]",
+            "[capslock a capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "body: bare group inside body is an error",
+      "why": "A group must say [ or . — a bare group is ambiguous (Q: keep; single keys default to tap, groups do not).",
+      "src": "clx[ (a+b) ] => k c",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: a group must be followed by \"[\" (hold) or \".\" (tap)"
+        ]
+      }
+    },
+    {
+      "name": "unclosed hold: legal, warned, fires on key-down",
+      "why": "Locked mode has this shape. Variant has no closing edge.",
+      "src": "clx[ q => k q",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ q => { k q }"
+        ],
+        "variants": [
+          [
+            "[space q",
+            "[capslock q"
+          ]
+        ],
+        "diags": [
+          "warn@1: hold is never closed — legal (fires on key-down, like locked mode) but check for a missing \"]\""
+        ]
+      }
+    },
+    {
+      "name": "unclosed hold: nested",
+      "why": "The outer hold is what is unclosed; the inner one closed normally.",
+      "src": "clx[ alt[ 4 ] => k a-f4",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ alt[ 4 ] => { k a-f4 }"
+        ],
+        "variants": [
+          [
+            "[space [alt 4 alt]",
+            "[capslock [alt 4 alt]"
+          ]
+        ],
+        "diags": [
+          "warn@1: hold is never closed — legal (fires on key-down, like locked mode) but check for a missing \"]\""
+        ]
+      }
+    },
+    {
+      "name": "empty hold body warns",
+      "why": "clx[ ] would be a trigger tap wearing hold syntax; the tap form is clx. (decided 2026-09-15).",
+      "src": "clx[ ] => k a",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ ] => { k a }"
+        ],
+        "variants": [
+          [
+            "space",
+            "capslock"
+          ]
+        ],
+        "diags": [
+          "warn@1: empty hold body — a tap is written with \".\" (e.g. clx.)"
+        ]
+      }
+    },
+    {
+      "name": "hold on a plain key is a tap-hold (Q3): warned",
+      "why": "f[ j ] needs the engine to defer f until it knows whether j follows (home-row-mod territory); a modifier hold (alt[ 1 ]) is a plain global hotkey and a trigger hold is the normal case. Decided 2026-09-15: parser warns, engine v1 loader rejects plain-key holds.",
+      "src": "f[ j ] => k left\nalt[ 1 ] => desktop 1\n(a+b)[ c ] => k d",
+      "expect": {
+        "bindings": [
+          "1: f[ j ] => { k left }",
+          "2: alt[ 1 ] => { desktop 1 }",
+          "3: (a+b)[ c ] => { k d }"
+        ],
+        "variants": [
+          [
+            "[f j f]"
+          ],
+          [
+            "[alt 1 alt]"
+          ],
+          [
+            "[a [b c b] a]"
+          ]
+        ],
+        "diags": [
+          "warn@1: hold on a plain key is a tap-hold (\"f\" must be buffered until the body arrives) — not supported by the engine (Q3)",
+          "warn@3: hold on a plain key is a tap-hold (\"a+b\" must be buffered until the body arrives) — not supported by the engine (Q3)"
+        ]
+      }
+    },
+    {
+      "name": "duplicate pattern: first wins",
+      "why": "Matches the engine's first-module-wins dispatch; later line warns.",
+      "src": "clx[ h ] => k left\nclx[ h ] => k right",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k left }",
+          "2: (capslock|space)[ h ] => { k right }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ],
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ]
+        ],
+        "diags": [
+          "warn@2: duplicate pattern, earlier binding on line 1 wins"
+        ]
+      }
+    },
+    {
+      "name": "punctuation keys: bare and named",
+      "why": "Q2: - and = accepted bare because F11/F12 use them; minus/equal are the canonical names so bare and named collide as duplicates.",
+      "src": "clx[ - ] => k f11\nclx[ = ] => k f12\nclx[ minus ] => k f11",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ minus ] => { k f11 }",
+          "2: (capslock|space)[ equal ] => { k f12 }",
+          "3: (capslock|space)[ minus ] => { k f11 }"
+        ],
+        "variants": [
+          [
+            "[space minus space]",
+            "[capslock minus capslock]"
+          ],
+          [
+            "[space equal space]",
+            "[capslock equal capslock]"
+          ],
+          [
+            "[space minus space]",
+            "[capslock minus capslock]"
+          ]
+        ],
+        "diags": [
+          "warn@3: duplicate pattern, earlier binding on line 1 wins"
+        ]
+      }
+    },
+    {
+      "name": "pointer keys parse but warn",
+      "why": "No mouse hook in the engine yet (WH_MOUSE_LL / CGEventTap mouse mask).",
+      "src": "clx[ wheeldown ] => scroll down\nmb4[ h ] => k left",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ wheeldown ] => { scroll down 3lines }",
+          "2: mb4[ h ] => { k left }"
+        ],
+        "variants": [
+          [
+            "[space wheeldown space]",
+            "[capslock wheeldown capslock]"
+          ],
+          [
+            "[mb4 h mb4]"
+          ]
+        ],
+        "diags": [
+          "warn@1: pointer key \"wheeldown\" in a pattern: parses, but the engine has no mouse hook yet (WH_MOUSE_LL / CGEventTap mouse mask)",
+          "warn@2: pointer key \"mb4\" in a pattern: parses, but the engine has no mouse hook yet (WH_MOUSE_LL / CGEventTap mouse mask)"
+        ]
+      }
+    },
+    {
+      "name": "ordered group: bare group at top level is an error",
+      "why": "Same rule as inside a body: (a->b) alone does not say hold or tap.",
+      "src": "(a->b) => k c",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: a group must be followed by \"[\" (hold) or \".\" (tap)"
+        ]
+      }
+    },
+    {
+      "name": "mixed connectors in one group is an error",
+      "why": "Nest instead: (a+b)|c is not expressible in one group.",
+      "src": "(a+b|c)[ x ] => k d",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "warn@1: hold on a plain key is a tap-hold (\"a+b+c\" must be buffered until the body arrives) — not supported by the engine (Q3)",
+          "error@1: mixed connectors in one group: \"+\" and \"|\" — use nested groups"
+        ]
+      }
+    },
+    {
+      "name": "top-level sequence parses (rejected by the engine, Q4)",
+      "why": "Juxtaposition is a sequence; no double-tap feature (lab/double-tap), so the Rust loader rejects multi-gesture patterns. The parser still produces the cross product of variants.",
+      "src": "clx[ h ] clx[ h ] => k left",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] (capslock|space)[ h ] => { k left }"
+        ],
+        "variants": [
+          [
+            "[space h space] [space h space]",
+            "[space h space] [capslock h capslock]",
+            "[capslock h capslock] [space h space]",
+            "[capslock h capslock] [capslock h capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "alternation of three triggers",
+      "why": "Variants follow the written order of the alternatives.",
+      "src": "(capslock|space|insert)[ h ] => k left",
+      "expect": {
+        "bindings": [
+          "1: (capslock|insert|space)[ h ] => { k left }"
+        ],
+        "variants": [
+          [
+            "[capslock h capslock]",
+            "[space h space]",
+            "[insert h insert]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "nested alternation is a cross product",
+      "why": "Outer × inner alternatives, outer-major order.",
+      "src": "(a|b)[ (c|d). ] => k e",
+      "expect": {
+        "bindings": [
+          "1: (a|b)[ (c|d). ] => { k e }"
+        ],
+        "variants": [
+          [
+            "[a c a]",
+            "[a d a]",
+            "[b c b]",
+            "[b d b]"
+          ]
+        ],
+        "diags": [
+          "warn@1: hold on a plain key is a tap-hold (\"a+b\" must be buffered until the body arrives) — not supported by the engine (Q3)"
+        ]
+      }
+    },
+    {
+      "name": "lexical: case-insensitive, tabs, CRLF, trailing comment",
+      "why": "Key names fold to lower case; whitespace is free; CRLF files parse; # comments anywhere.",
+      "src": "CLX[\tH\t]\t=>\tk left # cursor\r\n\r\n# comment line\r\nclx[ 2 ] => k f2",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k left }",
+          "4: (capslock|space)[ 2 ] => { k f2 }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ],
+          [
+            "[space 2 space]",
+            "[capslock 2 capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "lexical: no spaces needed",
+      "why": "clx[h]=>k left is one binding.",
+      "src": "clx[h]=>k left",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k left }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "action: k key with modifiers",
+      "why": "c s w a prefixes, order preserved.",
+      "src": "clx[ h ] => k c-s-a\nclx[ j ] => k w-p\nclx[ k ] => k ctrl",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k c-s-a }",
+          "2: (capslock|space)[ j ] => { k w-p }",
+          "3: (capslock|space)[ k ] => { k ctrl }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ],
+          [
+            "[space j space]",
+            "[capslock j capslock]"
+          ],
+          [
+            "[space k space]",
+            "[capslock k capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "action: k bare - and = are minus and equal",
+      "why": "Same as the pattern side (Q2); previously lexed as a broken modifier prefix.",
+      "src": "clx[ h ] => k -\nclx[ j ] => k =",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k minus }",
+          "2: (capslock|space)[ j ] => { k equal }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ],
+          [
+            "[space j space]",
+            "[capslock j capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "action: k string with escapes",
+      "why": "\\n \\t \\\" \\\\ escapes, verbatim from the agent language.",
+      "src": "clx[ h ] => k \"a\\nb\\\"c\\\\\"",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { k \"a\\nb\\\"c\\\\\" }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "action: block with waits",
+      "why": "; separates; trailing and doubled ; are tolerated; newlines inside a block are fine.",
+      "src": "clx[ g ] => { k \"hi\"; w 200ms;; k enter; }",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ g ] => { k \"hi\"; w 200ms; k enter }"
+        ],
+        "variants": [
+          [
+            "[space g space]",
+            "[capslock g capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "action: empty block warns",
+      "why": "Decided 2026-09-15: { } is almost certainly a mistake.",
+      "src": "clx[ h ] => { }",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => {  }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ]
+        ],
+        "diags": [
+          "warn@1: empty action block — the binding does nothing"
+        ]
+      }
+    },
+    {
+      "name": "action: built-ins are free-form (Q5)",
+      "why": "Unknown names are for the engine to reject at load time, not the parser.",
+      "src": "clx[ h ] => frobnicate 1 two \"three\"\nclx[ v ] => voice",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { frobnicate 1 two three }",
+          "2: (capslock|space)[ v ] => { voice }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ],
+          [
+            "[space v space]",
+            "[capslock v capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "action: ; outside a block is an error",
+      "why": "Sequences need braces; the line is dropped.",
+      "src": "clx[ h ] => k left ; k right",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: unexpected \";\" after binding"
+        ]
+      }
+    },
+    {
+      "name": "action: missing action is an error",
+      "why": "The binding is dropped, not kept with an empty block.",
+      "src": "clx[ h ] => ",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: expected an action after \"=>\", found end of file"
+        ]
+      }
+    },
+    {
+      "name": "action: missing => is an error",
+      "why": "",
+      "src": "clx[ h ]",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: expected \"=>\" but found end of file"
+        ]
+      }
+    },
+    {
+      "name": "action: leading => is an error, not a crash",
+      "why": "Regression: an empty pattern at file start used to throw in span calculation.",
+      "src": "=> k a",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: expected a gesture pattern"
+        ]
+      }
+    },
+    {
+      "name": "action: bad k / w arguments are errors, line dropped",
+      "why": "k takes one key or one string; w takes 200ms or 3s (no decimals).",
+      "src": "clx[ h ] => k c-\nclx[ j ] => w 2\nclx[ k ] => w 1.5s\nclx[ l ] => k é",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: k takes one key (k a, k c-c) or one string (k \"text\")",
+          "error@2: w takes a duration like 200ms or 3s",
+          "error@3: w takes a duration like 200ms or 3s",
+          "error@4: k takes one key (k a, k c-c) or one string (k \"text\")",
+          "error@4: unexpected character \"é\""
+        ]
+      }
+    },
+    {
+      "name": "action: agent-only verbs are not part of .clx",
+      "why": "scan / S / ? are runtime verbs of clx agent, not bindings; they do not parse here (decided 2026-09-15).",
+      "src": "clx[ h ] => scan ID 0 0 10 10 dark>3 { k up }\nclx[ j ] => ? screen",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: unexpected character \">\"",
+          "error@2: expected an action after \"=>\"",
+          "error@2: unexpected character \"?\""
+        ]
+      }
+    },
+    {
+      "name": "pointer: m legacy forms",
+      "why": "m x y, m x y c, m 50% 50%, m cur, m cur +dx +dy, m @mark, hover is m.",
+      "src": "clx[ a ] => m 400 300 c\nclx[ b ] => m 50% 50%\nclx[ c ] => m cur\nclx[ d ] => m cur +300 0\nclx[ e ] => { mark here; m @here }\nclx[ f ] => hover @\"OK\"",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ a ] => { m 400 300 c }",
+          "2: (capslock|space)[ b ] => { m 50% 50% }",
+          "3: (capslock|space)[ c ] => { m cur }",
+          "4: (capslock|space)[ d ] => { m cursor +300 +0 }",
+          "5: (capslock|space)[ e ] => { mark here; m @here }",
+          "6: (capslock|space)[ f ] => { m @\"OK\" }"
+        ],
+        "variants": [
+          [
+            "[space a space]",
+            "[capslock a capslock]"
+          ],
+          [
+            "[space b space]",
+            "[capslock b capslock]"
+          ],
+          [
+            "[space c space]",
+            "[capslock c capslock]"
+          ],
+          [
+            "[space d space]",
+            "[capslock d capslock]"
+          ],
+          [
+            "[space e space]",
+            "[capslock e capslock]"
+          ],
+          [
+            "[space f space]",
+            "[capslock f capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "pointer: click forms",
+      "why": "[mods-]button [target] [xN]; default left, x1 = once; dbl is click x2; buttons l r m x1 x2.",
+      "src": "clx[ a ] => click\nclx[ b ] => click r @\"OK\"\nclx[ c ] => click s-l 50% 50% x3\nclx[ d ] => dbl @\"Untitled.txt\"\nclx[ e ] => click x2\nclx[ f ] => click c-a-r cur +10 -10",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ a ] => { click left }",
+          "2: (capslock|space)[ b ] => { click right @\"OK\" }",
+          "3: (capslock|space)[ c ] => { click s-left 50% 50% x3 }",
+          "4: (capslock|space)[ d ] => { click left @\"Untitled.txt\" x2 }",
+          "5: (capslock|space)[ e ] => { click x2 }",
+          "6: (capslock|space)[ f ] => { click c-a-right cursor +10 -10 }"
+        ],
+        "variants": [
+          [
+            "[space a space]",
+            "[capslock a capslock]"
+          ],
+          [
+            "[space b space]",
+            "[capslock b capslock]"
+          ],
+          [
+            "[space c space]",
+            "[capslock c capslock]"
+          ],
+          [
+            "[space d space]",
+            "[capslock d capslock]"
+          ],
+          [
+            "[space e space]",
+            "[capslock e capslock]"
+          ],
+          [
+            "[space f space]",
+            "[capslock f capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "pointer: drag, md/mu, scroll, wf",
+      "why": "drag from -> to [button]; md/mu default left; scroll dir [n|px] [target]; wf takes a string (legacy) or an element target.",
+      "src": "clx[ a ] => drag win 50% 90% -> win 50% 10%\nclx[ b ] => drag 10 10 -> 20 20 r\nclx[ c ] => { md; m cur +300 0; mu }\nclx[ d ] => scroll up 240px @\"Sidebar\"\nclx[ e ] => scroll left 2 cur\nclx[ f ] => wf \"Save\" 3s\nclx[ g ] => wf @button:\"Save\" 3s",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ a ] => { drag window +50% +90% -> window +50% +10% left }",
+          "2: (capslock|space)[ b ] => { drag 10 10 -> 20 20 right }",
+          "3: (capslock|space)[ c ] => { md left; m cursor +300 +0; mu left }",
+          "4: (capslock|space)[ d ] => { scroll up 240px @\"Sidebar\" }",
+          "5: (capslock|space)[ e ] => { scroll left 2lines cur }",
+          "6: (capslock|space)[ f ] => { wf \"Save\" 3000ms }",
+          "7: (capslock|space)[ g ] => { wf @button:\"Save\" 3000ms }"
+        ],
+        "variants": [
+          [
+            "[space a space]",
+            "[capslock a capslock]"
+          ],
+          [
+            "[space b space]",
+            "[capslock b capslock]"
+          ],
+          [
+            "[space c space]",
+            "[capslock c capslock]"
+          ],
+          [
+            "[space d space]",
+            "[capslock d capslock]"
+          ],
+          [
+            "[space e space]",
+            "[capslock e capslock]"
+          ],
+          [
+            "[space f space]",
+            "[capslock f capslock]"
+          ],
+          [
+            "[space g space]",
+            "[capslock g capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "pointer: absolute coordinates may be negative (Q9)",
+      "why": "Absolute px are virtual-desktop coordinates, which are negative left of / above the primary display.",
+      "src": "clx[ h ] => m -10 -10",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ h ] => { m -10 -10 }"
+        ],
+        "variants": [
+          [
+            "[space h space]",
+            "[capslock h capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "pointer: mixing px and % in one target is an error",
+      "why": "",
+      "src": "clx[ h ] => m 50% 300",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: mix of px and % in one target"
+        ]
+      }
+    },
+    {
+      "name": "pointer: bad click count / scroll direction are errors",
+      "why": "x0 is not a target or a count; scroll needs up/down/left/right.",
+      "src": "clx[ h ] => click x0\nclx[ j ] => scroll sideways",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: not a target: \"x0\"",
+          "error@2: scroll needs a direction: up down left right"
+        ]
+      }
+    },
+    {
+      "name": "pointer: screen-relative target is not supported yet",
+      "why": "Draft only; today it fails to parse. When added it should be `screen N x y`.",
+      "src": "clx[ h ] => m screen 2 50% 50%",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: m needs a target: x y, N% N%, win/cur/screen x y, @\"text\", or @mark",
+          "error@1: screen-relative targets (\"screen N x y\") are not supported yet"
+        ]
+      }
+    },
+    {
+      "name": "keys: unknown key name is an error",
+      "why": "",
+      "src": "clx[ foo ] => k a",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: unknown key \"foo\""
+        ]
+      }
+    },
+    {
+      "name": "keys: stray ] and [ are errors",
+      "why": "",
+      "src": "clx[ h ] ] => k a\nclx[ [ h ] => k a",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: expected \"=>\" but found \"]\"",
+          "error@2: expected \"]\" to close the hold",
+          "error@2: expected \"=>\" but found \"[\""
+        ]
+      }
+    },
+    {
+      "name": "keys: digit 0 and ctrl as a held modifier",
+      "why": "",
+      "src": "clx[ 0 ] => desktop 10\nclx[ ctrl[ h ] ] => k home",
+      "expect": {
+        "bindings": [
+          "1: (capslock|space)[ 0 ] => { desktop 10 }",
+          "2: (capslock|space)[ ctrl[ h ] ] => { k home }"
+        ],
+        "variants": [
+          [
+            "[space 0 space]",
+            "[capslock 0 capslock]"
+          ],
+          [
+            "[space [ctrl h ctrl] space]",
+            "[capslock [ctrl h ctrl] capslock]"
+          ]
+        ],
+        "diags": []
+      }
+    },
+    {
+      "name": "keys: a hold after ] is an error (no double-tap operator)",
+      "why": "clx[ v ]. is not a thing; there is no tap-after-hold form.",
+      "src": "clx[ v ]. => voice toggle",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": [
+          "error@1: expected \"=>\" but found \".\""
+        ]
+      }
+    },
+    {
+      "name": "empty file and comment-only file",
+      "why": "",
+      "src": "# nothing here\n\n",
+      "expect": {
+        "bindings": [],
+        "variants": [],
+        "diags": []
+      }
+    }
+  ]
+}

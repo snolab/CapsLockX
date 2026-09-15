@@ -287,6 +287,13 @@
   function describe(tok) {
     if (tok.t === "EOF") return "end of file";
     if (tok.t === "NL") return "end of line";
+    // An ERR token carries its own message ('unexpected character "?"'); the
+    // lexer already reported it, so refer to the offending text, not the text
+    // of that message.
+    if (tok.t === "ERR") {
+      var m = /"(.*)"$/.exec(tok.v);
+      return m ? '"' + m[1] + '"' : tok.v;
+    }
     return JSON.stringify(tok.v);
   }
   P.syncLine = function () {
@@ -304,7 +311,8 @@
       var b = this.binding();
       if (b) items.push(b);
       if (!this.at("NL") && !this.at("EOF")) {
-        this.err(this.peek(), "unexpected " + describe(this.peek()) + " after binding");
+        if (!this.at("ERR"))
+          this.err(this.peek(), "unexpected " + describe(this.peek()) + " after binding");
         this.syncLine();
       }
       void line;
@@ -339,7 +347,10 @@
       if (!g) break;
       gs.push(g);
     }
-    return { kind: "Pattern", gestures: gs, span: [start.pos, this.peek(-1).end] };
+    // An empty pattern at the very start of the file has no previous token
+    // (a line beginning with "=>"); the span is then just the start position.
+    var prev = this.i > 0 ? this.peek(-1) : null;
+    return { kind: "Pattern", gestures: gs, span: [start.pos, prev ? prev.end : start.pos] };
   };
 
   // gesture := holdable ( '[' pattern? ']'? | '.' )?
@@ -358,6 +369,10 @@
       if (this.at("RB")) {
         this.next();
         closed = true;
+        // `clx[ ]` is a tap wearing hold syntax: it would fire on the trigger's
+        // key-up with nothing struck — exactly what `clx.` says explicitly.
+        if (!body.gestures.length)
+          this.warn(start, 'empty hold body — a tap is written with "." (e.g. clx.)');
       } else if (!this.at("NL") && !this.at("EOF") && !this.at("FAT")) {
         this.err(this.peek(), 'expected "]" to close the hold');
       } else {
@@ -437,7 +452,8 @@
 
   // action := '{' cmd (';' cmd)* ';'? '}' | cmd
   P.action = function () {
-    var start = this.peek();
+    var start = this.peek(),
+      before = this.diags.length;
     if (this.at("LC")) {
       this.next();
       var cmds = [];
@@ -451,9 +467,10 @@
         else this.next();
       }
       this.expect("RC", '"}"');
+      if (!cmds.length && this.diags.length === before)
+        this.warn(start, "empty action block — the binding does nothing");
       return { kind: "Block", cmds: cmds, span: [start.pos, this.peek(-1).end] };
     }
-    var before = this.diags.length;
     var one = this.command(false);
     if (!one) {
       if (this.diags.length === before) this.err(start, 'expected an action after "=>"');
@@ -466,7 +483,9 @@
   P.command = function (inBlock) {
     var head = this.peek();
     if (head.t !== "ID") {
-      this.err(head, 'expected an action after "=>", found ' + describe(head));
+      // A lexer error token was already reported; don't cascade.
+      if (head.t !== "ERR")
+        this.err(head, 'expected an action after "=>", found ' + describe(head));
       return null;
     }
     this.next();
@@ -488,6 +507,11 @@
           args.length === 1 &&
           (args[0].t === "ID" || args[0].t === "MODKEY" || args[0].t === "KEY")
         ) {
+          // Bare "-" / "=" mean minus / equal here too (Q2), so `k -` is not
+          // read as a modifier prefix with nothing after it.
+          if (args[0].v === "-" || args[0].v === "=") {
+            return { kind: "Cmd", cmd: "key", mods: [], key: KEY_ALIASES[args[0].v], span: span };
+          }
           var parts = args[0].v.split("-"),
             key = parts.pop().toLowerCase(),
             mods = parts;
@@ -637,6 +661,12 @@
         return { kind: "Mark", name: n.v };
       }
       this.err(first, '@ must be followed by "text", role:"text", or a mark name');
+      return null;
+    }
+    if (first.t === "ID" && first.v === "screen") {
+      // Drafted as `screen N x y`; not parsed yet. Say so instead of tripping
+      // over N as an x coordinate.
+      this.err(first, 'screen-relative targets ("screen N x y") are not supported yet');
       return null;
     }
     if (first.t === "ID" && BASES[first.v]) {
@@ -842,6 +872,33 @@
         }
       });
       var top = b.pattern.gestures;
+      // Q3: a hold whose holder is a plain key (f[ j ]) is a tap-hold — the
+      // engine would have to buffer f until it knows whether j follows. A
+      // trigger hold (clx[ ]) or a modifier hold (alt[ 1 ], a global hotkey)
+      // needs no such deferral. Warn now; the loader will reject (see #hold).
+      top.forEach(function (g) {
+        if (g.kind !== "Hold") return;
+        var plain = g.group.keys.every(function (k) {
+          return !TRIGGERS[k.name] && !MODIFIERS[k.name] && !POINTER_KEYS[k.name];
+        });
+        if (plain) {
+          diags.push({
+            level: "warn",
+            msg:
+              'hold on a plain key is a tap-hold ("' +
+              g.group.keys
+                .map(function (k) {
+                  return k.name;
+                })
+                .join("+") +
+              '" must be buffered until the body arrives) — not supported by the engine (Q3)',
+            line: lineOf(src, g.span[0]),
+            col: 1,
+            pos: g.span[0],
+            end: g.span[1],
+          });
+        }
+      });
       if (
         top.length &&
         top.every(function (g) {
@@ -889,7 +946,9 @@
         var grp = ks.length > 1 ? "(" + ks.join(g.group.conn) + ")" : ks[0];
         if (g.kind === "Tap") return depth > 0 && ks.length === 1 ? grp : grp + ".";
         var body = normalize(g.body, depth + 1);
-        return grp + "[" + (body ? " " + body + " " : " ") + (g.closed ? "]" : "");
+        // Closed: "k[ body ]" / "k[ ]". Unclosed: "k[ body" — no trailing space,
+        // so the canonical text (and the Rust port) has one obvious form.
+        return grp + "[" + (body ? " " + body : "") + (g.closed ? " ]" : "");
       })
       .join(" ");
   }
@@ -978,9 +1037,25 @@
       if (t.t === "ERR") p.err(t, t.v);
     });
     check(ast, p.diags, src);
-    var out = ast.items.map(function (b) {
+    // A line with an error yields no binding: half-parsed actions used to come
+    // out as empty blocks, which a simulator or engine would run as silent
+    // no-ops. Warnings keep the binding. (Loader policy — reject the whole
+    // file, keep the previous good set — is Q6 and lives above this layer.)
+    var errLines = {};
+    p.diags.forEach(function (d) {
+      if (d.level === "error") errLines[d.line] = true;
+    });
+    var out = [];
+    ast.items.forEach(function (b) {
+      var line = lineOf(src, b.span[0]);
+      if (errLines[line]) return;
       var vs = edges(b.pattern);
-      return { pattern: normalize(b.pattern), variants: vs.map(traceText), action: b.action };
+      out.push({
+        line: line,
+        pattern: normalize(b.pattern),
+        variants: vs.map(traceText),
+        action: b.action,
+      });
     });
     p.diags.sort(function (a, b) {
       return a.pos - b.pos;
