@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>.clx language — draft &amp; playground</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#ffffff; --ink:#1a1a1c; --muted:#63636b; --line:#e5e3de;
+  --accent:#2f5fd8; --code-bg:#f2f1ed; --ok:#1f7a52; --ok-bg:#e7f4ec;
+  --warn:#a35a00; --warn-bg:#fdf1e0; --crit:#b3261e; --crit-bg:#fdeceb;
+  --tk-key:#2f5fd8; --tk-op:#8a6d1f; --tk-str:#1f7a52; --tk-cmd:#7a1f6b; --tk-cm:#9b9aa2;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;
+  --tk-key:#8fb0ff; --tk-op:#e2c36a; --tk-str:#8fd3ae; --tk-cmd:#e19ad6; --tk-cm:#6f6f78;}}
+:root[data-theme="dark"]{
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;
+  --tk-key:#8fb0ff; --tk-op:#e2c36a; --tk-str:#8fd3ae; --tk-cmd:#e19ad6; --tk-cm:#6f6f78;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);margin:0;padding:0 1.25rem 6rem;
+  font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:76rem;margin:0 auto}
+.crumb{font-size:.85rem;color:var(--muted);margin:0;padding-top:1.5rem}
+header{padding:1.3rem 0 1.2rem;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(1.5rem,3vw,2.1rem);margin:0 0 .4rem;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0}
+h2{font-size:1.2rem;margin:2.6rem 0 .5rem;letter-spacing:-.01em;scroll-margin-top:1rem}
+h3{font-size:.98rem;margin:1.5rem 0 .4rem}
+p{margin:.55rem 0}
+.lede{color:var(--muted);font-size:.95rem}
+code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;background:var(--code-bg);
+  padding:.1em .36em;border-radius:4px;font-size:.86em}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:.85rem 1rem;
+  overflow-x:auto;font-size:.84rem;line-height:1.5;margin:.6rem 0}
+pre code{background:none;padding:0}
+a{color:var(--accent)}
+.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+
+/* ── playground ──────────────────────────────────────────────────── */
+.pg{display:grid;gap:.9rem;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin:1rem 0}
+@media (max-width:60rem){.pg{grid-template-columns:1fr}}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0}
+.pane .hd{display:flex;justify-content:space-between;align-items:center;gap:.6rem;
+  padding:.55rem .9rem;border-bottom:1px solid var(--line);font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pane .hd .r{font-weight:500;text-transform:none;letter-spacing:0;font-size:.78rem}
+.editor{position:relative;min-height:19rem}
+.editor textarea,.editor .hl{font:14px/1.55 ui-monospace,"Cascadia Mono",Consolas,monospace;
+  padding:.9rem 1rem;margin:0;border:0;width:100%;min-height:19rem;white-space:pre;overflow:auto;
+  tab-size:4;letter-spacing:0}
+.editor .hl{position:absolute;inset:0;pointer-events:none;color:var(--ink);word-break:normal}
+.editor textarea{position:relative;background:transparent;color:transparent;caret-color:var(--ink);
+  resize:vertical;outline:none;display:block}
+.hl .k{color:var(--tk-key)} .hl .o{color:var(--tk-op);font-weight:700} .hl .s{color:var(--tk-str)}
+.hl .c{color:var(--tk-cmd);font-weight:600} .hl .m{color:var(--tk-cm);font-style:italic}
+.hl .e{text-decoration:underline wavy var(--crit);text-underline-offset:3px}
+.hl .w{text-decoration:underline wavy var(--warn);text-underline-offset:3px}
+.out{padding:.7rem .9rem;font-size:.84rem;overflow:auto;max-height:24rem}
+.out table{border-collapse:collapse;width:100%}
+.out td,.out th{text-align:left;vertical-align:top;padding:.35rem .5rem;border-bottom:1px solid var(--line)}
+.out th{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.out tr:last-child td{border-bottom:none}
+.diag{display:flex;gap:.6rem;padding:.35rem .5rem;border-bottom:1px solid var(--line);align-items:baseline}
+.diag:last-child{border-bottom:none}
+.diag .lv{font-size:.66rem;font-weight:800;padding:.1em .45em;border-radius:4px;text-transform:uppercase;min-width:3.6rem;text-align:center}
+.diag.error .lv{color:var(--crit);background:var(--crit-bg)} .diag.warn .lv{color:var(--warn);background:var(--warn-bg)}
+.diag .at{color:var(--muted);min-width:3.4rem}
+.diag pre{margin:.3rem 0 0;padding:.35rem .6rem;font-size:.78rem}
+.ok-line{color:var(--ok);font-weight:600;padding:.4rem .5rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.6rem 0}
+button,select{font:inherit;font-size:.84rem;padding:.35em .8em;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.on{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600}
+.json{font-size:.78rem;white-space:pre;max-height:24rem;overflow:auto;margin:0;padding:.7rem .9rem;background:transparent;border:0}
+
+/* ── run / simulator ─────────────────────────────────────────────── */
+.holds{display:flex;gap:.4rem;flex-wrap:wrap;padding:.6rem .9rem;border-bottom:1px solid var(--line);align-items:center}
+.holds .lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-right:.2rem}
+.holds button{font-family:ui-monospace,Consolas,monospace;font-size:.82rem;padding:.3em .7em}
+.holds button.down{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:700}
+#rpad{margin:.7rem .9rem;border:2px dashed var(--line);border-radius:10px;padding:.9rem;text-align:center;
+  cursor:pointer;outline:none;font-size:.88rem;color:var(--muted);transition:border-color .15s,background .15s}
+#rpad.armed{border-style:solid;border-color:var(--accent);color:var(--accent);font-weight:600;background:var(--live-bg,rgba(47,95,216,.06))}
+#rheld{margin-top:.5rem;min-height:1.5rem;display:flex;gap:.35rem;justify-content:center;flex-wrap:wrap}
+#rheld .pk{background:var(--accent);color:var(--bg);font-weight:700;padding:.15em .55em;border-radius:6px;font-size:.78rem;font-family:ui-monospace,Consolas,monospace}
+.trace{display:flex;gap:.5rem;padding:.4rem .9rem .8rem;align-items:center}
+.trace input{flex:1;font:13px/1.5 ui-monospace,Consolas,monospace;padding:.45em .7em;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-width:0}
+.trace input:focus{outline:none;border-color:var(--accent)}
+#transcript{font:14px/1.6 ui-monospace,"Cascadia Mono",Consolas,monospace;white-space:pre-wrap;word-break:break-word;
+  padding:.8rem .95rem;min-height:6.5rem;max-height:11rem;overflow:auto;border-bottom:1px solid var(--line)}
+#transcript .mk{color:var(--accent);background:var(--code-bg);border-radius:4px;padding:0 .25em;font-size:.86em;font-weight:600}
+#transcript .caret{display:inline-block;width:.55em;height:1.1em;background:var(--accent);vertical-align:text-bottom;animation:blink 1s steps(1) infinite;margin-left:1px}
+@keyframes blink{50%{opacity:0}}
+#rlog{font-size:.82rem;max-height:14rem;overflow:auto}
+#rlog .row{display:grid;grid-template-columns:5.2rem minmax(9rem,1fr) 2.6rem minmax(9rem,1.4fr);gap:.6rem;padding:.3rem .9rem;border-bottom:1px solid var(--line);align-items:baseline}
+#rlog .row:last-child{border-bottom:none}
+#rlog .t{color:var(--muted);font-size:.72rem}
+#rlog .g{font-family:ui-monospace,Consolas,monospace}
+#rlog .arrow{color:var(--muted);text-align:center}
+#rlog .a{font-family:ui-monospace,Consolas,monospace;color:var(--ok)}
+#rlog .row.miss .a{color:var(--warn)} #rlog .row.pass .a{color:var(--muted)}
+#rlog .row.hit .g{color:var(--accent);font-weight:600}
+#rlog .ln{color:var(--muted);font-size:.72rem;margin-left:.4rem}
+.note{font-size:.8rem;color:var(--muted);padding:.5rem .9rem;border-top:1px solid var(--line)}
+
+/* ── prose tables ────────────────────────────────────────────────── */
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:.9rem 0}
+table.t{border-collapse:collapse;width:100%;font-size:.88rem;min-width:48rem}
+table.t th,table.t td{text-align:left;vertical-align:top;padding:.58rem .8rem;border-bottom:1px solid var(--line)}
+table.t th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;background:var(--bg)}
+table.t tr:last-child td{border-bottom:none}
+.sev{display:inline-block;font-size:.68rem;font-weight:800;padding:.14em .5em;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.sev.win{color:var(--ok);background:var(--ok-bg)} .sev.mid{color:var(--warn);background:var(--warn-bg)}
+.sev.bad{color:var(--crit);background:var(--crit-bg)} .sev.none{color:var(--muted);background:var(--code-bg)}
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--panel);
+  border-radius:0 10px 10px 0;padding:.85rem 1.05rem;margin:1rem 0}
+.callout.ok{border-left-color:var(--ok)} .callout.warn{border-left-color:var(--warn)}
+.callout h4{margin:0 0 .3rem;font-size:.93rem} .callout p{margin:.3rem 0;font-size:.92rem}
+ul.tight{margin:.5rem 0;padding-left:1.2rem} ul.tight li{margin:.3rem 0}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.8rem 1.2rem;margin:1.4rem 0;font-size:.9rem}
+nav.toc ol{margin:.3rem 0;padding-left:1.3rem} nav.toc li{margin:.15rem 0}
+footer{margin-top:3.5rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / clx-lang &nbsp;·&nbsp;
+  notation: <a href="/lab/chord-fn-row/#notation">chord-fn-row</a> &nbsp;·&nbsp;
+  recognizer: <a href="/lab/gesture-parser/">gesture-parser</a></p>
+
+<header>
+  <h1><code>.clx</code> — draft language &amp; playground</h1>
+  <p class="sub">One line per binding: a gesture <em>pattern</em>, <code>=&gt;</code>, an <em>action</em>. Both halves already exist in the project; this file format just puts them next to each other.</p>
+</header>
+
+<nav class="toc"><strong>Contents</strong>
+<ol>
+  <li><a href="#play">Playground</a> &nbsp;·&nbsp; <a href="#run">Run it</a></li>
+  <li><a href="#lang">The draft, in one page</a></li>
+  <li><a href="#tooling">Compiler / AST tooling — what to use</a></li>
+  <li><a href="#plan">Suggested path</a></li>
+  <li><a href="#open">Open design questions</a></li>
+</ol></nav>
+
+<h2 id="play">1 · Playground</h2>
+<p class="lede">Edit on the left; everything on the right is recomputed on every keystroke. Errors and warnings underline the source. The edge IR is the <em>trace form</em> — the same thing the recognizer emits from real keystrokes, and the same thing a keystroke emitter would consume.</p>
+
+<div class="pg">
+  <div class="pane">
+    <div class="hd"><span>source.clx</span><span class="r" id="stat">—</span></div>
+    <div class="editor">
+      <pre class="hl" id="hl" aria-hidden="true"></pre>
+      <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    </div>
+    <div class="row" style="padding:.4rem .9rem .7rem">
+      <button data-ex="shipped">example: shipped bindings</button>
+      <button data-ex="pointer">example: pointer</button>
+      <button data-ex="macros">example: macros</button>
+      <button data-ex="errors">example: things that fail</button>
+    </div>
+  </div>
+  <div class="pane">
+    <div class="hd"><span id="rhd">bindings → edge IR</span>
+      <span class="r"><select id="view"><option value="bind">bindings → edge IR</option><option value="diag">diagnostics</option><option value="ast">AST (JSON)</option><option value="tok">tokens</option></select></span></div>
+    <div class="out" id="out"></div>
+  </div>
+</div>
+
+<h3 id="run" style="margin-top:1.6rem">Run it</h3>
+<p class="lede">The script above is live here. Feed it keystrokes and watch what the focused app would receive. Hold keys with the toggles (the browser is unreliable about <kbd>CapsLock</kbd>), type body keys on the pad, or paste an edge trace.</p>
+
+<div class="pg">
+  <div class="pane">
+    <div class="hd"><span>input</span><span class="r" id="rstat">idle</span></div>
+    <div class="holds"><span class="lbl">hold</span>
+      <button data-hold="capslock">capslock</button>
+      <button data-hold="space">space</button>
+      <button data-hold="shift">shift</button>
+      <button data-hold="ctrl">ctrl</button>
+      <button data-hold="alt">alt</button>
+      <button data-hold="win">win</button>
+      <button id="rrelease" title="release every held key" style="margin-left:auto">release all</button>
+    </div>
+    <div id="rpad" tabindex="0" role="application">click here, then press keys — <kbd>Esc</kbd> to disarm
+      <div id="rheld"></div>
+    </div>
+    <div class="trace">
+      <input id="rtrace" placeholder='or type an edge trace and press Enter:  [capslock [space 1 space] capslock]' spellcheck="false">
+      <button id="rgo">run</button>
+    </div>
+  </div>
+  <div class="pane">
+    <div class="hd"><span>output — what the app receives</span><span class="r"><button id="rclear">clear</button></span></div>
+    <div id="transcript"><span class="caret"></span></div>
+    <div id="rlog"></div>
+    <div class="note" id="rnote"></div>
+  </div>
+</div>
+
+<h2 id="lang">2 · The draft, in one page</h2>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:15rem">Construct</th><th style="width:20rem">Example</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>binding</td><td><code>pattern =&gt; action</code></td><td>One per line. <code>#</code> starts a comment.</td></tr>
+<tr><td>hold</td><td><code>clx[ h ]</code></td><td>Hold the group, strike what's in the body. Body keys fire on their own key-down.</td></tr>
+<tr><td>group, commutative</td><td><code>(capslock+space)</code></td><td>Held together; order irrelevant (交换律). Duplicates are detected modulo order.</td></tr>
+<tr><td>group, alternation</td><td><code>(space|capslock)</code>, <code>clx</code></td><td>Either one. <code>clx</code> is sugar for the two triggers.</td></tr>
+<tr><td>group, ordered</td><td><code>(a-&gt;b)</code></td><td>Pressed in that order. Connectors can't be mixed in one group — nest instead.</td></tr>
+<tr><td>tap</td><td><code>(s+c).</code>, <code>h</code></td><td>Down and straight back up. A bare key inside a body is a tap.</td></tr>
+<tr><td>nesting</td><td><code>capslock[ alt[ 4 ] ]</code></td><td>Inner pressed after outer, released before it.</td></tr>
+<tr><td>unclosed hold</td><td><code>clx[ q</code></td><td>Legal — fires on key-down with no release required (locked mode has this shape). Warned, since it's usually a missing <code>]</code>.</td></tr>
+<tr><td>action: key</td><td><code>k f1</code>, <code>k c-c</code>, <code>k a-f4</code></td><td>The agent language. Modifiers <code>c s w a</code> = ctrl shift win/cmd alt.</td></tr>
+<tr><td>action: text</td><td><code>k "hello\n"</code></td><td>Type a string; <code>\n \t \" \\</code> escapes.</td></tr>
+<tr><td>action: mouse / wait</td><td><code>m 400 300 c</code>, <code>w 200ms</code>, <code>wf "Save" 3s</code></td><td>Verbatim from <code>clx agent --exec</code>.</td></tr>
+<tr><td>action: block</td><td><code>{ k "hi"; w 200ms; k enter }</code></td><td>Sequence of commands, <code>;</code>-separated.</td></tr>
+<tr><td>action: built-in</td><td><code>lock toggle</code>, <code>desktop move 3</code>, <code>brainstorm</code></td><td>Anything that isn't an agent verb is a built-in name plus args; resolved by the engine, not the parser.</td></tr>
+</tbody></table></div>
+
+<h3>Pointer actions</h3>
+<p class="lede">Every pointer verb takes the same <em>target</em> grammar, so "click by position" and "click by whatever" differ only in the argument, never in the verb.</p>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:15rem">Verb</th><th style="width:22rem">Example</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>m</code> / <code>hover</code></td><td><code>m 400 300</code>, <code>m @"OK"</code></td><td>Move the pointer to a target. <code>m x y c</code> still works (legacy: move + click).</td></tr>
+<tr><td><code>click</code></td><td><code>click</code>, <code>click r</code>, <code>click s-l @"file"</code>, <code>click 50% 50% x3</code></td><td><code>[mods-]button [target] [xN]</code>. Button <code>l r m x1 x2</code>, default <code>l</code>. No target = where the pointer is. Modifiers use the same <code>c s w a</code> prefixes as <code>k</code>.</td></tr>
+<tr><td><code>dbl</code></td><td><code>dbl @"Untitled.txt"</code></td><td>Sugar for <code>click … x2</code>.</td></tr>
+<tr><td><code>drag</code></td><td><code>drag win 50% 90% -&gt; win 50% 10% [r]</code></td><td>Press at the first target, move, release at the second.</td></tr>
+<tr><td><code>md</code> / <code>mu</code></td><td><code>{ md; m cur +300 0; mu }</code></td><td>Button down / up on their own — for slow drags, or holding a button while another gesture moves the pointer.</td></tr>
+<tr><td><code>scroll</code></td><td><code>scroll down 5</code>, <code>scroll up 240px @"Sidebar"</code></td><td>Direction, amount in lines (default 3) or <code>px</code>, optional target to scroll <em>over</em>.</td></tr>
+<tr><td><code>mark</code></td><td><code>mark here</code> … <code>m @here</code></td><td>Remember the current pointer position under a name; <code>@name</code> is then a target.</td></tr>
+<tr><td><code>wf</code></td><td><code>wf @"Save" 3s</code></td><td>Existing verb, now also accepts an element target — wait until it exists.</td></tr>
+</tbody></table></div>
+
+<h3>Targets</h3>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:15rem">Form</th><th style="width:16rem">Example</th><th>Resolves to</th><th style="width:11rem">Engine today</th></tr></thead>
+<tbody>
+<tr><td>absolute</td><td><code>400 300</code></td><td>Screen pixels, primary display origin</td><td><span class="sev mid">needs absolute move</span></td></tr>
+<tr><td>percent</td><td><code>50% 50%</code></td><td>Fraction of the primary screen</td><td><span class="sev mid">needs screen size</span></td></tr>
+<tr><td>window-relative</td><td><code>win 10 20</code>, <code>win 50% 92%</code></td><td>Client area of the active window</td><td><span class="sev mid">needs window rect</span></td></tr>
+<tr><td>cursor-relative</td><td><code>cur +20 -5</code>, <code>cur</code></td><td>Offset from where the pointer is; bare <code>cur</code> = there</td><td><span class="sev win">exists</span> (<code>mouse_move(dx,dy)</code>)</td></tr>
+<tr><td>screen-relative</td><td><code>screen 2 50% 50%</code></td><td>A specific display <em>(draft; not parsed yet)</em></td><td><span class="sev none">not started</span></td></tr>
+<tr><td>UI element</td><td><code>@"OK"</code>, <code>@button:"Save"</code></td><td>Centre of an accessibility-tree element by name, optionally role-qualified</td><td><span class="sev mid">macOS: AX via osascript exists (agent) · Windows: needs UIA</span></td></tr>
+<tr><td>mark</td><td><code>@here</code></td><td>A position saved with <code>mark here</code></td><td><span class="sev win">trivial</span> (engine state)</td></tr>
+</tbody></table></div>
+
+<div class="callout warn">
+  <h4>Where the language is ahead of the engine</h4>
+  <p>The <code>Platform</code> trait today has <code>mouse_move(dx, dy)</code> — relative only — plus <code>mouse_button</code> and <code>scroll_v/h</code>. There is no cursor-position getter, no absolute move, no window rect, no screen size, and no element lookup. Even the agent's <code>m c</code> (click where the pointer is) is unimplemented in <code>clx-agent.rs</code> ("will fix with proper tracking"). So of the target forms above, only <code>cur</code> offsets and marks run on the engine as it stands. The rest are honest requirements, not promises — and <code>@"element"</code> on Windows means a UI Automation client that doesn't exist yet.</p>
+</div>
+
+<div class="callout">
+  <h4>Pointer keys on the pattern side</h4>
+  <p><code>mb1</code>–<code>mb5</code> (aliases <code>lbtn rbtn mbtn xbtn1 xbtn2</code>), <code>wheelup</code>, <code>wheeldown</code> parse as keys, so <code>mb4[ h ]</code> or <code>clx[ wheeldown ]</code> are writable. They are <strong>flagged with a warning</strong>: the engine hooks the keyboard only (<code>WH_KEYBOARD_LL</code>; a CGEventTap with the keyboard mask on macOS). Seeing mouse buttons as triggers needs a second hook, and on Windows a <code>WH_MOUSE_LL</code> callback shares the same UI-thread hazards this project has already been bitten by.</p>
+</div>
+
+<div class="callout ok">
+  <h4>A decision made while writing this: single letters are always letters</h4>
+  <p>The first draft had <code>s</code> and <code>c</code> as aliases for the triggers, so <code>(s+c)</code> was short and pleasant. It also made <code>clx[ c ]</code> — tile windows — silently mean CapsLock. Aliases that shadow real keys are removed; <code>clx</code>, <code>space</code> and <code>capslock</code> stay.</p>
+</div>
+
+<h3>Grammar (EBNF)</h3>
+<pre><code>file      := { line NEWLINE } ;
+line      := [ binding ] [ comment ] ;
+binding   := pattern "=&gt;" action ;
+pattern   := gesture { gesture } ;                     (* juxtaposition = sequence *)
+gesture   := holdable ( "[" [ pattern ] [ "]" ] | "." | ε ) ;
+holdable  := key | "(" key { ( "+" | "|" | "-&gt;" ) key } ")" ;
+key       := IDENT | DIGIT | "-" | "=" ;               (* punctuation keys also by name: minus equal comma ... *)
+action    := "{" [ command { ";" command } [ ";" ] ] "}" | command ;
+command   := pointer | IDENT { arg } ;
+arg       := IDENT | NUMBER | DURATION | STRING | MODKEY ;
+pointer   := ( "m" | "hover" ) target [ "c" ]
+           | ( "click" | "dbl" ) [ button ] [ target ] [ "x" DIGITS ]
+           | "drag" target "-&gt;" target [ button ]
+           | ( "md" | "mu" ) [ button ]
+           | "scroll" ( "up" | "down" | "left" | "right" ) [ DIGITS | PX ] [ target ]
+           | "mark" IDENT ;
+target    := coord coord | ( "win" | "cur" | "screen" ) coord coord | "cur"
+           | "@" IDENT | "@" STRING | "@" IDENT ":" STRING ;
+coord     := [ "+" | "-" ] ( DIGITS | PCT ) ;
+button    := [ MODS ] ( "l" | "r" | "m" | "x1" | "x2" ) ;
+MODKEY    := ( "c-" | "s-" | "w-" | "a-" )+ IDENT ;
+DURATION  := DIGITS ( "ms" | "s" ) ;</code></pre>
+
+<div class="callout">
+  <h4>The one design move that makes this cheap</h4>
+  <p>The action half is <strong>not new</strong>. <code>clx agent --exec</code> already parses and executes <code>k</code>/<code>m</code>/<code>w</code>/<code>wf</code>/<code>scan</code> (<code>parse_line</code> in <code>clx-agent.rs</code>). A <code>.clx</code> binding's right-hand side is a line of that language, so the engine can hand it to code that already exists. Only the pattern half is genuinely new — and it is the notation the recognizer already speaks.</p>
+</div>
+
+<h2 id="tooling">3 · Compiler / AST tooling — what to use</h2>
+<p class="lede">The grammar above is about 14 token kinds and no left recursion. That constrains the answer more than any library's feature list does.</p>
+
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:13rem">Option</th><th style="width:8rem">Where it runs</th><th>Assessment</th><th style="width:7rem">Verdict</th></tr></thead>
+<tbody>
+<tr><td><b>Hand-written recursive descent</b></td><td>JS and Rust</td><td>~350 lines each, spans on every node, error recovery per line, zero dependencies. This page runs one. Ports to Rust line-for-line, and the Windows build — which has already proven allergic to heavy crates — gains nothing new to compile.</td><td><span class="sev win">recommended</span></td></tr>
+<tr><td><b>Rust parser → WASM</b> via the existing browser adapter</td><td>Rust, run in JS</td><td><code>rs/adapters/browser</code> already builds with wasm-pack and <code>pkg/</code> has artifacts. Once the parser lives in <code>rs/core</code>, the lab can load <em>the real one</em> instead of a JS twin. Eliminates drift outright.</td><td><span class="sev win">phase 2</span></td></tr>
+<tr><td><code>chumsky</code> (Rust)</td><td>Rust</td><td>Best-in-class error messages from combinators. Worth it if the grammar grows expressions or precedence. For this size, more concept than benefit.</td><td><span class="sev mid">if it grows</span></td></tr>
+<tr><td><code>pest</code> (Rust)</td><td>Rust</td><td>Grammar in a <code>.pest</code> file; pleasant. Produces a token-pair tree you still walk into an AST, so you write most of the parser anyway.</td><td><span class="sev mid">optional</span></td></tr>
+<tr><td><b>tree-sitter</b></td><td>C → WASM + Rust crate</td><td>One <code>grammar.js</code> yields a browser parser <em>and</em> a Rust crate <em>and</em> editor highlighting (VS Code, Neovim, Zed). The right answer the day <code>.clx</code> wants IDE support. Costs a node+CLI codegen step and yields a CST, not an AST.</td><td><span class="sev mid">later, for editors</span></td></tr>
+<tr><td><b>Lezer</b> + CodeMirror 6</td><td>JS</td><td>The best in-browser editing experience (incremental, highlighting, folding). But it is a third grammar to keep in sync and never reaches Rust. This page uses a 40-line tokenizer-based highlighter instead, reusing the lexer's spans.</td><td><span class="sev none">not needed</span></td></tr>
+<tr><td>Ohm.js</td><td>JS</td><td>Superb for <em>sketching</em> a grammar interactively. JS-only dead end for the engine.</td><td><span class="sev none">sketch only</span></td></tr>
+<tr><td>peggy / Chevrotain / ANTLR</td><td>JS (/ Java)</td><td>Generated or heavyweight parsers for a grammar that fits on one screen. ANTLR additionally drags in a Java toolchain.</td><td><span class="sev bad">no</span></td></tr>
+</tbody></table></div>
+
+<div class="callout ok">
+  <h4>What actually keeps two implementations honest: a conformance corpus, not a shared grammar</h4>
+  <p>Whatever parses <code>.clx</code> in the lab and whatever parses it in the engine must agree. A shared grammar file <em>feels</em> like the guarantee but isn't — the semantic layer (aliases, duplicate detection, edge IR) lives outside the grammar. A directory of <code>.clx</code> inputs with expected <code>{bindings, edges, diagnostics}</code> JSON that <strong>both</strong> implementations must pass is the guarantee, and it doubles as the language's spec-by-example. The JS side already proved this works: <code>parse.test.cjs</code> caught two real bugs a visual check had missed.</p>
+</div>
+
+<h2 id="plan">4 · Suggested path</h2>
+<ol class="tight">
+  <li><b>Now — design in JS</b> (this page). Iterate the grammar where a change costs a page reload. Grow <code>corpus.json</code> as decisions land.</li>
+  <li><b>Port to Rust</b> as <code>rs/core/src/clx_lang.rs</code>: lexer → parser → <code>Vec&lt;Binding&gt;</code> → the engine's existing module dispatch. The action side calls the <code>Cmd</code> executor that already exists.</li>
+  <li><b>Swap the lab to WASM.</b> Expose <code>compile(src) -&gt; JSON</code> through the browser adapter; this page loads it and the JS twin becomes a fallback. Run the corpus against both in CI.</li>
+  <li><b>Round-trip with the recognizer.</b> <code>edges(pattern)</code> here produces exactly what <code>gesture-parser</code> reads; feed one into the other and assert identity. That is the reverse direction asked for earlier, without JS ever needing to inject a key.</li>
+  <li><b>tree-sitter only when someone wants highlighting in an editor.</b></li>
+</ol>
+
+<h2 id="open">5 · Open design questions</h2>
+<div class="scroll"><table class="t">
+<thead><tr><th style="width:3rem">#</th><th style="width:22rem">Question</th><th>Current draft says</th></tr></thead>
+<tbody>
+<tr><td>Q1</td><td>Is a <code>.clx</code> file the whole config, or just bindings?</td><td>Just bindings. Speeds, API keys, feature toggles stay in prefs. Keeps the language small and the file diffable.</td></tr>
+<tr><td>Q2</td><td>Punctuation keys: bare (<code>-</code> <code>=</code>) or named (<code>minus</code> <code>equal</code>)?</td><td>Both accepted for <code>-</code>/<code>=</code> because F11/F12 use them constantly; everything else by name, since <code>.</code> <code>|</code> <code>+</code> are operators.</td></tr>
+<tr><td>Q3</td><td>What does the engine do with a pattern whose hold is a non-trigger, e.g. <code>alt[ 1 ]</code>?</td><td>Undecided. Today the engine only dispatches while a trigger is held. Allowing arbitrary holds is a much bigger engine change than the parser suggests — flag it before anyone writes one.</td></tr>
+<tr><td>Q4</td><td>Sequences at top level — <code>clx[ g ] clx[ g ]</code> as a double-tap?</td><td><b>Decided: no.</b> There is no double-tap feature (<a href="/lab/double-tap/">why</a>). A top-level sequence still parses but is not simulated and should be rejected by the Rust parser.</td></tr>
+<tr><td>Q5</td><td>Built-in names: closed set or free-form?</td><td>Free-form in the parser, resolved by the engine, unknown names rejected at load time with a diagnostic — so adding a built-in never touches the grammar.</td></tr>
+<tr><td>Q7</td><td>Element targets: match by exact name, substring, or glob? Case-sensitive?</td><td>Undecided. Exact-then-substring with a diagnostic on ambiguity is the usual compromise; needs a real UIA/AX backend to test against.</td></tr>
+<tr><td>Q8</td><td>Should <code>click</code> with no target mean "where the pointer is" or "where the <em>gesture</em> started"?</td><td>Pointer position. Gesture-start needs the engine to snapshot the cursor on trigger-down, which is cheap — worth adding as <code>@start</code> rather than changing the default.</td></tr>
+<tr><td>Q9</td><td>Multi-monitor: are <code>400 300</code> and <code>50% 50%</code> primary-display or virtual-desktop coordinates?</td><td>Primary for percent, virtual for absolute px — that matches what <code>SetCursorPos</code> and <code>CGWarpMouseCursorPosition</code> actually take. Needs stating loudly in docs either way.</td></tr>
+<tr><td>Q6</td><td>Where does the file live and when is it reloaded?</td><td>Suggest <code>~/.config/capslockx/bindings.clx</code> (Windows: <code>%APPDATA%</code>), hot-reloaded on save, with load errors shown in the tray and the previous good set kept.</td></tr>
+</tbody></table></div>
+
+<footer>
+  Prototype source: <code>lab/clx-lang/clx.js</code> — same file this page runs. Nothing here is wired into the engine yet.
+</footer>
+</div>
+
+<script src="clx.js"></script>
+<script src="run.js"></script>
+<script>
+(function () {
+  'use strict';
+  var R = self.CLXRun;
+  var $ = function (id) { return document.getElementById(id); };
+  var transcript = $('transcript'), rlog = $('rlog'), rstat = $('rstat'), rnote = $('rnote'), rpad = $('rpad');
+  var caret = transcript.querySelector('.caret');
+  var armed = false, t0 = null;
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function stamp() { if (!t0) t0 = performance.now(); return ((performance.now() - t0) / 1000).toFixed(2) + 's'; }
+
+  function actionText(b) {
+    return b.cmds.map(function (c) {
+      switch (c.cmd) {
+        case 'key': return 'k ' + (c.mods.length ? c.mods.join('-') + '-' : '') + c.key;
+        case 'type': return 'k ' + JSON.stringify(c.text);
+        case 'wait': return 'w ' + c.ms + 'ms';
+        case 'waitfor': return 'wf …';
+        case 'move': return 'm …'; case 'click': return 'click …'; case 'drag': return 'drag …';
+        case 'scroll': return 'scroll ' + c.dir; case 'mark': return 'mark ' + c.name;
+        case 'mousedown': return 'md'; case 'mouseup': return 'mu';
+        default: return c.name + (c.args.length ? ' ' + c.args.join(' ') : '');
+      }
+    }).join(' ; ');
+  }
+
+  var sim = new R.Sim({
+    onOutput: function (text, cls) {
+      if (cls === 'backspace') {
+        var last = caret.previousSibling;
+        if (!last) return;
+        if (last.nodeType === 3 && last.nodeValue.length > 1) last.nodeValue = last.nodeValue.slice(0, -1);
+        else last.remove();
+      } else if (cls === 'mark') {
+        var m = document.createElement('span'); m.className = 'mk'; m.textContent = text;
+        transcript.insertBefore(m, caret);
+      } else {
+        transcript.insertBefore(document.createTextNode(text), caret);
+      }
+      transcript.scrollTop = transcript.scrollHeight;
+    },
+    onLog: function (e) {
+      if (e.silent) return;
+      var row = document.createElement('div');
+      row.className = 'row ' + (e.hit ? 'hit' : e.miss ? 'miss' : 'pass');
+      row.innerHTML = '<span class="t">' + stamp() + '</span><span class="g">' + esc(e.gesture) + '</span><span class="arrow">→</span><span class="a">' +
+        (e.hit ? esc(actionText(e.action)) + '<span class="ln">line ' + e.line + '</span>' : e.miss ? 'no binding — passed through' : 'passed through') + '</span>';
+      rlog.appendChild(row); rlog.scrollTop = rlog.scrollHeight;
+    },
+    onState: function (held) {
+      var groupable = held.filter(R.groupable);
+      document.querySelectorAll('[data-hold]').forEach(function (b) { b.classList.toggle('down', held.indexOf(b.dataset.hold) >= 0); });
+      $('rheld').innerHTML = held.map(function (k) { return '<span class="pk">' + esc(k) + '</span>'; }).join('');
+      rstat.textContent = groupable.length ? 'holding ' + groupable.join(' + ') + (held.length > groupable.length ? ' …' : '') : (armed ? 'listening' : 'idle');
+    }
+  });
+
+  var lastSrc = null;
+  self.CLXRunUI = {
+    setCompiled: function (r, src) {
+      sim.setCompiled(r, src);
+      // Mark the boundary in the log when the script actually changed, so old
+      // output above it is never mistaken for the current script's behaviour.
+      if (lastSrc !== null && src !== lastSrc && (rlog.children.length || transcript.childNodes.length > 1)) {
+        var div = document.createElement('div');
+        div.className = 'row pass';
+        div.style.cssText = 'grid-template-columns:1fr;text-align:center;color:var(--muted);font-size:.74rem;background:var(--code-bg)';
+        div.textContent = '— script changed ' + new Date().toTimeString().slice(0, 8) + ' — output below uses the new version —';
+        rlog.appendChild(div); rlog.scrollTop = rlog.scrollHeight;
+        var sep = document.createElement('span'); sep.className = 'mk'; sep.textContent = '⟨script changed⟩';
+        transcript.insertBefore(sep, caret); transcript.insertBefore(document.createTextNode('\n'), caret);
+      }
+      lastSrc = src;
+      var n = Object.keys(sim.idx).length;
+      var now = new Date();
+      rnote.textContent = 'compiled ' + now.toTimeString().slice(0, 8) + ' · ' + r.bindings.length + ' bindings · ' +
+        n + ' match key' + (n === 1 ? '' : 's') + ' indexed' +
+        (sim.skipped.length ? ' · not simulated: ' + sim.skipped.map(function (x) { return 'line ' + x.line + ' (' + x.why + ')'; }).join(', ') : '') +
+        ' · "->" order is matched as "+" here';
+    }
+  };
+
+  // virtual holds
+  document.querySelectorAll('[data-hold]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.dataset.hold;
+      if (sim.held.indexOf(k) >= 0) sim.up(k); else sim.down(k);
+      rpad.focus();
+    });
+  });
+  $('rrelease').addEventListener('click', function () { sim.releaseAll(); });
+
+  // real keys on the pad
+  function arm(on) { armed = on; rpad.classList.toggle('armed', on); sim.opts.onState(sim.held); }
+  rpad.addEventListener('mousedown', function (e) { e.preventDefault(); arm(true); rpad.focus(); });
+  rpad.addEventListener('blur', function () { arm(false); });
+  rpad.addEventListener('keydown', function (e) {
+    if (e.code === 'Escape') { arm(false); rpad.blur(); return; }
+    e.preventDefault();
+    if (e.repeat) return;
+    var k = R.nameOf(e.code);
+    // CapsLock arrives as a toggle in most browsers: treat a second down as the up
+    if (k === 'capslock' && sim.held.indexOf(k) >= 0) { sim.up(k); return; }
+    sim.down(k);
+  });
+  rpad.addEventListener('keyup', function (e) {
+    e.preventDefault();
+    var k = R.nameOf(e.code);
+    if (k === 'capslock') return;                 // handled on the next down
+    sim.up(k);
+  });
+
+  // typed traces
+  function runTrace() {
+    var t = $('rtrace').value; if (!t.trim()) return;
+    sim.replayTrace(t); $('rtrace').select();
+  }
+  $('rgo').addEventListener('click', runTrace);
+  $('rtrace').addEventListener('keydown', function (e) { if (e.key === 'Enter') runTrace(); });
+
+  $('rclear').addEventListener('click', function () {
+    transcript.innerHTML = ''; transcript.appendChild(caret); rlog.innerHTML = ''; t0 = null; sim.releaseAll();
+  });
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var C = self.CLX;
+  var $ = function (id) { return document.getElementById(id); };
+  var src = $('src'), hl = $('hl'), out = $('out'), view = $('view'), stat = $('stat');
+
+  var EXAMPLES = {
+    shipped: [
+      '# the shipped chord layer: (capslock] + space]) latches the lock',
+      '(capslock+space)[ 1 ]   => k f1',
+      '(capslock+space)[ 5 ]   => k f5',
+      '(capslock+space)[ = ]   => k f12',
+      '(capslock+space).       => lock toggle',
+      '',
+      '# ordinary bindings, either trigger',
+      'clx[ h ]                => k left',
+      'clx[ j ]                => k down',
+      'clx[ g ]                => k enter',
+      '(space+shift)[ 3 ]      => desktop move 3',
+      'space[ 3 ]              => desktop 3',
+      '',
+      '# held modifiers decorate the injected key',
+      'capslock[ alt[ 4 ] ]    => k a-f4',
+    ].join('\n'),
+    pointer: [
+      '# targets: x y | N% N% | win/cur/screen x y | @"text" | @role:"text" | @mark',
+      'clx[ 1 ]   => click',
+      'clx[ 2 ]   => click r',
+      'clx[ 3 ]   => dbl @"Untitled.txt"',
+      'clx[ 4 ]   => click s-l @row:"invoice.pdf"     # shift-click an element',
+      'clx[ 5 ]   => click win 50% 92%                # bottom-centre of the active window',
+      'clx[ 6 ]   => drag win 50% 90% -> win 50% 10%',
+      'clx[ 7 ]   => scroll down 5',
+      'clx[ 8 ]   => scroll up 240px @"Sidebar"',
+      'clx[ 9 ]   => { mark here; click @"OK"; m @here }',
+      'clx[ 0 ]   => { md; m cur +300 0; mu }         # a slow drag, in pieces',
+      'clx[ o ]   => { wf @"Open" 3s; click @"Open" }',
+      '',
+      '# pointer keys on the PATTERN side parse, but need a mouse hook the engine lacks',
+      'mb4[ h ]   => k left',
+    ].join('\n'),
+    macros: [
+      '# a block is a sequence; each command is a line of the agent language.',
+      '# every single key is already bound (see fn-row-rethink 1.3), but the chord',
+      '# layer only claims the number row -- chord + letter is free real estate.',
+      '(capslock+space)[ h ] => { k "Hello, "; w 120ms; k "world"; k enter }',
+      '(capslock+space)[ u ] => { k c-l; w 80ms; k "https://capslockx.com\\n" }',
+      '(capslock+space)[ m ] => agent',
+      '(capslock+space)[ b ] => brainstorm',
+      '(capslock+space)[ v ] => voice hold',
+      '',
+      '# wait for UI before continuing',
+      '(capslock+space)[ p ] => { k c-p; wf "Command Palette" 2s; k "toggle word wrap"; k enter }',
+    ].join('\n'),
+    errors: [
+      '# each of these is caught',
+      '(space+capslock)[ 1 ]   => k f1      # ok on its own ...',
+      '(capslock+space)[ 1 ]   => k f2      # ... duplicate modulo order',
+      '(a+b->c)[ x ]           => k x       # mixed connectors',
+      'h                       => k left    # no hold, no trigger',
+      'clx[ q                  => k q       # unclosed hold (warning)',
+      'clx[ z ]                =>           # missing action',
+      'foo[ 1 ]                => k f1      # unknown key',
+      'clx[ w ]                => m 10      # bad arity',
+      'clx[ t ]                => w 5       # duration needs a unit',
+      'clx[ u ]                => k "oops   # unterminated string',
+    ].join('\n'),
+  };
+
+  // ── syntax highlight from the lexer's own tokens ──────────────────────────
+  var CMDS = { k: 1, m: 1, w: 1, wf: 1, scan: 1, scan_stop: 1,
+               click: 1, dbl: 1, drag: 1, md: 1, mu: 1, scroll: 1, hover: 1, mark: 1 };
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function highlight(text, toks, diags) {
+    var marks = [];
+    toks.forEach(function (t) {
+      if (t.t === 'NL' || t.t === 'EOF') return;
+      var cls = null;
+      if (t.t === 'STR') cls = 's';
+      else if (t.t === 'FAT' || t.t === 'ARROW' || t.t === 'PLUS' || t.t === 'PIPE' || t.t === 'DOT' ||
+               t.t === 'LB' || t.t === 'RB' || t.t === 'LP' || t.t === 'RP' || t.t === 'LC' || t.t === 'RC' || t.t === 'SEMI') cls = 'o';
+      else if (t.t === 'ID' && CMDS[t.v]) cls = 'c';
+      else if (t.t === 'ID' || t.t === 'KEY' || t.t === 'MODKEY') cls = 'k';
+      else if (t.t === 'DUR' || t.t === 'NUM') cls = 's';
+      if (cls) marks.push({ a: t.pos, b: t.end, cls: cls });
+    });
+    // comments: lexer drops them, so find them textually
+    var re = /#[^\n]*/g, m;
+    while ((m = re.exec(text))) marks.push({ a: m.index, b: m.index + m[0].length, cls: 'm' });
+    diags.forEach(function (d) { marks.push({ a: d.pos, b: Math.max(d.end, d.pos + 1), cls: d.level === 'error' ? 'e' : 'w', deco: true }); });
+
+    // build spans; decorations can overlap tokens, so paint per character class set
+    var n = text.length, base = new Array(n).fill(null), deco = new Array(n).fill(null);
+    marks.forEach(function (mk) { for (var i = mk.a; i < Math.min(mk.b, n); i++) { if (mk.deco) deco[i] = mk.cls; else base[i] = mk.cls; } });
+    var html = '', cur = '';
+    for (var i = 0; i < n; i++) {
+      var cls = [base[i], deco[i]].filter(Boolean).join(' ');
+      if (cls !== cur) { if (cur) html += '</span>'; if (cls) html += '<span class="' + cls + '">'; cur = cls; }
+      html += esc(text[i]);
+    }
+    if (cur) html += '</span>';
+    return html + '\n';
+  }
+
+  // ── output views ──────────────────────────────────────────────────────────
+  function caret(text, d) {
+    var lines = text.split('\n'), ln = lines[d.line - 1] || '';
+    var width = Math.max(1, Math.min(d.end, ln.length + 1 + (text.slice(0, d.pos).lastIndexOf('\n') + 1)) - d.pos);
+    return esc(ln) + '\n' + ' '.repeat(Math.max(0, d.col - 1)) + '^'.repeat(width);
+  }
+  function actionText(b) {
+    return b.cmds.map(function (c) {
+      switch (c.cmd) {
+        case 'key': return 'k ' + (c.mods.length ? c.mods.join('-') + '-' : '') + c.key;
+        case 'type': return 'k ' + JSON.stringify(c.text);
+        case 'move': return 'm ' + tgt(c.target) + (c.click ? ' c' : '');
+        case 'click': return 'click ' + (c.mods.length ? c.mods.join('-') + '-' : '') + c.button + (c.target ? ' ' + tgt(c.target) : '') + (c.times > 1 ? ' x' + c.times : '');
+        case 'mousedown': return 'md ' + c.button;
+        case 'mouseup': return 'mu ' + c.button;
+        case 'drag': return 'drag ' + tgt(c.from) + ' -> ' + tgt(c.to) + (c.button !== 'left' ? ' ' + c.button : '');
+        case 'scroll': return 'scroll ' + c.dir + ' ' + c.amount + (c.unit === 'px' ? 'px' : '') + (c.target ? ' ' + tgt(c.target) : '');
+        case 'mark': return 'mark ' + c.name;
+        case 'wait': return 'w ' + c.ms + 'ms';
+        case 'waitfor': return 'wf ' + (c.what.kind === 'Text' ? JSON.stringify(c.what.text) : tgt(c.what)) + ' ' + c.timeoutMs + 'ms';
+        default: return c.name + (c.args.length ? ' ' + c.args.join(' ') : '');
+      }
+    }).join(' ; ');
+  }
+  function tgt(t) {
+    if (!t) return '';
+    var u = t.pct ? '%' : '';
+    switch (t.kind) {
+      case 'Abs': return t.x + u + ' ' + t.y + u;
+      case 'Rel': return { window: 'win', cursor: 'cur', screen: 'screen' }[t.base] + ' ' + (t.x >= 0 && t.base === 'cursor' ? '+' : '') + t.x + u + ' ' + (t.y >= 0 && t.base === 'cursor' ? '+' : '') + t.y + u;
+      case 'Cursor': return 'cur';
+      case 'Elem': return '@' + (t.role ? t.role + ':' : '') + JSON.stringify(t.name);
+      case 'Mark': return '@' + t.name;
+    }
+    return '?';
+  }
+  function render() {
+    var text = src.value;
+    var r = C.compile(text);
+    if (self.CLXRunUI) self.CLXRunUI.setCompiled(r, text);
+    hl.innerHTML = highlight(text, r.tokens, r.diagnostics);
+    var errs = r.diagnostics.filter(function (d) { return d.level === 'error'; }).length;
+    var warns = r.diagnostics.length - errs;
+    stat.textContent = r.bindings.length + ' binding' + (r.bindings.length === 1 ? '' : 's') +
+      (errs ? ' · ' + errs + ' error' + (errs > 1 ? 's' : '') : '') + (warns ? ' · ' + warns + ' warning' + (warns > 1 ? 's' : '') : '');
+    stat.style.color = errs ? 'var(--crit)' : warns ? 'var(--warn)' : 'var(--ok)';
+
+    var v = view.value;
+    if (v === 'bind') {
+      if (!r.bindings.length) { out.innerHTML = '<div class="diag"><span class="at">—</span>no bindings yet</div>'; return; }
+      var rows = r.bindings.map(function (b) {
+        return '<tr><td class="mono">' + esc(b.pattern) + '</td><td class="mono" style="color:var(--muted)">' +
+          b.variants.map(esc).join('<br>') + '</td><td class="mono">' + esc(actionText(b.action)) + '</td></tr>';
+      }).join('');
+      out.innerHTML = '<table><thead><tr><th>pattern (canonical)</th><th>edge IR — trace form</th><th>action</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    } else if (v === 'diag') {
+      if (!r.diagnostics.length) { out.innerHTML = '<div class="ok-line">no diagnostics</div>'; return; }
+      out.innerHTML = r.diagnostics.map(function (d) {
+        return '<div class="diag ' + d.level + '"><span class="lv">' + d.level + '</span><span class="at">' + d.line + ':' + d.col +
+          '</span><div>' + esc(d.msg) + '<pre>' + caret(text, d) + '</pre></div></div>';
+      }).join('');
+    } else if (v === 'ast') {
+      var ast = JSON.parse(JSON.stringify(r.ast, function (k, val) { return k === 'span' || k === 'raw' ? undefined : val; }));
+      out.innerHTML = '<pre class="json">' + esc(JSON.stringify(ast, null, 2)) + '</pre>';
+    } else {
+      out.innerHTML = '<pre class="json">' + esc(r.tokens.filter(function (t) { return t.t !== 'NL'; })
+        .map(function (t) { return (t.line + ':' + t.col).padEnd(7) + t.t.padEnd(7) + JSON.stringify(t.v); }).join('\n')) + '</pre>';
+    }
+  }
+
+  // ── wiring ────────────────────────────────────────────────────────────────
+  src.addEventListener('input', render);
+  src.addEventListener('scroll', function () { hl.scrollTop = src.scrollTop; hl.scrollLeft = src.scrollLeft; });
+  view.addEventListener('change', function () { $('rhd').textContent = view.options[view.selectedIndex].text; render(); });
+  document.querySelectorAll('button[data-ex]').forEach(function (b) {
+    b.addEventListener('click', function () { src.value = EXAMPLES[b.dataset.ex]; render(); });
+  });
+  src.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') { e.preventDefault(); var s = src.selectionStart; src.setRangeText('    ', s, src.selectionEnd, 'end'); render(); }
+  });
+  try { var saved = localStorage.getItem('clx-lang-src'); if (saved) src.value = saved; } catch (e) {}
+  if (!src.value) src.value = EXAMPLES.shipped;
+  src.addEventListener('input', function () { try { localStorage.setItem('clx-lang-src', src.value); } catch (e) {} });
+  render();
+})();
+</script>
+</body>
+</html>

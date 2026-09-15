@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Double-tap: worth having?</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#ffffff; --ink:#1a1a1c; --muted:#63636b; --line:#e5e3de;
+  --accent:#2f5fd8; --code-bg:#f2f1ed; --ok:#1f7a52; --ok-bg:#e7f4ec;
+  --warn:#a35a00; --warn-bg:#fdf1e0; --crit:#b3261e; --crit-bg:#fdeceb;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;}}
+:root[data-theme="dark"]{
+  --bg:#131316; --panel:#1a1a1e; --ink:#e9e8e6; --muted:#9b9aa2; --line:#2c2c33;
+  --accent:#8fb0ff; --code-bg:#232329; --ok:#8fd3ae; --ok-bg:#1d2f26;
+  --warn:#f3bd72; --warn-bg:#382914; --crit:#ff9b93; --crit-bg:#3a1e1c;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);margin:0;padding:0 1.25rem 6rem;
+  font:16px/1.62 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:70rem;margin:0 auto}
+.crumb{font-size:.85rem;color:var(--muted);margin:0;padding-top:1.5rem}
+header{padding:1.3rem 0 1.3rem;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(1.55rem,3.2vw,2.2rem);margin:0 0 .45rem;letter-spacing:-.02em;line-height:1.2}
+.sub{color:var(--muted);margin:0}
+h2{font-size:1.25rem;margin:2.8rem 0 .4rem;letter-spacing:-.01em;scroll-margin-top:1rem}
+h2 .num{color:var(--muted);font-weight:500;margin-right:.5rem}
+h3{font-size:1rem;margin:1.6rem 0 .4rem}
+p{margin:.6rem 0}
+.lede{color:var(--muted)}
+code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;background:var(--code-bg);
+  padding:.1em .38em;border-radius:4px;font-size:.87em}
+kbd{font-family:ui-monospace,Consolas,monospace;background:var(--panel);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:.08em .4em;font-size:.8em;white-space:nowrap}
+a{color:var(--accent)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:1rem 0}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:46rem}
+th,td{text-align:left;vertical-align:top;padding:.6rem .8rem;border-bottom:1px solid var(--line)}
+th{font-weight:600;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg)}
+tbody tr:last-child td{border-bottom:none}
+.sev{display:inline-block;font-size:.7rem;font-weight:800;padding:.15em .5em;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.sev.win{color:var(--ok);background:var(--ok-bg)} .sev.bad{color:var(--crit);background:var(--crit-bg)}
+.sev.mid{color:var(--warn);background:var(--warn-bg)} .sev.none{color:var(--muted);background:var(--code-bg)}
+.callout{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--panel);
+  border-radius:0 10px 10px 0;padding:.9rem 1.1rem;margin:1.2rem 0}
+.callout.ok{border-left-color:var(--ok)} .callout.warn{border-left-color:var(--warn)} .callout.danger{border-left-color:var(--crit)}
+.callout h4{margin:0 0 .3rem;font-size:.94rem} .callout p{margin:.35rem 0;font-size:.93rem}
+.grid{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));margin:1rem 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem}
+.card h4{margin:0 0 .35rem;font-size:.92rem} .card p{margin:.25rem 0;font-size:.88rem;color:var(--muted)}
+.card.good{border-top:3px solid var(--ok)} .card.badc{border-top:3px solid var(--crit)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:.85rem 1rem;overflow-x:auto;font-size:.84rem;line-height:1.5}
+pre code{background:none;padding:0}
+ul.tight{margin:.5rem 0;padding-left:1.2rem} ul.tight li{margin:.3rem 0}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.85rem 1.2rem;margin:1.6rem 0;font-size:.9rem}
+nav.toc ol{margin:.3rem 0;padding-left:1.3rem} nav.toc li{margin:.15rem 0}
+footer{margin-top:3.5rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / double-tap &nbsp;·&nbsp;
+  notation: <a href="/lab/chord-fn-row/#notation">chord-fn-row</a> &nbsp;·&nbsp;
+  language: <a href="/lab/clx-lang/#open">clx-lang Q4</a></p>
+
+<header>
+  <h1>Double-tap: worth having?</h1>
+  <p class="sub">The one common keyboard gesture the CLX notation cannot write. Whether that is a gap or a feature.</p>
+</header>
+
+<div class="callout danger">
+  <h4>Decision (2026-09-14): no double-tap feature</h4>
+  <p>Not a gesture in the notation, not an operator in <code>.clx</code>, no new engine or platform plumbing (no <code>double_tap_ms()</code>, no repeat-rate readout). The research below stays as the reasoning; the conclusion was that the one good form is already the only one in use &mdash; the voice module's look-back on <kbd>V</kbd> &mdash; and it is left exactly as it is, hardcoded 500&nbsp;ms included. Revisit only if a second module genuinely needs tap-vs-double.</p>
+</div>
+
+<div class="callout ok">
+  <h4>Short answer</h4>
+  <p><strong>Yes in one specific form, no as a general primitive.</strong> There are two ways to build a double-tap, and they are not the same gesture. <em>Look-back</em> — the single tap fires at once, and a second tap inside the window <em>upgrades</em> it — costs nothing and needs no timer. <em>Wait-ahead</em> — the first tap is held back until the window expires to see if a second arrives — taxes every single tap with the full interval and reintroduces the timer-thread bug class this project just spent a week on. The voice module already does the right one. Keep that shape, source the interval from the OS instead of hardcoding it, and do not add double-tap to the pattern language.</p>
+</div>
+
+<nav class="toc"><strong>Contents</strong>
+<ol>
+  <li><a href="#have">What CLX has today</a></li>
+  <li><a href="#two">Two gestures wearing one name</a></li>
+  <li><a href="#cost">The costs, with numbers</a></li>
+  <li><a href="#for">What it buys</a></li>
+  <li><a href="#prior">Prior art and their intervals</a></li>
+  <li><a href="#keys">Key-by-key: where it is safe</a></li>
+  <li><a href="#rec">Recommendation</a></li>
+  <li><a href="#lang">What it means for <code>.clx</code></a></li>
+</ol></nav>
+
+<h2 id="have"><span class="num">1</span>What CLX has today</h2>
+<div class="scroll"><table>
+<thead><tr><th style="width:15rem">Where</th><th style="width:15rem">Gesture</th><th style="width:6rem">Window</th><th>Shape</th></tr></thead>
+<tbody>
+<tr><td><code>rs/core/src/modules/voice_ptt.rs:36</code></td><td>double-tap <kbd>V</kbd> → locked push-to-talk</td><td><b>500 ms</b></td><td><span class="sev win">look-back</span> First tap starts PTT immediately; a second tap inside 500 ms upgrades it to locked. No timer thread — just <code>last_tap_time</code> compared on the second tap. Covered by <code>test_double_tap_too_slow_is_two_taps</code>.</td></tr>
+<tr><td><code>Core/CapsLockX-Core.ahk:319</code> (AHK, legacy)</td><td>CapsLock+Space → locked mode</td><td>250 ms</td><td><span class="sev none">retired</span> A chord with a deadline: the second trigger had to land within 250 ms. The Rust port detects the chord from <code>held_keys</code> instead — purely structural, no clock. That was a deliberate improvement, not a loss.</td></tr>
+<tr><td><code>Modules/CLX-WindowManager.ahk:899</code> (AHK)</td><td>double-tap LCtrl/LAlt/LShift → always-on-top</td><td>200 ms</td><td><span class="sev none">not ported</span></td></tr>
+</tbody></table></div>
+<p class="lede">Three implementations, three intervals. The only one alive in the Rust engine is also the one built the right way.</p>
+
+<h2 id="two"><span class="num">2</span>Two gestures wearing one name</h2>
+<div class="grid">
+  <div class="card good">
+    <h4>Look-back — compare on the second tap</h4>
+    <p>Tap 1 fires its action <em>now</em>. Tap 2 checks "was tap 1 within T?" and, if so, <em>upgrades</em> what tap 1 started.</p>
+    <p><b>Latency:</b> zero. <b>Timer thread:</b> none — one <code>Instant</code> and a comparison. <b>Failure mode when the window is missed:</b> two ordinary taps.</p>
+    <p><b>Requires:</b> the single-tap action must be something a second tap can build on — start a mode, begin a hold, open something. It cannot be a one-shot side effect you would need to take back.</p>
+  </div>
+  <div class="card badc">
+    <h4>Wait-ahead — decide after the window</h4>
+    <p>Tap 1 is <em>held back</em>. A timer fires at T: if no second tap came, run the single action late; if one did, run the double action.</p>
+    <p><b>Latency:</b> every single tap arrives T ms late, always. <b>Timer thread:</b> required — the same detached-thread-with-a-deadline shape as the 200 ms Space timeout that produced the space flood. <b>Failure mode:</b> the wrong action fires, after a delay, and there is no undo.</p>
+    <p><b>Requires:</b> tolerating the latency. On navigation keys that is the whole product.</p>
+  </div>
+</div>
+<p>Nearly every complaint about double-tap in the wild is a complaint about <em>wait-ahead</em>: sluggish single-clicks, tap-dance keys that feel mushy, the IDE that eats your first Shift. Nearly every double-tap people like — iOS double-space to period, double-tap Shift to caps on a phone — is <em>look-back</em>, sometimes with a small retroactive edit (the first space is typed at once; the second replaces it with <code>". "</code>).</p>
+
+<h2 id="cost"><span class="num">3</span>The costs, with numbers</h2>
+<div class="scroll"><table>
+<thead><tr><th style="width:16rem">Cost</th><th>Detail</th><th style="width:9rem">Applies to</th></tr></thead>
+<tbody>
+<tr><td>Single-tap latency</td><td>Wait-ahead delays every single tap by the full window: 300–500 ms on a key you press hundreds of times a day. QMK's tap-dance documents exactly this and offers "permissive hold" hacks to soften it.</td><td><span class="sev bad">wait-ahead</span></td></tr>
+<tr><td>Accidental fires on letters</td><td>Doubled letters — <code>ll ee ss oo tt ff rr nn pp mm</code> — are roughly 3–4% of English bigrams. At 80 WPM a same-key repeat lands ~120–160 ms apart, deep inside any plausible window. A double-tap detector on a letter fires constantly during normal typing. This is why nobody ships one on letters.</td><td><span class="sev bad">both</span></td></tr>
+<tr><td>Accidental fires on modifiers</td><td>Two capitals in a row (<kbd>Shift</kbd> A <kbd>Shift</kbd> B) is a double-tap of Shift within the window. JetBrains' double-Shift "Search Everywhere" is the canonical accident, and the setting to disable it is well-trodden.</td><td><span class="sev mid">Shift especially</span></td></tr>
+<tr><td>Accidental fires on Space</td><td>Two-space-after-period typists exist. Double-tap Space would fire on every sentence for them.</td><td><span class="sev mid">Space</span></td></tr>
+<tr><td>The interval is not a constant</td><td>Users cluster from ~200 to ~500 ms; motor impairments push higher. Anything hardcoded is wrong for someone. The OS already keeps a user-tuned value for mouse double-click.</td><td><span class="sev mid">both</span></td></tr>
+<tr><td>Auto-repeat looks like tapping</td><td>OS key repeat (delay ~250–500 ms, rate ~30 ms) produces repeated key-downs. A detector counting <em>downs</em> sees a double-tap in every held key. Must count down→up→down edges — which the engine already tracks, so this is a known-solved hazard here.</td><td><span class="sev none">solved</span></td></tr>
+<tr><td>Timer-thread bug class</td><td>A deferred decision needs something to wake up later. The engine's one existing timer became an unbounded <code>SendInput</code> firehose when the hook died. Every new deferred action is another instance of that class to bound and audit.</td><td><span class="sev bad">wait-ahead</span></td></tr>
+</tbody></table></div>
+
+<h2 id="for"><span class="num">4</span>What it buys</h2>
+<ul class="tight">
+  <li><b>Toggle/lock semantics that feel natural.</b> "Tap to do it once, tap-tap to make it stick" is a widely understood idiom (double-tap Shift → caps lock on phones). The voice module's use is exactly this, and it is the strongest case for keeping double-tap at all.</li>
+  <li><b>Binding space without new keys.</b> Real, but the chord layer already delivers a whole extra layer <em>structurally</em>, with no clock. Double-tap is the weaker tool for this job.</li>
+  <li><b>Familiarity.</b> Users arrive knowing it from IDEs and phones.</li>
+</ul>
+
+<h2 id="prior"><span class="num">5</span>Prior art and their intervals</h2>
+<div class="scroll"><table>
+<thead><tr><th style="width:17rem">System</th><th style="width:8rem">Interval</th><th style="width:7rem">Shape</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Windows mouse double-click</td><td><b>500 ms</b> default</td><td>look-back</td><td><code>GetDoubleClickTime()</code>; user-tunable in Control Panel and respected by accessibility settings. The first click always fires.</td></tr>
+<tr><td>macOS double-click</td><td>~500 ms default</td><td>look-back</td><td><code>NSEvent.doubleClickInterval</code>, user-tunable in Settings.</td></tr>
+<tr><td>Android <code>DOUBLE_TAP_TIMEOUT</code></td><td>300 ms</td><td>wait-ahead</td><td>Touch double-tap defers the single tap — the classic 300 ms web "click delay" that browsers later removed with <code>touch-action</code>.</td></tr>
+<tr><td>iOS double-space → period</td><td>~ a few hundred ms</td><td>look-back + retroactive edit</td><td>First space is typed immediately; the second replaces it. Retraction works because a space is trivially undoable.</td></tr>
+<tr><td>JetBrains double-Shift</td><td>~300 ms</td><td>look-back</td><td>Famous for accidental fires; widely disabled.</td></tr>
+<tr><td>QMK tap-dance</td><td><code>TAPPING_TERM</code> 200 ms</td><td>wait-ahead</td><td>Documented latency cost; "permissive hold" / interrupt rules exist to soften it.</td></tr>
+<tr><td>Karabiner-Elements</td><td><code>to_delayed_action</code> 500 ms</td><td>either</td><td>Double-tap is assembled from variables + delayed actions, so the author chooses the shape.</td></tr>
+<tr><td>Vim <code>dd</code> <code>yy</code> <code>gg</code></td><td>none (<code>timeoutlen</code> 1000 ms only for <em>mappings</em>)</td><td>sequence</td><td>Not a double-tap: a modal command sequence with no deadline. Structure, not time.</td></tr>
+<tr><td>tmux / Emacs prefix keys</td><td>none</td><td>sequence</td><td>Same: state machine, no clock.</td></tr>
+</tbody></table></div>
+<p class="lede">The systems that feel good either use look-back or use no timer at all. The 500 ms already in <code>voice_ptt.rs</code> matches the desktop OS default, which is not a coincidence — it is what users have already calibrated their hands to.</p>
+
+<h2 id="keys"><span class="num">6</span>Key-by-key: where it is safe in CLX</h2>
+<div class="scroll"><table>
+<thead><tr><th style="width:13rem">Key</th><th style="width:12rem">Single-tap today</th><th>Double-tap viability</th><th style="width:7rem">Verdict</th></tr></thead>
+<tbody>
+<tr><td><kbd>V</kbd> inside a hold</td><td>start PTT</td><td>Starting PTT is harmless and upgradable; letters inside a CLX hold are never typed, so no doubled-letter risk. The existing design.</td><td><span class="sev win">good</span></td></tr>
+<tr><td><kbd>CapsLock</kbd> alone</td><td>toggles OS caps</td><td>Rarely typed twice, so accidents are rare — but the single action is an OS state flip, so a look-back "upgrade" would have to flip it back. Doable, ugly.</td><td><span class="sev mid">meh</span></td></tr>
+<tr><td><kbd>Space</kbd> alone</td><td>types a space</td><td>Would need iOS-style retraction (backspace the first space), which misbehaves in terminals, password fields, and anything with autocomplete. Two-space typists fire it on every sentence.</td><td><span class="sev bad">no</span></td></tr>
+<tr><td>Modifiers alone</td><td>nothing</td><td>No single action to delay, so look-back is free of latency — but the accidental-fire rate on Shift is high. Ctrl/Alt are safer. The old AHK always-on-top binding lived here.</td><td><span class="sev mid">Ctrl/Alt only</span></td></tr>
+<tr><td>Letters, outside a hold</td><td>types the letter</td><td>Doubled letters kill it outright.</td><td><span class="sev bad">never</span></td></tr>
+<tr><td>Navigation keys inside a hold (<kbd>H J K L</kbd>)</td><td>move</td><td>Wait-ahead would put 300–500 ms on cursor movement — the core feature. Look-back has nothing to upgrade.</td><td><span class="sev bad">never</span></td></tr>
+<tr><td>Trigger chord</td><td>toggle lock</td><td>Already structural; a double-chord adds nothing the chord + a key doesn't.</td><td><span class="sev none">unnecessary</span></td></tr>
+</tbody></table></div>
+
+<h2 id="rec"><span class="num">7</span>Recommendation</h2>
+<div class="callout ok">
+  <h4>The rule</h4>
+  <p><strong>Look-back double-tap is allowed; wait-ahead is not.</strong> Concretely: the single tap must fire immediately, the second tap may only <em>upgrade</em> something the first tap started, and the implementation is a stored <code>Instant</code> compared on the second tap — never a thread that wakes up later to decide. That rule keeps zero latency, keeps the notation edge-based, and keeps the engine at exactly one timer (the Space hold-timeout), which is already one more than anyone wants.</p>
+</div>
+<ul class="tight">
+  <li><b>Interval: take it from the OS, fall back to 500 ms.</b> Add <code>Platform::double_tap_ms() -&gt; Option&lt;u64&gt;</code> beside the existing <code>system_key_repeat_ms()</code>; Windows answers with <code>GetDoubleClickTime()</code>, macOS with <code>NSEvent.doubleClickInterval</code>. The user has already tuned that number for their hands, and accessibility settings flow through for free. Replace the hardcoded <code>DOUBLE_TAP_MS</code> in <code>voice_ptt.rs</code> with it.</li>
+  <li><b>One constant, not three.</b> Retire 250 and 200 from the conversation; they belong to AHK code that is either superseded or unported.</li>
+  <li><b>Factor the voice pattern into a reusable helper</b> — a <code>TapUpgrade</code> that a module can consult — so the next module that wants "tap = do, tap-tap = lock" reuses the safe shape instead of inventing a timer.</li>
+  <li><b>Do not add it as a general gesture.</b> Every case where it seems attractive (a layer, a lock) has a structural equivalent that needs no clock: the chord.</li>
+</ul>
+
+<div class="callout warn">
+  <h4>The alternative worth a thought: make voice lock structural too</h4>
+  <p>Voice lock is the only timing gesture left in the engine. It could be <code>(capslock+space)[ v ]</code> instead — chord + V — which is exactly how the F-row layer already works, needs no interval at all, and makes "lock" mean the same gesture family everywhere. The cost is ergonomic: a double-tap of V is one finger, the chord is two hands. The recommendation above keeps double-tap because it is the good kind; but if you would rather have <em>zero</em> timers, this is how.</p>
+</div>
+
+<h2 id="lang"><span class="num">8</span>What it means for <code>.clx</code></h2>
+<p>This settles open question Q4 on the language page. Top-level sequences like <code>clx[ v ] clx[ v ]</code> should <strong>not</strong> become a general double-tap operator — the language stays edge-based. If a binding needs tap-vs-double, it is a property of the <em>action</em>, not the pattern:</p>
+<pre><code>clx[ v ]   =&gt; voice hold          # single tap: hold-to-talk (fires at once)
+clx[ v ]   =&gt; voice hold, x2 lock # second tap inside the OS double-tap window upgrades to locked</code></pre>
+<p class="lede">That keeps the pattern side honest (one gesture, one binding) and puts the timing where it belongs: inside a built-in that has explicitly opted into upgrade semantics, with the interval coming from the platform.</p>
+
+<footer>
+  Sources checked: <code>voice_ptt.rs</code>, <code>CapsLockX-Core.ahk</code>, <code>CLX-WindowManager.ahk</code>, <code>platform.rs</code>. Interval figures for other systems are from their public documentation and defaults; bigram frequency is the standard English-corpus estimate.
+</footer>
+</div>
+</body>
+</html>
