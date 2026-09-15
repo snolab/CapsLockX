@@ -150,3 +150,6 @@ These modifier+Space combos bypass CLX mode (pass through to OS):
 - Ctrl+Space → IME switching (like AHK)
 - Cmd+Space → Spotlight
 ```
+
+## No Claude Artifacts
+Never publish lab pages, reports, or any HTML from this repo as a Claude Artifact (the `Artifact` tool), and never suggest it. Lab pages are viewed from the local server (`bun lab/serve.ts` → http://localhost:4550/lab/, or via portless at https://capslockx.localhost/lab/) or from the published site (capslockx.com/lab, deployed from `main`). Content lives in git only.
