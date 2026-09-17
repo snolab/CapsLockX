@@ -346,8 +346,9 @@ impl Platform for WinPlatform {
         let windows = get_app_windows();
         if windows.is_empty() {
             // Empty desktop: nothing to cycle, so Z / Shift+Z step to the
-            // next / previous virtual desktop instead of doing nothing.
-            vd_api::step_desktop(dir);
+            // next / previous virtual desktop (and land on its first / last
+            // window) instead of doing nothing.
+            vd_api::step_desktop_and_focus(dir);
             return;
         }
         let fg = unsafe { GetForegroundWindow() };
@@ -373,10 +374,9 @@ impl Platform for WinPlatform {
                         let _ = SetForegroundWindow(windows[new_idx as usize]);
                     }
                 } else {
-                    // TODO: wrap around with modulo instead of switching desktop.
-                    // Match macOS behavior: cycle through all windows, wrap E→A.
-                    // For now, keep the desktop-switching behavior.
-                    vd_api::step_desktop(dir);
+                    // Ran off the end: continue into the next / previous
+                    // desktop and land on its first / last window.
+                    vd_api::step_desktop_and_focus(dir);
                 }
             }
         }
@@ -557,7 +557,7 @@ fn enum_callback_inner(hwnd: HWND, lparam: LPARAM) -> BOOL {
 /// Enumerate visible app windows, ordered by monitor index then HWND value.
 ///
 /// Cycling order: current monitor's windows → next monitor → … → desktop switch.
-fn get_app_windows() -> Vec<HWND> {
+pub(crate) fn get_app_windows() -> Vec<HWND> {
     let mut v: Vec<HWND> = Vec::new();
     unsafe {
         let _ = EnumWindows(

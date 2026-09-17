@@ -275,6 +275,10 @@ enum Req {
     Switch(usize),
     /// Step one desktop left (-1) or right (+1) of the current one.
     Step(i32),
+    /// Like `Step` but wrapping around at the ends, then focus the first (+1)
+    /// / last (-1) app window on the desktop we land on, so window cycling
+    /// forms one closed loop across every desktop.
+    StepFocus(i32),
     /// Move `hwnd` to the 1-based desktop index and follow it.
     MoveWindow(isize, usize),
 }
@@ -366,21 +370,42 @@ impl Worker {
         self.tracked_idx = idx;
     }
 
+    /// Step one desktop in `dir`. With `wrap`, stepping past the last desktop
+    /// lands on the first (and vice versa) so window cycling forms a closed
+    /// loop; without it the step clamps at the edges. Returns whether a
+    /// switch was issued.
+    fn step(&mut self, dir: i32, wrap: bool) -> bool {
+        if let Some(cur) = self.current_idx() {
+            let count = self
+                .with_mgr(|m| unsafe { m.count() })
+                .unwrap_or(usize::MAX)
+                .max(1) as i64;
+            let raw = cur as i64 + dir as i64;
+            let next = if wrap {
+                ((raw - 1).rem_euclid(count) + 1) as usize
+            } else {
+                raw.clamp(1, count) as usize
+            };
+            if next == cur {
+                return false;
+            }
+            self.switch(next);
+        } else {
+            // No COM at all: blind Win+Ctrl+Arrow, one step (cannot wrap).
+            crate::output::navigate_desktops_step(dir);
+        }
+        true
+    }
+
     fn handle(&mut self, req: Req) {
         match req {
             Req::Switch(idx) => self.switch(idx),
             Req::Step(dir) => {
-                if let Some(cur) = self.current_idx() {
-                    let count = self
-                        .with_mgr(|m| unsafe { m.count() })
-                        .unwrap_or(usize::MAX);
-                    let next = (cur as i64 + dir as i64).clamp(1, count.max(1) as i64) as usize;
-                    if next != cur {
-                        self.switch(next);
-                    }
-                } else {
-                    // No COM at all: blind Win+Ctrl+Arrow, one step.
-                    crate::output::navigate_desktops_step(dir);
+                self.step(dir, false);
+            }
+            Req::StepFocus(dir) => {
+                if self.step(dir, true) {
+                    focus_edge_window(dir);
                 }
             }
             Req::MoveWindow(hwnd, idx) => self.move_window(hwnd, idx),
@@ -687,6 +712,29 @@ unsafe fn arr_get_at(arr: *mut c_void, i: u32, iid: &GUID) -> Option<ComPtr> {
     }
 }
 
+/// After a desktop switch, activate the first (`dir > 0`) or last (`dir < 0`)
+/// app window on the new desktop. The shell un-cloaks the target desktop's
+/// windows asynchronously, so poll briefly until the enumeration sees them;
+/// an empty desktop just times out and leaves the desktop background focused.
+fn focus_edge_window(dir: i32) {
+    use windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow;
+    for _ in 0..25 {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        let windows = crate::output::get_app_windows();
+        let target = if dir > 0 {
+            windows.first()
+        } else {
+            windows.last()
+        };
+        if let Some(&w) = target {
+            unsafe {
+                let _ = SetForegroundWindow(w);
+            }
+            return;
+        }
+    }
+}
+
 // ── Public API (safe to call from the hook callback) ─────────────────────────
 //
 // None of these touch COM; they post to the worker and return immediately.
@@ -699,6 +747,12 @@ pub fn switch_desktop(idx: usize) {
 /// Step one desktop in `dir` direction (+1 or -1), clamped to the real range.
 pub fn step_desktop(dir: i32) {
     post(Req::Step(dir));
+}
+
+/// Step one desktop in `dir`, wrapping last → first (and first → last), then
+/// focus the first (+1) / last (-1) app window on the desktop we land on.
+pub fn step_desktop_and_focus(dir: i32) {
+    post(Req::StepFocus(dir));
 }
 
 /// Move the window `hwnd` to the 1-based desktop index and switch to it.
