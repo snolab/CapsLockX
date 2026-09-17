@@ -344,6 +344,12 @@ impl Platform for WinPlatform {
     ///   3. Next virtual desktop's first monitor's first window
     fn cycle_windows(&self, dir: i32) {
         let windows = get_app_windows();
+        if windows.is_empty() {
+            // Empty desktop: nothing to cycle, so Z / Shift+Z step to the
+            // next / previous virtual desktop instead of doing nothing.
+            vd_api::step_desktop(dir);
+            return;
+        }
         let fg = unsafe { GetForegroundWindow() };
         let pos = windows.iter().position(|&h| h == fg);
         match pos {
