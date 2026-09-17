@@ -176,6 +176,11 @@ fn write_wav_header(w: &mut impl Write) -> std::io::Result<()> {
 /// reads `notes.jsonl` independently — its lifecycle is not tied to the
 /// listen child, so a sensevoice crash here doesn't take it down.
 pub fn ensure_tray_running() {
+    // otoji-tray is a macOS menu-bar app; on Windows the clx tray reflects
+    // voice state itself, and `pgrep`/`which` don't exist to probe with.
+    if cfg!(target_os = "windows") {
+        return;
+    }
     // Detect a running tray *specifically* — the bare process name `otoji`
     // is also used by `otoji listen`, `otoji kws`, etc., so a `pgrep -x
     // otoji` match would mean "any otoji subprocess is alive" and skip
@@ -258,12 +263,19 @@ pub fn ensure_tray_running() {
 
 /// Resolve the `otoji` executable via PATH, following symlinks so the result
 /// points at the real binary (e.g. a dev rebuild behind a Homebrew symlink).
-fn otoji_binary_path() -> Option<std::path::PathBuf> {
+pub fn otoji_binary_path() -> Option<std::path::PathBuf> {
+    let names: &[&str] = if cfg!(windows) {
+        &["otoji.exe", "otoji"]
+    } else {
+        &["otoji"]
+    };
     let path_var = std::env::var_os("PATH")?;
     for dir in std::env::split_paths(&path_var) {
-        let candidate = dir.join("otoji");
-        if candidate.is_file() {
-            return std::fs::canonicalize(&candidate).ok().or(Some(candidate));
+        for name in names {
+            let candidate = dir.join(name);
+            if candidate.is_file() {
+                return std::fs::canonicalize(&candidate).ok().or(Some(candidate));
+            }
         }
     }
     None
@@ -384,16 +396,11 @@ impl OtojiBackend {
         }
     }
 
-    /// Check if `otoji` binary is available on PATH.
-    /// Uses `which` instead of running the binary to avoid hanging on broken builds.
+    /// Check if the `otoji` binary is available on PATH. A plain PATH scan —
+    /// no subprocess, so it's safe from the keyboard hook thread and can't
+    /// hang on a broken build (which running the binary could).
     pub fn is_available() -> bool {
-        Command::new("which")
-            .arg("otoji")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
+        otoji_binary_path().is_some()
     }
 
     /// Start otoji listen subprocess with stdin audio piping. Returns true if started.
@@ -447,7 +454,9 @@ impl OtojiBackend {
         // of clx capturing audio and piping a WAV to otoji's stdin. With --aec
         // otoji uses VoiceProcessingIO (echo cancellation); without it, cpal.
         // NOTE: otoji must hold its own microphone TCC grant for this to work.
-        let mut cmd = Command::new("otoji");
+        // Spawn by resolved path: `Command::new("otoji")` would re-walk PATH
+        // and, on Windows, depend on the implicit `.exe` append.
+        let mut cmd = Command::new(otoji_binary_path().unwrap_or_else(|| "otoji".into()));
         let ctx_path = super::voice_ptt::ptt_context_file_path();
         let mut args: Vec<String> = vec![
             "listen".into(),
@@ -557,6 +566,17 @@ impl OtojiBackend {
         {
             use std::os::windows::process::CommandExt;
             cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+                                            // otoji resolves its SenseVoice model cache as `$HOME/.cache/otoji`,
+                                            // but Windows doesn't set HOME outside a POSIX shell (it falls back
+                                            // to a cwd-relative `.otoji-cache`). Pin it to the profile dir.
+            if std::env::var_os("OTOJI_CACHE_DIR").is_none() && std::env::var_os("HOME").is_none() {
+                if let Some(profile) = std::env::var_os("USERPROFILE") {
+                    let cache = std::path::PathBuf::from(profile)
+                        .join(".cache")
+                        .join("otoji");
+                    cmd.env("OTOJI_CACHE_DIR", cache);
+                }
+            }
         }
 
         // NOTE: process_group(0) was disabled — it may interfere with signal
@@ -667,15 +687,33 @@ impl OtojiBackend {
                             AsrEvent::Final { text } => {
                                 platform.update_voice_subtitle(&text);
 
-                                if input_active.load(Ordering::Relaxed) {
-                                    let prev = typed_text.lock().unwrap().clone();
-                                    if !prev.is_empty() {
-                                        for _ in prev.chars() {
-                                            platform.key_tap(crate::key_code::KeyCode::Backspace);
-                                        }
+                                // otoji runs the continuous decode track even
+                                // while a PTT segment is held, so suppress the
+                                // append when a hold is active — PttFinal already
+                                // types that text (with glyphs). Prevents a
+                                // note-mode + hold overlap from typing twice.
+                                let ptt_holding =
+                                    ptt.as_ref().map_or(false, |p| p.is_active());
+                                if input_active.load(Ordering::Relaxed) && !ptt_holding {
+                                    // Continuous "listening input" mode (Space+V
+                                    // tap): otoji commits one Final per sentence,
+                                    // so APPEND each — accumulating long-form
+                                    // dictation — with a trailing space. The live
+                                    // partial streams into the overlay above as a
+                                    // preview; only committed sentences reach the
+                                    // field, so nothing here is ever backspaced.
+                                    // (The historic backspace-replace here assumed
+                                    // a cumulative-transcript backend and was dead
+                                    // code in the otoji path — input_active is only
+                                    // ever set by note-input mode.)
+                                    let piece = text.trim();
+                                    if !piece.is_empty() {
+                                        let mut out = String::with_capacity(piece.len() + 1);
+                                        out.push_str(piece);
+                                        out.push(' ');
+                                        platform.type_text(&out);
+                                        *typed_text.lock().unwrap() = out;
                                     }
-                                    platform.type_text(&text);
-                                    *typed_text.lock().unwrap() = text.clone();
                                 }
 
                                 partial_text.clear();

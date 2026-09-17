@@ -9,6 +9,13 @@ license = "GPL-3.0"
 name = "clx"
 path = "src/main.rs"
 
+# Out-of-process voice host. Kept a separate binary FILE (not a subcommand of
+# clx.exe) so it can be rebuilt/restarted without stopping the always-on core —
+# a running exe locks its own file on Windows. See src/bin/clx-voice.rs.
+[[bin]]
+name = "clx-voice"
+path = "src/bin/clx-voice.rs"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

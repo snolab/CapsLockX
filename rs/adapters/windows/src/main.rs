@@ -18,6 +18,7 @@ mod self_update;
 mod shm;
 mod vd_api;
 mod vk;
+mod voice_ipc;
 
 use std::path::Path;
 use std::process::{Child, Command};

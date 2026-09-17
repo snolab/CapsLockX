@@ -255,6 +255,16 @@ pub trait Platform: Send + Sync + 'static {
         None
     }
 
+    /// Delegate a Space+V key event to an out-of-process voice host, if the
+    /// platform runs one. Returns `true` when the event was handed off (so the
+    /// caller must NOT also run voice in-process). Default `false` → the module
+    /// handles voice itself. On Windows the core delegates to `clx-voice.exe`
+    /// so the always-on hook process stays a thin, stable hotkey trigger; the
+    /// voice host owns otoji + STT and can be rebuilt without restarting core.
+    fn voice_delegate(&self, _down: bool) -> bool {
+        false
+    }
+
     fn open_preferences(&self) {}
     fn show_voice_overlay(&self) {}
     fn hide_voice_overlay(&self) {}
@@ -323,4 +333,17 @@ pub trait Platform: Send + Sync + 'static {
 
     /// Restart the entire application (spawn new instance, exit current).
     fn restart(&self) {}
+}
+
+/// Named-object identifiers for the Windows out-of-process voice host
+/// (`clx-voice.exe`). Defined in core so the core (`clx.exe`) signaller and
+/// the host both agree on the exact names. Unused on other platforms.
+pub mod voice_ipc {
+    /// Auto-reset event: core sets it on Space+V key-down.
+    pub const KEY_DOWN_EVENT: &str = "CapsLockX_Voice_KeyDown";
+    /// Auto-reset event: core sets it on Space+V key-up.
+    pub const KEY_UP_EVENT: &str = "CapsLockX_Voice_KeyUp";
+    /// Mutex held for the lifetime of the voice host — core probes it to decide
+    /// whether the host is already running (and skip re-spawning it).
+    pub const ALIVE_MUTEX: &str = "CapsLockX_VoiceHost_Alive";
 }

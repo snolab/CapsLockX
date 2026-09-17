@@ -29,7 +29,14 @@ const PLACEHOLDER_DELAY_MS: u64 = 150;
 /// Path to the context file shared with the otoji subprocess.
 /// Written on press (AX tree snapshot), read by otoji on PTT end.
 pub fn ptt_context_file_path() -> String {
-    format!("/tmp/capslockx-otoji-ctx-{}.txt", std::process::id())
+    let dir = if cfg!(unix) {
+        std::path::PathBuf::from("/tmp")
+    } else {
+        std::env::temp_dir()
+    };
+    dir.join(format!("capslockx-otoji-ctx-{}.txt", std::process::id()))
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Max interval between two taps to count as double-click (ms).
@@ -614,6 +621,15 @@ impl PttSession {
         let old_tail_chars = old.chars().count() - common;
         let new_tail_str: String = new.chars().skip(common).collect();
 
+        if old_tail_chars != 0 || !new_tail_str.is_empty() {
+            eprintln!(
+                "[CLX] PTT: render bs={} type={:?} (tail {:?}->{:?})",
+                old_tail_chars,
+                new_tail_str,
+                tail.glyph(),
+                new_tail.glyph()
+            );
+        }
         for _ in 0..old_tail_chars {
             self.platform.key_tap(KeyCode::Backspace);
         }

@@ -4,7 +4,7 @@
 /// own hook callback can skip self-injected events).
 /// Window management: Win32 window enumeration + manipulation APIs.
 use std::mem::size_of;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use windows::Win32::Foundation::{CloseHandle, BOOL, COLORREF, HWND, LPARAM, WPARAM};
 use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::Graphics::Gdi::{
@@ -14,9 +14,9 @@ use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_T
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE,
     KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE,
-    MAPVK_VK_TO_VSC, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP,
-    MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL, MOUSEINPUT,
-    MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
+    KEYEVENTF_UNICODE, MAPVK_VK_TO_VSC, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN,
+    MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
+    MOUSEEVENTF_WHEEL, MOUSEINPUT, MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
@@ -47,6 +47,9 @@ pub struct WinPlatform {
     v_hwnd: AtomicUsize,
     /// Monotonic counter for unique prompt-result temp file names.
     prompt_seq: AtomicUsize,
+    /// True between show_voice_overlay and hide_voice_overlay; gates subtitle
+    /// updates so late otoji events can't re-show a hidden overlay.
+    voice_overlay_visible: AtomicBool,
 }
 
 impl WinPlatform {
@@ -54,11 +57,29 @@ impl WinPlatform {
         Self {
             v_hwnd: AtomicUsize::new(0),
             prompt_seq: AtomicUsize::new(0),
+            voice_overlay_visible: AtomicBool::new(false),
         }
     }
 }
 
 // ── SendInput helpers ────────────────────────────────────────────────────────
+
+/// Build a KEYEVENTF_UNICODE keyboard INPUT for one UTF-16 unit (wVk must be
+/// 0; the unit goes in wScan). Tagged like every other injected event.
+fn unicode_kbd(unit: u16, flags: KEYBD_EVENT_FLAGS) -> INPUT {
+    INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0),
+                wScan: unit,
+                dwFlags: flags,
+                time: 0,
+                dwExtraInfo: CLX_EXTRA_INFO,
+            },
+        },
+    }
+}
 
 /// Nav-cluster / arrow / right-modifier VKs that require KEYEVENTF_EXTENDEDKEY
 /// (they share scancodes with the numpad and need the E0 prefix).
@@ -156,6 +177,13 @@ fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
 // ── Platform impl ─────────────────────────────────────────────────────────────
 
 impl Platform for WinPlatform {
+    fn voice_delegate(&self, down: bool) -> bool {
+        // Hand Space+V off to the out-of-process voice host (clx-voice.exe).
+        // Returns false only when no host binary exists, so voice_lite falls
+        // back to running otoji in-process rather than losing the feature.
+        crate::voice_ipc::delegate(down)
+    }
+
     fn open_preferences(&self) {
         // Space+, toggles: pressing it again closes the window instead of
         // stacking another one. The tray menu still uses open_prefs_window().
@@ -182,6 +210,79 @@ impl Platform for WinPlatform {
 
     fn hide_brainstorm_overlay(&self) {
         crate::overlay::hide();
+    }
+
+    // ── Voice (CLX+V) support ────────────────────────────────────────────────
+    //
+    // The voice subtitle reuses the brainstorm overlay window (`overlay.rs`).
+    // Show/hide are called from the keyboard hook, so they hop to a thread:
+    // `overlay::show` may spawn the overlay process on first use, and even the
+    // shm write + seq bump is work the LL hook callback shouldn't wait on.
+
+    fn show_voice_overlay(&self) {
+        self.voice_overlay_visible.store(true, Ordering::Relaxed);
+        std::thread::Builder::new()
+            .name("voice-overlay-show".into())
+            .spawn(|| crate::overlay::show("🎤 …"))
+            .ok();
+    }
+
+    fn hide_voice_overlay(&self) {
+        self.voice_overlay_visible.store(false, Ordering::Relaxed);
+        std::thread::Builder::new()
+            .name("voice-overlay-hide".into())
+            .spawn(crate::overlay::hide)
+            .ok();
+    }
+
+    /// Only updates the text while the voice overlay is up — otoji keeps
+    /// emitting `ptt_final`/`partial` after a PTT release, and those must not
+    /// re-show the window the release just hid.
+    fn update_voice_subtitle(&self, text: &str) {
+        if !self.voice_overlay_visible.load(Ordering::Relaxed) {
+            return;
+        }
+        let text = if text.trim().is_empty() {
+            "🎤 …".to_string()
+        } else {
+            format!("🎤 {text}")
+        };
+        crate::overlay::show(&text);
+    }
+
+    /// Type arbitrary Unicode via `KEYEVENTF_UNICODE` (one event pair per
+    /// UTF-16 unit, so surrogate pairs land as one code point). Newline/tab go
+    /// as real Enter/Tab taps because editors treat a U+000A PACKET
+    /// inconsistently. Tagged with CLX_EXTRA_INFO so our own hook skips it.
+    fn type_text(&self, text: &str) {
+        let mut inputs: Vec<INPUT> = Vec::with_capacity(text.len() * 2);
+        for ch in text.chars() {
+            match ch {
+                '\n' => {
+                    let vk = keycode_to_vk(KeyCode::Enter);
+                    inputs.push(kbd(vk, KEYBD_EVENT_FLAGS(0)));
+                    inputs.push(kbd(vk, KEYEVENTF_KEYUP));
+                }
+                '\r' => {}
+                '\t' => {
+                    let vk = keycode_to_vk(KeyCode::Tab);
+                    inputs.push(kbd(vk, KEYBD_EVENT_FLAGS(0)));
+                    inputs.push(kbd(vk, KEYEVENTF_KEYUP));
+                }
+                _ => {
+                    let mut units = [0u16; 2];
+                    for unit in ch.encode_utf16(&mut units) {
+                        inputs.push(unicode_kbd(*unit, KEYEVENTF_UNICODE));
+                        inputs.push(unicode_kbd(*unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP));
+                    }
+                }
+            }
+        }
+        // SendInput takes the whole batch atomically w.r.t. other input, but
+        // chunk very long strings so a single call can't fail wholesale.
+        for chunk in inputs.chunks(64) {
+            send(chunk);
+        }
     }
 
     /// Launch the local-AI setup wizard: the prefs window opened in setup mode.
