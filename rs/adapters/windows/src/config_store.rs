@@ -54,6 +54,12 @@ pub struct FullConfig {
     /// Brainstorm local model tag (e.g. "qwen2.5:7b"). Empty = auto-recommend.
     #[serde(default)]
     pub local_model: String,
+    /// Voice input device for otoji (substring of the device name, or numeric
+    /// index from `otoji devices`). Empty = system default. Read by the
+    /// clx-voice host (exported as CLX_VOICE_MIC) since the Windows default can
+    /// be a silent virtual device.
+    #[serde(default)]
+    pub voice_mic: String,
 }
 
 fn default_edit_speed() -> f64 {
@@ -103,6 +109,7 @@ impl Default for FullConfig {
             stt_polish_chain: default_stt_polish_chain(),
             prefer_local: true,
             local_model: String::new(),
+            voice_mic: String::new(),
         }
     }
 }
@@ -135,6 +142,7 @@ impl FullConfig {
             stt_polish_chain: cfg.stt_polish_chain.clone(),
             prefer_local: cfg.prefer_local,
             local_model: cfg.local_model.clone(),
+            voice_mic: String::new(),
         }
     }
 

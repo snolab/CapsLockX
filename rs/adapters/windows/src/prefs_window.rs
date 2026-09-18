@@ -248,6 +248,80 @@ fn exit_with_parent() {
     });
 }
 
+/// One input device shown in the mic picker.
+#[derive(serde::Serialize)]
+struct AudioDevice {
+    /// Numeric index from `otoji devices` (fallback selector).
+    index: u32,
+    /// Clean device name (without the "(Nch @ Hz)" capability suffix); stored as
+    /// `voice_mic` and matched by otoji as a device-name substring.
+    name: String,
+    /// Whether this is the current system default input device.
+    default: bool,
+}
+
+/// Enumerate input devices by shelling out to `otoji devices` — the same cpal
+/// host otoji itself uses, so the list matches exactly. Best-effort: an empty
+/// list if otoji isn't found or errors (the picker then shows just "default").
+#[tauri::command]
+fn list_audio_devices() -> Vec<AudioDevice> {
+    use std::process::Command;
+    let exe =
+        capslockx_core::modules::voice_otoji::otoji_binary_path().unwrap_or_else(|| "otoji".into());
+    let mut cmd = Command::new(exe);
+    cmd.arg("devices").env("OTOJI_REBUILDING", "1");
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    match cmd.output() {
+        Ok(o) => parse_devices(&String::from_utf8_lossy(&o.stdout)),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Parse the `input devices:` section of `otoji devices` output. Lines look
+/// like `* [ 1] マイク (USB Audio Device) (2ch @ 48000Hz)` — a leading `*` marks
+/// the default; the trailing `(Nch @ …Hz)` is a capability suffix to drop.
+fn parse_devices(text: &str) -> Vec<AudioDevice> {
+    let mut devices = Vec::new();
+    let mut in_section = false;
+    for line in text.lines() {
+        let t = line.trim();
+        if t.starts_with("input devices:") {
+            in_section = true;
+            continue;
+        }
+        if !in_section {
+            continue;
+        }
+        let default = t.starts_with('*');
+        let t = t.trim_start_matches('*').trim_start();
+        if !t.starts_with('[') {
+            continue;
+        }
+        let Some(close) = t.find(']') else {
+            continue;
+        };
+        let index: u32 = t[1..close].trim().parse().unwrap_or(u32::MAX);
+        let mut name = t[close + 1..].trim().to_string();
+        if let Some(pos) = name.rfind(" (") {
+            if name[pos..].contains("ch @") && name.ends_with(')') {
+                name.truncate(pos);
+            }
+        }
+        if !name.is_empty() {
+            devices.push(AudioDevice {
+                index,
+                name,
+                default,
+            });
+        }
+    }
+    devices
+}
+
 /// Entry point for the `prefs-window` subcommand. Blocks until the window closes.
 pub fn run() {
     exit_with_parent();
@@ -273,7 +347,8 @@ pub fn run() {
             set_autostart,
             autostart_hint,
             bs_detect,
-            bs_run_setup
+            bs_run_setup,
+            list_audio_devices
         ])
         .setup(|app| {
             WebviewWindowBuilder::new(app.handle(), "prefs", WebviewUrl::App("index.html".into()))

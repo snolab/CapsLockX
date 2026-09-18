@@ -205,6 +205,17 @@ impl VoiceModule {
         true
     }
 
+    /// Drop the warm otoji instance (if any) so the next Space+V spawns a fresh
+    /// one — used when the input device or other otoji settings change, so the
+    /// new config takes effect without restarting the whole host.
+    pub fn stop_backend(&self) {
+        if self.otoji.is_running() {
+            eprintln!("[CLX] voice-lite: resetting otoji backend (config changed)");
+            self.otoji.stop();
+            self.platform.hide_voice_overlay();
+        }
+    }
+
     /// Called when CLX mode deactivates. Normally V is released first and
     /// `on_key_up` commits; if the trigger went up while V is still held, the
     /// V key-up will pass through unrouted, so commit the segment here. A

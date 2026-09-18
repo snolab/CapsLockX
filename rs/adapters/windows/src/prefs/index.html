@@ -183,6 +183,23 @@
     </div>
   </section>
 
+  <section id="voice-section">
+    <h2>Voice · Microphone (Space+V)</h2>
+    <div class="sl-row" style="grid-template-columns: 130px 1fr;">
+      <label for="voice_mic">Input device</label>
+      <select id="voice_mic"
+              style="background:var(--surface0); color:var(--text); border:1px solid var(--overlay1);
+                     border-radius:6px; padding:6px 8px; font-family:inherit; font-size:13px;">
+        <option value="">System default</option>
+      </select>
+    </div>
+    <div class="bs-muted" style="margin-top:8px; font-size:11px;">
+      Which microphone Space+V listens to. The Windows default can be a silent
+      virtual device (Steam / NVIDIA / a muted USB mic) — pick your real mic here.
+      Changes apply the next time the voice host starts.
+    </div>
+  </section>
+
   <div id="status">Loading…</div>
 
   <style>
@@ -209,6 +226,7 @@
         cursor_speed:    parseFloat(document.getElementById('cursor_speed').value),
         mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
+        voice_mic:       document.getElementById('voice_mic').value,
       });
     }
 
@@ -259,9 +277,43 @@
       el.addEventListener('input',  schedulesSave);
     });
 
+    // ── Microphone picker ─────────────────────────────────────────────────
+    // A <select>, not an <input>, so the blanket input listener above misses it.
+    document.getElementById('voice_mic').addEventListener('change', schedulesSave);
+
+    function loadMicDevices() {
+      const sel = document.getElementById('voice_mic');
+      invoke('list_audio_devices').then(devs => {
+        sel.innerHTML = '<option value="">System default</option>';
+        (devs || []).forEach(d => {
+          const o = document.createElement('option');
+          o.value = d.name;                       // otoji matches this as a substring
+          o.textContent = d.name + (d.default ? '  (default)' : '');
+          sel.appendChild(o);
+        });
+        // Restore the stored choice. Try exact match, then substring (the
+        // stored value may be a partial name like "WH-1000XM4"); only if nothing
+        // matches keep it as a custom entry (e.g. a mic that's unplugged now).
+        const stored = currentCfg.voice_mic || '';
+        sel.value = stored;
+        if (stored && sel.value !== stored) {
+          const opt = Array.from(sel.options).find(o => o.value && o.value.includes(stored));
+          if (opt) {
+            sel.value = opt.value;
+          } else {
+            const o = document.createElement('option');
+            o.value = stored;
+            o.textContent = stored + '  (not connected)';
+            sel.appendChild(o);
+            sel.value = stored;
+          }
+        }
+      }).catch(() => {});
+    }
+
     // Initial load
     invoke('get_config')
-      .then(cfg => { populateForm(cfg); status.textContent = ''; })
+      .then(cfg => { populateForm(cfg); status.textContent = ''; loadMicDevices(); })
       .catch(err => { status.textContent = 'Failed to load: ' + err; status.className = 'error'; });
 
     // ── Launch at login ───────────────────────────────────────────────────

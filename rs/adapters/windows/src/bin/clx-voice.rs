@@ -290,20 +290,48 @@ impl Platform for HostPlatform {
 
 // ── Config ───────────────────────────────────────────────────────────────────
 
+/// Path to the shared `%APPDATA%\CapsLockX\config.json`.
+fn config_path() -> Option<std::path::PathBuf> {
+    std::env::var_os("APPDATA")
+        .map(std::path::PathBuf::from)
+        .map(|p| p.join("CapsLockX").join("config.json"))
+}
+
 /// Read the few voice-relevant fields out of the shared `config.json`. Any
 /// missing field falls back to the same default the core uses.
 fn load_config_json() -> serde_json::Value {
-    let path = std::env::var_os("APPDATA")
-        .map(std::path::PathBuf::from)
-        .map(|p| p.join("CapsLockX").join("config.json"));
-    if let Some(path) = path {
+    if let Some(path) = config_path() {
         if let Ok(data) = std::fs::read_to_string(&path) {
-            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&data) {
+            // Tolerate a UTF-8 BOM (some editors add one) before the JSON.
+            let data = data.trim_start_matches('\u{feff}');
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
                 return v;
             }
         }
     }
     serde_json::Value::Null
+}
+
+/// config.json's last-modified time, for cheap change polling.
+fn config_mtime() -> Option<std::time::SystemTime> {
+    std::fs::metadata(config_path()?).ok()?.modified().ok()
+}
+
+/// Export the configured input device as CLX_VOICE_MIC so the otoji `voice_lite`
+/// spawns pick it up. Empty/unset clears it (otoji uses the system default).
+fn apply_mic_env(v: &serde_json::Value) -> String {
+    let mic = v
+        .get("voice_mic")
+        .and_then(|x| x.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if mic.is_empty() {
+        std::env::remove_var("CLX_VOICE_MIC");
+    } else {
+        std::env::set_var("CLX_VOICE_MIC", &mic);
+    }
+    mic
 }
 
 fn apply_config(voice: &VoiceModule, v: &serde_json::Value) {
@@ -365,6 +393,13 @@ fn main() {
 
     let platform: Arc<dyn Platform> = Arc::new(HostPlatform::new());
     let cfg = load_config_json();
+    // Pin the input device for otoji (voice_otoji reads CLX_VOICE_MIC and passes
+    // it as `otoji listen <device>`; the child inherits this env). Empty/unset ->
+    // otoji uses the Windows system default.
+    let mic = apply_mic_env(&cfg);
+    if !mic.is_empty() {
+        eprintln!("[clx-voice] input device from config: {mic}");
+    }
     let stt_engine = cfg
         .get("stt_engine")
         .and_then(|x| x.as_str())
@@ -376,6 +411,34 @@ fn main() {
     ));
     apply_config(&voice, &cfg);
     voice.preload();
+
+    // Watch config.json for prefs changes (mtime poll — no shared event, so the
+    // core keeps its own CapsLockX_ConfigChanged untouched). On change, re-read,
+    // re-export the mic device, and drop the warm otoji so the next Space+V picks
+    // up the new mic — the picker in clx+, then applies without restarting this
+    // host.
+    {
+        let voice = Arc::clone(&voice);
+        std::thread::Builder::new()
+            .name("clx-voice-config-watch".into())
+            .spawn(move || {
+                let mut last = config_mtime();
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    let now = config_mtime();
+                    if now == last {
+                        continue;
+                    }
+                    last = now;
+                    let cfg = load_config_json();
+                    let mic = apply_mic_env(&cfg);
+                    apply_config(&voice, &cfg);
+                    voice.stop_backend();
+                    eprintln!("[clx-voice] config changed — mic='{mic}', backend reset");
+                }
+            })
+            .ok();
+    }
 
     // Named key events. CreateEventW returns the core's existing objects when
     // they exist (auto-reset, so a key-down fired during our cold start isn't

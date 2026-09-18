@@ -537,6 +537,19 @@ impl OtojiBackend {
             addr
         };
 
+        // Explicit input device. `otoji listen [DEVICE]` takes a trailing
+        // positional (substring of the device name, or numeric index). The
+        // Windows system default can be a silent virtual device (Steam mic,
+        // NVIDIA virtual audio, a muted USB mic), so let CLX pin a real one via
+        // CLX_VOICE_MIC. Empty/unset → otoji uses the system default.
+        if let Ok(mic) = std::env::var("CLX_VOICE_MIC") {
+            let mic = mic.trim();
+            if !mic.is_empty() {
+                eprintln!("[CLX] voice-otoji: using input device '{}'", mic);
+                args.push(mic.to_string());
+            }
+        }
+
         cmd.args(&args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
