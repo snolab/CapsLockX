@@ -115,6 +115,13 @@ fn ensure_host() -> bool {
     true
 }
 
+/// Spawn the voice host now (if not already running) without sending a key —
+/// used at core startup when prewarm is enabled, so the host can load the model
+/// and open the mic before the first Space+V instead of on it.
+pub fn prewarm_host() {
+    ensure_host();
+}
+
 /// Deliver a Space+V key-down/up to the voice host. Returns `true` when the
 /// host path is usable (event signaled, host running or being spawned); `false`
 /// only when there is no `clx-voice.exe` to run — the core then handles voice

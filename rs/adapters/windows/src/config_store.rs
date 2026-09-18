@@ -60,6 +60,12 @@ pub struct FullConfig {
     /// be a silent virtual device.
     #[serde(default)]
     pub voice_mic: String,
+    /// Keep otoji pre-warmed: load the model + open the mic at voice-host
+    /// startup (in standby) so the first Space+V is instant instead of paying a
+    /// cold start. Costs a continuously-open mic (on a Bluetooth headset that
+    /// means staying in the low-quality Hands-Free profile). Default off.
+    #[serde(default)]
+    pub voice_prewarm: bool,
 }
 
 fn default_edit_speed() -> f64 {
@@ -110,6 +116,7 @@ impl Default for FullConfig {
             prefer_local: true,
             local_model: String::new(),
             voice_mic: String::new(),
+            voice_prewarm: false,
         }
     }
 }
@@ -143,6 +150,7 @@ impl FullConfig {
             prefer_local: cfg.prefer_local,
             local_model: cfg.local_model.clone(),
             voice_mic: String::new(),
+            voice_prewarm: false,
         }
     }
 

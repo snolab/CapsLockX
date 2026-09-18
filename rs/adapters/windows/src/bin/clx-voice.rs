@@ -334,6 +334,21 @@ fn apply_mic_env(v: &serde_json::Value) -> String {
     mic
 }
 
+/// Reflect the `voice_prewarm` setting into CLX_PTT_PREWARM, which
+/// `voice_lite`'s preload path reads to keep otoji warm from startup.
+fn apply_prewarm_env(v: &serde_json::Value) -> bool {
+    let on = v
+        .get("voice_prewarm")
+        .and_then(|x| x.as_bool())
+        .unwrap_or(false);
+    if on {
+        std::env::set_var("CLX_PTT_PREWARM", "1");
+    } else {
+        std::env::remove_var("CLX_PTT_PREWARM");
+    }
+    on
+}
+
 fn apply_config(voice: &VoiceModule, v: &serde_json::Value) {
     let s = |k: &str, d: &str| v.get(k).and_then(|x| x.as_str()).unwrap_or(d).to_string();
     let f = |k: &str, d: f64| v.get(k).and_then(|x| x.as_f64()).unwrap_or(d) as f32;
@@ -400,6 +415,9 @@ fn main() {
     if !mic.is_empty() {
         eprintln!("[clx-voice] input device from config: {mic}");
     }
+    if apply_prewarm_env(&cfg) {
+        eprintln!("[clx-voice] prewarm enabled — otoji stays warm from startup");
+    }
     let stt_engine = cfg
         .get("stt_engine")
         .and_then(|x| x.as_str())
@@ -432,9 +450,17 @@ fn main() {
                     last = now;
                     let cfg = load_config_json();
                     let mic = apply_mic_env(&cfg);
+                    let prewarm = apply_prewarm_env(&cfg);
                     apply_config(&voice, &cfg);
+                    // Cycle otoji so the new device/settings take effect; if
+                    // prewarm is on, bring it straight back up warm (standby).
                     voice.stop_backend();
-                    eprintln!("[clx-voice] config changed — mic='{mic}', backend reset");
+                    if prewarm {
+                        voice.preload();
+                    }
+                    eprintln!(
+                        "[clx-voice] config changed — mic='{mic}', prewarm={prewarm}, backend reset"
+                    );
                 }
             })
             .ok();

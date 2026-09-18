@@ -363,6 +363,12 @@ fn main() {
     // relaunches fully detached so it can't couple clx to our launching session.
     self_update::spawn_check(cfg.auto_rebuild);
 
+    // Prewarm: if the voice host is set to stay warm, spawn it now (not lazily on
+    // the first Space+V) so it can load the model + open the mic ahead of time.
+    if cfg.voice_prewarm {
+        voice_ipc::prewarm_host();
+    }
+
     hook::init_engine(cfg.clone().into_clx_config());
 
     // Create shared memory for IPC with AHK before installing the hook.

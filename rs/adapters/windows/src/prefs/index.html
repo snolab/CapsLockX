@@ -196,7 +196,16 @@
     <div class="bs-muted" style="margin-top:8px; font-size:11px;">
       Which microphone Space+V listens to. The Windows default can be a silent
       virtual device (Steam / NVIDIA / a muted USB mic) — pick your real mic here.
-      Changes apply the next time the voice host starts.
+      Changes apply on your next Space+V.
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+      <input type="checkbox" id="voice_prewarm">
+      <span>Keep mic warm (instant Space+V)</span>
+    </label>
+    <div class="bs-muted" style="margin-top:6px; font-size:11px;">
+      Loads the model and opens the mic in the background so the first Space+V
+      doesn't wait ~5&nbsp;s. Costs a continuously-open mic — on a Bluetooth headset
+      that keeps it in the low-quality Hands-Free profile.
     </div>
   </section>
 
@@ -227,6 +236,7 @@
         mouse_speed:     parseFloat(document.getElementById('mouse_speed').value),
         scroll_speed:    parseFloat(document.getElementById('scroll_speed').value),
         voice_mic:       document.getElementById('voice_mic').value,
+        voice_prewarm:   document.getElementById('voice_prewarm').checked,
       });
     }
 
@@ -240,6 +250,7 @@
       setSlider('cursor_speed', cfg.cursor_speed);
       setSlider('mouse_speed',  cfg.mouse_speed);
       setSlider('scroll_speed', cfg.scroll_speed);
+      document.getElementById('voice_prewarm').checked = !!cfg.voice_prewarm;
     }
 
     function setSlider(id, value) {
