@@ -362,3 +362,38 @@ impl Modules {
         self.voice.stop();
     }
 }
+
+#[cfg(test)]
+mod startup_latency {
+    use super::*;
+    use crate::test_platform::MockPlatform;
+
+    /// Building the modules must not block.
+    ///
+    /// It is on the startup path *before* the keyboard hook is installed, so
+    /// every millisecond spent here is a millisecond during which clx is running
+    /// and deaf. This was measured at 10.3 s on Windows — the whole of an
+    /// otherwise unexplained "clx ignores my keys for ten seconds after login".
+    ///
+    /// Anything slow a module needs (probing hardware, spawning a helper,
+    /// loading a model, touching the network) belongs on a background thread it
+    /// owns, not in its constructor.
+    #[test]
+    fn building_the_modules_does_not_block_startup() {
+        let platform: Arc<dyn Platform> = Arc::new(MockPlatform::new());
+        let state = Arc::new(ClxState::new(ClxConfig::default()));
+
+        let started = std::time::Instant::now();
+        let modules = Modules::new(platform, state);
+        let elapsed = started.elapsed();
+        drop(modules);
+
+        eprintln!("Modules::new took {} ms", elapsed.as_millis());
+        assert!(
+            elapsed < std::time::Duration::from_millis(500),
+            "Modules::new blocked for {} ms — clx is deaf for that long at \
+             startup; move the slow work to a background thread",
+            elapsed.as_millis()
+        );
+    }
+}

@@ -39,8 +39,12 @@ pub struct BrainstormModule {
     history: Mutex<Vec<Message>>,
     /// Last response for re-show.
     last_response: Mutex<String>,
-    /// LLM config (behind Mutex for hot-reload from prefs).
-    llm_config: Mutex<Option<LlmConfig>>,
+    /// LLM config (behind Mutex for hot-reload from prefs). `Arc` because it is
+    /// filled in by the background resolver spawned in `new`.
+    llm_config: Arc<Mutex<Option<LlmConfig>>>,
+    /// True while that resolver is still running, so an early CLX+B can say
+    /// "not ready yet" rather than the misleading "no API key configured".
+    llm_resolving: Arc<AtomicBool>,
     /// Whether "keep history" is checked (persists across restarts).
     keep_history: AtomicBool,
 }
@@ -117,11 +121,41 @@ fn save_keep_history_pref(keep: bool) {
 
 impl BrainstormModule {
     pub fn new(platform: Arc<dyn Platform>, llm_api_key: String, llm_model: String) -> Self {
-        let llm_config = if llm_api_key.is_empty() {
-            None
-        } else {
-            Some(LlmConfig::from_key_and_model(&llm_api_key, &llm_model))
-        };
+        // Resolving the LLM config talks to the network: it probes for an MLX
+        // server on :8321 and asks Ollama which models it has. On this machine
+        // that took 10.3 s — a dead localhost port costs ~4 s because `localhost`
+        // resolves to ::1 first, and the Ollama query ~2 s even when it answers.
+        //
+        // This constructor runs before the keyboard hook is installed, so that
+        // was 10.3 s of clx running and completely deaf after launch. It cannot
+        // move to first use either: `start_turn` runs on the event-tap thread,
+        // where the same wait would freeze the keyboard instead. So it happens
+        // on a thread of its own and lands whenever it lands — long before
+        // anyone presses CLX+B in practice.
+        let llm_config: Arc<Mutex<Option<LlmConfig>>> = Arc::new(Mutex::new(None));
+        let llm_resolving = Arc::new(AtomicBool::new(false));
+        if !llm_api_key.is_empty() {
+            llm_resolving.store(true, Ordering::Relaxed);
+            let slot = Arc::clone(&llm_config);
+            let done = Arc::clone(&llm_resolving);
+            let key = llm_api_key.clone();
+            let model = llm_model.clone();
+            let spawned = std::thread::Builder::new()
+                .name("clx-llm-config".into())
+                .spawn(move || {
+                    let resolved = LlmConfig::from_key_and_model(&key, &model);
+                    let mut slot = slot.lock().unwrap();
+                    // Do not clobber a config the user set in Preferences while
+                    // we were still probing — theirs is newer than ours.
+                    if slot.is_none() {
+                        *slot = Some(resolved);
+                    }
+                    done.store(false, Ordering::Relaxed);
+                });
+            if spawned.is_err() {
+                llm_resolving.store(false, Ordering::Relaxed);
+            }
+        }
 
         let keep = load_keep_history_pref();
         let mut history = vec![Message {
@@ -147,7 +181,8 @@ impl BrainstormModule {
             generation: AtomicU32::new(0),
             history: Mutex::new(history),
             last_response: Mutex::new(String::new()),
-            llm_config: Mutex::new(llm_config),
+            llm_config,
+            llm_resolving,
             keep_history: AtomicBool::new(keep),
         }
     }
@@ -159,6 +194,9 @@ impl BrainstormModule {
         } else {
             Some(LlmConfig::from_key_and_model(api_key, model))
         };
+        // An explicit choice supersedes whatever the startup resolver finds, and
+        // clearing the flag keeps the "not ready yet" message honest.
+        self.llm_resolving.store(false, Ordering::Relaxed);
         *self.llm_config.lock().unwrap() = new_config;
         eprintln!("[CLX] brainstorm: LLM config hot-reloaded");
     }
@@ -209,7 +247,11 @@ impl BrainstormModule {
             Some(c) => c,
             None => {
                 self.platform.show_brainstorm_overlay(
-                    "No LLM API key configured.\nSet one in Preferences → LLM → API Key.",
+                    if self.llm_resolving.load(Ordering::Relaxed) {
+                        "Still looking for an LLM backend — try again in a moment."
+                    } else {
+                        "No LLM API key configured.\nSet one in Preferences → LLM → API Key."
+                    },
                 );
                 self.state.store(STATE_DONE, Ordering::Relaxed);
                 return;
@@ -273,6 +315,32 @@ impl BrainstormModule {
         self.cancel.store(true, Ordering::Relaxed);
         self.state.store(STATE_IDLE, Ordering::Relaxed);
         self.platform.hide_brainstorm_overlay();
+    }
+}
+
+/// Worst-case wait for the OS to service a synthetic Ctrl+C before we read the
+/// clipboard. Also the fixed sleep on platforms without a sequence counter.
+const CLIPBOARD_COPY_TIMEOUT_MS: u64 = 150;
+
+/// Block until the clipboard sequence counter moves past `before` (the copy
+/// landed), or `CLIPBOARD_COPY_TIMEOUT_MS` elapse (nothing selected, or the app
+/// ignored the copy). Typically returns in 10–30 ms; the old fixed 150 ms sleep
+/// was paid on every CLX+B whether or not a copy happened.
+fn wait_for_clipboard_change(platform: &dyn Platform, before: Option<u64>) {
+    let timeout = std::time::Duration::from_millis(CLIPBOARD_COPY_TIMEOUT_MS);
+    let Some(before) = before else {
+        std::thread::sleep(timeout);
+        return;
+    };
+    let start = std::time::Instant::now();
+    while start.elapsed() < timeout {
+        if platform
+            .clipboard_sequence()
+            .is_some_and(|now| now != before)
+        {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
     }
 }
 
@@ -361,8 +429,9 @@ fn agent_turn(
     } else {
         // Save current clipboard, copy selection, read it, restore clipboard.
         let old_clipboard = platform.get_clipboard_text();
+        let seq_before = platform.clipboard_sequence();
         platform.key_tap_cmd_or_ctrl(KeyCode::C);
-        std::thread::sleep(std::time::Duration::from_millis(150));
+        wait_for_clipboard_change(platform.as_ref(), seq_before);
         let selected = platform.get_clipboard_text();
         // Restore old clipboard if we actually got something new.
         if selected != old_clipboard && !old_clipboard.is_empty() {
@@ -686,10 +755,25 @@ mod tests {
         assert!(m.llm_config.lock().unwrap().is_some());
     }
 
+    /// Block until the background resolver has filled the config in.
+    ///
+    /// `new` no longer resolves it inline — that cost 10 s of deaf startup; see
+    /// the comment there. These tests use a Gemini-shaped model, which resolves
+    /// without touching the network, so the wait is over almost immediately.
+    fn await_llm_config(m: &BrainstormModule) -> bool {
+        for _ in 0..200 {
+            if m.llm_config.lock().unwrap().is_some() {
+                return true;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        false
+    }
+
     #[test]
     fn update_llm_config_to_none() {
         let (m, _mock) = make_module("initial-key");
-        assert!(m.llm_config.lock().unwrap().is_some());
+        assert!(await_llm_config(&m));
         m.update_llm_config("", "gemini-2.0-flash");
         assert!(m.llm_config.lock().unwrap().is_none());
     }
@@ -697,9 +781,33 @@ mod tests {
     #[test]
     fn new_with_api_key_initializes_config() {
         let (m, _mock) = make_module("some-key");
-        assert!(m.llm_config.lock().unwrap().is_some());
+        assert!(await_llm_config(&m), "resolver never produced a config");
         assert_eq!(m.history.lock().unwrap().len(), 1);
         assert_eq!(m.history.lock().unwrap()[0].role, "system");
+    }
+
+    /// The point of the change: constructing the module must not wait on the
+    /// network, because it happens before the keyboard hook is installed.
+    #[test]
+    fn new_does_not_block_on_resolving_the_llm_backend() {
+        let started = std::time::Instant::now();
+        let (_m, _mock) = make_module("some-key");
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(200),
+            "BrainstormModule::new blocked for {} ms",
+            started.elapsed().as_millis()
+        );
+    }
+
+    /// An explicit choice from Preferences must win over whatever the startup
+    /// resolver finds, however the two race.
+    #[test]
+    fn an_explicit_config_is_not_clobbered_by_the_resolver() {
+        let (m, _mock) = make_module("initial-key");
+        m.update_llm_config("sk-ant-explicit", "claude-opus-4-20250514");
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        let got = m.llm_config.lock().unwrap().clone().expect("config");
+        assert_eq!(got.api_key, "sk-ant-explicit");
     }
 
     #[test]

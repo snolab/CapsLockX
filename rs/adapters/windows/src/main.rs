@@ -351,6 +351,7 @@ fn main() {
     // we're not), re-launch self elevated and let the elevated child retry.
     // This mirrors the AHK version's behavior of UAC-prompting on demand.
     let needs_elevation_for_kill = shm::SharedState::kill_previous();
+    hook::debug_log("[main] stage: previous instance handled");
 
     // ── Elevate to admin if configured, or if a stuck old instance demands it ─
     let cfg_pre = config_store::load();
@@ -373,8 +374,13 @@ fn main() {
     // (non-git) binaries. Runs off-thread so it never delays hotkey startup, and
     // relaunches fully detached so it can't couple clx to our launching session.
     self_update::spawn_check(cfg.auto_rebuild);
+    // Stage markers. Everything between `[main] started` and `[main] hook
+    // installed` is time during which clx is running but deaf, so each stage
+    // that can block says when it finished. Debug-gated, so free in production.
+    hook::debug_log("[main] stage: config loaded, self-update spawned");
 
     hook::init_engine(cfg.clone().into_clx_config());
+    hook::debug_log("[main] stage: engine ready");
 
     // Create shared memory for IPC with AHK before installing the hook.
     if let Some(shm) = shm::SharedState::create() {
@@ -384,7 +390,10 @@ fn main() {
         eprintln!("[CLX] shared memory creation failed (standalone mode)");
     }
 
+    hook::debug_log("[main] stage: shared memory done");
+
     vd_api::init();
+    hook::debug_log("[main] stage: vd_api ready");
 
     // Spawn AHK modules only when --with-ahk is passed.
     // WH_KEYBOARD_LL hooks are called most-recent-first (LIFO), so installing
@@ -427,6 +436,7 @@ fn main() {
     // inside the WH_KEYBOARD_LL callback — keeping the hook callback fast
     // and avoiding deadlocks that could leave the process unkillable.
     hook::init_tray_worker();
+    hook::debug_log("[main] stage: tray worker spawned");
 
     // Install hook on the main thread BEFORE Tauri init.
     // Tauri's setup takes ~15s, during which the hook would be starved of
