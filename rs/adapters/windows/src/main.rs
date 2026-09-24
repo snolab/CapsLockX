@@ -317,6 +317,26 @@ fn main() {
                 vd_api::dump();
                 return;
             }
+            // Run a plugin: spawn it and perform whatever effects it writes
+            // to stdout. This is the entire plugin contract — any program that
+            // can print a line can extend CLX, and CLX learns nothing about
+            // what the program is for. See lab/plugins.
+            //   clx plugin <command> [args...]
+            "plugin" => {
+                let argv: Vec<String> = std::env::args().skip(2).collect();
+                let Some((command, rest)) = argv.split_first() else {
+                    eprintln!("usage: clx plugin <command> [args...]");
+                    hard_exit(2);
+                };
+                let platform = output::WinPlatform::new();
+                match capslockx_core::plugin::run(command, rest, &platform) {
+                    capslockx_core::plugin::Outcome::Exited(code) => hard_exit(code.max(0) as u32),
+                    capslockx_core::plugin::Outcome::NotStarted(why) => {
+                        eprintln!("clx plugin: {why}");
+                        hard_exit(127);
+                    }
+                }
+            }
             // What CLX+Z would actually cycle through, and what it hides.
             //
             // The cycling-flood bugs all came down to landing on a window that

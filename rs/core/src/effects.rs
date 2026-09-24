@@ -208,7 +208,11 @@ fn parse_delta(s: &str) -> Option<i32> {
 
 /// Parse one line. Never fails — see [`Effect`].
 pub fn parse(line: &str) -> Effect {
-    let line = line.trim();
+    // A UTF-8 BOM on the first line is common enough to be worth absorbing:
+    // several languages and shells emit one by default when writing UTF-8, and
+    // without this the plugin's very first effect fails to parse for a reason
+    // that is invisible in any log.
+    let line = line.trim_start_matches('\u{feff}').trim();
     if line.is_empty() || line.starts_with('#') {
         return Effect::Comment;
     }
@@ -488,6 +492,15 @@ mod tests {
         assert_eq!(parse(r#"k "hi""#), Effect::Type("hi".into()));
         assert_eq!(parse(r#"k "a\nb""#), Effect::Type("a\nb".into()));
         assert_eq!(parse(r#"k "q\"q""#), Effect::Type("q\"q".into()));
+    }
+
+    #[test]
+    fn a_byte_order_mark_does_not_eat_the_first_effect() {
+        // PowerShell, among others, writes a BOM when asked for UTF-8. Without
+        // tolerance here, a plugin's opening line silently does nothing and
+        // nothing in any log says why.
+        let with_bom = format!("{}k \"hi\"", '\u{feff}');
+        assert_eq!(parse(&with_bom), Effect::Type("hi".into()));
     }
 
     #[test]

@@ -16,6 +16,7 @@ pub mod local_sherpa;
 pub mod local_whisper;
 pub mod modules;
 pub mod platform;
+pub mod plugin;
 pub mod state;
 pub mod stt_corrector;
 pub mod task_manager;

@@ -21,9 +21,9 @@ use windows::Win32::System::Threading::{
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE,
     KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE,
-    MAPVK_VK_TO_VSC, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP,
-    MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL, MOUSEINPUT,
-    MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
+    KEYEVENTF_UNICODE, MAPVK_VK_TO_VSC, MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN,
+    MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
+    MOUSEEVENTF_WHEEL, MOUSEINPUT, MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, EnumWindows, FindWindowW, GetClassNameW, GetForegroundWindow, GetWindowLongW,
@@ -106,6 +106,31 @@ fn kbd(vk: u16, flags: KEYBD_EVENT_FLAGS) -> INPUT {
                 wVk: VIRTUAL_KEY(vk),
                 wScan: scan,
                 dwFlags: f,
+                time: 0,
+                dwExtraInfo: CLX_EXTRA_INFO,
+            },
+        },
+    }
+}
+
+/// One UTF-16 code unit, injected as a character rather than as a key.
+///
+/// `KEYEVENTF_UNICODE` hands the character straight to the focused window,
+/// bypassing the keyboard layout entirely. Nothing about which physical key
+/// would produce it, and therefore nothing about Caps Lock, Shift or whether
+/// the user is on AZERTY, enters into it.
+fn unicode_unit(unit: u16, up: bool) -> INPUT {
+    let mut flags = KEYEVENTF_UNICODE;
+    if up {
+        flags |= KEYEVENTF_KEYUP;
+    }
+    INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0),
+                wScan: unit,
+                dwFlags: flags,
                 time: 0,
                 dwExtraInfo: CLX_EXTRA_INFO,
             },
@@ -334,6 +359,36 @@ impl Platform for WinPlatform {
     /// `engine.rs` has to survive.
     fn is_key_physically_down(&self, key: KeyCode) -> bool {
         modifier_held(key)
+    }
+
+    /// Type text as characters, not as keystrokes.
+    ///
+    /// The trait's default walks the string pressing virtual keys with Shift
+    /// where it thinks Shift is needed, which is wrong here three ways: Caps
+    /// Lock inverts the result, there is no virtual key for CJK so Chinese
+    /// cannot be typed at all, and the mapping assumes a US layout. All three
+    /// matter now that plugins and speech transcripts flow through this
+    /// function — a case-inverted `dONE. nOTHING HERE` was how it surfaced.
+    ///
+    /// `KEYEVENTF_UNICODE` sidesteps the layout completely. Characters outside
+    /// the BMP arrive as a surrogate pair, which must travel in the same
+    /// `SendInput` batch or the target sees two broken halves.
+    fn type_text(&self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
+        let mut batch: Vec<INPUT> = Vec::with_capacity(text.len() * 2);
+        let mut buf = [0u16; 2];
+        for ch in text.chars() {
+            for unit in ch.encode_utf16(&mut buf) {
+                batch.push(unicode_unit(*unit, false));
+                batch.push(unicode_unit(*unit, true));
+            }
+            // One SendInput per character keeps a surrogate pair together
+            // while staying well clear of any queue limit on long text.
+            send(&batch);
+            batch.clear();
+        }
     }
 
     fn mouse_move(&self, dx: i32, dy: i32) {
