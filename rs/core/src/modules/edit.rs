@@ -43,6 +43,24 @@ impl EditModule {
             speed.action_speed,
             250.0,
         );
+        // Each model is latched by its own keys; a lost key-up would otherwise
+        // leave it running forever. See `modules::key_watchdog`.
+        // DISABLED 2026-09-22: cursor.set_watchdog(super::key_watchdog(
+        //             Arc::clone(&platform),
+        //             &[KeyCode::H, KeyCode::J, KeyCode::K, KeyCode::L],
+        //         ));
+        // DISABLED 2026-09-22: page.set_watchdog(super::key_watchdog(
+        //             Arc::clone(&platform),
+        //             &[KeyCode::Y, KeyCode::U, KeyCode::I, KeyCode::O],
+        //         ));
+        // DISABLED 2026-09-22: tab.set_watchdog(super::key_watchdog(
+        //             Arc::clone(&platform),
+        //             &[KeyCode::N, KeyCode::P],
+        //         ));
+        // DISABLED 2026-09-22: action.set_watchdog(super::key_watchdog(
+        //             Arc::clone(&platform),
+        //             &[KeyCode::G, KeyCode::T],
+        //         ));
         Self {
             cursor,
             page,
@@ -73,6 +91,25 @@ impl EditModule {
         self.page.tick_once();
         self.tab.tick_once();
         self.action.tick_once();
+    }
+
+    pub fn refresh_held_key(&self, key: KeyCode) {
+        let (model, direction) = match key {
+            KeyCode::H => (&self.cursor, 0),
+            KeyCode::L => (&self.cursor, 1),
+            KeyCode::K => (&self.cursor, 2),
+            KeyCode::J => (&self.cursor, 3),
+            KeyCode::Y => (&self.page, 0),
+            KeyCode::O => (&self.page, 1),
+            KeyCode::I => (&self.page, 2),
+            KeyCode::U => (&self.page, 3),
+            KeyCode::P => (&self.tab, 2),
+            KeyCode::N => (&self.tab, 3),
+            KeyCode::G => (&self.action, 2),
+            KeyCode::T => (&self.action, 3),
+            _ => return,
+        };
+        model.refresh_direction(direction);
     }
 
     pub fn on_key_down(&self, key: KeyCode, p: &dyn Platform) -> bool {

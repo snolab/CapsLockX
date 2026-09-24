@@ -38,6 +38,16 @@ impl MouseModule {
             speed.scroll_speed,
             f64::INFINITY,
         );
+        // WASD drives the pointer, R/F the wheel; a lost key-up would leave the
+        // pointer sliding forever. See `modules::key_watchdog`.
+        // DISABLED 2026-09-22: mouse_model.set_watchdog(super::key_watchdog(
+        //             Arc::clone(&platform),
+        //             &[KeyCode::W, KeyCode::A, KeyCode::S, KeyCode::D],
+        //         ));
+        // DISABLED 2026-09-22: scroll_model.set_watchdog(super::key_watchdog(
+        //             Arc::clone(&platform),
+        //             &[KeyCode::R, KeyCode::F],
+        //         ));
         Self {
             mouse_model,
             scroll_model,
@@ -77,6 +87,19 @@ impl MouseModule {
         }
         self.r_held.store(false, Ordering::Relaxed);
         self.f_held.store(false, Ordering::Relaxed);
+    }
+
+    pub fn refresh_held_key(&self, key: KeyCode) {
+        let (model, direction) = match key {
+            KeyCode::A => (&self.mouse_model, 0),
+            KeyCode::D => (&self.mouse_model, 1),
+            KeyCode::W => (&self.mouse_model, 2),
+            KeyCode::S => (&self.mouse_model, 3),
+            KeyCode::R => (&self.scroll_model, 2),
+            KeyCode::F => (&self.scroll_model, 3),
+            _ => return,
+        };
+        model.refresh_direction(direction);
     }
 
     pub fn on_key_down(&self, key: KeyCode) -> bool {

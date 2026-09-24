@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 use std::sync::mpsc;
 /// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -22,6 +22,12 @@ static HOOK_RAW: AtomicUsize = AtomicUsize::new(0);
 // ── Engine (initialised once via init_engine before hook installs) ────────────
 
 static ENGINE: OnceLock<Arc<ClxEngine>> = OnceLock::new();
+
+// Serialize recovered releases with hook dispatch, so an old UP cannot reset
+// a model between a new DOWN and its activation. The ticker uses try_lock:
+// a callback that is itself stuck must not strand the ticker behind it.
+static INPUT_STATE: Mutex<crate::release_state::ReleaseState> =
+    Mutex::new(crate::release_state::ReleaseState::new());
 
 // ── Shared memory (set from main before hook install) ────────────────────────
 
@@ -162,6 +168,13 @@ pub fn install_hook() {
                 std::thread::sleep(std::time::Duration::from_millis(6)); // ~166 FPS
 
                 if let Some(engine) = ENGINE.get() {
+                    // Raw release reconciliation. See `RECONCILE_RELEASES`
+                    // for why it was briefly switched off and why that was a
+                    // false alarm; it runs here, on the ticker, never on the
+                    // hook thread.
+                    if RECONCILE_RELEASES {
+                        reconcile_releases(engine);
+                    }
                     engine.tick();
                 }
 
@@ -282,7 +295,15 @@ unsafe fn keyboard_proc_inner(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> 
     }
 
     let engine = ENGINE.get().expect("init_engine not called");
-    let resp = engine.on_key_event(code, pressed);
+    let resp = {
+        let mut input = INPUT_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(slot) =
+            crate::release_state::key_slot(kb.scanCode, flags & 0x01 != 0, kb.vkCode)
+        {
+            input.hook_event(slot, kb.vkCode, pressed, kb.time);
+        }
+        engine.on_key_event(code, pressed)
+    };
     if debug_enabled() {
         debug_log(&format!(
             "[hook] -> {:?} mode={}",
@@ -291,6 +312,58 @@ unsafe fn keyboard_proc_inner(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> 
         ));
     }
 
+    publish_mode(engine);
+
+    match resp {
+        CoreResponse::Suppress => LRESULT(1),
+        CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
+    }
+}
+
+/// Master switch for raw release reconciliation.
+///
+/// Briefly set to `false` on 2026-09-23 while chasing a hook death that looked
+/// correlated with it. It was not: with reconciliation off, the hook still died
+/// after the first Space. That whole session ran with five unkillable zombie
+/// clx processes each holding a `WH_KEYBOARD_LL` registration, so every result
+/// from it — including that one — is untrustworthy. Re-enabled to be retested
+/// on a clean machine.
+const RECONCILE_RELEASES: bool = true;
+
+fn reconcile_releases(engine: &ClxEngine) {
+    let mut input = match INPUT_STATE.try_lock() {
+        Ok(input) => input,
+        Err(std::sync::TryLockError::Poisoned(e)) => e.into_inner(),
+        Err(std::sync::TryLockError::WouldBlock) => return,
+    };
+    let cancelled = crate::raw_input::take_cancel();
+    if cancelled {
+        input.clear();
+        engine.emergency_stop();
+    }
+    let mut recovered = Vec::new();
+    crate::raw_input::drain_releases(|slot, time| {
+        if let Some(vk) = input.take_release(slot, time) {
+            if engine.release_missed_key(vk_to_keycode(vk)) {
+                recovered.push(vk);
+            }
+        }
+    });
+    drop(input); // Never make the hook wait for diagnostic disk I/O.
+    if cancelled || !recovered.is_empty() {
+        publish_mode(engine);
+    }
+    if cancelled {
+        crash_log_sync("[input-reconcile] input desktop lost or observer resumed; cancelled input");
+    }
+    for vk in recovered {
+        crash_log_sync(&format!(
+            "[input-reconcile] recovered missed UP vk=0x{vk:02X}"
+        ));
+    }
+}
+
+fn publish_mode(engine: &ClxEngine) {
     // Publish current mode to shared memory so AHK extensions can read it.
     let mode = engine.state().mode();
     if let Some(shm) = SHM.get() {
@@ -307,11 +380,6 @@ unsafe fn keyboard_proc_inner(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> 
         if let Some(tx) = TRAY_TX.get() {
             let _ = tx.send(active != 0);
         }
-    }
-
-    match resp {
-        CoreResponse::Suppress => LRESULT(1),
-        CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
     }
 }
 

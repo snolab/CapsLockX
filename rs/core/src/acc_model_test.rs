@@ -127,3 +127,111 @@ mod tests {
         }
     }
 }
+
+/// The runaway guard: a model whose key-up never arrives must stop itself.
+///
+/// This is the bug from 2026-09-22 — CLX+Z tapped once, but the foreground
+/// landed on a window a non-elevated hook cannot see past (an elevated app, or
+/// the DWM `Ghost` of an unresponsive one), so the key-up was never delivered
+/// and the cycle accelerated to max_speed forever. Same shape as the Space
+/// flood recorded in `tmp/2026-09-11-clx-wedge-incident.md`.
+#[cfg(test)]
+mod watchdog_tests {
+    use crate::acc_model::AccModel2D;
+    use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+    use std::sync::Arc;
+
+    /// Drive a model by hand (no ticker thread), counting MOVE actions.
+    fn model(watchdog_alive: Arc<AtomicBool>, install: bool) -> (AccModel2D, Arc<AtomicI64>) {
+        crate::acc_model::set_external_tick(true);
+        let moves = Arc::new(AtomicI64::new(0));
+        let m2 = Arc::clone(&moves);
+        let m = AccModel2D::new(
+            Arc::new(move |dx, _dy, phase| {
+                if phase == "MOVE" {
+                    m2.fetch_add(dx.abs() as i64, Ordering::Relaxed);
+                }
+            }),
+            // A high ratio so the integral crosses whole units quickly: these
+            // tests assert on *whether* motion continues, not how fast.
+            3000.0,
+            3000.0,
+            250.0,
+        );
+        if install {
+            let alive = Arc::clone(&watchdog_alive);
+            m.set_watchdog(Arc::new(move || alive.load(Ordering::Relaxed)));
+        }
+        (m, moves)
+    }
+
+    #[test]
+    fn watchdog_stops_a_model_whose_key_up_never_arrived() {
+        let alive = Arc::new(AtomicBool::new(true));
+        let (m, moves) = model(Arc::clone(&alive), true);
+
+        // Key down, and a few ticks of genuine motion.
+        m.press_right();
+        for _ in 0..60 {
+            m.tick_once();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        let while_held = moves.load(Ordering::Relaxed);
+        assert!(while_held > 0, "expected motion while the key is held");
+
+        // The key is physically released, but no key-up event ever arrives —
+        // so `stop()` is never called. Only the watchdog can notice.
+        alive.store(false, Ordering::Relaxed);
+        m.tick_once();
+        let after_release = moves.load(Ordering::Relaxed);
+
+        // Everything past this point must be silence, however long we tick.
+        for _ in 0..120 {
+            m.tick_once();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert_eq!(
+            moves.load(Ordering::Relaxed),
+            after_release,
+            "the model kept moving after the watchdog said the key was up"
+        );
+    }
+
+    #[test]
+    fn without_a_watchdog_the_model_runs_away() {
+        // Characterises the bug: the same sequence with no watchdog keeps
+        // emitting forever. If this ever stops on its own, the physics changed
+        // and the guard above may no longer be the only thing saving us.
+        let alive = Arc::new(AtomicBool::new(true));
+        let (m, moves) = model(alive, false);
+        m.press_right();
+        for _ in 0..60 {
+            m.tick_once();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        let before = moves.load(Ordering::Relaxed);
+        for _ in 0..60 {
+            m.tick_once();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert!(
+            moves.load(Ordering::Relaxed) > before,
+            "expected the unguarded model to keep running (that is the bug)"
+        );
+    }
+
+    #[test]
+    fn a_watchdog_that_stays_true_does_not_interfere() {
+        let alive = Arc::new(AtomicBool::new(true));
+        let (m, moves) = model(Arc::clone(&alive), true);
+        m.press_right();
+        for _ in 0..60 {
+            m.tick_once();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert!(
+            moves.load(Ordering::Relaxed) > 0,
+            "a live watchdog must not suppress normal motion"
+        );
+    }
+}

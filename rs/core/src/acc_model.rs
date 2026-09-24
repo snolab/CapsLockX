@@ -95,6 +95,9 @@ struct State {
     h_accum: f64,
     v_accum: f64,
     active: bool,
+    max_active: std::time::Duration,
+    // Separate from acceleration timestamps: a repeat must not restart physics.
+    evidence: [Option<Instant>; 4],
     h_accel_ratio: f64,
     v_accel_ratio: f64,
     max_speed: f64,
@@ -119,12 +122,32 @@ impl State {
         self.h_accum = 0.0;
         self.v_accum = 0.0;
         self.active = false;
+        self.evidence = [None; 4];
     }
 }
 
 // ──────────────────────────────── public API ─────────────────────────────────
 
 pub type ActionFn = dyn Fn(i32, i32, &str) + Send + Sync + 'static;
+
+/// Asked once per tick while the model is running: "is this motion still
+/// legitimate?" Returning `false` stops the model immediately.
+///
+/// This exists because every exit from the physics loop used to require the
+/// key-UP event to reach the engine. When the foreground window belongs to a
+/// higher-integrity process (an elevated app, or the DWM-owned "Ghost" window
+/// Windows puts up in front of an unresponsive app), a non-elevated
+/// `WH_KEYBOARD_LL` hook stops receiving input entirely — so the key-up never
+/// arrives, the direction stays latched, and the model accelerates to
+/// `max_speed` forever. A single tap then behaves exactly like holding the key
+/// down for good. The same bug in the Space auto-repeat path is recorded in
+/// `tmp/2026-09-11-clx-wedge-incident.md`; this is the general cure for the
+/// whole family.
+pub type WatchdogFn = dyn Fn() -> bool + Send + Sync + 'static;
+
+/// Default maximum time without down evidence for any held direction.
+/// Non-repeating holds also reach this ceiling. Raw releases remain primary.
+const MAX_ACTIVE_MS: u128 = 20_000;
 
 /// 2-D acceleration model.
 ///
@@ -134,6 +157,7 @@ pub type ActionFn = dyn Fn(i32, i32, &str) + Send + Sync + 'static;
 pub struct AccModel2D {
     inner: Arc<(Mutex<State>, Condvar)>,
     action: Arc<ActionFn>,
+    watchdog: Arc<Mutex<Option<Arc<WatchdogFn>>>>,
 }
 
 impl AccModel2D {
@@ -155,6 +179,8 @@ impl AccModel2D {
                 h_accum: 0.0,
                 v_accum: 0.0,
                 active: false,
+                max_active: std::time::Duration::from_millis(MAX_ACTIVE_MS as u64),
+                evidence: [None; 4],
                 h_accel_ratio,
                 v_accel_ratio: if v_accel_ratio == 0.0 {
                     h_accel_ratio
@@ -167,17 +193,47 @@ impl AccModel2D {
             Condvar::new(),
         ));
 
+        let watchdog: Arc<Mutex<Option<Arc<WatchdogFn>>>> = Arc::new(Mutex::new(None));
+
         #[cfg(not(target_arch = "wasm32"))]
         if !EXTERNAL_TICK.load(Ordering::SeqCst) {
             let inner_clone = Arc::clone(&inner);
             let action_clone = Arc::clone(&action);
+            let wd_clone = Arc::clone(&watchdog);
             thread::Builder::new()
                 .name("clx-acc-ticker".into())
-                .spawn(move || ticker_thread(inner_clone, action_clone))
+                .spawn(move || ticker_thread(inner_clone, action_clone, wd_clone))
                 .expect("failed to spawn acc ticker thread");
         }
 
-        AccModel2D { inner, action }
+        AccModel2D {
+            inner,
+            action,
+            watchdog,
+        }
+    }
+
+    /// Install the runaway watchdog. Called once per model, by the module that
+    /// owns it, with a closure that knows which physical keys drive it.
+    pub fn set_watchdog(&self, f: Arc<WatchdogFn>) {
+        *self.watchdog.lock().unwrap() = Some(f);
+    }
+
+    /// Bound time without per-key down evidence. Non-repeating deliberate holds
+    /// also reach this ceiling; a new press starts again.
+    pub fn set_max_active(&self, duration: std::time::Duration) {
+        self.inner.0.lock().unwrap().max_active = duration;
+    }
+
+    /// Extend only an already-held direction (left, right, up, down = 0..4).
+    /// A late repeat cannot restart a model that already reached its ceiling.
+    pub fn refresh_direction(&self, direction: usize) {
+        let mut st = self.inner.0.lock().unwrap();
+        if let Some(evidence) = st.evidence.get_mut(direction) {
+            if evidence.is_some() {
+                *evidence = Some(Instant::now());
+            }
+        }
     }
 
     /// Advance the physics by one ~16 ms step.
@@ -185,17 +241,20 @@ impl AccModel2D {
     /// On native this is called automatically by the background thread.
     /// On WASM the adapter calls this from a JS `setInterval(fn, 16)`.
     pub fn tick_once(&self) {
-        tick_step(&self.inner, &*self.action);
+        let wd = self.watchdog.lock().unwrap().clone();
+        tick_step(&self.inner, &*self.action, wd.as_deref());
     }
 
     fn press_dir(
         inner: &Arc<(Mutex<State>, Condvar)>,
         field: fn(&mut State) -> &mut Option<Instant>,
+        direction: usize,
     ) {
         let (lock, cvar) = inner.as_ref();
         let mut st = lock.lock().unwrap();
         if field(&mut st).is_none() {
             *field(&mut st) = Some(Instant::now());
+            st.evidence[direction] = Some(Instant::now());
         }
         if !st.active {
             st.active = true;
@@ -207,34 +266,37 @@ impl AccModel2D {
     fn release_dir(
         inner: &Arc<(Mutex<State>, Condvar)>,
         field: fn(&mut State) -> &mut Option<Instant>,
+        direction: usize,
     ) {
         let (lock, _) = inner.as_ref();
-        *field(&mut lock.lock().unwrap()) = None;
+        let mut st = lock.lock().unwrap();
+        *field(&mut st) = None;
+        st.evidence[direction] = None;
     }
 
     pub fn press_left(&self) {
-        Self::press_dir(&self.inner, |s| &mut s.left_down);
+        Self::press_dir(&self.inner, |s| &mut s.left_down, 0);
     }
     pub fn release_left(&self) {
-        Self::release_dir(&self.inner, |s| &mut s.left_down);
+        Self::release_dir(&self.inner, |s| &mut s.left_down, 0);
     }
     pub fn press_right(&self) {
-        Self::press_dir(&self.inner, |s| &mut s.right_down);
+        Self::press_dir(&self.inner, |s| &mut s.right_down, 1);
     }
     pub fn release_right(&self) {
-        Self::release_dir(&self.inner, |s| &mut s.right_down);
+        Self::release_dir(&self.inner, |s| &mut s.right_down, 1);
     }
     pub fn press_up(&self) {
-        Self::press_dir(&self.inner, |s| &mut s.up_down);
+        Self::press_dir(&self.inner, |s| &mut s.up_down, 2);
     }
     pub fn release_up(&self) {
-        Self::release_dir(&self.inner, |s| &mut s.up_down);
+        Self::release_dir(&self.inner, |s| &mut s.up_down, 2);
     }
     pub fn press_down(&self) {
-        Self::press_dir(&self.inner, |s| &mut s.down_down);
+        Self::press_dir(&self.inner, |s| &mut s.down_down, 3);
     }
     pub fn release_down(&self) {
-        Self::release_dir(&self.inner, |s| &mut s.down_down);
+        Self::release_dir(&self.inner, |s| &mut s.down_down, 3);
     }
 
     pub fn set_ratios(&self, h: f64, v: f64, max: f64) {
@@ -254,17 +316,121 @@ impl AccModel2D {
 unsafe impl Sync for AccModel2D {}
 unsafe impl Send for AccModel2D {}
 
+#[cfg(test)]
+mod ceiling_tests {
+    use super::*;
+
+    #[test]
+    fn per_model_ceiling_stops_stuck_input_and_allows_a_new_press() {
+        set_external_tick(true);
+        let short = AccModel2D::new(Arc::new(|_, _, _| {}), 30.0, 30.0, 250.0);
+        let default = AccModel2D::new(Arc::new(|_, _, _| {}), 30.0, 30.0, 250.0);
+        short.set_max_active(std::time::Duration::from_secs(2));
+        for model in [&short, &default] {
+            model.press_right();
+            model.inner.0.lock().unwrap().evidence[1] =
+                Some(Instant::now() - std::time::Duration::from_secs(3));
+            model.tick_once();
+        }
+        assert!(!short.inner.0.lock().unwrap().active);
+        assert!(default.inner.0.lock().unwrap().active);
+        short.press_right();
+        short.tick_once();
+        assert!(short.inner.0.lock().unwrap().active);
+        default.inner.0.lock().unwrap().evidence[1] =
+            Some(Instant::now() - std::time::Duration::from_secs(21));
+        default.tick_once();
+        assert!(!default.inner.0.lock().unwrap().active);
+        short.stop();
+    }
+
+    #[test]
+    fn repeat_evidence_extends_hold_without_restarting_acceleration() {
+        set_external_tick(true);
+        let model = AccModel2D::new(Arc::new(|_, _, _| {}), 30.0, 30.0, 250.0);
+        model.set_max_active(std::time::Duration::from_secs(2));
+        model.press_right();
+        let original = model.inner.0.lock().unwrap().right_down;
+        model.inner.0.lock().unwrap().evidence[1] =
+            Some(Instant::now() - std::time::Duration::from_secs(3));
+        model.refresh_direction(1);
+        model.tick_once();
+        let st = model.inner.0.lock().unwrap();
+        assert!(st.active);
+        assert_eq!(st.right_down, original);
+        drop(st);
+        model.stop();
+        model.refresh_direction(1);
+        assert!(!model.inner.0.lock().unwrap().active);
+    }
+
+    #[test]
+    fn another_direction_repeat_cannot_hide_a_stale_latch() {
+        set_external_tick(true);
+        let model = AccModel2D::new(Arc::new(|_, _, _| {}), 30.0, 30.0, 250.0);
+        model.set_max_active(std::time::Duration::from_secs(2));
+        model.press_right();
+        model.press_down();
+        model.inner.0.lock().unwrap().evidence[1] =
+            Some(Instant::now() - std::time::Duration::from_secs(3));
+        model.refresh_direction(3);
+        model.tick_once();
+        assert!(!model.inner.0.lock().unwrap().active);
+    }
+}
+
 // ──────────────────────────────── tick logic ─────────────────────────────────
 
 /// One physics step (no sleep).  Returns `true` to keep ticking, `false` if
 /// the model has settled and the caller can stop driving it.
-fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
+fn tick_step(
+    inner: &Arc<(Mutex<State>, Condvar)>,
+    action: &ActionFn,
+    watchdog: Option<&WatchdogFn>,
+) -> bool {
     let now = Instant::now();
     let (lock, _cvar) = inner.as_ref();
 
     let mut st = lock.lock().unwrap();
     if !st.active {
         return false;
+    }
+
+    // ── Runaway guards ───────────────────────────────────────────────────────
+    // Both run before the physics, so a model whose key-up was never delivered
+    // stops here instead of integrating its way up to `max_speed` forever.
+    let max_active = st.max_active;
+    let over_ceiling = st
+        .evidence
+        .iter()
+        .flatten()
+        .any(|t| now.duration_since(*t) >= max_active);
+    if over_ceiling {
+        st.reset();
+        drop(st);
+        eprintln!(
+            "[CLX] acc model had no key-down evidence for {} ms — release and press again",
+            max_active.as_millis()
+        );
+        action(0, 0, "STOP");
+        return false;
+    }
+    if let Some(wd) = watchdog {
+        // Drop the lock across the callback: it calls into the platform
+        // (GetAsyncKeyState), and holding the state mutex through an FFI call
+        // is how deadlocks get written.
+        drop(st);
+        let alive = wd();
+        if !alive {
+            let (lock2, _) = inner.as_ref();
+            lock2.lock().unwrap().reset();
+            action(0, 0, "STOP");
+            return false;
+        }
+        st = lock.lock().unwrap();
+        if !st.active {
+            return false;
+        }
     }
 
     // Fast-start: first tick just fires the "started" callback and sets direction.
@@ -370,7 +536,11 @@ fn tick_step(inner: &Arc<(Mutex<State>, Condvar)>, action: &ActionFn) -> bool {
 // ──────────────────────────────── native ticker thread ────────────────────────
 
 #[cfg(not(target_arch = "wasm32"))]
-fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
+fn ticker_thread(
+    inner: Arc<(Mutex<State>, Condvar)>,
+    action: Arc<ActionFn>,
+    watchdog: Arc<Mutex<Option<Arc<WatchdogFn>>>>,
+) {
     use std::sync::atomic::AtomicU64;
 
     // FPS logger: every 2 seconds, log actual tick rate to stderr.
@@ -427,7 +597,8 @@ fn ticker_thread(inner: Arc<(Mutex<State>, Condvar)>, action: Arc<ActionFn>) {
                 TICK_COUNT.store(0, Ordering::Relaxed);
             }
 
-            if !tick_step(&inner, &*action) {
+            let wd = watchdog.lock().unwrap().clone();
+            if !tick_step(&inner, &*action, wd.as_deref()) {
                 break;
             }
         }

@@ -300,6 +300,7 @@ pub fn init() {
             let mut worker = Worker {
                 mgr: acquire_fresh(),
                 tracked_idx: 1,
+                last_acquire: None,
             };
             while let Ok(req) = rx.recv() {
                 // Firewall each request like the tray worker does: a panic in
@@ -315,12 +316,39 @@ pub fn init() {
         });
 }
 
+/// Number of desktop-step requests the worker has not finished yet.
+///
+/// Steps are the only request that can be generated faster than the worker
+/// drains them: `focus_edge_window` polls for up to 500 ms per step, while the
+/// cycle model can post one per tick. An unbounded `mpsc` then turns a moment
+/// of over-eager input into minutes of desktop switching that no key press can
+/// stop. Coalescing keeps at most one queued behind the one in flight — a user
+/// who really wants to travel four desktops presses the key four times, and
+/// each press still lands.
+static STEPS_IN_FLIGHT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+const MAX_STEPS_IN_FLIGHT: usize = 2;
+
 fn post(req: Req) {
+    let is_step = matches!(req, Req::Step(_) | Req::StepFocus(_));
+    if is_step {
+        let n = STEPS_IN_FLIGHT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if n >= MAX_STEPS_IN_FLIGHT {
+            STEPS_IN_FLIGHT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+            return;
+        }
+    }
     match VD_TX.get() {
         Some(tx) => {
-            let _ = tx.send(req);
+            if tx.send(req).is_err() && is_step {
+                STEPS_IN_FLIGHT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+            }
         }
-        None => log("[vd_api] request dropped: worker not initialised"),
+        None => {
+            if is_step {
+                STEPS_IN_FLIGHT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+            }
+            log("[vd_api] request dropped: worker not initialised");
+        }
     }
 }
 
@@ -329,6 +357,8 @@ fn post(req: Req) {
 struct Worker {
     mgr: Option<Manager>,
     tracked_idx: usize,
+    /// Last re-acquire attempt, for the cooldown in `with_mgr`.
+    last_acquire: Option<std::time::Instant>,
 }
 
 impl Worker {
@@ -340,6 +370,17 @@ impl Worker {
                 return Some(v);
             }
         }
+        // Re-acquiring hammers ImmersiveShell, and when it is refusing (it
+        // does, under load) every call logs twice. Back off so a bad patch
+        // costs a few lines rather than the 9,640 that filled the log on
+        // 2026-09-22.
+        const REACQUIRE_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(500);
+        if let Some(t) = self.last_acquire {
+            if t.elapsed() < REACQUIRE_COOLDOWN {
+                return None;
+            }
+        }
+        self.last_acquire = Some(std::time::Instant::now());
         log("[vd_api] manager call failed – re-acquiring");
         self.mgr = acquire_fresh();
         self.mgr.as_ref().and_then(|m| f(m))
@@ -402,9 +443,12 @@ impl Worker {
             Req::Switch(idx) => self.switch(idx),
             Req::Step(dir) => {
                 self.step(dir, false);
+                STEPS_IN_FLIGHT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
             }
             Req::StepFocus(dir) => {
-                if self.step(dir, true) {
+                let moved = self.step(dir, true);
+                STEPS_IN_FLIGHT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+                if moved {
                     focus_edge_window(dir);
                 }
             }
