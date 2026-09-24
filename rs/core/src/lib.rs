@@ -4,6 +4,7 @@ mod acc_model_test;
 pub mod agent;
 pub mod audio_capture;
 pub mod cloud_stt;
+pub mod effects;
 pub mod engine;
 pub mod key_code;
 pub mod llm_client;

@@ -114,6 +114,87 @@ pub enum KeyCode {
 }
 
 impl KeyCode {
+    /// The key a single printable character names — `'c'` is C, `'4'` is D4,
+    /// `'-'` is Minus. Used by the effect language, where `k c-c` means Ctrl+C
+    /// and the key half is written as the character itself.
+    pub fn from_char(c: char) -> Option<KeyCode> {
+        let c = c.to_ascii_lowercase();
+        Some(match c {
+            'a'..='z' => Self::LETTERS[(c as u8 - b'a') as usize],
+            '0'..='9' => Self::DIGITS[(c as u8 - b'0') as usize],
+            '-' => KeyCode::Minus,
+            '=' => KeyCode::Equal,
+            ',' => KeyCode::Comma,
+            '.' => KeyCode::Period,
+            '/' => KeyCode::Slash,
+            '[' => KeyCode::BracketLeft,
+            ']' => KeyCode::BracketRight,
+            '\\' => KeyCode::Backslash,
+            _ => return None,
+        })
+    }
+
+    /// `1` → F1. Only F1–F12 exist as variants, so anything beyond is `None`
+    /// rather than a silently wrong key.
+    pub fn from_fn_number(n: u8) -> Option<KeyCode> {
+        Some(match n {
+            1 => KeyCode::F1,
+            2 => KeyCode::F2,
+            3 => KeyCode::F3,
+            4 => KeyCode::F4,
+            5 => KeyCode::F5,
+            6 => KeyCode::F6,
+            7 => KeyCode::F7,
+            8 => KeyCode::F8,
+            9 => KeyCode::F9,
+            10 => KeyCode::F10,
+            11 => KeyCode::F11,
+            12 => KeyCode::F12,
+            _ => return None,
+        })
+    }
+
+    const LETTERS: [KeyCode; 26] = [
+        KeyCode::A,
+        KeyCode::B,
+        KeyCode::C,
+        KeyCode::D,
+        KeyCode::E,
+        KeyCode::F,
+        KeyCode::G,
+        KeyCode::H,
+        KeyCode::I,
+        KeyCode::J,
+        KeyCode::K,
+        KeyCode::L,
+        KeyCode::M,
+        KeyCode::N,
+        KeyCode::O,
+        KeyCode::P,
+        KeyCode::Q,
+        KeyCode::R,
+        KeyCode::S,
+        KeyCode::T,
+        KeyCode::U,
+        KeyCode::V,
+        KeyCode::W,
+        KeyCode::X,
+        KeyCode::Y,
+        KeyCode::Z,
+    ];
+    const DIGITS: [KeyCode; 10] = [
+        KeyCode::D0,
+        KeyCode::D1,
+        KeyCode::D2,
+        KeyCode::D3,
+        KeyCode::D4,
+        KeyCode::D5,
+        KeyCode::D6,
+        KeyCode::D7,
+        KeyCode::D8,
+        KeyCode::D9,
+    ];
+
     /// Returns true if this is a modifier key.
     pub fn is_modifier(self) -> bool {
         matches!(
