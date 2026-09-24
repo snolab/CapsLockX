@@ -9,6 +9,8 @@
 //! k enter              tap a key
 //! k c-c                Ctrl+C          (c=ctrl s=shift a=alt w=win/cmd)
 //! k "hello\n"          type a string
+//! retype "hello!"      revise what was just typed, in place
+//! commit               end the revisable run
 //! m +40 -10            move the pointer, relative
 //! click                click where the pointer is
 //! click r x2           right button, twice
@@ -21,6 +23,12 @@
 //! *why*. That is what lets CLX host a plugin without learning what the plugin
 //! is for: otoji emits `k "the words"` and CLX types them, knowing nothing
 //! about speech.
+//!
+//! [`Effect::Retype`] is the one verb that needs the executor to remember
+//! something, and it is here rather than in the plugin for a reason: only CLX
+//! knows what it actually injected. A plugin doing its own backspace
+//! arithmetic would have to guess, and would be wrong the moment the user
+//! typed anything in between.
 //!
 //! Deliberately smaller than the `.clx` draft. The draft's pointer grammar has
 //! absolute coordinates, percentages, window-relative positions and
@@ -42,8 +50,16 @@ use crate::platform::{MouseButton, Platform};
 pub enum Effect {
     /// `k enter`, `k c-c` — tap `key` while `mods` are held.
     Key { key: KeyCode, mods: Vec<KeyCode> },
-    /// `k "text"` — type a literal string.
+    /// `k "text"` — type a literal string, and begin a revisable run.
     Type(String),
+    /// `retype "text"` — revise the current run in place. The executor diffs
+    /// against what it last typed, erases only the differing suffix and types
+    /// the replacement, so a draft becoming a correction costs a couple of
+    /// keystrokes rather than a full rewrite.
+    Retype(String),
+    /// `commit` — end the run. The next `retype` then has nothing to revise
+    /// and simply types.
+    Commit,
     /// `m +40 -10` — move the pointer by a delta.
     MouseMove { dx: i32, dy: i32 },
     /// `click`, `click r x2` — press and release at the current position.
@@ -214,6 +230,16 @@ pub fn parse(line: &str) -> Effect {
             }
         }
 
+        "retype" => {
+            if rest.len() >= 2 && rest.starts_with('"') && rest.ends_with('"') {
+                Effect::Retype(unescape(&rest[1..rest.len() - 1]))
+            } else {
+                Effect::Unknown(line.to_string())
+            }
+        }
+
+        "commit" => Effect::Commit,
+
         "m" | "hover" => {
             let args: Vec<&str> = rest.split_whitespace().collect();
             // Only `cur`-relative movement exists today. Absolute pixels,
@@ -297,14 +323,87 @@ pub fn parse(line: &str) -> Effect {
     }
 }
 
-/// Perform one effect.
+/// Never erase more than this in one revision. A revision that large is not a
+/// correction, it is a different sentence, and blindly backspacing through it
+/// would eat whatever the user had already written.
+const MAX_REVISION_ERASE: usize = 256;
+
+/// Executes effects, remembering just enough to revise its own output.
+///
+/// The only state is the text of the current run — what [`Effect::Retype`]
+/// diffs against. Everything else is stateless.
+#[derive(Default)]
+pub struct Runner {
+    typed: String,
+}
+
+impl Runner {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Perform one effect.
+    ///
+    /// `Wait` blocks the calling thread, so drive this somewhere that can
+    /// afford to block: never the keyboard hook.
+    pub fn perform(&mut self, effect: &Effect, platform: &dyn Platform) {
+        match effect {
+            Effect::Type(text) => {
+                platform.type_text(text);
+                self.typed = text.clone();
+            }
+            Effect::Retype(text) => self.revise(text, platform),
+            Effect::Commit => self.typed.clear(),
+            other => perform(other, platform),
+        }
+    }
+
+    /// Backspace the differing suffix, type the new one.
+    fn revise(&mut self, next: &str, platform: &dyn Platform) {
+        if next == self.typed {
+            return;
+        }
+        let common = self
+            .typed
+            .chars()
+            .zip(next.chars())
+            .take_while(|(a, b)| a == b)
+            .count();
+        let erase = self.typed.chars().count() - common;
+
+        if erase > MAX_REVISION_ERASE {
+            eprintln!(
+                "[CLX] revision would erase {erase} characters — refusing, and                  starting a fresh run instead"
+            );
+            platform.type_text(next);
+            self.typed = next.to_string();
+            return;
+        }
+
+        if erase > 0 {
+            platform.key_tap_n(KeyCode::Backspace, erase as i32);
+        }
+        let tail: String = next.chars().skip(common).collect();
+        if !tail.is_empty() {
+            platform.type_text(&tail);
+        }
+        self.typed = next.to_string();
+    }
+}
+
+/// Perform one stateless effect.
+///
+/// [`Effect::Type`], [`Effect::Retype`] and [`Effect::Commit`] need a
+/// [`Runner`] to remember the current run; passed here, `Retype` can only type
+/// its text outright, since there is nothing to diff against.
 ///
 /// `Wait` blocks the calling thread, so run a stream somewhere that can afford
 /// to: never the keyboard hook.
 pub fn perform(effect: &Effect, platform: &dyn Platform) {
     match effect {
         Effect::Key { key, mods } => platform.key_tap_with_mods(*key, mods, 1),
-        Effect::Type(text) => platform.type_text(text),
+        Effect::Type(text) | Effect::Retype(text) => platform.type_text(text),
+        Effect::Commit => {}
         Effect::MouseMove { dx, dy } => platform.mouse_move(*dx, *dy),
         Effect::Click { button, times } => {
             for _ in 0..*times {
@@ -337,9 +436,10 @@ pub fn perform(effect: &Effect, platform: &dyn Platform) {
 /// turns what the plugin wanted into what actually happens, without either side
 /// knowing anything about the other's purpose.
 pub fn perform_stream(reader: impl std::io::BufRead, platform: &dyn Platform) {
+    let mut runner = Runner::new();
     for line in reader.lines() {
         let Ok(line) = line else { break };
-        perform(&parse(&line), platform);
+        runner.perform(&parse(&line), platform);
     }
 }
 
@@ -498,6 +598,80 @@ mod tests {
         assert!(calls
             .iter()
             .any(|c| matches!(c, Call::TypeText(t) if t == "hello world")));
+    }
+
+    fn typed_and_erased(p: &MockPlatform) -> (String, usize) {
+        let calls = p.calls.lock().unwrap();
+        let mut text = String::new();
+        let mut erased = 0;
+        for c in calls.iter() {
+            match c {
+                Call::TypeText(t) => text.push_str(t),
+                Call::KeyTapExtended(KeyCode::Backspace) | Call::KeyDown(KeyCode::Backspace) => {
+                    erased += 1
+                }
+                _ => {}
+            }
+        }
+        (text, erased)
+    }
+
+    #[test]
+    fn retype_revises_only_the_differing_suffix() {
+        // The shape every streaming recogniser produces: a draft, then a fix.
+        let p = run("k \"hello worl\"\nretype \"hello world\"\n");
+        let (text, _) = typed_and_erased(&p);
+        assert!(text.ends_with('d'), "the correction should be typed");
+        // "hello worl" -> "hello world" shares a 10-character prefix, so the
+        // revision is one keystroke, not eleven.
+        assert!(
+            text.len() < "hello worlhello world".len(),
+            "a shared prefix must not be retyped: {text:?}"
+        );
+    }
+
+    #[test]
+    fn retype_after_commit_starts_fresh() {
+        let p = MockPlatform::new();
+        let mut r = Runner::new();
+        r.perform(&parse("k \"abc\""), &p);
+        r.perform(&parse("commit"), &p);
+        r.perform(&parse("retype \"xyz\""), &p);
+        let (_, erased) = typed_and_erased(&p);
+        assert_eq!(erased, 0, "a committed run must not be backspaced over");
+    }
+
+    #[test]
+    fn an_identical_revision_does_nothing() {
+        let p = MockPlatform::new();
+        let mut r = Runner::new();
+        r.perform(&parse("k \"same\""), &p);
+        let before = p.calls.lock().unwrap().len();
+        r.perform(&parse("retype \"same\""), &p);
+        assert_eq!(p.calls.lock().unwrap().len(), before);
+    }
+
+    #[test]
+    fn a_wild_revision_refuses_to_backspace_through_the_document() {
+        let p = MockPlatform::new();
+        let mut r = Runner::new();
+        r.perform(&Effect::Type("x".repeat(MAX_REVISION_ERASE + 50)), &p);
+        r.perform(&Effect::Retype("completely different".into()), &p);
+        let (_, erased) = typed_and_erased(&p);
+        assert_eq!(erased, 0, "should type fresh rather than erase that much");
+    }
+
+    #[test]
+    fn a_streaming_plugin_reads_naturally() {
+        // What otoji would emit across one utterance.
+        let p = run(concat!(
+            "k \"the quick brown\"\n",
+            "retype \"the quick brown fox\"\n",
+            "retype \"The quick brown fox.\"\n",
+            "commit\n"
+        ));
+        let (text, _) = typed_and_erased(&p);
+        assert!(text.contains("The quick brown fox."), "got {text:?}");
     }
 
     // small helper so the modifier test reads cleanly
