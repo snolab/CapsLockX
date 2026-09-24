@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiet Window</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a18; --muted:#6b6a66; --line:#e2e0da; --card:#fff;
+    --ok:#1f7a4d; --warn:#9a6b00; --crit:#b3261e; --accent:#2b5fd9;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+      --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+    --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+  }
+  * { box-sizing:border-box }
+  body {
+    margin:0; background:var(--bg); color:var(--fg); text-align:center;
+    font:15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width:760px; margin:0 auto; padding:2rem 16px 4rem }
+  .crumb { color:var(--muted); font-size:.85rem; margin:0 0 1.4rem; text-align:left }
+  .crumb a { color:var(--muted) }
+  h1 { font-size:1.6rem; margin:0 0 .3rem; letter-spacing:-.01em }
+  .sub { color:var(--muted); margin:0 auto 1.8rem; max-width:52ch }
+  code, .mono { font-family:var(--mono); font-size:.9em }
+
+  #dial {
+    font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:clamp(4rem, 22vw, 9rem); font-weight:700; line-height:1;
+    letter-spacing:-.04em; margin:.6rem 0 .2rem; transition:color .2s;
+  }
+  #dial.idle { color:var(--muted) }
+  #dial.run  { color:var(--accent) }
+  #dial.dirty{ color:var(--crit) }
+  #dial.done { color:var(--ok) }
+  #state { font-size:1.1rem; font-weight:600; min-height:1.6em; margin:0 0 .2rem }
+  #hint  { color:var(--muted); min-height:1.5em; margin:0 0 1.4rem }
+
+  .bar { height:6px; background:var(--line); border-radius:99px; overflow:hidden; margin:0 auto 1.8rem; max-width:520px }
+  .bar i { display:block; height:100%; width:0; background:var(--accent); transition:width .1s linear }
+  .bar.dirty i { background:var(--crit) }
+
+  .row { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; margin-bottom:1rem }
+  .btn {
+    font:inherit; font-size:.95rem; padding:.55rem 1.1rem; border-radius:8px;
+    border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer;
+  }
+  .btn:hover { border-color:var(--accent) }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600 }
+  .btn[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); font-weight:600 }
+  .btn:disabled { opacity:.45; cursor:default }
+
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:.9rem 1rem; text-align:left; margin-top:1.4rem;
+  }
+  .card h2 { font-size:.8rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:0 0 .6rem }
+  #events { font-family:var(--mono); font-size:.78rem; max-height:150px; overflow:auto; margin:0 }
+  #events div { padding:.1rem 0; color:var(--crit) }
+  #events .expected { color:var(--muted) }
+  #agent { font-family:var(--mono); font-size:.8rem; max-height:180px; overflow:auto }
+  #agent div { padding:.12rem 0 }
+  #agent .pass { color:var(--ok) } #agent .fail { color:var(--crit) } #agent .info { color:var(--muted) }
+  #events .none { color:var(--muted) }
+  pre.out {
+    font-family:var(--mono); font-size:.75rem; white-space:pre-wrap; word-break:break-all;
+    background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.6rem; margin:.6rem 0 0;
+  }
+  .note {
+    border-left:3px solid var(--warn); background:var(--card); text-align:left;
+    padding:.7rem .9rem; border-radius:0 8px 8px 0; margin:1.6rem 0 0; font-size:.9rem;
+  }
+  .note b { color:var(--warn) }
+  footer { margin-top:2.4rem; color:var(--muted); font-size:.85rem }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / quiet-window</p>
+
+<h1>Quiet Window</h1>
+<p class="sub">
+  Press <b>Run test</b> and take your hands off the keyboard. The agent is
+  waiting on this button: it starts its injection when you press it, and this
+  page independently checks that nothing you typed leaked into the measurement.
+  A run that catches a keystroke is reported as contaminated rather than passed.
+</p>
+
+<div id="dial" class="idle">15</div>
+<p id="state">ready</p>
+<p id="hint">Pick how long the test needs, then press Run test.</p>
+
+<div class="bar"><i id="fill"></i></div>
+
+<div class="row" id="lengths">
+  <button class="btn" data-secs="15" aria-pressed="true">15 s</button>
+  <button class="btn" data-secs="30" aria-pressed="false">30 s</button>
+  <button class="btn" data-secs="60" aria-pressed="false">60 s</button>
+</div>
+<div class="row">
+  <button class="btn primary" id="start">Run test</button>
+  <button class="btn" id="abort" disabled>Abort</button>
+</div>
+
+<div class="card">
+  <h2>Stray input during the run</h2>
+  <div id="events"><div class="none">nothing yet</div></div>
+</div>
+
+<div class="card">
+  <h2>What the agent reported</h2>
+  <div id="agent"><span style="color:var(--muted)">nothing yet — the agent writes here while it runs</span></div>
+</div>
+
+<div class="card">
+  <h2>Result</h2>
+  <pre class="out" id="out">no run yet</pre>
+  <div class="row" style="justify-content:flex-start;margin:.6rem 0 0">
+    <button class="btn" id="copy">Copy result</button>
+  </div>
+</div>
+
+<div class="note">
+  <b>A clean verdict here is necessary, not sufficient.</b> This page only sees what
+  the browser is given, and CLX <em>suppresses</em> the keys it claims — press
+  <code>CLX+Z</code> and the browser never sees a <code>Z</code> at all, only whatever CLX
+  injected in its place. So a physical keypress can be invisible here while still
+  reaching the engine and corrupting a measurement. The authoritative record is
+  CLX's own hook log: every line with <code>inj=false</code> between
+  <code>startAt</code> and <code>endAt</code> is a real keystroke that happened.
+  Treat this page as the trigger and the first filter; treat the hook log as the proof.
+  <br><br>Also keep it focused — a run that ends while the page is blurred is reported
+  <em>unverified</em> rather than clean.
+</div>
+
+<footer>
+  Timestamps are <code>Date.now()</code> epoch milliseconds — the same clock
+  <code>capslockx_hook.log</code> and the SendInput harness stamp their lines with,
+  so the window can be lined up against them directly.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  let secs = 15, timer = null, endAt = 0, startAt = 0;
+  let hits = [], blurred = false, running = false, injecting = false;
+
+  const stray = () => hits.filter(h => !h.expected);
+
+  function fmt(ms) {
+    const s = Math.max(0, ms / 1000);
+    return s >= 10 ? s.toFixed(0) : s.toFixed(1);
+  }
+
+  function setDial(cls, text) {
+    $("dial").className = cls;
+    $("dial").textContent = text;
+  }
+
+  // ── machine-readable surface ──────────────────────────────────────────────
+  // Contract for a driver (Playwright, say):
+  //
+  //   idle  -> running -> clean | contaminated | unverified
+  //
+  // `running` means the human pressed Run test; start injecting. The three
+  // terminal states are only ever published once the window has elapsed, so
+  // waiting on them needs no extra `running === false` check. Stray input
+  // during the run sets `__quiet.dirty` (and `body[data-quiet-dirty]`) while
+  // the state stays `running`, so a driver may abort early but can never
+  // mistake it for the verdict.
+  function publish(state) {
+    document.body.dataset.quiet = state;
+    document.body.dataset.quietDirty = String(stray().length > 0);
+    window.__quiet = {
+      state,
+      // True as soon as any stray input lands, while `state` is still
+      // `running`. A driver can abort early on this; it must not treat it as
+      // the verdict.
+      dirty: stray().length > 0,
+      running,
+      requestedSeconds: secs,
+      startAt: startAt || null,
+      endAt: startAt ? startAt + secs * 1000 : null,
+      events: hits.slice(),
+      blurred,
+      clock: "Date.now() epoch ms",
+    };
+    window.dispatchEvent(new CustomEvent("quiet-window", { detail: window.__quiet }));
+  }
+
+  $("lengths").addEventListener("click", e => {
+    const b = e.target.closest("button[data-secs]");
+    if (!b || running) return;
+    secs = +b.dataset.secs;
+    [...$("lengths").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    setDial("idle", String(secs));
+  });
+
+  function record(kind, detail) {
+    if (!running) return;
+    const at = Date.now();
+    // The browser cannot tell injected input from a real finger — `isTrusted`
+    // is true for SendInput too. So the driver brackets its own injection and
+    // anything inside that bracket is expected rather than dirt. Only the hook
+    // log's `inj=` field can actually discriminate, which is why the verdict
+    // here is advisory and that audit is authoritative.
+    const expected = injecting;
+    hits.push({ at, sinceStart: at - startAt, kind, detail, expected });
+    if (expected) {
+      const box0 = $("events");
+      if (box0.querySelector(".none")) box0.innerHTML = "";
+      const e0 = document.createElement("div");
+      e0.className = "expected";
+      e0.textContent = `+${String(at - startAt).padStart(6, " ")}ms  ${kind}  ${detail}  (expected — driver injecting)`;
+      box0.appendChild(e0);
+      box0.scrollTop = box0.scrollHeight;
+      return;
+    }
+    const box = $("events");
+    if (box.querySelector(".none")) box.innerHTML = "";
+    const d = document.createElement("div");
+    d.textContent = `+${String(at - startAt).padStart(6, " ")}ms  ${kind}  ${detail}`;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+    $("dial").className = "dirty";
+    document.querySelector(".bar").classList.add("dirty");
+    $("state").textContent = "contaminated — input detected";
+    // Stay in `running`: a terminal state must mean "the window is over".
+    // Publishing `contaminated` mid-run would let a driver act on a verdict
+    // before the measurement finished. The dirt is exposed as a flag instead.
+    publish("running");
+  }
+
+  // Both edges. A lone key-UP — a stray Space release with no matching press
+  // inside the window — is exactly what invalidated a Bypass run by ending the
+  // gesture for the ordinary reason, and listening only for keydown would miss
+  // it entirely.
+  window.addEventListener("keydown", e => record("keydown", e.code || e.key), true);
+  window.addEventListener("keyup", e => record("keyup", e.code || e.key), true);
+  // `blur` does not bubble, but a capture-phase listener on `window` still sees
+  // it on the way down to an element target — so a button losing focus looked
+  // exactly like the page losing focus. Ask the document instead: it is the only
+  // thing that actually knows.
+  window.addEventListener("blur", () => {
+    if (!running || document.hasFocus()) return;
+    blurred = true;
+    record("blur", "page lost focus");
+  }, true);
+
+  function tick() {
+    const left = endAt - Date.now();
+    if (left <= 0) return finish();
+    setDial(hits.length ? "dirty" : "run", fmt(left));
+    $("fill").style.width = (100 * (1 - left / (secs * 1000))) + "%";
+  }
+
+  function finish() {
+    clearInterval(timer);
+    running = false;
+    $("start").disabled = false;
+    $("abort").disabled = true;
+    const clean = stray().length === 0 && !blurred;
+    setDial(clean ? "done" : "dirty", clean ? "✓" : "✕");
+    $("state").textContent = clean
+      ? `no stray input in ${secs}s (advisory)`
+      : (blurred && stray().length === 0 ? "unverified — the page lost focus" : `stray input — ${stray().length} event(s)`);
+    $("hint").textContent = clean
+      ? "The measurement is trustworthy."
+      : "Discard this run — press Run test again.";
+    $("fill").style.width = "100%";
+    publish(clean ? "clean" : (blurred && stray().length === 0 ? "unverified" : "contaminated"));
+    dump();
+  }
+
+  function dump() {
+    const clean = stray().length === 0 && !blurred;
+    const payload = {
+      verdict: clean ? "CLEAN (advisory)" : (blurred && stray().length === 0 ? "UNVERIFIED (page blurred)" : "STRAY INPUT"),
+      authoritative: "not this page — audit capslockx_hook.log for inj=false lines within windowStart..windowEnd",
+      requestedSeconds: secs,
+      windowStart: startAt,
+      windowEnd: startAt + secs * 1000,
+      clock: "Date.now() epoch ms — matches capslockx_hook.log line prefixes",
+      events: hits,
+    };
+    $("out").textContent = JSON.stringify(payload, null, 2);
+    return payload;
+  }
+
+  $("start").onclick = () => {
+    hits = []; blurred = false; running = true;
+    $("events").innerHTML = '<div class="none">none so far — good</div>';
+    document.querySelector(".bar").classList.remove("dirty");
+    startAt = Date.now();
+    endAt = startAt + secs * 1000;
+    $("start").disabled = true;
+    $("abort").disabled = false;
+    $("state").textContent = "test running — hands off";
+    $("hint").textContent = "The agent is injecting now. Any keystroke from here on invalidates it.";
+    setDial("run", fmt(secs * 1000));
+    $("fill").style.width = "0";
+    // Drop focus from the Start button, or a stray Space would press it again.
+    // Deliberately not `window.focus()` — that moves focus off the button and
+    // fires the very blur this page is trying to detect.
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    publish("running");
+    clearInterval(timer);
+    timer = setInterval(tick, 100);
+  };
+
+  $("abort").onclick = () => {
+    clearInterval(timer);
+    running = false;
+    $("start").disabled = false;
+    $("abort").disabled = true;
+    setDial("idle", String(secs));
+    $("state").textContent = "aborted";
+    $("hint").textContent = "Pick a length and start again.";
+    $("fill").style.width = "0";
+    publish("idle");
+  };
+
+  // The driver pushes its own progress and verdict in here, so the human sees
+  // the test's outcome and the window's cleanliness in one place instead of
+  // waiting to be told in chat.
+  window.quietWindow = {
+    get state() { return document.body.dataset.quiet; },
+    /// Bracket your own injection. Events recorded between `injecting(true)`
+    /// and `injecting(false)` are marked expected and do not count as stray.
+    injecting(on) { injecting = !!on; publish(document.body.dataset.quiet); },
+    report(text, kind) {
+      const box = $("agent");
+      if (box.querySelector("span")) box.innerHTML = "";
+      const d = document.createElement("div");
+      d.className = kind === "pass" ? "pass" : kind === "fail" ? "fail" : "info";
+      d.textContent = `+${String(Date.now() - (startAt || Date.now())).padStart(6, " ")}ms  ${text}`;
+      box.appendChild(d);
+      box.scrollTop = box.scrollHeight;
+    },
+  };
+
+  publish("idle");
+
+  $("copy").onclick = async () => {
+    const t = JSON.stringify(dump(), null, 2);
+    try {
+      await navigator.clipboard.writeText(t);
+      $("copy").textContent = "copied ✓";
+      setTimeout(() => ($("copy").textContent = "Copy result"), 1500);
+    } catch { $("copy").textContent = "copy blocked — select the text above"; }
+  };
+})();
+</script>
+</body>
+</html>

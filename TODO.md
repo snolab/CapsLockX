@@ -11,6 +11,104 @@
 - [ ] otoji-tray: extract `objc-helpers.rs` shared with CLX `tray.rs` (~150 lines duplicated)
 - [ ] CLX↔otoji-tray state channel: drop CLX's own tray, otoji-tray reflects CLX mode/PTT via state file
 
+## Findings parked during the CLX+Z runaway investigation (2026-09-22)
+
+Each of these was confirmed while chasing the CLX+Z runaway but is a separate
+concern. Evidence lives in `tmp/clx-z-*.md` and `tmp/clx-raw-probe-*.md`.
+
+- [ ] **The keyboard hook never comes back on its own.** `install_hook()` runs
+  exactly once (`rs/adapters/windows/src/hook.rs:131`); there is no liveness
+  check and no reinstall. The hook is installed on the Tauri UI thread and
+  serviced by its run loop, so when that thread is busy the hook stops being
+  called — proven live: in one clx process (PID 25880, never restarted) the hook
+  suppressed Space, then stopped suppressing it for ~1 minute, then resumed,
+  with an *ordinary* window in the foreground the whole time. That stall is the
+  previously-unconfirmed "wedge" from the memory
+  `windows-clx-wedge-and-space-flood`, and it is what starves a latched physics
+  model of its key-up. Needs a liveness poll + reinstall, or the hook moved off
+  the UI thread.
+
+- [ ] **clx's shutdown path wedges the process, and the zombie keeps its keyboard
+  hook forever.** Confirmed 2026-09-23 — this is the previously-unconfirmed wedge
+  in the memory `windows-clx-wedge-and-space-flood`, and it is a *shutdown* bug.
+  - Reproduced four times in one session. Happens on `Stop-Process -Force` **and**
+    on clx's own graceful `CapsLockX_Quit` event, so it is not force-kill specific.
+  - End state: process drops from ~16 threads to 1-2, `Responding=False`,
+    `ExitCode` already `0xFFFFFFFF`, `WaitForSingleObject` = 258 (not signalled),
+    and `TerminateProcess` returns **ERROR_ACCESS_DENIED (5)** even though
+    `OpenProcess(PROCESS_TERMINATE)` succeeded — the signature of
+    `STATUS_PROCESS_IS_TERMINATING`. Surviving threads are
+    `state=Wait wait=UserRequest startaddr=0x0`. No user-mode call can reap it;
+    only a reboot clears it.
+  - **Why it matters far more than it looks.** The zombie never terminates, so
+    Windows never releases its `WH_KEYBOARD_LL` registration. After a few
+    restart cycles a freshly launched clx gets a hook that receives nothing:
+    observed with PID 31044, which had a healthy 16 threads and a working raw
+    receiver but **zero `[hook]` lines in `capslockx_hook.log`** and a dead tray
+    menu. Both symptoms are the same cause — the hook lives on the Tauri UI
+    thread (`hook.rs:120`), so a stuck UI thread kills hotkeys and the tray
+    together while independent threads keep running.
+  - Each zombie also costs ~2.5 s on every later startup (`kill_previous` waits
+    1500 ms + 1000 ms per unkillable victim) and holds a file lock on the exe.
+    The lock is escapable without rebooting: **rename the running exe aside**
+    (Windows permits renaming a locked image, just not deleting or overwriting
+    it) — the trick `self_update.rs::aside_path` already uses.
+  - Suspect range is small: everything `main.rs` does after Tauri's `run()`
+    returns — `SHUTDOWN.store`, `hook::uninstall_hook()`,
+    `cursor_visibility::disable()`, the AHK child kill. `UnhookWindowsHookEx`
+    called while the hook is mid-callback is the leading candidate. The older
+    guess in memory (tray `set_icon` cross-thread) is not supported by the
+    thread states seen here.
+  - **This bug is what made every other investigation harder** — each debug
+    restart poisoned the next one. Fix it before doing more hook work.
+
+- [ ] **Single-`.exe` portable build is not actually single-exe.** `build.ps1`
+  copies `clx-prefs-slint.exe` next to `clx.exe` because `open_prefs_window`
+  shells out to it. Carrying only `clx.exe` on a USB stick leaves Preferences
+  broken. Prefs must stay a *separate process* (WebView2/Slint in the hook
+  process kills the hook — see `windows-prefs-out-of-process`) but a separate
+  process does not require a separate file: self-spawn the same exe with a
+  subcommand (`clx prefs-window`). Also audit for stray runtime DLLs
+  (onnxruntime et al.) that would need to ride along.
+
+- [ ] **`CLX_EXTRA_INFO` is trivially spoofable.** It is a plain constant
+  `0x434C5800` = `"CLX\0"` (`output.rs:42`), and the hook's self-injection test
+  is `injected && dwExtraInfo == CLX_EXTRA_INFO` (`hook.rs:248`). Any process
+  can tag input with it and make clx blind to those keys. Windows already
+  provides `LLKHF_LOWER_IL_INJECTED (0x02)` alongside `LLKHF_INJECTED (0x10)`;
+  checking it would catch injection from lower-integrity processes. Low severity
+  for a local keyboard tool, but free to harden.
+
+- [ ] **`describe_foreground_block()` uses the wrong elevation test.** It infers
+  "higher integrity" from `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)`
+  failing. That right is deliberately permissive and *succeeds* on ordinary
+  elevated apps — measured: `fg_pid=9380 fg_query=True fg_elevated=1`. So every
+  `blocked=false` it has ever logged is unreliable. Replace with
+  `OpenProcessToken` + `GetTokenInformation(TokenElevation)`.
+
+- [ ] **`Platform::system_key_repeat_ms` is unimplemented on Windows** (trait
+  default returns `None`). Wants `SystemParametersInfo` with
+  `SPI_GETKEYBOARDDELAY` / `SPI_GETKEYBOARDSPEED`. Needed by any
+  repeat-rate-aware logic, including the hook-silence backstop idea in
+  `tmp/clx-z-review-notes-6.md`.
+
+- [ ] **`MAX_STEPS_IN_FLIGHT = 2` drops rapid separate desktop presses.**
+  `vd_api::post` coalesces desktop steps to bound a queue that the runaway used
+  to bury. Deliberate for now, but it means four quick presses do not reliably
+  travel four desktops. If release detection is genuinely fixed the backlog
+  becomes unreachable, and the cap may be droppable entirely rather than tuned.
+
+- [ ] **`%TEMP%\capslockx_vd.log` has no rotation.** It reached 6.4 MB during
+  the runaway (9,640 × `CoCreateInstance FAILED` + `manager call failed –
+  re-acquiring` in one session, since fixed with a 500 ms backoff). The hook log
+  is `CLX_DEBUG`-gated so it only grows when asked; the vd log is not.
+
+- [ ] **`lab/clx-lang/` playground UI is behind its parser.** `clx.js` now lexes
+  and parses `when app:"…" { … }` scopes and `js { … }` action bodies, with
+  `lab/clx-lang/parse.test.cjs` green at 27/27, but the page does not yet show a
+  scope column, ship a scoped example, or syntax-highlight the new keywords.
+  §3 and §4 of `lab/clx-lang/index.html` are written and flagged as design-only.
+
 ---
 
 ### 发展路线 🛰️ RoadMap

@@ -55,6 +55,7 @@ docs/agent/               — comprehensive design docs for the agent system
 | 1-9 | Switch virtual desktop | virtual_desktop.rs |
 | ESC | Dismiss overlays / kill agent (bare, no trigger needed) | engine.rs |
 | Ctrl+Cmd+Shift+T | Toggle system Dark Mode (global, no trigger needed) | engine.rs → dark_mode.rs |
+| Ctrl+Alt+Shift ×2 | Send focused window to back — escape full-screen RDP/VM (global, no trigger needed) | engine.rs → rdp_escape.rs |
 
 **Chord layer** — hold *both* triggers (CapsLock **and** Space) and the number
 row becomes function keys: `1`-`0`, `-`, `=` emit F1-F12 (`fn_row.rs`). Held

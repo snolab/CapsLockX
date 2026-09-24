@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Key Probe</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a18; --muted:#6b6a66; --line:#e2e0da; --card:#fff;
+    --ok:#1f7a4d; --warn:#9a6b00; --crit:#b3261e; --accent:#2b5fd9;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+      --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+    --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+  }
+  * { box-sizing:border-box }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width:1100px; margin:0 auto; padding:2rem 16px 5rem }
+  .crumb { color:var(--muted); font-size:.85rem; margin:0 0 1.2rem }
+  .crumb a { color:var(--muted) }
+  h1 { font-size:1.7rem; margin:0 0 .3rem; letter-spacing:-.01em }
+  .sub { color:var(--muted); margin:0 0 1.6rem; max-width:62ch }
+  h2 { font-size:1.15rem; margin:2rem 0 .6rem }
+  code, .mono { font-family:var(--mono); font-size:.88em }
+  a { color:var(--accent) }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:start }
+  @media (max-width:860px){ .grid { grid-template-columns:1fr } }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden }
+  .hd {
+    display:flex; align-items:center; gap:.6rem; padding:.55rem .8rem;
+    border-bottom:1px solid var(--line); font-size:.82rem; color:var(--muted);
+  }
+  .hd .r { margin-left:auto }
+
+  /* ── step runner ─────────────────────────────────────────── */
+  #stage {
+    padding:1.4rem; text-align:center; border:1px solid var(--line);
+    border-radius:10px; background:var(--card); margin-bottom:1rem;
+  }
+  #stepNo { color:var(--muted); font-size:.8rem; letter-spacing:.08em; text-transform:uppercase }
+  #stepTitle { font-size:1.3rem; font-weight:650; margin:.3rem 0 .5rem }
+  #stepDo { font-size:1.05rem; margin:0 0 .4rem }
+  #stepWhy { color:var(--muted); font-size:.9rem; margin:0 auto; max-width:60ch }
+  kbd {
+    font-family:var(--mono); font-size:.85em; background:var(--bg);
+    border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
+    padding:.12em .45em; margin:0 .1em;
+  }
+  .btn {
+    font:inherit; font-size:.9rem; padding:.45rem .9rem; border-radius:7px;
+    border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer;
+  }
+  .btn:hover { border-color:var(--accent) }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent) }
+  .btn:disabled { opacity:.45; cursor:default }
+  .row { display:flex; gap:.5rem; justify-content:center; margin-top:1rem; flex-wrap:wrap }
+
+  #armed {
+    display:inline-block; padding:.2rem .6rem; border-radius:99px; font-size:.78rem;
+    border:1px solid var(--line);
+  }
+  #armed.on { color:var(--ok); border-color:var(--ok) }
+  #armed.off { color:var(--muted) }
+
+  /* ── live log ────────────────────────────────────────────── */
+  #log { height:300px; overflow:auto; font-family:var(--mono); font-size:.78rem; padding:.5rem .7rem }
+  #log div { white-space:pre; padding:.05rem 0 }
+  .dn { color:var(--accent) } .up { color:var(--muted) }
+  .inj { color:var(--ok) } .rep { color:var(--warn) }
+  .evt-blur { color:var(--crit) }
+
+  table { border-collapse:collapse; width:100% ; font-size:.86rem }
+  th,td { text-align:left; padding:.4rem .7rem; border-bottom:1px solid var(--line); vertical-align:top }
+  th { color:var(--muted); font-weight:600; font-size:.78rem }
+  tr:last-child td { border-bottom:0 }
+  .v { font-weight:650; font-family:var(--mono); font-size:.82rem }
+  .v.pass { color:var(--ok) } .v.fail { color:var(--crit) }
+  .v.wait { color:var(--muted) } .v.info { color:var(--warn) }
+
+  .note {
+    border-left:3px solid var(--warn); background:var(--card);
+    padding:.7rem .9rem; border-radius:0 8px 8px 0; margin:1rem 0; font-size:.9rem;
+  }
+  .note b { color:var(--warn) }
+  pre.out {
+    font-family:var(--mono); font-size:.75rem; background:var(--card);
+    border:1px solid var(--line); border-radius:8px; padding:.7rem;
+    max-height:220px; overflow:auto; white-space:pre-wrap; word-break:break-all;
+  }
+  footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / key-probe</p>
+
+<h1>Key Probe</h1>
+<p class="sub">
+  What the <em>foreground application</em> actually receives, recorded in the browser,
+  so it can be diffed against what clx's <code>WH_KEYBOARD_LL</code> hook logged for the
+  same keystrokes. The gap between the two lists is exactly what clx suppressed or injected.
+</p>
+
+<div class="note">
+  <b>Turn on clx's hook log first</b>, or there is nothing to diff against. Stop clx, then:
+  <br><code class="mono">$env:CLX_DEBUG=1; C:\Users\snomi\CapsLockX\clx.exe</code>
+  <br>Hook lines land in <code class="mono">%TEMP%\capslockx_hook.log</code> and carry
+  millisecond epoch timestamps — the same clock this page stamps events with, so the two
+  align directly.
+</div>
+
+<div id="stage">
+  <div id="stepNo">not started</div>
+  <div id="stepTitle">Key Probe</div>
+  <p id="stepDo">Click <b>Start</b>, then click into this page so it has keyboard focus.</p>
+  <p id="stepWhy"></p>
+  <div class="row">
+    <button class="btn primary" id="start">Start</button>
+    <button class="btn" id="next" disabled>Step done →</button>
+    <button class="btn" id="redo" disabled>Redo step</button>
+    <button class="btn" id="reset">Reset</button>
+  </div>
+  <div class="row"><span id="armed" class="off">not capturing</span></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="hd"><span>events seen by this page</span><span class="r" id="count">0</span></div>
+    <div id="log"></div>
+  </div>
+  <div class="card">
+    <div class="hd"><span>steps</span><span class="r" id="progress">0 / 0</span></div>
+    <table id="steps"><tbody></tbody></table>
+  </div>
+</div>
+
+<h2>Results</h2>
+<p class="sub" style="margin-bottom:.8rem">
+  Copy this and hand it back to Claude together with the matching slice of
+  <code class="mono">capslockx_hook.log</code>. Timestamps are epoch ms in both.
+</p>
+<div class="row" style="justify-content:flex-start">
+  <button class="btn" id="copy">Copy results JSON</button>
+  <button class="btn" id="download">Download .json</button>
+  <button class="btn" id="hooktip">Show log-slice command</button>
+</div>
+<pre class="out" id="out">nothing recorded yet</pre>
+
+<footer>
+  Records <code>keydown</code> / <code>keyup</code> only — the browser cannot see
+  <code>GetAsyncKeyState</code>, which is the other half of the question. It can, however,
+  prove whether a key clx suppressed still reached the app, and whether an injected
+  repeat kept arriving after the physical key was released.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── the script ─────────────────────────────────────────────────────────────
+  // Each step: what the user does, why it matters, and a verdict function that
+  // runs over the events captured while that step was active.
+  const STEPS = [
+    {
+      title: "Control — a key clx does not touch",
+      do_: 'Tap <kbd>J</kbd> once, on its own. No trigger key.',
+      why: "Establishes that this page sees ordinary keystrokes at all. If this fails, nothing below means anything.",
+      verdict(evts) {
+        const dn = evts.filter(e => e.type === "keydown" && e.code === "KeyJ");
+        const up = evts.filter(e => e.type === "keyup" && e.code === "KeyJ");
+        if (!dn.length) return ["fail", "no J keydown seen — page not focused?"];
+        if (!up.length) return ["fail", "J went down but never came up"];
+        return ["pass", `J down+up seen (${dn.length}/${up.length})`];
+      },
+    },
+    {
+      title: "Bare trigger tap",
+      do_: 'Tap <kbd>Space</kbd> once, on its own.',
+      why: "clx swallows the Space key-down and synthesises a real space on release. The page should therefore see an injected space, not the physical one.",
+      verdict(evts) {
+        const sp = evts.filter(e => e.code === "Space");
+        if (!sp.length) return ["fail", "no Space event reached the page at all"];
+        return ["info", `${sp.length} Space event(s): ` + sp.map(e => e.type + (e.repeat ? "*" : "")).join(" ")];
+      },
+    },
+    {
+      title: "Suppression — the trigger combo",
+      do_: 'Hold <kbd>Space</kbd>, tap <kbd>J</kbd> once, then release <kbd>Space</kbd>.',
+      why: "CLX+J is Down-arrow. The page should receive ArrowDown and must NOT receive J — if J leaks through, suppression is broken.",
+      verdict(evts) {
+        const j = evts.filter(e => e.code === "KeyJ" && e.type === "keydown");
+        const arrow = evts.filter(e => e.code === "ArrowDown" && e.type === "keydown");
+        if (j.length) return ["fail", `J leaked through (${j.length}× keydown) — not suppressed`];
+        if (!arrow.length) return ["fail", "no ArrowDown injected — did CLX mode engage?"];
+        return ["pass", `suppressed J, injected ${arrow.length}× ArrowDown`];
+      },
+    },
+    {
+      title: "Hold-to-repeat",
+      do_: 'Hold <kbd>Space</kbd>+<kbd>J</kbd> together for about 2 seconds, then release <b>both</b>.',
+      why: "The acceleration model should emit a stream of arrows while held, and the stream must stop when the keys come up. This is the gesture that ran away.",
+      verdict(evts, span) {
+        const arrows = evts.filter(e => e.code === "ArrowDown" && e.type === "keydown");
+        if (arrows.length < 2) return ["fail", `only ${arrows.length} arrow(s) — hold did not repeat`];
+        const last = arrows[arrows.length - 1].t;
+        const tail = span.end - last;
+        return [tail > 400 ? "pass" : "info",
+          `${arrows.length} arrows; last one ${tail} ms before you marked the step done`];
+      },
+    },
+    {
+      title: "Release detection — the actual bug",
+      do_: 'Hold <kbd>Space</kbd>+<kbd>J</kbd> for ~2 s. Release <b>J only</b>, keep <kbd>Space</kbd> held for another second, <em>then</em> release Space.',
+      why: "The stream must stop the moment J comes up, not when Space does. Arrows still arriving during that extra second are the runaway, reproduced.",
+      verdict(evts, span) {
+        const arrows = evts.filter(e => e.code === "ArrowDown" && e.type === "keydown");
+        if (!arrows.length) return ["fail", "no arrows at all"];
+        const last = arrows[arrows.length - 1].t;
+        const tail = span.end - last;
+        if (tail < 300) return ["fail",
+          `arrows were still arriving ${tail} ms before the end — they did not stop when J was released`];
+        return ["pass", `arrows stopped ${tail} ms before the end — release was detected`];
+      },
+    },
+    {
+      title: "Window cycle (this page will lose focus)",
+      do_: 'Tap <kbd>Space</kbd>+<kbd>Z</kbd> <b>once</b>. clx will switch windows away from here. Come back and click this page, then press “Step done”.',
+      why: "One tap must produce a bounded number of switches. The page records the moment it lost focus; clx's own log records how many switches followed.",
+      verdict(evts) {
+        const blurs = evts.filter(e => e.type === "blur");
+        if (!blurs.length) return ["info", "focus never left — did the cycle fire?"];
+        return ["info", `lost focus at ${blurs[0].t} — count the switches in clx's log after that timestamp`];
+      },
+    },
+  ];
+
+  // ── state ──────────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  let idx = -1, capturing = false, events = [], stepStart = 0;
+  const results = [];
+
+  function stamp() { return Date.now(); }
+
+  function render() {
+    const tb = $("steps").querySelector("tbody");
+    tb.innerHTML = STEPS.map((s, i) => {
+      const r = results[i];
+      const v = r ? r.verdict : (i === idx ? "wait" : "");
+      const label = r ? r.verdict : (i === idx ? "running" : "—");
+      const detail = r ? r.detail : (i === idx ? "in progress" : "");
+      return `<tr><td>${i + 1}</td><td>${s.title}</td>` +
+             `<td class="v ${v}">${label}</td><td style="color:var(--muted)">${detail}</td></tr>`;
+    }).join("");
+    $("progress").textContent = `${results.filter(Boolean).length} / ${STEPS.length}`;
+  }
+
+  function showStep() {
+    const s = STEPS[idx];
+    $("stepNo").textContent = `step ${idx + 1} of ${STEPS.length}`;
+    $("stepTitle").textContent = s.title;
+    $("stepDo").innerHTML = s.do_;
+    $("stepWhy").textContent = s.why;
+    $("next").disabled = false;
+    $("redo").disabled = false;
+    render();
+  }
+
+  function setArmed(on) {
+    capturing = on;
+    const el = $("armed");
+    el.className = on ? "on" : "off";
+    el.textContent = on ? "capturing — keep this page focused" : "not capturing";
+  }
+
+  function logLine(e) {
+    const d = document.createElement("div");
+    let cls = e.type === "keydown" ? "dn" : e.type === "keyup" ? "up" : "evt-" + e.type;
+    if (e.repeat) cls = "rep";
+    d.className = cls;
+    const rel = String(e.t - stepStart).padStart(6, " ");
+    d.textContent = `+${rel}ms  ${e.type.padEnd(8)} ${String(e.code || "").padEnd(12)} ` +
+                    `${JSON.stringify(e.key || "")}${e.repeat ? "  REPEAT" : ""}`;
+    $("log").appendChild(d);
+    $("log").scrollTop = $("log").scrollHeight;
+    $("count").textContent = events.length;
+  }
+
+  function record(type, ev) {
+    if (!capturing) return;
+    const e = {
+      type, t: stamp(), step: idx,
+      key: ev ? ev.key : undefined,
+      code: ev ? ev.code : undefined,
+      repeat: ev ? !!ev.repeat : undefined,
+    };
+    events.push(e);
+    logLine(e);
+  }
+
+  // Capture in the capture phase so nothing can stop propagation first.
+  window.addEventListener("keydown", e => record("keydown", e), true);
+  window.addEventListener("keyup", e => record("keyup", e), true);
+  window.addEventListener("blur", () => record("blur", null), true);
+  window.addEventListener("focus", () => record("focus", null), true);
+
+  function finishStep() {
+    const span = { start: stepStart, end: stamp() };
+    const mine = events.filter(e => e.step === idx);
+    let v = ["info", ""];
+    try { v = STEPS[idx].verdict(mine, span) || v; } catch (err) { v = ["fail", String(err)]; }
+    results[idx] = { step: idx + 1, title: STEPS[idx].title, verdict: v[0], detail: v[1], span, events: mine };
+    dumpOut();
+    if (idx + 1 < STEPS.length) { idx++; stepStart = stamp(); $("log").innerHTML = ""; showStep(); }
+    else {
+      setArmed(false);
+      $("stepNo").textContent = "done";
+      $("stepTitle").textContent = "All steps recorded";
+      $("stepDo").innerHTML = "Copy the results JSON below and hand it back with the hook log.";
+      $("stepWhy").textContent = "";
+      $("next").disabled = true;
+      render();
+    }
+  }
+
+  function dumpOut() {
+    const payload = {
+      generated: new Date().toISOString(),
+      clock: "Date.now() epoch ms — same clock as capslockx_hook.log line prefixes",
+      userAgent: navigator.userAgent,
+      window: { start: results.length ? results[0].span.start : null, end: stamp() },
+      steps: results.filter(Boolean),
+    };
+    $("out").textContent = JSON.stringify(payload, null, 2);
+    return payload;
+  }
+
+  $("start").onclick = () => {
+    idx = 0; events = []; results.length = 0;
+    stepStart = stamp(); $("log").innerHTML = "";
+    setArmed(true); showStep();
+    $("start").disabled = true;
+    window.focus();
+  };
+  $("next").onclick = finishStep;
+  $("redo").onclick = () => {
+    events = events.filter(e => e.step !== idx);
+    results[idx] = undefined;
+    stepStart = stamp(); $("log").innerHTML = ""; render();
+  };
+  $("reset").onclick = () => {
+    idx = -1; events = []; results.length = 0; setArmed(false);
+    $("start").disabled = false; $("next").disabled = true; $("redo").disabled = true;
+    $("log").innerHTML = ""; $("out").textContent = "nothing recorded yet";
+    $("stepNo").textContent = "not started";
+    $("stepTitle").textContent = "Key Probe";
+    $("stepDo").innerHTML = "Click <b>Start</b>, then click into this page so it has keyboard focus.";
+    $("stepWhy").textContent = "";
+    render();
+  };
+
+  $("copy").onclick = async () => {
+    const t = JSON.stringify(dumpOut(), null, 2);
+    try { await navigator.clipboard.writeText(t); $("copy").textContent = "copied ✓";
+          setTimeout(() => ($("copy").textContent = "Copy results JSON"), 1500); }
+    catch { $("copy").textContent = "copy blocked — select the text below"; }
+  };
+  $("download").onclick = () => {
+    const blob = new Blob([JSON.stringify(dumpOut(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `key-probe-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $("hooktip").onclick = () => {
+    const p = dumpOut();
+    const from = p.window.start, to = p.window.end;
+    $("out").textContent =
+      "# Slice the hook log to this run's window, in PowerShell:\n" +
+      `Get-Content $env:TEMP\\capslockx_hook.log |\n` +
+      `  Where-Object { $_ -match '^(\\d+) ' -and [int64]$Matches[1] -ge ${from} -and [int64]$Matches[1] -le ${to} }\n` +
+      "\n# then hand that output back together with the results JSON.";
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
