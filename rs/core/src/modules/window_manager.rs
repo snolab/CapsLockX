@@ -33,6 +33,21 @@ impl WindowManagerModule {
         // Reviewer-requested last resort if both hook and raw releases are
         // unavailable. Z repeats extend this deadline without changing physics.
         cycle.set_max_active(std::time::Duration::from_secs(2));
+        // The guarantee against the cycling flood. The time ceiling above bounds
+        // how *long* a runaway lasts, which is the wrong currency here: two
+        // seconds of cycling at full speed is hundreds of window switches, and
+        // that is what the user experiences as endless. So cap the *count* of
+        // switches a gesture may make without a typematic repeat to refill the
+        // budget. A held Z refills it continuously and cycles as far as ever; a Z
+        // whose key-up was eaten by the window we just cycled into gets eight
+        // switches, not hundreds.
+        //
+        // This is the layer that does not need to know *why* the key-up went
+        // missing. Every previous fix named the culprit — elevated windows, DWM
+        // ghosts, hung apps, full-screen RDP, and then Magnifier — and the list
+        // kept growing. Skipping those windows (see `window_is_unreachable`)
+        // stops us landing there; this stops the next unknown one from mattering.
+        cycle.set_max_steps(8);
         // Cycling can carry us into a session that eats the keyboard — a
         // full-screen RDP is the case that bit us: stepping to the next virtual
         // desktop hands focus back to whatever lived there, and if that is

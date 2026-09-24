@@ -317,6 +317,16 @@ fn main() {
                 vd_api::dump();
                 return;
             }
+            // What CLX+Z would actually cycle through, and what it hides.
+            //
+            // The cycling-flood bugs all came down to landing on a window that
+            // then swallowed the keyboard, and each round of diagnosis had to
+            // guess at the window list from the outside. This prints it, without
+            // touching focus.
+            "windows" => {
+                output::dump_window_list();
+                return;
+            }
             // Dev smoke test for the overlay pipeline (no LLM needed).
             "overlay-selftest" => {
                 overlay::selftest();

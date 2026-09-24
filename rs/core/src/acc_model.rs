@@ -102,6 +102,10 @@ struct State {
     v_accel_ratio: f64,
     max_speed: f64,
     mid_key_window: std::time::Duration,
+    /// Step units this activation may still emit, or `None` for unlimited.
+    /// See [`AccModel2D::set_max_steps`].
+    steps_left: Option<u32>,
+    max_steps: Option<u32>,
 }
 
 impl State {
@@ -123,6 +127,9 @@ impl State {
         self.v_accum = 0.0;
         self.active = false;
         self.evidence = [None; 4];
+        // A fresh press gets a fresh budget: the cap bounds one gesture, and the
+        // user pressing the key again is always allowed to continue.
+        self.steps_left = self.max_steps;
     }
 }
 
@@ -188,6 +195,8 @@ impl AccModel2D {
                     v_accel_ratio
                 },
                 max_speed,
+                steps_left: None,
+                max_steps: None,
                 mid_key_window: std::time::Duration::from_millis(100),
             }),
             Condvar::new(),
@@ -225,6 +234,39 @@ impl AccModel2D {
         self.inner.0.lock().unwrap().max_active = duration;
     }
 
+    /// Cap how many step units one activation may emit.
+    ///
+    /// The time-based guards above bound how *long* a runaway lasts, which is
+    /// the right currency for continuous motion — an extra second of cursor
+    /// drift is a nuisance. It is the wrong currency for a discrete action with
+    /// a heavy side effect: two seconds of window cycling at full speed is
+    /// hundreds of window switches, and the user experiences that as an endless
+    /// flood however promptly it "stops".
+    ///
+    /// A count bounds the damage regardless of *why* a release went missing,
+    /// which is what makes it a guarantee rather than another special case —
+    /// every previous attempt at this bug enumerated the windows that swallow
+    /// input (elevated, Ghost, hung, RDP, and now Magnifier) and the list was
+    /// never finished.
+    ///
+    /// The budget is **spent by steps and refilled by evidence that the key is
+    /// still down**: every typematic repeat that reaches
+    /// [`refresh_direction`](Self::refresh_direction), and every fresh press,
+    /// tops it back up. So a genuine hold, which produces a repeat every few
+    /// tens of milliseconds, cycles as far as the user likes and is effectively
+    /// not capped; a lost release produces no repeats, runs the budget down, and
+    /// goes quiet. The cap only ever bites when clx has stopped hearing the
+    /// keyboard, which is exactly the condition it is there for.
+    ///
+    /// Running out *pauses* the model rather than stopping it, so the next repeat
+    /// resumes a genuine hold seamlessly. Stopping would have required a release
+    /// and a new press — and a lost key-up means no release is coming.
+    pub fn set_max_steps(&self, steps: u32) {
+        let mut st = self.inner.0.lock().unwrap();
+        st.max_steps = Some(steps);
+        st.steps_left = Some(steps);
+    }
+
     /// Extend only an already-held direction (left, right, up, down = 0..4).
     /// A late repeat cannot restart a model that already reached its ceiling.
     pub fn refresh_direction(&self, direction: usize) {
@@ -232,6 +274,9 @@ impl AccModel2D {
         if let Some(evidence) = st.evidence.get_mut(direction) {
             if evidence.is_some() {
                 *evidence = Some(Instant::now());
+                // A repeat is proof the key is still physically down, which is
+                // what refills the step budget. See `set_max_steps`.
+                st.steps_left = st.max_steps;
             }
         }
     }
@@ -256,6 +301,10 @@ impl AccModel2D {
             *field(&mut st) = Some(Instant::now());
             st.evidence[direction] = Some(Instant::now());
         }
+        // A press is the strongest evidence the key is down, so it refills the
+        // step budget exactly as a repeat does — otherwise a gesture that had
+        // paused at the cap would stay paused through a deliberate new press.
+        st.steps_left = st.max_steps;
         if !st.active {
             st.active = true;
             st.last_tick = None;
@@ -315,6 +364,99 @@ impl AccModel2D {
 
 unsafe impl Sync for AccModel2D {}
 unsafe impl Send for AccModel2D {}
+
+#[cfg(test)]
+mod step_cap_tests {
+    use super::*;
+    use std::sync::atomic::AtomicI32;
+
+    /// A model with a step cap, and a counter of the step units it emitted.
+    fn capped(steps: u32) -> (AccModel2D, Arc<AtomicI32>) {
+        set_external_tick(true);
+        let emitted = Arc::new(AtomicI32::new(0));
+        let sink = Arc::clone(&emitted);
+        let model = AccModel2D::new(
+            Arc::new(move |dx, _dy, phase| {
+                if phase == "MOVE" {
+                    sink.fetch_add(dx.abs(), Ordering::Relaxed);
+                }
+            }),
+            30.0,
+            30.0,
+            250.0,
+        );
+        model.set_max_steps(steps);
+        (model, emitted)
+    }
+
+    /// Drive the model hard enough that an uncapped one would run away. The
+    /// sleep is not decoration: the physics integrates over real elapsed time,
+    /// so a tight tick loop advances by dt≈0 and emits nothing at all.
+    fn spin(model: &AccModel2D, ticks: usize) {
+        for _ in 0..ticks {
+            model.tick_once();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn a_lost_key_up_cannot_emit_more_than_the_cap() {
+        let (model, emitted) = capped(8);
+        model.press_right();
+        // No release and no repeat ever arrives — the Magnifier/Task Manager
+        // case, where the window we cycled into swallows the keyboard.
+        spin(&model, 120);
+        let after_cap = emitted.load(Ordering::Relaxed);
+        assert!(after_cap <= 8, "emitted {after_cap} steps, cap was 8");
+        // And it stays quiet: the flood is bounded, not merely slowed. (The
+        // model is still *live* — see `set_max_steps` — the time ceiling and the
+        // watchdog are what finally retire it.)
+        spin(&model, 120);
+        assert_eq!(
+            emitted.load(Ordering::Relaxed),
+            after_cap,
+            "an exhausted budget must not leak further steps"
+        );
+    }
+
+    #[test]
+    fn a_genuine_hold_refills_the_budget_and_is_not_capped() {
+        let (model, emitted) = capped(8);
+        model.press_right();
+        // A held key produces typematic repeats; each one is proof it is still
+        // down, so the gesture must keep going well past the cap. Long enough
+        // (~1.2 s) that the acceleration curve has produced more than 8 steps —
+        // over a short window an uncapped model would not reach 8 either, and
+        // the test would prove nothing.
+        for _ in 0..24 {
+            spin(&model, 10);
+            model.refresh_direction(1);
+        }
+        assert!(
+            emitted.load(Ordering::Relaxed) > 8,
+            "a held key was capped at {} steps",
+            emitted.load(Ordering::Relaxed)
+        );
+        assert!(
+            model.inner.0.lock().unwrap().active,
+            "must still be running"
+        );
+    }
+
+    #[test]
+    fn pressing_again_after_the_cap_starts_a_fresh_budget() {
+        let (model, emitted) = capped(8);
+        model.press_right();
+        spin(&model, 120);
+        let first = emitted.load(Ordering::Relaxed);
+        model.press_right();
+        spin(&model, 120);
+        assert!(
+            emitted.load(Ordering::Relaxed) > first,
+            "a new press must be allowed to move again"
+        );
+    }
+}
 
 #[cfg(test)]
 mod ceiling_tests {
@@ -512,10 +654,42 @@ fn tick_step(
     st.h_accum = add_safe(st.h_accum, st.h_vel * dt);
     st.v_accum = add_safe(st.v_accum, st.v_vel * dt);
 
-    let h_out = st.h_accum as i32;
+    let mut h_out = st.h_accum as i32;
     st.h_accum -= h_out as f64;
-    let v_out = st.v_accum as i32;
+    let mut v_out = st.v_accum as i32;
     st.v_accum -= v_out as f64;
+
+    // Spend the step budget. An exhausted budget *pauses* the model rather than
+    // stopping it: the motion is withheld, but the model stays live so that the
+    // next typematic repeat can refill the budget and carry a genuine hold
+    // straight on. That is what lets the cap be small enough to matter without
+    // making a real hold stutter to a halt — a stop would need the user to
+    // release and press again, and a lost key-up means no release is coming.
+    //
+    // Clamping the tick rather than discarding it keeps a single fast tick from
+    // overshooting the cap, and the accumulators are dropped while paused so no
+    // burst of withheld motion builds up to be released all at once.
+    if let Some(left) = st.steps_left {
+        let want = h_out.unsigned_abs() + v_out.unsigned_abs();
+        if want > left {
+            // Give what remains to the dominant axis; mixed-axis overrun at the
+            // very last step is not worth splitting hairs over.
+            let allowed = left as i32;
+            if h_out.abs() >= v_out.abs() {
+                h_out = h_out.signum() * allowed.min(h_out.abs());
+                v_out = 0;
+            } else {
+                v_out = v_out.signum() * allowed.min(v_out.abs());
+                h_out = 0;
+            }
+            st.steps_left = Some(0);
+            st.h_accum = 0.0;
+            st.v_accum = 0.0;
+        } else {
+            st.steps_left = Some(left - want);
+        }
+    }
+
     let h_vel = st.h_vel;
     let v_vel = st.v_vel;
     let any_key = st.any_key_held();

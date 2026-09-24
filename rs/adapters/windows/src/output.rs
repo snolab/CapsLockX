@@ -10,7 +10,9 @@ use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
-use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+use windows::Win32::Security::{
+    GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_INFORMATION_CLASS, TOKEN_QUERY,
+};
 use windows::Win32::System::Threading::{
     AttachThreadInput, GetCurrentThreadId, OpenProcess, OpenProcessToken,
     QueryFullProcessImageNameW, TerminateProcess, PROCESS_NAME_WIN32,
@@ -856,31 +858,80 @@ fn process_captures_input(pid: u32) -> bool {
     captures
 }
 
-/// Is `pid` running at an integrity level we cannot drive?
+/// `TokenUIAccess` — is this process flagged as assistive technology?
 ///
-/// Cached per PID: a process does not change elevation during its lifetime, and
-/// this is consulted for every window on every cycle tick — up to a few hundred
-/// times a second — so the token query must happen once, not per call.
+/// Not in the `windows` crate's constant set at the version we build against, so
+/// it is spelled out here. Value 26 from `TOKEN_INFORMATION_CLASS`.
+const TOKEN_UI_ACCESS: TOKEN_INFORMATION_CLASS = TOKEN_INFORMATION_CLASS(26);
+
+/// `pid`'s executable file name, without its directory. `None` when the process
+/// cannot be opened, which for our purposes reads as "something we cannot see
+/// into" rather than as an error.
+fn process_image_name(pid: u32) -> Option<String> {
+    unsafe {
+        let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, BOOL(0), pid).ok()?;
+        let mut buf = [0u16; 260];
+        let mut len = buf.len() as u32;
+        let ok = QueryFullProcessImageNameW(
+            process,
+            PROCESS_NAME_WIN32,
+            windows::core::PWSTR(buf.as_mut_ptr()),
+            &mut len,
+        )
+        .is_ok();
+        let _ = CloseHandle(process);
+        if !ok {
+            return None;
+        }
+        let full = String::from_utf16_lossy(&buf[..len as usize]);
+        Some(full.rsplit(['\\', '/']).next().unwrap_or(&full).to_string())
+    }
+}
+
+/// What a process's token says about our ability to deal with its windows.
+#[derive(Clone, Copy, Default)]
+struct ProcessReach {
+    /// Higher integrity than us — we cannot drive it, and focusing it costs us
+    /// the keyboard hook.
+    elevated: bool,
+    /// `TokenUIAccess`: assistive technology. Skipped whatever our own
+    /// elevation, because the reason is different — see `window_is_unreachable`.
+    assistive: bool,
+}
+
+/// Ask `pid`'s token both questions, once.
+///
+/// Cached per PID: neither answer changes during a process's lifetime, and this
+/// is consulted for every window on every cycle tick — up to a few hundred times
+/// a second — so the token query must happen once, not per call.
 ///
 /// A process we cannot even open a token on (dwm, anything protected) counts as
-/// unreachable, which is the right answer for the case that matters: the DWM
+/// elevated, which is the right answer for the case that matters: the DWM
 /// `Ghost` window's owner.
-fn process_is_unreachable(pid: u32) -> bool {
+fn process_reach(pid: u32) -> ProcessReach {
     use std::collections::HashMap;
     use std::sync::Mutex;
-    static CACHE: std::sync::OnceLock<Mutex<HashMap<u32, bool>>> = std::sync::OnceLock::new();
+    static CACHE: std::sync::OnceLock<Mutex<HashMap<u32, ProcessReach>>> =
+        std::sync::OnceLock::new();
 
     if pid == 0 {
-        return true;
+        return ProcessReach {
+            elevated: true,
+            assistive: false,
+        };
     }
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some(&known) = cache.lock().unwrap().get(&pid) {
         return known;
     }
 
-    let unreachable = unsafe {
+    let reach = unsafe {
         match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, BOOL(0), pid) {
-            Err(_) => true, // cannot even ask — protected or higher integrity
+            // Cannot even ask — protected or higher integrity.
+            Err(_) => ProcessReach {
+                elevated: true,
+                assistive: false,
+            },
             Ok(process) => {
                 let mut token = HANDLE::default();
                 let verdict = if OpenProcessToken(process, TOKEN_QUERY, &mut token).is_ok() {
@@ -894,13 +945,41 @@ fn process_is_unreachable(pid: u32) -> bool {
                         &mut len,
                     )
                     .is_ok();
-                    let _ = CloseHandle(token);
                     // `PROCESS_QUERY_LIMITED_INFORMATION` is deliberately
                     // permissive and succeeds against ordinary elevated apps, so
                     // the open alone proves nothing — the token is the answer.
-                    ok && elevation.TokenIsElevated != 0
+                    let elevated = ok && elevation.TokenIsElevated != 0;
+
+                    // UIAccess marks assistive technology: Magnifier, Narrator,
+                    // the on-screen keyboard. Two independent reasons to treat
+                    // those as absent. They are not documents to cycle between —
+                    // nobody Alt-Tabs *to* the magnifier — and empirically
+                    // landing on one is where CLX+Z stopped hearing the keyboard,
+                    // Magnifier being the report that prompted this. The flag is
+                    // the general form of what was previously a list of
+                    // executables that never stopped growing.
+                    let mut ui_access = 0u32;
+                    let mut ui_len = 0u32;
+                    let assistive = GetTokenInformation(
+                        token,
+                        TOKEN_UI_ACCESS,
+                        Some(&mut ui_access as *mut _ as *mut _),
+                        std::mem::size_of::<u32>() as u32,
+                        &mut ui_len,
+                    )
+                    .is_ok()
+                        && ui_access != 0;
+
+                    let _ = CloseHandle(token);
+                    ProcessReach {
+                        elevated,
+                        assistive,
+                    }
                 } else {
-                    true
+                    ProcessReach {
+                        elevated: true,
+                        assistive: false,
+                    }
                 };
                 let _ = CloseHandle(process);
                 verdict
@@ -913,21 +992,27 @@ fn process_is_unreachable(pid: u32) -> bool {
     if map.len() > 512 {
         map.clear();
     }
-    map.insert(pid, unreachable);
-    unreachable
+    map.insert(pid, reach);
+    reach
 }
 
 /// Should this window be invisible to every window-management feature?
 ///
-/// Three kinds, and the rule is the same for all of them: CLX cannot usefully
-/// drive them, and focusing one costs us the keyboard hook, so they are treated
-/// as though they do not exist — not skipped in cycling only, but absent from
-/// the single list that cycling, tiling and cross-desktop focus all read.
+/// Four kinds, and the outcome is the same for all of them: they are treated as
+/// though they do not exist — not skipped in cycling only, but absent from the
+/// single list that cycling, tiling and cross-desktop focus all read.
 ///
 /// 1. the DWM `Ghost` stand-in raised in front of an app that stopped responding
 /// 2. the unresponsive app itself — focusing it just summons the ghost
-/// 3. higher-integrity windows, *when clx is not elevated*. An elevated clx can
+/// 3. assistive technology (Magnifier, Narrator, the on-screen keyboard), which
+///    is not a window anyone means to cycle *to*, and which is where CLX+Z was
+///    observed to stop hearing the keyboard
+/// 4. higher-integrity windows, *when clx is not elevated*. An elevated clx can
 ///    drive them perfectly well, so it must not hide them from itself.
+///
+/// Note the asymmetry between 3 and 4: elevation is about what we are *able* to
+/// drive, so it depends on our own token, whereas an assistive-technology
+/// surface is not a cycling destination no matter who is asking.
 unsafe fn window_is_unreachable(hwnd: HWND) -> bool {
     let mut cls = [0u16; 16];
     let n = GetClassNameW(hwnd, &mut cls);
@@ -937,13 +1022,17 @@ unsafe fn window_is_unreachable(hwnd: HWND) -> bool {
     if IsHungAppWindow(hwnd).as_bool() {
         return true;
     }
+    let mut pid: u32 = 0;
+    GetWindowThreadProcessId(hwnd, Some(&mut pid));
+    let reach = process_reach(pid);
+    if reach.assistive {
+        return true;
+    }
     static SELF_ELEVATED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     if *SELF_ELEVATED.get_or_init(crate::is_elevated) {
         return false; // we outrank everything an ordinary user can run
     }
-    let mut pid: u32 = 0;
-    GetWindowThreadProcessId(hwnd, Some(&mut pid));
-    process_is_unreachable(pid)
+    reach.elevated
 }
 
 /// Enumerate visible app windows, ordered by monitor index then HWND value.
@@ -965,6 +1054,87 @@ pub(crate) fn get_app_windows() -> Vec<HWND> {
         (mon.0 as usize, h.0 as usize)
     });
     v
+}
+
+/// Print the window list CLX+Z cycles through, and the windows it hides.
+///
+/// Behind `clx windows`. Every cycling-flood report so far has turned on *which
+/// window we landed on*, and answering that from the outside meant guessing.
+/// This asks the same predicates the real list does — `window_is_unreachable`
+/// and `process_reach` — so the two cannot drift apart.
+pub fn dump_window_list() {
+    let mut all: Vec<HWND> = Vec::new();
+    unsafe {
+        let _ = EnumWindows(
+            Some(enum_all_captioned),
+            LPARAM(&mut all as *mut Vec<HWND> as isize),
+        );
+    }
+    let cycled = get_app_windows();
+
+    println!("CLX+Z cycles through {} window(s):", cycled.len());
+    for hwnd in &cycled {
+        println!("  {}", unsafe { describe_window(*hwnd) });
+    }
+
+    let hidden: Vec<HWND> = all
+        .into_iter()
+        .filter(|h| !cycled.iter().any(|c| c.0 == h.0))
+        .collect();
+    println!("\nhidden from every window feature ({}):", hidden.len());
+    for hwnd in hidden {
+        let reason = unsafe {
+            let mut pid: u32 = 0;
+            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+            let reach = process_reach(pid);
+            let mut cls = [0u16; 16];
+            let n = GetClassNameW(hwnd, &mut cls);
+            if n == 5 && String::from_utf16_lossy(&cls[..5]) == "Ghost" {
+                "DWM ghost of an unresponsive app"
+            } else if IsHungAppWindow(hwnd).as_bool() {
+                "not responding"
+            } else if reach.assistive {
+                "assistive technology (TokenUIAccess)"
+            } else if reach.elevated {
+                "higher integrity than clx"
+            } else {
+                // Cloaked is the ordinary case: UWP apps on another desktop.
+                "cloaked, or on another virtual desktop"
+            }
+        };
+        println!("  {}  — {}", unsafe { describe_window(hwnd) }, reason);
+    }
+}
+
+/// Everything `enum_callback_inner` would consider, *before* it starts rejecting.
+extern "system" fn enum_all_captioned(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    unsafe {
+        if !IsWindowVisible(hwnd).as_bool()
+            || GetWindowLongW(hwnd, GWL_STYLE) as u32 & WS_CAPTION_RAW == 0
+            || GetWindowLongW(hwnd, GWL_EXSTYLE) as u32 & WS_EX_TOOLWINDOW_RAW != 0
+            || GetWindowTextLengthW(hwnd) == 0
+        {
+            return BOOL(1);
+        }
+        (&mut *(lparam.0 as *mut Vec<HWND>)).push(hwnd);
+        BOOL(1)
+    }
+}
+
+/// `hwnd class=… pid=… exe`, for the dump. Deliberately avoids `GetWindowTextW`,
+/// which sends `WM_GETTEXT` and would block on exactly the hung windows this is
+/// most needed for.
+unsafe fn describe_window(hwnd: HWND) -> String {
+    let mut cls = [0u16; 64];
+    let n = GetClassNameW(hwnd, &mut cls).max(0) as usize;
+    let class = String::from_utf16_lossy(&cls[..n.min(cls.len())]);
+    let mut pid: u32 = 0;
+    GetWindowThreadProcessId(hwnd, Some(&mut pid));
+    let exe = process_image_name(pid).unwrap_or_else(|| "?".into());
+    format!(
+        "hwnd=0x{:X} pid={:<6} {:<28} {}",
+        hwnd.0 as usize, pid, class, exe
+    )
 }
 
 /// Describe the foreground window, and say whether it is one our hook cannot
@@ -996,7 +1166,8 @@ fn describe_foreground_block() -> (String, bool) {
         // PROCESS_QUERY_LIMITED_INFORMATION succeeds against ordinary elevated
         // apps (measured: fg_query=True while fg_elevated=1), so it reported
         // blocked=false for every genuinely blocked window. Ask the token.
-        let opaque = process_is_unreachable(pid);
+        let reach = process_reach(pid);
+        let opaque = reach.elevated || reach.assistive;
 
         let mut label = if class == "Ghost" {
             format!("{} (无响应程序的替身窗口 / DWM ghost)", class)
