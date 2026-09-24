@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plugins</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a18; --muted:#6b6a66; --line:#e2e0da; --card:#fff;
+    --ok:#1f7a4d; --warn:#9a6b00; --crit:#b3261e; --accent:#2b5fd9;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+      --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+    --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:2rem 16px 5rem }
+  .crumb { color:var(--muted); font-size:.85rem; margin:0 0 1.2rem }
+  .crumb a { color:var(--muted) }
+  h1 { font-size:1.8rem; margin:0 0 .3rem; letter-spacing:-.015em }
+  .sub { color:var(--muted); margin:0 0 2rem; max-width:64ch; font-size:1.02rem }
+  h2 { font-size:1.2rem; margin:2.6rem 0 .7rem; letter-spacing:-.01em }
+  h3 { font-size:1rem; margin:1.8rem 0 .5rem }
+  p { max-width:70ch }
+  code, .mono { font-family:var(--mono); font-size:.88em }
+  a { color:var(--accent) }
+  pre { font-family:var(--mono); font-size:.82rem; background:var(--card);
+    border:1px solid var(--line); border-radius:8px; padding:.8rem 1rem; overflow:auto }
+  pre code { font-size:inherit }
+  .scroll { overflow-x:auto; margin:1rem 0 }
+  table { border-collapse:collapse; width:100%; font-size:.9rem }
+  th,td { text-align:left; padding:.45rem .7rem; border-bottom:1px solid var(--line); vertical-align:top }
+  th { color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em }
+  tr:last-child td { border-bottom:0 }
+  .callout { border-left:3px solid var(--accent); background:var(--card);
+    padding:.8rem 1rem; border-radius:0 8px 8px 0; margin:1.3rem 0 }
+  .callout.warn { border-left-color:var(--warn) }
+  .callout.ok { border-left-color:var(--ok) }
+  .callout h4 { margin:0 0 .4rem; font-size:.95rem }
+  .callout p { margin:.4rem 0 0 }
+  .q { border:1px solid var(--line); border-radius:10px; padding:.9rem 1.1rem; margin:1rem 0; background:var(--card) }
+  .q h4 { margin:0 0 .3rem; font-size:.98rem }
+  .q .tag { display:inline-block; font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.06em; padding:.1rem .45rem; border-radius:99px; border:1px solid var(--line);
+    color:var(--warn); margin-left:.5rem; vertical-align:.1em }
+  nav.toc { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:.9rem 1.1rem; margin-bottom:2rem }
+  nav.toc strong { font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted) }
+  nav.toc ol { margin:.5rem 0 0; padding-left:1.4rem }
+  nav.toc li { margin:.15rem 0 }
+  footer { margin-top:3.5rem; padding-top:1.2rem; border-top:1px solid var(--line);
+    color:var(--muted); font-size:.87rem }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / plugins &nbsp;·&nbsp;
+  bindings: <a href="/lab/clx-lang/">clx-lang</a></p>
+
+<h1>Plugins</h1>
+<p class="sub">
+  CLX is a hotkey engine. It should not know what speech recognition is, or
+  translation, or note-taking — only how to notice a gesture and hand it to
+  whoever asked for it. This is what falls out of taking that seriously.
+</p>
+
+<nav class="toc"><strong>Contents</strong>
+<ol>
+  <li><a href="#already">otoji is already a plugin — informally</a></li>
+  <li><a href="#shape">A plugin is something a binding can call</a></li>
+  <li><a href="#effects">Effects, not domains — the one thing CLX must know</a></li>
+  <li><a href="#open">Four questions to settle before writing code</a></li>
+  <li><a href="#test">How we will know the design was right</a></li>
+</ol></nav>
+
+<h2 id="already">1 · otoji is already a plugin — informally</h2>
+
+<p>Nothing here starts from zero. Speech input already runs as a separate
+program that CLX finds at runtime and talks to over a structured protocol:</p>
+
+<div class="scroll"><table>
+<thead><tr><th style="width:15rem">What a plugin needs</th><th>otoji today</th></tr></thead>
+<tbody>
+<tr><td>separate process</td><td>its own binary, its own repo (<code>lib/otoji</code>)</td></tr>
+<tr><td>found at runtime</td><td><code>which otoji</code>, PATH, or beside the CLX binary</td></tr>
+<tr><td>own lifecycle</td><td>CLX spawns it detached; it outlives individual gestures</td></tr>
+<tr><td>own permissions</td><td><b>the microphone grant belongs to otoji, not CLX</b> — CLX must never request it</td></tr>
+<tr><td>own configuration</td><td>its own config file and settings panel</td></tr>
+<tr><td>structured protocol</td><td>JSON-line <code>AsrEvent</code>s on stdout</td></tr>
+</tbody></table></div>
+
+<div class="callout warn">
+  <h4>The one thing missing: CLX knows its name</h4>
+  <p><code>rs/core/src/modules/voice_otoji.rs</code> is <b>1,195 lines</b> that
+  hard-code otoji's command-line flags, its process name, its companion tray
+  binary and its config paths. So the question is not whether to build a plugin
+  system — it is how to turn an arrangement that already exists into a contract.</p>
+</div>
+
+<h2 id="shape">2 · A plugin is something a binding can call</h2>
+
+<p>The obvious design is a capability taxonomy — plugins declare
+<code>provides: stt</code>, CLX binds voice keys to whatever provides it. That
+is wrong, and it is wrong in an instructive way: it still makes CLX learn a
+vocabulary of domains. Add text-to-speech and you add a category. Add
+translation and you add another. CLX accumulates knowledge of a problem space
+it has no business understanding.</p>
+
+<p>Drop the taxonomy entirely. A plugin registers a <em>name</em>, and a
+<code>.clx</code> binding calls it:</p>
+
+<pre><code>clx[ v ] =&gt; otoji listen        # CLX has no idea what "listen" means
+clx[ b ] =&gt; brainstorm
+clx[ m ] =&gt; agent</code></pre>
+
+<p>The <a href="/lab/clx-lang/#lang"><code>.clx</code> draft</a> already left the
+door open for exactly this. Its action grammar says of built-ins:</p>
+
+<blockquote style="border-left:3px solid var(--line);margin:1rem 0;padding-left:1rem;color:var(--muted)">
+  "Anything that isn't an agent verb is a built-in name plus args; resolved by
+  the engine, not the parser."
+</blockquote>
+
+<p>Becoming a plugin host means changing <em>the engine knows these names</em>
+into <em>whoever registered this name</em>. CLX reduces to: notice a gesture,
+look up who claimed the name, hand it over. Domain knowledge: none.</p>
+
+<h2 id="effects">3 · Effects, not domains — the one thing CLX must know</h2>
+
+<p>There is a limit to how ignorant CLX can be, and it is worth stating
+precisely, because it is easy to mistake for a hole in the idea.</p>
+
+<p>CLX is the process holding the keyboard hook and the input-injection APIs.
+A plugin should not have to reimplement key injection, overlay rendering, or
+accessibility-tree targeting just to put a word on screen. So CLX has to
+understand <em>what to do</em> — while still not understanding <em>why</em>.</p>
+
+<div class="callout">
+  <h4>Plugins emit effects; CLX performs them</h4>
+  <p>"Type this text" is an <b>effect</b>. "This is speech recognition" is a
+  <b>domain</b>. CLX needs the first and must stay innocent of the second.</p>
+</div>
+
+<p>CLX already has that vocabulary. The agent language is a list of effects and
+nothing else:</p>
+
+<pre><code>k "the recognised words"    # CLX types it, and has no idea where it came from
+k c-c                       # a chord
+m 400 300 c                 # move and click
+w 200ms                     # wait
+wf "Save" 3s                # wait for an element</code></pre>
+
+<p>So the contract can be stated in one line:</p>
+
+<div class="callout ok">
+  <h4>A plugin is a process that speaks the CLX effect language on stdout</h4>
+  <p>No SDK, no linking, no ABI. Any language that can write to stdout can be a
+  plugin, and CLX already has the executor for it.</p>
+</div>
+
+<p><b>Honest gap:</b> that executor currently lives only in the macOS agent
+binary (<code>clx-agent.rs</code>, <code>--exec</code>), not in
+<code>rs/core</code>, so Windows has no way to run it. Lifting it into core is
+the first piece of work, and it is worth doing regardless — it is the same
+executor the <code>.clx</code> action half needs.</p>
+
+<h2 id="open">4 · Four questions to settle before writing code</h2>
+
+<p>These are chosen because getting 2 and 3 wrong is expensive to undo later.</p>
+
+<div class="q">
+  <h4>Q1 — Streaming and revision <span class="tag">needs a decision</span></h4>
+  <p>otoji emits a fast draft and then a corrected version; today
+  <code>voice.rs</code> replaces the text in place. A pure "type this" effect
+  cannot express that — the second version would be typed on top of the first.
+  Either the effect language grows a notion of "replace what I last emitted",
+  or plugins own their own correction and only emit final text. The first is
+  more useful and more complex.</p>
+</div>
+
+<div class="q">
+  <h4>Q2 — Does the channel go both ways? <span class="tag">needs a decision</span></h4>
+  <p>Push-to-talk means the plugin has to learn that the key came up. That
+  makes stdin an event channel, not just stdout an effect channel, and turns a
+  plugin from a producer into a participant in the gesture. Skipping it limits
+  plugins to fire-and-forget; adding it means defining what CLX tells them and
+  when.</p>
+</div>
+
+<div class="q">
+  <h4>Q3 — Lifecycle <span class="tag">needs a decision</span></h4>
+  <p>otoji is a resident daemon; it holds the microphone open and outlives any
+  single gesture. Other plugins will be one-shot. Supporting both means
+  defining who starts what and when; supporting only one means picking which
+  kind of plugin is second-class.</p>
+</div>
+
+<div class="q">
+  <h4>Q4 — Failure</h4>
+  <p>A plugin that dies mid-gesture must not leave CLX latched. We have just
+  spent a night on exactly this failure mode in the physics models, so the
+  lesson is fresh: <b>the thing that stops must not depend on the thing that
+  broke</b>.</p>
+</div>
+
+<h2 id="test">5 · How we will know the design was right</h2>
+
+<p>There is a number to aim at, and it is unambiguous.</p>
+
+<div class="callout">
+  <h4>Lines in CLX that know otoji exists: 1,195 → 0</h4>
+  <p><code>voice_otoji.rs</code> hard-codes otoji's flags, its process name, its
+  companion tray binary and its config paths. If the design is right, every one
+  of those lines becomes otoji's own problem, and CLX keeps a generic plugin
+  runner that would host a second plugin without being edited.</p>
+</div>
+
+<p>The weaker but earlier signal: adding a hypothetical second plugin should
+require no change to CLX at all — only a <code>.clx</code> binding and a
+program that writes effects to stdout.</p>
+
+<footer>
+  Design only. Nothing here is implemented. The first piece of work it implies —
+  lifting the effect executor out of the macOS agent binary into
+  <code>rs/core</code> — is worth doing on its own merits, since the
+  <a href="/lab/clx-lang/">.clx</a> action half needs the same executor.
+</footer>
+
+</div>
+</body>
+</html>
