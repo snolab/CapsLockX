@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::key_code::{KeyCode, Modifiers};
+use crate::modules::rdp_escape::RdpEscape;
 use crate::modules::Modules;
 use crate::platform::Platform;
 use crate::state::{ClxConfig, ClxState};
@@ -24,6 +25,9 @@ pub struct ClxEngine {
     platform: Arc<dyn Platform>,
     held_keys: Arc<Mutex<HashSet<KeyCode>>>,
     prior_key: Mutex<KeyCode>,
+    /// Double-tap LCtrl+LAlt+LShift → send the focused window to the back.
+    /// Global, like the dark-mode chord: no CLX trigger involved.
+    rdp_escape: RdpEscape,
     trigger_key: Arc<Mutex<Option<KeyCode>>>,
     fn_acted: Arc<AtomicBool>,
     /// CAS flag: whichever of the timeout thread or clx_up swaps this
@@ -56,6 +60,7 @@ impl ClxEngine {
             platform,
             held_keys: Arc::new(Mutex::new(HashSet::new())),
             prior_key: Mutex::new(KeyCode::Unknown(0)),
+            rdp_escape: RdpEscape::new(),
             trigger_key: Arc::new(Mutex::new(None)),
             fn_acted: Arc::new(AtomicBool::new(false)),
             trigger_timeout_fired: Arc::new(AtomicBool::new(false)),
@@ -163,6 +168,21 @@ impl ClxEngine {
             }
         }
 
+        // ── 3d. Double-tap LCtrl+LAlt+LShift escapes a full-screen RDP / VM ──
+        // Global, and never suppressed: the modifiers still reach the focused
+        // app (AHK's `~` prefix). See `modules::rdp_escape` for why a
+        // modifier-only gesture is the one that can get out of `mstsc`.
+        {
+            let held = self.held_keys.lock().unwrap();
+            let fired = self
+                .rdp_escape
+                .on_key_event(code, pressed, is_repeat, prior, &held);
+            drop(held);
+            if fired {
+                self.platform.send_active_window_to_back();
+            }
+        }
+
         // ── 4. Non-trigger key while CLX is active ────────────────────────────
         if self.state.is_clx_active() {
             if pressed && !is_repeat {
@@ -172,6 +192,7 @@ impl ClxEngine {
                     return CoreResponse::Suppress;
                 }
             } else if pressed && is_repeat && self.modules.is_mapped_key(code) {
+                self.modules.refresh_held_key(code);
                 // Suppress auto-repeat of mapped keys so they don't leak through.
                 return CoreResponse::Suppress;
             } else if !pressed && self.modules.on_key_up(code) {
@@ -189,11 +210,45 @@ impl ClxEngine {
         self.held_keys.lock().unwrap().insert(code);
     }
 
+    /// Reconcile a release observed independently when the primary hook missed it.
+    /// The adapter must serialize this with its normal input dispatch and reject
+    /// stale releases from earlier presses. Never synthesize a trigger tap or
+    /// toggle locked mode here: the event already passed through to the OS.
+    pub fn release_missed_key(&self, code: KeyCode) -> bool {
+        if !self.held_keys.lock().unwrap().remove(&code) {
+            return false;
+        }
+        if self.state.is_trigger_key(code) {
+            self.trigger_timeout_fired.store(true, Ordering::SeqCst);
+            *self.trigger_key.lock().unwrap() = None;
+            self.fn_acted.store(false, Ordering::Relaxed);
+            self.chord_pending.store(false, Ordering::Relaxed);
+            self.entered_from_locked.store(false, Ordering::Relaxed);
+            self.state.set_chord_active(false);
+            self.state.exit_fn_mode();
+            if !self.state.is_clx_active() {
+                self.modules.stop_all();
+            }
+        } else {
+            if matches!(code, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift) {
+                self.state.set_shift_held(false);
+            }
+            // This path only releases input, never starts voice/agent work or
+            // emits keys. Other held models keep running, including locked CLX.
+            self.modules.release_missed_key(code);
+        }
+        true
+    }
+
     /// Emergency stop: clear all held keys, exit CLX mode, stop all modules.
     /// Called when CGEventTap is disabled (secure input / password fields) so
     /// AccModel doesn't keep running with phantom held keys.
     pub fn emergency_stop(&self) {
         self.held_keys.lock().unwrap().clear();
+        *self.trigger_key.lock().unwrap() = None;
+        self.trigger_timeout_fired.store(true, Ordering::SeqCst);
+        self.fn_acted.store(false, Ordering::Relaxed);
+        self.state.set_shift_held(false);
         self.state.set_chord_active(false);
         self.chord_pending.store(false, Ordering::Relaxed);
         self.entered_from_locked.store(false, Ordering::Relaxed);
@@ -467,6 +522,69 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
+    #[test]
+    fn missed_z_release_stops_cycle_but_keeps_locked_mouse_hold() {
+        crate::acc_model::set_external_tick(true);
+        let platform = Arc::new(MockPlatform::new());
+        let engine = ClxEngine::new(platform.clone());
+        engine.state.enter_clx_mode();
+        engine.on_key_event(KeyCode::Z, true);
+        engine.on_key_event(KeyCode::W, true);
+        engine.tick();
+        std::thread::sleep(Duration::from_millis(15));
+        engine.tick();
+        assert!(platform.count(|c| matches!(c, Call::CycleWindows(_))) > 0);
+        assert!(engine.release_missed_key(KeyCode::Z));
+        assert!(!engine.release_missed_key(KeyCode::Z));
+        platform.clear();
+        for _ in 0..5 {
+            std::thread::sleep(Duration::from_millis(10));
+            engine.tick();
+        }
+        assert_eq!(platform.count(|c| matches!(c, Call::CycleWindows(_))), 0);
+        assert!(platform.count(|c| matches!(c, Call::MouseMove(_, _))) > 0);
+        assert!(engine.state.is_clx_locked());
+        assert!(engine.held_keys.lock().unwrap().contains(&KeyCode::W));
+        engine.emergency_stop();
+    }
+
+    #[test]
+    fn missed_trigger_release_stops_held_z_without_synthesizing_space() {
+        crate::acc_model::set_external_tick(true);
+        let (engine, platform) = engine_with_space();
+        engine.on_key_event(KeyCode::Space, true);
+        engine.on_key_event(KeyCode::Z, true);
+        assert!(engine.release_missed_key(KeyCode::Space));
+        assert!(!engine.state.is_clx_active());
+        engine.tick();
+        assert!(platform.calls().is_empty());
+        assert!(engine.release_missed_key(KeyCode::Z));
+        assert_eq!(*engine.trigger_key.lock().unwrap(), None);
+    }
+
+    #[test]
+    fn missed_z_then_trigger_release_clears_both_in_reverse_order() {
+        crate::acc_model::set_external_tick(true);
+        let (engine, platform) = engine_with_space();
+        engine.on_key_event(KeyCode::Space, true);
+        engine.on_key_event(KeyCode::Z, true);
+        assert!(engine.release_missed_key(KeyCode::Z));
+        assert!(engine.state.is_clx_active());
+        assert!(engine.release_missed_key(KeyCode::Space));
+        assert!(!engine.state.is_clx_active());
+        assert!(engine.held_keys.lock().unwrap().is_empty());
+        assert!(platform.calls().is_empty());
+    }
+
+    #[test]
+    fn missed_bare_trigger_release_does_not_emit_a_native_tap() {
+        let (engine, platform) = engine_with_space();
+        engine.on_key_event(KeyCode::Space, true);
+        assert!(engine.release_missed_key(KeyCode::Space));
+        assert!(platform.calls().is_empty());
+        assert!(!engine.state.is_clx_active());
+    }
+
     fn engine_with_space() -> (Arc<ClxEngine>, Arc<MockPlatform>) {
         let platform = Arc::new(MockPlatform::new());
         let mut cfg = ClxConfig::default();
@@ -534,6 +652,39 @@ mod tests {
         let resp = engine.on_key_event(KeyCode::T, true);
         assert_eq!(resp, CoreResponse::PassThrough);
         assert_eq!(dark_mode_toggles(&platform), 0);
+    }
+
+    #[test]
+    fn double_tap_ctrl_alt_shift_sends_window_to_back() {
+        let (engine, platform) = engine_with_space();
+        let chord = [KeyCode::LCtrl, KeyCode::LAlt, KeyCode::LShift];
+        for _ in 0..2 {
+            for k in chord {
+                assert_eq!(engine.on_key_event(k, true), CoreResponse::PassThrough);
+            }
+            for k in chord {
+                assert_eq!(engine.on_key_event(k, false), CoreResponse::PassThrough);
+            }
+        }
+        assert_eq!(
+            platform.count(|c| matches!(c, Call::SendActiveWindowToBack)),
+            1
+        );
+    }
+
+    #[test]
+    fn single_ctrl_alt_shift_tap_leaves_the_window_alone() {
+        let (engine, platform) = engine_with_space();
+        for k in [KeyCode::LCtrl, KeyCode::LAlt, KeyCode::LShift] {
+            engine.on_key_event(k, true);
+        }
+        for k in [KeyCode::LCtrl, KeyCode::LAlt, KeyCode::LShift] {
+            engine.on_key_event(k, false);
+        }
+        assert_eq!(
+            platform.count(|c| matches!(c, Call::SendActiveWindowToBack)),
+            0
+        );
     }
 
     #[test]

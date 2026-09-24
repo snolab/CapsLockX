@@ -21,6 +21,8 @@ pub enum Call {
     SetWindowTransparent(u8),
     RestoreWindow,
     ToggleWindowTopmost,
+    SendActiveWindowToBack,
+    OnInputLost,
     SwitchToDesktop(u32),
     MoveWindowToDesktop(u32),
     TypeText(String),
@@ -189,6 +191,12 @@ impl Platform for MockPlatform {
     fn show_prompt_input(&self, title: &str, msg: &str, pre: &str) -> Option<String> {
         self.log(Call::ShowPromptInput(title.into(), msg.into(), pre.into()));
         self.prompt_response.lock().unwrap().clone()
+    }
+    fn on_input_lost(&self) {
+        self.log(Call::OnInputLost);
+    }
+    fn send_active_window_to_back(&self) {
+        self.log(Call::SendActiveWindowToBack);
     }
     fn toggle_dark_mode(&self) {
         self.log(Call::ToggleDarkMode);

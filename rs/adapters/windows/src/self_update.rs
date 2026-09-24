@@ -446,7 +446,7 @@ fn aside_path(exe: &Path) -> PathBuf {
 ///   between the new clx and whatever terminal launched us.
 /// - `CREATE_NEW_PROCESS_GROUP`: Ctrl+C / Ctrl+Break in the parent group can't
 ///   reach it.
-fn spawn_detached(exe: &Path, cwd: &Path) -> std::io::Result<()> {
+pub(crate) fn spawn_detached(exe: &Path, cwd: &Path) -> std::io::Result<()> {
     const DETACHED_PROCESS: u32 = 0x0000_0008;
     const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
     const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x0100_0000;

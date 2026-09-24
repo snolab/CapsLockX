@@ -30,6 +30,25 @@ impl WindowManagerModule {
             speed.cursor_speed * 0.5,
             250.0,
         );
+        // Reviewer-requested last resort if both hook and raw releases are
+        // unavailable. Z repeats extend this deadline without changing physics.
+        cycle.set_max_active(std::time::Duration::from_secs(2));
+        // Cycling can carry us into a session that eats the keyboard — a
+        // full-screen RDP is the case that bit us: stepping to the next virtual
+        // desktop hands focus back to whatever lived there, and if that is
+        // mstsc every following keystroke, including Z's key-up, goes to the
+        // remote machine. The model would then cycle desktops forever.
+        //
+        // Arriving is not the error — that is where the user was going. So the
+        // gesture simply ends there, checked once per tick because the desktop
+        // switch is asynchronous and we only learn where we landed afterwards.
+        //
+        // (The `key_watchdog` that used to occupy this slot is gone for good:
+        // it asked `GetAsyncKeyState` about keys the hook had already
+        // suppressed, which that API cannot see.)
+        let wd_platform = Arc::clone(&platform);
+        cycle.set_watchdog(Arc::new(move || !wd_platform.foreground_captures_input()));
+
         Self { platform, cycle }
     }
 
@@ -44,6 +63,14 @@ impl WindowManagerModule {
 
     pub fn tick(&self) {
         self.cycle.tick_once();
+    }
+
+    pub fn refresh_held_key(&self, key: KeyCode) {
+        if key == KeyCode::Z {
+            // Z owns both directions; refresh only the one already held.
+            self.cycle.refresh_direction(0);
+            self.cycle.refresh_direction(1);
+        }
     }
 
     pub fn on_key_down(&self, key: KeyCode, mods: &Modifiers) -> bool {

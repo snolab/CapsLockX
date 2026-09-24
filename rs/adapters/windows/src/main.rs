@@ -14,6 +14,8 @@ mod output;
 mod overlay;
 mod prefs_window;
 mod prompt_window;
+mod raw_input;
+mod release_state;
 mod self_update;
 mod shm;
 mod vd_api;
@@ -496,9 +498,11 @@ fn main() {
             let prefs_item = MenuItemBuilder::with_id("prefs", "Preferences…").build(app)?;
             let config_item =
                 MenuItemBuilder::with_id("config_dir", "Open Config Folder…").build(app)?;
+            let restart_item =
+                MenuItemBuilder::with_id("restart", "Restart CapsLockX").build(app)?;
             let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
             let menu = MenuBuilder::new(app)
-                .items(&[&prefs_item, &config_item, &quit_item])
+                .items(&[&prefs_item, &config_item, &restart_item, &quit_item])
                 .build()?;
 
             let icon = Image::from_bytes(ICON_OFF).expect("embedded ICO must be valid");
@@ -521,6 +525,29 @@ fn main() {
                                     let _ = Command::new("explorer").arg(dir).spawn();
                                 }
                             }
+                            // Relaunch, then exit. Reuses the self-updater's
+                            // spawn: the replacement must break away from any
+                            // Job Object and inherit no console, or restarting
+                            // from a terminal-launched clx takes the terminal
+                            // down with it (see self_update's module docs).
+                            "restart" => {
+                                let exe = std::env::current_exe();
+                                match exe {
+                                    Ok(exe) => {
+                                        let cwd =
+                                            exe.parent().unwrap_or(Path::new(".")).to_path_buf();
+                                        match self_update::spawn_detached(&exe, &cwd) {
+                                            Ok(()) => app.exit(0),
+                                            Err(e) => hook::crash_log_sync(&format!(
+                                                "[tray] restart: spawn failed: {e}"
+                                            )),
+                                        }
+                                    }
+                                    Err(e) => hook::crash_log_sync(&format!(
+                                        "[tray] restart: current_exe failed: {e}"
+                                    )),
+                                }
+                            }
                             "quit" => app.exit(0),
                             _ => {}
                         }
@@ -530,6 +557,10 @@ fn main() {
                     }
                 })
                 .build(app)?;
+            // Tao registers keyboard raw input during runtime creation. Our
+            // independent release receiver takes ownership only after that;
+            // mouse registration and ordinary window messages stay with Tao.
+            raw_input::start();
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -614,7 +645,7 @@ fn spawn_ahk() -> Option<Child> {
 
 // ── Elevation helpers ────────────────────────────────────────────────────────
 
-fn is_elevated() -> bool {
+pub fn is_elevated() -> bool {
     unsafe {
         let mut token = HANDLE::default();
         if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token).is_err() {

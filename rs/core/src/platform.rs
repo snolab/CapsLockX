@@ -144,6 +144,31 @@ pub trait Platform: Send + Sync + 'static {
     fn restore_window(&self) {}
     fn toggle_window_topmost(&self) {}
 
+    /// Does the foreground window swallow the keyboard wholesale?
+    ///
+    /// A remote-desktop or VM console session forwards every keystroke to the
+    /// guest, so once focus lands there CLX receives nothing more — including
+    /// the key-up for whatever gesture carried us in. Unlike a ghost or an
+    /// unresponsive window, this is a *legitimate destination*: the user means
+    /// to arrive there. So it is not hidden from cycling; the gesture simply
+    /// ends on arrival.
+    fn foreground_captures_input(&self) -> bool {
+        false
+    }
+
+    /// Called when a physics model had to stop itself because the key-up was
+    /// never delivered — i.e. we can prove the input pipe went silent while a
+    /// key was still latched. The adapter uses it to work out *why* (an
+    /// elevated foreground window, a DWM Ghost) and tell the user, since from
+    /// their side clx has simply stopped responding.
+    fn on_input_lost(&self) {}
+
+    /// Push the focused window to the bottom of the Z-order and hand focus to
+    /// the shell, without minimizing it. The escape hatch from a full-screen
+    /// RDP / VM window that is swallowing every keystroke — see
+    /// `modules::rdp_escape`.
+    fn send_active_window_to_back(&self) {}
+
     // ── Virtual desktop (optional, default = no-op) ────────────────────────────
 
     /// Switch to virtual desktop by 1-based index.
@@ -293,6 +318,13 @@ pub trait Platform: Send + Sync + 'static {
     }
     /// Set clipboard text content.
     fn set_clipboard_text(&self, _text: &str) {}
+    /// Cheap monotonic counter that changes whenever the clipboard contents do
+    /// (Windows `GetClipboardSequenceNumber`, macOS `changeCount`). Lets a
+    /// "Ctrl+C then read" round-trip poll for the copy to land instead of
+    /// sleeping a fixed worst-case interval. `None` = unsupported, caller sleeps.
+    fn clipboard_sequence(&self) -> Option<u64> {
+        None
+    }
     /// Show brainstorm floating overlay with streaming text.
     fn show_brainstorm_overlay(&self, _text: &str) {}
     /// Hide brainstorm overlay.

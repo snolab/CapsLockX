@@ -4,6 +4,66 @@ pub mod edit;
 pub mod fn_row;
 pub mod media;
 pub mod mouse;
+pub mod rdp_escape;
+
+/// Build the runaway watchdog for an `AccModel2D` driven by `keys`.
+///
+/// Every physics model in CLX is "hold to keep moving", and every one of them
+/// used to have exactly one brake: the key-UP reaching the engine. That brake
+/// fails whenever the foreground window belongs to a higher-integrity process
+/// — an elevated app, or the DWM-owned `Ghost` window Windows raises in front
+/// of an unresponsive one — because a non-elevated `WH_KEYBOARD_LL` hook then
+/// receives nothing at all. The direction stays latched, the model integrates
+/// up to `max_speed`, and a single tap becomes an endless stream of commands.
+///
+/// `GetAsyncKeyState` still tells the truth in that state, because it reads
+/// hardware rather than the (now silent) event pipe. Measured cost on Windows:
+/// ~350 ns per call, ~0.01% of a core at the ticker's rate — free next to the
+/// sub-millisecond spin the ticker already does.
+///
+/// Self-calibration: `Platform::is_key_physically_down` defaults to a flat
+/// `false` for adapters that cannot answer, so a bare negative would stop
+/// every model instantly on those platforms. The verdict is therefore only
+/// believed once the same API has been seen to return `true` at least once —
+/// the same rule the Space auto-repeat fix uses in `engine.rs`.
+/// **DISABLED 2026-09-22 — do not re-enable without reading this.**
+///
+/// The premise below is wrong for the keys CLX actually drives. The hook
+/// *suppresses* those keys (`LRESULT(1)`), and a suppressed key does not reach
+/// the asynchronous key state, so `GetAsyncKeyState` reports it **up while the
+/// user is holding it down**. The watchdog therefore fired constantly during
+/// ordinary use — `crash.log` filled with `[on_input_lost] ... blocked=false`
+/// against Chrome, Terminal and Firefox — and killed hold-to-repeat mid-
+/// gesture, which is most of what CLX does. Symptom: clx looks dead.
+///
+/// The runaway it was meant to stop is real (see
+/// `tmp/clx-z-runaway-handoff.md`); the detection mechanism has to be
+/// something the hook has not already swallowed. Call sites are commented out
+/// rather than deleted so the replacement has a place to land.
+pub fn key_watchdog(
+    platform: std::sync::Arc<dyn Platform>,
+    keys: &'static [KeyCode],
+) -> std::sync::Arc<crate::acc_model::WatchdogFn> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let trusted = AtomicBool::new(false);
+    std::sync::Arc::new(move || {
+        if keys.iter().any(|k| platform.is_key_physically_down(*k)) {
+            trusted.store(true, Ordering::Relaxed);
+            return true;
+        }
+        // Nothing reports down. Only act on that if this adapter has ever
+        // reported `true` — otherwise it simply cannot answer the question.
+        if !trusted.load(Ordering::Relaxed) {
+            return true;
+        }
+        // Reaching here means the model is still latched while the hardware
+        // says the key is up: the key-up event was swallowed. That is not a
+        // normal release (a normal one calls `stop()` and the model is never
+        // ticked again), so it is worth telling the user about.
+        platform.on_input_lost();
+        false
+    })
+}
 pub mod virtual_desktop;
 #[cfg(feature = "stt")]
 pub mod voice;
@@ -226,6 +286,20 @@ impl Modules {
             return true;
         }
         false
+    }
+
+    /// Release only the input modules after an adapter observes a missed UP.
+    /// Keep this free of keyboard injection: it may run off the hook thread.
+    pub fn release_missed_key(&self, key: KeyCode) {
+        if !self.edit.on_key_up(key) && !self.mouse.on_key_up(key) {
+            self.window_manager.on_key_up(key);
+        }
+    }
+
+    pub fn refresh_held_key(&self, key: KeyCode) {
+        self.edit.refresh_held_key(key);
+        self.mouse.refresh_held_key(key);
+        self.window_manager.refresh_held_key(key);
     }
 
     pub fn is_mapped_key(&self, key: KeyCode) -> bool {
