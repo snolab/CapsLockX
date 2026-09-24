@@ -642,7 +642,10 @@ impl Platform for WinPlatform {
                 std::env::current_dir().unwrap_or_else(|_| exe.parent().unwrap().to_path_buf());
             let _ = std::process::Command::new(&exe).current_dir(wd).spawn();
         }
-        std::process::exit(0);
+        // Not `process::exit` — that is the ExitProcess path that leaves an
+        // unkillable zombie still holding the keyboard hook, which would then
+        // starve the instance we just spawned. See `main::hard_exit`.
+        crate::hard_exit(0);
     }
 
     fn move_window_to_desktop(&self, idx: u32) {

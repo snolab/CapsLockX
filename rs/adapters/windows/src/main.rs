@@ -578,18 +578,16 @@ fn main() {
             }
         });
 
-    // Signal helper threads to wind down before we tear down Win32 state.
-    SHUTDOWN.store(true, Ordering::Relaxed);
-
-    hook::uninstall_hook();
-    cursor_visibility::disable();
-
-    // Terminate AHK child process on shutdown.
+    // The AHK child is the one thing the kernel will not clean up for us: it is
+    // a separate process and would be orphaned. Kill it before we go.
     if let Some(ref mut child) = ahk_child {
         eprintln!("[CLX] terminating AHK child");
         let _ = child.kill();
         let _ = child.wait();
     }
+
+    // Deliberately not a return from `main` — see `hard_exit`.
+    hard_exit(0);
 }
 
 /// Spawn AHK module loader (lightweight, Rust-first path).
@@ -641,6 +639,48 @@ fn spawn_ahk() -> Option<Child> {
             None
         }
     }
+}
+
+/// Leave the process without going through `ExitProcess`.
+///
+/// Returning from `main`, `std::process::exit` and `app.exit` all funnel into
+/// the CRT's exit path, which calls `ExitProcess`. That is documented to
+/// terminate every other thread *"without regard to whether they are still
+/// using resources"*, and then to run `DLL_PROCESS_DETACH` while holding the
+/// loader lock. clx has around sixteen detached threads at that moment — the
+/// Tauri UI thread, the hook ticker, seven `AccModel` tickers, the raw-input
+/// receiver in `GetMessageW`, the virtual-desktop COM worker, the tray worker,
+/// the debug logger — and most of them are inside user32 or win32k calls
+/// (`SendInput`, `EnumWindows`, `GetMessageW`). Kill one of those while it
+/// holds a user-mode window-manager lock and the exiting thread deadlocks with
+/// the loader lock in its hand.
+///
+/// That is not a theoretical concern here: it is the "wedge" this project has
+/// been chasing for weeks. The result is a process stuck *inside* termination —
+/// one or two threads left in `Wait`/`UserRequest`, `ExitCode` already set, and
+/// `TerminateProcess` returning `ERROR_ACCESS_DENIED` because termination has
+/// already begun and cannot be restarted. Nothing in user mode can reap it, and
+/// crucially **Windows never releases its `WH_KEYBOARD_LL` registration**, so
+/// after a few restarts a freshly launched clx comes up with a hook that
+/// receives nothing and a tray menu that does not open. Every symptom traces
+/// back to this one exit.
+///
+/// `TerminateProcess` on our own process takes neither path: it does not notify
+/// DLLs and does not touch the loader lock. Nothing here needs an orderly
+/// teardown — there is no buffered state to flush, and the kernel reclaims the
+/// hook, the windows, the raw-input registration and the shared memory for us.
+/// So do the two things that actually matter to the *outside* world first, then
+/// leave immediately.
+pub fn hard_exit(code: u32) -> ! {
+    SHUTDOWN.store(true, Ordering::Relaxed);
+    hook::uninstall_hook();
+    cursor_visibility::disable();
+    unsafe {
+        use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
+        let _ = TerminateProcess(GetCurrentProcess(), code);
+    }
+    // TerminateProcess on self does not return, but the compiler wants a `!`.
+    unreachable!("TerminateProcess(self) returned");
 }
 
 // ── Elevation helpers ────────────────────────────────────────────────────────

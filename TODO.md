@@ -38,40 +38,21 @@ concern. Evidence lives in `tmp/clx-z-*.md` and `tmp/clx-raw-probe-*.md`.
   window, or Windows never notices it is dead — `scripts/make-ghost-window.ps1` spawns
   a helper that sends `WM_NULL` once a second for exactly that reason.
 
-- [ ] **clx's shutdown path wedges the process, and the zombie keeps its keyboard
-  hook forever.** Confirmed 2026-09-23 — this is the previously-unconfirmed wedge
-  in the memory `windows-clx-wedge-and-space-flood`, and it is a *shutdown* bug.
-  - Reproduced four times in one session. Happens on `Stop-Process -Force` **and**
-    on clx's own graceful `CapsLockX_Quit` event, so it is not force-kill specific.
-  - End state: process drops from ~16 threads to 1-2, `Responding=False`,
-    `ExitCode` already `0xFFFFFFFF`, `WaitForSingleObject` = 258 (not signalled),
-    and `TerminateProcess` returns **ERROR_ACCESS_DENIED (5)** even though
-    `OpenProcess(PROCESS_TERMINATE)` succeeded — the signature of
-    `STATUS_PROCESS_IS_TERMINATING`. Surviving threads are
-    `state=Wait wait=UserRequest startaddr=0x0`. No user-mode call can reap it;
-    only a reboot clears it.
-  - **Why it matters far more than it looks.** The zombie never terminates, so
-    Windows never releases its `WH_KEYBOARD_LL` registration. After a few
-    restart cycles a freshly launched clx gets a hook that receives nothing:
-    observed with PID 31044, which had a healthy 16 threads and a working raw
-    receiver but **zero `[hook]` lines in `capslockx_hook.log`** and a dead tray
-    menu. Both symptoms are the same cause — the hook lives on the Tauri UI
-    thread (`hook.rs:120`), so a stuck UI thread kills hotkeys and the tray
-    together while independent threads keep running.
-  - Each zombie also costs ~2.5 s on every later startup (`kill_previous` waits
-    1500 ms + 1000 ms per unkillable victim) and holds a file lock on the exe.
-    The lock is escapable without rebooting: **rename the running exe aside**
-    (Windows permits renaming a locked image, just not deleting or overwriting
-    it) — the trick `self_update.rs::aside_path` already uses.
-  - Suspect range is small: everything `main.rs` does after Tauri's `run()`
-    returns — `SHUTDOWN.store`, `hook::uninstall_hook()`,
-    `cursor_visibility::disable()`, the AHK child kill. `UnhookWindowsHookEx`
-    called while the hook is mid-callback is the leading candidate. The older
-    guess in memory (tray `set_icon` cross-thread) is not supported by the
-    thread states seen here.
-  - **This bug is what made every other investigation harder** — each debug
-    restart poisoned the next one. Fix it before doing more hook work.
-
+- [x] **clx's shutdown path wedges the process, and the zombie keeps its keyboard
+  hook forever.** FIXED 2026-09-24 — it was `ExitProcess`. Returning from `main`,
+  `std::process::exit` and `app.exit` all funnel into the CRT exit path, which
+  terminates every other thread "without regard to whether they are still using
+  resources" and then runs `DLL_PROCESS_DETACH` under the loader lock. clx has
+  ~16 detached threads at that moment, most of them inside user32/win32k calls
+  (`SendInput`, `EnumWindows`, `GetMessageW`, COM); killing one that holds a
+  window-manager lock deadlocks the exiting thread with the loader lock in hand.
+  Hence a process stuck *inside* termination, immune to `TerminateProcess`, and
+  never releasing its `WH_KEYBOARD_LL` registration. Fixed by leaving via
+  `main::hard_exit` — `TerminateProcess` on ourselves, which notifies no DLLs and
+  takes no loader lock — after killing the AHK child, the one thing the kernel
+  will not clean up. Verified six consecutive exits (three forced, three via the
+  graceful `CapsLockX_Quit` event) with zero zombies; the same sequence produced
+  five the night before.
 - [ ] **Single-`.exe` portable build is not actually single-exe.** `build.ps1`
   copies `clx-prefs-slint.exe` next to `clx.exe` because `open_prefs_window`
   shells out to it. Carrying only `clx.exe` on a USB stick leaves Preferences

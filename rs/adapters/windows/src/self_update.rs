@@ -428,7 +428,10 @@ fn rebuild_and_swap(root: &Path) -> Result<(), String> {
     // name filter, so the child will not terminate us — we must exit ourselves.
     // Give the child a moment to come up first.
     std::thread::sleep(std::time::Duration::from_millis(400));
-    std::process::exit(0);
+    // Not `process::exit`: the ExitProcess path can wedge this instance into an
+    // unkillable zombie that keeps its keyboard hook, which is precisely what
+    // would cripple the replacement we just launched. See `main::hard_exit`.
+    crate::hard_exit(0);
 }
 
 /// `<exe>.old-<pid>` sidecar path used to hold a running image out of the way.
