@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc;
 /// Windows WH_KEYBOARD_LL hook – bridges Win32 key events to ClxEngine.
 use std::sync::{Arc, Mutex, OnceLock};
@@ -18,6 +18,11 @@ use capslockx_core::{ClxConfig, ClxEngine, CoreResponse};
 // ── Raw HHOOK stored as usize for atomic access ───────────────────────────────
 
 static HOOK_RAW: AtomicUsize = AtomicUsize::new(0);
+
+/// How many times the hook callback has run. Compared against
+/// `raw_input::key_event_count()` by `check_hook_alive` to notice that Windows
+/// has quietly removed our hook.
+static HOOK_CALLS: AtomicU64 = AtomicU64::new(0);
 
 // ── Engine (initialised once via init_engine before hook installs) ────────────
 
@@ -207,11 +212,100 @@ unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _
     // Also an `extern "system"` callback — same panic firewall rationale as
     // `keyboard_proc`. Swallow on panic (the nudge is best-effort cosmetics).
     let _ = std::panic::catch_unwind(|| {
+        // This timer is the one thing clx has running on the UI thread, and the
+        // hook may only be installed from there — so the liveness check lives
+        // here rather than on the ticker.
+        check_hook_alive();
+
         let active = LAST_TRAY_ACTIVE.load(Ordering::Relaxed);
         if active != 0 && active != u32::MAX {
             crate::cursor_visibility::nudge();
         }
     });
+}
+
+/// Put the hook back after Windows has removed it.
+///
+/// Must run on the thread that owns clx's windows, for the reason spelled out on
+/// [`install_hook`]. Its only caller is `nudge_timer_proc`, which is that
+/// thread's timer callback.
+fn reinstall_hook() -> bool {
+    let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
+    // Drop the stale handle first. Unhooking one Windows has already removed
+    // simply fails, which is why the result is ignored.
+    let old = HOOK_RAW.swap(0, Ordering::SeqCst) as *mut _;
+    if !std::ptr::eq(old, std::ptr::null()) {
+        unsafe {
+            let _ = UnhookWindowsHookEx(HHOOK(old));
+        }
+    }
+    // Unlike `install_hook`, a failure here must not panic: this runs inside a
+    // timer callback on a live system, where staying up deaf beats aborting.
+    match unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), hmod, 0) } {
+        Ok(hhook) => {
+            HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
+            true
+        }
+        Err(_) => false,
+    }
+}
+
+/// Notice that the hook has stopped being called, and put it back.
+///
+/// Windows removes a low-level keyboard hook **without telling anyone** when its
+/// callback exceeds `LowLevelHooksTimeout` (300 ms by default), and until now
+/// nothing reinstalled it: clx went silently deaf until restarted. It was
+/// reported after enabling Narrator, which adds slow UI Automation work to the
+/// input path — exactly the condition that pushes a hook past the timeout.
+///
+/// Raw input is the witness. It only receives events that no hook suppressed, so
+/// in normal operation everything it sees was also offered to our hook. Raw
+/// events piling up while the hook's call count sits still therefore means we
+/// are no longer in the chain. Note what this cannot false-positive on: keys clx
+/// suppresses reach neither counter, so holding a CLX trigger looks like silence
+/// on both sides rather than like a dead hook.
+///
+/// Reinstalling has a second benefit. The chain runs most-recently-installed
+/// first, so a hook installed after ours — Narrator's, for one — sits ahead of
+/// us and can swallow a key before we ever see it. Reinstalling moves us back to
+/// the front.
+fn check_hook_alive() {
+    /// Physical events that must accumulate with a motionless hook before we
+    /// act. Four is two whole keystrokes (make + break), enough that a single
+    /// straggler racing the counters cannot trip it.
+    const STALE_BUDGET: u64 = 4;
+
+    static LAST_RAW: AtomicU64 = AtomicU64::new(0);
+    static LAST_HOOK: AtomicU64 = AtomicU64::new(0);
+    static STALE_RAW: AtomicU64 = AtomicU64::new(0);
+
+    let raw = crate::raw_input::key_event_count();
+    let hook = HOOK_CALLS.load(Ordering::Relaxed);
+    let raw_delta = raw.saturating_sub(LAST_RAW.swap(raw, Ordering::Relaxed));
+    let hook_delta = hook.saturating_sub(LAST_HOOK.swap(hook, Ordering::Relaxed));
+
+    // Any callback at all means we are still in the chain.
+    if hook_delta > 0 {
+        STALE_RAW.store(0, Ordering::Relaxed);
+        return;
+    }
+
+    // Accumulated rather than required within one 250 ms window: a few
+    // keystrokes spread over a couple of seconds still add up to a verdict.
+    let stale = STALE_RAW.fetch_add(raw_delta, Ordering::Relaxed) + raw_delta;
+    if stale < STALE_BUDGET {
+        return;
+    }
+    STALE_RAW.store(0, Ordering::Relaxed);
+
+    let recovered = reinstall_hook();
+    // crash_log_sync, not debug_log: this is durable and rare, and someone
+    // reading a report of "clx went deaf" days later needs to find it.
+    crash_log_sync(&format!(
+        "[hook] {stale} physical key event(s) with no callback — hook was \
+         dropped; reinstall {}",
+        if recovered { "ok" } else { "FAILED" }
+    ));
 }
 
 pub fn uninstall_hook() {
@@ -243,6 +337,10 @@ unsafe extern "system" fn keyboard_proc(n_code: i32, w_param: WPARAM, l_param: L
 }
 
 unsafe fn keyboard_proc_inner(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    // Counted before anything can return early: this is "was the hook called",
+    // not "did the hook act". A relaxed increment costs nothing on this path.
+    HOOK_CALLS.fetch_add(1, Ordering::Relaxed);
+
     if n_code < 0 {
         return call_next(n_code, w_param, l_param);
     }

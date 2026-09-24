@@ -35,6 +35,18 @@ static RELEASES: [AtomicU64; KEY_SLOTS] = [const { AtomicU64::new(0) }; KEY_SLOT
 static DIRTY: AtomicBool = AtomicBool::new(false);
 static CANCEL: AtomicBool = AtomicBool::new(false);
 
+/// Every physical keyboard event seen here, make and break alike.
+///
+/// This exists as an independent witness that the input path is live. Raw input
+/// only receives what no hook suppressed, so in normal operation each event
+/// counted here was also offered to `WH_KEYBOARD_LL` — see
+/// `hook::check_hook_alive`, which compares the two.
+static KEY_EVENTS: AtomicU64 = AtomicU64::new(0);
+
+pub fn key_event_count() -> u64 {
+    KEY_EVENTS.load(Ordering::Relaxed)
+}
+
 pub fn take_cancel() -> bool {
     CANCEL.swap(false, Ordering::AcqRel)
 }
@@ -195,7 +207,13 @@ unsafe fn read_release(lp: LPARAM) {
         return;
     }
     let key = raw.data.keyboard;
-    if key.Flags & 1 == 0 || key.ExtraInformation == CLX_EXTRA_INFO as u32 {
+    if key.ExtraInformation == CLX_EXTRA_INFO as u32 {
+        return;
+    }
+    // Counted before the release-only filter below: the liveness witness wants
+    // every physical event, whereas reconciliation only cares about breaks.
+    KEY_EVENTS.fetch_add(1, Ordering::Relaxed);
+    if key.Flags & 1 == 0 {
         return;
     }
     if let Some(slot) = key_slot(key.MakeCode as u32, key.Flags & 2 != 0, key.VKey as u32) {
