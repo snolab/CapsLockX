@@ -5,12 +5,17 @@
 /// Window management: Win32 window enumeration + manipulation APIs.
 use std::mem::size_of;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use windows::Win32::Foundation::{CloseHandle, BOOL, COLORREF, HWND, LPARAM, WPARAM};
+use windows::Win32::Foundation::{CloseHandle, BOOL, COLORREF, HANDLE, HWND, LPARAM, WPARAM};
 use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
-use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+use windows::Win32::System::Threading::{
+    AttachThreadInput, GetCurrentThreadId, OpenProcess, OpenProcessToken,
+    QueryFullProcessImageNameW, TerminateProcess, PROCESS_NAME_WIN32,
+    PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE,
+};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE,
     KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE,
@@ -19,12 +24,15 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     MOUSE_EVENT_FLAGS, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    EnumWindows, GetForegroundWindow, GetWindowLongW, GetWindowTextLengthW,
-    GetWindowThreadProcessId, IsWindowVisible, SendMessageW, SetForegroundWindow,
-    SetLayeredWindowAttributes, SetWindowLongW, SetWindowPos, ShowWindow, GWL_EXSTYLE, GWL_STYLE,
-    HWND_NOTOPMOST, HWND_TOPMOST, LWA_ALPHA, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE,
-    SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
+    BringWindowToTop, EnumWindows, FindWindowW, GetClassNameW, GetForegroundWindow, GetWindowLongW,
+    GetWindowTextLengthW, GetWindowThreadProcessId, IsHungAppWindow, IsWindowVisible,
+    SendMessageTimeoutW, SetForegroundWindow, SetLayeredWindowAttributes, SetWindowLongW,
+    SetWindowPos, ShowWindow, GWL_EXSTYLE, GWL_STYLE, HWND_BOTTOM, HWND_NOTOPMOST, HWND_TOPMOST,
+    LWA_ALPHA, SMTO_ABORTIFHUNG, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
+    SWP_NOZORDER, SWP_SHOWWINDOW, SW_MINIMIZE, SW_RESTORE, WS_EX_LAYERED, WS_EX_TOPMOST,
 };
+
+use windows::core::{w, PCWSTR};
 
 use crate::vd_api;
 use crate::vk::keycode_to_vk;
@@ -47,11 +55,18 @@ pub struct WinPlatform {
     v_hwnd: AtomicUsize,
     /// Monotonic counter for unique prompt-result temp file names.
     prompt_seq: AtomicUsize,
+    /// The window `cycle_windows` last aimed at (0 = none). Cycling resumes
+    /// from here when the foreground is something we do not track — a Ghost,
+    /// an elevated window, a transient dialog. Without it, "foreground not in
+    /// list" rewound to the head of the list and cycling could never get past
+    /// the offending window.
+    last_cycle_target: AtomicUsize,
 }
 
 impl WinPlatform {
     pub fn new() -> Self {
         Self {
+            last_cycle_target: AtomicUsize::new(0),
             v_hwnd: AtomicUsize::new(0),
             prompt_seq: AtomicUsize::new(0),
         }
@@ -176,6 +191,13 @@ impl Platform for WinPlatform {
         }
     }
 
+    /// Doesn't open the clipboard, so it can't collide with the app that's
+    /// servicing our synthetic Ctrl+C the way a `get_clipboard_text` poll would.
+    fn clipboard_sequence(&self) -> Option<u64> {
+        use windows::Win32::System::DataExchange::GetClipboardSequenceNumber;
+        Some(u64::from(unsafe { GetClipboardSequenceNumber() }))
+    }
+
     fn show_brainstorm_overlay(&self, text: &str) {
         crate::overlay::show(text);
     }
@@ -194,13 +216,17 @@ impl Platform for WinPlatform {
         }
     }
 
-    /// Show the brainstorm prompt as a SEPARATE process (`clx prompt-window`).
+    /// Show the brainstorm prompt as a SEPARATE process.
     ///
     /// Same rationale as the prefs window: a WebView2 window in the hook process
-    /// kills WH_KEYBOARD_LL while focused. The subprocess writes the user's input
-    /// to a temp file (NOT stdout — WebView2 spawns Chromium helper processes that
-    /// may inherit a stdout pipe and hang `.output()`); we wait via `.status()`
-    /// then read the file. Absent/empty file = cancelled.
+    /// kills WH_KEYBOARD_LL while focused. Prefers the native Slint dialog
+    /// (`clx-prompt-slint.exe` next to clx.exe, ~150ms to first paint) and falls
+    /// back to the Tauri/WebView2 one (`clx prompt-window`, ~1s until Chromium
+    /// has rendered) when the native binary isn't there. Both take the same
+    /// `<title> <message> <prefill> <out_path>` argv and write the user's input
+    /// to that temp file (NOT stdout — WebView2 spawns Chromium helper processes
+    /// that may inherit a stdout pipe and hang `.output()`); we wait via
+    /// `.status()` then read the file. Absent/empty file = cancelled.
     fn show_prompt_input(&self, title: &str, message: &str, prefill: &str) -> Option<String> {
         let n = self.prompt_seq.fetch_add(1, Ordering::Relaxed);
         let path =
@@ -209,12 +235,22 @@ impl Platform for WinPlatform {
         let _ = std::fs::remove_file(&path);
 
         let exe = std::env::current_exe().ok()?;
-        let status = std::process::Command::new(exe)
-            .arg("prompt-window")
+        let native = exe.parent().map(|d| d.join("clx-prompt-slint.exe"));
+        let mut cmd = match native.filter(|p| p.exists()) {
+            Some(native) => std::process::Command::new(native),
+            None => {
+                let mut c = std::process::Command::new(exe);
+                c.arg("prompt-window");
+                c
+            }
+        };
+        let status = cmd
             .arg(title)
             .arg(message)
             .arg(prefill)
             .arg(&path)
+            // Lets the dialog self-terminate if clx restarts while it's open.
+            .env("CLX_PARENT_PID", std::process::id().to_string())
             .status()
             .ok()?;
         let _ = status; // exit code is advisory; the file is the channel.
@@ -352,34 +388,128 @@ impl Platform for WinPlatform {
             return;
         }
         let fg = unsafe { GetForegroundWindow() };
-        let pos = windows.iter().position(|&h| h == fg);
-        match pos {
+
+        // Where to resume from. The foreground is usually one of ours; when it
+        // is not — a Ghost window, an elevated app, a transient dialog we
+        // filter out — carry on from the window we last aimed at instead of
+        // rewinding to the head of the list. The rewind was what let cycling
+        // orbit the same few windows and never get past the offending one.
+        let pos = windows.iter().position(|&h| h == fg).or_else(|| {
+            let last = self.last_cycle_target.load(Ordering::Relaxed);
+            if last == 0 {
+                None
+            } else {
+                windows.iter().position(|&h| h.0 as usize == last)
+            }
+        });
+
+        let next = match pos {
+            Some(i) => i as i32 + dir,
             None => {
-                // No focused window in list — focus first/last on current desktop.
-                if let Some(&w) = if dir > 0 {
-                    windows.first()
+                // No idea where we are: enter from the end we are travelling
+                // away from, so this step lands on the first / last window.
+                if dir > 0 {
+                    0
                 } else {
-                    windows.last()
-                } {
-                    unsafe {
-                        let _ = SetForegroundWindow(w);
-                    }
+                    windows.len() as i32 - 1
                 }
             }
-            Some(idx) => {
-                let new_idx = idx as i32 + dir;
-                if new_idx >= 0 && (new_idx as usize) < windows.len() {
-                    // Normal: activate adjacent window on the same desktop.
-                    unsafe {
-                        let _ = SetForegroundWindow(windows[new_idx as usize]);
-                    }
-                } else {
-                    // Ran off the end: continue into the next / previous
-                    // desktop and land on its first / last window.
-                    vd_api::step_desktop_and_focus(dir);
-                }
-            }
+        };
+
+        if next < 0 || next as usize >= windows.len() {
+            // Ran off the end: continue into the next / previous desktop and
+            // land on its first / last window. The wrap is deliberate — one
+            // closed loop across every desktop.
+            vd_api::step_desktop_and_focus(dir);
+            return;
         }
+
+        let target = windows[next as usize];
+        // Deliberately NOT checking the BOOL. `SetForegroundWindow` returns
+        // FALSE in plenty of cases where it did the right thing — Windows'
+        // foreground-lock rules refuse a process that did not handle the last
+        // input, which is exactly clx's position when a low-level hook
+        // swallowed the keystroke. Treating FALSE as "refused, try the next
+        // one" made a single Z skip the whole list.
+        unsafe {
+            let _ = SetForegroundWindow(target);
+        }
+        // Remember it either way: the next press resumes from here even if the
+        // foreground ended up somewhere we do not recognise.
+        self.last_cycle_target
+            .store(target.0 as usize, Ordering::Relaxed);
+    }
+
+    fn foreground_captures_input(&self) -> bool {
+        unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.0.is_null() {
+                return false;
+            }
+            let mut cls = [0u16; 48];
+            let n = GetClassNameW(hwnd, &mut cls).max(0) as usize;
+            let class = String::from_utf16_lossy(&cls[..n.min(cls.len())]);
+            if CAPTURING_CLASSES.iter().any(|c| *c == class) {
+                return true;
+            }
+            let mut pid: u32 = 0;
+            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+            process_captures_input(pid)
+        }
+    }
+
+    /// A latched key's key-up never arrived. Record why.
+    ///
+    /// The usual cause is UIPI: a non-elevated `WH_KEYBOARD_LL` hook receives
+    /// nothing at all while the foreground window belongs to a
+    /// higher-integrity process — Task Manager, or the DWM-owned `Ghost`
+    /// window raised in front of an unresponsive app.
+    ///
+    /// This writes to the log and nothing else. It deliberately does **not**
+    /// pop anything up: the user is mid-keystroke in another window, and
+    /// stealing focus to explain that we lost focus is worse than the problem.
+    fn on_input_lost(&self) {
+        // Rate-limit: one line per 30 s, however many models trip at once.
+        use std::sync::atomic::AtomicU64;
+        static LAST_REPORT: AtomicU64 = AtomicU64::new(0);
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let last = LAST_REPORT.load(Ordering::Relaxed);
+        if now.saturating_sub(last) < 30 {
+            return;
+        }
+        LAST_REPORT.store(now, Ordering::Relaxed);
+
+        let (desc, blocked) = describe_foreground_block();
+        crate::hook::crash_log_sync(&format!(
+            "[on_input_lost] key-up never arrived; foreground={} blocked={}              (clx elevated: {})",
+            desc,
+            blocked,
+            crate::is_elevated()
+        ));
+    }
+
+    /// Escape hatch from a full-screen RDP / VM window (double-tap
+    /// LCtrl+LAlt+LShift — see `capslockx_core::modules::rdp_escape`).
+    ///
+    /// Sends the focused window to the bottom of the Z-order *without*
+    /// minimizing it — the remote session keeps running underneath — then
+    /// activates the taskbar, which is what actually breaks `mstsc`'s
+    /// keyboard grab. AHK did the same via `WinSet Bottom` +
+    /// `WinActivate ahk_class Shell_TrayWnd`.
+    fn send_active_window_to_back(&self) {
+        // Off the hook thread. This attaches input queues and steals the
+        // foreground, both of which are input-synchronous operations that must
+        // never run inside the `WH_KEYBOARD_LL` callback — the same hazard that
+        // forced virtual-desktop COM onto its own worker.
+        std::thread::spawn(|| {
+            let r = std::panic::catch_unwind(escape_foreground_window);
+            if r.is_err() {
+                crate::hook::crash_log_sync("[PANIC] recovered in escape_foreground_window");
+            }
+        });
     }
 
     fn arrange_windows(&self, mode: ArrangeMode) {
@@ -397,7 +527,20 @@ impl Platform for WinPlatform {
         let hwnd = unsafe { GetForegroundWindow() };
         self.cycle_windows(1);
         unsafe {
-            SendMessageW(hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+            // SendMessageW is synchronous: against a window whose thread has
+            // stopped pumping (TeraCopy mid-copy, anything showing a Ghost) it
+            // never returns, and since this runs on a thread spawned per press
+            // every Shift+X would strand one forever. SMTO_ABORTIFHUNG gives
+            // up instead.
+            let _ = SendMessageTimeoutW(
+                hwnd,
+                WM_CLOSE,
+                WPARAM(0),
+                LPARAM(0),
+                SMTO_ABORTIFHUNG,
+                2000,
+                None,
+            );
         }
     }
 
@@ -538,6 +681,13 @@ fn enum_callback_inner(hwnd: HWND, lparam: LPARAM) -> BOOL {
         if GetWindowTextLengthW(hwnd) == 0 {
             return BOOL(1);
         }
+        // Windows CLX cannot drive are dropped here rather than skipped by each
+        // caller, so cycling, tiling and cross-desktop focus all agree that they
+        // simply are not there.
+        if window_is_unreachable(hwnd) {
+            return BOOL(1);
+        }
+
         // Skip cloaked windows (e.g. UWP apps on other virtual desktops).
         let mut cloaked: u32 = 0;
         let _ = DwmGetWindowAttribute(
@@ -552,6 +702,248 @@ fn enum_callback_inner(hwnd: HWND, lparam: LPARAM) -> BOOL {
         (&mut *(lparam.0 as *mut Vec<HWND>)).push(hwnd);
         BOOL(1)
     }
+}
+
+/// Get out of a session that has swallowed the keyboard, and hand the host
+/// machine back to the user.
+///
+/// Sending the window to the bottom is not enough on its own: a full-screen
+/// RDP keeps the foreground, so every keystroke still travels to the guest and
+/// the user is no better off. The gesture has to actually move focus somewhere
+/// they can work.
+///
+/// Three steps, each verified rather than assumed:
+///
+/// 1. Drop the offender to the bottom of the Z-order, without activating
+///    anything (that is the part that already behaved correctly).
+/// 2. Give the foreground to the best remaining window — the topmost one from
+///    `get_app_windows()`, which already excludes windows CLX cannot drive, so
+///    this lands the user on something usable rather than on the taskbar.
+///    `SetForegroundWindow` is refused unless the caller owns the foreground or
+///    handled the last input, and CLX's hook *swallowed* the keystroke that got
+///    us here, so it qualifies for neither: the input queues are briefly
+///    attached to borrow that right, the way every focus-stealing tool has to.
+/// 3. **Check whether it worked**, and if the offender still holds the
+///    foreground, minimize it. Minimizing needs no activation rights at all, so
+///    it always succeeds — the window vanishes rather than merely sinking, which
+///    is a worse outcome than step 2 but strictly better than being stuck.
+fn escape_foreground_window() {
+    unsafe {
+        let stuck = GetForegroundWindow();
+        if stuck.0.is_null() {
+            return;
+        }
+
+        let _ = SetWindowPos(
+            stuck,
+            HWND_BOTTOM,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+        );
+
+        // Prefer a real window to return to; fall back to the shell.
+        let target = get_app_windows()
+            .into_iter()
+            .find(|&h| h != stuck)
+            .or_else(|| match FindWindowW(w!("Shell_TrayWnd"), PCWSTR::null()) {
+                Ok(tray) if !tray.0.is_null() => Some(tray),
+                _ => None,
+            });
+
+        if let Some(target) = target {
+            let our_thread = GetCurrentThreadId();
+            let their_thread = GetWindowThreadProcessId(stuck, None);
+            let attached = their_thread != 0
+                && their_thread != our_thread
+                && AttachThreadInput(our_thread, their_thread, BOOL(1)).as_bool();
+
+            let _ = SetForegroundWindow(target);
+            let _ = BringWindowToTop(target);
+
+            if attached {
+                let _ = AttachThreadInput(our_thread, their_thread, BOOL(0));
+            }
+        }
+
+        // Verify. The foreground change is synchronous once granted, but a
+        // short settle avoids reading the state mid-switch.
+        std::thread::sleep(std::time::Duration::from_millis(120));
+        if GetForegroundWindow() == stuck {
+            crate::hook::crash_log_sync(
+                "[escape] foreground refused to move — minimizing the window instead",
+            );
+            let _ = ShowWindow(stuck, SW_MINIMIZE);
+        }
+    }
+}
+
+/// Window classes belonging to sessions that forward the whole keyboard to a
+/// guest. `TscShellContainerClass` is mstsc — the reported case, and the one a
+/// cross-desktop step lands on when a full-screen RDP owns that desktop.
+const CAPTURING_CLASSES: &[&str] = &[
+    "TscShellContainerClass", // mstsc — Remote Desktop Connection (verified)
+    "RAIL_WINDOW",            // RemoteApp
+    "VMPlayerFrame",          // VMware Player
+    "VMUIFrame",              // VMware Workstation
+    "VMConnectMainWindow",    // Hyper-V virtual machine connection
+    "VBoxSDL",                // VirtualBox, SDL front end
+];
+
+/// VirtualBox is the awkward one: its main window is a Qt widget whose class is
+/// a generic `Qt<version>QWindowIcon`-style name that changes between builds and
+/// is shared with every other Qt application on the machine, so matching on it
+/// would be both fragile and far too broad. It is caught by executable name in
+/// `CAPTURING_EXES` instead. Hyper-V's `vmconnect` is really an RDP client under
+/// the skin and is expected to behave exactly like mstsc — both are listed, and
+/// both still want a live check.
+
+/// Executables whose windows capture the keyboard but whose class names are too
+/// generic to match on (Qt and Electron shells, mostly). Cached per PID like
+/// the elevation check — this is consulted once per physics tick.
+fn process_captures_input(pid: u32) -> bool {
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    static CACHE: std::sync::OnceLock<Mutex<HashMap<u32, bool>>> = std::sync::OnceLock::new();
+    const CAPTURING_EXES: &[&str] = &[
+        "mstsc.exe",      // Remote Desktop Connection
+        "msrdc.exe",      // Windows App / Remote Desktop client
+        "vmconnect.exe",  // Hyper-V VM connection
+        "vmware-vmx.exe", // VMware
+        "vmware.exe",
+        "vmplayer.exe",
+        "virtualbox.exe",   // VirtualBox manager, when a VM is embedded
+        "virtualboxvm.exe", // VirtualBox VM window — the usual one
+        "vboxsdl.exe",
+        "vmconnect.exe",
+    ];
+    if pid == 0 {
+        return false;
+    }
+    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some(&known) = cache.lock().unwrap().get(&pid) {
+        return known;
+    }
+    let captures = unsafe {
+        OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, BOOL(0), pid)
+            .map(|process| {
+                let mut buf = [0u16; 260];
+                let mut len = buf.len() as u32;
+                let ok = QueryFullProcessImageNameW(
+                    process,
+                    PROCESS_NAME_WIN32,
+                    windows::core::PWSTR(buf.as_mut_ptr()),
+                    &mut len,
+                )
+                .is_ok();
+                let _ = CloseHandle(process);
+                if !ok {
+                    return false;
+                }
+                let path = String::from_utf16_lossy(&buf[..len as usize]).to_ascii_lowercase();
+                let exe = path.rsplit('\\').next().unwrap_or("").to_string();
+                CAPTURING_EXES.iter().any(|e| *e == exe)
+            })
+            .unwrap_or(false)
+    };
+    let mut map = cache.lock().unwrap();
+    if map.len() > 512 {
+        map.clear();
+    }
+    map.insert(pid, captures);
+    captures
+}
+
+/// Is `pid` running at an integrity level we cannot drive?
+///
+/// Cached per PID: a process does not change elevation during its lifetime, and
+/// this is consulted for every window on every cycle tick — up to a few hundred
+/// times a second — so the token query must happen once, not per call.
+///
+/// A process we cannot even open a token on (dwm, anything protected) counts as
+/// unreachable, which is the right answer for the case that matters: the DWM
+/// `Ghost` window's owner.
+fn process_is_unreachable(pid: u32) -> bool {
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    static CACHE: std::sync::OnceLock<Mutex<HashMap<u32, bool>>> = std::sync::OnceLock::new();
+
+    if pid == 0 {
+        return true;
+    }
+    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some(&known) = cache.lock().unwrap().get(&pid) {
+        return known;
+    }
+
+    let unreachable = unsafe {
+        match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, BOOL(0), pid) {
+            Err(_) => true, // cannot even ask — protected or higher integrity
+            Ok(process) => {
+                let mut token = HANDLE::default();
+                let verdict = if OpenProcessToken(process, TOKEN_QUERY, &mut token).is_ok() {
+                    let mut elevation = TOKEN_ELEVATION::default();
+                    let mut len = 0u32;
+                    let ok = GetTokenInformation(
+                        token,
+                        TokenElevation,
+                        Some(&mut elevation as *mut _ as *mut _),
+                        std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+                        &mut len,
+                    )
+                    .is_ok();
+                    let _ = CloseHandle(token);
+                    // `PROCESS_QUERY_LIMITED_INFORMATION` is deliberately
+                    // permissive and succeeds against ordinary elevated apps, so
+                    // the open alone proves nothing — the token is the answer.
+                    ok && elevation.TokenIsElevated != 0
+                } else {
+                    true
+                };
+                let _ = CloseHandle(process);
+                verdict
+            }
+        }
+    };
+
+    let mut map = cache.lock().unwrap();
+    // PIDs churn; keep the table from growing without bound over a long session.
+    if map.len() > 512 {
+        map.clear();
+    }
+    map.insert(pid, unreachable);
+    unreachable
+}
+
+/// Should this window be invisible to every window-management feature?
+///
+/// Three kinds, and the rule is the same for all of them: CLX cannot usefully
+/// drive them, and focusing one costs us the keyboard hook, so they are treated
+/// as though they do not exist — not skipped in cycling only, but absent from
+/// the single list that cycling, tiling and cross-desktop focus all read.
+///
+/// 1. the DWM `Ghost` stand-in raised in front of an app that stopped responding
+/// 2. the unresponsive app itself — focusing it just summons the ghost
+/// 3. higher-integrity windows, *when clx is not elevated*. An elevated clx can
+///    drive them perfectly well, so it must not hide them from itself.
+unsafe fn window_is_unreachable(hwnd: HWND) -> bool {
+    let mut cls = [0u16; 16];
+    let n = GetClassNameW(hwnd, &mut cls);
+    if n == 5 && String::from_utf16_lossy(&cls[..5]) == "Ghost" {
+        return true;
+    }
+    if IsHungAppWindow(hwnd).as_bool() {
+        return true;
+    }
+    static SELF_ELEVATED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *SELF_ELEVATED.get_or_init(crate::is_elevated) {
+        return false; // we outrank everything an ordinary user can run
+    }
+    let mut pid: u32 = 0;
+    GetWindowThreadProcessId(hwnd, Some(&mut pid));
+    process_is_unreachable(pid)
 }
 
 /// Enumerate visible app windows, ordered by monitor index then HWND value.
@@ -573,6 +965,49 @@ pub(crate) fn get_app_windows() -> Vec<HWND> {
         (mon.0 as usize, h.0 as usize)
     });
     v
+}
+
+/// Describe the foreground window, and say whether it is one our hook cannot
+/// see past.
+///
+/// "Cannot see past" is `process_is_unreachable`: the process token's
+/// `TokenElevation`, plus "we could not open it at all" for protected
+/// processes. It is emphatically *not* "OpenProcess failed" —
+/// `PROCESS_QUERY_LIMITED_INFORMATION` is deliberately permissive and succeeds
+/// against ordinary elevated apps (measured: `fg_query=True fg_elevated=1`),
+/// which is why the earlier version of this function reported `blocked=false`
+/// for every window that was genuinely blocking us. The DWM `Ghost` window is
+/// called out by name because it is the common case and the useful thing to
+/// say.
+fn describe_foreground_block() -> (String, bool) {
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.0.is_null() {
+            return ("(none)".into(), false);
+        }
+        let mut cls = [0u16; 64];
+        let n = GetClassNameW(hwnd, &mut cls).max(0) as usize;
+        let class = String::from_utf16_lossy(&cls[..n.min(cls.len())]);
+        let hung = IsHungAppWindow(hwnd).as_bool();
+
+        let mut pid: u32 = 0;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        // Was: "OpenProcess failed ⇒ higher integrity". That inference is wrong —
+        // PROCESS_QUERY_LIMITED_INFORMATION succeeds against ordinary elevated
+        // apps (measured: fg_query=True while fg_elevated=1), so it reported
+        // blocked=false for every genuinely blocked window. Ask the token.
+        let opaque = process_is_unreachable(pid);
+
+        let mut label = if class == "Ghost" {
+            format!("{} (无响应程序的替身窗口 / DWM ghost)", class)
+        } else {
+            class
+        };
+        if hung {
+            label.push_str(" [无响应 / not responding]");
+        }
+        (label, opaque)
+    }
 }
 
 // ── Virtual desktop hotkey fallback (Win+Ctrl+Arrow) ─────────────────────────
