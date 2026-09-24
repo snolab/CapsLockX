@@ -9,9 +9,19 @@ license = "GPL-3.0"
 name = "clx-prompt-slint"
 path = "src/main.rs"
 
+[lib]
+name = "clx_prompt_slint"
+path = "src/lib.rs"
+
 [dependencies]
-slint = { version = "1.8", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg"] }
+slint = { version = "1.8", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software"] }
 dirs = "5"
 
 [build-dependencies]
 slint-build = "1.8"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+] }

@@ -234,16 +234,13 @@ impl Platform for WinPlatform {
         // Stale-safe: ensure no leftover file from a crashed prior run.
         let _ = std::fs::remove_file(&path);
 
+        // Re-execute ourselves rather than looking for a sidecar. The dialog
+        // still runs out-of-process — a UI toolkit in the hook process kills
+        // the keyboard hook — but it is the same executable, so the portable
+        // build stays a single file.
         let exe = std::env::current_exe().ok()?;
-        let native = exe.parent().map(|d| d.join("clx-prompt-slint.exe"));
-        let mut cmd = match native.filter(|p| p.exists()) {
-            Some(native) => std::process::Command::new(native),
-            None => {
-                let mut c = std::process::Command::new(exe);
-                c.arg("prompt-window");
-                c
-            }
-        };
+        let mut cmd = std::process::Command::new(exe);
+        cmd.arg("prompt-window");
         let status = cmd
             .arg(title)
             .arg(message)

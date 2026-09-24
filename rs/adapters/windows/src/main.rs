@@ -145,16 +145,10 @@ fn spawn_prefs_window() -> Option<Child> {
     // Pass our PID so the prefs subprocess can self-terminate if we (the parent)
     // exit/crash/self-update while it's open — otherwise it orphans and lingers.
     let parent_pid = std::process::id().to_string();
-    if let Some(dir) = exe.parent() {
-        let native = dir.join("clx-prefs-slint.exe");
-        if native.exists() {
-            return Command::new(&native)
-                .arg(prefs_version_line())
-                .env("CLX_PARENT_PID", &parent_pid)
-                .spawn()
-                .ok();
-        }
-    }
+    // Re-execute ourselves. The window has to be a separate *process* — a UI
+    // toolkit inside the hook process kills the keyboard hook while it has
+    // focus — but it does not have to be a separate *file*, and a portable clx
+    // is one executable on a USB stick.
     Command::new(exe)
         .arg("prefs-window")
         .env("CLX_PARENT_PID", &parent_pid)
@@ -277,7 +271,14 @@ fn main() {
             // the clx.exe name but must NOT touch the running main instance or
             // install a keyboard hook. It only shows the prefs UI.
             "prefs-window" => {
-                prefs_window::run();
+                // Native Slint, linked in. Falls back to the WebView2 window
+                // only if it cannot start, so a broken UI never costs you
+                // access to your settings.
+                let args = vec![prefs_version_line()];
+                if let Err(error) = clx_prefs_slint::run(&args) {
+                    eprintln!("[CLX] native prefs window failed ({error}); using WebView2");
+                    prefs_window::run();
+                }
                 return;
             }
             // Out-of-process brainstorm prompt window. Like prefs-window, this
@@ -289,7 +290,16 @@ fn main() {
                 let message = std::env::args().nth(3).unwrap_or_default();
                 let prefill = std::env::args().nth(4).unwrap_or_default();
                 let out_path = std::env::args().nth(5).unwrap_or_default();
-                prompt_window::run(title, message, prefill, out_path);
+                let args = vec![
+                    title.clone(),
+                    message.clone(),
+                    prefill.clone(),
+                    out_path.clone(),
+                ];
+                if let Err(error) = clx_prompt_slint::run(&args) {
+                    eprintln!("[CLX] native prompt window failed ({error}); using WebView2");
+                    prompt_window::run(title, message, prefill, out_path);
+                }
                 return;
             }
             // Out-of-process brainstorm streaming overlay. Reads the shared text

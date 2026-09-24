@@ -1029,6 +1029,8 @@ dependencies = [
  "arboard",
  "capslockx-core",
  "clx-autostart",
+ "clx-prefs-slint",
+ "clx-prompt-slint",
  "dirs 5.0.1",
  "once_cell",
  "serde",

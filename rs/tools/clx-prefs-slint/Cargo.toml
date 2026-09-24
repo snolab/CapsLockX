@@ -9,8 +9,12 @@ license = "GPL-3.0"
 name = "clx-prefs-slint"
 path = "src/main.rs"
 
+[lib]
+name = "clx_prefs_slint"
+path = "src/lib.rs"
+
 [dependencies]
-slint = { version = "=1.8.0", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg"] }
+slint = { version = "=1.8.0", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software"] }
 dirs = "5"
 serde_json = "1"
 clx-autostart = { path = "../../autostart" }

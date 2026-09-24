@@ -13,6 +13,13 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# The native preference and prompt windows, linked in rather than shipped as
+# sidecar executables, so the portable build is a single file. They are still
+# rendered out-of-process — clx re-executes itself with a subcommand — because
+# a UI toolkit in the hook process is what kills the keyboard hook.
+clx-prefs-slint  = { path = "../../tools/clx-prefs-slint" }
+clx-prompt-slint = { path = "../../tools/clx-prompt-slint" }
+
 capslockx-core = { path = "../../core" }
 clx-autostart  = { path = "../../autostart" }
 once_cell = "1.19"

@@ -5,7 +5,10 @@ $ROOT = $PSScriptRoot
 
 Push-Location (Join-Path $ROOT "rs")
 try {
-    cargo build -p capslockx-windows -p clx-prefs-slint --release
+    # The Slint windows are libraries inside clx.exe now. They are still
+    # built as standalone binaries so the tools stay runnable on their own,
+    # but nothing is staged next to clx.exe any more.
+    cargo build -p capslockx-windows -p clx-prefs-slint -p clx-prompt-slint --release
     if ($LASTEXITCODE -ne 0) { throw "cargo build failed (exit $LASTEXITCODE)" }
 } finally {
     Pop-Location
@@ -13,14 +16,6 @@ try {
 
 $CARGO_BIN = Join-Path $ROOT "rs\target\release\clx.exe"
 $CLX_BIN   = Join-Path $ROOT "clx.exe"
-
-# Keep the native prefs binary next to clx.exe so open_prefs_window finds it.
-$PREFS_SRC = Join-Path $ROOT "rs\target\release\clx-prefs-slint.exe"
-$PREFS_DST = Join-Path $ROOT "clx-prefs-slint.exe"
-if (Test-Path $PREFS_SRC) {
-    Get-Process clx-prefs-slint -ErrorAction SilentlyContinue | Stop-Process -Force
-    Copy-Item $PREFS_SRC $PREFS_DST -Force -ErrorAction SilentlyContinue
-}
 
 # Skip the copy + relaunch when the binary is unchanged. Avoids needlessly
 # killing a running instance when only a doc or comment changed.

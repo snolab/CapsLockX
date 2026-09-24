@@ -64,7 +64,7 @@ jobs:
         # without stt by default (whisper-rs doesn't compile on Windows).
         # Both portable and setup ship the same binary on Windows for now —
         # the variants differ only in packaging (zip vs NSIS installer).
-        run: cargo build -p capslockx-windows -p clx-screen-reader -p clx-prefs-slint --release
+        run: cargo build -p capslockx-windows -p clx-screen-reader -p clx-prefs-slint -p clx-prompt-slint --release
 
       - name: Package Windows zip
         shell: pwsh
@@ -74,9 +74,12 @@ jobs:
           # cargo builds the windows adapter as `clx.exe` (the bin name
           # in capslockx-windows/Cargo.toml).
           Copy-Item rs\target\release\clx.exe "$STAGE\clx.exe"
-          Copy-Item rs\target\release\clx-screen-reader.exe "$STAGE\clx-screen-reader.exe"
-          # Native (Slint) preferences window — opens instantly (no WebView2).
-          Copy-Item rs\target\release\clx-prefs-slint.exe "$STAGE\clx-prefs-slint.exe"
+          # One executable, deliberately. The native Slint preference and
+          # prompt windows are linked into clx.exe and rendered by
+          # re-executing it (`clx prefs-window`), so the portable build is a
+          # single file you can carry on a USB stick. clx-screen-reader is a
+          # development tool with no hotkey or code path behind it, so it
+          # does not ship.
           # Runtime DLLs (sherpa-onnx-c-api.dll, onnxruntime.dll, etc.)
           # are dropped by sherpa-rs's build.rs into target/release WHEN
           # the `stt` feature is enabled. capslockx-windows currently
@@ -110,8 +113,6 @@ jobs:
           # Stage binaries + runtime DLLs next to .nsi (NSIS File resolves
           # relative to script dir)
           Copy-Item rs\target\release\clx.exe scripts\clx.exe
-          Copy-Item rs\target\release\clx-screen-reader.exe scripts\clx-screen-reader.exe
-          Copy-Item rs\target\release\clx-prefs-slint.exe scripts\clx-prefs-slint.exe
           Get-ChildItem rs\target\release -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
             Copy-Item $_.FullName "scripts\"
           }
@@ -154,8 +155,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           Copy-Item CapsLockX\clx.exe clx.exe
-          Copy-Item CapsLockX\clx-screen-reader.exe clx-screen-reader.exe
-          git add clx.exe clx-screen-reader.exe
+          git add clx.exe
           git diff --cached --quiet || git commit -m "chore: update prebuilt binaries for ${{ github.ref_name }}"
           git push origin main
 
