@@ -28,6 +28,16 @@ concern. Evidence lives in `tmp/clx-z-*.md` and `tmp/clx-raw-probe-*.md`.
   model of its key-up. Needs a liveness poll + reinstall, or the hook moved off
   the UI thread.
 
+- [ ] **Note for anyone writing a "deliberately hung window" test fixture:
+  `Start-Sleep` will not do it.** PowerShell runs STA so WinForms can work, and
+  an STA thread keeps pumping messages during its blocking waits — so a window
+  that looks asleep is still answering, `IsHungAppWindow` stays false, and
+  Windows never raises a Ghost. Poking it harder does not help; it really is
+  responding. Use `[System.Threading.Thread]::Sleep()`, which blocks the thread
+  outright. Second requirement: something must actually try to talk to the
+  window, or Windows never notices it is dead — `scripts/make-ghost-window.ps1` spawns
+  a helper that sends `WM_NULL` once a second for exactly that reason.
+
 - [ ] **clx's shutdown path wedges the process, and the zombie keeps its keyboard
   hook forever.** Confirmed 2026-09-23 — this is the previously-unconfirmed wedge
   in the memory `windows-clx-wedge-and-space-flood`, and it is a *shutdown* bug.
