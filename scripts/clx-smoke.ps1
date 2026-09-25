@@ -61,6 +61,33 @@ function StartClx([hashtable]$extraEnv = @{}, [switch]$KeepLog) {
     $p
 }
 
+# Wait until the human has actually stopped typing.
+#
+# Pressing Start and taking your hands off the keyboard are not the same instant.
+# The first run began 5.8 s before the user's last keystroke, so the test's
+# injected Shift presses interleaved with their sentence and came out as random
+# capitals. Neither the results nor their typing deserved that.
+#
+# clx's own hook log is the right oracle: it sees physical keys (`inj=false`)
+# wherever focus happens to be, whereas the hand-off page only sees them while it
+# is focused — and the user is usually typing somewhere else.
+function WaitForQuietKeyboard([int]$quietMs = 2000, [int]$timeoutSeconds = 90) {
+    $deadline = (Get-Date).AddSeconds($timeoutSeconds)
+    $last = -1
+    $since = Get-Date
+    while ((Get-Date) -lt $deadline) {
+        $now = (LogLines | Select-String "inj=false").Count
+        if ($now -ne $last) {
+            $last = $now
+            $since = Get-Date
+        } elseif (((Get-Date) - $since).TotalMilliseconds -ge $quietMs) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 250
+    }
+    return $false
+}
+
 function WaitLog([string]$pattern, [int]$seconds) {
     for ($i = 0; $i -lt $seconds * 4; $i++) {
         if (LogLines | Select-String $pattern) { return $true }
@@ -104,6 +131,17 @@ if ($deaf.Count -ge 2) {
     $t1 = [long]($deaf[-1].Line -split ' ')[0]
     if (($t1 - $t0) -lt 2000) { Pass "deaf window at startup: $($t1 - $t0) ms" }
     else { Fail "deaf for $($t1 - $t0) ms before the hook was installed (was 10353 ms once)" }
+}
+
+if ($haveKeyboard) {
+    Head "waiting for the keyboard to go quiet"
+    if (WaitForQuietKeyboard) {
+        Note "no physical keys for 2 s - starting the keyboard tests"
+    } else {
+        Fail "the keyboard never went quiet; injected keys would interleave with real typing"
+        Note "skipping the keyboard tests rather than producing results nobody can trust"
+        $haveKeyboard = $false
+    }
 }
 
 if ($haveKeyboard) {
