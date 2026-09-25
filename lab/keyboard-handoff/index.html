@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard Hand-off</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a18; --muted:#6b6a66; --line:#e2e0da; --card:#fff;
+    --ok:#1f7a4d; --warn:#9a6b00; --crit:#b3261e; --accent:#2b5fd9;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+      --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+    --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+  }
+  * { box-sizing:border-box }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width:60rem; margin:0 auto; padding:2rem 16px 4rem }
+  .crumb { color:var(--muted); font-size:.85rem; margin:0 0 1.2rem }
+  .crumb a { color:var(--muted) }
+  h1 { font-size:1.7rem; margin:0 0 .3rem; letter-spacing:-.01em }
+  .sub { color:var(--muted); margin:0 0 1.6rem; max-width:64ch }
+  code, .mono { font-family:var(--mono); font-size:.88em }
+  a { color:var(--accent) }
+
+  /* ── the state banner: the one thing readable from across the room ── */
+  .banner {
+    border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.5rem;
+    background:var(--card); margin:0 0 1.2rem;
+    display:flex; gap:1.2rem; align-items:center; flex-wrap:wrap;
+  }
+  .banner .dot { width:14px; height:14px; border-radius:50%; background:var(--muted); flex:none }
+  .banner .who { font-size:1.35rem; font-weight:650; letter-spacing:-.01em }
+  .banner .why { color:var(--muted); font-size:.92rem; margin-top:.15rem }
+  body[data-state="running"] .banner { border-color:var(--warn); box-shadow:0 0 0 3px color-mix(in srgb, var(--warn) 18%, transparent) }
+  body[data-state="running"] .dot { background:var(--warn) }
+  body[data-state="released"] .banner { border-color:var(--ok) }
+  body[data-state="released"] .dot { background:var(--ok) }
+
+  button {
+    font:inherit; font-weight:600; padding:.75rem 1.5rem; border-radius:9px;
+    border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer;
+  }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-size:1.05rem }
+  button:disabled { opacity:.45; cursor:default }
+  .row { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; margin:0 0 1.4rem }
+  .elapsed { font-family:var(--mono); color:var(--muted); font-size:.9rem }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:0 0 1.2rem }
+  .card h2 { font-size:.95rem; margin:0; padding:.7rem 1rem; border-bottom:1px solid var(--line); font-weight:650 }
+  .card .body { padding:1rem }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:.84rem }
+  th, td { text-align:left; padding:.3rem .6rem; border-bottom:1px solid var(--line); white-space:nowrap }
+  th { color:var(--muted); font-weight:600 }
+  tbody tr:last-child td { border-bottom:none }
+  .scroll { max-height:19rem; overflow:auto }
+  .empty { color:var(--muted); padding:1.5rem 1rem; text-align:center }
+  .up { color:var(--muted) }
+  ol { margin:.2rem 0; padding-left:1.3rem }
+  li { margin:.3rem 0 }
+</style>
+</head>
+<body data-state="idle">
+<div class="wrap">
+  <p class="crumb"><a href="/lab/">lab</a> / keyboard-handoff</p>
+  <h1>Keyboard hand-off</h1>
+  <p class="sub">
+    Testing clx means pressing keys, and injected keys land in whatever window has
+    focus. On a machine you are still using, that has meant your editor. Hand the
+    keyboard over here instead: this window takes focus, the keystrokes land in
+    this table, and the agent reads them from disk rather than asking you to copy
+    anything back.
+  </p>
+
+  <div class="banner">
+    <span class="dot"></span>
+    <div>
+      <div class="who" id="who">The keyboard is yours</div>
+      <div class="why" id="why">Nothing is being tested. Press Start when you are ready to hand it over.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="primary" id="start">Start the test</button>
+    <button id="release">Take it back</button>
+    <span class="elapsed" id="elapsed"></span>
+  </div>
+
+  <div class="card">
+    <h2>What the page received <span id="count" class="up"></span></h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>+ms</th><th>type</th><th>code</th><th>key</th><th>mods</th><th>repeat</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty">No keys yet.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>How this is used</h2>
+    <div class="body">
+      <ol>
+        <li>The agent opens this page and asks you to hand the keyboard over.</li>
+        <li>You press <strong>Start the test</strong> and stop typing. This window keeps focus,
+          so anything injected lands here and not in your work.</li>
+        <li>The agent runs the test, then reads both this table and clx's own hook
+          log — two independent records of the same keystrokes, which is what makes
+          "clx never saw it" a finding rather than a guess.</li>
+        <li>The banner turns green when the agent releases the keyboard. It also
+          releases itself after five minutes, so a forgotten test cannot sit on
+          your keyboard.</li>
+      </ol>
+      <p class="why">
+        State lives in <code>tmp/keyboard-handoff.json</code>. Keys are recorded only
+        between Start and release, and only <code>code</code>/<code>key</code> — enough
+        to identify a keystroke, and it never leaves this machine.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── state ────────────────────────────────────────────────────────────────────
+const MAX_RUN_MS = 5 * 60 * 1000;   // a forgotten test must not hold the keyboard
+let state = "idle";
+let startedAt = null;
+let pending = [];                    // events not yet sent to the server
+let seen = 0;
+
+const $ = (id) => document.getElementById(id);
+
+function paint() {
+  document.body.dataset.state = state;
+  const who = $("who"), why = $("why");
+  if (state === "running") {
+    who.textContent = "Hands off — the agent has the keyboard";
+    why.textContent = "Keystrokes are being recorded here. Keep this window focused.";
+  } else if (state === "released") {
+    who.textContent = "The keyboard is yours again";
+    why.textContent = "The agent finished. Press Start to hand it over again.";
+  } else {
+    who.textContent = "The keyboard is yours";
+    why.textContent = "Nothing is being tested. Press Start when you are ready to hand it over.";
+  }
+  $("start").disabled = state === "running";
+  $("release").disabled = state !== "running";
+}
+
+function tick() {
+  if (state !== "running" || !startedAt) { $("elapsed").textContent = ""; return; }
+  const ms = Date.now() - startedAt;
+  $("elapsed").textContent = (ms / 1000).toFixed(1) + "s";
+  if (ms > MAX_RUN_MS) release("auto-released after five minutes");
+}
+setInterval(tick, 100);
+
+// ── recording ────────────────────────────────────────────────────────────────
+function mods(e) {
+  return [e.ctrlKey && "ctrl", e.shiftKey && "shift", e.altKey && "alt", e.metaKey && "win"]
+    .filter(Boolean).join("+");
+}
+
+function record(e, type) {
+  if (state !== "running") return;
+  // Keep the browser from acting on the test keys: Space must not scroll the
+  // page, Tab must not move focus out of the window mid-test.
+  e.preventDefault();
+  const row = {
+    t: Date.now() - startedAt,
+    type,
+    code: e.code,
+    key: e.key === " " ? "Space" : e.key,
+    mods: mods(e),
+    repeat: !!e.repeat,
+  };
+  pending.push(row);
+  addRow(row);
+}
+
+addEventListener("keydown", (e) => record(e, "down"));
+addEventListener("keyup", (e) => record(e, "up"));
+
+function addRow(r) {
+  $("empty").style.display = "none";
+  const tr = document.createElement("tr");
+  for (const v of [r.t, r.type, r.code, r.key, r.mods || "—", r.repeat ? "yes" : ""]) {
+    const td = document.createElement("td");
+    td.textContent = v;
+    if (r.type === "up") td.className = "up";
+    tr.appendChild(td);
+  }
+  $("rows").appendChild(tr);
+  tr.scrollIntoView({ block: "nearest" });
+  $("count").textContent = "(" + (++seen) + ")";
+}
+
+// ── server ───────────────────────────────────────────────────────────────────
+async function api(action, body) {
+  const res = await fetch("/api/handoff/" + action, {
+    method: body === undefined ? "GET" : "POST",
+    headers: { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// Batched: one request per 250 ms rather than one per keystroke, so the recorder
+// cannot itself become a source of lag during a timing-sensitive test.
+setInterval(async () => {
+  if (state !== "running" || pending.length === 0) return;
+  const batch = pending;
+  pending = [];
+  try { await api("events", { events: batch }); }
+  catch { pending = batch.concat(pending); }   // keep them for the next attempt
+}, 250);
+
+$("start").onclick = async () => {
+  $("rows").replaceChildren();
+  $("empty").style.display = "";
+  $("count").textContent = "";
+  seen = 0; pending = [];
+  await api("start", { label: "manual" });
+  startedAt = Date.now();
+  state = "running";
+  paint();
+  window.focus();
+  document.body.focus();
+};
+
+async function release(note) {
+  if (state !== "running") return;
+  state = "released";
+  if (pending.length) { const b = pending; pending = []; await api("events", { events: b }); }
+  await api("release", { note: note || "taken back from the page" });
+  paint();
+}
+$("release").onclick = () => release("taken back by the user");
+
+// The agent releases the keyboard server-side; notice it and say so.
+setInterval(async () => {
+  try {
+    const cur = await api("current");
+    if (state === "running" && cur.state === "released") { state = "released"; paint(); }
+  } catch { /* server restarted; the page keeps recording locally */ }
+}, 1000);
+
+paint();
+</script>
+</body>
+</html>
