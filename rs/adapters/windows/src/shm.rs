@@ -135,13 +135,30 @@ impl SharedState {
                 let proc = match OpenProcess(PROCESS_TERMINATE | PROCESS_SYNCHRONIZE, false, pid) {
                     Ok(h) => h,
                     Err(e) => {
-                        // Likely access denied — old instance is elevated
-                        // and we're not. Flag it so main can re-launch
-                        // self elevated and retry.
-                        crate::hook::debug_log(&format!(
-                            "[CLX] cannot open previous pid={pid} ({e:?}) — needs elevation"
-                        ));
-                        needs_elevation = true;
+                        // Two very different failures used to be conflated here,
+                        // and only one of them means elevation.
+                        //
+                        // ACCESS_DENIED: the old instance really is elevated and we
+                        // are not, so main should relaunch elevated and retry.
+                        //
+                        // Anything else, in practice INVALID_PARAMETER: the pid no
+                        // longer exists. That is now the *normal* case — since the
+                        // quit watcher leaves via hard_exit, the previous instance
+                        // is usually gone before we get here. Reading that as
+                        // "needs elevation" triggered a pointless elevated
+                        // relaunch, which is one more instance and one more UAC
+                        // prompt for a job that had already succeeded.
+                        const E_ACCESS_DENIED: i32 = -2147024891; // 0x80070005
+                        if e.code().0 == E_ACCESS_DENIED {
+                            crate::hook::debug_log(&format!(
+                                "[CLX] cannot open previous pid={pid} ({e:?}) — needs elevation"
+                            ));
+                            needs_elevation = true;
+                        } else {
+                            crate::hook::debug_log(&format!(
+                                "[CLX] previous pid={pid} already gone ({e:?})"
+                            ));
+                        }
                         continue;
                     }
                 };
