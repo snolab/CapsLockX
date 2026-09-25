@@ -324,6 +324,21 @@ fn main() {
                 }
                 return;
             }
+            // Recovery for "my space bar stopped working": free the keyboard from
+            // a clx that was killed from outside and will not finish dying. See
+            // `SharedState::unstick_others`. No reboot required.
+            "unstick" => {
+                let (suspended, unreachable) = shm::SharedState::unstick_others();
+                if suspended == 0 && unreachable == 0 {
+                    println!("clx unstick: nothing stuck");
+                } else {
+                    println!("clx unstick: {suspended} freed, {unreachable} unreachable");
+                    if unreachable > 0 {
+                        println!("clx unstick: re-run from an administrator shell for the rest");
+                    }
+                }
+                return;
+            }
             "vd-test" => {
                 vd_api::log_line("[vd_api] vd-test");
                 vd_api::dump();

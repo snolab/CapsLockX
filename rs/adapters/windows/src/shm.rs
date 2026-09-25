@@ -23,6 +23,14 @@ use windows::Win32::System::Threading::{
     EVENT_MODIFY_STATE, PROCESS_SYNCHRONIZE, PROCESS_TERMINATE,
 };
 
+// Not in the `windows` crate: it is documented as internal, but it is the only
+// way to freeze a process whose threads will not finish terminating. See
+// `unstick_others`.
+#[link(name = "ntdll")]
+extern "system" {
+    fn NtSuspendProcess(process: HANDLE) -> i32;
+}
+
 const SHM_SIZE: u32 = 256;
 const VERSION: u32 = 1;
 
@@ -151,6 +159,97 @@ impl SharedState {
             }
         }
         needs_elevation
+    }
+
+    /// Give the keyboard back when a half-dead clx is holding onto it.
+    ///
+    /// The bad state is a clx that was terminated from outside — `taskkill`, Task
+    /// Manager, anything that is not `request_quit`. Its threads sit in win32k so
+    /// it never finishes dying, and if the hook thread is among the survivors it
+    /// goes on suppressing Space as a CLX trigger while the rest of the process is
+    /// too broken to inject the replacement. The space bar stops working and no
+    /// API can remove another process's hook.
+    ///
+    /// Suspending the corpse does it. A hook whose thread cannot run overruns
+    /// `LowLevelHooksTimeout`, Windows stops consulting it, and keys flow again —
+    /// verified on a live machine that had seven of these stacked up.
+    ///
+    /// This is a recovery tool, not a cure, and it exists so the answer to "my
+    /// space bar is gone" is one command instead of a reboot. The cure is not
+    /// killing clx from outside in the first place; `clx quit` is the way.
+    ///
+    /// Returns (suspended, unreachable). `unreachable` counts corpses we could not
+    /// open, which usually means they were elevated and we are not.
+    pub fn unstick_others() -> (usize, usize) {
+        // Give anything still healthy the chance to leave properly first; a live
+        // instance does not need suspending.
+        Self::request_quit();
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+
+        let mut suspended = 0;
+        let mut unreachable = 0;
+        for pid in Self::other_clx_pids() {
+            unsafe {
+                // 0x0800 = PROCESS_SUSPEND_RESUME.
+                match OpenProcess(
+                    windows::Win32::System::Threading::PROCESS_ACCESS_RIGHTS(0x0800),
+                    false,
+                    pid,
+                ) {
+                    Ok(h) => {
+                        let status = NtSuspendProcess(h);
+                        let _ = CloseHandle(h);
+                        if status >= 0 {
+                            println!("clx unstick: suspended stuck instance pid={pid}");
+                            suspended += 1;
+                        } else {
+                            println!("clx unstick: pid={pid} would not suspend (0x{status:08X})");
+                            unreachable += 1;
+                        }
+                    }
+                    Err(_) => {
+                        println!(
+                            "clx unstick: cannot open pid={pid} (elevated? try an admin shell)"
+                        );
+                        unreachable += 1;
+                    }
+                }
+            }
+        }
+        (suspended, unreachable)
+    }
+
+    /// Every other `clx.exe` pid on the system.
+    fn other_clx_pids() -> Vec<u32> {
+        let mut pids = Vec::new();
+        let self_pid = std::process::id();
+        unsafe {
+            let Ok(snap) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) else {
+                return pids;
+            };
+            let mut entry = PROCESSENTRY32W {
+                dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+                ..Default::default()
+            };
+            if Process32FirstW(snap, &mut entry).is_ok() {
+                loop {
+                    let end = entry
+                        .szExeFile
+                        .iter()
+                        .position(|c| *c == 0)
+                        .unwrap_or(entry.szExeFile.len());
+                    let name = String::from_utf16_lossy(&entry.szExeFile[..end]);
+                    if name.eq_ignore_ascii_case("clx.exe") && entry.th32ProcessID != self_pid {
+                        pids.push(entry.th32ProcessID);
+                    }
+                    if Process32NextW(snap, &mut entry).is_err() {
+                        break;
+                    }
+                }
+            }
+            let _ = CloseHandle(snap);
+        }
+        pids
     }
 
     /// Create the named quit event. Returns a handle the caller can wait on.
