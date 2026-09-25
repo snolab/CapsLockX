@@ -138,9 +138,78 @@ fn unicode_unit(unit: u16, up: bool) -> INPUT {
     }
 }
 
+/// A batch on its way to the injector thread.
+///
+/// `INPUT` is plain data — integers and a union of them, no pointers — but the
+/// `windows` crate does not mark it `Send`, so say so here rather than at every
+/// call site.
+struct Batch(Vec<INPUT>);
+unsafe impl Send for Batch {}
+
+/// The one thread that calls `SendInput`.
+///
+/// **Nothing may inject input from the keyboard hook callback.** `SendInput` is
+/// serviced by the raw input thread, and while our hook callback is running that
+/// thread is waiting for the callback to return — so injecting from inside it
+/// asks the input system to accept new input while it is blocked on us. It
+/// usually works, and then one day it does not: clx froze exactly there after
+/// nineteen hours, on `E` (CLX-mode left click) in CLX lock mode. The hook
+/// callback entered, called `SendInput` for the mouse-down, and never returned;
+/// Windows dropped the hook for exceeding `LowLevelHooksTimeout` and clx went
+/// deaf while still looking alive.
+///
+/// So the hook now only ever decides and returns, and this thread does the
+/// injecting. A single consumer over a FIFO channel keeps ordering exactly as it
+/// was — batches are delivered in the order they were queued — and a `SendInput`
+/// that blocks now costs us later injection instead of the keyboard.
+///
+/// Callers do not wait for delivery. The one place that needs the effect to have
+/// landed, the Ctrl+C round-trip in `brainstorm`, already polls
+/// `clipboard_sequence()` for the observable change rather than trusting a
+/// synchronous return.
+static INJECT_TX: std::sync::OnceLock<std::sync::mpsc::Sender<Batch>> = std::sync::OnceLock::new();
+
+/// Start the injector thread. Call once from `main`, **before the hook exists**.
+///
+/// Eager on purpose. The first version created the thread lazily on the first
+/// `send`, and the first send is the synthetic Space that a Space *tap* emits —
+/// which happens inside the hook callback. Spawning a thread there takes the
+/// loader lock from inside a low-level keyboard hook, and clx wedged on the first
+/// Space press every time, which is a far worse bug than the one being fixed.
+///
+/// Nothing on the hook path may create a thread, allocate a channel, or load a
+/// library. Doing that work at startup is the whole point.
+pub fn start_injector() {
+    if INJECT_TX.get().is_some() {
+        return;
+    }
+    let (tx, rx) = std::sync::mpsc::channel::<Batch>();
+    let spawned = std::thread::Builder::new()
+        .name("clx-inject".into())
+        .spawn(move || {
+            while let Ok(Batch(batch)) = rx.recv() {
+                unsafe {
+                    SendInput(&batch, size_of::<INPUT>() as i32);
+                }
+            }
+        })
+        .is_ok();
+    if spawned {
+        let _ = INJECT_TX.set(tx);
+    }
+}
+
 fn send(inputs: &[INPUT]) {
-    unsafe {
-        SendInput(inputs, size_of::<INPUT>() as i32);
+    match INJECT_TX.get() {
+        Some(tx) => {
+            let _ = tx.send(Batch(inputs.to_vec()));
+        }
+        // Injector unavailable (start_injector not called, or the spawn failed).
+        // Inject inline rather than silently dropping input: this is the old
+        // behaviour, hazard included, and it is better than a dead keyboard.
+        None => unsafe {
+            SendInput(inputs, size_of::<INPUT>() as i32);
+        },
     }
 }
 

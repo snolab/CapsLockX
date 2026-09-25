@@ -409,6 +409,9 @@ fn main() {
     // that can block says when it finished. Debug-gated, so free in production.
     hook::debug_log("[main] stage: config loaded, self-update spawned");
 
+    // Before the hook exists, so nothing on the hook path ever has to create it.
+    output::start_injector();
+
     hook::init_engine(cfg.clone().into_clx_config());
     hook::debug_log("[main] stage: engine ready");
 
