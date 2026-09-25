@@ -421,8 +421,21 @@ fn main() {
     // that can block says when it finished. Debug-gated, so free in production.
     hook::debug_log("[main] stage: config loaded, self-update spawned");
 
-    // Before the hook exists, so nothing on the hook path ever has to create it.
-    output::start_injector();
+    // DISABLED pending diagnosis — 2026-09-25.
+    //
+    // Routing injection through the dedicated thread silently dropped every
+    // injected event: with it on, a Space *tap* was suppressed on both halves and
+    // the replacement Space never arrived, so the space bar simply stopped
+    // working. The hook log shows the suppression and no following `ours=true`
+    // pair, where before the change there was one.
+    //
+    // Without this call `send` falls back to injecting inline, which is the
+    // long-standing behaviour — including its hazard of injecting from the hook
+    // callback. A freeze after nineteen hours is a far better failure than a
+    // keyboard with no space bar, so the hazard stays until the queue path is
+    // understood rather than guessed at.
+    //
+    // output::start_injector();
 
     hook::init_engine(cfg.clone().into_clx_config());
     hook::debug_log("[main] stage: engine ready");
