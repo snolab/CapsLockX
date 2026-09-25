@@ -32,7 +32,7 @@ use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 
 use tauri::image::Image;
 use tauri::tray::TrayIconId;
-use tauri::{AppHandle, Manager as _};
+use tauri::AppHandle;
 
 // ── Embedded tray icons ─────────────────────────────────────────────────────
 
@@ -504,8 +504,23 @@ fn main() {
             // Uses a 500 ms polling wait instead of INFINITE so the thread
             // observes the SHUTDOWN flag during normal shutdown and exits
             // cleanly, rather than sitting in a kernel wait forever.
+            //
+            // Leaving via `hard_exit` rather than `app_handle.exit(0)` is the
+            // whole point. Tauri's exit runs a full teardown, which is exactly
+            // what deadlocks (see hard_exit), so the old instance could not
+            // finish within the 1500 ms `kill_previous` waits — and was then
+            // TerminateProcess'd **with its keyboard hook still installed**.
+            // Nothing can remove another process's hook, and the corpse's threads
+            // sit in win32k so it never finishes dying, so that orphaned hook
+            // lives on: still suppressing Space as a CLX trigger, no longer
+            // injecting the replacement. The user loses their space bar and only
+            // a reboot brings it back.
+            //
+            // That happened repeatedly, and it is self-inflicted: every
+            // self-update relaunch replaces the instance, so each one was one
+            // more orphaned hook. `hard_exit` uninstalls the hook first and then
+            // leaves immediately, so there is nothing left to orphan.
             if let Some(evt) = shm::SharedState::create_quit_event() {
-                let app_handle = app.handle().clone();
                 let raw = evt.0 as usize; // extract raw ptr for Send
                 let _ = std::thread::Builder::new()
                     .name("clx-quit-watch".into())
@@ -518,8 +533,8 @@ fn main() {
                                 let r = WaitForSingleObject(h, 500);
                                 if r == WAIT_OBJECT_0 {
                                     let _ = CloseHandle(h);
-                                    app_handle.exit(0);
-                                    return;
+                                    hook::debug_log("[main] quit requested — releasing the hook");
+                                    hard_exit(0);
                                 }
                                 if SHUTDOWN.load(Ordering::Relaxed) {
                                     let _ = CloseHandle(h);
