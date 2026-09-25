@@ -134,6 +134,23 @@ if ($deaf.Count -ge 2) {
 }
 
 if ($haveKeyboard) {
+    # CLX lock (mode=2) consumes every key, so every keyboard measurement taken
+    # while it is on reads zero and means nothing. An entire debugging session was
+    # spent on "no spaces are being typed" that was only ever CLX being locked.
+    Head "checking clx is not in locked mode"
+    $n = LogCount
+    Tap 0xA0
+    $mode = ((Since $n | Select-String "-> " | Select-Object -Last 1) -replace '.*mode=', '')
+    if ($mode -eq '2') {
+        Fail "clx is in LOCKED mode - tap the trigger chord to unlock, or restart clx"
+        Note "every keyboard result would be zero and none of it would mean anything"
+        $haveKeyboard = $false
+    } elseif ($mode) {
+        Note "mode=$mode (not locked)"
+    }
+}
+
+if ($haveKeyboard) {
     Head "waiting for the keyboard to go quiet"
     if (WaitForQuietKeyboard) {
         Note "no physical keys for 2 s - starting the keyboard tests"
@@ -157,11 +174,33 @@ if ($haveKeyboard) {
     # Space press and injects a replacement. No replacement, no space, and the
     # only symptom is a keyboard that cannot type spaces.
     Head "3. Space tap injects its replacement"
-    $n = LogCount
-    Tap 0x20
-    $ours = Since $n | Select-String "vk=0x20.*ours=true"
-    if ($ours) { Pass "replacement Space injected ($($ours.Count) event(s))" }
-    else { Fail "Space was suppressed with no replacement - the space bar is dead" }
+    # Several hold durations, because the loss was duration-dependent and
+    # intermittent. 213 ms and 247 ms taps typed nothing on a live machine while
+    # shorter ones worked: the trigger timeout is 200 ms, and a release observed
+    # near it could be reconciled by the raw-input path, which took the "who types
+    # the character" token and then typed nothing. Anything either side of 200 ms
+    # must still produce exactly one space.
+    # Under the 200 ms timeout a tap must produce exactly one space.
+    foreach ($hold in 40, 120, 180) {
+        $n = LogCount
+        Tap 0x20 $hold
+        Start-Sleep -Milliseconds 400
+        $ours = (Since $n | Select-String "vk=0x20.*ours=true.*DN").Count
+        if ($ours -eq 1) { Pass "${hold} ms hold -> exactly one space" }
+        elseif ($ours -eq 0) { Fail "${hold} ms hold -> no space typed" }
+        else { Fail "${hold} ms hold -> $ours spaces (two racers both typed)" }
+    }
+    # Over it, the timeout thread types and then auto-repeats, exactly as holding
+    # a real space bar does — so one *or more*, but never none. These two
+    # durations are the ones that were silently typing nothing.
+    foreach ($hold in 213, 247, 400) {
+        $n = LogCount
+        Tap 0x20 $hold
+        Start-Sleep -Milliseconds 500
+        $ours = (Since $n | Select-String "vk=0x20.*ours=true.*DN").Count
+        if ($ours -ge 1) { Pass "${hold} ms hold -> $ours space(s), none lost" }
+        else { Fail "${hold} ms hold -> no space typed (the 200 ms race bug)" }
+    }
 }
 
 # ── 4. replacing an instance does not orphan its hook ───────────────────────

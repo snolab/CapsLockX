@@ -1,4 +1,4 @@
-/// ClxEngine – platform-agnostic CLX state machine.
+﻿/// ClxEngine – platform-agnostic CLX state machine.
 ///
 /// Instantiate with a `Arc<dyn Platform>`, then call `on_key_event` for every
 /// (non-injected) key event from the adapter.  Returns whether to suppress the
@@ -212,22 +212,55 @@ impl ClxEngine {
 
     /// Reconcile a release observed independently when the primary hook missed it.
     /// The adapter must serialize this with its normal input dispatch and reject
-    /// stale releases from earlier presses. Never synthesize a trigger tap or
-    /// toggle locked mode here: the event already passed through to the OS.
+    /// stale releases from earlier presses. Never toggle locked mode here.
+    ///
+    /// It *does* synthesize a bare trigger tap, because the press was suppressed
+    /// even though the release was not — see the note at the swap below.
     pub fn release_missed_key(&self, code: KeyCode) -> bool {
         if !self.held_keys.lock().unwrap().remove(&code) {
             return false;
         }
         if self.state.is_trigger_key(code) {
-            self.trigger_timeout_fired.store(true, Ordering::SeqCst);
+            // Read the gesture's outcome before the reset below erases it.
+            let acted = self.fn_acted.load(Ordering::Relaxed);
+            // Take the same token the key-up path and the timeout thread compete
+            // for. This used to be a plain `store(true)`, which *claimed* the
+            // token and then emitted nothing — on the reasoning that the release
+            // had already reached the OS, so no tap was needed.
+            //
+            // Half of that is true. Suppressed events never reach raw input, so a
+            // release observed here did reach the OS. But the *press* was
+            // suppressed — Space is a trigger — so the OS saw an up with no down
+            // and typed nothing, while the token this path swallowed stopped the
+            // key-up path and the timeout thread from typing it either. The space
+            // simply vanished.
+            //
+            // It is a race, so it was intermittent: it needed the hook to miss the
+            // release, which for a Space held around the 200 ms timeout is a
+            // coin flip. Measured on a live machine: taps of 213 ms and 247 ms
+            // produced no character at all, while shorter ones did.
+            //
+            // Whoever wins the token owes the user the character.
+            let won = !self.trigger_timeout_fired.swap(true, Ordering::SeqCst);
+            let from_locked = self.entered_from_locked.swap(false, Ordering::Relaxed);
             *self.trigger_key.lock().unwrap() = None;
             self.fn_acted.store(false, Ordering::Relaxed);
             self.chord_pending.store(false, Ordering::Relaxed);
-            self.entered_from_locked.store(false, Ordering::Relaxed);
             self.state.set_chord_active(false);
             self.state.exit_fn_mode();
             if !self.state.is_clx_active() {
                 self.modules.stop_all();
+            }
+            // A bare tap, and this path holds the token: emit. A tap that acted
+            // (Space+H) has already done its job, and one that left locked mode
+            // must not also type the key — that is what used to leak a real
+            // CapsLock, and its LED, into the focused app.
+            if won && !acted && !from_locked {
+                match code {
+                    KeyCode::CapsLock => self.platform.key_tap(KeyCode::CapsLock),
+                    KeyCode::Space => self.platform.key_tap(KeyCode::Space),
+                    _ => {}
+                }
             }
         } else {
             if matches!(code, KeyCode::Shift | KeyCode::LShift | KeyCode::RShift) {
@@ -576,13 +609,61 @@ mod tests {
         assert!(platform.calls().is_empty());
     }
 
+    /// This test used to assert the opposite, and the assertion was the bug.
+    ///
+    /// The reasoning behind it was that a reconciled release had already reached
+    /// the OS, so synthesizing a tap would double it. Half right: suppressed
+    /// events never reach raw input, so the *release* did get through — but the
+    /// *press* was suppressed, because Space is a trigger. The OS saw an up with
+    /// no down and typed nothing, while this path swallowed the token that would
+    /// have let the key-up path or the timeout thread type it. The space vanished.
+    ///
+    /// Intermittent, because it needed the hook to miss the release — which for a
+    /// Space held near the 200 ms timeout is a coin flip. Measured on a live
+    /// machine: 213 ms and 247 ms taps produced nothing, shorter ones worked.
     #[test]
-    fn missed_bare_trigger_release_does_not_emit_a_native_tap() {
+    fn missed_bare_trigger_release_still_types_the_space() {
         let (engine, platform) = engine_with_space();
         engine.on_key_event(KeyCode::Space, true);
         assert!(engine.release_missed_key(KeyCode::Space));
-        assert!(platform.calls().is_empty());
+        assert!(
+            platform.count(|c| matches!(c, Call::KeyDown(KeyCode::Space))) == 1,
+            "a bare Space tap must still type a space when the hook missed the release, got {:?}",
+            platform.calls()
+        );
         assert!(!engine.state.is_clx_active());
+    }
+
+    /// The token is exclusive: exactly one of the three racers may type.
+    #[test]
+    fn a_reconciled_release_cannot_double_up_with_the_key_up_path() {
+        let (engine, platform) = engine_with_space();
+        engine.on_key_event(KeyCode::Space, true);
+        assert!(engine.release_missed_key(KeyCode::Space));
+        // The hook's own key-up arrives late, for the press already reconciled.
+        engine.on_key_event(KeyCode::Space, false);
+        assert_eq!(
+            platform.count(|c| matches!(c, Call::KeyDown(KeyCode::Space))),
+            1,
+            "exactly one space, not two: {:?}",
+            platform.calls()
+        );
+    }
+
+    /// A tap that did something must not also type its trigger.
+    #[test]
+    fn a_reconciled_release_after_an_action_types_nothing() {
+        crate::acc_model::set_external_tick(true);
+        let (engine, platform) = engine_with_space();
+        engine.on_key_event(KeyCode::Space, true);
+        engine.on_key_event(KeyCode::H, true); // Space+H = cursor left
+        assert!(engine.release_missed_key(KeyCode::Space));
+        assert_eq!(
+            platform.count(|c| matches!(c, Call::KeyDown(KeyCode::Space))),
+            0,
+            "Space+H must not also type a space: {:?}",
+            platform.calls()
+        );
     }
 
     fn engine_with_space() -> (Arc<ClxEngine>, Arc<MockPlatform>) {
