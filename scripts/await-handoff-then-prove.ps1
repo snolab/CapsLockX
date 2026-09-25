@@ -27,9 +27,9 @@ while ((Get-Date) -lt $deadline) {
 
 if (-not $ready) { Say "TIMED OUT - the keyboard was never handed over."; exit 1 }
 
-Say "keyboard handed over; running the proof"
+Say "keyboard handed over; running the smoke suite (it includes the watchdog proof)"
 Say "----------------------------------------"
-& powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\prove-hook-watchdog.ps1" *>> $out
+& powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\clx-smoke.ps1" *>> $out
 Say "----------------------------------------"
 Say "exit code: $LASTEXITCODE"
 
