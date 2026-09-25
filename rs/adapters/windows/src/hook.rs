@@ -6,8 +6,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, GetClassNameW, GetForegroundWindow, GetWindowThreadProcessId, SetTimer,
-    SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL,
+    CallNextHookEx, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW,
+    GetWindowThreadProcessId, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK,
+    KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL,
 };
 
 use crate::output::{WinPlatform, CLX_EXTRA_INFO};
@@ -123,31 +124,56 @@ pub fn engine() -> Arc<ClxEngine> {
         .clone()
 }
 
-/// Install the WH_KEYBOARD_LL hook on the **calling (main/UI) thread** and spawn
-/// the AccModel ticker.
+/// Which hook thread currently owns the registration.
 ///
-/// **IMPORTANT — must be installed on the thread that owns clx's own windows
-/// (the Tauri/WebView2 UI thread).** A low-level keyboard hook installed on a
-/// *different* thread than the one owning the foreground window will NOT receive
-/// callbacks while one of clx's *own* windows (e.g. the Preferences window) has
-/// focus — Windows cannot deliver the cross-thread hook callback through the
-/// process's serialized input queue, so the hook silently goes dead until focus
-/// leaves. Installing on the UI thread (same as AutoHotkey's GUI-thread hook)
-/// makes the hook fire for clx's own windows too. Tauri's `run()` loop on this
-/// thread pumps the messages that keep the hook serviced.
-///
-/// The original close-freeze (closing prefs starving the hook during WebView2
-/// teardown) is solved separately by hiding the prefs window instead of
-/// destroying it — see `open_prefs_window` in main.rs.
-pub fn install_hook() {
-    let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
-    let hhook = unsafe {
-        SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), hmod, 0)
-            .expect("SetWindowsHookExW failed")
-    };
-    HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
+/// A thread whose generation no longer matches has been superseded and retires
+/// itself. This is how a wedged hook thread is replaced rather than repaired: the
+/// blocked one cannot be rescued, so a fresh one takes over and the old one
+/// leaves when (if) it ever comes back.
+static HOOK_GENERATION: AtomicU64 = AtomicU64::new(0);
 
-    // Cursor-visibility nudge timer on the UI thread; Tauri's loop dispatches it.
+/// Install the WH_KEYBOARD_LL hook on a **dedicated thread** and spawn the
+/// AccModel ticker.
+///
+/// The hook used to live on the Tauri/UI thread, because a low-level hook
+/// installed elsewhere would not fire while one of clx's *own* windows had focus
+/// — cross-thread hook delivery cannot get through the process's serialized input
+/// queue. That reason is gone: prefs, the prompt and the overlay are all separate
+/// processes now (`clx prefs-window` and friends), so this process owns no
+/// focusable window for the hook to be blind to.
+///
+/// What the old arrangement cost, on the other hand, was measured: when a hook
+/// callback blocked, it took the UI thread with it, and with the UI thread went
+/// the message pump, the tray menu, and the `SetTimer` that the hook watchdog
+/// was running on — so the one mechanism meant to notice a dead hook died
+/// alongside it. A thread whose only job is to own the hook and pump its
+/// messages can be abandoned and replaced; the UI thread cannot.
+pub fn install_hook() {
+    spawn_hook_thread(1);
+
+    // Test affordance: drop our own hook after N ms, exactly as Windows does
+    // when a callback overruns `LowLevelHooksTimeout`. The watchdog should then
+    // notice and start a replacement.
+    //
+    // This exists because the watchdog's recovery path had already failed once in
+    // the field without anyone noticing — it was sitting on the thread that dies.
+    // A recovery mechanism nobody has ever seen recover is a guess, and there is
+    // no other way to provoke this from outside the process.
+    if let Ok(ms) = std::env::var("CLX_TEST_DROP_HOOK_MS") {
+        if let Ok(ms) = ms.parse::<u64>() {
+            std::thread::Builder::new()
+                .name("clx-test-drop-hook".into())
+                .spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(ms));
+                    crash_log_sync("[hook] TEST: dropping the hook on purpose");
+                    uninstall_hook();
+                })
+                .ok();
+        }
+    }
+
+    // Cursor-visibility nudge timer stays on the UI thread: it calls
+    // SystemParametersInfoW, which has no business anywhere near the hook.
     unsafe {
         SetTimer(None, 0, 250, Some(nudge_timer_proc));
     }
@@ -163,6 +189,8 @@ pub fn install_hook() {
             use std::sync::atomic::AtomicU64;
             static TICK_COUNT: AtomicU64 = AtomicU64::new(0);
             static LAST_LOG: AtomicU64 = AtomicU64::new(0);
+            /// ~6 ms per tick, so every 42nd tick is roughly four times a second.
+            static NEXT_HOOK_CHECK: AtomicU64 = AtomicU64::new(0);
 
             // Request 1ms timer resolution from Windows.
             unsafe {
@@ -181,6 +209,17 @@ pub fn install_hook() {
                         reconcile_releases(engine);
                     }
                     engine.tick();
+                }
+
+                // Hook liveness, checked from here because this thread is the
+                // one that survives. It ran on the UI thread's timer until a
+                // blocked hook callback took that thread down and the watchdog
+                // with it — the ticker kept logging 156 FPS throughout, for
+                // fifteen minutes, while clx was deaf and nothing noticed.
+                // Four times a second is plenty; the hot part of the check is
+                // two atomic loads.
+                if NEXT_HOOK_CHECK.fetch_add(1, Ordering::Relaxed) % 42 == 0 {
+                    check_hook_alive();
                 }
 
                 // FPS logging — every 2 seconds.
@@ -212,11 +251,6 @@ unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _
     // Also an `extern "system"` callback — same panic firewall rationale as
     // `keyboard_proc`. Swallow on panic (the nudge is best-effort cosmetics).
     let _ = std::panic::catch_unwind(|| {
-        // This timer is the one thing clx has running on the UI thread, and the
-        // hook may only be installed from there — so the liveness check lives
-        // here rather than on the ticker.
-        check_hook_alive();
-
         let active = LAST_TRAY_ACTIVE.load(Ordering::Relaxed);
         if active != 0 && active != u32::MAX {
             crate::cursor_visibility::nudge();
@@ -224,39 +258,44 @@ unsafe extern "system" fn nudge_timer_proc(_hwnd: HWND, _msg: u32, _id: usize, _
     });
 }
 
-/// Put the hook back after Windows has removed it.
+/// Replace the hook after Windows has removed it, or after its thread wedged.
 ///
-/// Must run on the thread that owns clx's windows, for the reason spelled out on
-/// [`install_hook`]. Its only caller is `nudge_timer_proc`, which is that
-/// thread's timer callback.
-fn reinstall_hook() -> bool {
-    let hmod = unsafe { GetModuleHandleW(None).unwrap_or_default() };
-    // Drop the stale handle first. Unhooking one Windows has already removed
-    // simply fails, which is why the result is ignored.
+/// Deliberately *not* an in-place reinstall on the calling thread. A low-level
+/// hook must be owned by a thread that pumps messages, and the caller here is the
+/// ticker, which does not. More importantly, the failure this recovers from
+/// includes "the hook thread is blocked inside a callback and will never return",
+/// which no amount of work on that thread can fix. So a new generation takes
+/// over; the old thread retires if it is merely idle, and is abandoned if it is
+/// stuck.
+fn replace_hook_thread() {
+    // Drop the stale registration so an abandoned thread's hook stops being
+    // consulted. Unhooking one Windows already removed simply fails, which is
+    // why the result is ignored.
     let old = HOOK_RAW.swap(0, Ordering::SeqCst) as *mut _;
     if !std::ptr::eq(old, std::ptr::null()) {
         unsafe {
             let _ = UnhookWindowsHookEx(HHOOK(old));
         }
     }
-    // Unlike `install_hook`, a failure here must not panic: this runs inside a
-    // timer callback on a live system, where staying up deaf beats aborting.
-    match unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), hmod, 0) } {
-        Ok(hhook) => {
-            HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
-            true
-        }
-        Err(_) => false,
-    }
+    let next = HOOK_GENERATION.load(Ordering::SeqCst) + 1;
+    // Bumped before the new thread starts so a live old thread notices it has
+    // been superseded even if the new one is slow to install.
+    HOOK_GENERATION.store(next, Ordering::SeqCst);
+    spawn_hook_thread(next);
 }
 
-/// Notice that the hook has stopped being called, and put it back.
+/// Notice that the hook has stopped being called, and replace it.
 ///
 /// Windows removes a low-level keyboard hook **without telling anyone** when its
-/// callback exceeds `LowLevelHooksTimeout` (300 ms by default), and until now
-/// nothing reinstalled it: clx went silently deaf until restarted. It was
-/// reported after enabling Narrator, which adds slow UI Automation work to the
-/// input path — exactly the condition that pushes a hook past the timeout.
+/// callback exceeds `LowLevelHooksTimeout` (300 ms by default), and nothing used
+/// to put it back: clx went silently deaf until restarted. Seen twice, from both
+/// directions — a hook callback that blocked in `SendInput` and never returned,
+/// and Narrator adding slow UI Automation work to the input path.
+///
+/// Runs on the ticker thread. That is not incidental: the first version of this
+/// ran on the UI thread's `SetTimer`, and when a blocked callback took the UI
+/// thread down it took the watchdog with it, so the check never fired in the one
+/// case it existed for.
 ///
 /// Raw input is the witness. It only receives events that no hook suppressed, so
 /// in normal operation everything it sees was also offered to our hook. Raw
@@ -265,15 +304,19 @@ fn reinstall_hook() -> bool {
 /// suppresses reach neither counter, so holding a CLX trigger looks like silence
 /// on both sides rather than like a dead hook.
 ///
-/// Reinstalling has a second benefit. The chain runs most-recently-installed
-/// first, so a hook installed after ours — Narrator's, for one — sits ahead of
-/// us and can swallow a key before we ever see it. Reinstalling moves us back to
-/// the front.
+/// Replacing has a second benefit. The chain runs most-recently-installed first,
+/// so a hook installed after ours — Narrator's, for one — sits ahead of us and
+/// can swallow a key before we ever see it. A fresh hook goes back to the front.
 fn check_hook_alive() {
     /// Physical events that must accumulate with a motionless hook before we
     /// act. Four is two whole keystrokes (make + break), enough that a single
     /// straggler racing the counters cannot trip it.
     const STALE_BUDGET: u64 = 4;
+
+    // Nothing to judge until a hook has been installed at all.
+    if HOOK_GENERATION.load(Ordering::SeqCst) == 0 {
+        return;
+    }
 
     static LAST_RAW: AtomicU64 = AtomicU64::new(0);
     static LAST_HOOK: AtomicU64 = AtomicU64::new(0);
@@ -298,14 +341,56 @@ fn check_hook_alive() {
     }
     STALE_RAW.store(0, Ordering::Relaxed);
 
-    let recovered = reinstall_hook();
     // crash_log_sync, not debug_log: this is durable and rare, and someone
     // reading a report of "clx went deaf" days later needs to find it.
     crash_log_sync(&format!(
-        "[hook] {stale} physical key event(s) with no callback — hook was \
-         dropped; reinstall {}",
-        if recovered { "ok" } else { "FAILED" }
+        "[hook] {stale} physical key event(s) with no callback — hook gen {} is \
+         gone or wedged; starting a replacement",
+        HOOK_GENERATION.load(Ordering::SeqCst)
     ));
+    replace_hook_thread();
+}
+
+/// Own the hook on a thread of its own, and pump the messages that keep it
+/// serviced.
+///
+/// A low-level hook is delivered to the installing thread's message queue, so a
+/// hook thread without a `GetMessage` loop receives nothing. The loop also gives
+/// us the retirement check: a superseded generation exits and unhooks, which is
+/// what makes replacing a wedged hook safe rather than merely hopeful.
+fn spawn_hook_thread(generation: u64) {
+    let spawned = std::thread::Builder::new()
+        .name(format!("clx-hook-{generation}"))
+        .spawn(move || unsafe {
+            let hmod = GetModuleHandleW(None).unwrap_or_default();
+            let hhook = match SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_proc), hmod, 0) {
+                Ok(hhook) => hhook,
+                Err(error) => {
+                    crash_log_sync(&format!("[hook] gen {generation}: install failed: {error}"));
+                    return;
+                }
+            };
+            HOOK_RAW.store(hhook.0 as usize, Ordering::SeqCst);
+            HOOK_GENERATION.store(generation, Ordering::SeqCst);
+            debug_log(&format!("[hook] gen {generation} installed and pumping"));
+
+            let mut msg = MSG::default();
+            while GetMessageW(&mut msg, None, 0, 0).0 > 0 {
+                if crate::SHUTDOWN.load(Ordering::Relaxed) {
+                    break;
+                }
+                if HOOK_GENERATION.load(Ordering::SeqCst) != generation {
+                    debug_log(&format!("[hook] gen {generation} superseded — retiring"));
+                    break;
+                }
+                DispatchMessageW(&msg);
+            }
+            let _ = UnhookWindowsHookEx(hhook);
+        })
+        .is_ok();
+    if !spawned {
+        crash_log_sync("[hook] could not spawn the hook thread — clx has no keyboard");
+    }
 }
 
 pub fn uninstall_hook() {
