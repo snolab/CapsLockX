@@ -312,6 +312,18 @@ fn main() {
             // this (main, hook-less) thread and dump version / count / current
             // index / GUIDs (exercises GetCurrentDesktop + GetDesktops without
             // switching). Result goes to %TEMP%\capslockx_vd.log.
+            // Stop a running instance cleanly, so it uninstalls its keyboard
+            // hook on the way out. Scripts and build steps must use this rather
+            // than taskkill — see `SharedState::request_quit` for what killing it
+            // from outside costs.
+            "quit" => {
+                if shm::SharedState::request_quit() {
+                    println!("clx: asked the running instance to quit");
+                } else {
+                    println!("clx: no running instance");
+                }
+                return;
+            }
             "vd-test" => {
                 vd_api::log_line("[vd_api] vd-test");
                 vd_api::dump();

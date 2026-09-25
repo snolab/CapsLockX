@@ -164,6 +164,30 @@ impl SharedState {
         }
     }
 
+    /// Ask a running instance to quit cleanly. `true` if one was listening.
+    ///
+    /// This is the *only* safe way to stop clx from outside. `taskkill` and
+    /// `Process.Kill` terminate it without running `hard_exit`, so its keyboard
+    /// hook is never uninstalled — and because its threads are sitting in win32k
+    /// the process then refuses to finish dying, leaving an orphaned hook that
+    /// still suppresses Space as a CLX trigger and never injects the replacement.
+    /// The result is a machine with no working space bar and no way to fix it
+    /// short of a reboot. That is not hypothetical; it is why this exists.
+    pub fn request_quit() -> bool {
+        unsafe {
+            match OpenEventW(EVENT_MODIFY_STATE, false, w!("CapsLockX_Quit")) {
+                Ok(evt) => {
+                    let ok = SetEvent(evt).is_ok();
+                    let _ = CloseHandle(evt);
+                    ok
+                }
+                // No event object means no instance is running, which is the
+                // outcome the caller wanted anyway.
+                Err(_) => false,
+            }
+        }
+    }
+
     /// Create the named "config changed" event (auto-reset). The main process
     /// waits on this; the out-of-process preferences window signals it via
     /// `signal_config_changed` after writing config.json, so the main process

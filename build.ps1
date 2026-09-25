@@ -35,12 +35,46 @@ if ($cargoHash -eq $clxHash) {
     exit 0
 }
 
-# Running clx.exe holds a file lock on the root copy; kill it before
-# overwriting. The new instance will auto-deduplicate via shm.rs anyway.
-Get-Process clx -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Milliseconds 300
+# Running clx.exe holds a file lock on the root copy, so it has to go before we
+# can overwrite it. Ask it to quit rather than killing it: a killed clx never
+# uninstalls its keyboard hook, and since its threads sit in win32k it then
+# refuses to finish dying — leaving an orphaned hook that swallows every Space
+# press. Recovering from that needs a reboot, so this is worth the extra second.
+if (Test-Path $CLX_BIN) { & $CLX_BIN quit | Out-Null }
+for ($i = 0; $i -lt 20 -and (Get-Process clx -ErrorAction SilentlyContinue); $i++) {
+    Start-Sleep -Milliseconds 250
+}
+# Only if it ignored the request. A hook orphaned here is still better than a
+# build that cannot deploy, but it should be rare enough to notice.
+$stubborn = Get-Process clx -ErrorAction SilentlyContinue
+if ($stubborn) {
+    Write-Host "[build] clx did not quit when asked - falling back to killing it"
+    $stubborn | ForEach-Object { try { $_.Kill() } catch { } }
+    Start-Sleep -Milliseconds 500
+}
 
-Copy-Item $CARGO_BIN $CLX_BIN -Force
+# A clx that wedged can leave a process Windows will not finish killing, and it
+# keeps the lock on its own image for as long as it exists. Copying then fails,
+# and with ErrorActionPreference=Stop the whole build aborted *before* the copy —
+# so the build "succeeded" while quietly deploying nothing, which cost an hour of
+# debugging a fix that was never actually running.
+#
+# Windows lets you rename a locked image even though it will not let you replace
+# one. So move the old file aside and copy into the freed name. The stale
+# `clx.exe.old-*` files are cleaned up at the next startup by
+# self_update::cleanup_old_binaries.
+try {
+    Copy-Item $CARGO_BIN $CLX_BIN -Force -ErrorAction Stop
+} catch {
+    $aside = "$CLX_BIN.old-" + (Get-Date -Format "yyyyMMddHHmmss")
+    Write-Host "[build] clx.exe is locked (wedged instance?) - renaming it aside"
+    Move-Item $CLX_BIN $aside -Force
+    Copy-Item $CARGO_BIN $CLX_BIN -Force
+}
+
+# Prove the deploy landed rather than trusting it: the hashes must now agree.
+$deployed = (Get-FileHash $CLX_BIN -Algorithm SHA256).Hash
+if ($deployed -ne $cargoHash) { throw "deploy failed: clx.exe does not match the build output" }
 
 Start-Process -FilePath $CLX_BIN -WorkingDirectory $ROOT
 Write-Host "[build] clx restarted (new binary)"
