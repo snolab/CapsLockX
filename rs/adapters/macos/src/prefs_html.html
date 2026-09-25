@@ -283,7 +283,16 @@
   </section>
 
   <section>
-    <h2>Window Cycling</h2>
+    <h2>Window Management</h2>
+    <div class="sl-row">
+      <label for="window_arrange_side_by_side">Default arrange mode (CLX+C)</label>
+      <select id="window_arrange_side_by_side" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
+        <option value="false">Stacked</option>
+        <option value="true">Side by side</option>
+      </select>
+      <span></span>
+    </div>
+    <p style="color:var(--overlay1);font-size:12px;">CLX+Shift+C uses the opposite mode. CLX+Alt+C swaps and saves the modes, then arranges once using the new default.</p>
     <div class="sl-row">
       <label for="window_cycle_order">Cycle Order (Space+Z)</label>
       <select id="window_cycle_order" style="background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:13px;">
@@ -417,6 +426,7 @@
         elevenlabs_api_key: document.getElementById('elevenlabs_api_key').value,
         window_cycle_order:  document.getElementById('window_cycle_order').value,
         window_arrange_order: document.getElementById('window_arrange_order').value,
+        window_arrange_side_by_side: document.getElementById('window_arrange_side_by_side').value === 'true',
         // Wake word
         wake_word_enabled:       document.getElementById('wake_word_enabled').checked,
         wake_word_model_dir:     document.getElementById('wake_word_model_dir').value,
@@ -444,6 +454,7 @@
       if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
       if (cfg.window_cycle_order) document.getElementById('window_cycle_order').value = cfg.window_cycle_order;
       if (cfg.window_arrange_order) document.getElementById('window_arrange_order').value = cfg.window_arrange_order;
+      document.getElementById('window_arrange_side_by_side').value = String(!!cfg.window_arrange_side_by_side);
       // Wake word
       document.getElementById('wake_word_enabled').checked = cfg.wake_word_enabled || false;
       document.getElementById('wake_word_model_dir').value = cfg.wake_word_model_dir || '';
@@ -520,6 +531,10 @@
     });
 
     // Called from Rust via evaluateJavaScript
+    window.handleArrangePreference = function(sideBySide) {
+      document.getElementById('window_arrange_side_by_side').value = String(sideBySide);
+    };
+
     window.handleGetConfig = function(json) {
       try {
         var cfg = JSON.parse(json);

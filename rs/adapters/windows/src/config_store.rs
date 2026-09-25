@@ -9,6 +9,8 @@ pub struct FullConfig {
     pub use_insert: bool,
     pub use_scroll_lock: bool,
     pub use_ralt: bool,
+    #[serde(default)]
+    pub window_arrange_side_by_side: bool,
     pub cursor_speed: f64,
     #[serde(default = "default_edit_speed")]
     pub page_speed: f64,
@@ -83,6 +85,7 @@ impl Default for FullConfig {
             use_insert: false,
             use_scroll_lock: false,
             use_ralt: false,
+            window_arrange_side_by_side: false,
             cursor_speed: 60.0,
             page_speed: 30.0,
             tab_speed: 30.0,
@@ -115,6 +118,7 @@ impl FullConfig {
             use_insert: cfg.use_insert,
             use_scroll_lock: cfg.use_scroll_lock,
             use_ralt: cfg.use_ralt,
+            window_arrange_side_by_side: cfg.window_arrange_side_by_side,
             cursor_speed: cfg.speed.cursor_speed,
             page_speed: cfg.speed.page_speed,
             tab_speed: cfg.speed.tab_speed,
@@ -145,6 +149,7 @@ impl FullConfig {
             use_insert: self.use_insert,
             use_scroll_lock: self.use_scroll_lock,
             use_ralt: self.use_ralt,
+            window_arrange_side_by_side: self.window_arrange_side_by_side,
             speed: SpeedConfig {
                 cursor_speed: self.cursor_speed,
                 page_speed: self.page_speed,

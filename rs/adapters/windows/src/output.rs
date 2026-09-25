@@ -156,6 +156,20 @@ fn mouse_inp(dx: i32, dy: i32, data: i32, flags: u32) -> INPUT {
 // ── Platform impl ─────────────────────────────────────────────────────────────
 
 impl Platform for WinPlatform {
+    fn arrange_preference_changed(&self) {
+        // Never do disk I/O on WH_KEYBOARD_LL. Serialize workers and read the
+        // latest engine value after acquiring the lock so rapid toggles save
+        // the final preference even when worker threads start out of order.
+        static SAVE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        std::thread::spawn(|| {
+            let _guard = SAVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+            let mut cfg = crate::config_store::load();
+            cfg.window_arrange_side_by_side = crate::hook::engine()
+                .get_config().window_arrange_side_by_side;
+            crate::config_store::save(&cfg);
+        });
+    }
+
     fn open_preferences(&self) {
         // Space+, toggles: pressing it again closes the window instead of
         // stacking another one. The tray menu still uses open_prefs_window().

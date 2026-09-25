@@ -497,6 +497,27 @@ mod tests {
         assert!(engine.state().is_clx_active());
     }
 
+    #[test]
+    fn alt_c_toggles_arrange_preference_once_per_press() {
+        let (engine, platform) = engine_with_space();
+        engine.on_key_event(KeyCode::Space, true);
+        engine.on_key_event(KeyCode::LAlt, true);
+        assert_eq!(engine.on_key_event(KeyCode::C, true), CoreResponse::Suppress);
+        assert!(engine.get_config().window_arrange_side_by_side);
+        assert_eq!(engine.on_key_event(KeyCode::C, true), CoreResponse::Suppress);
+        assert!(engine.get_config().window_arrange_side_by_side);
+        let first = vec![Call::ArrangeWindows(crate::platform::ArrangeMode::SideBySide)];
+        assert_eq!(platform.wait_calls(&first), first);
+        engine.on_key_event(KeyCode::C, false);
+        engine.on_key_event(KeyCode::C, true);
+        assert!(!engine.get_config().window_arrange_side_by_side);
+        let expected = vec![
+            Call::ArrangeWindows(crate::platform::ArrangeMode::SideBySide),
+            Call::ArrangeWindows(crate::platform::ArrangeMode::Stacked),
+        ];
+        assert_eq!(platform.wait_calls(&expected), expected);
+    }
+
     fn dark_mode_toggles(platform: &MockPlatform) -> usize {
         platform.count(|c| matches!(c, Call::ToggleDarkMode))
     }

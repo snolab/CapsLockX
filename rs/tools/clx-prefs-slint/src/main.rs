@@ -116,6 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         win.set_use_insert(cfg_bool(&c, "use_insert", false));
         win.set_use_scroll_lock(cfg_bool(&c, "use_scroll_lock", false));
         win.set_use_ralt(cfg_bool(&c, "use_ralt", false));
+        win.set_window_arrange_side_by_side(cfg_bool(&c, "window_arrange_side_by_side", false));
         win.set_cursor_speed(cfg_f32(&c, "cursor_speed", 60.0));
         win.set_mouse_speed(cfg_f32(&c, "mouse_speed", 5900.0));
         win.set_scroll_speed(cfg_f32(&c, "scroll_speed", 1500.0));
@@ -154,6 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             c["use_insert"] = json!(w.get_use_insert());
             c["use_scroll_lock"] = json!(w.get_use_scroll_lock());
             c["use_ralt"] = json!(w.get_use_ralt());
+            c["window_arrange_side_by_side"] = json!(w.get_window_arrange_side_by_side());
             c["cursor_speed"] = json!(w.get_cursor_speed() as f64);
             c["mouse_speed"] = json!(w.get_mouse_speed() as f64);
             c["scroll_speed"] = json!(w.get_scroll_speed() as f64);
@@ -173,6 +175,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
+    // Reflect Alt+C from the hook process while this preferences window is open.
+    let arrange_timer = slint::Timer::default();
+    let weak = win.as_weak();
+    arrange_timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(500), move || {
+        if let Some(w) = weak.upgrade() {
+            let latest = load_config();
+            let side_by_side = cfg_bool(&latest, "window_arrange_side_by_side", false);
+            w.set_window_arrange_side_by_side(side_by_side);
+            cfg.borrow_mut()["window_arrange_side_by_side"] = json!(side_by_side);
+        }
+    });
     win.run()?;
     Ok(())
 }

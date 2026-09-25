@@ -20,6 +20,25 @@ static PREFS_HTML: &str = include_str!("prefs_html.html");
 static PREFS_WINDOW: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
 static WEBVIEW_REF: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
 
+/// Serialize hotkey saves with preferences UI work on the main queue. Read the
+/// latest engine value there, so rapid toggles cannot persist out of order.
+pub fn save_arrange_preference() {
+    extern "C" {
+        static _dispatch_main_q: c_void;
+        fn dispatch_async_f(queue: *mut c_void, ctx: *mut c_void, work: extern "C" fn(*mut c_void));
+    }
+    extern "C" fn save(_ctx: *mut c_void) {
+        let side_by_side = ENGINE.get_config().window_arrange_side_by_side;
+        let mut full = config_store::load();
+        full.window_arrange_side_by_side = side_by_side;
+        config_store::save(&full);
+        unsafe { eval_js(&format!("window.handleArrangePreference({side_by_side})")); }
+    }
+    unsafe {
+        dispatch_async_f(std::ptr::addr_of!(_dispatch_main_q) as *mut c_void, ptr::null_mut(), save);
+    }
+}
+
 // ── Objective-C runtime FFI ──────────────────────────────────────────────────
 
 extern "C" {
