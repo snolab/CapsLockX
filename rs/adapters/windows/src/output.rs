@@ -179,34 +179,86 @@ static INJECT_TX: std::sync::OnceLock<std::sync::mpsc::Sender<Batch>> = std::syn
 ///
 /// Nothing on the hook path may create a thread, allocate a channel, or load a
 /// library. Doing that work at startup is the whole point.
+/// Opt-in, because enabling it by default cost a working space bar twice.
+///
+/// Set `CLX_INJECT_THREAD=1` to route injection through the dedicated thread.
+/// Unset, `send` injects inline, which is the long-standing behaviour. The queue
+/// path stays off until it is understood rather than assumed.
+fn injector_wanted() -> bool {
+    matches!(
+        std::env::var("CLX_INJECT_THREAD").ok().as_deref(),
+        Some("1") | Some("true") | Some("on")
+    )
+}
+
 pub fn start_injector() {
-    if INJECT_TX.get().is_some() {
+    if !injector_wanted() || INJECT_TX.get().is_some() {
         return;
     }
     let (tx, rx) = std::sync::mpsc::channel::<Batch>();
     let spawned = std::thread::Builder::new()
         .name("clx-inject".into())
         .spawn(move || {
-            while let Ok(Batch(batch)) = rx.recv() {
-                unsafe {
-                    SendInput(&batch, size_of::<INPUT>() as i32);
+            crate::hook::debug_log("[inject] thread up");
+            loop {
+                let Batch(batch) = match rx.recv() {
+                    Ok(b) => b,
+                    // Only reachable if every sender is dropped, which cannot
+                    // happen while INJECT_TX holds one — so if this ever fires it
+                    // is the answer to why injection stopped.
+                    Err(e) => {
+                        crate::hook::crash_log_sync(&format!(
+                            "[inject] channel closed ({e}) — injection has stopped"
+                        ));
+                        return;
+                    }
+                };
+                let want = batch.len();
+                let sent = unsafe { SendInput(&batch, size_of::<INPUT>() as i32) };
+                if sent as usize != want {
+                    // SendInput reports how many events it inserted; anything
+                    // short means the input queue rejected the rest, and
+                    // GetLastError says why. Silence here is what made the
+                    // first attempt undebuggable.
+                    let err = unsafe { windows::Win32::Foundation::GetLastError() };
+                    crate::hook::crash_log_sync(&format!(
+                        "[inject] SendInput inserted {sent}/{want} (last error {:?})",
+                        err
+                    ));
+                } else {
+                    crate::hook::debug_log(&format!("[inject] sent {sent} event(s)"));
                 }
             }
         })
         .is_ok();
     if spawned {
         let _ = INJECT_TX.set(tx);
+        crate::hook::debug_log("[inject] routing injection through the dedicated thread");
     }
 }
 
 fn send(inputs: &[INPUT]) {
     match INJECT_TX.get() {
         Some(tx) => {
-            let _ = tx.send(Batch(inputs.to_vec()));
+            let n = inputs.len();
+            if let Err(e) = tx.send(Batch(inputs.to_vec())) {
+                // The receiver is gone, so this event is lost. Say so loudly and
+                // fall back, rather than dropping input in silence: a silently
+                // dropped injection is a keyboard that stops typing spaces and
+                // gives no clue why.
+                crate::hook::crash_log_sync(&format!(
+                    "[inject] queue send failed ({e}) — injecting inline instead"
+                ));
+                unsafe {
+                    SendInput(inputs, size_of::<INPUT>() as i32);
+                }
+            } else {
+                crate::hook::debug_log(&format!("[inject] queued {n} event(s)"));
+            }
         }
-        // Injector unavailable (start_injector not called, or the spawn failed).
-        // Inject inline rather than silently dropping input: this is the old
-        // behaviour, hazard included, and it is better than a dead keyboard.
+        // Injector unavailable (not wanted, or the spawn failed). Inject inline:
+        // this is the old behaviour, hazard included, and it is better than a
+        // dead keyboard.
         None => unsafe {
             SendInput(inputs, size_of::<INPUT>() as i32);
         },
