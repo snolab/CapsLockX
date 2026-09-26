@@ -2,6 +2,7 @@ pub mod agent;
 pub mod brainstorm;
 pub mod edit;
 pub mod fn_row;
+pub mod js_calc;
 pub mod media;
 pub mod mouse;
 pub mod rdp_escape;
@@ -170,6 +171,7 @@ pub struct Modules {
     pub brainstorm: BrainstormModule,
     edit: EditModule,
     fn_row: FnRowModule,
+    js_calc: js_calc::JsCalcModule,
     mouse: MouseModule,
     media: MediaModule,
     virtual_desktop: VirtualDesktopModule,
@@ -190,6 +192,7 @@ impl Modules {
             brainstorm: BrainstormModule::new(Arc::clone(&platform), bs_key, bs_model),
             edit: EditModule::new(Arc::clone(&platform), Arc::clone(&state)),
             fn_row: FnRowModule::new(Arc::clone(&platform), Arc::clone(&state)),
+            js_calc: js_calc::JsCalcModule::new(Arc::clone(&platform)),
             mouse: MouseModule::new(Arc::clone(&platform), Arc::clone(&state)),
             media: MediaModule::new(Arc::clone(&platform)),
             virtual_desktop: VirtualDesktopModule::new(Arc::clone(&platform), Arc::clone(&state)),
@@ -230,6 +233,12 @@ impl Modules {
         // The F-row layer runs before virtual_desktop: both claim the number
         // row, and the chord is the more specific gesture.
         if self.fn_row.on_key_down(key, mods) {
+            return true;
+        }
+        // After fn_row, which claims = and - as F11/F12 when *both* triggers are
+        // held — the chord is the more specific gesture, so it wins. Before edit,
+        // which does not want these keys at all.
+        if self.js_calc.on_key_down(key, mods) {
             return true;
         }
         if self.edit.on_key_down(key, &*self.platform) {
@@ -306,6 +315,9 @@ impl Modules {
         key == KeyCode::Comma  // Space+Comma = preferences
             || key == KeyCode::Slash  // Space+Slash = keyboard layout HUD
             || self.fn_row.is_mapped_key(key)
+            // Without this, holding `=` leaks repeat characters into the app
+            // instead of being suppressed while one evaluation runs.
+            || self.js_calc.is_mapped_key(key)
             || self.edit.is_mapped_key(key)
             || self.mouse.is_mapped_key(key)
             || self.media.is_mapped_key(key)
