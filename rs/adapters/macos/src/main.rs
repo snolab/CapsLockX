@@ -58,6 +58,29 @@ fn main() {
             agent_cmd::main(&["dino".to_string()]);
             return;
         }
+        // Run a plugin: spawn it and perform whatever effects it writes to
+        // stdout. The same contract as on Windows — any program that can print a
+        // line extends CLX, and CLX learns nothing about what it is for.
+        //
+        // This existed on Windows only, which quietly made every "plugin" a
+        // Windows feature. A plugin like clx-genpw is platform-agnostic by
+        // construction, so the host being platform-specific was the only thing
+        // stopping it working here.
+        Some("plugin") => {
+            let argv: Vec<String> = args[2..].to_vec();
+            let Some((command, rest)) = argv.split_first() else {
+                eprintln!("usage: clx plugin <command> [args...]");
+                std::process::exit(2);
+            };
+            let platform = output::MacPlatform::new();
+            match capslockx_core::plugin::run(command, rest, &platform) {
+                capslockx_core::plugin::Outcome::Exited(code) => std::process::exit(code),
+                capslockx_core::plugin::Outcome::NotStarted(why) => {
+                    eprintln!("clx plugin: {why}");
+                    std::process::exit(127);
+                }
+            }
+        }
         Some("observe") => {
             observe_cmd::main(&args[2..].to_vec());
             return;
@@ -72,6 +95,7 @@ fn main() {
             println!("USAGE:");
             println!("  clx                         Start CapsLockX (forks to background)");
             println!("  clx -f                      Start in foreground (blocks shell)");
+            println!("  clx plugin <cmd> [args]     Run a plugin; perform the effects it prints");
             println!("  clx agent --tree            Dump accessibility tree of frontmost app");
             println!("  clx agent --exec            Execute CLX commands from stdin");
             println!("  clx agent --prompt \"task\"    Run LLM agent to perform a task");
