@@ -344,12 +344,42 @@ fn check_hook_alive() {
     // crash_log_sync, not debug_log: this is durable and rare, and someone
     // reading a report of "clx went deaf" days later needs to find it.
     crash_log_sync(&format!(
-        "[hook] {stale} physical key event(s) with no callback — hook gen {} is \
-         gone or wedged; starting a replacement",
-        HOOK_GENERATION.load(Ordering::SeqCst)
+        "[hook] {stale} physical key event(s) with no callback — hook gen {} looks \
+         gone or wedged{}",
+        HOOK_GENERATION.load(Ordering::SeqCst),
+        if REPLACE_ON_SUSPICION {
+            "; starting a replacement"
+        } else {
+            " (replacement disabled — observing only)"
+        }
     ));
-    replace_hook_thread();
+    if REPLACE_ON_SUSPICION {
+        replace_hook_thread();
+    }
 }
+
+/// Whether a suspected-dead hook is actually replaced.
+///
+/// **Off.** Turning it on shipped a worse bug than the one it fixed: the counter
+/// comparison false-positives, and it did so every few minutes, replacing a
+/// perfectly live hook again and again — nineteen generations in one session. Each
+/// replacement is a global keyboard hook being torn down and reinstalled, which
+/// the user feels as a one-second input freeze, and each abandoned thread stayed
+/// parked in `GetMessageW` and never woke to notice it had been superseded, so the
+/// process climbed to 29 threads.
+///
+/// The inference is wrong, not merely twitchy. Raw input receives keyboard events
+/// that our hook is legitimately never called for — a higher-integrity foreground
+/// window is the obvious case, and a game taking raw input is another. "Raw
+/// advanced while the hook did not" therefore does not mean the hook is dead, and
+/// the comment claiming this could not false-positive only considered *suppressed*
+/// keys, which reach neither counter.
+///
+/// Detection stays on, because the log is genuinely useful, and the counters do
+/// still notice something real. What has to change before this flips back on is
+/// the evidence: confirm with a positive liveness probe — inject a tagged event
+/// and see whether the callback fires — rather than inferring death from silence.
+const REPLACE_ON_SUSPICION: bool = false;
 
 /// Own the hook on a thread of its own, and pump the messages that keep it
 /// serviced.
