@@ -254,67 +254,23 @@ fn execute_tool(name: &str, args_json: &str) -> String {
     }
 }
 
-/// Execute JavaScript in a sandboxed engine. No I/O, no network, no filesystem.
-/// Native: rquickjs (8x faster, 97% ES conformance).
-/// WASM: boa_engine (pure Rust, compiles to wasm32).
-#[cfg(not(target_arch = "wasm32"))]
+/// The agent's `js_eval` tool: JavaScript in a sandboxed engine, with no I/O, no
+/// network and no filesystem. The engine itself now lives in [`crate::js`],
+/// because `CLX+=` wants it too and a keyboard module should not have to depend
+/// on the agent to get it.
+///
+/// Four seconds, slightly under the 5 s `task_manager` timeout, so QuickJS
+/// returns its own message before the task manager forces the call to background.
 fn js_eval(code: &str) -> String {
-    use rquickjs::{Context, Runtime};
-
-    eprintln!("[CLX] agent: js_eval({} chars) [rquickjs]", code.len());
-
-    let rt = match Runtime::new() {
-        Ok(r) => r,
-        Err(e) => return format!("JS runtime error: {:?}", e),
-    };
-
-    // Set interrupt handler — checks a deadline to abort long-running scripts.
-    // Use 4s internal deadline (slightly less than the 5s task_manager timeout)
-    // so QuickJS cleanly returns an error before the task manager forces background.
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
-    rt.set_interrupt_handler(Some(Box::new(move || std::time::Instant::now() > deadline)));
-
-    let ctx = match Context::full(&rt) {
-        Ok(c) => c,
-        Err(e) => return format!("JS context error: {:?}", e),
-    };
-
-    ctx.with(|ctx| {
-        let wrapped = format!("String(eval({}))", serde_json::json!(code));
-        match ctx.eval::<String, _>(wrapped.as_bytes()) {
-            Ok(s) => s,
-            Err(e) => {
-                let err = format!("{:?}", e);
-                if err.contains("interrupted") || err.contains("InternalError") {
-                    "Execution timed out after 4s. The code ran too long. Try a smaller computation, or break it into smaller steps.".to_string()
-                } else {
-                    format!("JS error: {}", err)
-                }
-            }
-        }
-    })
-}
-
-#[cfg(target_arch = "wasm32")]
-fn js_eval(code: &str) -> String {
-    use boa_engine::{Context, Source};
-
-    eprintln!("[CLX] agent: js_eval({} chars) [boa]", code.len());
-    let mut context = Context::default();
-
-    match context.eval(Source::from_bytes(code)) {
-        Ok(result) => {
-            let output = result.to_string(&mut context);
-            match output {
-                Ok(s) => s.to_std_string_escaped(),
-                Err(e) => format!("toString error: {:?}", e),
-            }
-        }
-        Err(e) => format!("JS error: {:?}", e),
+    eprintln!("[CLX] agent: js_eval({} chars)", code.len());
+    match crate::js::eval(code, std::time::Duration::from_secs(4)) {
+        Ok(value) => value,
+        // The tool contract is a string either way: the model reads the error and
+        // decides what to do, so there is nothing to branch on here.
+        Err(message) => message,
     }
 }
 
-/// Evaluate Wolfram Language expression via Woxi.
 fn math_eval(expr: &str) -> String {
     eprintln!("[CLX] agent: math_eval({:?})", expr);
 

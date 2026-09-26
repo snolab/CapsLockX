@@ -6,6 +6,7 @@ pub mod audio_capture;
 pub mod cloud_stt;
 pub mod effects;
 pub mod engine;
+pub mod js;
 pub mod key_code;
 pub mod llm_client;
 pub mod local_gguf;
