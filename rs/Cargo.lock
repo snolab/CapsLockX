@@ -977,6 +977,7 @@ dependencies = [
  "cpal",
  "dirs 5.0.1",
  "encoding_rs",
+ "getrandom 0.2.17",
  "libc",
  "llama-cpp-2",
  "mp3lame-encoder",
