@@ -425,11 +425,20 @@ pub fn perform(effect: &Effect, platform: &dyn Platform) {
         }
         Effect::Wait(d) => std::thread::sleep(*d),
         Effect::Comment => {}
+        // Both of these used to print the whole line. A plugin's effects may
+        // carry anything the plugin types — including, if someone ever writes a
+        // password plugin, a password. `k "…"` only parses when the payload both
+        // starts and ends with a quote, so a secret containing an unescaped quote
+        // would fail to parse and be echoed verbatim to inherited stderr, into
+        // terminal scrollback or a watchdog log. One quoting bug away, silently.
+        //
+        // The verb is what makes the message useful; the payload is what makes it
+        // dangerous. Print the first word and the length, never the content.
         Effect::Unsupported { line, reason } => {
-            eprintln!("[CLX] effect not available: {line}  ({reason})");
+            eprintln!("[CLX] effect not available: {}  ({reason})", redact(line));
         }
         Effect::Unknown(line) => {
-            eprintln!("[CLX] unrecognised effect: {line}");
+            eprintln!("[CLX] unrecognised effect: {}", redact(line));
         }
     }
 }
@@ -695,5 +704,35 @@ mod tests {
                 other => panic!("expected a key effect, got {other:?}"),
             }
         }
+    }
+}
+
+/// A one-line effect, with its payload withheld.
+///
+/// Diagnostics about a malformed effect need to say *which verb* misbehaved, not
+/// what it carried: the payload is exactly the part that might be a secret. Keeps
+/// the first whitespace-delimited token and reports how much was suppressed.
+fn redact(line: &str) -> String {
+    let line = line.trim();
+    match line.split_once(char::is_whitespace) {
+        Some((verb, rest)) => format!("{verb} <{} chars withheld>", rest.trim().len()),
+        None => line.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod redaction_tests {
+    use super::redact;
+
+    #[test]
+    fn the_verb_survives_and_the_payload_does_not() {
+        let out = redact(r#"k "hunter2 is not the password""#);
+        assert!(out.starts_with('k'), "the verb is the useful part: {out}");
+        assert!(!out.contains("hunter2"), "payload leaked: {out}");
+    }
+
+    #[test]
+    fn a_bare_verb_is_printed_whole() {
+        assert_eq!(redact("commit"), "commit");
     }
 }

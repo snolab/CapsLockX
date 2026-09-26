@@ -237,7 +237,52 @@ pub fn start_injector() {
     }
 }
 
+/// Describe a batch for the diagnostic below: `k:0x20` for a key, `m:flags` for
+/// the mouse. Enough to tell *what* is being injected without dumping structs.
+fn describe_batch(inputs: &[INPUT]) -> String {
+    inputs
+        .iter()
+        .map(|i| unsafe {
+            if i.r#type == INPUT_KEYBOARD {
+                format!("k:0x{:02X}", i.Anonymous.ki.wVk.0)
+            } else {
+                // `mouseData` matters as much as dx/dy: a wheel event carries its
+                // delta there and leaves dx/dy at zero, so printing only dx/dy
+                // makes scroll traffic look like a storm of zero-delta *moves*.
+                // That is not hypothetical — it sent an investigation chasing a
+                // phantom "idle mouse jitter" bug that was really R/F scrolling.
+                let mi = i.Anonymous.mi;
+                format!(
+                    "m:0x{:X}({},{},d={})",
+                    mi.dwFlags.0, mi.dx, mi.dy, mi.mouseData as i32
+                )
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// `CLX_LOG_INJECT=1` logs every injected batch and what was in it.
+///
+/// Separate from `CLX_DEBUG` because it is noisy and from `CLX_INJECT_THREAD`
+/// because the question it answers — *what* is clx injecting — applies to the
+/// inline path too. It exists because clx turned out to be injecting ~57 mouse
+/// events per second while completely idle, and nothing in the logs said what
+/// they were.
+fn log_injections() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| {
+        matches!(
+            std::env::var("CLX_LOG_INJECT").ok().as_deref(),
+            Some("1") | Some("true") | Some("on")
+        )
+    })
+}
+
 fn send(inputs: &[INPUT]) {
+    if log_injections() {
+        crate::hook::debug_log(&format!("[inject] {}", describe_batch(inputs)));
+    }
     match INJECT_TX.get() {
         Some(tx) => {
             let n = inputs.len();
