@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Script Store</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a18; --muted:#6b6a66; --line:#e2e0da; --card:#fff;
+    --ok:#1f7a4d; --warn:#9a6b00; --crit:#b3261e; --accent:#2b5fd9;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+      --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+    --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:2rem 16px 5rem }
+  .crumb { color:var(--muted); font-size:.85rem; margin:0 0 1.2rem }
+  .crumb a { color:var(--muted) }
+  h1 { font-size:1.8rem; margin:0 0 .3rem; letter-spacing:-.015em }
+  .sub { color:var(--muted); margin:0 0 2rem; max-width:64ch; font-size:1.02rem }
+  h2 { font-size:1.2rem; margin:2.6rem 0 .7rem; letter-spacing:-.01em }
+  h3 { font-size:1rem; margin:1.8rem 0 .5rem }
+  p { max-width:70ch }
+  code, .mono { font-family:var(--mono); font-size:.88em }
+  a { color:var(--accent) }
+  pre { font-family:var(--mono); font-size:.82rem; background:var(--card);
+    border:1px solid var(--line); border-radius:8px; padding:.8rem 1rem; overflow:auto }
+  pre code { font-size:inherit }
+  .scroll { overflow-x:auto; margin:1rem 0 }
+  table { border-collapse:collapse; width:100%; font-size:.9rem }
+  th,td { text-align:left; padding:.45rem .7rem; border-bottom:1px solid var(--line); vertical-align:top }
+  th { color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em }
+  tr:last-child td { border-bottom:0 }
+  .callout { border-left:3px solid var(--accent); background:var(--card);
+    padding:.8rem 1rem; border-radius:0 8px 8px 0; margin:1.3rem 0 }
+  .callout.warn { border-left-color:var(--warn) }
+  .callout.ok { border-left-color:var(--ok) }
+  .callout.crit { border-left-color:var(--crit) }
+  .callout h4 { margin:0 0 .4rem; font-size:.95rem }
+  .callout p { margin:.4rem 0 0 }
+  .q { border:1px solid var(--line); border-radius:10px; padding:.9rem 1.1rem; margin:1rem 0; background:var(--card) }
+  .q h4 { margin:0 0 .3rem; font-size:.98rem }
+  .q .tag { display:inline-block; font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.06em; padding:.1rem .45rem; border-radius:99px; border:1px solid var(--line);
+    color:var(--warn); margin-left:.5rem; vertical-align:.1em }
+  nav.toc { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:.9rem 1.1rem; margin-bottom:2rem }
+  nav.toc strong { font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted) }
+  nav.toc ol { margin:.5rem 0 0; padding-left:1.4rem }
+  nav.toc li { margin:.15rem 0 }
+  footer { margin-top:3.5rem; padding-top:1.2rem; border-top:1px solid var(--line);
+    color:var(--muted); font-size:.87rem }
+  .yes { color:var(--ok); font-weight:600 }
+  .no { color:var(--crit); font-weight:600 }
+  .stage { display:flex; gap:.7rem; align-items:baseline; padding:.7rem 0; border-bottom:1px solid var(--line) }
+  .stage:last-child { border-bottom:0 }
+  .stage .n { font-family:var(--mono); font-size:1.1rem; color:var(--muted); flex:none; width:1.4rem }
+  .stage .body { flex:1 }
+  .stage .body p { margin:.25rem 0 0; font-size:.92rem; color:var(--muted) }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / script-store &nbsp;·&nbsp;
+  see also: <a href="/lab/plugins/">plugins</a>, <a href="/lab/clx-lang/">clx-lang</a></p>
+
+<h1>Script store</h1>
+<p class="sub">
+  Shipping a compiled executable per feature is the wrong shape for a hotkey
+  tool. Scripts are the right one — and most of what that needs is already
+  compiled into clx. This is the design, the order to build it in, and the one
+  part that deserves genuine caution.
+</p>
+
+<nav class="toc"><strong>Contents</strong>
+<ol>
+  <li><a href="#why">Why not another exe</a></li>
+  <li><a href="#have">What already exists</a></li>
+  <li><a href="#missing">What is actually missing</a></li>
+  <li><a href="#binding">The binding format</a></li>
+  <li><a href="#api">The host API is the security boundary</a></li>
+  <li><a href="#order">Build order</a></li>
+  <li><a href="#trust">Third-party distribution, and why it comes last</a></li>
+  <li><a href="#open">Open questions</a></li>
+</ol></nav>
+
+<h2 id="why">Why not another exe</h2>
+
+<p>
+  <code>clx-genpw</code> exists as a compiled binary. It is about twenty lines of
+  real logic — pick characters from an alphabet, print one line — wrapped in a
+  Rust crate, a build target, and a deployment step. Doing that again for the next
+  small idea is how a tool accumulates a distribution problem instead of features.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Concern</th><th>Compiled plugin</th><th>Script</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Platforms</td>
+      <td>One build per target; cross-compiling for macOS from Windows is its own project</td>
+      <td><span class="yes">One file, everywhere</span></td>
+    </tr>
+    <tr>
+      <td>Antivirus</td>
+      <td>An unsigned executable that injects keystrokes. Defender already quarantined clx for hook + injection + spawning processes; a store that downloads and runs binaries is the worst possible shape for that heuristic</td>
+      <td><span class="yes">Nothing is spawned; no new image on disk to flag</span></td>
+    </tr>
+    <tr>
+      <td>Review before trusting</td>
+      <td><span class="no">You cannot read a binary</span></td>
+      <td><span class="yes">You can read the file</span></td>
+    </tr>
+    <tr>
+      <td>Iteration</td>
+      <td>Edit, build, sign, deploy, restart clx</td>
+      <td><span class="yes">Edit, press the key</span></td>
+    </tr>
+    <tr>
+      <td>Process cost</td>
+      <td>A spawn per invocation</td>
+      <td>In-process</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout">
+  <h4>The plugin contract still holds</h4>
+  <p>
+    A plugin is anything that emits effects. A script is not a different contract,
+    only a different way of running one — the effects, and the fact that clx knows
+    nothing about what they are for, are unchanged. <code>clx plugin &lt;program&gt;</code>
+    stays useful for anything that genuinely needs to be a program (otoji, a model
+    server); scripts are for the long tail that does not.
+  </p>
+</div>
+
+<h2 id="have">What already exists</h2>
+
+<p>
+  This is less new machinery than it sounds. Three pieces are already in the tree:
+</p>
+
+<ul>
+  <li><strong>A JS engine, already compiled in.</strong> <code>rquickjs</code> for
+    native builds, <code>boa</code> for WASM (<code>rs/core/Cargo.toml:89</code>),
+    with a working <code>js_eval</code> in <code>rs/core/src/agent.rs:261</code>.
+    Nothing needs to be added to run a script.</li>
+  <li><strong>The effect language.</strong> <code>rs/core/src/effects.rs</code> —
+    the output format a script would emit, already parsed, already performed,
+    already tested.</li>
+  <li><strong>The <code>js { … }</code> escape hatch</strong>, already designed in
+    <a href="/lab/clx-lang/">clx-lang</a> and described there as opaque to the
+    <code>.clx</code> around it.</li>
+</ul>
+
+<h2 id="missing">What is actually missing</h2>
+
+<p>
+  Not the store. Two things underneath it, and the first is the one that blocks
+  everything:
+</p>
+
+<div class="callout warn">
+  <h4>There is no way to bind a key to anything user-defined</h4>
+  <p>
+    <code>ClxConfig</code> (<code>rs/core/src/state.rs</code>) is a flat struct of
+    typed settings — <code>cursor_speed</code>, <code>use_space</code>, API keys.
+    There is no map from a gesture to a command, and no extension point. That is
+    why <code>clx-genpw</code> can currently only be run from a shell, which is
+    not a feature anybody will use.
+  </p>
+  <p>
+    A store of scripts that cannot be bound to a key is a catalogue.
+  </p>
+</div>
+
+<p>
+  The second is the API surface. A QuickJS context has no crypto, no clipboard, no
+  window access, no filesystem. A script can compute and emit effects and nothing
+  else — which is a good default, and means every capability is a deliberate
+  decision rather than an inherited one.
+</p>
+
+<h2 id="binding">The binding format</h2>
+
+<p>
+  Bindings belong in a file the user edits, not in the typed config struct — the
+  whole point is that clx should not need to know the set of possible actions in
+  advance. A small table keyed by gesture:
+</p>
+
+<pre><code># scripts/bindings.clx  — gesture on the left, what runs on the right
+
+space+p    script  genpw.js dpw       # generate a password, type it
+space+;    script  genpw.js qpw
+space+d    script  isodate.js         # 2026-09-27
+space+m    plugin  ay pi              # an existing program, unchanged
+</code></pre>
+
+<p>
+  Two verbs, because the difference is real: <code>script</code> runs in-process in
+  the JS context with the host API; <code>plugin</code> spawns a program and reads
+  its stdout, exactly as today. Everything else — which gestures are legal, how a
+  chord is written — is <a href="/lab/clx-lang/">clx-lang</a>'s problem, already
+  designed.
+</p>
+
+<div class="callout">
+  <h4>A script is a function that returns effects</h4>
+  <p>
+    The simplest contract that works, and it keeps the script honest: it cannot
+    <em>do</em> anything, only describe what should happen.
+  </p>
+</div>
+
+<pre><code>// scripts/genpw.js
+export default function (args) {
+  const alphabet = "123456789abcdefghijkmnopqrstuvwxyz";   // no 0 O I l
+  const upper    = "123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const pick = (set, n) =&gt;
+    Array.from(clx.random(n), b =&gt; set[b % set.length]).join("");
+
+  const pw = pick(upper, 1) + pick(alphabet, 6) + "_" + pick(alphabet, 7);
+  return [{ type: pw }];        // one effect: type this
+}
+</code></pre>
+
+<div class="callout warn">
+  <h4><code>clx.random</code> is not a convenience</h4>
+  <p>
+    It is the reason this script can exist at all. <code>Math.random()</code> is
+    not a CSPRNG, and the AHK original's clock-seeded Mersenne Twister is exactly
+    the defect the Rust port was written to fix. If the host does not expose the OS
+    CSPRNG, a scripted generator is a step backwards from the binary — so this API
+    is a precondition for retiring <code>clx-genpw</code>, not a nice-to-have.
+  </p>
+</div>
+
+<h2 id="api">The host API is the security boundary</h2>
+
+<p>
+  Every function the host exposes is a capability granted to every script. The
+  interesting question is not what to add but what to refuse, and the answer should
+  be written down before the first script asks.
+</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Capability</th><th>Verdict</th><th>Reasoning</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>clx.random(n)</code></td>
+      <td><span class="yes">yes</span></td>
+      <td>OS CSPRNG. Without it, scripted generators are weaker than the thing they replace.</td>
+    </tr>
+    <tr>
+      <td>Return effects</td>
+      <td><span class="yes">yes</span></td>
+      <td>The whole contract. Nothing else needs to be able to act.</td>
+    </tr>
+    <tr>
+      <td><code>clx.now()</code>, formatting</td>
+      <td><span class="yes">yes</span></td>
+      <td>Half the AHK hotstrings are date stamps. Inert.</td>
+    </tr>
+    <tr>
+      <td><code>clx.clipboard</code></td>
+      <td><span class="warn">read: careful</span></td>
+      <td>Reading the clipboard reads whatever the user last copied, which is
+        routinely a password or a token. Writing is far safer than reading.</td>
+    </tr>
+    <tr>
+      <td>Network</td>
+      <td><span class="no">no</span></td>
+      <td>Read-the-clipboard plus send-it-somewhere is the entire exfiltration
+        path in two capabilities. If a script needs the network it can be a
+        <code>plugin</code>, where the user is granting a program, not a snippet.</td>
+    </tr>
+    <tr>
+      <td>Filesystem</td>
+      <td><span class="no">no</span></td>
+      <td>Same argument. A scratch key/value store would cover the real uses.</td>
+    </tr>
+    <tr>
+      <td>Reading keystrokes</td>
+      <td><span class="no">no</span></td>
+      <td>A script that can observe typing inside a process that already holds a
+        global keyboard hook is a keylogger with extra steps.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="order">Build order</h2>
+
+<div>
+  <div class="stage"><div class="n">1</div><div class="body">
+    <strong>Key → script binding</strong>
+    <p>The blocker. Unblocks <code>clx-genpw</code> immediately and is the
+      prerequisite for everything below. Nothing else is worth starting first.</p>
+  </div></div>
+  <div class="stage"><div class="n">2</div><div class="body">
+    <strong>A <code>scripts/</code> directory in this repo</strong>
+    <p>Genpw as JS, the date stamps, the demo. A bundled collection: most of the
+      value of a store, none of its trust problem, and it is where the API surface
+      gets discovered honestly rather than guessed.</p>
+  </div></div>
+  <div class="stage"><div class="n">3</div><div class="body">
+    <strong>The host API, deliberately</strong>
+    <p>Including the refusals above, written down with reasons.</p>
+  </div></div>
+  <div class="stage"><div class="n">4</div><div class="body">
+    <strong>Metadata, only when discovery hurts</strong>
+    <p>A name, a description, which platforms, which gesture it wants. Premature
+      before there are enough scripts to need finding.</p>
+  </div></div>
+  <div class="stage"><div class="n">5</div><div class="body">
+    <strong>Third-party distribution — last, or never</strong>
+    <p>See below. This is the only part where being slow is the correct
+      engineering decision.</p>
+  </div></div>
+</div>
+
+<h2 id="trust">Third-party distribution, and why it comes last</h2>
+
+<div class="callout crit">
+  <h4>The closest precedent is not a package manager</h4>
+  <p>
+    It is AHK script sharing, which has been a reliable malware vector for years —
+    for exactly this reason: a keyboard tool with a global hook running a snippet
+    someone found online. A clx script cannot read keystrokes or reach the network
+    under the surface above, and that is deliberate, but "installed scripts type
+    into your session" is close enough to a keylogger that the distribution story
+    deserves more care than the runtime does.
+  </p>
+</div>
+
+<p>
+  Practical consequences, if it ever gets built: scripts arrive as readable text
+  and are shown to the user before first run; capabilities are declared and
+  granted rather than assumed; and a script from a store is not the same trust
+  tier as one the user wrote. None of that is hard, but all of it is pointless
+  before stages 1–3 exist.
+</p>
+
+<h2 id="open">Open questions</h2>
+
+<div class="q">
+  <h4>What gesture invokes a script that needs a parameter?<span class="tag">decide first</span></h4>
+  <p>
+    Under a held trigger nearly every letter is taken — HJKL, YUIO, G, T, N, P,
+    WASD, V, B, M, Z, X, C, 1–9. The generator alone wants nine profiles. One key
+    that cycles, a two-key sequence, punctuation, or arguments in the binding
+    table as sketched above?
+  </p>
+</div>
+
+<div class="q">
+  <h4>JS, or the declarative <code>.clx</code> first?</h4>
+  <p>
+    <a href="/lab/clx-lang/">clx-lang</a> proposes both, with JS as the escape
+    hatch. Most of the AHK hotstrings this replaces are one line and need no
+    logic — a date format, a fixed string. Those may not want a JS engine at all,
+    which would make the declarative layer the more valuable half to build first.
+  </p>
+</div>
+
+<div class="q">
+  <h4>Does <code>clx-genpw</code> survive as a binary?</h4>
+  <p>
+    Its tests are a usable spec for the nine profiles and for escaping a password
+    into the effect language. Once <code>clx.random</code> exists the binary is
+    redundant — but until then it is the only working version.
+  </p>
+</div>
+
+<footer>
+  CapsLockX lab · design note, nothing here is implemented yet ·
+  the blocker is stage 1
+</footer>
+
+</div>
+</body>
+</html>

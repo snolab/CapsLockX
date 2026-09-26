@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>#DPW# as a plugin</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a18; --muted:#6b6a66; --line:#e2e0da; --card:#fff;
+    --ok:#1f7a4d; --warn:#9a6b00; --crit:#b3261e; --accent:#2b5fd9;
+    --ok-bg:#e7f4ec; --warn-bg:#fdf1e0; --crit-bg:#fdeceb;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+      --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+      --ok-bg:#1d2f26; --warn-bg:#382914; --crit-bg:#3a1e1c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#14141a; --fg:#e8e6e1; --muted:#9a978f; --line:#2c2c36; --card:#1c1c24;
+    --ok:#5ec98c; --warn:#e0b050; --crit:#ff7b72; --accent:#7aa2f7;
+    --ok-bg:#1d2f26; --warn-bg:#382914; --crit-bg:#3a1e1c;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:2rem 16px 5rem }
+  .crumb { color:var(--muted); font-size:.85rem; margin:0 0 1.2rem }
+  .crumb a { color:var(--muted) }
+  h1 { font-size:clamp(1.5rem,5vw,1.8rem); margin:0 0 .3rem; letter-spacing:-.015em }
+  .sub { color:var(--muted); margin:0 0 2rem; max-width:64ch; font-size:1.02rem }
+  h2 { font-size:1.2rem; margin:2.6rem 0 .7rem; letter-spacing:-.01em; scroll-margin-top:1rem }
+  h3 { font-size:1rem; margin:1.8rem 0 .5rem }
+  p, ul, ol { max-width:70ch }
+  li { margin:.25rem 0 }
+  code, .mono { font-family:var(--mono); font-size:.88em; word-break:break-word }
+  a { color:var(--accent) }
+  pre { font-family:var(--mono); font-size:.82rem; background:var(--card);
+    border:1px solid var(--line); border-radius:8px; padding:.8rem 1rem; overflow:auto }
+  pre code { font-size:inherit; word-break:normal }
+  .scroll { overflow-x:auto; margin:1rem 0 }
+  table { border-collapse:collapse; width:100%; font-size:.9rem }
+  th,td { text-align:left; padding:.45rem .7rem; border-bottom:1px solid var(--line); vertical-align:top }
+  th { color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em }
+  tr:last-child td { border-bottom:0 }
+  table.wide { min-width:46rem }
+  .callout { border-left:3px solid var(--accent); background:var(--card);
+    padding:.8rem 1rem; border-radius:0 8px 8px 0; margin:1.3rem 0 }
+  .callout.warn { border-left-color:var(--warn) }
+  .callout.ok { border-left-color:var(--ok) }
+  .callout.crit { border-left-color:var(--crit) }
+  .callout h4 { margin:0 0 .4rem; font-size:.95rem }
+  .callout p { margin:.4rem 0 0 }
+  .q { border:1px solid var(--line); border-radius:10px; padding:.9rem 1.1rem; margin:1rem 0; background:var(--card) }
+  .q h4 { margin:0 0 .3rem; font-size:.98rem }
+  .q p { margin:.4rem 0 0 }
+  .tag { display:inline-block; font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.06em; padding:.1rem .45rem; border-radius:99px; border:1px solid var(--line);
+    color:var(--warn); margin-left:.4rem; vertical-align:.1em; white-space:nowrap }
+  .v { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
+    padding:.12em .5em; border-radius:5px; white-space:nowrap }
+  .v.no  { color:var(--crit); background:var(--crit-bg) }
+  .v.yes { color:var(--ok);   background:var(--ok-bg) }
+  .v.mid { color:var(--warn); background:var(--warn-bg) }
+  .src { font-family:var(--mono); font-size:.78rem; color:var(--muted); display:block; margin-top:.35rem }
+  nav.toc { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:.9rem 1.1rem; margin-bottom:2rem }
+  nav.toc strong { font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted) }
+  nav.toc ol { margin:.5rem 0 0; padding-left:1.4rem }
+  nav.toc li { margin:.15rem 0 }
+  blockquote { border-left:3px solid var(--line); margin:1rem 0; padding-left:1rem; color:var(--muted) }
+  footer { margin-top:3.5rem; padding-top:1.2rem; border-top:1px solid var(--line);
+    color:var(--muted); font-size:.87rem }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="crumb"><a href="/lab/">lab</a> / dpw-plugin &nbsp;·&nbsp;
+  contract: <a href="/lab/plugins/">plugins</a> &nbsp;·&nbsp;
+  bindings: <a href="/lab/clx-lang/">clx-lang</a></p>
+
+<h1><code>#DPW#</code> as a cross-platform plugin</h1>
+<p class="sub">
+  The AHK side types a password when you type <code>#DPW#</code>. Porting it is
+  two questions wearing one coat: <em>generating</em> a password is trivial and
+  safe, <em>retrieving</em> a stored one is neither. This page separates them,
+  and reports one concrete leak in the current effect executor that has to be
+  fixed before the second one is built.
+</p>
+
+<nav class="toc"><strong>Contents</strong>
+<ol>
+  <li><a href="#ahk">What <code>#DPW#</code> actually does</a></li>
+  <li><a href="#weak">Where the AHK version is weak</a></li>
+  <li><a href="#contract">What clx offers today</a></li>
+  <li><a href="#leak">Does the current design leak a typed password?</a></li>
+  <li><a href="#keystrokes">Is typing a secret as keystrokes even sound?</a></li>
+  <li><a href="#options">Where the secrets would live — five options</a></li>
+  <li><a href="#rec">Recommendation</a></li>
+  <li><a href="#design">The concrete plugin design</a></li>
+  <li><a href="#not">What I would not do</a></li>
+  <li><a href="#open">What needs a decision</a></li>
+</ol></nav>
+
+<h2 id="ahk">1 · What <code>#DPW#</code> actually does</h2>
+
+<div class="callout warn">
+  <h4>It is a generator, not a vault</h4>
+  <p><code>#DPW#</code> does not type <em>your</em> password. It invents a fresh
+  random one and types it. Nothing in this repository stores a secret — a
+  repo-wide search for keychain / credential / vault / 1Password / Bitwarden
+  finds only API-key plumbing in <code>lib/otoji</code> and nothing in the
+  hotkey engine. That reframes the whole port: the feature that exists is
+  cheap and safe, and the feature people <em>assume</em> exists is the
+  expensive one.</p>
+</div>
+
+<p>It lives in one file, <code>Modules/QuickInput.ahk</code> — a grab-bag of
+"type a timestamp or a random string" hotstrings. The trigger:</p>
+
+<pre><code>:*?:#DPW#::  ; two-section random password
+doubleSectionPassword()
+return
+<span class="src">Modules/QuickInput.ahk:117-119</span></code></pre>
+
+<p>That is an AutoHotkey <b>hotstring</b>, not a hotkey. <code>:*?:</code> is
+two options: <code>*</code> fires without waiting for an ending character
+(no space or Tab needed), and <code>?</code> fires even inside a word. So the
+five characters <code>#DPW#</code> expand the instant the final <code>#</code>
+lands, anywhere, in any field. AHK's default behaviour also
+<em>backspaces the trigger away</em> before typing the replacement.</p>
+
+<p>The body assembles two sections from a lookalike-free alphabet and types
+them joined by an underscore:</p>
+
+<pre><code>doubleSectionPassword()
+{
+    CharsFirst:="123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+    CharsRest:="123456789abcdefghijkmnopqrstuvwxyz"
+    section1 := GenPassword(CharsFirst, 1) GenPassword(CharsRest, 6)
+    section2 := GenPassword(CharsRest, 7)
+    QuickTextInput(section1 "_" section2)
+}
+<span class="src">Modules/QuickInput.ahk:78-85</span></code></pre>
+
+<p>Shape: <code>Xxxxxxx_yyyyyyy</code> — one uppercase-or-digit, then six
+lowercase-or-digit, an underscore, then seven more. <code>0</code>,
+<code>O</code>, <code>I</code> and <code>l</code> are excluded on purpose, so
+it survives being read aloud or off a screen.</p>
+
+<p>The generator and the typist are each three lines:</p>
+
+<pre><code>GenPassword(Chars, Length := 16)
+{
+    Min := 1
+    Max := StrLen(chars)
+    pw := ""
+    Loop %Length% {
+        Random StartPos, Min, Max          ; &lt;-- Mersenne Twister, clock-seeded
+        pw := pw SubStr(Chars, StartPos, 1)
+    }
+    Return pw
+}
+
+QuickTextInput(str)
+{
+    SendInput {Text}%str%                  ; &lt;-- synthetic keystrokes
+}
+<span class="src">Modules/QuickInput.ahk:15-25 (GenPassword), 64-67 (QuickTextInput)</span></code></pre>
+
+<p><code>SendInput {Text}</code> is the direct ancestor of clx's
+<code>type_text</code>: it injects the characters rather than pressing keys,
+so keyboard layout, Shift and Caps Lock do not enter into it.</p>
+
+<p>Nine siblings share the same two functions — <code>#PW#</code>,
+<code>#WPW#</code> (identical to it), <code>#NPW#</code>, <code>#HEX#</code>,
+<code>#HEXL#</code>, <code>#QPW#</code>, <code>#SPW#</code>,
+<code>#JPW#</code>, <code>#UUID#</code>, plus the date/time ones
+(<code>Modules/QuickInput.ahk:89-143</code>). Any port should treat
+<code>#DPW#</code> as one profile of one feature, not as a special case.</p>
+
+<h2 id="weak">2 · Where the AHK version is weak</h2>
+
+<div class="scroll"><table class="wide">
+<thead><tr><th style="width:13rem">Weakness</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td><b>Not a CSPRNG</b><br><span class="src">QuickInput.ahk:21</span></td>
+  <td>AHK v1's <code>Random</code> is a Mersenne Twister auto-seeded from the
+  system clock. The nominal strength is ≈71 bits for <code>#DPW#</code>
+  (14 chars over a 33/34-symbol alphabet) and ≈94 for <code>#PW#</code>, but a
+  clock-derived seed is a far smaller space than that, and the generator is
+  not designed to resist state recovery from earlier outputs. Every password
+  from one script session comes from one seed.</td></tr>
+<tr><td><b>The trigger is typed, then erased</b></td>
+  <td><code>#DPW#</code> is real keystrokes that reach the focused app before
+  AHK backspaces them. In anything with incremental search, live collaboration
+  or a "user is typing" channel, the literal string <code>#DPW#</code> — and
+  the five backspaces — leave the machine.</td></tr>
+<tr><td><b><code>?</code> and <code>*</code> mean it fires anywhere</b>
+  <span class="src">QuickInput.ahk:117</span></td>
+  <td>Including mid-word, in a code editor, in a chat message, or in a field
+  where the literal text <code>#DPW#</code> was what you meant. There is no
+  confirmation step and no undo — the generated value replaces your text.</td></tr>
+<tr><td><b>Write-only output</b></td>
+  <td>The password is typed into exactly one field and never shown, stored or
+  copied. A sign-up form with a "confirm password" box cannot be filled, and
+  if the form is rejected the value is gone. In practice this pushes people
+  toward the clipboard, which is worse.</td></tr>
+<tr><td><b>Windows-only by construction</b></td>
+  <td>AHK v1, <code>SendInput</code>, <code>FormatTime</code>. Nothing here
+  ports; only the idea does.</td></tr>
+<tr><td><b><code>#SPW#</code>'s alphabet is buggy</b>
+  <span class="src">QuickInput.ahk:138</span></td>
+  <td>The symbol set contains <code>", "</code> — a comma <em>and a literal
+  space</em>. A generated password can therefore begin or end with a space,
+  which many fields silently trim. Worth not reproducing.</td></tr>
+</tbody></table></div>
+
+<h2 id="contract">3 · What clx offers today</h2>
+
+<p>The plugin contract is already exactly right for this, and it is one
+sentence: <b>a plugin is any program that writes effects to stdout.</b>
+<code>clx plugin &lt;command&gt; [args…]</code> spawns it and performs each line
+as it arrives (<code>rs/core/src/plugin.rs:47-74</code>). No SDK, no ABI, no
+manifest, and clx learns nothing about what the program is for. Typing is one
+verb:</p>
+
+<pre><code>k "text"        type a literal string  (\n \t \" \\ escapes)
+k enter         tap a key
+k c-c           a chord
+w 200ms         wait
+<span class="src">rs/core/src/effects.rs:8-20</span></code></pre>
+
+<p>So the entire "type a generated password" feature is a program that prints
+one line. That part is genuinely trivial. Three gaps are not:</p>
+
+<div class="scroll"><table>
+<thead><tr><th style="width:13rem">Gap</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td><b>No hotstring engine</b></td>
+  <td>Nothing in <code>rs/</code> matches <code>hotstring</code>,
+  <code>abbrev</code> or any typed-character buffer. clx recognises
+  <em>gestures</em> (trigger held + key), never <em>typed text</em>. There is
+  no way to reproduce <code>#DPW#</code> as a trigger without building a
+  rolling buffer of recent keystrokes inside the keyboard hook — a new and
+  unattractive component to add to a process that also wants to type
+  secrets.</td></tr>
+<tr><td><b><code>clx plugin</code> is Windows-only</b></td>
+  <td><code>rs/core/src/plugin.rs</code> is platform-agnostic and already
+  used by <code>rs/adapters/windows/src/main.rs:352-366</code>. The macOS
+  adapter's subcommand match (<code>rs/adapters/macos/src/main.rs:52</code>)
+  has <code>agent</code>, <code>dino</code>, <code>observe</code>,
+  <code>ocr</code> — and no <code>plugin</code>. That is a ~12-line addition,
+  but it is a prerequisite for calling anything here cross-platform.</td></tr>
+<tr><td><b>No binding from a key to a plugin</b></td>
+  <td><code>clx plugin</code> is a CLI subcommand only. The
+  <a href="/lab/clx-lang/">.clx</a> binding layer that would let
+  <code>clx[ … ]</code> call a plugin is a design, not code — there is no
+  bindings loader in <code>rs/core/src</code>. Until it lands, invocation is
+  a shell command or an OS-level shortcut.</td></tr>
+<tr><td><b>Plugin stdin is <code>null</code></b>
+  <span class="src">plugin.rs:51</span></td>
+  <td>Decisive for vault integration: a plugin <em>cannot prompt on the
+  terminal</em> for a master password. It must rely on an already-unlocked
+  session or on the vault's own GUI/biometric prompt.</td></tr>
+</tbody></table></div>
+
+<h2 id="leak">4 · Does the current design leak a typed password?</h2>
+
+<p>A plugin's secret travels over its stdout pipe into clx. Pipes are not
+files, and clx does not write effect lines to any log on the success path.
+But three places print or retain them, and one is a real leak. This decides
+whether the retrieval feature is safe to build at all, so here it is
+explicitly.</p>
+
+<div class="callout crit">
+  <h4>Leak 1 — a malformed effect line is echoed in full, payload included</h4>
+  <p>Any line the parser does not understand is printed verbatim to
+  stderr:</p>
+  <pre><code>Effect::Unknown(line) =&gt; {
+    eprintln!("[CLX] unrecognised effect: {line}");
+}
+<span class="src">rs/core/src/effects.rs:431-434 (and :428-430 for Unsupported)</span></code></pre>
+  <p>And <code>k "…"</code> is recognised <b>only</b> when the payload starts
+  and ends with a quote (<code>effects.rs:228-234</code>). So a password
+  containing an unescaped <code>"</code> produces a line that no longer ends
+  in a quote → <code>Unknown</code> → <b>the secret is printed to
+  stderr</b>. stderr is <code>Stdio::inherit()</code>
+  (<code>plugin.rs:52</code>), so it lands wherever clx's own stderr goes —
+  a terminal's scrollback, a watchdog log, a CI capture. This is a one-symbol
+  quoting bug away at all times, and it fails silently.</p>
+  <p><b>Fix before shipping any retrieval plugin:</b> never echo the payload.
+  Print the verb and a reason, or redact everything between quotes.</p>
+</div>
+
+<div class="callout warn">
+  <h4>Leak 2 — the revision buffer holds the secret in clx's heap</h4>
+  <p><code>Runner.typed</code> keeps a copy of the last typed string so
+  <code>retype</code> can diff against it (<code>effects.rs:340-363</code>).
+  This is <em>already handled correctly by design</em>: <code>commit</code>
+  clears it, and <code>plugin.rs:68</code> commits unconditionally when the
+  plugin ends, however it ends. The residual issue is only that
+  <code>String::clear</code> does not zero the freed bytes, so the plaintext
+  can persist in the heap (and therefore in a crash dump or a swapped page)
+  until reused. Worth knowing; not a reason to stop.</p>
+</div>
+
+<div class="callout ok">
+  <h4>Non-leak — the hook's keystroke log does not record the characters, today</h4>
+  <p>With <code>CLX_DEBUG</code> set, the Windows hook logs every key event to
+  <code>%TEMP%\capslockx_hook.log</code>, and it logs injected events too —
+  the <code>is_ours</code> early return happens <em>after</em> the log line
+  (<code>rs/adapters/windows/src/hook.rs:450-465</code>). But what it prints
+  is <code>kb.vkCode</code>:</p>
+  <pre><code>debug_log(&amp;format!("[hook] vk=0x{:02X} {:?} {} inj={} ours={} fg=[{}]", …));
+<span class="src">rs/adapters/windows/src/hook.rs:451-459</span></code></pre>
+  <p>Typed text is injected with <code>KEYEVENTF_UNICODE</code>
+  (<code>rs/adapters/windows/src/output.rs:122-137, 534-546</code>), which
+  reaches a low-level hook as <code>VK_PACKET</code> with the character in
+  <code>wScan</code> — a field this format string does not touch. So the log
+  records <em>that</em> a 15-character burst happened and exactly when, and
+  which window had focus, but not what it said.</p>
+  <p>This is a fragile "no". It is one added field away from being a
+  plaintext password log, and nothing in the file says so. A comment at that
+  <code>debug_log</code> call, plus a test, is cheap insurance.</p>
+</div>
+
+<h2 id="keystrokes">5 · Is typing a secret as keystrokes even sound?</h2>
+
+<p>Partly, and the two platforms fail differently.</p>
+
+<p><b>Windows: every keyboard hook in every process sees it.</b> That is not
+a hypothesis — it is how clx itself works. <code>SendInput</code> events are
+delivered to all <code>WH_KEYBOARD_LL</code> hooks, so any other tool the user
+runs (another macro program, an IME helper, a "productivity" utility, an
+actual keylogger) observes the injected password exactly as it observes typing.
+Injection is therefore <em>no worse than typing it by hand</em>, with two
+caveats: a human typing a password is at least aware they are doing it, and
+elevated windows reject injected input entirely (UIPI), so the feature quietly
+does nothing at a UAC prompt.</p>
+
+<p><b>macOS: it will fail precisely where it matters most.</b> When a real
+secure field has focus, the system enters secure input mode and disables
+event taps — clx already handles being switched off for this reason:</p>
+
+<pre><code>// When macOS disables our tap (e.g. during secure input / password fields),
+// it sends a special event type. Re-enable the tap so it resumes working
+// after the secure input ends.
+<span class="src">rs/adapters/macos/src/hook.rs:240-244 — and engine.rs:276-279, emergency_stop</span></code></pre>
+
+<p>The same mechanism drops synthetic <code>CGEventPost</code> input into
+secure fields. So on macOS a password-typing plugin works in ordinary text
+fields and web forms and <em>does not work</em> at the login window, Keychain
+prompts, <code>sudo</code>, or any app using
+<code>EnableSecureEventInput</code>. That is a feature boundary to state up
+front rather than a bug to chase: this is for tokens and web forms, and a
+password manager's own browser integration is better wherever it reaches.</p>
+
+<h2 id="options">6 · Where the secrets would live — five options</h2>
+
+<p>Only relevant to the <em>retrieval</em> feature. The generator has no
+secret at rest and skips this table entirely.</p>
+
+<div class="scroll"><table class="wide">
+<thead><tr>
+  <th style="width:10rem">Option</th>
+  <th>Cross-platform</th>
+  <th>Plaintext on disk?</th>
+  <th>Secret in an argv?</th>
+  <th>Setup burden</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><b>Generate, never store</b><br><span class="src">what #DPW# does</span></td>
+  <td><span class="v yes">full</span> OS CSPRNG everywhere</td>
+  <td><span class="v yes">never</span> there is no secret</td>
+  <td><span class="v yes">no</span> generated in-process</td>
+  <td><span class="v yes">none</span></td>
+</tr>
+<tr>
+  <td><b>Password-manager CLI</b><br><code>op</code> · <code>bw</code></td>
+  <td><span class="v yes">full</span> both ship Win + macOS binaries</td>
+  <td><span class="v yes">never</span> vault is encrypted; unlock is biometric</td>
+  <td><span class="v yes">no</span> argv carries an item <em>reference</em>, not the value</td>
+  <td><span class="v mid">medium</span> user must already use one; <code>bw</code> needs a session token in an env var — prefer <code>op</code></td>
+</tr>
+<tr>
+  <td><b><code>pass</code></b><br><span class="src">gpg + files</span></td>
+  <td><span class="v mid">partial</span> native on macOS, awkward on Windows (gpg4win + shell)</td>
+  <td><span class="v yes">never</span> gpg decrypts to stdout</td>
+  <td><span class="v yes">no</span></td>
+  <td><span class="v no">high</span> GPG key management, agent lifetime</td>
+</tr>
+<tr>
+  <td><b>age/gpg file managed by clx</b></td>
+  <td><span class="v yes">full</span> single static binary</td>
+  <td><span class="v yes">never</span> <em>if</em> decryption stays in memory</td>
+  <td><span class="v mid">risk</span> a passphrase flag would be visible — must not exist</td>
+  <td><span class="v no">high</span> and stdin is <code>null</code>, so there is nowhere to type the passphrase</td>
+</tr>
+<tr>
+  <td><b>OS credential store</b><br>DPAPI · Keychain</td>
+  <td><span class="v no">none shared</span> two unrelated APIs, two implementations</td>
+  <td><span class="v yes">never</span> encrypted at rest</td>
+  <td><span class="v yes">no</span></td>
+  <td><span class="v mid">medium</span> but see below</td>
+</tr>
+</tbody></table></div>
+
+<div class="callout warn">
+  <h4>Why the OS credential store scores badly despite encrypting at rest</h4>
+  <p>DPAPI's whole design is that <em>any process running as the user</em>
+  decrypts silently, with no prompt and no audit — so a vault in Credential
+  Manager is protected against someone reading the disk and against nothing
+  else. macOS Keychain is stronger (per-item ACLs, a prompt, Touch ID) but
+  shares no code, no model and no CLI with it. Choosing this means writing and
+  maintaining two half-vaults with different security properties, which is
+  strictly worse than delegating to software whose entire job is that.</p>
+</div>
+
+<h2 id="rec">7 · Recommendation</h2>
+
+<div class="callout ok">
+  <h4>Split the feature in two. Build the first now; delegate the second, and only after the stderr leak is fixed.</h4>
+</div>
+
+<h3>7.1 — <code>clx-genpw</code>: ship it</h3>
+
+<p>This is what <code>#DPW#</code> actually is. It has no secret at rest, no
+vault, no unlock, and no cross-platform story to invent: it is a program that
+reads the OS CSPRNG and prints one <code>k "…"</code> line. It inherits all of
+the security analysis above and none of the risk, because the value it types
+did not exist a millisecond earlier and is not a credential to anything yet.
+It fixes both real defects of the AHK version — the clock-seeded Mersenne
+Twister becomes a CSPRNG, and the typed-then-backspaced trigger disappears
+because clx uses gestures, not hotstrings.</p>
+
+<h3>7.2 — <code>clx-pw</code>: delegate to the user's password manager</h3>
+
+<p>For retrieval, clx should own <em>none</em> of it. The plugin shells out to
+<code>op</code> (or <code>bw</code>, or <code>pass</code>), reads the value
+from that process's stdout, escapes it, prints one <code>k "…"</code> line, and
+exits. Reasoning, in order of weight:</p>
+
+<ol>
+  <li><b>clx never becomes a place secrets live.</b> No new storage format, no
+  key management, no unlock UI, no migration, no backup story — and no
+  obligation to be as careful as a password manager, because it never holds
+  the vault.</li>
+  <li><b>Unlock is already solved, and stdin is <code>null</code>.</b>
+  <code>op</code> raises its own Windows Hello / Touch ID prompt out of band.
+  Every design where clx handles the passphrase collides with
+  <code>plugin.rs:51</code>.</li>
+  <li><b>argv stays clean.</b> <code>clx plugin clx-pw "Example Login"</code>
+  puts an item <em>name</em> in the process table — visible to other processes
+  as it always is, and harmless. The value never appears in an argument.</li>
+  <li><b>Same command on both platforms.</b> The only clx change needed is
+  adding <code>plugin</code> to the macOS subcommand match.</li>
+  <li><b>It degrades honestly.</b> No <code>op</code> installed → the plugin
+  prints nothing and exits non-zero → clx types nothing. A missing feature,
+  not a wrong password in a field.</li>
+</ol>
+
+<p>If the user has no password manager, the fallback is <code>pass</code> or an
+age-encrypted file <em>invoked as an external command the same way</em> — a
+different plugin, not a different clx.</p>
+
+<h2 id="design">8 · The concrete plugin design</h2>
+
+<h3>What the plugin is</h3>
+<p>Two small programs, neither of which clx knows anything about. Each prints
+effects and exits. Written in whatever is convenient — Rust beside the other
+binaries, or PowerShell/shell on the model of
+<code>scripts/clx-plugin-demo.ps1</code>.</p>
+
+<h3>What it emits — generator</h3>
+
+<pre><code>$ clx-genpw dpw
+k "Xxxxxxx_yyyyyyy"
+
+$ clx-genpw quad
+k "AAAA-BBBB-CCCC-DDDD"
+<span class="src">shapes only — every character above is a placeholder</span></code></pre>
+
+<p>One line, one effect, nothing else. Profiles mirror the AHK family
+(<code>dpw</code>, <code>pw</code>, <code>quad</code>, <code>hex</code>,
+<code>num</code>, <code>uuid</code>, <code>iso-date</code> …) so the nine
+hotstrings become nine arguments to one plugin rather than nine features.
+Rules: OS CSPRNG (<code>getrandom</code>), rejection sampling rather than
+<code>% len</code> so the alphabet stays uniform, the lookalike exclusions
+kept, and no leading or trailing space ever — that is <code>#SPW#</code>'s
+bug.</p>
+
+<h3>What it emits — retrieval</h3>
+
+<pre><code>$ clx-pw "Example Login"
+k "<span class="mono">&lt;value from op, with \" and \\ escaped&gt;</span>"
+</code></pre>
+
+<p>Nothing else — no banner on stdout, diagnostics on stderr only, and never
+the value on stderr. Escaping is the plugin's responsibility and is the one
+place a bug becomes a disclosure (see §4). A shape worth considering for
+two-field forms, since it costs nothing extra:</p>
+
+<pre><code># username, Tab, password — the whole login in one gesture
+k "<span class="mono">&lt;username&gt;</span>"
+k tab
+k "<span class="mono">&lt;value&gt;</span>"
+</code></pre>
+
+<h3>How the user invokes it</h3>
+
+<pre><code># today — the contract as it exists
+clx plugin clx-genpw dpw
+clx plugin clx-pw "Example Login"
+
+# once .clx bindings land (/lab/clx-lang/)
+clx[ ; ] =&gt; clx-genpw dpw
+</code></pre>
+
+<p>What it should <em>not</em> be is a hotstring. Reproducing
+<code>#DPW#</code> literally means giving clx a rolling buffer of recently
+typed characters inside the keyboard hook — new machinery, in the hottest code
+path in the program, whose entire purpose is to remember what the user typed.
+For a password feature that trade is bad in both directions. A gesture is
+also strictly better behaved: nothing is typed and erased, and it cannot fire
+by accident inside a word.</p>
+
+<div class="callout">
+  <h4>Prerequisites, smallest first</h4>
+  <ol style="margin:.4rem 0 0">
+    <li><b>Redact the payload in <code>effects.rs:428-434</code>.</b> Blocks
+    the retrieval plugin; good hygiene regardless. (~5 lines + a test.)</li>
+    <li><b>Add <code>plugin</code> to the macOS subcommand match</b>
+    (<code>rs/adapters/macos/src/main.rs:52</code>). Blocks "cross-platform".
+    (~12 lines.)</li>
+    <li><b>Comment the <code>VK_PACKET</code> property at
+    <code>hook.rs:451</code></b> so nobody adds <code>wScan</code> to that
+    format string later.</li>
+    <li>Then <code>clx-genpw</code>. Then, separately, <code>clx-pw</code>.</li>
+  </ol>
+</div>
+
+<h2 id="not">9 · What I would not do</h2>
+
+<ul>
+  <li><b>Not store passwords in clx.</b> Not in <code>config_store</code>, not
+  in <code>./tmp/</code>, not in a clx-managed encrypted file. The moment clx
+  holds a vault it inherits an obligation it is not built for.</li>
+  <li><b>Not add a secret-aware verb</b> (<code>pw</code>,
+  <code>secret</code>, <code>type_secret</code>) to the effect language.
+  <a href="/lab/plugins/#effects">Effects, not domains</a> is the whole
+  reason this contract works; a verb that means "this one is sensitive" hands
+  clx a category it then has to reason about. The redaction in §4 should apply
+  to <em>every</em> payload, which is simpler and strictly safer.</li>
+  <li><b>Not pass a secret as a command-line argument</b>, ever — not to
+  <code>clx plugin</code>, not to a helper. The process table is readable by
+  other processes running as the same user.</li>
+  <li><b>Not route it through the clipboard.</b> The effect language has no
+  clipboard verb and should not gain one for this: on Windows, Clipboard
+  History and cloud sync would archive the password, and opting out requires
+  setting the clipboard-exclusion formats correctly — work a password manager
+  has already done and clx would get wrong.</li>
+  <li><b>Not build a DPAPI/Keychain mini-vault</b> — two implementations, two
+  security models, and DPAPI offers no protection against the threat that
+  matters (other code running as the user).</li>
+  <li><b>Not reproduce the hotstring trigger</b> for the retrieval half under
+  any circumstances, and preferably not for the generator either (§8).</li>
+  <li><b>Not run either plugin with <code>CLX_DEBUG</code> set</b> until §4's
+  fix is in, and say so in the plugin's own <code>--help</code>.</li>
+</ul>
+
+<h2 id="open">10 · What needs a decision</h2>
+
+<div class="q">
+  <h4>Q1 — Is retrieval wanted at all? <span class="tag">needs a decision</span></h4>
+  <p>The existing feature is a generator. If the generator is all that was
+  meant, this is a half-day of work with no security surface and §7.2 can be
+  dropped entirely. Everything expensive on this page exists only if you want
+  clx to type a <em>stored</em> password.</p>
+</div>
+
+<div class="q">
+  <h4>Q2 — Which vault CLI? <span class="tag">needs a decision</span></h4>
+  <p><code>op</code> is the best fit (biometric unlock out of band, clean
+  cross-platform binaries, no session token to park in an env var).
+  <code>bw</code> works but wants <code>BW_SESSION</code> in the environment,
+  which is readable by other processes running as you. <code>pass</code> is
+  fine on macOS and painful on Windows. Which do you actually use?</p>
+</div>
+
+<div class="q">
+  <h4>Q3 — What gesture? <span class="tag">needs a decision</span></h4>
+  <p>Under a held trigger, the letters are nearly all taken (HJKL YUIO G T N P
+  WASD V B M Z X C, digits 1-9). A generator wants one binding plus a way to
+  pick a profile. Options: one key cycling profiles, a two-key sequence, or
+  the punctuation keys. This only matters once <code>.clx</code> bindings
+  exist; until then the shell command is the interface.</p>
+</div>
+
+<footer>
+  Research only — nothing here is implemented, by request. The one finding
+  that is independent of any decision above:
+  <code>rs/core/src/effects.rs:428-434</code> echoes an unparsed effect line
+  verbatim to inherited stderr, so a quoting bug in <em>any</em> plugin
+  discloses its payload. Worth fixing whether or not this feature is built.
+</footer>
+
+</div>
+</body>
+</html>
