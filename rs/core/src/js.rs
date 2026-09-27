@@ -67,6 +67,79 @@ pub fn eval(code: &str, timeout: Duration) -> Result<String, String> {
     })
 }
 
+/// Evaluate `code` and return its result as JSON.
+///
+/// The difference from [`eval`] is the wrapper: `String(...)` turns an array of
+/// objects into `"[object Object]"`, which is useless for a script whose whole
+/// job is to describe what should happen. `JSON.stringify` keeps the structure.
+///
+/// Scripts get a `clx` global — see [`install_host_api`]. Its contents are the
+/// security boundary, so they are a deliberate, short list.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn eval_json(code: &str, args: &[String], timeout: Duration) -> Result<String, String> {
+    use rquickjs::{Context, Runtime};
+
+    let rt = Runtime::new().map_err(|e| format!("JS runtime error: {e:?}"))?;
+    let deadline = std::time::Instant::now() + timeout;
+    rt.set_interrupt_handler(Some(Box::new(move || std::time::Instant::now() > deadline)));
+    let ctx = Context::full(&rt).map_err(|e| format!("JS context error: {e:?}"))?;
+
+    ctx.with(|ctx| {
+        install_host_api(&ctx, args)?;
+        let wrapped = format!("JSON.stringify(eval({}))", serde_json::json!(code));
+        match ctx.eval::<String, _>(wrapped.as_bytes()) {
+            Ok(json) => Ok(json),
+            Err(e) => {
+                if std::time::Instant::now() > deadline {
+                    Err(format!("script timed out after {}ms", timeout.as_millis()))
+                } else {
+                    Err(describe_exception(&ctx, &e))
+                }
+            }
+        }
+    })
+}
+
+/// Everything a script is allowed to reach.
+///
+/// Short on purpose: each entry is a capability granted to every script that ever
+/// runs, and the refusals matter as much as the grants. No network and no
+/// filesystem, because clipboard-read plus network is an exfiltration path in two
+/// capabilities; no reading keystrokes, because inside a process that already
+/// holds a global keyboard hook that is a keylogger with extra steps. See
+/// `lab/script-store`.
+#[cfg(not(target_arch = "wasm32"))]
+fn install_host_api(ctx: &rquickjs::Ctx<'_>, args: &[String]) -> Result<(), String> {
+    use rquickjs::{Function, Object};
+
+    let clx = Object::new(ctx.clone()).map_err(|e| format!("host API: {e:?}"))?;
+
+    // The OS CSPRNG. Not a convenience: `Math.random()` is not cryptographically
+    // secure, and a scripted password generator built on it would be weaker than
+    // the AHK implementation this replaces — whose clock-seeded Mersenne Twister
+    // was the specific defect worth fixing.
+    let random = Function::new(ctx.clone(), |n: usize| -> rquickjs::Result<Vec<u8>> {
+        // Bounded: a script asking for a gigabyte of randomness is a bug, and the
+        // host should not oblige it.
+        let n = n.min(4096);
+        let mut bytes = vec![0u8; n];
+        getrandom::getrandom(&mut bytes).map_err(|_| rquickjs::Error::Unknown)?;
+        Ok(bytes)
+    })
+    .map_err(|e| format!("host API: {e:?}"))?;
+    clx.set("random", random)
+        .map_err(|e| format!("host API: {e:?}"))?;
+
+    // Whatever followed the script path in the binding, so one script can serve
+    // several gestures (`genpw.js dpw` and `genpw.js qpw`).
+    clx.set("args", args.to_vec())
+        .map_err(|e| format!("host API: {e:?}"))?;
+
+    ctx.globals()
+        .set("clx", clx)
+        .map_err(|e| format!("host API: {e:?}"))
+}
+
 /// Turn a failed `eval` into something worth showing a person.
 ///
 /// `rquickjs` returns `Error::Exception` as a marker — the thrown value stays in
