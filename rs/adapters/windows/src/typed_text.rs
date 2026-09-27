@@ -213,16 +213,51 @@ fn character_for(event: &Typed) -> Option<char> {
 mod tests {
     use super::*;
 
-    /// A layout-dependent call, so the only thing worth asserting here is that it
-    /// does not panic and refuses non-character keys.
+    /// An unmodified key press, which is what the hook hands the worker for
+    /// ordinary typing.
+    fn typed(vk: u16) -> Typed {
+        Typed {
+            vk,
+            scan: 0,
+            hwnd: 0,
+            shift: false,
+            ctrl: false,
+            alt: false,
+            caps: false,
+        }
+    }
+
+    /// Layout-dependent, so this asserts only what holds on every layout: keys
+    /// that carry no printable character yield nothing. Arrow and function keys
+    /// give `ToUnicodeEx` nothing at all; Return does produce `\r`, and the point
+    /// is that it is filtered out rather than buffered as text — a hotstring must
+    /// never be matched across a newline.
     #[test]
     fn control_keys_produce_no_character() {
-        // VK_LEFT / VK_F1 / VK_RETURN carry no printable character.
         for vk in [0x25u16, 0x70, 0x0D] {
-            assert!(
-                character_for(vk, 0).is_none_or(|c| !c.is_control()),
-                "vk {vk:#x} produced a control character"
+            assert_eq!(
+                character_for(&typed(vk)),
+                None,
+                "vk {vk:#x} should carry no printable character"
             );
+        }
+    }
+
+    /// The modifiers travel with the event because the worker cannot read them:
+    /// `GetKeyboardState` describes the calling thread's queue, and the worker
+    /// pumps none. If this ever regresses, `Shift+3` decodes as `3` and `#DPW#`
+    /// arrives as `3dpw3`, which is exactly how the first version failed — so
+    /// assert the two decode differently rather than trusting the comment.
+    #[test]
+    fn shift_is_taken_from_the_event_not_the_thread() {
+        // VK_3 on any layout: the shifted and unshifted characters differ.
+        let plain = character_for(&typed(0x33));
+        let shifted = character_for(&Typed {
+            shift: true,
+            ..typed(0x33)
+        });
+        if let (Some(p), Some(s)) = (plain, shifted) {
+            assert_ne!(p, s, "Shift made no difference — modifiers are being lost");
         }
     }
 

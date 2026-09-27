@@ -405,16 +405,29 @@ mod step_cap_tests {
         model.press_right();
         // No release and no repeat ever arrives — the Magnifier/Task Manager
         // case, where the window we cycled into swallows the keyboard.
-        spin(&model, 120);
-        let after_cap = emitted.load(Ordering::Relaxed);
-        assert!(after_cap <= 8, "emitted {after_cap} steps, cap was 8");
-        // And it stays quiet: the flood is bounded, not merely slowed. (The
-        // model is still *live* — see `set_max_steps` — the time ceiling and the
-        // watchdog are what finally retire it.)
+        //
+        // The bound is the entire point, so check it continuously: the budget
+        // must not be exceeded at any moment, not merely by the time we look.
+        for _ in 0..8 {
+            spin(&model, 60);
+            let n = emitted.load(Ordering::Relaxed);
+            assert!(n <= 8, "emitted {n} steps, cap was 8");
+        }
+        // And it has gone quiet rather than merely slowed: a further long spin
+        // adds nothing. (The model is still *live* — see `set_max_steps` — the
+        // time ceiling and the watchdog are what finally retire it.)
+        //
+        // Sampled after the loop above, not before it. How many of the eight
+        // steps land in any particular 300 ms is a property of the machine, and
+        // an earlier version of this test compared against a sample taken after
+        // the first spin alone: it passed on Windows and macOS and failed on a
+        // Linux runner that had reached only seven by then, reporting a leak
+        // where the cap had in fact been honoured.
+        let settled = emitted.load(Ordering::Relaxed);
         spin(&model, 120);
         assert_eq!(
             emitted.load(Ordering::Relaxed),
-            after_cap,
+            settled,
             "an exhausted budget must not leak further steps"
         );
     }
