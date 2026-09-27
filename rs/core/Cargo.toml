@@ -12,13 +12,6 @@ path = "src/lib.rs"
 # STT-dependent bins (sherpa-onnx / whisper-rs). Gated via required-features
 # so default builds (no `stt`) and no-default-features Windows builds don't
 # try to compile them and fail with "module local_sherpa configured out".
-# Password generator plugin. Deliberately without `required-features`: it is pure
-# std plus the OS CSPRNG and must build on every platform, which is the whole
-# point of it being a plugin rather than a clx feature.
-[[bin]]
-name = "clx-genpw"
-path = "src/bin/clx-genpw.rs"
-
 [[bin]]
 name = "stt-bench"
 path = "src/bin/stt-bench.rs"
@@ -80,7 +73,7 @@ pitch-detection = "0.3"
 mp3lame-encoder = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-# OS CSPRNG, for the clx-genpw plugin. Lives here rather than in the shared
+# OS CSPRNG, exposed to scripts as `clx.random`. Lives here rather than in the shared
 # dependency list because wasm32 would want a JS shim the browser adapter has no
 # reason to carry.
 getrandom    = "0.2"
