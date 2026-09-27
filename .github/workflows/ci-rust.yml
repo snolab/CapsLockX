@@ -12,23 +12,40 @@ on:
       - "rs/**"
       - ".github/workflows/ci-rust.yml"
 
-# The platform jobs run unconditionally on a push to a release branch, and are
-# filtered only on pull requests. That asymmetry is deliberate and was paid for.
+# Which platform jobs run is decided by what a push actually changed. Getting that
+# comparison right, and making it fail in the safe direction, took two attempts.
 #
-# `paths-filter` answers "what changed relative to a base", and on a push it takes
-# the base to be the default branch — it logs `Searching for merge-base main...beta`.
-# This project pushes `beta` and then fast-forwards `main` to the same commit, so by
-# the time the filter ran, main and beta were identical, every filter came out
-# `false`, and all three platform jobs skipped. Every push looked like a green CI
-# run in which nothing was compiled.
+# `paths-filter` answers "what changed relative to a base", and left to itself on a
+# push it takes the base to be the default branch — it logs `Searching for merge-base
+# main...beta`. This project pushes `beta` and then fast-forwards `main` to the same
+# commit, so by the time the filter ran the two were identical, every filter came out
+# `false`, and all three platform jobs skipped. Every push produced a green CI run in
+# which nothing had been compiled.
 #
-# That is bad on its own and worse downstream: release-schedule.yml refuses to
-# publish without green CI on the exact commit, and a run of skipped jobs reports no
-# failures. The guard would have waved through commits nothing had tested.
+# Worse downstream: release-schedule.yml refuses to publish without green CI on the
+# exact commit, and a run of skipped jobs reports no failures, so the guard would have
+# waved through commits nothing had tested. (That guard now also requires at least one
+# job to have actually succeeded — belt as well as braces.)
 #
-# On a pull request the filter is asking the right question against the right base,
-# so the fan-out saving is kept there. On a push to main/beta/prod — the commits
-# that actually get released — everything is tested, every time.
+# The base is therefore given explicitly as `github.event.before`: the commit the push
+# moved off, so the diff is exactly what the push introduced. On a pull request it is
+# left empty, because there the action's own default — the PR's base branch — is the
+# right question.
+#
+# Two ways that can still go wrong, both handled:
+#
+#   * `before` is forty zeroes when a branch is first pushed, and points at an
+#     orphaned commit after a force-push. Either way the diff cannot be computed.
+#   * A failed filter step yields empty outputs, and a `needs:`-gated job reading an
+#     empty output skips — silently reproducing the exact bug above.
+#
+# So the step is `continue-on-error` and the job conditions test `!= 'false'` rather
+# than `== 'true'`. A job runs unless the filter positively said its paths were
+# untouched; anything else — unknown, empty, errored — builds. The filter can only
+# ever remove work when it is confident, which is the only safe polarity for the
+# thing a release gate depends on.
+#
+# `fetch-depth: 0` because the base commit has to be present locally to diff against.
 jobs:
   # Detect which parts of the rs/ tree changed. Adapter-only PRs skip the
   # other platforms; core / workspace-root changes still fan out to all
@@ -43,9 +60,16 @@ jobs:
       macos: ${{ steps.filter.outputs.macos }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: dorny/paths-filter@v3
         id: filter
+        continue-on-error: true
         with:
+          # On a push, diff against the commit the push moved off. Empty on a pull
+          # request so the action uses the PR base, and empty for the forty-zero
+          # `before` of a branch's first push, where there is nothing to diff.
+          base: ${{ github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000' && github.event.before || '' }}
           filters: |
             core:
               - 'rs/core/**'
@@ -64,7 +88,7 @@ jobs:
     name: Build & Test (windows-latest / x86_64-pc-windows-msvc)
     runs-on: windows-latest
     needs: changes
-    if: ${{ github.event_name == 'push' || needs.changes.outputs.core == 'true' || needs.changes.outputs.windows == 'true' }}
+    if: ${{ needs.changes.outputs.core != 'false' || needs.changes.outputs.windows != 'false' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +133,7 @@ jobs:
     name: Build & Test (ubuntu-latest / x86_64-unknown-linux-gnu)
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ github.event_name == 'push' || needs.changes.outputs.core == 'true' || needs.changes.outputs.linux == 'true' }}
+    if: ${{ needs.changes.outputs.core != 'false' || needs.changes.outputs.linux != 'false' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -149,7 +173,7 @@ jobs:
     name: Build & Test (macos-latest / aarch64-apple-darwin)
     runs-on: macos-latest
     needs: changes
-    if: ${{ github.event_name == 'push' || needs.changes.outputs.core == 'true' || needs.changes.outputs.macos == 'true' }}
+    if: ${{ needs.changes.outputs.core != 'false' || needs.changes.outputs.macos != 'false' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -186,7 +210,7 @@ jobs:
     name: Coverage report (capslockx-core, lib only)
     runs-on: ubuntu-latest
     needs: [changes, build-linux]
-    if: ${{ github.event_name == 'push' || needs.changes.outputs.core == 'true' }}
+    if: ${{ needs.changes.outputs.core != 'false' }}
 
     steps:
       - uses: actions/checkout@v4

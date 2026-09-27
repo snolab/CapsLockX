@@ -192,33 +192,87 @@ jobs:
           fi
           echo "last=$last" >> "$GITHUB_OUTPUT"
 
-      # Guard 2: is CI green on exactly this commit? A red or missing run means we
-      # do not know, and "we do not know" is not a reason to publish.
-      - name: Require green CI on this commit
+      # Guard 2: has this *code* been tested? Not "is there a run on this SHA",
+      # which is a different and much worse question.
+      #
+      # ci-rust only triggers on `rs/**` and its own workflow file, so a tip that is
+      # a docs, lab or submodule commit has no run of its own and never will. An
+      # earlier version demanded a run on the tip and would have blocked the first
+      # real release: beta's tip was a submodule bump, and the check-runs API
+      # returned an empty list for it. "No evidence" was being treated as identical
+      # to "bad evidence", and the release simply stopped.
+      #
+      # So: walk back to the newest ancestor with a genuinely green ci-rust result,
+      # then require that nothing ci-rust gates differs between there and here. If
+      # any of `rs/` changed, that run does not cover this code and we refuse. If it
+      # is byte-identical, the tests that passed there tested exactly this code, and
+      # the tip carrying a lab page instead of a Rust change is not a reason to
+      # withhold a release.
+      #
+      # Red on the tip itself is still fatal, and still checked first: an ancestor
+      # being green does not excuse a failure introduced on top of it.
+      - name: Require green CI for this code
         if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true' && steps.token.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha="$(git rev-parse HEAD)"
-          state="$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs" \
-            --jq '[.check_runs[] | select(.name | test("ci-rust|test"; "i")) | .conclusion] | unique')"
-          echo "check conclusions: $state"
-          if [ "$state" = "[]" ]; then
-            echo "no CI run found for $sha — refusing to release blind" >&2
+          # Paths ci-rust gates — kept in step with that workflow's own `on.paths`.
+          gated="rs .github/workflows/ci-rust.yml"
+
+          conclusions() {
+            gh api "repos/${{ github.repository }}/commits/$1/check-runs" \
+              --jq '[.check_runs[] | select(.name | test("ci-rust|test"; "i")) | .conclusion] | unique' \
+              2>/dev/null || echo '[]'
+          }
+
+          tested=""
+          for candidate in $(git rev-list -n 40 HEAD); do
+            state="$(conclusions "$candidate")"
+            short="$(git rev-parse --short "$candidate")"
+            if echo "$state" | grep -qE 'failure|cancelled|timed_out'; then
+              # Fatal on the tip; on an ancestor, keep looking further back — a
+              # later commit may have reverted whatever broke it, and the tree
+              # comparison below is what decides whether that is so.
+              if [ "$candidate" = "$sha" ]; then
+                echo "CI is red on $short — refusing to release" >&2
+                exit 1
+              fi
+              echo "$short: red, looking further back"
+              continue
+            fi
+            # A run whose jobs all *skipped* has no failures either, and an earlier
+            # version of this step accepted that. It was not hypothetical: a path
+            # filter comparing beta against an identical main marked every platform
+            # job skipped, so each push produced a run that compiled nothing and
+            # failed at nothing. Absence of failure is not evidence of success.
+            if echo "$state" | grep -q 'success'; then
+              tested="$candidate"
+              echo "$short: green"
+              break
+            fi
+            echo "$short: no conclusive ci-rust result"
+          done
+
+          if [ -z "$tested" ]; then
+            echo "no green ci-rust run on any of the last 40 commits — refusing to" >&2
+            echo "release code that nothing has demonstrably tested." >&2
             exit 1
           fi
-          if echo "$state" | grep -qE 'failure|cancelled|timed_out'; then
-            echo "CI is not green for $sha — refusing to release" >&2
-            exit 1
+
+          if [ "$tested" = "$sha" ]; then
+            echo "CI is green on the commit being released."
+            exit 0
           fi
-          # A run whose jobs all *skipped* has no failures either, and this step
-          # used to accept it. That was not hypothetical: a path filter comparing
-          # beta against an identical main marked every platform job skipped, so
-          # each push produced a CI run in which nothing was compiled and nothing
-          # failed. Absence of failure is not evidence of success, so require some.
-          if ! echo "$state" | grep -q 'success'; then
-            echo "no CI job actually succeeded for $sha — every run was skipped or" >&2
-            echo "inconclusive, so nothing has tested this commit. Refusing." >&2
+
+          if git diff --quiet "$tested" "$sha" -- $gated; then
+            echo "nothing ci-rust gates has changed since $(git rev-parse --short "$tested"),"
+            echo "which is green — that run covers this code."
+          else
+            echo "files ci-rust gates changed after the last green run" >&2
+            echo "($(git rev-parse --short "$tested")), and this commit has no run of" >&2
+            echo "its own. Refusing to release untested code:" >&2
+            git --no-pager diff --stat "$tested" "$sha" -- $gated >&2
             exit 1
           fi
 
