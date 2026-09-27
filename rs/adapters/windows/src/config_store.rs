@@ -230,3 +230,37 @@ pub fn save(cfg: &FullConfig) {
         let _ = std::fs::write(path, json);
     }
 }
+
+/// Where the user's gesture bindings live: `%APPDATA%\CapsLockX\bindings.clx`.
+///
+/// A separate file from `config.json` on purpose. config.json is a typed struct
+/// that clx serialises; bindings are a list the user edits by hand, and mixing
+/// hand-edited lines into a file that gets rewritten programmatically is how
+/// comments and formatting get eaten.
+pub fn bindings_path() -> std::path::PathBuf {
+    config_path().with_file_name("bindings.clx")
+}
+
+/// Read and parse the bindings file. Missing file is not an error — most people
+/// will never create one.
+pub fn load_bindings() -> capslockx_core::bindings::Bindings {
+    let path = bindings_path();
+    match std::fs::read_to_string(&path) {
+        Ok(text) => {
+            let parsed = capslockx_core::bindings::Bindings::parse(&text);
+            // Problems are reported, never swallowed: a binding that silently does
+            // nothing is the most annoying possible outcome, and the user cannot
+            // see this file being parsed.
+            for (line, why) in &parsed.problems {
+                eprintln!("[CLX] bindings: {}:{line}: {why}", path.display());
+            }
+            eprintln!(
+                "[CLX] bindings: {} loaded from {}",
+                parsed.len(),
+                path.display()
+            );
+            parsed
+        }
+        Err(_) => capslockx_core::bindings::Bindings::default(),
+    }
+}

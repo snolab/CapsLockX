@@ -529,7 +529,19 @@ unsafe fn keyboard_proc_inner(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> 
 
     match resp {
         CoreResponse::Suppress => LRESULT(1),
-        CoreResponse::PassThrough => call_next(n_code, w_param, l_param),
+        CoreResponse::PassThrough => {
+            // Hotstrings watch what the user actually types, so only keys that
+            // reach the app count — a suppressed CLX gesture never appears in the
+            // document and must not appear in the buffer either.
+            //
+            // This is a channel push and nothing else. The layout lookup, the
+            // matching and the backspaces all happen on the watcher's own thread,
+            // because a hook callback is the one place none of that belongs.
+            if pressed {
+                crate::typed_text::observe(kb.vkCode as u16, kb.scanCode);
+            }
+            call_next(n_code, w_param, l_param)
+        }
     }
 }
 

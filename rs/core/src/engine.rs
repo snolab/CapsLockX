@@ -44,6 +44,8 @@ pub struct ClxEngine {
     /// longer answer this — and answering it wrong makes the unlock tap leak a
     /// real CapsLock (and its LED) into the focused app.
     entered_from_locked: AtomicBool,
+    /// User-defined gestures. Empty until the adapter loads a bindings file.
+    bindings: std::sync::RwLock<crate::bindings::Bindings>,
 }
 
 impl ClxEngine {
@@ -67,6 +69,7 @@ impl ClxEngine {
             trigger_bypassed: AtomicBool::new(false),
             chord_pending: AtomicBool::new(false),
             entered_from_locked: AtomicBool::new(false),
+            bindings: std::sync::RwLock::new(crate::bindings::Bindings::default()),
         })
     }
 
@@ -189,6 +192,17 @@ impl ClxEngine {
                 self.fn_acted.store(true, Ordering::Relaxed);
                 let mods = self.compute_mods();
                 if self.modules.on_key_down(code, &mods) {
+                    return CoreResponse::Suppress;
+                }
+                // User bindings, after the built-ins have had their say. A binding
+                // for `h` therefore never fires, because Space+H is cursor-left —
+                // silently shadowing a built-in gesture would be worse than the
+                // binding appearing not to work.
+                //
+                // Handled here rather than in `Modules` because this is the only
+                // layer that knows *which* trigger is held, and `space+p` versus
+                // `capslock+p` needs that.
+                if self.run_binding(code) {
                     return CoreResponse::Suppress;
                 }
             } else if pressed && is_repeat && self.modules.is_mapped_key(code) {
@@ -536,6 +550,72 @@ impl ClxEngine {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
+    /// Replace the user's bindings. Called by the adapter at startup, and again
+    /// whenever the file changes.
+    pub fn set_bindings(&self, bindings: crate::bindings::Bindings) {
+        *self.bindings.write().unwrap() = bindings;
+    }
+
+    /// Run whatever is bound to `code` under the trigger currently held.
+    ///
+    /// `true` means a binding claimed the key, so the caller suppresses it.
+    fn run_binding(&self, code: KeyCode) -> bool {
+        use crate::bindings::{Action, Trigger};
+
+        // Which trigger is down decides whether `space+p` or `capslock+p` applies.
+        let held = match *self.trigger_key.lock().unwrap() {
+            Some(KeyCode::Space) => Trigger::Space,
+            Some(KeyCode::CapsLock) => Trigger::CapsLock,
+            // Locked CLX mode has no trigger held; a bare binding still applies.
+            _ => Trigger::Any,
+        };
+
+        let action = {
+            let bindings = self.bindings.read().unwrap();
+            match bindings.lookup(code, held) {
+                Some(action) => action.clone(),
+                None => return false,
+            }
+        };
+
+        // Off the hook thread: a plugin spawns a process and streams effects, and
+        // none of that belongs inside a keyboard callback.
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let platform = Arc::clone(&self.platform);
+            let spawned = std::thread::Builder::new()
+                .name("clx-binding".into())
+                .spawn(move || match action {
+                    Action::Plugin { command, args } => {
+                        match crate::plugin::run(&command, &args, &*platform) {
+                            crate::plugin::Outcome::Exited(0) => {}
+                            crate::plugin::Outcome::Exited(code) => {
+                                eprintln!("[CLX] binding: {command} exited with {code}")
+                            }
+                            crate::plugin::Outcome::NotStarted(why) => {
+                                eprintln!("[CLX] binding: {why}")
+                            }
+                        }
+                    }
+                    Action::Script { path, args } => {
+                        match crate::script::run(&path, &args, &*platform) {
+                            crate::script::Outcome::Performed(_) => {}
+                            // Said out loud, because a script that quietly does
+                            // nothing is indistinguishable from a broken binding.
+                            crate::script::Outcome::Failed(why) => {
+                                eprintln!("[CLX] script {path}: {why}")
+                            }
+                        }
+                    }
+                })
+                .is_ok();
+            if !spawned {
+                eprintln!("[CLX] binding: could not spawn a thread to run it");
+            }
+        }
+        true
+    }
+
     fn store_trigger(&self, code: KeyCode) {
         *self.trigger_key.lock().unwrap() = Some(code);
         self.fn_acted.store(false, Ordering::Relaxed);
@@ -664,6 +744,63 @@ mod tests {
             "Space+H must not also type a space: {:?}",
             platform.calls()
         );
+    }
+
+    /// A bound key is claimed, which is what makes it reachable at all — before
+    /// this, a plugin could only be run from a shell.
+    #[test]
+    fn a_bound_key_is_claimed_from_the_app() {
+        let (engine, _p) = engine_with_space();
+        engine.set_bindings(crate::bindings::Bindings::parse(
+            "p plugin definitely-not-a-real-program-xyz",
+        ));
+        engine.on_key_event(KeyCode::Space, true);
+        assert_eq!(
+            engine.on_key_event(KeyCode::P, true),
+            CoreResponse::Suppress,
+            "a bound key must not also reach the focused app"
+        );
+    }
+
+    /// Unbound keys are untouched: binding `p` must not make `o` disappear.
+    #[test]
+    fn an_unbound_key_still_passes_through() {
+        let (engine, _p) = engine_with_space();
+        engine.set_bindings(crate::bindings::Bindings::parse("p plugin whatever"));
+        engine.on_key_event(KeyCode::Space, true);
+        assert_eq!(
+            engine.on_key_event(KeyCode::O, true),
+            CoreResponse::Suppress,
+            "O is a built-in (page nav), so it is claimed by that, not by bindings"
+        );
+    }
+
+    /// Built-ins win. Binding `h` must not steal cursor-left, because a gesture
+    /// that silently stops working is worse than a binding that never fires.
+    #[test]
+    fn a_binding_cannot_shadow_a_builtin() {
+        let (engine, platform) = engine_with_space();
+        engine.set_bindings(crate::bindings::Bindings::parse(
+            "h plugin definitely-not-a-real-program-xyz",
+        ));
+        crate::acc_model::set_external_tick(true);
+        engine.on_key_event(KeyCode::Space, true);
+        engine.on_key_event(KeyCode::H, true);
+        // Cursor-left is AccModel-driven, so it needs real elapsed time before it
+        // emits anything — one tick at dt≈0 produces nothing.
+        engine.tick();
+        for _ in 0..5 {
+            std::thread::sleep(Duration::from_millis(15));
+            engine.tick();
+        }
+        // Cursor-left still happened, which means `edit` claimed H before the
+        // binding layer was consulted.
+        assert!(
+            platform.count(|c| matches!(c, Call::KeyDown(KeyCode::Left))) > 0,
+            "Space+H must still be cursor-left: {:?}",
+            platform.calls()
+        );
+        engine.emergency_stop();
     }
 
     fn engine_with_space() -> (Arc<ClxEngine>, Arc<MockPlatform>) {

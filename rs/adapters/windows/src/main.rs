@@ -18,6 +18,7 @@ mod raw_input;
 mod release_state;
 mod self_update;
 mod shm;
+mod typed_text;
 mod vd_api;
 mod vk;
 
@@ -339,6 +340,30 @@ fn main() {
                 }
                 return;
             }
+            // Show what the bindings file parsed to, and what it could not.
+            //
+            // Worth a subcommand because the alternative is a user editing a file
+            // and getting no signal at all: a mistyped line simply never fires,
+            // which is indistinguishable from the feature being broken.
+            "bindings" => {
+                let path = config_store::bindings_path();
+                println!("bindings file: {}", path.display());
+                if !path.exists() {
+                    println!("  (does not exist — create it to bind gestures)");
+                    println!("\nexample:");
+                    println!("  # trigger+key   what to run");
+                    println!("  p              plugin clx-genpw dpw");
+                    println!("  space+;        plugin clx-genpw qpw");
+                    return;
+                }
+                let parsed = config_store::load_bindings();
+                println!(
+                    "  {} binding(s), {} problem(s)",
+                    parsed.len(),
+                    parsed.problems.len()
+                );
+                return;
+            }
             "vd-test" => {
                 vd_api::log_line("[vd_api] vd-test");
                 vd_api::dump();
@@ -454,6 +479,13 @@ fn main() {
     // than guessed at.
 
     hook::init_engine(cfg.clone().into_clx_config());
+    // User gestures. Absent for most people; cheap to load and reported either way
+    // so a typo in the file is visible rather than a binding that does nothing.
+    let user_bindings = config_store::load_bindings();
+    // Typed triggers (`#DPW#`) watch what reaches the app; key bindings are
+    // dispatched by the engine. Same file, two mechanisms.
+    typed_text::start(user_bindings.hotstrings());
+    hook::engine().set_bindings(user_bindings);
     hook::debug_log("[main] stage: engine ready");
 
     // Create shared memory for IPC with AHK before installing the hook.
