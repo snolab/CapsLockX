@@ -220,9 +220,13 @@ jobs:
           # Paths ci-rust gates — kept in step with that workflow's own `on.paths`.
           gated="rs .github/workflows/ci-rust.yml"
 
+          # `.status` as the fallback, not just `.conclusion`: a running job has a
+          # null conclusion, so reading conclusions alone makes a half-finished run
+          # look like a partial success. One green Linux job while Windows is still
+          # compiling is not a tested commit.
           conclusions() {
             gh api "repos/${{ github.repository }}/commits/$1/check-runs" \
-              --jq '[.check_runs[] | select(.name | test("ci-rust|test"; "i")) | .conclusion] | unique' \
+              --jq '[.check_runs[] | select(.name | test("ci-rust|test"; "i")) | (.conclusion // .status)] | unique' \
               2>/dev/null || echo '[]'
           }
 
@@ -230,6 +234,15 @@ jobs:
           for candidate in $(git rev-list -n 40 HEAD); do
             state="$(conclusions "$candidate")"
             short="$(git rev-parse --short "$candidate")"
+            # Still building. On the tip, stop: publishing on a partial result is
+            # the same error as publishing on a skipped one, and a nightly that
+            # happens to fire minutes after a push should simply wait for tomorrow
+            # rather than guess. On an ancestor it is merely inconclusive.
+            if [ "$candidate" = "$sha" ] && echo "$state" | grep -qE 'in_progress|queued|pending'; then
+              echo "ci-rust is still running on $short — not releasing a commit whose" >&2
+              echo "build has not finished. The next scheduled run will pick it up." >&2
+              exit 1
+            fi
             if echo "$state" | grep -qE 'failure|cancelled|timed_out'; then
               # Fatal on the tip; on an ancestor, keep looking further back — a
               # later commit may have reverted whatever broke it, and the tree
