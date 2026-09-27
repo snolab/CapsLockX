@@ -2,12 +2,12 @@ name: ci-rust
 
 on:
   push:
-    branches: [main]
+    branches: [main, beta, prod]
     paths:
       - "rs/**"
       - ".github/workflows/ci-rust.yml"
   pull_request:
-    branches: [main]
+    branches: [main, beta, prod]
     paths:
       - "rs/**"
       - ".github/workflows/ci-rust.yml"

@@ -1,0 +1,214 @@
+# Scheduled releases: beta nightly, prod weekly.
+#
+# Neither publishes anything itself. Each one bumps the version, commits it and
+# pushes a `v*` tag; the existing tag-triggered workflows (npm-publish,
+# release-rust, choco-push, package-macos-app) do the shipping. One place decides
+# *when* to release, four places decide *how*, and neither has to know about the
+# other.
+#
+# Three guards, because an unattended publish to everyone's `npm i` deserves them:
+#
+#   1. Nothing new, no release. An empty version bump is noise that costs users a
+#      download and tells them nothing.
+#   2. CI must be green on the commit being released. Automating releases off an
+#      untested branch is automating the shipping of untested code.
+#   3. Prod promotes what beta has already been running, rather than cutting from
+#      an untested tree. A weekly stable release whose code nobody has used for a
+#      week is a nightly with extra confidence and no extra evidence.
+#
+# Manual runs are allowed (`workflow_dispatch`) so a release can be cut on demand
+# without waiting for the clock, and `dry_run` shows what would happen.
+#
+# REQUIRES a `RELEASE_TOKEN` secret (a PAT with `contents: write`). Tags pushed
+# with the default `GITHUB_TOKEN` deliberately do NOT trigger other workflows, so
+# with it the tag appears and nothing publishes — which looks exactly like a
+# broken release. The run fails early and says so rather than leaving that puzzle.
+
+name: release-schedule
+
+on:
+  schedule:
+    # 03:17 UTC daily — beta. Off the hour, because every project in the world
+    # schedules on the hour and GitHub's runners queue accordingly.
+    - cron: "17 3 * * *"
+    # 09:23 UTC Monday — prod. Early in the week, so a bad stable release is
+    # found on a working day rather than discovered on a Saturday.
+    - cron: "23 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Which channel to release"
+        type: choice
+        options: [beta, prod]
+        default: beta
+      dry_run:
+        description: "Work out the version and stop, without tagging"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'snolab/CapsLockX'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide the channel
+        id: what
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            channel="${{ inputs.channel }}"
+            dry="${{ inputs.dry_run }}"
+          elif [ "${{ github.event.schedule }}" = "23 9 * * 1" ]; then
+            channel=prod
+            dry=false
+          else
+            channel=beta
+            dry=false
+          fi
+          branch=$channel
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch"   >> "$GITHUB_OUTPUT"
+          echo "dry=$dry"         >> "$GITHUB_OUTPUT"
+          echo "releasing $channel from $branch (dry_run=$dry)"
+
+      - name: Refuse without a push token
+        if: steps.what.outputs.dry != 'true'
+        run: |
+          if [ -z "${{ secrets.RELEASE_TOKEN }}" ]; then
+            echo "RELEASE_TOKEN is not set." >&2
+            echo "A tag pushed with GITHUB_TOKEN does not trigger the publish" >&2
+            echo "workflows, so the release would silently ship nothing." >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.what.outputs.branch }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+      # Guard 1: has anything actually changed since the last release on this
+      # channel? `git describe` finds the most recent matching tag reachable from
+      # here, so this compares against what this channel last shipped.
+      - name: Anything to release?
+        id: changed
+        run: |
+          channel="${{ steps.what.outputs.channel }}"
+          if [ "$channel" = "prod" ]; then
+            pattern='v[0-9]*.[0-9]*.[0-9]*'
+          else
+            pattern='v*-beta.*'
+          fi
+          last="$(git describe --tags --abbrev=0 --match "$pattern" 2>/dev/null || true)"
+          if [ -z "$last" ]; then
+            echo "no previous $channel tag — releasing the first one"
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$(git log --oneline "$last"..HEAD)" ]; then
+            echo "$(git log --oneline "$last"..HEAD | wc -l) commit(s) since $last"
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "nothing new since $last — skipping"
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "last=$last" >> "$GITHUB_OUTPUT"
+
+      # Guard 2: is CI green on exactly this commit? A red or missing run means we
+      # do not know, and "we do not know" is not a reason to publish.
+      - name: Require green CI on this commit
+        if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          state="$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs" \
+            --jq '[.check_runs[] | select(.name | test("ci-rust|test"; "i")) | .conclusion] | unique')"
+          echo "check conclusions: $state"
+          if [ "$state" = "[]" ]; then
+            echo "no CI run found for $sha — refusing to release blind" >&2
+            exit 1
+          fi
+          if echo "$state" | grep -qE 'failure|cancelled|timed_out'; then
+            echo "CI is not green for $sha — refusing to release" >&2
+            exit 1
+          fi
+
+      # Guard 3, prod only: promote what beta has been running. Cutting stable from
+      # an unreleased tree would mean its first users are the public.
+      - name: Prod must promote a released beta
+        if: steps.what.outputs.channel == 'prod' && steps.changed.outputs.go == 'true'
+        run: |
+          if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/beta 2>/dev/null \
+             && ! git describe --tags --abbrev=0 --match 'v*-beta.*' >/dev/null 2>&1; then
+            echo "this commit has never been released as a beta — promote it first" >&2
+            exit 1
+          fi
+
+      # Left to npm's semver rather than hand-rolled, because the hand-rolled
+      # version was wrong: from a released 2.1.0 it produced `2.1.0-beta.N`, which
+      # semver orders *below* 2.1.0 — a beta that looks older than the release it
+      # follows, and npm would have refused it or worse, accepted it.
+      #
+      #   2.1.0        + beta -> preminor  -> 2.2.0-beta.0   (opens the next line)
+      #   2.2.0-beta.4 + beta -> prerelease -> 2.2.0-beta.5
+      #   2.2.0-beta.4 + prod -> patch      -> 2.2.0         (drops the suffix)
+      #   2.2.0        + prod -> patch      -> 2.2.1
+      - name: Work out the next version
+        id: next
+        if: steps.changed.outputs.go == 'true'
+        run: |
+          current="$(node -p 'require("./package.json").version')"
+          if [ "${{ steps.what.outputs.channel }}" = "prod" ]; then
+            verb="patch"
+          elif [ "$current" = "${current%%-*}" ]; then
+            verb="preminor --preid beta"
+          else
+            verb="prerelease --preid beta"
+          fi
+          next="$(npm version $verb --no-git-tag-version --allow-same-version | tail -1)"
+          next="${next#v}"
+          # A tag already there means a previous run half-finished. Stop rather than
+          # force anything: the history is easier to read than to repair.
+          if git rev-parse -q --verify "refs/tags/v$next" >/dev/null; then
+            echo "v$next already exists — a previous release may have half-run" >&2
+            exit 1
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "$current -> $next  (npm version $verb)"
+
+      - name: Stop here (dry run)
+        if: steps.what.outputs.dry == 'true'
+        run: |
+          echo "would release ${{ steps.next.outputs.next }} from ${{ steps.what.outputs.branch }}"
+          echo "(previous: ${{ steps.changed.outputs.last }}, go=${{ steps.changed.outputs.go }})"
+
+      # package.json and the Cargo manifests carry the same version, and a release
+      # where they disagree is one where `clx --version` lies about what it is.
+      - name: Bump, commit and tag
+        if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true'
+        env:
+          NEXT: ${{ steps.next.outputs.next }}
+        run: |
+          git config user.name "capslockx-release"
+          git config user.email "noreply@github.com"
+          # package.json already carries $NEXT: the version step wrote it while
+          # working the number out. Setting it again is harmless and makes this step
+          # correct on its own if the two are ever reordered.
+          npm version "$NEXT" --no-git-tag-version --allow-same-version
+          for manifest in rs/core/Cargo.toml rs/adapters/*/Cargo.toml; do
+            [ -f "$manifest" ] || continue
+            # Only the package's own version line, which is the first one.
+            perl -0pi -e 's/^version = "[^"]*"/version = "'"$NEXT"'"/m' "$manifest"
+          done
+          # Cargo.lock records workspace member versions too, so without this the
+          # tag ships manifests saying $NEXT and a lock still saying the old one —
+          # which any `--locked` build rejects. `--workspace` touches only our own
+          # packages, never dependency versions.
+          cargo update --workspace --quiet || echo "could not refresh Cargo.lock"
+          git add -A
+          git commit -m "chore(release): $NEXT"
+          git tag "v$NEXT"
+          git push origin "HEAD:${{ steps.what.outputs.branch }}"
+          git push origin "v$NEXT"
+          echo "tagged v$NEXT — the publish workflows take it from here"

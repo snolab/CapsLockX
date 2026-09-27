@@ -16,6 +16,43 @@ jobs:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
       - run: bun install
-      - run: npm publish
+
+      # Which npm dist-tag this version belongs on.
+      #
+      # This was a bare `npm publish`, which always publishes to `latest`. So a
+      # `v2.2.0-beta.1` tag pushed a prerelease to everyone running
+      # `npm i capslockx` — the opposite of what a beta channel is for, and silent.
+      #
+      # The version string decides, not the branch, so a tag cut from the wrong
+      # place cannot mislabel a release: anything with a `-` suffix is a
+      # prerelease and lands on that suffix's own tag (`beta`, `rc`, `dev`).
+      - name: Work out the dist-tag
+        id: channel
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          suffix="${version#*-}"
+          if [ "$suffix" = "$version" ]; then
+            tag=latest
+          else
+            # v2.2.0-beta.1 -> beta ; v2.2.0-rc.2 -> rc
+            tag="${suffix%%.*}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag"         >> "$GITHUB_OUTPUT"
+          echo "publishing $version to npm dist-tag '$tag'"
+
+      # Refuse rather than mislabel: a stable version reached by a prerelease tag
+      # (or the reverse) means the release was cut from the wrong place, and
+      # guessing which one was intended is how `latest` gets clobbered.
+      - name: Check the git tag agrees with the version
+        run: |
+          ref="${GITHUB_REF_NAME#v}"
+          version="${{ steps.channel.outputs.version }}"
+          if [ "$ref" != "$version" ]; then
+            echo "git tag $GITHUB_REF_NAME does not match package.json $version" >&2
+            exit 1
+          fi
+
+      - run: npm publish --tag "${{ steps.channel.outputs.tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
