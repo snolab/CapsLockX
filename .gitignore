@@ -73,3 +73,9 @@ rs/target-v3/
 # and rs/adapters/macos/src/bin/). Source is tracked, artifacts are not.
 /bin/clx-prompt
 /bin/clx-prompt-slint
+
+# Browser-automation scratch. These hold a text snapshot of every page visited,
+# so anything on screen at the time lands in them — including, if a credential
+# page is ever driven this way, a secret. Never committed.
+.playwright-cli/
+.playwright-cli-multi-tab/
