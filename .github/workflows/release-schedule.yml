@@ -12,9 +12,13 @@
 #      download and tells them nothing.
 #   2. CI must be green on the commit being released. Automating releases off an
 #      untested branch is automating the shipping of untested code.
-#   3. Prod promotes what beta has already been running, rather than cutting from
-#      an untested tree. A weekly stable release whose code nobody has used for a
-#      week is a nightly with extra confidence and no extra evidence.
+#   3. Prod promotes a commit that was actually released as a beta, rather than
+#      cutting from an untested tree. A weekly stable release whose code nobody
+#      has run is a nightly with extra confidence and no extra evidence.
+#
+# The prod run also *performs* that promotion — fast-forwarding the `prod` branch
+# to the newest released beta tag — because nothing else in the repository moves
+# that branch.
 #
 # Manual runs are allowed (`workflow_dispatch`) so a release can be cut on demand
 # without waiting for the clock, and `dry_run` shows what would happen.
@@ -99,11 +103,75 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
+      # Promotion, prod only — and the step without which the prod channel does not
+      # work at all. Nothing else moves the `prod` branch: not this workflow, not
+      # CI, not a merge. Left out, the weekly run cuts one release from wherever a
+      # human last left `prod` and then reports "nothing new since" every Monday
+      # for ever, which looks like a healthy schedule and ships nothing.
+      #
+      # What gets promoted is the newest *released beta tag*, not beta's tip. That
+      # is the only honest reading of "promote what beta has been running": beta's
+      # tip may be minutes old and have reached nobody, whereas a `v*-beta.*` tag
+      # was published to the beta dist-tag and has had at least a night to go
+      # wrong. It also replaces the old guard 3, which asked whether HEAD was an
+      # ancestor of `origin/beta` — true of any unreleased beta commit, so it
+      # admitted exactly the untested trees it was meant to keep out.
+      #
+      # Fast-forward only. A `prod` carrying commits of its own means someone
+      # hotfixed the branch directly, and quietly discarding that is the one
+      # outcome nobody wants; say so and stop instead.
+      - name: Promote the newest released beta
+        id: promote
+        if: steps.what.outputs.channel == 'prod'
+        run: |
+          # checkout@v4 fetched this branch and its tags; `beta` is a different ref
+          # and has to be asked for by name.
+          git fetch --tags --force origin '+refs/heads/beta:refs/remotes/origin/beta'
+          tag="$(git tag --list 'v*-beta.*' --sort=-v:refname --merged origin/beta | head -1)"
+          if [ -z "$tag" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::no v*-beta.* tag on beta yet — nothing has been through"
+            echo "the beta channel, so there is nothing to promote to prod"
+            exit 0
+          fi
+          # Three relations between `prod` and that tag, and they are not symmetric:
+          #
+          #   tag is ahead of prod   the normal case — fast-forward and release
+          #   tag is behind prod     prod already contains it. True right now, since
+          #                          the newest beta tag predates the last stable
+          #                          release: promoting would move prod *backwards*.
+          #                          Stand down; the next nightly beta tags a commit
+          #                          that is ahead, and Monday proceeds on its own.
+          #   diverged               only reachable by committing to `prod` directly.
+          #                          Discarding that quietly is the one unacceptable
+          #                          outcome, so this is the only case that fails.
+          target="$(git rev-parse "$tag^{commit}")"
+          if [ "$(git rev-parse HEAD)" = "$target" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "prod is already at $tag — nothing new to promote"
+          elif git merge-base --is-ancestor "$target" HEAD; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$tag is already contained in prod — waiting for a newer beta"
+          elif git merge-base --is-ancestor HEAD "$target"; then
+            echo "promoting prod: $(git rev-parse --short HEAD) -> $tag"
+            git merge --ff-only "$target"
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prod and $tag have diverged — prod carries commits the beta tag" >&2
+            echo "does not contain, so someone committed to the branch directly." >&2
+            echo "Promoting would discard them; resolve by hand." >&2
+            exit 1
+          fi
+
       # Guard 1: has anything actually changed since the last release on this
       # channel? `git describe` finds the most recent matching tag reachable from
       # here, so this compares against what this channel last shipped.
+      #
+      # Skipped when promotion found nothing: every later step keys off `go`, which
+      # is unset when this does not run, so the whole release stands down.
       - name: Anything to release?
         id: changed
+        if: steps.promote.outputs.ok != 'false'
         run: |
           channel="${{ steps.what.outputs.channel }}"
           if [ "$channel" = "prod" ]; then
@@ -141,17 +209,6 @@ jobs:
           fi
           if echo "$state" | grep -qE 'failure|cancelled|timed_out'; then
             echo "CI is not green for $sha — refusing to release" >&2
-            exit 1
-          fi
-
-      # Guard 3, prod only: promote what beta has been running. Cutting stable from
-      # an unreleased tree would mean its first users are the public.
-      - name: Prod must promote a released beta
-        if: steps.what.outputs.channel == 'prod' && steps.changed.outputs.go == 'true'
-        run: |
-          if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/beta 2>/dev/null \
-             && ! git describe --tags --abbrev=0 --match 'v*-beta.*' >/dev/null 2>&1; then
-            echo "this commit has never been released as a beta — promote it first" >&2
             exit 1
           fi
 
