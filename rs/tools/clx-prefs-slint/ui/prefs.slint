@@ -116,6 +116,7 @@ export component PrefsWindow inherits Window {
     in-out property <bool> use-insert;
     in-out property <bool> use-scroll-lock;
     in-out property <bool> use-ralt;
+    in-out property <bool> window-arrange-side-by-side;
     // Speeds
     in-out property <float> cursor-speed;
     in-out property <float> mouse-speed;
@@ -211,6 +212,22 @@ export component PrefsWindow inherits Window {
                         label: "Scroll (RF)"; min: 100; max: 3000;
                         value <=> root.scroll-speed;
                         changed => { root.changed(); }
+                    }
+                }
+            }
+
+            GroupBox {
+                title: "Window arrangement";
+                VerticalBox {
+                    CheckBox {
+                        text: "CLX+C: side by side (unchecked: stacked)";
+                        checked <=> root.window-arrange-side-by-side;
+                        toggled => { root.changed(); }
+                    }
+                    Text {
+                        text: "CLX+Shift+C uses the opposite mode.\nCLX+Alt+C swaps and saves, then arranges once.";
+                        font-size: 11px;
+                        wrap: word-wrap;
                     }
                 }
             }

@@ -1393,6 +1393,10 @@ pub fn perform_haptic_tap() {
 }
 
 impl Platform for MacPlatform {
+    fn arrange_preference_changed(&self) {
+        crate::prefs::save_arrange_preference();
+    }
+
     // ── Keyboard output ───────────────────────────────────────────────────────
 
     fn system_key_repeat_ms(&self) -> Option<u64> {

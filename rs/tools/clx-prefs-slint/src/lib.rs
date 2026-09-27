@@ -120,6 +120,7 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         win.set_cursor_speed(cfg_f32(&c, "cursor_speed", 60.0));
         win.set_mouse_speed(cfg_f32(&c, "mouse_speed", 5900.0));
         win.set_scroll_speed(cfg_f32(&c, "scroll_speed", 1500.0));
+        win.set_window_arrange_side_by_side(cfg_bool(&c, "window_arrange_side_by_side", false));
     }
 
     // About: which build this is and where it lives, so it's obvious when prefs
@@ -173,6 +174,7 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
             c["cursor_speed"] = json!(w.get_cursor_speed() as f64);
             c["mouse_speed"] = json!(w.get_mouse_speed() as f64);
             c["scroll_speed"] = json!(w.get_scroll_speed() as f64);
+            c["window_arrange_side_by_side"] = json!(w.get_window_arrange_side_by_side());
             save_config(&c);
         });
     }
@@ -187,6 +189,32 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
                 w.set_autostart(actual);
             }
         });
+    }
+
+    // Reflect CLX+Alt+C from the hook process while this window is open: that
+    // gesture swaps the arrange mode and saves it, so a checkbox showing the old
+    // value would be quietly lying. Polled rather than pushed because the writer
+    // is a different process and config.json is the channel between them.
+    //
+    // Held in a binding that lives until `run` returns — a dropped `Timer` stops.
+    let arrange_timer = slint::Timer::default();
+    {
+        let weak = win.as_weak();
+        let cfg = Rc::clone(&cfg);
+        arrange_timer.start(
+            slint::TimerMode::Repeated,
+            std::time::Duration::from_millis(500),
+            move || {
+                if let Some(w) = weak.upgrade() {
+                    let latest = load_config();
+                    let side_by_side = cfg_bool(&latest, "window_arrange_side_by_side", false);
+                    w.set_window_arrange_side_by_side(side_by_side);
+                    // Keep the in-memory copy in step, or the next save would write
+                    // back the stale value and undo the gesture.
+                    cfg.borrow_mut()["window_arrange_side_by_side"] = json!(side_by_side);
+                }
+            },
+        );
     }
 
     win.run()?;

@@ -11,6 +11,7 @@ use std::sync::Arc;
 pub struct WindowManagerModule {
     platform: Arc<dyn Platform>,
     cycle: AccModel2D,
+    state: Arc<ClxState>,
 }
 
 impl WindowManagerModule {
@@ -64,7 +65,11 @@ impl WindowManagerModule {
         let wd_platform = Arc::clone(&platform);
         cycle.set_watchdog(Arc::new(move || !wd_platform.foreground_captures_input()));
 
-        Self { platform, cycle }
+        Self {
+            platform,
+            cycle,
+            state,
+        }
     }
 
     pub fn apply_speeds(&self, s: &SpeedConfig) {
@@ -119,11 +124,26 @@ impl WindowManagerModule {
                 true
             }
             KeyCode::C => {
+                if mods.alt {
+                    {
+                        let mut cfg = self.state.config.write().unwrap();
+                        cfg.window_arrange_side_by_side = !cfg.window_arrange_side_by_side;
+                    }
+                    self.platform.arrange_preference_changed();
+                }
                 // arrange_windows iterates AX windows + animates resize — was
                 // taking 1.5–2s synchronously and tripping the CGEventTap
                 // 1s timeout, which fires emergency_stop and drops Space.
                 let p = Arc::clone(&self.platform);
-                let mode = if mods.shift {
+                let side_by_side = self
+                    .state
+                    .config
+                    .read()
+                    .unwrap()
+                    .window_arrange_side_by_side;
+                // Alt+C applies the new default once; Shift only inverts a
+                // regular arrange request, not the default-mode toggle.
+                let mode = if (mods.shift && !mods.alt) ^ side_by_side {
                     ArrangeMode::SideBySide
                 } else {
                     ArrangeMode::Stacked
@@ -226,6 +246,53 @@ mod tests {
         let (mock, module) = setup();
         assert!(module.on_key_down(KeyCode::Period, &mods(false, false, false)));
         assert_eq!(mock.wait_calls(&[Call::Restart]), vec![Call::Restart]);
+    }
+
+    #[test]
+    fn alt_c_swaps_both_bindings_and_second_press_restores_them() {
+        let (mock, module) = setup();
+        for side_by_side in [true, false] {
+            mock.clear();
+            assert!(module.on_key_down(KeyCode::C, &mods(false, false, true)));
+            assert_eq!(
+                module
+                    .state
+                    .config
+                    .read()
+                    .unwrap()
+                    .window_arrange_side_by_side,
+                side_by_side
+            );
+            let mode = if side_by_side {
+                ArrangeMode::SideBySide
+            } else {
+                ArrangeMode::Stacked
+            };
+            let expected = vec![Call::ArrangeWindows(mode)];
+            assert_eq!(mock.wait_calls(&expected), expected);
+            for shift in [false, true] {
+                mock.clear();
+                module.on_key_down(KeyCode::C, &mods(shift, false, false));
+                let mode = if shift ^ side_by_side {
+                    ArrangeMode::SideBySide
+                } else {
+                    ArrangeMode::Stacked
+                };
+                let expected = vec![Call::ArrangeWindows(mode)];
+                assert_eq!(mock.wait_calls(&expected), expected);
+            }
+        }
+    }
+
+    #[test]
+    fn saved_arrange_preference_applies_on_startup() {
+        let mock = Arc::new(MockPlatform::new());
+        let mut cfg = ClxConfig::default();
+        cfg.window_arrange_side_by_side = true;
+        let module = WindowManagerModule::new(mock.clone(), Arc::new(ClxState::new(cfg)));
+        module.on_key_down(KeyCode::C, &Modifiers::default());
+        let expected = vec![Call::ArrangeWindows(ArrangeMode::SideBySide)];
+        assert_eq!(mock.wait_calls(&expected), expected);
     }
 
     #[test]

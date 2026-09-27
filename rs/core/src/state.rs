@@ -42,6 +42,8 @@ pub struct ClxConfig {
     pub use_insert: bool,
     pub use_scroll_lock: bool,
     pub use_ralt: bool,
+    /// CLX+C uses side-by-side; Shift+C always uses the opposite layout.
+    pub window_arrange_side_by_side: bool,
     pub speed: SpeedConfig,
     /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
     pub stt_engine: String,
@@ -114,6 +116,7 @@ impl Default for ClxConfig {
             use_insert: false,
             use_scroll_lock: false,
             use_ralt: false,
+            window_arrange_side_by_side: false,
             speed: SpeedConfig::default(),
             stt_engine: "sherpa".to_string(),
             ptt_vad_auto_release_ms: 0,

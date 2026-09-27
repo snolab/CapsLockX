@@ -26,6 +26,7 @@
 | `Space+G` / `Space+T` / `Space+N`/`P` | Editing | Enter / Delete / Tab / Shift+Tab |
 | `Space+WASD` / `QE` / `RF` | Mouse | Move (accelerated) / left+right click / scroll up+down |
 | `Space+Z` / `X` / `C` | Windows | Cycle / close / tile (Shift modifies) |
+| `Space+Alt+C` | Windows | Swap and save C / Shift+C modes, then arrange once using the new default |
 | `Space+1`–`9` | Windows | Switch virtual desktop |
 | `Space+V` | **AI** | Voice dictation (local STT + optional LLM polish) |
 | `Space+B` | **AI** | Brainstorm chat overlay |
@@ -146,19 +147,25 @@ skills/clx-agent/          agent system prompt + tool docs (editable at runtime)
 
 ### macOS (recommended path — always use `./build.sh`)
 
+First-time development setup (requires Apple Command Line Tools and Rust):
+
+```bash
+./scripts/setup-mac.sh             # Install missing CMake, build, sign, and launch
+./scripts/setup-mac.sh --signing   # Also create a stable local signing identity
+./scripts/setup-mac.sh --no-build  # Prepare dependencies only
+```
+
+The setup script can be rerun safely. It checks the Apple and Rust toolchains,
+installs CMake through Homebrew only when missing, and delegates to `build.sh`.
+Use `./bin/clx` to launch when `clx` is not on your PATH. Subsequent builds:
+
 ```bash
 ./build.sh
-# Equivalent to:
-#   cd rs && cargo build -p capslockx-macos --release
-#   cp target/release/capslockx ../clx
-#   codesign -s - --force --identifier "com.snomiao.capslockx" ../clx
 ```
 
-Code-signing with the stable identifier `com.snomiao.capslockx` makes Accessibility and Screen Recording permissions persist across rebuilds.
-
-```bash
-./build.sh && pkill -f "CapsLockX/clx" || true; clx
-```
+`build.sh` signs and relaunches the app. A stable signing certificate lets
+Accessibility and Screen Recording grants survive rebuilds; the identifier alone
+does not. After setting up signing, grant permissions once for the new identity.
 
 ### Linux
 

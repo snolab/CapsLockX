@@ -137,6 +137,8 @@ pub trait Platform: Send + Sync + 'static {
 
     fn cycle_windows(&self, _dir: i32) {}
     fn arrange_windows(&self, _mode: ArrangeMode) {}
+    /// Persist the current arrange preference without blocking the input hook.
+    fn arrange_preference_changed(&self) {}
     fn close_tab(&self) {}
     fn close_window(&self) {}
     fn kill_window(&self) {}
