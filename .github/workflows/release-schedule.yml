@@ -73,15 +73,25 @@ jobs:
           echo "dry=$dry"         >> "$GITHUB_OUTPUT"
           echo "releasing $channel from $branch (dry_run=$dry)"
 
-      - name: Refuse without a push token
+      # A scheduled run skips; a run someone asked for fails. Before the token is
+      # set up, nightly failures would just be noise arriving at 03:17 every day,
+      # whereas a manual run is a question that deserves a straight answer.
+      - name: Need a push token
+        id: token
         if: steps.what.outputs.dry != 'true'
         run: |
-          if [ -z "${{ secrets.RELEASE_TOKEN }}" ]; then
-            echo "RELEASE_TOKEN is not set." >&2
-            echo "A tag pushed with GITHUB_TOKEN does not trigger the publish" >&2
-            echo "workflows, so the release would silently ship nothing." >&2
+          if [ -n "${{ secrets.RELEASE_TOKEN }}" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_TOKEN is not set: a tag pushed with GITHUB_TOKEN does not"
+          echo "trigger the publish workflows, so the release would ship nothing."
+          echo "Add it with: gh secret set RELEASE_TOKEN --repo ${{ github.repository }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             exit 1
           fi
+          echo "::warning::skipping the scheduled release until RELEASE_TOKEN exists"
 
       - uses: actions/checkout@v4
         with:
@@ -117,7 +127,7 @@ jobs:
       # Guard 2: is CI green on exactly this commit? A red or missing run means we
       # do not know, and "we do not know" is not a reason to publish.
       - name: Require green CI on this commit
-        if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true'
+        if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true' && steps.token.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -186,7 +196,7 @@ jobs:
       # package.json and the Cargo manifests carry the same version, and a release
       # where they disagree is one where `clx --version` lies about what it is.
       - name: Bump, commit and tag
-        if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true'
+        if: steps.changed.outputs.go == 'true' && steps.what.outputs.dry != 'true' && steps.token.outputs.ok == 'true'
         env:
           NEXT: ${{ steps.next.outputs.next }}
         run: |
