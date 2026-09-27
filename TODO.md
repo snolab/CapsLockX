@@ -11,6 +11,53 @@
 - [ ] otoji-tray: extract `objc-helpers.rs` shared with CLX `tray.rs` (~150 lines duplicated)
 - [ ] CLX↔otoji-tray state channel: drop CLX's own tray, otoji-tray reflects CLX mode/PTT via state file
 
+## Parked from the input-path work (2026-09-27)
+
+Three things are deliberately switched off. Each is a real protection or
+improvement that was disabled because the version that shipped was worse than the
+problem it solved — so the note is here rather than in a commit nobody re-reads.
+
+- [ ] **Hook watchdog: replacement is off** (`REPLACE_ON_SUSPICION = false`,
+  `rs/adapters/windows/src/hook.rs`). Detection and logging stay on. So Windows
+  silently dropping the hook past `LowLevelHooksTimeout` is unprotected again.
+  - Why it is off: the inference was wrong. It concluded "hook is dead" from raw
+    input advancing while the hook's call count did not — but raw input receives
+    keyboard events the hook is legitimately never called for (higher-integrity
+    foreground window, a game taking raw input). It fired every few minutes during
+    normal use, replaced a live hook 19 times, and each replacement is a global
+    hook torn down and reinstalled, felt as a 1 s input freeze. Reported as "why
+    does my pc lag 1s every 3mins".
+  - What it needs before flipping back on: stop inferring death from silence.
+    Suspect from the counters, then **confirm with a positive liveness probe** —
+    inject a tagged event and check the callback fires within ~100 ms — and only
+    replace if it genuinely does not. Also `PostThreadMessageW(tid, WM_NULL, …)`
+    on a superseded thread so it wakes, sees the generation change and exits;
+    without that each abandoned thread parks in `GetMessageW` for ever and the
+    process climbed 17 → 29 threads.
+
+- [ ] **Injector thread is off** (`CLX_INJECT_THREAD=1` to enable,
+  `rs/adapters/windows/src/output.rs`). So injection still happens inside the
+  keyboard hook callback, which is the documented hazard that froze clx after
+  nineteen hours on a CLX-mode left click (`SendInput` from inside the callback,
+  while the raw input thread is waiting for that callback to return).
+  - The thread itself works — instrumented, every batch reports `sent N/N`. The
+    first attempt was enabled by default and created the thread *lazily* on first
+    use, which meant creating it inside the hook callback: that takes the loader
+    lock from inside a low-level hook and wedged clx on the first Space press. It
+    is eager now, but has not earned the default back.
+  - Whoever turns it on: `scripts/clx-smoke.ps1` test 3 is the guard. It checks a
+    Space tap still injects its replacement, which is the failure that cost a
+    working space bar twice.
+
+- [ ] **macOS `clx plugin` is unverified** (`rs/adapters/macos/src/main.rs`).
+  Read-checked against the Windows arm only; the adapter cannot be compiled from
+  a Windows machine. Needs one real build on a Mac before anyone relies on it.
+
+- [ ] **`clx-genpw` has no key binding**, so it only runs from a shell. Blocked on
+  there being no way to bind a gesture to anything user-defined — `ClxConfig` is a
+  flat struct of typed settings with no extension point. See `lab/script-store`,
+  which argues this is the piece to build before any script collection or store.
+
 ## Findings parked during the CLX+Z runaway investigation (2026-09-22)
 
 Each of these was confirmed while chasing the CLX+Z runaway but is a separate
