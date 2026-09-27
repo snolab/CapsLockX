@@ -211,6 +211,16 @@ jobs:
             echo "CI is not green for $sha — refusing to release" >&2
             exit 1
           fi
+          # A run whose jobs all *skipped* has no failures either, and this step
+          # used to accept it. That was not hypothetical: a path filter comparing
+          # beta against an identical main marked every platform job skipped, so
+          # each push produced a CI run in which nothing was compiled and nothing
+          # failed. Absence of failure is not evidence of success, so require some.
+          if ! echo "$state" | grep -q 'success'; then
+            echo "no CI job actually succeeded for $sha — every run was skipped or" >&2
+            echo "inconclusive, so nothing has tested this commit. Refusing." >&2
+            exit 1
+          fi
 
       # Left to npm's semver rather than hand-rolled, because the hand-rolled
       # version was wrong: from a released 2.1.0 it produced `2.1.0-beta.N`, which
