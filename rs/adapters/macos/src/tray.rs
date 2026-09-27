@@ -1,7 +1,7 @@
 //! macOS menu bar (NSStatusBar) tray icon using raw Objective-C FFI.
 //!
 //! Provides a status-bar icon that toggles between white (inactive) and blue
-//! (CapsLockX active), plus a "Quit" menu item.
+//! (CapsLockX active), plus app controls and version information.
 
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicPtr, Ordering};
@@ -10,11 +10,12 @@ use std::sync::atomic::{AtomicPtr, Ordering};
 
 static ICON_WHITE: &[u8] = include_bytes!("../../../../Data/XIconWhite.png");
 static ICON_BLUE: &[u8] = include_bytes!("../../../../Data/XIconBlue.png");
+const CLX_VERSION: &str = env!("CLX_VERSION");
+const CLX_BUILD_SOURCE: &str = env!("CLX_BUILD_SOURCE");
 
 // ── Global NSStatusItem reference ────────────────────────────────────────────
 
 static STATUS_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
-static MIC_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 static LOGIN_ITEM: AtomicPtr<c_void> = AtomicPtr::new(std::ptr::null_mut());
 
 // ── Objective-C runtime FFI ──────────────────────────────────────────────────
@@ -132,6 +133,48 @@ unsafe fn nsstring(s: &str) -> *mut c_void {
     f(cls_str, sel_utf8, cstr.as_ptr())
 }
 
+fn version_title() -> String {
+    format_version_title(CLX_VERSION, CLX_BUILD_SOURCE, cfg!(debug_assertions))
+}
+
+fn format_version_title(version: &str, build_source: &str, debug: bool) -> String {
+    let mut details = Vec::new();
+    if !build_source.is_empty() {
+        details.push(build_source);
+    }
+    if debug {
+        details.push("debug");
+    }
+
+    if details.is_empty() {
+        format!("CapsLockX v{version}")
+    } else {
+        format!("CapsLockX v{version} ({})", details.join(" "))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_version_title;
+
+    #[test]
+    fn formats_release_and_local_build_provenance() {
+        assert_eq!(format_version_title("1.2.3", "", false), "CapsLockX v1.2.3");
+        assert_eq!(
+            format_version_title("1.2.3", "git:main", false),
+            "CapsLockX v1.2.3 (git:main)"
+        );
+        assert_eq!(
+            format_version_title("1.2.3", "git:topic", true),
+            "CapsLockX v1.2.3 (git:topic debug)"
+        );
+        assert_eq!(
+            format_version_title("1.2.3", "", true),
+            "CapsLockX v1.2.3 (debug)"
+        );
+    }
+}
+
 // ── Launch-at-Login checkbox refresh ─────────────────────────────────────────
 
 /// Sync the "Launch at Login" checkmark with the actual LaunchAgent state.
@@ -149,37 +192,7 @@ pub fn refresh_login_item() {
     }
 }
 
-// ── Mic mode label refresh ───────────────────────────────────────────────────
-
-/// Update the "Mic: …" menu item title to reflect the currently active mode and STT engine.
-/// Safe to call from the main thread only (NSMenuItem is not thread-safe).
-fn refresh_mic_item() {
-    unsafe {
-        let item = MIC_ITEM.load(Ordering::Acquire);
-        if item.is_null() {
-            return;
-        }
-        let mode = crate::mic_mode::active_microphone_mode();
-        let mode_name = match mode {
-            0 => "Standard",
-            1 => "Wide Spectrum",
-            2 => "Voice Isolation",
-            _ => "Unknown",
-        };
-        let cfg = crate::config_store::load();
-        let engine_name = if cfg.stt_engine == "whisper" {
-            "Whisper"
-        } else {
-            "SenseVoice"
-        };
-        let title = format!("Mic: {mode_name} \u{00B7} {engine_name}\u{2026}");
-        let f: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) =
-            std::mem::transmute(objc_msgSend as *const ());
-        f(item, sel(b"setTitle:\0"), nsstring(&title));
-    }
-}
-
-/// Register a CLXMenuDelegate ObjC class with `menuWillOpen:` → refresh mic label.
+/// Register a CLXMenuDelegate ObjC class with `menuWillOpen:` → refresh checkbox state.
 /// Returns a freshly allocated and initialized delegate instance.
 unsafe fn create_menu_delegate() -> *mut c_void {
     let nsobject_cls = cls(b"NSObject\0");
@@ -202,7 +215,6 @@ unsafe fn create_menu_delegate() -> *mut c_void {
             _cmd: *mut c_void,
             _menu: *mut c_void,
         ) {
-            refresh_mic_item();
             refresh_login_item();
         }
         let proto = objc_getProtocol(b"NSMenuDelegate\0".as_ptr() as *const _);
@@ -296,6 +308,33 @@ pub fn setup_tray() {
         let menuitem_cls = cls(b"NSMenuItem\0");
         let sel_init_item = sel(b"initWithTitle:action:keyEquivalent:\0");
 
+        // ── Version information ─────────────────────────────────────────
+        let version_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
+        let version_title = nsstring(&version_title());
+        let version_item: *mut c_void = {
+            let f: extern "C" fn(
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+                *mut c_void,
+            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
+            f(
+                version_alloc,
+                sel_init_item,
+                version_title,
+                std::ptr::null_mut(),
+                nsstring(""),
+            )
+        };
+        let set_enabled: extern "C" fn(*mut c_void, *mut c_void, bool) =
+            std::mem::transmute(objc_msgSend as *const ());
+        set_enabled(version_item, sel(b"setEnabled:\0"), false);
+        msg1_ptr(menu, sel(b"addItem:\0"), version_item);
+
+        let top_separator = msg0(menuitem_cls, sel(b"separatorItem\0"));
+        msg1_ptr(menu, sel(b"addItem:\0"), top_separator);
+
         // ── "Preferences…" menu item ────────────────────────────────────
         let prefs_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
         let prefs_title = nsstring("Preferences\u{2026}");
@@ -381,62 +420,13 @@ pub fn setup_tray() {
         LOGIN_ITEM.store(login_item, Ordering::Release);
         msg1_ptr(menu, sel(b"addItem:\0"), login_item);
 
-        // ── "Voice Recordings…" menu item ───────────────────────────────
-        let voice_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
-        let voice_title = nsstring("Voice Recordings\u{2026}");
-        let voice_action = sel(b"openVoiceFolder:\0");
-        let voice_key = nsstring("");
-        let voice_item: *mut c_void = {
-            let f: extern "C" fn(
-                *mut c_void,
-                *mut c_void,
-                *mut c_void,
-                *mut c_void,
-                *mut c_void,
-            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-            f(
-                voice_alloc,
-                sel_init_item,
-                voice_title,
-                voice_action,
-                voice_key,
-            )
-        };
-        if !action_target.is_null() {
-            msg1_ptr(voice_item, sel(b"setTarget:\0"), action_target);
-        }
-        msg1_ptr(menu, sel(b"addItem:\0"), voice_item);
-
-        // ── "Mic: Standard…" menu item (label updated dynamically) ─────
-        let mic_alloc = msg0(menuitem_cls, sel(b"alloc\0"));
-        let mic_title = nsstring("Mic\u{2026}"); // placeholder; refreshed on menuWillOpen:
-        let mic_action = sel(b"showMicPicker:\0");
-        let mic_key = nsstring("");
-        let mic_item: *mut c_void = {
-            let f: extern "C" fn(
-                *mut c_void,
-                *mut c_void,
-                *mut c_void,
-                *mut c_void,
-                *mut c_void,
-            ) -> *mut c_void = std::mem::transmute(objc_msgSend as *const ());
-            f(mic_alloc, sel_init_item, mic_title, mic_action, mic_key)
-        };
-        if !action_target.is_null() {
-            msg1_ptr(mic_item, sel(b"setTarget:\0"), action_target);
-        }
-        msg0(mic_item, sel(b"retain\0"));
-        MIC_ITEM.store(mic_item, Ordering::Release);
-        msg1_ptr(menu, sel(b"addItem:\0"), mic_item);
-
         // Set delegate so menuWillOpen: fires before the menu is shown.
         let delegate = create_menu_delegate();
         if !delegate.is_null() {
             msg0(delegate, sel(b"retain\0"));
             msg1_ptr(menu, sel(b"setDelegate:\0"), delegate);
         }
-        // Populate label/checkbox immediately so first open isn't blank/stale.
-        refresh_mic_item();
+        // Populate the checkbox immediately so the first open is current.
         refresh_login_item();
 
         // ── Separator ───────────────────────────────────────────────────

@@ -11,13 +11,33 @@ if [ "${1:-}" = "--portable" ]; then
 fi
 cargo build -p capslockx-macos --release --bin capslockx $FEATURES_FLAG
 
+# ── Signing identity ────────────────────────────────────────────────────────
+# Ad-hoc signing pins the Designated Requirement to the cdhash, so every
+# rebuild invalidates the Accessibility grant and CLX restarts into limited
+# mode with no CGEventTap. A self-signed cert makes the DR depend on the
+# certificate leaf instead, which survives rebuilds. See
+# scripts/setup-dev-signing.sh — run it once, then grant Accessibility once.
+SIGN_ID="${CLX_SIGN_IDENTITY:-CapsLockX Dev Signing}"
+if ! security find-certificate -c "$SIGN_ID" >/dev/null 2>&1; then
+    echo "[build] warning: signing identity '$SIGN_ID' not found — falling back to ad-hoc." >&2
+    echo "[build]          Accessibility will need re-granting after every rebuild." >&2
+    echo "[build]          Run ./scripts/setup-dev-signing.sh once to fix this." >&2
+    SIGN_ID="-"
+fi
+
+# True when the target already carries a certificate-based (not cdhash-pinned)
+# signature — used to force a re-sign when switching away from ad-hoc.
+signed_with_cert() {
+    codesign -d -r- "$1" 2>/dev/null | grep -q 'certificate leaf'
+}
+
 # Compile the Vision OCR helper into ./clx-ocr (Swift binary, no cargo involved).
 # Needs Screen Recording permission at runtime to capture window pixels.
 OCR_SRC="$ROOT/rs/adapters/macos/src/bin/clx-ocr.swift"
 OCR_BIN="$ROOT/clx-ocr"
 if [ -f "$OCR_SRC" ] && { [ ! -x "$OCR_BIN" ] || [ "$OCR_SRC" -nt "$OCR_BIN" ]; }; then
     swiftc -O -o "$OCR_BIN" "$OCR_SRC"
-    codesign -s - --force --identifier "com.snomiao.capslockx.ocr" "$OCR_BIN"
+    codesign -s "$SIGN_ID" --force --identifier "com.snomiao.capslockx.ocr" "$OCR_BIN"
     echo "[build] clx-ocr compiled + signed"
 fi
 
@@ -27,9 +47,10 @@ fi
 "$ROOT/scripts/fetch-ort-dylib.sh" "$(uname -m)" "$ROOT/rs/target/release" >/dev/null || \
     echo "[build] warning: could not fetch ONNX Runtime dylib (voice VAD may not load)" >&2
 
-# Only update the binary if the cargo output is newer than the signed clx.
-# This preserves the codesign CDHash (and Accessibility permission) across rebuilds
-# that don't change the binary.
+# Only touch the binary when cargo actually produced something different, so
+# unrelated rebuilds don't churn the signature. A signature still using the old
+# ad-hoc (cdhash-pinned) form is re-done even when the bytes match, so the
+# one-time switch to the stable identity happens without a forced rebuild.
 CARGO_BIN="target/release/capslockx"
 CLX_BIN="$ROOT/clx"
 
@@ -40,8 +61,11 @@ if [ ! -f "$CLX_BIN" ] || ! cmp -s "$CARGO_BIN" "$CLX_BIN" 2>/dev/null; then
     install_name_tool -delete_rpath "$ROOT/rs/target/release" "$CLX_BIN" 2>/dev/null || true
     install_name_tool -add_rpath "$ROOT/rs/target/release" "$CLX_BIN"
     # Codesign AFTER install_name_tool (it invalidates any prior signature).
-    codesign -s - --force --identifier "com.snomiao.capslockx" "$CLX_BIN"
+    codesign -s "$SIGN_ID" --force --identifier "com.snomiao.capslockx" "$CLX_BIN"
     echo "[build] done — clx signed with rpath (NEW binary)"
+elif [ "$SIGN_ID" != "-" ] && ! signed_with_cert "$CLX_BIN"; then
+    codesign -s "$SIGN_ID" --force --identifier "com.snomiao.capslockx" "$CLX_BIN"
+    echo "[build] done — binary unchanged, re-signed with stable identity"
 else
     echo "[build] done — binary unchanged, signature preserved"
 fi
@@ -94,10 +118,10 @@ PLIST
 # Resources are sealed — otherwise `codesign --verify` reports "code has no
 # resources but signature indicates they must be present" / "Info.plist not
 # bound", TCC sees a broken app identity, and the Accessibility grant won't
-# attach to the CapsLockX entry. The stable --identifier keeps that grant
-# persistent across rebuilds (same rule as the raw clx binary).
+# attach to the CapsLockX entry. Signing with $SIGN_ID (not ad-hoc) is what
+# keeps that grant alive across rebuilds — same rule as the raw clx binary.
 cp "$CLX_BIN" "$DEV_APP/Contents/MacOS/clx"
-codesign -s - --force --identifier "com.snomiao.capslockx" "$DEV_APP" >/dev/null 2>&1
+codesign -s "$SIGN_ID" --force --identifier "com.snomiao.capslockx" "$DEV_APP" >/dev/null 2>&1
 if codesign --verify --strict "$DEV_APP" 2>/dev/null; then
     echo "[build] dev app bundle refreshed + signed: $DEV_APP"
 else

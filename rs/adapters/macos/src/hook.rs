@@ -322,7 +322,11 @@ unsafe extern "C" fn raw_callback(
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
-/// Install the CGEventTap hook and run the CFRunLoop.
+/// Install the CGEventTap hook and run the AppKit event loop.
+///
+/// The AppKit loop starts immediately, even when Accessibility permission is
+/// missing. Hook installation waits and retries on a background thread so the
+/// tray, preferences, voice services, and permission UI remain usable.
 /// This function blocks forever.
 pub fn install_and_run() {
     // Force engine initialisation.
@@ -368,73 +372,89 @@ pub fn install_and_run() {
         CGEventType::FlagsChanged,
     ]);
 
-    // Check Accessibility permission *before* CGEventTapCreate — on some
-    // macOS versions the latter blocks indefinitely waiting for a dialog
-    // that never appears when launched without a GUI session.
-    //
-    // IMPORTANT: poll-and-wait *in this same process* rather than exit(1)
-    // and rely on the watchdog to retry. The watchdog's crash-restart
-    // backoff starts at 10ms, so exiting here spawns a fresh process (which
-    // would call the *prompting* variant again) faster than a human can
-    // click through the system dialog — producing an endless storm of
-    // re-triggered prompts that never gives the approval a chance to stick.
-    // One process, one prompt, then just wait quietly.
-    if !unsafe { AXIsProcessTrusted() } {
-        eprintln!("[CLX] ERROR: Missing Accessibility permission.");
-        eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
-        eprintln!("[CLX] Requesting permission — check the box for clx, then CLX will continue automatically (no restart needed).");
-        // Triggers the native system prompt exactly once, adding clx to the
-        // Accessibility list (unchecked) if it isn't already there.
-        unsafe {
-            ax_is_process_trusted_with_prompt();
-        }
-        let _ = std::process::Command::new("open")
-            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-            .status();
-        loop {
-            std::thread::sleep(std::time::Duration::from_secs(1));
-            if unsafe { AXIsProcessTrusted() } {
-                eprintln!("[CLX] Accessibility permission granted — continuing.");
+    // Never let a missing/revoked permission block CLX startup. In particular,
+    // setup_tray() has already created AppKit objects, and they need the main
+    // event loop below to become visible and interactive. The installer waits
+    // on a worker, then attaches the tap source to the main run loop.
+    std::thread::Builder::new()
+        .name("clx-hook-install".into())
+        .spawn(move || {
+            let mut prompted = false;
+            let mut reported_granted = false;
+            loop {
+                // Check permission before CGEventTapCreate. Calling the latter
+                // while untrusted can hang indefinitely on some macOS versions.
+                if !unsafe { AXIsProcessTrusted() } {
+                    if !prompted {
+                        prompted = true;
+                        eprintln!("[CLX] Accessibility permission missing — running in limited mode.");
+                        eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
+                        eprintln!("[CLX] Requesting permission separately; CLX remains running.");
+                        // Trigger the native prompt exactly once, then open the
+                        // matching Settings pane. Polling below never re-prompts.
+                        unsafe {
+                            ax_is_process_trusted_with_prompt();
+                        }
+                        let _ = std::process::Command::new("open")
+                            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                            .status();
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    continue;
+                }
+
+                if prompted && !reported_granted {
+                    reported_granted = true;
+                    eprintln!("[CLX] Accessibility permission granted — enabling hotkeys.");
+                }
+
+                let tap: CFMachPortRef = unsafe {
+                    CGEventTapCreate(
+                        CGEventTapLocation::HID,
+                        CGEventTapPlacement::HeadInsertEventTap,
+                        CGEventTapOptions::Default,
+                        mask,
+                        raw_callback,
+                        ptr::null_mut(),
+                    )
+                };
+
+                if tap.is_null() {
+                    eprintln!("[CLX] CGEventTap unavailable — CLX stays running; retrying in 2s.");
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    continue;
+                }
+
+                // Add the source to the main AppKit run loop so callbacks and
+                // all tray updates continue to execute on the main thread.
+                unsafe {
+                    let mach_port =
+                        core_foundation::mach_port::CFMachPort::wrap_under_create_rule(tap);
+                    let loop_source = mach_port
+                        .create_runloop_source(0)
+                        .expect("failed to create run loop source from CGEventTap");
+                    let run_loop = CFRunLoop::get_main();
+                    run_loop.add_source(&loop_source, kCFRunLoopCommonModes);
+                    TAP_REF.store(tap as *mut _, Ordering::Relaxed);
+                    CGEventTapEnable(tap, true);
+                    // Adding a source from another thread does not itself wake
+                    // a sleeping run loop. Wake AppKit so hotkeys become live
+                    // immediately after the user grants permission.
+                    extern "C" {
+                        fn CFRunLoopWakeUp(run_loop: *mut std::ffi::c_void);
+                    }
+                    CFRunLoopWakeUp(run_loop.as_concrete_TypeRef() as *mut _);
+                }
+
+                eprintln!("[CLX] CGEventTap installed – hotkeys running…");
                 break;
             }
-        }
-    }
+        })
+        .expect("failed to spawn CGEventTap installer");
 
-    let tap: CFMachPortRef = unsafe {
-        CGEventTapCreate(
-            CGEventTapLocation::HID,
-            CGEventTapPlacement::HeadInsertEventTap,
-            CGEventTapOptions::Default,
-            mask,
-            raw_callback,
-            ptr::null_mut(),
-        )
-    };
-
-    if tap.is_null() {
-        eprintln!("[CLX] ERROR: Failed to create CGEventTap.");
-        eprintln!("[CLX] Grant Accessibility permission in:");
-        eprintln!("[CLX]   System Settings → Privacy & Security → Accessibility");
-        std::process::exit(1);
-    }
-
-    // Store tap reference so the callback can re-enable it after secure input.
-    TAP_REF.store(tap as *mut _, Ordering::Relaxed);
-
-    unsafe {
-        // Wrap in CFMachPort so we can create a run-loop source.
-        let mach_port = core_foundation::mach_port::CFMachPort::wrap_under_create_rule(tap);
-        let loop_source = mach_port
-            .create_runloop_source(0)
-            .expect("failed to create run loop source from CGEventTap");
-        let run_loop = CFRunLoop::get_current();
-        run_loop.add_source(&loop_source, kCFRunLoopCommonModes);
-        CGEventTapEnable(tap, true);
-    }
-
-    eprintln!("[CLX] CGEventTap installed – running…");
-
-    // Run the NSApplication event loop (which also processes CFRunLoop sources).
+    // Run AppKit immediately, regardless of permission state. This keeps the
+    // tray and every non-hook feature alive while the installer waits above.
+    // The event loop also processes the CGEventTap source once it is attached.
     // This is required for AppKit (NSStatusBar/NSMenu) to function.
     unsafe {
         extern "C" {
