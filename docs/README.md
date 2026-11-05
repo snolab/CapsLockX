@@ -21,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/snolab/CapsLockX/beta/scripts/insta
 clx                 # starts the daemon (forks to background)
 ```
 
-Grant **Accessibility** permission when prompted (System Settings → Privacy & Security → Accessibility). For voice features also grant **Microphone**.
+Grant **Accessibility** permission when prompted (System Settings → Privacy & Security → Accessibility). Voice input needs the separate [otoji](https://github.com/snomiao/otoji/releases) app, which asks for its own Microphone permission.
 
 ### Linux
 
@@ -77,9 +77,8 @@ Modifiers stack: hold `Shift` for selection, `Cmd`/`Ctrl` for word jumps, etc.
 
 | Key | Action |
 |---|---|
-| `V` | **Voice dictation** — hold to talk, tap to toggle. See below. |
+| `V` | **Voice input** — triggers the otoji app: hold to talk, tap to toggle. See below. |
 | `B` | **Brainstorm chat** — floating overlay with streaming LLM reply. |
-| `M` | **Agent** — give a task in natural language; the LLM drives your computer. |
 
 ### Escape valve
 
@@ -89,22 +88,19 @@ Modifiers stack: hold `Shift` for selection, `Cmd`/`Ctrl` for word jumps, etc.
 
 ---
 
-## Voice dictation — `Space+V`
+## Voice input — `Space+V`
 
-Hold `Space+V` and talk. Release to insert a polished transcript at the cursor.
+Voice input lives in [otoji](https://github.com/snomiao/otoji), not CapsLockX. `Space+V` triggers it: tap to turn otoji on or off, hold to talk. If otoji is installed but not running it is launched; if it isn't installed, CapsLockX suggests [getting it](https://github.com/snomiao/otoji/releases). All voice settings are in otoji.
 
-- **Local first**: SenseVoice + whisper.cpp run on-device. No cloud round-trip for STT.
-- **Polish chain**: short voice commands return raw text immediately; longer dictation flows through MLX (Qwen 2.5) or an LLM corrector for punctuation, capitalisation, and disfluency cleanup. Chain is user-configurable.
-- **Translation modes**: optional preset for learning / interpreter / chat / conversation flows.
-- **TTS**: ElevenLabs → Gemini → OpenAI → msedge-tts → native system, with automatic fallback.
-
-→ See [voice details](README.en.md#voice-features) and the otoji panel in `clx prefs`.
+otoji ships for macOS only so far; on Windows and Linux `Space+V` says it isn't available yet.
 
 ## Brainstorm chat — `Space+B`
 
 A floating overlay panel. Streams replies from your configured LLM (Gemini, OpenAI, Anthropic, or local Ollama / MLX). Use it for quick questions without context-switching to a browser. History is preserved between sessions.
 
-## LLM agent — `Space+M` / `clx agent`
+## LLM agent — `clx agent`
+
+The `Space+M` hotkey is temporarily disabled while voice input moves to otoji. The CLI still works.
 
 Give the agent a task in natural language; it sees your screen (Apple Vision OCR + AX tree) and operates your computer via the CLX command language:
 

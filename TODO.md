@@ -9,7 +9,6 @@
   - `is_enabled()` = registry value exists and points at the current exe path (like the mac version, treat the registry as the single source of truth — no separate config flag to desync).
   - Note: unlike macOS, Windows Run-key autostart just launches the exe directly at login — there's no separate watchdog/crash-restart wrapper on this platform to route through, so `Program` = current exe path with no wrapper args.
 - [ ] otoji-tray: extract `objc-helpers.rs` shared with CLX `tray.rs` (~150 lines duplicated)
-- [ ] CLX↔otoji-tray state channel: drop CLX's own tray, otoji-tray reflects CLX mode/PTT via state file
 
 ## Parked from the input-path work (2026-09-27)
 
@@ -206,16 +205,6 @@ CapsLockX 的核心理念是：简化系统操作逻辑，提升操作效率，�
 
 ### DONE: Admin elevation config
 - `request_admin: true` in `%APPDATA%\CapsLockX\config.json` triggers UAC elevation on startup
-
-### FEAT: Voice Input (CLX+V) — Streaming Speech-to-Text
-**Plan:** [plan/voice-input/README.md](plan/voice-input/README.md) | [plan/voice-input/TODO.md](plan/voice-input/TODO.md)
-- CLX+V click = toggle continuous listening; CLX+V hold = listen while held
-- VAD splits audio into utterances, sends chunks to server incrementally
-- 3-stage streaming pipeline: local Whisper (fast draft) → server Whisper (refined) → LLM typo-fix (polished)
-- Text typed at cursor, each stage replaces previous in-place
-- Server: new endpoint on brainstorm.snomiao.com combining Whisper + LLM
-- Client: `cpal` for cross-platform audio, `webrtc-vad` for voice detection
-- Phases: hotkey → audio capture → VAD → server endpoint → HTTP client → local Whisper (optional)
 
 ### BUG: macOS mouse drag doesn't move windows in realtime
 **Problem:** Space+E (left click hold) + WASD to drag a window only moves the window when E is released, instead of moving it continuously like a trackpad drag.

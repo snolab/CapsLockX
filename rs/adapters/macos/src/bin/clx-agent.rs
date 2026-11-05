@@ -1,6 +1,6 @@
 // clx-agent — standalone LLM-driven computer control agent.
 //
-// Reads the accessibility tree + voice input, sends to LLM, streams
+// Reads the accessibility tree, sends to LLM, streams
 // CLX commands, parses and executes them, echoes results back.
 //
 // Usage: clx-agent [--prompt "do something"] [--model gemini-2.0-flash]

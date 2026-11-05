@@ -31,95 +31,17 @@ use crate::output::MacPlatform;
 
 // ── Engine (created once on first use) ───────────────────────────────────────
 
-/// Convert the stored translation preferences into the env vars that
-/// `voice_otoji::start` + `voice_ptt::on_ptt_translated` read. Keeps the
-/// plumbing thin — changing a pref just re-applies these vars.
-pub(crate) fn reapply_translate_env(cfg: &crate::config_store::FullConfig) {
-    apply_translate_env(cfg);
-}
-
-fn apply_translate_env(cfg: &crate::config_store::FullConfig) {
-    // Derive effective values from preset if not Custom.
-    // (For Custom, use the user's explicit fields as-is.)
-    let (enabled, target, type_what, tts_source) = match cfg.translate_preset.as_str() {
-        "off" => (false, String::new(), "original".into(), "original".into()),
-        "learning" => (true, cfg.translate_target.clone(), "translated".into(), "translated".into()),
-        "interpreter" => (true, cfg.translate_target.clone(), "original".into(), "translated".into()),
-        "chat" => (true, cfg.translate_target.clone(), "translated".into(), "original".into()),
-        "conversation" => (true, cfg.translate_target.clone(), "both".into(), "translated".into()),
-        _ /* custom */ => (
-            cfg.translate_enabled,
-            cfg.translate_target.clone(),
-            cfg.translate_type.clone(),
-            cfg.translate_tts_source.clone(),
-        ),
-    };
-    if enabled && !target.is_empty() {
-        std::env::set_var("CLX_TRANSLATE_TO", &target);
-        std::env::set_var("CLX_TRANSLATE_TYPE", &type_what);
-        std::env::set_var("CLX_TRANSLATE_BOTH_TEMPLATE", &cfg.translate_both_template);
-        std::env::set_var("CLX_TRANSLATE_TTS_SOURCE", &tts_source);
-        eprintln!(
-            "[CLX] translate: preset={} target={} type={} tts_source={}",
-            cfg.translate_preset, target, type_what, tts_source
-        );
-    } else {
-        std::env::remove_var("CLX_TRANSLATE_TO");
-        std::env::remove_var("CLX_TRANSLATE_TYPE");
-        std::env::remove_var("CLX_TRANSLATE_BOTH_TEMPLATE");
-        std::env::remove_var("CLX_TRANSLATE_TTS_SOURCE");
-    }
-
-    // PTT polish provider + model — always applied so they take effect even
-    // when translation is off (polish still runs for punctuation/cleanup).
-    std::env::set_var("CLX_PTT_POLISH_PROVIDER", &cfg.ptt_polish_provider);
-    if !cfg.ptt_polish_model.is_empty() {
-        std::env::set_var("OTOJI_POLISH_MODEL", &cfg.ptt_polish_model);
-        eprintln!(
-            "[CLX] ptt polish: provider={} model={}",
-            cfg.ptt_polish_provider, cfg.ptt_polish_model
-        );
-    } else {
-        std::env::remove_var("OTOJI_POLISH_MODEL");
-        eprintln!(
-            "[CLX] ptt polish: provider={} model=<otoji-default>",
-            cfg.ptt_polish_provider
-        );
-    }
-
-    // Note-mode translation is independent — applies to continuous listen
-    // transcripts (AsrEvent::Final) while PTT is inactive.
-    if cfg.note_translate_enabled && !cfg.note_translate_target.is_empty() {
-        std::env::set_var("CLX_NOTE_TRANSLATE_TO", &cfg.note_translate_target);
-        eprintln!("[CLX] note translate: target={}", cfg.note_translate_target);
-    } else {
-        std::env::remove_var("CLX_NOTE_TRANSLATE_TO");
-    }
-}
-
 pub(crate) static ENGINE: Lazy<Arc<ClxEngine>> = Lazy::new(|| {
     let platform = Arc::new(MacPlatform::new());
     // Load saved config, fall back to defaults.
-    let mut saved = crate::config_store::load();
+    let saved = crate::config_store::load();
     crate::output::set_cycle_order(&saved.window_cycle_order);
     crate::output::set_arrange_order(&saved.window_arrange_order);
-
-    // Overlay otoji voice config (if present) — otoji owns voice settings.
-    if let Some(ov) = crate::config_store::load_otoji_voice_override() {
-        eprintln!("[CLX] otoji config overlay applied (stt={})", ov.stt_engine);
-        crate::config_store::apply_otoji_override(&mut saved, &ov);
-    }
-
-    // Apply voice translation settings as environment variables so the otoji
-    // subprocess and PttSession pick them up without extra plumbing.
-    apply_translate_env(&saved);
 
     let config = saved.into_clx_config();
     let (best_key, _) = config.best_llm_key_and_model();
     eprintln!(
-        "[CLX] config loaded: stt={}, correction={}, llm_key={}...",
-        config.stt_engine,
-        config.stt_correction,
+        "[CLX] config loaded: llm_key={}...",
         &best_key[..best_key.len().min(10)]
     );
     ClxEngine::with_config(platform, config)
@@ -327,40 +249,6 @@ unsafe extern "C" fn raw_callback(
 pub fn install_and_run() {
     // Force engine initialisation.
     Lazy::force(&ENGINE);
-
-    // Ensure otoji-tray is running so the mic menu bar icon is always present.
-    // Must be called here (after GUI session is established via setup_tray) so
-    // the spawned process inherits CLX's WindowServer connection.
-    capslockx_core::modules::voice_otoji::ensure_tray_running();
-
-    // Watch otoji config for changes and hot-reload voice settings.
-    // Polls every 3s; on mtime change re-reads and calls ENGINE.update_config().
-    std::thread::Builder::new()
-        .name("otoji-cfg-watch".into())
-        .spawn(|| {
-            let mut last_mtime = crate::config_store::otoji_config_mtime();
-            loop {
-                std::thread::sleep(std::time::Duration::from_secs(3));
-                let mtime = crate::config_store::otoji_config_mtime();
-                if mtime != last_mtime && mtime > 0 {
-                    last_mtime = mtime;
-                    if let Some(ov) = crate::config_store::load_otoji_voice_override() {
-                        eprintln!(
-                            "[CLX] otoji config changed — hot-reloading voice settings (stt={})",
-                            ov.stt_engine
-                        );
-                        // Build a base CLX config from disk, apply the otoji overlay,
-                        // then apply to engine (preserves API keys, trigger keys, etc.).
-                        let mut base = crate::config_store::load();
-                        crate::config_store::apply_otoji_override(&mut base, &ov);
-                        reapply_translate_env(&base);
-                        let clx_cfg = base.into_clx_config();
-                        ENGINE.update_config(clx_cfg);
-                    }
-                }
-            }
-        })
-        .ok();
 
     let mask = event_mask(&[
         CGEventType::KeyDown,

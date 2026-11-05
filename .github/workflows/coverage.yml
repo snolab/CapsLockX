@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Floor that must not regress. Raise this number as coverage climbs.
-      # Reflects current line% on capslockx-core --lib (excluding sherpa/test_platform).
+      # Reflects current line% on capslockx-core --lib (excluding test_platform).
       COVERAGE_FLOOR: "50"
 
     steps:
@@ -45,10 +45,10 @@ jobs:
         run: |
           cargo llvm-cov -p capslockx-core --lib \
             --no-fail-fast \
-            --ignore-filename-regex '(sherpa|target/|test_platform)' \
+            --ignore-filename-regex '(target/|test_platform)' \
             --json --output-path coverage.json
           cargo llvm-cov report \
-            --ignore-filename-regex '(sherpa|target/|test_platform)' \
+            --ignore-filename-regex '(target/|test_platform)' \
             --summary-only
 
       - name: Enforce coverage floor

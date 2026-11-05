@@ -115,7 +115,7 @@ jobs:
 
       - name: cargo clippy
         working-directory: rs
-        # Temporarily relaxed from `-D warnings` while the WIP voice/agent
+        # Temporarily relaxed from `-D warnings` while the WIP agent
         # backlog (committed in af7842a as a snapshot) lints clean. Tighten
         # back once those modules get a focused clippy pass.
         run: cargo clippy -p capslockx-core -p capslockx-windows --all-targets

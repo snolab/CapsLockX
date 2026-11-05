@@ -26,30 +26,17 @@ pub struct FullConfig {
     /// a local git checkout and the binary is behind HEAD. See self_update.rs.
     #[serde(default = "default_auto_rebuild")]
     pub auto_rebuild: bool,
-    /// STT engine: "sherpa" (SenseVoice) or "whisper"
-    #[serde(default = "default_stt_engine")]
-    pub stt_engine: String,
     #[serde(default)]
     pub gemini_api_key: String,
     #[serde(default)]
     pub openai_api_key: String,
     #[serde(default)]
     pub anthropic_api_key: String,
-    #[serde(default)]
-    pub elevenlabs_api_key: String,
     /// Backwards compat: old single key migrates to gemini/openai based on prefix.
     #[serde(default)]
     pub llm_api_key: String,
     #[serde(default)]
     pub llm_model: String,
-    #[serde(default)]
-    pub stt_correction: bool,
-    /// TTS fallback chain (comma-separated provider names).
-    #[serde(default = "default_tts_chain")]
-    pub tts_chain: String,
-    /// STT polishing fallback chain (comma-separated stage names).
-    #[serde(default = "default_stt_polish_chain")]
-    pub stt_polish_chain: String,
     /// Brainstorm: prefer a local LLM (Ollama) over cloud APIs. Default true.
     #[serde(default = "default_prefer_local")]
     pub prefer_local: bool,
@@ -60,15 +47,6 @@ pub struct FullConfig {
 
 fn default_edit_speed() -> f64 {
     30.0
-}
-fn default_stt_engine() -> String {
-    "sherpa".to_string()
-}
-fn default_tts_chain() -> String {
-    "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string()
-}
-fn default_stt_polish_chain() -> String {
-    "mlx:qwen2.5-3b,llm-corrector,raw".to_string()
 }
 fn default_prefer_local() -> bool {
     true
@@ -94,16 +72,11 @@ impl Default for FullConfig {
             scroll_speed: 1600.0,
             request_admin: false,
             auto_rebuild: true,
-            stt_engine: "sherpa".to_string(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
             anthropic_api_key: String::new(),
-            elevenlabs_api_key: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
-            stt_correction: false,
-            tts_chain: default_tts_chain(),
-            stt_polish_chain: default_stt_polish_chain(),
             prefer_local: true,
             local_model: String::new(),
         }
@@ -127,16 +100,11 @@ impl FullConfig {
             scroll_speed: cfg.speed.scroll_speed,
             request_admin: false,
             auto_rebuild: true,
-            stt_engine: cfg.stt_engine.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
             openai_api_key: cfg.openai_api_key.clone(),
             anthropic_api_key: cfg.anthropic_api_key.clone(),
-            elevenlabs_api_key: cfg.elevenlabs_api_key.clone(),
             llm_api_key: String::new(),
             llm_model: String::new(),
-            stt_correction: cfg.stt_correction,
-            tts_chain: cfg.tts_chain.clone(),
-            stt_polish_chain: cfg.stt_polish_chain.clone(),
             prefer_local: cfg.prefer_local,
             local_model: cfg.local_model.clone(),
         }
@@ -158,7 +126,6 @@ impl FullConfig {
                 mouse_speed: self.mouse_speed,
                 scroll_speed: self.scroll_speed,
             },
-            stt_engine: self.stt_engine,
             // Migrate old single llm_api_key to per-provider keys.
             gemini_api_key: if !self.gemini_api_key.is_empty() {
                 self.gemini_api_key
@@ -183,10 +150,6 @@ impl FullConfig {
             } else {
                 String::new()
             },
-            elevenlabs_api_key: self.elevenlabs_api_key,
-            stt_correction: self.stt_correction,
-            tts_chain: self.tts_chain,
-            stt_polish_chain: self.stt_polish_chain,
             // Set explicitly: default prefer_local is true, so omitting here
             // would mask a stored `false`.
             prefer_local: self.prefer_local,
@@ -209,8 +172,7 @@ pub fn load() -> FullConfig {
         match serde_json::from_str::<FullConfig>(&data) {
             Ok(cfg) => {
                 eprintln!(
-                    "[CLX] config: stt_correction={} llm_key={}... llm_model={}",
-                    cfg.stt_correction,
+                    "[CLX] config: llm_key={}... llm_model={}",
                     &cfg.llm_api_key[..cfg.llm_api_key.len().min(10)],
                     cfg.llm_model
                 );

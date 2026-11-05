@@ -1349,49 +1349,6 @@ impl MacPlatform {
     }
 }
 
-/// Fire a single trackpad haptic tap via `NSHapticFeedbackManager`. Dispatched
-/// to the main queue (AppKit). No-op on hardware without a Taptic Engine.
-pub fn perform_haptic_tap() {
-    use std::ffi::c_void;
-    extern "C" {
-        fn dispatch_async_f(queue: *mut c_void, ctx: *mut c_void, work: extern "C" fn(*mut c_void));
-        fn dlsym(handle: *mut c_void, symbol: *const std::ffi::c_char) -> *mut c_void;
-    }
-    extern "C" fn do_haptic(_ctx: *mut c_void) {
-        unsafe {
-            let cls = objc_getClass(b"NSHapticFeedbackManager\0".as_ptr() as *const _);
-            if cls.is_null() {
-                return;
-            }
-            let performer = objc_msgSend(
-                cls,
-                sel_registerName(b"defaultPerformer\0".as_ptr() as *const _),
-            );
-            if performer.is_null() {
-                return;
-            }
-            // -performFeedbackPattern:(NSInteger)pattern performanceTime:(NSUInteger)time
-            // pattern: Generic = 0 · performanceTime: Now = 1
-            let perform: extern "C" fn(*mut c_void, *mut c_void, i64, u64) =
-                std::mem::transmute(objc_msgSend as *const ());
-            perform(
-                performer,
-                sel_registerName(b"performFeedbackPattern:performanceTime:\0".as_ptr() as *const _),
-                0,
-                1,
-            );
-        }
-    }
-    unsafe {
-        // RTLD_DEFAULT (-2) → the libdispatch main-queue global.
-        let main_q = dlsym(
-            -2isize as *mut c_void,
-            b"_dispatch_main_q\0".as_ptr() as *const _,
-        );
-        dispatch_async_f(main_q, std::ptr::null_mut(), do_haptic);
-    }
-}
-
 impl Platform for MacPlatform {
     fn arrange_preference_changed(&self) {
         crate::prefs::save_arrange_preference();
@@ -1931,88 +1888,20 @@ impl Platform for MacPlatform {
         }
     }
 
-    fn start_aec_mic(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
-        match crate::voice_capture::VoiceCapture::new() {
-            Ok(cap) => {
-                if let Err(e) = cap.start() {
-                    eprintln!("[CLX] VoiceProcessingIO start failed: {e}");
-                    return None;
-                }
-                eprintln!("[CLX] VoiceProcessingIO mic with AEC started");
-                Some(Box::new(cap))
-            }
-            Err(e) => {
-                eprintln!("[CLX] VoiceProcessingIO unavailable: {e}, falling back to cpal");
-                None
-            }
-        }
-    }
-
-    fn start_system_audio(&self) -> Option<Box<dyn capslockx_core::platform::SystemAudioStream>> {
-        // Try Core Audio Taps first (macOS 14.2+, cleaner digital reference signal).
-        match crate::audio_tap::AudioTapCapture::new() {
-            Ok(cap) => {
-                eprintln!("[CLX] system audio: using Core Audio Tap (digital reference)");
-                return Some(Box::new(cap));
-            }
-            Err(e) => {
-                eprintln!("[CLX] system audio: Core Audio Tap unavailable ({e}), falling back to ScreenCaptureKit");
-            }
-        }
-        // Fallback: ScreenCaptureKit (macOS 12.3+).
-        match crate::system_audio::SystemAudioCapture::new() {
-            Ok(cap) => Some(Box::new(cap)),
-            Err(e) => {
-                eprintln!("[CLX] system audio: {e}");
-                None
-            }
-        }
-    }
-
     fn open_preferences(&self) {
         crate::prefs::open_preferences();
     }
-    fn show_voice_overlay(&self) {
-        crate::voice_overlay::show_overlay();
-    }
-    fn hide_voice_overlay(&self) {
-        crate::voice_overlay::hide_overlay();
-    }
-    fn update_voice_overlay(
+    fn otoji_send(
         &self,
-        mic_levels: &[f32],
-        mic_vad: bool,
-        sys_levels: &[f32],
-        sys_vad: bool,
-    ) {
-        crate::voice_overlay::push_dual_audio_levels(
-            mic_levels, mic_vad, sys_levels, sys_vad, None,
-        );
-    }
-    fn update_voice_subtitle(&self, text: &str) {
-        crate::voice_overlay::push_audio_levels_with_text(&[], false, Some(text));
-    }
-    fn update_voice_subtitle_translation(&self, translation: &str) {
-        crate::voice_overlay::push_translation(translation);
-    }
-    fn set_ptt_tray_state(&self, state: capslockx_core::platform::PttTrayState) {
-        // Route PTT state changes to the otoji-tray menu-bar icon (via the
-        // shared Unix datagram socket) instead of the CLX tray. The CLX tray
-        // is reserved for CapsLock on/off; otoji owns voice/PTT visuals.
-        use capslockx_core::modules::voice_otoji::{notify_tray, TrayState};
-        use capslockx_core::platform::PttTrayState::*;
-        let ts = match state {
-            Idle => TrayState::Idle,
-            Recording => TrayState::ListenSilent,
-            Processing => TrayState::Decoding,
-            NoteMode => TrayState::ListenSilent,
-        };
-        notify_tray(ts);
+        cmd: capslockx_core::platform::OtojiCommand,
+    ) -> capslockx_core::platform::OtojiSendResult {
+        crate::otoji::send(cmd)
     }
 
-    fn haptic_feedback(&self) {
-        crate::output::perform_haptic_tap();
+    fn open_url(&self, url: &str) {
+        let _ = std::process::Command::new("open").arg(url).spawn();
     }
+
 
     fn get_selected_text(&self) -> String {
         unsafe {
@@ -2186,7 +2075,7 @@ impl Platform for MacPlatform {
 
     fn show_prompt_input(&self, title: &str, message: &str, prefill: &str) -> Option<String> {
         // Non-modal panel — doesn't block the main run loop.
-        // Voice overlay and other UI keeps updating while this is open.
+        // Overlays and other UI keep updating while this is open.
         crate::brainstorm_overlay::show_prompt_panel(title, message, prefill)
     }
 }

@@ -177,8 +177,8 @@ unsafe extern "C" fn handle_script_message(
     match cmd {
         "get_config" => {
             eprintln!("[CLX] prefs: get_config called");
-            // Load from disk so all fields (including ones not in ClxConfig
-            // such as translate_*) survive the round-trip.
+            // Load from disk so all fields (including ones not in ClxConfig)
+            // survive the round-trip.
             let full = config_store::load();
             let json = serde_json::to_string(&full).unwrap_or_default();
 
@@ -192,11 +192,12 @@ unsafe extern "C" fn handle_script_message(
             eprintln!("[CLX] prefs: set_config called");
             if let Some(cfg_val) = parsed.get("cfg") {
                 match serde_json::from_value::<config_store::FullConfig>(cfg_val.clone()) {
-                    Ok(full) => {
+                    Ok(mut full) => {
+                        // The form only sends what it shows; keep the rest.
+                        full.extra = config_store::load().extra;
                         config_store::save(&full);
                         crate::output::set_cycle_order(&full.window_cycle_order);
                         crate::output::set_arrange_order(&full.window_arrange_order);
-                        crate::hook::reapply_translate_env(&full);
                         let clx_cfg = full.into_clx_config();
                         ENGINE.update_config(clx_cfg);
                         eprintln!("[CLX] prefs: config saved and applied");
@@ -220,61 +221,13 @@ unsafe extern "C" fn handle_script_message(
     }
 }
 
-/// otoji-tray に SIGUSR1 を送り設定画面を開く。
-/// プロセスが見つからない場合は otoji-tray を起動してから送る。
+/// Open otoji's settings window, or its download page if it isn't installed.
 fn open_otoji_settings() {
-    let pid = find_otoji_tray_pid();
-    if let Some(pid) = pid {
-        eprintln!("[CLX] prefs: sending SIGUSR1 to otoji-tray pid={}", pid);
-        unsafe {
-            libc::kill(pid, libc::SIGUSR1);
-        }
-    } else {
-        eprintln!("[CLX] prefs: otoji-tray not running — spawning");
-        // CLX バイナリと同じディレクトリにある otoji-tray を探す。
-        let tray_path = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|d| d.join("otoji-tray")));
-        let Some(tray_path) = tray_path else { return };
-        if !tray_path.exists() {
-            eprintln!(
-                "[CLX] prefs: otoji-tray not found at {}",
-                tray_path.display()
-            );
-            return;
-        }
-        match std::process::Command::new(&tray_path)
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-        {
-            Ok(child) => {
-                eprintln!("[CLX] prefs: spawned otoji-tray pid={}", child.id());
-                std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_millis(1000));
-                    if let Some(pid) = find_otoji_tray_pid() {
-                        unsafe {
-                            libc::kill(pid, libc::SIGUSR1);
-                        }
-                    }
-                });
-            }
-            Err(e) => eprintln!("[CLX] prefs: failed to spawn otoji-tray: {}", e),
-        }
+    if !crate::otoji::open_settings() {
+        let _ = std::process::Command::new("open")
+            .arg(capslockx_core::modules::voice::OTOJI_INSTALL_URL)
+            .spawn();
     }
-}
-
-fn find_otoji_tray_pid() -> Option<i32> {
-    let out = std::process::Command::new("pgrep")
-        .args(["-f", "otoji-tray"])
-        .output()
-        .ok()?;
-    String::from_utf8(out.stdout)
-        .ok()?
-        .lines()
-        .next()
-        .and_then(|s| s.trim().parse::<i32>().ok())
 }
 
 /// Evaluate JavaScript on the webview (must be called from main thread or dispatched).
@@ -343,28 +296,6 @@ unsafe extern "C" fn action_open_prefs(
     _sender: *mut c_void,
 ) {
     open_preferences();
-}
-
-/// Action handler for "Voice Recordings" menu item — open the recordings folder in Finder.
-unsafe extern "C" fn action_open_voice_folder(
-    _this: *mut c_void,
-    _cmd: *mut c_void,
-    _sender: *mut c_void,
-) {
-    eprintln!("[CLX] opening voice recordings folder");
-    if let Some(dir) = dirs::home_dir().map(|h| h.join(".capslockx").join("voice")) {
-        let _ = std::fs::create_dir_all(&dir);
-        let _ = std::process::Command::new("open").arg(&dir).spawn();
-    }
-}
-
-/// Action handler for "Microphone Mode…" menu item — opens the system mic mode picker.
-unsafe extern "C" fn action_show_mic_picker(
-    _this: *mut c_void,
-    _cmd: *mut c_void,
-    _sender: *mut c_void,
-) {
-    crate::mic_mode::show_microphone_mode_picker();
 }
 
 /// Action handler for "Launch at Login" checkbox menu item — toggles the
@@ -456,17 +387,6 @@ unsafe fn ensure_action_class() {
             eprintln!("[CLX] prefs: failed to add restartApp: method");
         }
 
-        let sel_voice = sel(b"openVoiceFolder:\0");
-        let added = class_addMethod(
-            new_cls,
-            sel_voice,
-            action_open_voice_folder as *const c_void,
-            b"v@:@\0".as_ptr() as *const _,
-        );
-        if !added {
-            eprintln!("[CLX] prefs: failed to add openVoiceFolder: method");
-        }
-
         let sel_login = sel(b"toggleLaunchAtLogin:\0");
         let added = class_addMethod(
             new_cls,
@@ -476,17 +396,6 @@ unsafe fn ensure_action_class() {
         );
         if !added {
             eprintln!("[CLX] prefs: failed to add toggleLaunchAtLogin: method");
-        }
-
-        let sel_mic = sel(b"showMicPicker:\0");
-        let added = class_addMethod(
-            new_cls,
-            sel_mic,
-            action_show_mic_picker as *const c_void,
-            b"v@:@\0".as_ptr() as *const _,
-        );
-        if !added {
-            eprintln!("[CLX] prefs: failed to add showMicPicker: method");
         }
 
         objc_registerClassPair(new_cls);

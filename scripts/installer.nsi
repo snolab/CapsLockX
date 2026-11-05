@@ -39,13 +39,6 @@ Section "Install"
   File "clx.exe"
   File "clx-prefs-slint.exe"
   File "clx-prompt-slint.exe"
-  ; sherpa-rs runtime DLLs — only present when the `stt` feature is
-  ; enabled (currently disabled on Windows because whisper-rs doesn't
-  ; compile there). /nonfatal lets the installer build succeed when
-  ; the wildcard matches nothing; clx.exe runs as a STT-stub in that
-  ; case (Space+V no-op).
-  File /nonfatal "*.dll"
-
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
 

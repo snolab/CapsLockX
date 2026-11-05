@@ -82,13 +82,8 @@ const TOOLS: &[ToolDef] = &[
         params_json: r#"{"type":"object","properties":{}}"#,
     },
     ToolDef {
-        name: "speak",
-        description: "Speak text aloud (max 128 chars per call). Speeches are queued and play in order — no need to wait between calls. Only use when user explicitly asks to read aloud.",
-        params_json: r#"{"type":"object","properties":{"text":{"type":"string","description":"Text to speak (max 128 chars)"},"lang":{"type":"string","description":"Language code: en, ja, zh, ko, etc."}},"required":["text","lang"]}"#,
-    },
-    ToolDef {
         name: "wait",
-        description: "Wait for a specified number of seconds. Use between speak calls to avoid overlap.",
+        description: "Wait for a specified number of seconds.",
         params_json: r#"{"type":"object","properties":{"seconds":{"type":"number","description":"Seconds to wait"}},"required":["seconds"]}"#,
     },
 ];
@@ -236,15 +231,6 @@ fn execute_tool(name: &str, args_json: &str) -> String {
             crate::task_manager::task_kill(id)
         }
         "task_list" => crate::task_manager::task_list(),
-        "speak" => {
-            let text = args["text"].as_str().unwrap_or("");
-            let lang = args["lang"].as_str().unwrap_or("en");
-            let text: String = text.chars().take(128).collect();
-            // Queue speech — plays serially in a background thread.
-            // Agent doesn't need to wait; speeches queue up and play in order.
-            speech_queue(&text, lang);
-            "Queued. Speeches play in order automatically, no need to wait.".to_string()
-        }
         "wait" => {
             let secs = args["seconds"].as_f64().unwrap_or(1.0).min(30.0).max(0.1);
             std::thread::sleep(std::time::Duration::from_secs_f64(secs));
@@ -452,30 +438,6 @@ fn list_files(path: &str) -> String {
     }
 }
 
-/// Serial speech queue — speaks one at a time, no overlap.
-fn speech_queue(text: &str, lang: &str) {
-    use std::sync::mpsc;
-    static SPEECH_TX: std::sync::Mutex<Option<mpsc::Sender<(String, String)>>> =
-        std::sync::Mutex::new(None);
-
-    let mut tx_guard = SPEECH_TX.lock().unwrap();
-    if tx_guard.is_none() {
-        let (tx, rx) = mpsc::channel::<(String, String)>();
-        *tx_guard = Some(tx);
-        std::thread::Builder::new()
-            .name("clx-speech-queue".into())
-            .spawn(move || {
-                for (text, lang) in rx {
-                    let _ = speak_text(&text, &lang);
-                }
-            })
-            .ok();
-    }
-    if let Some(ref tx) = *tx_guard {
-        let _ = tx.send((text.to_string(), lang.to_string()));
-    }
-}
-
 /// Run a tool function with timeout. Returns inline result or background task message.
 fn run_with_timeout_tool<F>(name: &str, timeout_secs: u64, func: F) -> String
 where
@@ -485,26 +447,6 @@ where
     match run_with_timeout(name, timeout_secs, func) {
         ToolResult::Inline(result) => result,
         ToolResult::Background { message, .. } => message,
-    }
-}
-
-/// Speak text aloud via the TTS fallback chain.
-fn speak_text(text: &str, lang: &str) -> String {
-    eprintln!(
-        "[CLX] agent: speak({:?}, lang={})",
-        text.chars().take(40).collect::<String>(),
-        lang
-    );
-    let el_key = std::env::var("ELEVENLABS_API_KEY").unwrap_or_default();
-    let gemini_key = std::env::var("GEMINI_API_KEY").unwrap_or_default();
-    let openai_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
-    match crate::tts::speak(text, lang, &el_key, &gemini_key, &openai_key) {
-        Ok(()) => format!(
-            "Spoke aloud: {:?} (lang={})",
-            text.chars().take(50).collect::<String>(),
-            lang
-        ),
-        Err(e) => format!("TTS error: {}", e),
     }
 }
 

@@ -24,8 +24,7 @@ const STATE_DONE: u8 = 2;
 const SYSTEM_PROMPT: &str = "\
 You are CapsLockX Brainstorm, a helpful assistant embedded in a desktop productivity tool. \
 Answer concisely and helpfully. Use the same language as the user's input. \
-If given code or text, help with it. You can see the conversation history for context. \
-Only use the speak tool when the user explicitly asks to read aloud or pronounce something.";
+If given code or text, help with it. You can see the conversation history for context.";
 
 const HISTORY_FILENAME: &str = "brainstorm_history.json";
 
@@ -577,36 +576,6 @@ fn agent_turn(
                     }
                 ));
                 eprintln!("[CLX] brainstorm: response {} chars", response.len());
-
-                // TTS: speak the response aloud.
-                // Detect language from response content.
-                let lang = if response.chars().any(|c| {
-                    ('\u{3040}'..='\u{30FF}').contains(&c)
-                        || ('\u{4E00}'..='\u{9FFF}').contains(&c)
-                            && ('\u{3040}'..='\u{309F}').contains(&c)
-                }) {
-                    "ja"
-                } else if response
-                    .chars()
-                    .any(|c| ('\u{4E00}'..='\u{9FFF}').contains(&c))
-                {
-                    "zh"
-                } else if response
-                    .chars()
-                    .any(|c| ('\u{AC00}'..='\u{D7AF}').contains(&c))
-                {
-                    "ko"
-                } else {
-                    "en"
-                };
-                // Read API keys from config for TTS.
-                let tts_gemini_key = config.api_key.clone();
-                let tts_text = response.clone();
-                std::thread::spawn(move || {
-                    if let Err(e) = crate::tts::speak(&tts_text, lang, "", &tts_gemini_key, "") {
-                        eprintln!("[CLX] brainstorm tts: {}", e);
-                    }
-                });
             }
         }
         Err(e) => {

@@ -9,8 +9,6 @@
 #[cfg(target_os = "macos")]
 mod agent_cmd;
 #[cfg(target_os = "macos")]
-mod audio_tap;
-#[cfg(target_os = "macos")]
 mod brainstorm_overlay;
 #[cfg(target_os = "macos")]
 mod capslock_remap;
@@ -27,23 +25,17 @@ mod keyboard_layout_overlay;
 #[cfg(target_os = "macos")]
 mod launch_at_login;
 #[cfg(target_os = "macos")]
-mod mic_mode;
-#[cfg(target_os = "macos")]
 mod observe_cmd;
 #[cfg(target_os = "macos")]
 mod ocr_cmd;
+#[cfg(target_os = "macos")]
+mod otoji;
 #[cfg(target_os = "macos")]
 mod output;
 #[cfg(target_os = "macos")]
 mod prefs;
 #[cfg(target_os = "macos")]
-mod system_audio;
-#[cfg(target_os = "macos")]
 mod tray;
-#[cfg(target_os = "macos")]
-mod voice_capture;
-#[cfg(target_os = "macos")]
-mod voice_overlay;
 
 #[cfg(target_os = "macos")]
 fn main() {
@@ -116,8 +108,8 @@ fn main() {
             println!();
             println!("HOTKEYS (while CapsLock or Space held):");
             println!("  HJKL         cursor movement    WASD        mouse movement");
-            println!("  B            brainstorm (AI)    M           agent (AI control)");
-            println!("  V            voice input        1-9         virtual desktops");
+            println!("  B            brainstorm (AI)    1-9         virtual desktops");
+            println!("  V            voice input (opens otoji)");
             return;
         }
         _ => {}
@@ -190,15 +182,6 @@ fn main() {
         // Reap any orphan clx-prompt processes from previous (crashed) sessions.
         let _ = std::process::Command::new("sh")
             .args(["-c", "pkill -9 -f 'clx-prompt' 2>/dev/null"])
-            .status();
-
-        // Reap orphaned `otoji listen` backends from a previous clx instance.
-        // With startup pre-warm they no longer get killed on clx exit (the
-        // child outlives its parent's kill -9), so without this each restart
-        // would leak another mic-open otoji process. The fresh instance
-        // pre-warms its own.
-        let _ = std::process::Command::new("sh")
-            .args(["-c", "pkill -9 -f 'otoji listen' 2>/dev/null"])
             .status();
     }
 
@@ -292,19 +275,8 @@ fn main() {
         capslock_remap::apply();
     }
 
-    // Install the menu bar icon and voice overlay class before entering the run loop.
+    // Install the menu bar icon before entering the run loop.
     tray::setup_tray();
-    voice_overlay::init_overlay();
-
-    // NOTE: clx does NOT request microphone permission. The mic is owned by the
-    // otoji subprocess (`otoji listen` opens the input device itself — see
-    // voice_otoji.rs), so the Microphone TCC grant belongs to otoji, not clx.
-    // Requesting it here would put clx in the Microphone privacy list too and
-    // pop a redundant permission dialog. We still read the mic *mode* below
-    // (a query-only system setting) for the tray label and Voice Isolation tip.
-
-    // Prompt user to enable Voice Isolation if not active.
-    mic_mode::ensure_voice_isolation();
 
     // Install CGEventTap and block on CFRunLoop.
     hook::install_and_run();

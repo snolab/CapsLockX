@@ -9,68 +9,16 @@ license = "GPL-3.0"
 name = "capslockx_core"
 path = "src/lib.rs"
 
-# STT-dependent bins (sherpa-onnx / whisper-rs). Gated via required-features
-# so default builds (no `stt`) and no-default-features Windows builds don't
-# try to compile them and fail with "module local_sherpa configured out".
-[[bin]]
-name = "stt-bench"
-path = "src/bin/stt-bench.rs"
-required-features = ["stt"]
-
-[[bin]]
-name = "stt-quick"
-path = "src/bin/stt-quick.rs"
-required-features = ["stt"]
-
-[[bin]]
-name = "stt-compare"
-path = "src/bin/stt-compare.rs"
-required-features = ["stt"]
-
-[[bin]]
-name = "stt-server"
-path = "src/bin/stt-server.rs"
-required-features = ["stt"]
-
-[[bin]]
-name = "sherpa-test"
-path = "src/bin/sherpa-test.rs"
-required-features = ["stt"]
-
-[[bin]]
-name = "voice-test"
-path = "src/bin/voice-test.rs"
-required-features = ["stt"]
-
-# Voice QA harness: TTS-as-ground-truth regression test. No required-features —
-# shells out to system `say` and external `otoji` binary, so it builds cleanly
-# in a stripped no-default-features environment.
-[[bin]]
-name = "voice-qa"
-path = "src/bin/voice-qa.rs"
-
 [dependencies]
 once_cell    = "1.19"
 parking_lot  = "0.12"
-cpal         = "0.15"
-ringbuf      = "0.4"
 dirs         = "5"
-whisper-rs   = { version = "0.13", optional = true }
-sherpa-rs    = { version = "0.6", optional = true }
-ten-vad-rs   = { version = "0.1", optional = true }
-# ten-vad-rs pulls in `ort` (ONNX Runtime). Force load-dynamic so ort dlopens
-# ONNX Runtime at runtime instead of static-linking it: required for x86_64-macOS
-# (ort ships no prebuilt there) and avoids a symbol collision with sherpa's copy.
-ort          = { version = "=2.0.0-rc.11", features = ["load-dynamic"], optional = true }
 serde_json   = "1"
 # JS engine: rquickjs (native, fast) + boa (WASM fallback)
 boa_engine   = "0.21"
 boa_gc       = "0.21"
 woxi         = "0.1"
 libc         = "0.2"
-aec3         = "0.1"
-pitch-detection = "0.3"
-mp3lame-encoder = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # OS CSPRNG, exposed to scripts as `clx.random`. Lives here rather than in the shared
@@ -78,7 +26,6 @@ mp3lame-encoder = "0.2"
 # reason to carry.
 getrandom    = "0.2"
 ureq         = "2"
-msedge-tts   = "0.3"
 rquickjs     = { version = "0.11", features = ["bindgen"] }
 # In-process GGUF text generation (local-first clx+B, no Ollama). Optional:
 # pulls in a C++ toolchain (cmake + compiler) to build llama.cpp from source.
@@ -95,11 +42,7 @@ web-time = "1"
 
 [features]
 default = []
-# Local STT engines (whisper.cpp, sherpa-onnx, ten-vad).
-# Disabled by default because whisper-rs 0.13 fails to compile on Windows.
-# macOS/Linux builds should opt in: `cargo build --features stt`.
-stt = ["dep:whisper-rs", "dep:sherpa-rs", "dep:ten-vad-rs", "dep:ort"]
-# Cloud LLM features (brainstorm chat, agent, llm_client, cloud_stt). When
+# Cloud LLM features (brainstorm chat, agent, llm_client). When
 # disabled, all outbound HTTP entry points in those modules collapse to
 # error-returning stubs (same shape as the wasm32 stubs), so Space+B/M
 # become user-visible no-ops in the "portable" variant. Enabled by the

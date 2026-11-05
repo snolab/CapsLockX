@@ -45,60 +45,10 @@ pub struct ClxConfig {
     /// CLX+C uses side-by-side; Shift+C always uses the opposite layout.
     pub window_arrange_side_by_side: bool,
     pub speed: SpeedConfig,
-    /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
-    pub stt_engine: String,
-    /// VAD-based PTT auto-release: silence duration in ms before auto-commit.
-    /// 0 = disabled (hold-to-release only). Suggested: 1500.
-    pub ptt_vad_auto_release_ms: u64,
-    /// PTT polish LLM provider: "gemini" | "openai" | "anthropic" | "auto".
-    /// "openai" uses OTOJI_POLISH_BASE_URL (default localhost:11434 = Ollama).
-    pub ptt_polish_provider: String,
-    /// PTT polish model override (e.g. "qwen2.5:7b"). Empty = otoji default.
-    pub ptt_polish_model: String,
-    /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
-    pub whisper_model_path: String,
-    /// BCP-47 language code for whisper-cli --language. Default "ja".
-    pub whisper_language: String,
     /// Per-provider API keys.
     pub gemini_api_key: String,
     pub openai_api_key: String,
     pub anthropic_api_key: String,
-    pub elevenlabs_api_key: String,
-    /// Enable LLM-based STT correction.
-    pub stt_correction: bool,
-    /// TTS fallback chain (comma-separated model names).
-    pub tts_chain: String,
-    /// STT polish fallback chain (comma-separated model names).
-    pub stt_polish_chain: String,
-    // Advanced voice/AEC thresholds
-    pub aec_gain: f32,
-    pub noise_gate: f32,
-    pub speech_start_prob: f32,
-    pub speech_end_prob: f32,
-    pub speech_start_frames: usize,
-    pub silence_end_frames: usize,
-    /// VPIO acoustic echo cancellation mode: "off" | "dual-only" | "always".
-    /// - "off":       never use VPIO; raw mic via cpal.
-    /// - "dual-only": VPIO only when sys-audio is also captured (Shift+V).
-    /// - "always":    VPIO for every PTT session (cancels speaker bleed even in mic-only mode). Default.
-    pub aec_mode: String,
-    // ── Wake-word ─────────────────────────────────────────────────────────
-    /// Master toggle for the always-on KWS listener.
-    pub wake_word_enabled: bool,
-    /// Path to the sherpa-onnx KWS model directory.
-    pub wake_word_model_dir: String,
-    /// Path to the BPE-encoded keywords.txt used by sherpa.
-    pub wake_word_keywords_file: String,
-    /// Detection threshold (0.0 – 1.0). Higher = stricter.
-    pub wake_word_threshold: f32,
-    /// Safety cap on how long PTT stays held after a wake event (ms).
-    /// The VAD watchdog normally releases sooner, after ~1.2s of silence.
-    pub wake_word_hold_ms: u64,
-    // ── Note-mode translation ─────────────────────────────────────────────
-    /// Translate continuous (non-PTT) transcripts independently of PTT.
-    pub note_translate_enabled: bool,
-    /// Target language for note-mode translation (e.g. "Japanese", "ja").
-    pub note_translate_target: String,
     // ── Brainstorm: local-first LLM ───────────────────────────────────────
     /// Prefer a local LLM (Ollama) for CLX+B over any cloud API. Default true.
     /// Cloud keys remain a runtime fallback when the local server is down.
@@ -118,35 +68,9 @@ impl Default for ClxConfig {
             use_ralt: false,
             window_arrange_side_by_side: false,
             speed: SpeedConfig::default(),
-            stt_engine: "sherpa".to_string(),
-            ptt_vad_auto_release_ms: 0,
-            ptt_polish_provider: "openai".to_string(),
-            ptt_polish_model: String::new(),
-            whisper_model_path: String::new(),
-            whisper_language: "ja".to_string(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
             anthropic_api_key: String::new(),
-            elevenlabs_api_key: String::new(),
-            stt_correction: false,
-            tts_chain: "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native"
-                .to_string(),
-            stt_polish_chain: "min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw"
-                .to_string(),
-            aec_gain: 15.0,
-            noise_gate: 0.003,
-            speech_start_prob: 0.8,
-            speech_end_prob: 0.6,
-            speech_start_frames: 10,
-            silence_end_frames: 20,
-            aec_mode: "always".to_string(),
-            wake_word_enabled: false,
-            wake_word_model_dir: String::new(),
-            wake_word_keywords_file: String::new(),
-            wake_word_threshold: 0.25,
-            wake_word_hold_ms: 8000,
-            note_translate_enabled: false,
-            note_translate_target: String::new(),
             prefer_local: true,
             local_model: String::new(),
         }
@@ -307,20 +231,9 @@ mod tests {
         assert!(!c.use_insert);
         assert!(!c.use_scroll_lock);
         assert!(!c.use_ralt);
-        assert_eq!(c.stt_engine, "sherpa");
         assert_eq!(c.gemini_api_key, "");
         assert_eq!(c.openai_api_key, "");
         assert_eq!(c.anthropic_api_key, "");
-        assert_eq!(c.elevenlabs_api_key, "");
-        assert!(!c.stt_correction);
-        assert!(c.tts_chain.contains("elevenlabs"));
-        assert!(c.stt_polish_chain.contains("raw"));
-        assert_eq!(c.aec_gain, 15.0);
-        assert_eq!(c.noise_gate, 0.003);
-        assert_eq!(c.speech_start_prob, 0.8);
-        assert_eq!(c.speech_end_prob, 0.6);
-        assert_eq!(c.speech_start_frames, 10);
-        assert_eq!(c.silence_end_frames, 20);
     }
 
     #[test]
