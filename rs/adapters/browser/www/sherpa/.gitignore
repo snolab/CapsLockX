@@ -1,3 +1,0 @@
-# Large WASM model files (download on demand)
-*.wasm
-*.data

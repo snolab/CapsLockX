@@ -2,9 +2,7 @@ pub mod acc_model;
 #[cfg(test)]
 mod acc_model_test;
 pub mod agent;
-pub mod audio_capture;
 pub mod bindings;
-pub mod cloud_stt;
 pub mod effects;
 pub mod engine;
 pub mod hotstring;
@@ -13,18 +11,12 @@ pub mod key_code;
 pub mod llm_client;
 pub mod local_gguf;
 pub mod local_llm;
-#[cfg(feature = "stt")]
-pub mod local_sherpa;
-#[cfg(feature = "stt")]
-pub mod local_whisper;
 pub mod modules;
 pub mod platform;
 pub mod plugin;
 pub mod script;
 pub mod state;
-pub mod stt_corrector;
 pub mod task_manager;
-pub mod tts;
 
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_platform;

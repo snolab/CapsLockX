@@ -217,7 +217,7 @@
   <div id="topbar">
     <div class="row1">
       <h1>CapsLockX</h1>
-      <input id="search" type="search" placeholder="Filter settings… (e.g. voice, key, gain)" />
+      <input id="search" type="search" placeholder="Filter settings… (e.g. key, speed)" />
       <div id="status-sticky">Loading…</div>
     </div>
     <div id="tabs"></div>
@@ -324,12 +324,11 @@
   <section>
     <h2>Voice</h2>
     <div style="color:var(--overlay1);font-size:12px;padding:0 0 10px;">
-      STT エンジン・AEC・翻訳・VAD などの音声設定は otoji が管理しています。
+      Voice input lives in the otoji app, including all of its settings.
     </div>
     <button id="open_otoji_settings" style="background:var(--blue);color:var(--base);border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600;">Voice Settings… (otoji)</button>
     <div style="color:var(--overlay1);font-size:11px;padding:8px 0 0;">
-      <b>Space+V</b> = voice input (hold) / voice note (click)<br>
-      <b>Shift+Space+V</b> = dual capture (mic + system audio with AEC)
+      <b>Space+V</b> = hold to talk / tap to toggle otoji
     </div>
   </section>
 
@@ -353,49 +352,8 @@
       <button class="key-edit" data-for="anthropic_api_key">Edit</button>
       <button class="key-copy" data-for="anthropic_api_key">Copy</button>
     </div>
-    <div class="key-row">
-      <label for="elevenlabs_api_key">ElevenLabs</label>
-      <input type="password" id="elevenlabs_api_key" placeholder="xi-..." disabled>
-      <button class="key-edit" data-for="elevenlabs_api_key">Edit</button>
-      <button class="key-copy" data-for="elevenlabs_api_key">Copy</button>
-    </div>
     <div style="color:var(--overlay1);font-size:12px;padding:6px 0 0;">
-      Set keys for each provider. Used for brainstorm, TTS, and STT correction.
-    </div>
-  </section>
-
-  <section>
-    <h2>Wake Word</h2>
-    <div style="color:var(--overlay1);font-size:11px;padding:0 0 8px;">
-      Always-on keyword detection. When the wake phrase is heard, CLX enables
-      Agent mode and starts a PTT segment automatically — like "Hey Siri"
-      for the computer agent. Requires a sherpa-onnx KWS model on disk.
-    </div>
-    <div style="margin-bottom:10px;">
-      <label><input type="checkbox" id="wake_word_enabled"> Enable wake-word listener</label>
-    </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Model directory</label>
-      <input type="text" id="wake_word_model_dir" placeholder="~/.cache/otoji/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01" style="width:100%;background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:12px;font-family:monospace;">
-    </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Keywords file (BPE-encoded)</label>
-      <input type="text" id="wake_word_keywords_file" placeholder="~/.config/clx/kws-keywords.txt" style="width:100%;background:var(--surface0);color:var(--text);border:none;border-radius:4px;padding:4px 8px;font-size:12px;font-family:monospace;">
-    </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Threshold <span id="wake_word_threshold_val" style="color:var(--text);margin-left:8px;"></span></label>
-      <input type="range" id="wake_word_threshold" min="0.10" max="0.60" step="0.01" style="width:260px;">
-      <span style="color:var(--overlay1);font-size:11px;margin-left:10px;">0.25 default · higher = stricter</span>
-    </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:12px;color:var(--subtext0);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px;">Max hold cap (ms) <span id="wake_word_hold_ms_val" style="color:var(--text);margin-left:8px;"></span></label>
-      <input type="range" id="wake_word_hold_ms" min="2000" max="15000" step="500" style="width:260px;">
-      <span style="color:var(--overlay1);font-size:11px;margin-left:10px;">Safety cap — VAD watchdog usually releases sooner (~1.2s silence)</span>
-    </div>
-    <div style="color:var(--overlay1);font-size:11px;padding:6px 0 0;">
-      Takes effect on next CLX restart. Phrases are defined in the keywords
-      file (one BPE-encoded line per phrase). Build with sherpa-onnx's
-      <code>text2token.py</code>.
+      Set keys for each provider. Used for brainstorm.
     </div>
   </section>
 
@@ -423,16 +381,9 @@
         gemini_api_key:    document.getElementById('gemini_api_key').value,
         openai_api_key:    document.getElementById('openai_api_key').value,
         anthropic_api_key: document.getElementById('anthropic_api_key').value,
-        elevenlabs_api_key: document.getElementById('elevenlabs_api_key').value,
         window_cycle_order:  document.getElementById('window_cycle_order').value,
         window_arrange_order: document.getElementById('window_arrange_order').value,
         window_arrange_side_by_side: document.getElementById('window_arrange_side_by_side').value === 'true',
-        // Wake word
-        wake_word_enabled:       document.getElementById('wake_word_enabled').checked,
-        wake_word_model_dir:     document.getElementById('wake_word_model_dir').value,
-        wake_word_keywords_file: document.getElementById('wake_word_keywords_file').value,
-        wake_word_threshold:     parseFloat(document.getElementById('wake_word_threshold').value),
-        wake_word_hold_ms:       parseInt(document.getElementById('wake_word_hold_ms').value),
       };
     }
 
@@ -451,22 +402,9 @@
       if (cfg.gemini_api_key) document.getElementById('gemini_api_key').value = cfg.gemini_api_key;
       if (cfg.openai_api_key) document.getElementById('openai_api_key').value = cfg.openai_api_key;
       if (cfg.anthropic_api_key) document.getElementById('anthropic_api_key').value = cfg.anthropic_api_key;
-      if (cfg.elevenlabs_api_key) document.getElementById('elevenlabs_api_key').value = cfg.elevenlabs_api_key;
       if (cfg.window_cycle_order) document.getElementById('window_cycle_order').value = cfg.window_cycle_order;
       if (cfg.window_arrange_order) document.getElementById('window_arrange_order').value = cfg.window_arrange_order;
       document.getElementById('window_arrange_side_by_side').value = String(!!cfg.window_arrange_side_by_side);
-      // Wake word
-      document.getElementById('wake_word_enabled').checked = cfg.wake_word_enabled || false;
-      document.getElementById('wake_word_model_dir').value = cfg.wake_word_model_dir || '';
-      document.getElementById('wake_word_keywords_file').value = cfg.wake_word_keywords_file || '';
-      var wwThresh = typeof cfg.wake_word_threshold === 'number' ? cfg.wake_word_threshold : 0.25;
-      document.getElementById('wake_word_threshold').value = wwThresh;
-      var wwThreshV = document.getElementById('wake_word_threshold_val');
-      if (wwThreshV) wwThreshV.textContent = wwThresh.toFixed(2);
-      var wwHold = typeof cfg.wake_word_hold_ms === 'number' ? cfg.wake_word_hold_ms : 5000;
-      document.getElementById('wake_word_hold_ms').value = wwHold;
-      var wwHoldV = document.getElementById('wake_word_hold_ms_val');
-      if (wwHoldV) wwHoldV.textContent = wwHold + 'ms';
     }
 
     function setSlider(id, value) {
@@ -475,8 +413,7 @@
     }
 
     // Live label update while dragging
-    ['cursor_speed', 'page_speed', 'tab_speed', 'action_speed', 'mouse_speed', 'scroll_speed',
-     'wake_word_threshold', 'wake_word_hold_ms'].forEach(function(id) {
+    ['cursor_speed', 'page_speed', 'tab_speed', 'action_speed', 'mouse_speed', 'scroll_speed'].forEach(function(id) {
       document.getElementById(id).addEventListener('input', function(e) {
         document.getElementById(id + '_val').textContent = e.target.value;
       });

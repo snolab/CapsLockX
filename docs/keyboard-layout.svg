@@ -209,10 +209,10 @@
       <rect x="88"  y="0" width="40" height="32" class="window-bg"/><text x="108" y="12" class="fn-label">Cycle</text><text x="108" y="24" class="fn-sub">Z</text>
       <rect x="132" y="0" width="40" height="32" class="window-bg"/><text x="152" y="12" class="fn-label">Close</text><text x="152" y="24" class="fn-sub">X</text>
       <rect x="176" y="0" width="40" height="32" class="window-bg"/><text x="196" y="12" class="fn-label">Tile</text><text x="196" y="24" class="fn-sub">C</text>
-      <rect x="220" y="0" width="40" height="32" class="ai-bg"/><text x="240" y="12" class="fn-label">Voice</text><text x="240" y="24" class="fn-sub">V</text>
+      <rect x="220" y="0" width="40" height="32" class="ai-bg"/><text x="240" y="12" class="fn-label">otoji</text><text x="240" y="24" class="fn-sub">V</text>
       <rect x="264" y="0" width="40" height="32" class="ai-bg"/><text x="284" y="12" class="fn-label">Brain</text><text x="284" y="24" class="fn-sub">B</text>
       <rect x="308" y="0" width="40" height="32" class="action-bg"/><text x="328" y="12" class="fn-label">Tab</text><text x="328" y="24" class="fn-sub">N</text>
-      <rect x="352" y="0" width="40" height="32" class="ai-bg"/><text x="372" y="12" class="fn-label">Agent</text><text x="372" y="24" class="fn-sub">M</text>
+      <rect x="352" y="0" width="40" height="32" class="ai-bg"/><text x="372" y="12" class="fn-label">-</text><text x="372" y="24" class="fn-sub">M</text>
       <rect x="396" y="0" width="40" height="32" class="misc-bg"/><text x="416" y="12" class="fn-label">Prefs</text><text x="416" y="24" class="fn-sub">,</text>
       <rect x="440" y="0" width="40" height="32" class="misc-bg"/><text x="460" y="12" class="fn-label">Restart</text><text x="460" y="24" class="fn-sub">.</text>
       <rect x="484" y="0" width="40" height="32" class="misc-bg"/><text x="504" y="12" class="fn-label">HUD</text><text x="504" y="24" class="fn-sub">/</text>

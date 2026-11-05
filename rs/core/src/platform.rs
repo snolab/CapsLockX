@@ -27,20 +27,47 @@ pub enum ArrangeMode {
     SideBySide,
 }
 
-/// System audio capture stream (returned by Platform::start_system_audio).
-pub trait SystemAudioStream: Send {
-    fn take_samples(&self) -> Vec<f32>;
-    fn stop(&self);
-    fn sample_rate(&self) -> u32;
+/// A command for the external otoji voice app (CLX+V). Voice input lives in
+/// otoji, not CapsLockX; CLX only tells otoji's tray what the hotkey did.
+/// The wire names are otoji-tray's control-socket commands.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OtojiCommand {
+    /// Tap: turn otoji on/off.
+    Toggle,
+    /// Turn otoji on (idempotent) — used after CLX had to launch the app.
+    On,
+    /// Hold began: start a push-to-talk segment (turns otoji on if needed).
+    PttStart,
+    /// Hold ended: end the push-to-talk segment.
+    PttEnd,
 }
 
-/// Menu bar / tray icon state for voice features.
+impl OtojiCommand {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            OtojiCommand::Toggle => "toggle",
+            OtojiCommand::On => "on",
+            OtojiCommand::PttStart => "ptt-start",
+            OtojiCommand::PttEnd => "ptt-end",
+        }
+    }
+}
+
+/// What happened to an [`OtojiCommand`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PttTrayState {
-    Idle,
-    Recording,
-    Processing,
-    NoteMode,
+pub enum OtojiSendResult {
+    /// The running otoji tray accepted the command.
+    Sent,
+    /// otoji was installed but not running: CLX launched it and the command
+    /// was delivered once its control socket came up.
+    Launched,
+    /// otoji is not installed.
+    NotInstalled,
+    /// otoji is installed but never answered on its control socket (too old,
+    /// or failed to start).
+    NoResponse,
+    /// otoji does not ship for this platform yet.
+    Unsupported,
 }
 
 pub trait Platform: Send + Sync + 'static {
@@ -268,45 +295,20 @@ pub trait Platform: Send + Sync + 'static {
         }
     }
 
-    // ── Voice overlay (optional, default = no-op) ─────────────────────────────
+    // ── otoji voice app (optional, default = unsupported) ────────────────────
 
-    /// Start capturing system audio. Returns a boxed trait with take_samples()/stop().
-    fn start_system_audio(&self) -> Option<Box<dyn SystemAudioStream>> {
-        None
+    /// Deliver a CLX+V command to the otoji app, launching it if it is
+    /// installed but not running. May block for a few seconds while otoji
+    /// starts — callers run it off the hook thread. Default: otoji doesn't
+    /// ship for this platform yet.
+    fn otoji_send(&self, _cmd: OtojiCommand) -> OtojiSendResult {
+        OtojiSendResult::Unsupported
     }
 
-    /// Start capturing mic with echo cancellation (AEC).
-    /// Returns a boxed trait with take_samples()/stop()/sample_rate().
-    /// Default returns None (falls back to cpal AudioCapture).
-    fn start_aec_mic(&self) -> Option<Box<dyn SystemAudioStream>> {
-        None
-    }
+    /// Open a URL in the default browser. Default no-op.
+    fn open_url(&self, _url: &str) {}
 
     fn open_preferences(&self) {}
-    fn show_voice_overlay(&self) {}
-    fn hide_voice_overlay(&self) {}
-    fn update_voice_overlay(
-        &self,
-        _mic_levels: &[f32],
-        _mic_vad: bool,
-        _sys_levels: &[f32],
-        _sys_vad: bool,
-    ) {
-    }
-    fn update_voice_subtitle(&self, _text: &str) {}
-    /// Update only the translation lane of the voice overlay (line 2).
-    /// Independent from `update_voice_subtitle` — partial/final transcripts
-    /// don't touch this, and a new transcript doesn't clear the last
-    /// completed translation. The translation stays sticky until a new one
-    /// arrives, so the user can keep reading it while speaking the next
-    /// utterance. Pass empty `&str` to explicitly clear.
-    fn update_voice_subtitle_translation(&self, _translation: &str) {}
-    /// Update the menu bar tray icon to reflect PTT / voice state.
-    fn set_ptt_tray_state(&self, _state: PttTrayState) {}
-
-    /// Fire a brief haptic tap on the trackpad (Taptic Engine), e.g. to signal
-    /// "mic is ready, start speaking". Default no-op on platforms without one.
-    fn haptic_feedback(&self) {}
 
     // ── Brainstorm overlay (optional, default = no-op) ─────────────────────
 

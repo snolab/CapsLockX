@@ -1,6 +1,6 @@
 # CapsLockX 2.0
 
-> Hold `CapsLock` or `Space` + a key. Navigate without leaving home row, dictate by voice, let an LLM drive your computer.
+> Hold `CapsLock` or `Space` + a key. Navigate without leaving home row, trigger voice input, chat with an LLM.
 
 **CapsLockX** is a cross-platform keyboard productivity layer in Rust. The original AutoHotkey 1.x script (Windows only) lives on in the [`legacy` branch](https://github.com/snolab/CapsLockX/tree/legacy); the `main` branch here is the 2.0 ground-up rewrite that runs on macOS, Linux, and Windows.
 
@@ -28,9 +28,8 @@
 | `Space+Z` / `X` / `C` | Windows | Cycle / close / tile (Shift modifies) |
 | `Space+Alt+C` | Windows | Swap and save C / Shift+C modes, then arrange once using the new default |
 | `Space+1`–`9` | Windows | Switch virtual desktop |
-| `Space+V` | **AI** | Voice dictation (local STT + optional LLM polish) |
+| `Space+V` | **Voice** | Trigger the [otoji](https://github.com/snomiao/otoji) app: hold to talk, tap to toggle (macOS) |
 | `Space+B` | **AI** | Brainstorm chat overlay |
-| `Space+M` | **AI** | LLM agent operates the UI |
 | `Space+CapsLock` (chord) | — | Lock into CLX mode until tapped again |
 | `Esc` | — | Dismiss overlays / kill running agent |
 
@@ -59,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/snolab/CapsLockX/beta/scripts/insta
 clx                 # forks to background
 ```
 
-Grant **Accessibility** permission when prompted (System Settings → Privacy & Security → Accessibility). For `Space+V` voice features, also grant **Microphone**.
+Grant **Accessibility** permission when prompted (System Settings → Privacy & Security → Accessibility). Voice input needs the separate [otoji](https://github.com/snomiao/otoji/releases) app, which asks for its own Microphone permission.
 
 ### Linux
 
@@ -80,20 +79,19 @@ See [docs/installation.md](./docs/installation.md) for portable zips, Chocolatey
 
 ## AI features
 
-### `Space+V` — Voice dictation
+### `Space+V` — Voice input, via otoji
 
-Hold to talk push-to-talk style, tap to leave it on. The pipeline:
+Voice input lives in [otoji](https://github.com/snomiao/otoji), not CapsLockX. `Space+V` triggers it: tap to turn otoji on or off, hold to talk. If otoji is installed but not running it is launched; if it isn't installed, CapsLockX suggests [getting it](https://github.com/snomiao/otoji/releases). Transcription, polish, translation, text-to-speech and the wake word are all configured in otoji.
 
-1. **STT** — SenseVoice (local) or whisper.cpp; Gemini cloud as fallback. Mic and system-audio tracks transcribed in parallel.
-2. **Polish chain** — short utterances (≤15 chars or ≤5 s) return raw to avoid LLM-induced CER regressions; longer dictation flows through MLX (Qwen 2.5-3B local) or an LLM corrector.
-3. **Translation** (optional) — learning / interpreter / chat / conversation presets.
-4. **TTS** — ElevenLabs → Gemini → OpenAI → msedge-tts → native, with automatic fallback.
+otoji ships for macOS only so far; on Windows and Linux `Space+V` says it isn't available yet.
 
 ### `Space+B` — Brainstorm chat
 
 Streaming overlay panel to Gemini / OpenAI / Anthropic / Ollama / MLX. History preserved between sessions.
 
-### `Space+M` (or `clx agent`) — LLM agent
+### `clx agent` — LLM agent
+
+The `Space+M` hotkey is temporarily disabled while voice input moves to otoji, since it was driven by CapsLockX's own transcripts. The CLI still works.
 
 Describe a task; the agent reads your screen (Apple Vision OCR + AX tree) and operates the UI via the CLX command language:
 
@@ -135,7 +133,7 @@ rs/
     windows/               WH_KEYBOARD_LL + SendInput (WIP)
     browser/               WASM + Web APIs (experimental)
 lib/
-  otoji/                   voice/STT/TTS engine (submodule)
+  otoji/                   voice app that Space+V triggers (submodule, not built here)
   capslockx.com/           landing site (submodule)
 docs/                      docsify site, mirrored to snolab.github.io/CapsLockX
 skills/clx-agent/          agent system prompt + tool docs (editable at runtime)
@@ -201,9 +199,9 @@ The docs site at [snolab.github.io/CapsLockX](https://snolab.github.io/CapsLockX
 
 PRs welcome. Before opening one:
 
-- Read [`CLAUDE.md`](./CLAUDE.md) for the project's conventions (build, voice rules, agent language, macOS permission hazards).
+- Read [`CLAUDE.md`](./CLAUDE.md) for the project's conventions (build, agent language, macOS permission hazards).
 - For Rust changes: `cargo fmt && cargo clippy --workspace --all-targets` should be clean.
-- For UI/voice features: include a brief test plan since unit tests don't cover them.
+- For UI features: include a brief test plan since unit tests don't cover them.
 
 Issues and feature requests: <https://github.com/snolab/CapsLockX/issues>.
 
@@ -220,6 +218,5 @@ The `lib/capslockx.com` landing-page submodule is MIT.
 ## Acknowledgements
 
 - AutoHotkey, where it all started.
-- [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) for the local STT model.
 - [Karabiner-Elements](https://karabiner-elements.pqrs.org/) and [Hammerspoon](https://www.hammerspoon.org/) for showing what's possible at the macOS HID layer.
 - Everyone who hit `CapsLock` once too many times and thought *"there has to be a better use for this key."*

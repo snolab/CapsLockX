@@ -2,8 +2,7 @@
 //!
 //! Prototype backend for local-first `clx+B` that runs **entirely in-process**
 //! with no Ollama install and no background server — the same "embed the
-//! runtime, download only the weights" pattern the voice module already uses
-//! with `sherpa-onnx`. See `docs/dev/local-brainstorm-backends.md`.
+//! runtime, download only the weights" pattern. See `docs/dev/local-brainstorm-backends.md`.
 //!
 //! Layering mirrors `local_llm.rs`:
 //!   * **pure** — `format_chatml()` builds the Qwen2.5 ChatML prompt. No I/O,

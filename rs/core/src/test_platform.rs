@@ -1,7 +1,7 @@
 //! Mock Platform for unit tests. Records every call into a shared log.
 
 use crate::key_code::KeyCode;
-use crate::platform::{ArrangeMode, MouseButton, Platform, PttTrayState};
+use crate::platform::{ArrangeMode, MouseButton, OtojiCommand, OtojiSendResult, Platform};
 use std::sync::Mutex;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,10 +27,8 @@ pub enum Call {
     MoveWindowToDesktop(u32),
     TypeText(String),
     OpenPreferences,
-    ShowVoiceOverlay,
-    HideVoiceOverlay,
-    UpdateVoiceSubtitle(String),
-    SetPttTrayState(PttTrayState),
+    OtojiSend(OtojiCommand),
+    OpenUrl(String),
     GetSelectedText,
     GetClipboardText,
     SetClipboardText(String),
@@ -46,6 +44,8 @@ pub struct MockPlatform {
     pub clipboard: Mutex<String>,
     pub selected: Mutex<String>,
     pub prompt_response: Mutex<Option<String>>,
+    /// What `otoji_send` reports back (default: `Sent`).
+    pub otoji_result: Mutex<OtojiSendResult>,
 }
 
 impl MockPlatform {
@@ -55,6 +55,7 @@ impl MockPlatform {
             clipboard: Mutex::new(String::new()),
             selected: Mutex::new(String::new()),
             prompt_response: Mutex::new(None),
+            otoji_result: Mutex::new(OtojiSendResult::Sent),
         }
     }
 
@@ -158,17 +159,12 @@ impl Platform for MockPlatform {
     fn open_preferences(&self) {
         self.log(Call::OpenPreferences);
     }
-    fn show_voice_overlay(&self) {
-        self.log(Call::ShowVoiceOverlay);
+    fn otoji_send(&self, cmd: OtojiCommand) -> OtojiSendResult {
+        self.log(Call::OtojiSend(cmd));
+        *self.otoji_result.lock().unwrap()
     }
-    fn hide_voice_overlay(&self) {
-        self.log(Call::HideVoiceOverlay);
-    }
-    fn update_voice_subtitle(&self, t: &str) {
-        self.log(Call::UpdateVoiceSubtitle(t.into()));
-    }
-    fn set_ptt_tray_state(&self, s: PttTrayState) {
-        self.log(Call::SetPttTrayState(s));
+    fn open_url(&self, url: &str) {
+        self.log(Call::OpenUrl(url.into()));
     }
     fn get_selected_text(&self) -> String {
         self.log(Call::GetSelectedText);

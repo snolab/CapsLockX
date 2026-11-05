@@ -1,9 +1,16 @@
-use std::io::{BufRead, BufReader};
 use std::sync::atomic::{AtomicBool, Ordering};
-/// CLX Agent — LLM-driven computer control via voice.
+/// CLX Agent — LLM-driven computer control.
 ///
-/// Keybindings:
-///   CLX+M       — Toggle agent mode (voice → STT → LLM agent → execute)
+/// **Temporarily disabled (2026-11).** Agent mode was driven by voice: CLX+M
+/// routed CLX's own speech-to-text into `clx agent --prompt`. Voice input has
+/// moved out of CapsLockX into otoji (CLX+V now just triggers otoji), so there
+/// is no transcript left to feed the agent. Until otoji can hand transcripts
+/// back, the hotkeys below are unbound: `Modules` skips this module while
+/// [`ENABLED`] is false. The code is kept compiling (and unit-tested) so it can
+/// be switched back on; the `clx agent` subcommand is unaffected.
+///
+/// Keybindings (when enabled):
+///   CLX+M       — Toggle agent mode
 ///   CLX+Shift+M — Force stop agent
 ///   ESC         — Stop agent
 use std::sync::Arc;
@@ -12,76 +19,15 @@ use std::sync::Mutex;
 use crate::key_code::{KeyCode, Modifiers};
 use crate::platform::Platform;
 
-/// Global flag: when true, voice transcripts are sent to the agent
-/// instead of being typed at cursor.
+/// Whether CLX+M is bound. See the module docs for why this is off.
+pub const ENABLED: bool = false;
+
+/// Global flag: agent mode on/off.
 static AGENT_MODE: AtomicBool = AtomicBool::new(false);
 
-/// Check if agent mode is active (called by voice module).
+/// Check if agent mode is active.
 pub fn is_agent_mode() -> bool {
     AGENT_MODE.load(Ordering::Relaxed)
-}
-
-/// Enable agent mode programmatically (called by wake-word listener).
-/// Idempotent — safe to call when already on.
-pub fn enable_agent_mode() {
-    if !AGENT_MODE.swap(true, Ordering::Relaxed) {
-        eprintln!("[CLX] agent: MODE ON (via wake-word)");
-    }
-}
-
-/// Called by the voice module when a transcript is ready and agent mode is on.
-/// Spawns clx agent --prompt with the transcript.
-pub fn on_voice_transcript(text: &str, platform: &dyn Platform) {
-    if text.trim().is_empty() {
-        return;
-    }
-    let prompt = text.trim().to_string();
-    eprintln!(
-        "[CLX] agent: voice transcript → \"{}\"",
-        &prompt[..prompt.len().min(80)]
-    );
-    platform.show_brainstorm_overlay(&format!("🎤 \"{}\"\n\nRunning agent...", prompt));
-
-    // Spawn clx agent subprocess.
-    let clx_bin = std::env::current_exe().unwrap_or_else(|_| "clx".into());
-    match std::process::Command::new(&clx_bin)
-        .arg("agent")
-        .arg("--prompt")
-        .arg(&prompt)
-        .stderr(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::null())
-        .spawn()
-    {
-        Ok(mut child) => {
-            let stderr = child.stderr.take();
-            let mut log = format!("🎤 \"{}\"\n", prompt);
-
-            if let Some(stderr) = stderr {
-                let reader = BufReader::new(stderr);
-                for line in reader.lines() {
-                    let line = match line {
-                        Ok(l) => l,
-                        Err(_) => break,
-                    };
-                    log.push_str(&line);
-                    log.push('\n');
-                    if log.len() > 2000 {
-                        let start = log.len() - 1500;
-                        log = format!("...{}", &log[start..]);
-                    }
-                    platform.show_brainstorm_overlay(&log);
-                }
-            }
-
-            let _ = child.wait();
-            log.push_str("\n— Done. 🎤 Listening...");
-            platform.show_brainstorm_overlay(&log);
-        }
-        Err(e) => {
-            eprintln!("[CLX] agent: spawn error: {}", e);
-            platform.show_brainstorm_overlay(&format!("Agent error: {}\n\n🎤 Listening...", e));
-        }
-    }
 }
 
 pub struct AgentModule {
@@ -195,11 +141,9 @@ impl AgentModule {
         } else {
             AGENT_MODE.store(true, Ordering::Relaxed);
             self.running.store(true, Ordering::Relaxed);
-            eprintln!("[CLX] agent: MODE ON — voice transcripts → agent");
-            self.platform.show_brainstorm_overlay("🤖 Agent Mode ON\n\n🎤 Speak commands. Space+V to dictate.\nSpace+M or ESC to stop.");
-
-            // Also start voice listening if not already active.
-            self.platform.show_voice_overlay();
+            eprintln!("[CLX] agent: MODE ON");
+            self.platform
+                .show_brainstorm_overlay("🤖 Agent Mode ON\n\nSpace+M or ESC to stop.");
         }
     }
 
@@ -283,7 +227,6 @@ mod tests {
         assert!(calls
             .iter()
             .any(|c| matches!(c, Call::ShowBrainstormOverlay(s) if s.contains("Agent Mode ON"))));
-        assert!(calls.iter().any(|c| matches!(c, Call::ShowVoiceOverlay)));
 
         mock.clear();
         assert!(m.on_key_down(KeyCode::M, &mods));
@@ -348,15 +291,6 @@ mod tests {
         AGENT_MODE.store(true, Ordering::Relaxed);
         assert!(is_agent_mode());
         AGENT_MODE.store(false, Ordering::Relaxed);
-    }
-
-    #[test]
-    fn on_voice_transcript_empty_does_nothing() {
-        let _g = TEST_LOCK.lock().unwrap();
-        let mock = MockPlatform::new();
-        on_voice_transcript("", &mock);
-        on_voice_transcript("   ", &mock);
-        assert!(mock.calls().is_empty());
     }
 
     #[test]

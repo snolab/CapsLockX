@@ -1,13 +1,12 @@
 #!/bin/bash
 # Build a self-contained, signed CapsLockX.app and release artifacts (.pkg + .zip).
 #
-# The bundle is relocatable: dylibs live in Contents/Frameworks (reached via an
-# @executable_path/../Frameworks rpath), helper binaries and skills travel inside
-# the bundle, and the tray icon is compiled into the binary. The result can be
-# dropped in /Applications, installed via the .pkg, or unzipped anywhere.
+# The bundle is relocatable: helper binaries and skills travel inside the bundle,
+# and the tray icon is compiled into the binary. The result can be dropped in
+# /Applications, installed via the .pkg, or unzipped anywhere.
 #
 # Usage:
-#   scripts/package-mac.sh              # full build (voice + AI) then package
+#   scripts/package-mac.sh              # full build (with AI) then package
 #   scripts/package-mac.sh --no-build   # package whatever is already in target/release
 #
 # Output (dist/):
@@ -33,14 +32,14 @@ APP="$DIST/$APP_NAME.app"
 NO_BUILD=0
 [ "${1:-}" = "--no-build" ] && NO_BUILD=1
 
-# ── 1. Build release binaries (voice + AI) ───────────────────────────────────
+# ── 1. Build release binaries ────────────────────────────────────────────────
 # Remap absolute build paths so the PUBLIC release binaries don't leak the
 # builder's username / home layout. Rust bakes dependency source paths into
 # panic metadata (e.g. /Users/<you>/.cargo/registry/...); these rules strip the
 # real home and repo prefixes. Changing RUSTFLAGS forces a full recompile.
 CARGO_HOME_DIR="${CARGO_HOME:-$HOME/.cargo}"
 export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$CARGO_HOME_DIR=cargo --remap-path-prefix=$ROOT=. --remap-path-prefix=$HOME=home"
-# --remap-path-prefix is a rustc flag; native -sys crates (whisper.cpp, etc.)
+# --remap-path-prefix is a rustc flag; native -sys crates (quickjs, etc.)
 # are built by cc-rs and need the clang equivalent or they leak the build path.
 PREFIX_MAP="-ffile-prefix-map=$ROOT=. -ffile-prefix-map=$HOME=home"
 export CFLAGS="${CFLAGS:-} $PREFIX_MAP"
@@ -48,15 +47,7 @@ export CXXFLAGS="${CXXFLAGS:-} $PREFIX_MAP"
 if [ "$NO_BUILD" -eq 0 ]; then
     echo "[pkg] building release binaries (--features full, path-remapped)…"
     ( cd rs && cargo build -p capslockx-macos --release --features full \
-        --bin capslockx --bin clx-agent --bin clx-prompt --bin clx-media )
-fi
-
-# Vision OCR helper (Swift). Rebuild if source is newer.
-OCR_SRC="$ROOT/rs/adapters/macos/src/bin/clx-ocr.swift"
-OCR_BIN="$ROOT/clx-ocr"
-if [ -f "$OCR_SRC" ] && { [ ! -x "$OCR_BIN" ] || [ "$OCR_SRC" -nt "$OCR_BIN" ]; }; then
-    echo "[pkg] compiling clx-ocr…"
-    swiftc -O -o "$OCR_BIN" "$OCR_SRC"
+        --bin capslockx --bin clx-agent --bin clx-prompt )
 fi
 
 # ── 2. Generate CapsLockX.icns from the brand icon ───────────────────────────
@@ -78,42 +69,23 @@ rm -f "$ICONSET/icon_64x64.png" "$ICONSET/icon_1024x1024.png"  # not valid icons
 # ── 3. Assemble the bundle ───────────────────────────────────────────────────
 echo "[pkg] assembling $APP_NAME.app…"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Frameworks" \
-         "$APP/Contents/Resources" "$APP/Contents/skills"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/skills"
 
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/CapsLockX.icns"
 
 # Main binary is named `clx` so the daemon's `pgrep -x clx` dedup keeps working.
 cp "$TARGET/capslockx" "$APP/Contents/MacOS/clx"
-for b in clx-agent clx-prompt clx-media; do
+for b in clx-agent clx-prompt; do
     [ -x "$TARGET/$b" ] && cp "$TARGET/$b" "$APP/Contents/MacOS/$b"
 done
-[ -x "$OCR_BIN" ] && cp "$OCR_BIN" "$APP/Contents/MacOS/clx-ocr"
-
-# Dylibs → Frameworks. clx links libsherpa-onnx-c-api + libonnxruntime via @rpath.
-cp "$TARGET/libonnxruntime.1.17.1.dylib"   "$APP/Contents/Frameworks/"
-cp "$TARGET/libsherpa-onnx-c-api.dylib"    "$APP/Contents/Frameworks/"
-[ -f "$TARGET/libsherpa-onnx-cxx-api.dylib" ] && \
-    cp "$TARGET/libsherpa-onnx-cxx-api.dylib" "$APP/Contents/Frameworks/" || true
-( cd "$APP/Contents/Frameworks" && ln -sf libonnxruntime.1.17.1.dylib libonnxruntime.dylib )
-
-# ort (via ten-vad) runs in load-dynamic mode and dlopens ONNX Runtime at
-# runtime; bundle the matching build so the app's ORT_DYLIB_PATH resolves. The
-# app dlopens it by absolute path, so it needs no @rpath/install-name fixup.
-ORT_DYLIB="$("$ROOT/scripts/fetch-ort-dylib.sh" "$ARCH" "$CARGO_TARGET_DIR/ort-dylib")"
-cp "$ORT_DYLIB" "$APP/Contents/Frameworks/"
 
 # Skills (agent system prompt) — read-only, resolved via ../skills from the exe.
 cp -R "$ROOT/skills/." "$APP/Contents/skills/"
 
-# ── 4. Repoint rpath: repo target dir → bundled Frameworks ───────────────────
-echo "[pkg] fixing rpath…"
 CLX="$APP/Contents/MacOS/clx"
 chmod u+w "$CLX"
-install_name_tool -delete_rpath "$ROOT/rs/target/release" "$CLX" 2>/dev/null || true
-install_name_tool -add_rpath "@executable_path/../Frameworks" "$CLX"
 
-# ── 5. Info.plist ────────────────────────────────────────────────────────────
+# ── 4. Info.plist ────────────────────────────────────────────────────────────
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -130,19 +102,14 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>12.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSMicrophoneUsageDescription</key><string>CapsLockX uses the microphone for push-to-talk voice input.</string>
     <key>NSAppleEventsUsageDescription</key><string>CapsLockX uses Apple Events to read the accessibility tree for its agent.</string>
 </dict>
 </plist>
 PLIST
 
-# ── 6. Codesign inside-out (stable identifier ⇒ permissions persist) ─────────
+# ── 5. Codesign inside-out (stable identifier ⇒ permissions persist) ─────────
 echo "[pkg] codesigning…"
-for f in "$APP/Contents/Frameworks/"*.dylib; do
-    [ -L "$f" ] && continue
-    codesign -s - --force --timestamp=none "$f"
-done
-for b in clx-agent clx-prompt clx-media clx-ocr; do
+for b in clx-agent clx-prompt; do
     [ -e "$APP/Contents/MacOS/$b" ] && \
         codesign -s - --force --timestamp=none --identifier "$APP_ID.$b" "$APP/Contents/MacOS/$b"
 done
@@ -154,7 +121,7 @@ codesign -s - --force --timestamp=none --identifier "$APP_ID" \
 codesign -s - --force --identifier "$APP_ID" "$APP"
 codesign --verify --deep --strict "$APP" && echo "[pkg] signature OK"
 
-# ── 7. Package: zip + pkg ────────────────────────────────────────────────────
+# ── 6. Package: zip + pkg ────────────────────────────────────────────────────
 BASE="$APP_NAME-$VERSION-macos-$ARCH"
 echo "[pkg] zipping…"
 rm -f "$DIST/$BASE.zip"

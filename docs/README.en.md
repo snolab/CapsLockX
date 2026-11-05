@@ -1,6 +1,6 @@
-# CapsLockX 2.0 — Keyboard productivity + voice + LLM agent
+# CapsLockX 2.0 — Keyboard productivity + LLM
 
-> Hold `CapsLock` or `Space` + a key. Navigate without leaving home row, dictate by voice, let an LLM drive your computer.
+> Hold `CapsLock` or `Space` + a key. Navigate without leaving home row, trigger voice input, chat with an LLM.
 
 CapsLockX is a cross-platform keyboard productivity layer, **rewritten in Rust** for 2.0. The original AutoHotkey script (1.x, Windows only) is preserved on the `legacy` branch; this page documents the current Rust implementation that runs on macOS, Linux, and (in progress) Windows.
 
@@ -9,9 +9,9 @@ What it does:
 - **Vim-style navigation** anywhere (`HJKL` cursor, `YUIO` page, `G` enter, `T` delete, `N`/`P` tab)
 - **Mouse simulation** with physics-based acceleration (`WASD` move, `QE` click, `RF` scroll)
 - **Window management** & **virtual desktops** (`Z` cycle, `X` close, `C` tile, `1`–`9` desktops)
-- **Voice dictation** (`Space+V`) — local SenseVoice / whisper.cpp, with optional LLM polish
+- **Voice input** (`Space+V`) — triggers the [otoji](https://github.com/snomiao/otoji) app
 - **Brainstorm chat** (`Space+B`) — streaming overlay to Gemini / OpenAI / Anthropic / Ollama / MLX
-- **LLM agent** (`Space+M` or `clx agent`) — describe a task in natural language and it operates the UI for you
+- **LLM agent** (`clx agent`) — describe a task in natural language and it operates the UI for you
 
 Languages:
 **[English](./README.en.md)** · **[简体中文](./README.zh.md)** · **[日本語](./README.ja.md)** · **[Français](./README.fr.md)** · **[Español](./README.es.md)** · **[Русский](./README.ru.md)**
@@ -20,20 +20,15 @@ Repository 🏠: <https://github.com/snolab/CapsLockX>
 
 ---
 
-## Voice features
+## Voice input
 
-`Space+V` toggles voice input; hold to talk push-to-talk style, tap to leave it on. The pipeline:
+Voice input lives in [otoji](https://github.com/snomiao/otoji), not CapsLockX. `Space+V` triggers it: tap to turn otoji on or off, hold to talk. If otoji is installed but not running it is launched; if it isn't installed, CapsLockX suggests [getting it](https://github.com/snomiao/otoji/releases). All voice settings are in otoji.
 
-1. **STT** — SenseVoice (local) or whisper.cpp; Gemini cloud as fallback. Both mic and system-audio tracks are transcribed in parallel, so you can dictate over a meeting without losing either side.
-2. **Polish chain** (configurable) — short utterances (≤15 chars or ≤5 s) return raw to avoid LLM-induced CER regressions; longer dictation flows through MLX (Qwen 2.5-3B local) or an LLM corrector for punctuation, capitalisation, and disfluency cleanup.
-3. **Translation** (optional) — presets for learning, interpreter, chat, and conversation modes.
-4. **TTS** — ElevenLabs → Gemini → OpenAI → msedge-tts → native system, with automatic fallback.
-
-All settings live in the otoji preferences panel (`clx prefs`).
+otoji ships for macOS only so far; on Windows and Linux `Space+V` says it isn't available yet.
 
 ## LLM agent
 
-The agent (`Space+M` or `clx agent --prompt "…"`) operates your computer via the CLX command language:
+The `Space+M` hotkey is temporarily disabled while voice input moves to otoji. The agent (`clx agent --prompt "…"`) operates your computer via the CLX command language:
 
 ```
 k a                  tap key 'a'

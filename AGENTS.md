@@ -14,9 +14,9 @@ rs/
       edit.rs              — Space+HJKL cursor, Space+YUIO page nav, Space+G enter, Space+T delete
       mouse.rs             — Space+WASD mouse movement (AccModel physics)
       media.rs             — media keys
-      voice.rs             — Space+V voice input (STT via SenseVoice/Whisper)
+      voice.rs             — Space+V trigger for the otoji app (tap=toggle, hold=push-to-talk)
       brainstorm.rs        — Space+B LLM chat (streams to overlay)
-      agent.rs             — Space+M LLM agent (controls computer via CLX commands)
+      agent.rs             — LLM agent module (temporarily unbound, see agent::ENABLED)
       window_manager.rs    — Space+Z window cycle, Space+X close, Space+C tile
       virtual_desktop.rs   — Space+1-9 virtual desktops
     src/platform.rs        — Platform trait (key_tap, mouse_move, etc.)
@@ -29,7 +29,7 @@ rs/
     src/bin/clx-prompt.rs  — subprocess prompt dialog (no CGEventTap interference)
     src/agent_cmd.rs       — bridges `clx agent` subcommand to clx-agent.rs
     src/brainstorm_overlay.rs — floating overlay panel for brainstorm/agent output
-    src/voice_overlay.rs   — voice STT overlay
+    src/otoji.rs           — delivers CLX+V commands to otoji-tray (launches otoji.app if needed)
     src/tray.rs            — menu bar tray icon
     src/config_store.rs    — preferences persistence
     src/prefs.rs           — preferences GUI
@@ -46,9 +46,8 @@ docs/agent/               — comprehensive design docs for the agent system
 | T | Delete | edit.rs |
 | N/P | Tab / Shift+Tab | edit.rs |
 | WASD | Mouse movement | mouse.rs |
-| V | Voice input (hold=listen, tap=toggle) | voice.rs |
+| V | Trigger otoji (hold=push-to-talk, tap=toggle); suggests installing it if missing | voice.rs |
 | B | Brainstorm AI chat | brainstorm.rs |
-| M | Agent (LLM controls computer) | agent.rs |
 | Z | Window cycle (Shift+Z = reverse) | window_manager.rs |
 | X | Close tab (Shift=window, Ctrl+Alt=kill) | window_manager.rs |
 | C | Tile windows (Shift=side-by-side) | window_manager.rs |
@@ -69,7 +68,6 @@ Accessibility + Screen Recording permissions persist across rebuilds.
 
 After building, clx auto-deduplicates (kills old instance on startup).
 Launch: `clx` (forks to background) or `clx -f` (foreground).
-The `bin/clx` wrapper script sets `DYLD_LIBRARY_PATH` for onnxruntime.
 
 ## Build (Windows)
 ```
@@ -88,12 +86,17 @@ After building, test the feature locally, report findings, and wait.
 Only commit when the user says "commit". Only push when the user says "push".
 Never chain implement → build → commit → push in one shot.
 
-## Voice Module Rules
-- **NEVER suppress or gate mic STT** — both mic and sys tracks must always run and produce output, even if system audio is playing. The user wants to see both transcriptions simultaneously.
-- Echo/bleed in the mic track is acceptable; do NOT add energy gates, mic suppression, or silence-feeding to VAD when sys audio is active.
+## Voice lives in otoji
+CapsLockX has no voice stack: no audio capture, STT, polish, TTS or wake word. All of it is in [otoji](https://github.com/snomiao/otoji) (`lib/otoji` is only a pinned submodule; nothing in `rs/` builds against it). **Do not add voice code here — send it to otoji.**
 
-## STT polish chain
-Default since 2026-05-14: `min-chars:15,min-duration:5s,mlx:qwen2.5-3b,llm-corrector,raw`. The two leading pseudo-stages short-circuit the chain (return raw text immediately) on short voice commands, where LLM polish was empirically shown to degrade CER ~6× — see [`lib/otoji/docs/2026-05-14-polish-bench.md`](lib/otoji/docs/2026-05-14-polish-bench.md). Long dictation still flows through MLX/llm-corrector. Stages are parsed in `rs/core/src/modules/voice.rs::polish_stt_with_chain`; callers can override via the otoji settings panel. Existing user configs are auto-migrated on load (`lib/otoji/src/config.rs::apply_migrations`).
+CLX+V is a thin trigger (`rs/core/src/modules/voice.rs`): tap → `toggle`, hold (≥300 ms) → `ptt-start` / `ptt-end`, delivered through `Platform::otoji_send`.
+- **macOS** (`rs/adapters/macos/src/otoji.rs`): one ASCII command per datagram on otoji-tray's Unix socket `<otoji data dir>/tray-ctl.sock`. If nothing is listening and otoji.app (`com.snomiao.otoji`) is installed, launch it with `open -g -b` and retry, sending `on` instead of `toggle`. If it isn't installed, the overlay offers the download page.
+- **Windows / Linux**: the default `otoji_send` reports `Unsupported`, and CLX+V says "not available yet".
+- **The microphone belongs to otoji.** clx must never request Microphone permission or open an input device.
+- The voice fields of old `config.json` files are kept on save (`FullConfig::extra`) because otoji imports them on its first run.
+
+## Agent is temporarily disabled
+`agent::ENABLED = false` unbinds CLX+M: agent mode was fed by CLX's own transcripts, which no longer exist. The module still compiles and is tested, and `clx agent` still works. Flip the constant once otoji can hand transcripts back.
 
 ## Privacy: never use user's real prompts as examples
 When writing few-shot examples or documentation for LLM prompts (polish, translate, agent system prompts, `lib/otoji/src/polish.rs`, `skills/clx-agent/SKILL.md`, etc.), **NEVER copy phrases from the user's voice logs, chat messages, transcripts, or `tmp/clx-watchdog.log`**. Always synthesize generic, unrelated examples (e.g. `kafka`, `npm run`, `下雨了`, `water bottle`).

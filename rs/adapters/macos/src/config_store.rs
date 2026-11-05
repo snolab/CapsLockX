@@ -20,64 +20,17 @@ pub struct FullConfig {
     pub action_speed: f64,
     pub mouse_speed: f64,
     pub scroll_speed: f64,
-    /// STT engine: "sherpa" (SenseVoice) or "whisper" (whisper.cpp)
-    #[serde(default = "default_stt_engine")]
-    pub stt_engine: String,
-    /// VAD-based PTT auto-release silence threshold (ms). 0 = disabled.
-    #[serde(default)]
-    pub ptt_vad_auto_release_ms: u64,
-    /// PTT polish provider: "gemini" | "openai" | "anthropic" | "auto".
-    #[serde(default = "default_ptt_polish_provider")]
-    pub ptt_polish_provider: String,
-    /// PTT polish model override, e.g. "qwen2.5:7b". Empty = otoji default.
-    #[serde(default)]
-    pub ptt_polish_model: String,
-    /// Path to a whisper.cpp GGML model file. Empty = auto-detect.
-    #[serde(default)]
-    pub whisper_model_path: String,
-    /// BCP-47 language code for whisper-cli --language. Default "ja".
-    #[serde(default = "default_whisper_language")]
-    pub whisper_language: String,
     #[serde(default)]
     pub gemini_api_key: String,
     #[serde(default)]
     pub openai_api_key: String,
     #[serde(default)]
     pub anthropic_api_key: String,
-    #[serde(default)]
-    pub elevenlabs_api_key: String,
     /// Backwards compat: old single key migrates to gemini/openai based on prefix.
     #[serde(default)]
     pub llm_api_key: String,
     #[serde(default)]
     pub llm_model: String,
-    #[serde(default)]
-    pub stt_correction: bool,
-    /// TTS fallback chain (comma-separated provider names).
-    #[serde(default = "default_tts_chain")]
-    pub tts_chain: String,
-    /// STT polishing fallback chain (comma-separated stage names).
-    #[serde(default = "default_stt_polish_chain")]
-    pub stt_polish_chain: String,
-    // Advanced voice/AEC thresholds
-    #[serde(default = "default_aec_gain")]
-    pub aec_gain: f32,
-    #[serde(default = "default_noise_gate")]
-    pub noise_gate: f32,
-    #[serde(default = "default_speech_start_prob")]
-    pub speech_start_prob: f32,
-    #[serde(default = "default_speech_end_prob")]
-    pub speech_end_prob: f32,
-    #[serde(default = "default_speech_start_frames")]
-    pub speech_start_frames: usize,
-    #[serde(default = "default_silence_end_frames")]
-    pub silence_end_frames: usize,
-    /// VPIO AEC mode: "off" | "dual-only" | "always".
-    #[serde(default = "default_aec_mode")]
-    pub aec_mode: String,
-    /// Allow overlay to be visible in screenshots/screen sharing.
-    #[serde(default)]
-    pub overlay_sharing: bool,
     /// Window cycle order (Space+Z): "column", "row", "x,y", "y,x",
     /// "diagonal", "linear", "id".
     #[serde(default = "default_window_cycle_order")]
@@ -86,90 +39,11 @@ pub struct FullConfig {
     #[serde(default = "default_window_arrange_order")]
     pub window_arrange_order: String,
 
-    // ── Voice translation (Phase 2) ───────────────────────────────────────
-    /// Master toggle for PTT voice translation.
-    #[serde(default)]
-    pub translate_enabled: bool,
-    /// Preset: "off", "learning", "interpreter", "chat", "conversation", "custom".
-    #[serde(default = "default_translate_preset")]
-    pub translate_preset: String,
-    /// Target language BCP-47 code when direction=one_way.
-    #[serde(default = "default_translate_target")]
-    pub translate_target: String,
-    /// Second language when direction=between (lang_a is translate_target).
-    #[serde(default = "default_translate_other")]
-    pub translate_other: String,
-    /// "one_way" or "between".
-    #[serde(default = "default_translate_direction")]
-    pub translate_direction: String,
-    /// What to type: "original", "translated", or "both".
-    #[serde(default = "default_translate_type")]
-    pub translate_type: String,
-    /// Template for "both" mode. Placeholders: __ORIGINAL__, __TRANSLATION__.
-    #[serde(default = "default_translate_both_template")]
-    pub translate_both_template: String,
-    /// TTS speech source: "original", "translated", or "off".
-    #[serde(default = "default_translate_tts_source")]
-    pub translate_tts_source: String,
-    /// LLM provider for polish/translation: "gemini", "openai", "anthropic".
-    #[serde(default = "default_translate_polish_provider")]
-    pub translate_polish_provider: String,
-    /// TTS provider: "gemini", "openai", "elevenlabs", "piper", "iflytek".
-    #[serde(default = "default_translate_tts_provider")]
-    pub translate_tts_provider: String,
-
-    // ── Wake-word ─────────────────────────────────────────────────────────
-    #[serde(default)]
-    pub wake_word_enabled: bool,
-    #[serde(default)]
-    pub wake_word_model_dir: String,
-    #[serde(default)]
-    pub wake_word_keywords_file: String,
-    #[serde(default = "default_wake_word_threshold")]
-    pub wake_word_threshold: f32,
-    #[serde(default = "default_wake_word_hold_ms")]
-    pub wake_word_hold_ms: u64,
-
-    // ── Note-mode translation ─────────────────────────────────────────────
-    #[serde(default)]
-    pub note_translate_enabled: bool,
-    #[serde(default)]
-    pub note_translate_target: String,
-}
-
-fn default_wake_word_threshold() -> f32 {
-    0.25
-}
-fn default_wake_word_hold_ms() -> u64 {
-    8000
-}
-
-fn default_translate_preset() -> String {
-    "off".to_string()
-}
-fn default_translate_target() -> String {
-    "English".to_string()
-}
-fn default_translate_other() -> String {
-    "Japanese".to_string()
-}
-fn default_translate_direction() -> String {
-    "one_way".to_string()
-}
-fn default_translate_type() -> String {
-    "translated".to_string()
-}
-fn default_translate_both_template() -> String {
-    "__ORIGINAL__\n__TRANSLATION__".to_string()
-}
-fn default_translate_tts_source() -> String {
-    "original".to_string()
-}
-fn default_translate_polish_provider() -> String {
-    "gemini".to_string()
-}
-fn default_translate_tts_provider() -> String {
-    "gemini".to_string()
+    /// Settings this build doesn't know — notably the voice fields of older
+    /// configs, which otoji imports on its first run. Kept so saving preferences
+    /// here doesn't destroy them.
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 fn default_window_cycle_order() -> String {
@@ -179,46 +53,9 @@ fn default_window_arrange_order() -> String {
     "y,x".to_string()
 }
 
-fn default_stt_engine() -> String {
-    "sherpa".to_string()
-}
-fn default_whisper_language() -> String {
-    "ja".to_string()
-}
-fn default_ptt_polish_provider() -> String {
-    "openai".to_string()
-}
-fn default_tts_chain() -> String {
-    "elevenlabs:rachel,gemini-2.5-flash-preview-tts,openai:tts-1,msedge,native".to_string()
-}
-fn default_stt_polish_chain() -> String {
-    "mlx:qwen2.5-3b,llm-corrector,raw".to_string()
-}
 fn default_edit_speed() -> f64 {
     30.0
 }
-fn default_aec_gain() -> f32 {
-    15.0
-}
-fn default_noise_gate() -> f32 {
-    0.003
-}
-fn default_speech_start_prob() -> f32 {
-    0.8
-}
-fn default_speech_end_prob() -> f32 {
-    0.6
-}
-fn default_speech_start_frames() -> usize {
-    10
-}
-fn default_silence_end_frames() -> usize {
-    20
-}
-fn default_aec_mode() -> String {
-    "always".to_string()
-}
-
 impl Default for FullConfig {
     fn default() -> Self {
         Self {
@@ -234,48 +71,14 @@ impl Default for FullConfig {
             action_speed: 30.0,
             mouse_speed: 1600.0,
             scroll_speed: 1600.0,
-            stt_engine: "sherpa".to_string(),
-            ptt_vad_auto_release_ms: 0,
-            ptt_polish_provider: default_ptt_polish_provider(),
-            ptt_polish_model: String::new(),
-            whisper_model_path: String::new(),
-            whisper_language: default_whisper_language(),
             gemini_api_key: String::new(),
             openai_api_key: String::new(),
             anthropic_api_key: String::new(),
-            elevenlabs_api_key: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
-            stt_correction: false,
-            tts_chain: default_tts_chain(),
-            stt_polish_chain: default_stt_polish_chain(),
-            aec_gain: default_aec_gain(),
-            noise_gate: default_noise_gate(),
-            speech_start_prob: default_speech_start_prob(),
-            speech_end_prob: default_speech_end_prob(),
-            speech_start_frames: default_speech_start_frames(),
-            silence_end_frames: default_silence_end_frames(),
-            aec_mode: default_aec_mode(),
-            overlay_sharing: false,
             window_cycle_order: default_window_cycle_order(),
             window_arrange_order: default_window_arrange_order(),
-            translate_enabled: false,
-            translate_preset: default_translate_preset(),
-            translate_target: default_translate_target(),
-            translate_other: default_translate_other(),
-            translate_direction: default_translate_direction(),
-            translate_type: default_translate_type(),
-            translate_both_template: default_translate_both_template(),
-            translate_tts_source: default_translate_tts_source(),
-            translate_polish_provider: default_translate_polish_provider(),
-            translate_tts_provider: default_translate_tts_provider(),
-            wake_word_enabled: false,
-            wake_word_model_dir: String::new(),
-            wake_word_keywords_file: String::new(),
-            wake_word_threshold: default_wake_word_threshold(),
-            wake_word_hold_ms: default_wake_word_hold_ms(),
-            note_translate_enabled: false,
-            note_translate_target: String::new(),
+            extra: serde_json::Map::new(),
         }
     }
 }
@@ -295,48 +98,14 @@ impl FullConfig {
             action_speed: cfg.speed.action_speed,
             mouse_speed: cfg.speed.mouse_speed,
             scroll_speed: cfg.speed.scroll_speed,
-            stt_engine: cfg.stt_engine.clone(),
-            ptt_vad_auto_release_ms: cfg.ptt_vad_auto_release_ms,
-            ptt_polish_provider: cfg.ptt_polish_provider.clone(),
-            ptt_polish_model: cfg.ptt_polish_model.clone(),
-            whisper_model_path: cfg.whisper_model_path.clone(),
-            whisper_language: cfg.whisper_language.clone(),
             gemini_api_key: cfg.gemini_api_key.clone(),
             openai_api_key: cfg.openai_api_key.clone(),
             anthropic_api_key: cfg.anthropic_api_key.clone(),
-            elevenlabs_api_key: cfg.elevenlabs_api_key.clone(),
             llm_api_key: String::new(),
             llm_model: String::new(),
-            stt_correction: cfg.stt_correction,
-            tts_chain: cfg.tts_chain.clone(),
-            stt_polish_chain: cfg.stt_polish_chain.clone(),
-            aec_gain: cfg.aec_gain,
-            noise_gate: cfg.noise_gate,
-            speech_start_prob: cfg.speech_start_prob,
-            speech_end_prob: cfg.speech_end_prob,
-            speech_start_frames: cfg.speech_start_frames,
-            silence_end_frames: cfg.silence_end_frames,
-            aec_mode: cfg.aec_mode.clone(),
-            overlay_sharing: false, // not in ClxConfig, default false
             window_cycle_order: default_window_cycle_order(),
             window_arrange_order: default_window_arrange_order(),
-            translate_enabled: false,
-            translate_preset: default_translate_preset(),
-            translate_target: default_translate_target(),
-            translate_other: default_translate_other(),
-            translate_direction: default_translate_direction(),
-            translate_type: default_translate_type(),
-            translate_both_template: default_translate_both_template(),
-            translate_tts_source: default_translate_tts_source(),
-            translate_polish_provider: default_translate_polish_provider(),
-            translate_tts_provider: default_translate_tts_provider(),
-            wake_word_enabled: cfg.wake_word_enabled,
-            wake_word_model_dir: cfg.wake_word_model_dir.clone(),
-            wake_word_keywords_file: cfg.wake_word_keywords_file.clone(),
-            wake_word_threshold: cfg.wake_word_threshold,
-            wake_word_hold_ms: cfg.wake_word_hold_ms,
-            note_translate_enabled: cfg.note_translate_enabled,
-            note_translate_target: cfg.note_translate_target.clone(),
+            extra: serde_json::Map::new(),
         }
     }
 
@@ -356,12 +125,6 @@ impl FullConfig {
                 mouse_speed: self.mouse_speed,
                 scroll_speed: self.scroll_speed,
             },
-            stt_engine: self.stt_engine,
-            ptt_vad_auto_release_ms: self.ptt_vad_auto_release_ms,
-            ptt_polish_provider: self.ptt_polish_provider,
-            ptt_polish_model: self.ptt_polish_model,
-            whisper_model_path: self.whisper_model_path,
-            whisper_language: self.whisper_language,
             // Migrate old single llm_api_key to per-provider keys.
             gemini_api_key: if !self.gemini_api_key.is_empty() {
                 self.gemini_api_key
@@ -386,24 +149,6 @@ impl FullConfig {
             } else {
                 String::new()
             },
-            elevenlabs_api_key: self.elevenlabs_api_key,
-            stt_correction: self.stt_correction,
-            tts_chain: self.tts_chain,
-            stt_polish_chain: self.stt_polish_chain,
-            aec_gain: self.aec_gain,
-            noise_gate: self.noise_gate,
-            speech_start_prob: self.speech_start_prob,
-            speech_end_prob: self.speech_end_prob,
-            speech_start_frames: self.speech_start_frames,
-            silence_end_frames: self.silence_end_frames,
-            aec_mode: self.aec_mode,
-            wake_word_enabled: self.wake_word_enabled,
-            wake_word_model_dir: self.wake_word_model_dir,
-            wake_word_keywords_file: self.wake_word_keywords_file,
-            wake_word_threshold: self.wake_word_threshold,
-            wake_word_hold_ms: self.wake_word_hold_ms,
-            note_translate_enabled: self.note_translate_enabled,
-            note_translate_target: self.note_translate_target,
             // Brainstorm local-first fields (added on the Windows/rust-port side;
             // not surfaced in the macOS FullConfig yet) — use ClxConfig defaults
             // so this initializer stays complete after the beta↔main merge.
@@ -438,6 +183,21 @@ mod arrange_preference_tests {
         let legacy: FullConfig = serde_json::from_value(json).unwrap();
         assert!(!legacy.into_clx_config().window_arrange_side_by_side);
     }
+
+    /// otoji imports these from CLX's config on first run, so a save here must
+    /// not drop them even though this build no longer reads them.
+    #[test]
+    fn voice_fields_of_old_configs_survive_a_save() {
+        let mut json = serde_json::to_value(FullConfig::default()).unwrap();
+        let obj = json.as_object_mut().unwrap();
+        obj.insert("stt_engine".into(), "whisper".into());
+        obj.insert("elevenlabs_api_key".into(), "xi-example".into());
+        let loaded: FullConfig = serde_json::from_value(json).unwrap();
+        let saved = serde_json::to_value(&loaded).unwrap();
+        assert_eq!(saved["stt_engine"], "whisper");
+        assert_eq!(saved["elevenlabs_api_key"], "xi-example");
+        assert!(saved["use_capslock"].as_bool().unwrap());
+    }
 }
 
 pub fn load() -> FullConfig {
@@ -446,8 +206,7 @@ pub fn load() -> FullConfig {
         match serde_json::from_str::<FullConfig>(&data) {
             Ok(cfg) => {
                 eprintln!(
-                    "[CLX] config: stt_correction={} llm_key={}... llm_model={}",
-                    cfg.stt_correction,
+                    "[CLX] config: llm_key={}... llm_model={}",
                     &cfg.llm_api_key[..cfg.llm_api_key.len().min(10)],
                     cfg.llm_model
                 );
@@ -471,117 +230,4 @@ pub fn save(cfg: &FullConfig) {
     if let Ok(json) = serde_json::to_string_pretty(cfg) {
         let _ = std::fs::write(path, json);
     }
-}
-
-// ── Otoji config overlay ─────────────────────────────────────────────────────
-//
-// Reads only the voice-relevant fields from the otoji config file.
-// Unknown fields are ignored by serde, so this remains forward-compatible
-// even as the otoji config gains new fields.
-
-/// Voice fields that otoji owns. Parsed from otoji's config.json
-/// and merged into CLX's FullConfig on startup and on mtime change.
-#[derive(Debug, Default, serde::Deserialize)]
-#[serde(default)]
-pub struct OtojiVoiceOverride {
-    pub stt_engine: String,
-    pub ptt_vad_auto_release_ms: u64,
-    pub ptt_polish_provider: String,
-    pub ptt_polish_model: String,
-    pub whisper_model_path: String,
-    pub whisper_language: String,
-    pub stt_correction: bool,
-    pub tts_chain: String,
-    pub stt_polish_chain: String,
-    pub aec_gain: f32,
-    pub noise_gate: f32,
-    pub speech_start_prob: f32,
-    pub speech_end_prob: f32,
-    pub speech_start_frames: usize,
-    pub silence_end_frames: usize,
-    pub aec_mode: String,
-    pub overlay_sharing: bool,
-    pub translate_enabled: bool,
-    pub translate_preset: String,
-    pub translate_target: String,
-    pub translate_other: String,
-    pub translate_direction: String,
-    pub translate_type: String,
-    pub translate_both_template: String,
-    pub translate_tts_source: String,
-    pub translate_polish_provider: String,
-    pub translate_tts_provider: String,
-    pub note_translate_enabled: bool,
-    pub note_translate_target: String,
-}
-
-/// Path to the otoji config file.
-pub fn otoji_config_path() -> std::path::PathBuf {
-    #[cfg(target_os = "macos")]
-    if let Some(home) = std::env::var_os("HOME") {
-        return std::path::PathBuf::from(home)
-            .join("Library/Application Support/otoji/config.json");
-    }
-    dirs::data_local_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("otoji/config.json")
-}
-
-/// mtime (secs since epoch) of the otoji config file. Returns 0 if absent.
-pub fn otoji_config_mtime() -> u64 {
-    std::fs::metadata(otoji_config_path())
-        .and_then(|m| m.modified())
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
-}
-
-/// Load the otoji voice override config. Returns `None` if the file doesn't exist.
-pub fn load_otoji_voice_override() -> Option<OtojiVoiceOverride> {
-    let path = otoji_config_path();
-    let data = std::fs::read_to_string(&path).ok()?;
-    match serde_json::from_str::<OtojiVoiceOverride>(&data) {
-        Ok(v) => Some(v),
-        Err(e) => {
-            eprintln!("[CLX] otoji config parse error: {}", e);
-            None
-        }
-    }
-}
-
-/// Apply an otoji voice override on top of a FullConfig.
-/// Otoji owns all voice settings — every field is applied unconditionally
-/// once the otoji config file exists. CLX voice fields in FullConfig become
-/// subordinate to the otoji config.
-pub fn apply_otoji_override(cfg: &mut FullConfig, ov: &OtojiVoiceOverride) {
-    cfg.stt_engine = ov.stt_engine.clone();
-    cfg.ptt_vad_auto_release_ms = ov.ptt_vad_auto_release_ms;
-    cfg.ptt_polish_provider = ov.ptt_polish_provider.clone();
-    cfg.ptt_polish_model = ov.ptt_polish_model.clone();
-    cfg.whisper_model_path = ov.whisper_model_path.clone();
-    cfg.whisper_language = ov.whisper_language.clone();
-    cfg.stt_correction = ov.stt_correction;
-    cfg.tts_chain = ov.tts_chain.clone();
-    cfg.stt_polish_chain = ov.stt_polish_chain.clone();
-    cfg.aec_gain = ov.aec_gain;
-    cfg.noise_gate = ov.noise_gate;
-    cfg.speech_start_prob = ov.speech_start_prob;
-    cfg.speech_end_prob = ov.speech_end_prob;
-    cfg.speech_start_frames = ov.speech_start_frames;
-    cfg.silence_end_frames = ov.silence_end_frames;
-    cfg.aec_mode = ov.aec_mode.clone();
-    cfg.overlay_sharing = ov.overlay_sharing;
-    cfg.translate_enabled = ov.translate_enabled;
-    cfg.translate_preset = ov.translate_preset.clone();
-    cfg.translate_target = ov.translate_target.clone();
-    cfg.translate_other = ov.translate_other.clone();
-    cfg.translate_direction = ov.translate_direction.clone();
-    cfg.translate_type = ov.translate_type.clone();
-    cfg.translate_both_template = ov.translate_both_template.clone();
-    cfg.translate_tts_source = ov.translate_tts_source.clone();
-    cfg.translate_polish_provider = ov.translate_polish_provider.clone();
-    cfg.translate_tts_provider = ov.translate_tts_provider.clone();
-    cfg.note_translate_enabled = ov.note_translate_enabled;
-    cfg.note_translate_target = ov.note_translate_target.clone();
 }

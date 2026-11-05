@@ -22,7 +22,6 @@
 - **Lab notes (dev)**
   - [Local brainstorm backends (drop Ollama?)](dev/local-brainstorm-backends.md)
   - [Local agent models](agent/LOCAL-AGENT-MODELS.md)
-  - [Dual-track STT](dev/dual-track-stt.md)
 
 - **Reference**
   - [Roadmap](Roadmap.md)

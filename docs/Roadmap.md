@@ -9,10 +9,9 @@ CapsLockX 2.0 is a ground-up rewrite in Rust, targeting cross-platform support w
 ```
 capslockx-core (Rust library, platform-agnostic)
 ├── Engine (key event → module dispatch)
-├── Modules: Edit, Mouse, Media, VirtualDesktop, Voice, Brainstorm, WindowManager
+├── Modules: Edit, Mouse, Media, VirtualDesktop, Voice (otoji trigger), Brainstorm, WindowManager
 ├── LLM Client (Gemini/OpenAI/Anthropic/Ollama/MLX)
 ├── Agent (tool-use loop with web search, JS eval, TTS, etc.)
-├── STT (SenseVoice local + Gemini cloud)
 ├── TTS (ElevenLabs → Gemini → OpenAI → msedge-tts → native)
 └── Platform trait (adapters implement per-OS)
 
@@ -46,15 +45,7 @@ Adapters:
 | | Topmost toggle | ✅ |
 | **Virtual Desktop** | Switch desktop 1-9 | ✅ |
 | **Media** | Volume, play/pause, next/prev | ✅ |
-| **Voice (NEW)** | SenseVoice local STT (95% accuracy) | ✅ |
-| | Gemini cloud STT polish (100% JA accuracy) | ✅ |
-| | MLX local LLM STT correction | ✅ |
-| | Dual-track recording (mic + system audio) | ✅ |
-| | Echo cancellation (VPIO + NLMS) | ✅ |
-| | Voice note (WebM + SRT) | ✅ |
-| | Voice overlay (waveform + subtitle) | ✅ |
-| | Overlay drag/resize/close on hover | ✅ |
-| | Hidden from screen sharing | ✅ |
+| **Voice** | Moved to [otoji](https://github.com/snomiao/otoji); CLX+V triggers it | ✅ |
 | **Brainstorm (NEW)** | Agent with chat history (Space+B) | ✅ |
 | | Direct LLM streaming (SSE) | ✅ |
 | | 4 providers (Gemini/OpenAI/Anthropic/Ollama+MLX) | ✅ |
@@ -138,5 +129,4 @@ cargo build -p capslockx-core --release --bin clx-agent
 
 ### Links
 - [Window Cycle Stability](dev/window-cycle-stability.md)
-- [Dual-Track STT Architecture](dev/dual-track-stt.md)
 - [Agent Tool Test Matrix](dev/agent-test-matrix.md)

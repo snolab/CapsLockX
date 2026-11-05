@@ -3,7 +3,7 @@
 //! Usage:
 //!   clx observe                                          # full screen, 3s, Gemini describe
 //!   clx observe --region 450,40,900,300 --duration 5s   # specific region
-//!   clx observe --window voice-standalone --duration 3s  # capture by window name
+//!   clx observe --window Safari --duration 3s  # capture by window name
 //!   clx observe --prompt "what is on screen?"            # custom prompt
 //!   clx observe --output ./tmp/frames/                   # save frames only (no LLM)
 
