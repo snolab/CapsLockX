@@ -745,6 +745,7 @@ How to help CapsLockX survive? If CapsLockX has been helpful to you:
   - [如何将电脑桌面划分为独立的两半？ - 知乎](https://www.zhihu.com/question/23443944/answer/1670521971)
   - [我是职场达人，AutoHotKey 让我成为职场超人 - 知乎](https://zhuanlan.zhihu.com/p/60372361)
   - [为什么知乎上这么多人推荐 HHKB，却不反复强调说该键盘不适合大多数程序员？ - 知乎](https://www.zhihu.com/question/33690121/answer/3495460336)
+  - [为什么垂直鼠标没有流行起来？ - 知乎](https://www.zhihu.com/question/2085093726301448152)
 - AutoAHK:
   - [AutoHotKey 中文网专栏 - 知乎](https://www.zhihu.com/column/autoahk)
   - [我是职场达人，AutoHotKey 让我成为职场超人 – AutoAHK](https://www.autoahk.com/archives/14636)
